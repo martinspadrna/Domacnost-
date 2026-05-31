@@ -1,0 +1,10 @@
+{
+  "name": "Home Web Offline",
+  "short_name": "Home Web",
+  "description": "Offline domácí/rodinný dashboard pro RaK / Home Web.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#eef5ff",
+  "theme_color": "#eef5ff",
+  "icons": []
+}
