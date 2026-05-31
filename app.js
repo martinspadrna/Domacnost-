@@ -1,10 +1,10 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = 'Domácnost+ v.0.1_25';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_25';
-  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_24';
-  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
+  const APP_VERSION = 'Domácnost+ v.0.1_28';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_28';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_27';
+  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
     { id: 'home', label: 'Domů', icon: '🏠' },
@@ -96,9 +96,9 @@
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 24,
-      appBuild: 25,
-      mode: 'pwa-icon-fix',
+      schemaVersion: 27,
+      appBuild: 28,
+      mode: 'pwa-install-diagnostics',
       createdAt: '',
       updatedAt: ''
     },
@@ -130,7 +130,7 @@
     tasksCloud: { loadedAt: '' },
     calendarCloud: { sources: [], loadedAt: '' },
     shoppingStats: {},
-    pwa: { installed: false, lastUpdateCheck: '', lastInstallPrompt: '' },
+    pwa: { installed: false, lastUpdateCheck: '', lastInstallPrompt: '', diagnostics: null },
     homeTasks: [],
     waste: [],
     notes: [],
@@ -220,9 +220,9 @@
     const timestamp = new Date().toISOString();
 
     migrated.meta = {
-      schemaVersion: 24,
-      appBuild: 25,
-      mode: 'pwa-icon-fix',
+      schemaVersion: 27,
+      appBuild: 28,
+      mode: 'pwa-install-diagnostics',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -704,6 +704,8 @@
           </div>
         </section>
 
+        ${renderCloudSyncOverview('dashboard')}
+
         <section class="tablet-focus-grid">
           ${focusItems.map(renderDashboardFocusItem).join('')}
         </section>
@@ -814,6 +816,71 @@
     ];
 
     return items;
+  }
+
+
+  function getCloudSyncOverviewItems() {
+    const counters = [
+      { nav: 'shopping', icon: '🛒', label: 'Nákupy', items: state.shopping || [], loadedAt: state.shoppingCloud?.loadedAt },
+      { nav: 'contracts', icon: '📄', label: 'Smlouvy', items: state.contracts || [] },
+      { nav: 'contracts', icon: '📎', label: 'Přílohy smluv', items: state.contractFiles || [] },
+      { nav: 'garage', icon: '🚗', label: 'Garáž', items: [...(state.vehicles || []), ...(state.fuel || []), ...(state.services || [])] },
+      { nav: 'homecare', icon: '💡', label: 'HDO', items: state.hdoWindows || [], loadedAt: state.hdoCloud?.loadedAt },
+      { nav: 'homecare', icon: '♻️', label: 'Odpad', items: state.waste || [], loadedAt: state.wasteCloud?.loadedAt },
+      { nav: 'homecare', icon: '✅', label: 'Úkoly', items: state.homeTasks || [], loadedAt: state.tasksCloud?.loadedAt },
+      { nav: 'packages', icon: '📦', label: 'Balíky', items: state.packages || [], loadedAt: state.parcelsCloud?.loadedAt },
+      { nav: 'calendar', icon: '📅', label: 'Kalendář', items: state.calendar || [], loadedAt: state.calendarCloud?.loadedAt }
+    ];
+    return counters.map((entry) => {
+      const total = entry.items.length;
+      const cloud = entry.items.filter((item) => item.cloudId).length;
+      const local = Math.max(total - cloud, 0);
+      const percent = total ? Math.round((cloud / total) * 100) : 100;
+      return { ...entry, total, cloud, local, percent };
+    });
+  }
+
+  function renderCloudSyncOverview(mode = 'dashboard') {
+    const cloudReady = Boolean(state.cloud?.userId && state.cloud?.householdId);
+    const items = getCloudSyncOverviewItems();
+    const totalLocal = items.reduce((sum, item) => sum + item.local, 0);
+    const totalCloud = items.reduce((sum, item) => sum + item.cloud, 0);
+    const total = totalLocal + totalCloud;
+    const overall = total ? Math.round((totalCloud / total) * 100) : (cloudReady ? 100 : 0);
+    const compactItems = mode === 'dashboard' ? items.filter((item) => item.total || ['Nákupy', 'Smlouvy', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář'].includes(item.label)).slice(0, 9) : items;
+    return `
+      <section class="card desktop-span-2 cloud-sync-overview-card">
+        <div class="card-header">
+          <div>
+            <h2>Cloud / lokální data</h2>
+            <p>${cloudReady ? 'Rychlá kontrola, co už je v Supabase a co zůstává jen v tomto zařízení.' : 'Aplikace je připravená na cloud, ale domácnost zatím není napojená.'}</p>
+          </div>
+          <span class="badge ${cloudReady ? 'good' : 'warn'}">${cloudReady ? `${overall}% cloud` : 'lokálně'}</span>
+        </div>
+        <div class="cloud-status-grid compact-cloud-stats">
+          <div class="mini-stat"><span>Cloud záznamy</span><strong>${totalCloud}</strong></div>
+          <div class="mini-stat"><span>Jen lokálně</span><strong>${totalLocal}</strong></div>
+          <div class="mini-stat"><span>Poslední sync</span><strong>${state.cloud?.lastSyncAt ? escapeHtml(formatDateTime(state.cloud.lastSyncAt)) : 'nikdy'}</strong></div>
+          <div class="mini-stat"><span>Domácnost</span><strong>${escapeHtml(state.cloud?.householdId ? 'napojená' : 'offline')}</strong></div>
+        </div>
+        <div class="sync-overview-list">
+          ${compactItems.map((item) => `
+            <button class="sync-overview-row" type="button" data-nav="${escapeHtml(item.nav)}">
+              <span class="sync-overview-icon">${escapeHtml(item.icon)}</span>
+              <span class="sync-overview-main">
+                <span class="sync-overview-title">${escapeHtml(item.label)}</span>
+                <span class="sync-progress"><i style="width:${item.percent}%"></i></span>
+              </span>
+              <span class="sync-overview-meta"><strong>${item.cloud}</strong> cloud · <strong>${item.local}</strong> lokál</span>
+            </button>
+          `).join('')}
+        </div>
+        <div class="form-actions">
+          ${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-all">Načíst vše z cloudu</button>' : '<button class="ghost-btn" type="button" data-nav="settings">Napojit cloud v Nastavení</button>'}
+          ${cloudReady && totalLocal ? '<span class="badge warn">lokální položky odešli v daném modulu</span>' : '<span class="badge good">bez lokálních restů</span>'}
+        </div>
+      </section>
+    `;
   }
 
   function renderDashboardFocusItem(item) {
@@ -982,7 +1049,8 @@
       { title: 'Domácnost+ v.0.1_18', note: 'Hotovo: editace tankování/servisu, Fuelio import rovnou do cloudu a stabilnější Garáž sync.' },
       { title: 'Domácnost+ v.0.1_20', note: 'Hotovo: cloudový svoz odpadu, základ připomínek a dashboardové stavy cloud/lokál.' },
       { title: 'Domácnost+ v.0.1_24', note: 'Hotovo: cloudový Kalendář a příprava na Google Calendar bez tokenů ve frontendu.' },
-      { title: 'Domácnost+ v.0.1_25', note: 'Hotovo: opravené PWA ikony pro instalaci, apple-touch ikony, favicony a stabilnější manifest.' }
+      { title: 'Domácnost+ v.0.1_26', note: 'Hotovo: tvrdší oprava PWA ikon, relativní cesty, root apple-touch fallback a cache-busting pro iPhone/Android.' },
+      { title: 'Domácnost+ v.0.1_28', note: 'Hotovo: PWA diagnostika manifestu, ikon, Apple touch ikon, service workeru a cache přímo v aplikaci.' }
     ];
     return `
       <section class="card roadmap-card">
@@ -2243,6 +2311,9 @@
     const swSupported = 'serviceWorker' in navigator && location.protocol !== 'file:';
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent || '');
     const android = /android/i.test(navigator.userAgent || '');
+    const manifestLink = document.querySelector('link[rel="manifest"]');
+    const appleLinks = Array.from(document.querySelectorAll('link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]'));
+    const iconLinks = Array.from(document.querySelectorAll('link[rel~="icon"]'));
     return {
       standalone,
       secure,
@@ -2251,8 +2322,44 @@
       android,
       canPrompt: Boolean(deferredInstallPrompt),
       updateAvailable: Boolean(pwaUpdateAvailable),
-      fileMode: location.protocol === 'file:'
+      fileMode: location.protocol === 'file:',
+      manifestHref: manifestLink ? new URL(manifestLink.getAttribute('href'), location.href).href : '',
+      appleIconCount: appleLinks.length,
+      iconCount: iconLinks.length,
+      swControlled: Boolean(navigator.serviceWorker?.controller),
+      swReady: Boolean(serviceWorkerRegistration),
+      protocol: location.protocol.replace(':', ''),
+      host: location.host || 'lokální soubor'
     };
+  }
+
+  function renderPwaDiagnostics() {
+    const diagnostics = state.pwa?.diagnostics;
+    if (!diagnostics?.checks?.length) {
+      return `<div class="hint-box">Diagnostiku spusť po otevření aplikace z Vercelu/HTTPS. Zkontroluje manifest, dostupnost ikon, Apple touch ikony, service worker a režim instalace.</div>`;
+    }
+    const okCount = diagnostics.checks.filter((item) => item.status === 'ok').length;
+    const warnCount = diagnostics.checks.filter((item) => item.status === 'warn').length;
+    const badCount = diagnostics.checks.filter((item) => item.status === 'bad').length;
+    return `
+      <div class="pwa-diagnostic-summary">
+        <span class="badge good">OK ${okCount}</span>
+        <span class="badge warn">Pozor ${warnCount}</span>
+        <span class="badge bad">Chyba ${badCount}</span>
+        <span class="badge">${escapeHtml(formatDateTime(diagnostics.checkedAt))}</span>
+      </div>
+      <div class="diagnostic-list">
+        ${diagnostics.checks.map((item) => `
+          <div class="diagnostic-row ${escapeHtml(item.status)}">
+            <span class="diagnostic-dot" aria-hidden="true"></span>
+            <div>
+              <strong>${escapeHtml(item.label)}</strong>
+              <em>${escapeHtml(item.message)}</em>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
   }
 
   function renderPwaInstallCard() {
@@ -2261,27 +2368,32 @@
     return `
       <section class="card desktop-span-2 pwa-card">
         <div class="card-header">
-          <div><h2>Instalace aplikace</h2><p>Domácnost+ je připravená jako instalovatelná PWA appka. Na mobilu se otevře jako samostatná aplikace bez klasické lišty prohlížeče.</p></div>
+          <div><h2>Instalace aplikace</h2><p>Domácnost+ je instalovatelná PWA. Tahle část teď umí i diagnostiku ikon, manifestu a service workeru.</p></div>
           <span class="badge ${pwa.standalone ? 'good' : pwa.updateAvailable ? 'warn' : ''}">${statusLabel}</span>
         </div>
         <div class="cloud-status-grid">
           <div class="mini-stat"><span>Režim</span><strong>${pwa.standalone ? 'samostatná app' : 'prohlížeč'}</strong></div>
-          <div class="mini-stat"><span>Service worker</span><strong>${pwa.swSupported ? 'podporovaný' : 'není dostupný'}</strong></div>
-          <div class="mini-stat"><span>Instalace</span><strong>${pwa.canPrompt ? 'tlačítkem' : pwa.ios ? 'přes Safari' : 'přes menu'}</strong></div>
+          <div class="mini-stat"><span>Adresa</span><strong>${escapeHtml(pwa.host)}</strong></div>
+          <div class="mini-stat"><span>Service worker</span><strong>${pwa.swControlled ? 'aktivní' : pwa.swSupported ? 'podporovaný' : 'není dostupný'}</strong></div>
+          <div class="mini-stat"><span>Apple ikony</span><strong>${pwa.appleIconCount} odkazů</strong></div>
+          <div class="mini-stat"><span>Manifest</span><strong>${pwa.manifestHref ? 'nalezen' : 'chybí'}</strong></div>
           <div class="mini-stat"><span>Verze</span><strong>${escapeHtml(APP_VERSION)}</strong></div>
         </div>
-        ${pwa.fileMode ? `<div class="hint-box warn-box">Teď je appka otevřená jako lokální soubor ze ZIPu. Instalace, ikona a automatické aktualizace fungují správně až přes HTTPS, tedy typicky přes Vercel.</div>` : ''}
-        <div class="hint-box">Ikona je připravená pro Android i iPhone: manifest používá PNG ikony 192/512, samostatné maskable ikony, favicony a Apple touch ikony 120/152/167/180.</div>
+        ${pwa.fileMode ? `<div class="hint-box warn-box">Teď je appka otevřená jako lokální soubor ze ZIPu. Instalace, ikona a automatické aktualizace fungují správně až přes HTTPS, typicky přes Vercel.</div>` : ''}
+        <div class="hint-box">Když se na iPhonu pořád ukazuje stará nebo prázdná ikona, smaž starou ikonu z plochy, otevři web znovu v Safari a přidej ji znovu. iOS si ikonu ukládá mimo běžnou web cache.</div>
         <div class="install-steps">
-          <div class="install-step"><strong>iPhone / iPad</strong><span>Otevři přes Safari → Sdílet → Přidat na plochu. iOS bere ikonu hlavně z apple-touch-icon, ne jen z manifestu.</span></div>
-          <div class="install-step"><strong>Android / Chrome</strong><span>Menu prohlížeče → Instalovat aplikaci. Když prohlížeč nabídne tlačítko, objeví se níže.</span></div>
-          <div class="install-step"><strong>Update</strong><span>Po novém deployi přes Vercel se zobrazí možnost aktualizovat. Tohle držíme podobně jako u RaK.</span></div>
+          <div class="install-step"><strong>iPhone / iPad</strong><span>Safari → Sdílet → Přidat na plochu. iOS bere hlavně apple-touch-icon, proto je kontrolujeme zvlášť.</span></div>
+          <div class="install-step"><strong>Android / Chrome</strong><span>Menu prohlížeče → Instalovat aplikaci. Tlačítko se objeví jen když Chrome pošle instalační prompt.</span></div>
+          <div class="install-step"><strong>Update</strong><span>Nový deploy přes Vercel se kontroluje přes service worker podobně jako u RaK.</span></div>
         </div>
         <div class="form-actions">
           ${pwa.canPrompt ? `<button class="primary-btn" type="button" data-action="pwa-install">Instalovat aplikaci</button>` : ''}
+          <button class="ghost-btn" type="button" data-action="pwa-run-diagnostics">Spustit diagnostiku</button>
           <button class="ghost-btn" type="button" data-action="pwa-check-update">Zkontrolovat update</button>
+          <button class="ghost-btn" type="button" data-action="pwa-clear-cache">Vyčistit PWA cache</button>
           ${pwa.updateAvailable ? `<button class="primary-btn" type="button" data-action="pwa-apply-update">Aktualizovat na novou verzi</button>` : ''}
         </div>
+        ${renderPwaDiagnostics()}
       </section>
     `;
   }
@@ -4911,7 +5023,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 24, appBuild: 25, mode: 'pwa-icon-fix', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 27, appBuild: 28, mode: 'pwa-install-diagnostics', updatedAt: new Date().toISOString() };
   }
 
   function addItem(collection, item) {
@@ -4961,6 +5073,39 @@
     if (mode === 'workdays') return [1, 2, 3, 4, 5];
     if (mode === 'weekend') return [6, 0];
     return [1, 2, 3, 4, 5, 6, 0];
+  }
+
+
+  async function cloudLoadAllModules(showMessage = true) {
+    if (!state.cloud?.userId || !state.cloud?.householdId) {
+      showToast('Nejdřív napoj domácnost na cloud');
+      return;
+    }
+    const loaders = [
+      cloudLoadShoppingData,
+      cloudLoadContracts,
+      cloudLoadGarageData,
+      cloudLoadHdoData,
+      cloudLoadWaste,
+      cloudLoadTasks,
+      cloudLoadParcels,
+      cloudLoadCalendar,
+      cloudLoadContractFiles
+    ];
+    let ok = 0;
+    for (const loader of loaders) {
+      try {
+        await loader(false);
+        ok += 1;
+      } catch (error) {
+        console.warn('Cloud load module failed', error);
+      }
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(`Cloud načten: ${ok}/${loaders.length} částí`);
   }
 
   function handleAction(button) {
@@ -5017,6 +5162,10 @@
           render();
         });
       }
+      return;
+    }
+    if (action === 'cloud-load-all') {
+      cloudLoadAllModules(true);
       return;
     }
     if (action === 'cloud-load-calendar') {
@@ -5223,6 +5372,14 @@
       promptInstallApp();
       return;
     }
+    if (action === 'pwa-run-diagnostics') {
+      runPwaDiagnostics();
+      return;
+    }
+    if (action === 'pwa-clear-cache') {
+      clearPwaCacheAndReload();
+      return;
+    }
     if (action === 'pwa-check-update') {
       checkForAppUpdate(true);
       return;
@@ -5249,6 +5406,122 @@
   }
 
 
+
+  function addDiagnostic(checks, label, status, message) {
+    checks.push({ label, status, message });
+  }
+
+  function loadImageInfo(src) {
+    return new Promise((resolve) => {
+      if (!src) {
+        resolve({ ok: false, width: 0, height: 0, message: 'Chybí cesta' });
+        return;
+      }
+      const image = new Image();
+      const timer = window.setTimeout(() => {
+        image.onload = null;
+        image.onerror = null;
+        resolve({ ok: false, width: 0, height: 0, message: 'Timeout načtení' });
+      }, 6000);
+      image.onload = () => {
+        window.clearTimeout(timer);
+        resolve({ ok: true, width: image.naturalWidth || image.width, height: image.naturalHeight || image.height, message: 'OK' });
+      };
+      image.onerror = () => {
+        window.clearTimeout(timer);
+        resolve({ ok: false, width: 0, height: 0, message: 'Obrázek se nenačetl' });
+      };
+      image.src = src;
+    });
+  }
+
+  async function verifyIcon(checks, label, src, expectedWidth = 0) {
+    const info = await loadImageInfo(src);
+    if (!info.ok) {
+      addDiagnostic(checks, label, 'bad', `${info.message}: ${src}`);
+      return;
+    }
+    const sizeText = `${info.width}×${info.height}`;
+    if (expectedWidth && (info.width < expectedWidth || info.height < expectedWidth)) {
+      addDiagnostic(checks, label, 'warn', `Načteno, ale malé: ${sizeText}`);
+      return;
+    }
+    addDiagnostic(checks, label, 'ok', `Načteno ${sizeText}`);
+  }
+
+  async function runPwaDiagnostics() {
+    showToast('Spouštím PWA diagnostiku');
+    const checks = [];
+    const pwa = getPwaStatus();
+
+    addDiagnostic(checks, 'HTTPS / Vercel', pwa.secure && !pwa.fileMode ? 'ok' : 'warn', pwa.fileMode ? 'Otevřeno jako lokální ZIP; instalace nebude spolehlivá.' : `Protokol: ${pwa.protocol}`);
+    addDiagnostic(checks, 'Standalone režim', pwa.standalone ? 'ok' : 'warn', pwa.standalone ? 'Aplikace běží jako nainstalovaná.' : 'Aplikace zatím běží v prohlížeči.');
+    addDiagnostic(checks, 'Service worker podpora', pwa.swSupported ? 'ok' : 'bad', pwa.swSupported ? 'Prohlížeč service worker podporuje.' : 'Service worker není dostupný.');
+    addDiagnostic(checks, 'Service worker řízení stránky', pwa.swControlled ? 'ok' : 'warn', pwa.swControlled ? 'Aktivní service worker řídí stránku.' : 'Po prvním načtení může být potřeba stránku obnovit.');
+    addDiagnostic(checks, 'Instalační prompt', pwa.canPrompt ? 'ok' : (pwa.ios ? 'warn' : 'warn'), pwa.canPrompt ? 'Chrome nabízí instalaci tlačítkem.' : (pwa.ios ? 'Na iPhonu se používá Sdílet → Přidat na plochu.' : 'Prohlížeč zatím neposlal instalační prompt.'));
+
+    const manifestLink = document.querySelector('link[rel="manifest"]');
+    if (!manifestLink) {
+      addDiagnostic(checks, 'Manifest odkaz', 'bad', 'V HTML chybí link rel="manifest".');
+    } else {
+      const manifestUrl = new URL(manifestLink.getAttribute('href'), location.href).href;
+      addDiagnostic(checks, 'Manifest odkaz', 'ok', manifestUrl);
+      try {
+        const response = await fetch(manifestUrl, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const manifest = await response.json();
+        addDiagnostic(checks, 'Manifest načtení', 'ok', `${manifest.name || 'bez názvu'} / ${manifest.display || 'bez display'}`);
+        addDiagnostic(checks, 'Manifest display', manifest.display === 'standalone' ? 'ok' : 'warn', `display: ${manifest.display || 'neuvedeno'}`);
+        const icons = Array.isArray(manifest.icons) ? manifest.icons : [];
+        const has192 = icons.some((icon) => String(icon.sizes || '').includes('192x192'));
+        const has512 = icons.some((icon) => String(icon.sizes || '').includes('512x512'));
+        const hasMaskable = icons.some((icon) => String(icon.purpose || '').includes('maskable'));
+        addDiagnostic(checks, 'Manifest ikony', has192 && has512 ? 'ok' : 'bad', `${icons.length} ikon, 192: ${has192 ? 'ano' : 'ne'}, 512: ${has512 ? 'ano' : 'ne'}, maskable: ${hasMaskable ? 'ano' : 'ne'}`);
+        const icon512 = icons.find((icon) => String(icon.sizes || '').includes('512x512') && !String(icon.purpose || '').includes('maskable')) || icons.find((icon) => String(icon.sizes || '').includes('512x512'));
+        const icon192 = icons.find((icon) => String(icon.sizes || '').includes('192x192') && !String(icon.purpose || '').includes('maskable')) || icons.find((icon) => String(icon.sizes || '').includes('192x192'));
+        if (icon192?.src) await verifyIcon(checks, 'Manifest 192 ikona', new URL(icon192.src, manifestUrl).href, 192);
+        if (icon512?.src) await verifyIcon(checks, 'Manifest 512 ikona', new URL(icon512.src, manifestUrl).href, 512);
+      } catch (error) {
+        addDiagnostic(checks, 'Manifest načtení', 'bad', error?.message || 'Manifest se nepodařilo načíst.');
+      }
+    }
+
+    const appleLinks = Array.from(document.querySelectorAll('link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]'));
+    addDiagnostic(checks, 'Apple touch odkazy', appleLinks.length >= 2 ? 'ok' : 'warn', `${appleLinks.length} odkazů v HTML`);
+    const apple180 = appleLinks.find((link) => link.getAttribute('sizes') === '180x180') || appleLinks[0];
+    if (apple180) await verifyIcon(checks, 'Apple touch ikona', new URL(apple180.getAttribute('href'), location.href).href, 120);
+    await verifyIcon(checks, 'Root apple-touch-icon.png', new URL('./apple-touch-icon.png', location.href).href, 120);
+    await verifyIcon(checks, 'Root favicon.ico', new URL('./favicon.ico', location.href).href, 16);
+
+    state.pwa = {
+      ...(state.pwa || {}),
+      diagnostics: {
+        checkedAt: new Date().toISOString(),
+        appVersion: APP_VERSION,
+        pageUrl: location.href,
+        checks
+      }
+    };
+    saveState();
+    render();
+    const bad = checks.filter((item) => item.status === 'bad').length;
+    const warn = checks.filter((item) => item.status === 'warn').length;
+    showToast(bad ? `Diagnostika našla ${bad} chyb` : warn ? `Diagnostika hotová, ${warn} upozornění` : 'Diagnostika OK');
+  }
+
+  async function clearPwaCacheAndReload() {
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter((key) => key.includes('domacnost-plus')).map((key) => caches.delete(key)));
+      }
+      if (serviceWorkerRegistration) await serviceWorkerRegistration.update();
+      showToast('Cache vyčištěná, načítám znovu');
+      window.setTimeout(() => window.location.reload(), 500);
+    } catch {
+      showToast('Cache se nepovedlo vyčistit');
+    }
+  }
 
   async function promptInstallApp() {
     if (!deferredInstallPrompt) {
@@ -5420,7 +5693,7 @@
           name: householdName(),
           timezone: 'Europe/Prague',
           app_build: 24,
-          schema_version: 24,
+          schema_version: 25,
           created_by: user.id
         })
         .select('id')
