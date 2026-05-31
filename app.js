@@ -1,9 +1,10 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = 'Home Web offline v1.0 (909)';
-  const STORAGE_KEY = 'homeWebOffline.v1.0.909';
-  const LEGACY_STORAGE_KEYS = ['homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
+  const APP_VERSION = 'Domácnost+ v.0.1_22';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_22';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_20';
+  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
     { id: 'home', label: 'Domů', icon: '🏠' },
@@ -17,12 +18,58 @@
     { id: 'settings', label: 'Nastavení', icon: '⚙️' }
   ];
 
+
+
+  const SHOPPING_UNITS = [
+    ['ks', 'ks'], ['g', 'g'], ['kg', 'kg'], ['ml', 'ml'], ['l', 'l'], ['bal', 'balení'], ['krab', 'krabice'], ['lahev', 'láhev'], ['plech', 'plechovka'], ['role', 'role'], ['sacek', 'sáček'], ['m', 'm'], ['jine', 'jiné']
+  ];
+
+  const SHOPPING_CATEGORIES = [
+    ['Ovoce a zelenina', '🥦'], ['Pečivo', '🥐'], ['Mléčné', '🥛'], ['Maso a uzeniny', '🥩'], ['Ryby', '🐟'], ['Trvanlivé', '🥫'], ['Mražené', '🧊'], ['Nápoje', '🥤'], ['Drogerie', '🧴'], ['Domácnost', '🏠'], ['Děti', '🧸'], ['Zvířata', '🐾'], ['Lékárna', '💊'], ['Ostatní', '🛒']
+  ];
+
+  const CONTRACT_TYPE_OPTIONS = [
+    ['car_insurance', 'Pojištění auta'],
+    ['home_insurance', 'Pojištění domácnosti'],
+    ['property_insurance', 'Pojištění nemovitosti'],
+    ['electricity', 'Elektřina'],
+    ['gas', 'Plyn'],
+    ['water', 'Voda'],
+    ['internet', 'Internet'],
+    ['mobile', 'Mobil / paušál'],
+    ['subscription', 'Předplatné'],
+    ['loan', 'Úvěr / půjčka'],
+    ['leasing', 'Leasing'],
+    ['service', 'Servis / služba'],
+    ['other', 'Jiné']
+  ];
+
+  const DEFAULT_SHOPPING_CATALOG = [
+    ['Banány','kg','Ovoce a zelenina'], ['Jablka','kg','Ovoce a zelenina'], ['Hrušky','kg','Ovoce a zelenina'], ['Pomeranče','kg','Ovoce a zelenina'], ['Citrony','ks','Ovoce a zelenina'], ['Rajčata','kg','Ovoce a zelenina'], ['Okurka','ks','Ovoce a zelenina'], ['Paprika','ks','Ovoce a zelenina'], ['Brambory','kg','Ovoce a zelenina'], ['Cibule','kg','Ovoce a zelenina'], ['Česnek','ks','Ovoce a zelenina'], ['Mrkev','kg','Ovoce a zelenina'], ['Salát','ks','Ovoce a zelenina'],
+    ['Rohlíky','ks','Pečivo'], ['Chléb','ks','Pečivo'], ['Toustový chléb','ks','Pečivo'], ['Bagety','ks','Pečivo'],
+    ['Máslo','ks','Mléčné'], ['Mléko','l','Mléčné'], ['Jogurt','ks','Mléčné'], ['Tvaroh','ks','Mléčné'], ['Sýr plátkový','bal','Mléčné'], ['Sýr eidam','g','Mléčné'], ['Smetana','ks','Mléčné'], ['Vejce','bal','Mléčné'],
+    ['Kuřecí maso','kg','Maso a uzeniny'], ['Vepřové maso','kg','Maso a uzeniny'], ['Hovězí maso','kg','Maso a uzeniny'], ['Mleté maso','kg','Maso a uzeniny'], ['Šunka','g','Maso a uzeniny'], ['Salám','g','Maso a uzeniny'], ['Párky','bal','Maso a uzeniny'], ['Losos','g','Ryby'], ['Tuňák','plech','Ryby'],
+    ['Rýže','kg','Trvanlivé'], ['Těstoviny','bal','Trvanlivé'], ['Mouka hladká','kg','Trvanlivé'], ['Mouka polohrubá','kg','Trvanlivé'], ['Cukr','kg','Trvanlivé'], ['Sůl','kg','Trvanlivé'], ['Olej','l','Trvanlivé'], ['Kečup','ks','Trvanlivé'], ['Hořčice','ks','Trvanlivé'], ['Káva','bal','Trvanlivé'], ['Čaj','bal','Trvanlivé'],
+    ['Pizza mražená','ks','Mražené'], ['Hranolky mražené','bal','Mražené'], ['Zelenina mražená','bal','Mražené'], ['Zmrzlina','ks','Mražené'],
+    ['Voda neperlivá','lahev','Nápoje'], ['Voda perlivá','lahev','Nápoje'], ['Minerálka','lahev','Nápoje'], ['Džus','l','Nápoje'], ['Cola','lahev','Nápoje'],
+    ['Toaletní papír','bal','Drogerie'], ['Papírové kapesníky','bal','Drogerie'], ['Kuchyňské utěrky','role','Drogerie'], ['Jar','ks','Drogerie'], ['Tablety do myčky','bal','Drogerie'], ['Prací gel','ks','Drogerie'], ['Aviváž','ks','Drogerie'], ['Šampon','ks','Drogerie'], ['Sprchový gel','ks','Drogerie'], ['Zubní pasta','ks','Drogerie'], ['Zubní kartáček','ks','Drogerie'],
+    ['Pytle na odpad','role','Domácnost'], ['Alobal','role','Domácnost'], ['Potravinová fólie','role','Domácnost'], ['Baterie AA','bal','Domácnost'], ['Baterie AAA','bal','Domácnost'],
+    ['Granule pro psa','kg','Zvířata'], ['Granule pro kočku','kg','Zvířata'], ['Kapsičky pro kočku','ks','Zvířata'], ['Stelivo pro kočku','kg','Zvířata'], ['Paralen','bal','Lékárna'], ['Ibalgin','bal','Lékárna'], ['Náplasti','bal','Lékárna'], ['Dezinfekce','ks','Lékárna']
+  ].map(([name, unit, category]) => ({ id: `default-${normalizeKeySeed(name)}`, name, defaultUnit: unit, category, householdId: '', source: 'default' }));
+
+  function normalizeKeySeed(value) {
+    return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+
   const DEFAULT_BOTTOM_NAV_IDS = ['home', 'calendar', 'shopping', 'homecare'];
   const BOTTOM_NAV_MIN = 3;
   const BOTTOM_NAV_MAX = 5;
   const MORE_MODULE = { id: 'more', label: 'Více', icon: '•••' };
   const FILE_DB_NAME = 'homeWebOfflineFiles.v1';
   const FILE_STORE_CONTRACTS = 'contractFiles';
+  const SUPABASE_URL = 'https://cgshssdjgzzuprlwnabl.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_v7jeuZC-MNUEO5nfE5xcUQ_Pu9pT-X_';
+  const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -30,15 +77,16 @@
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 8,
-      appBuild: 909,
-      mode: 'offline',
+      schemaVersion: 21,
+      appBuild: 22,
+      mode: 'pwa-cloud-parcels',
       createdAt: '',
       updatedAt: ''
     },
     settings: {
       theme: 'light',
-      dashboardNote: 'Domácí přehled je zatím offline. Každý si nastaví vlastní domácnost, profily a zapnuté moduly.',
+      dashboardNote: 'Domácí přehled je připravený na cloud. Každý si nastaví vlastní domácnost, profily a zapnuté moduly.',
+      cloudEnabled: false,
       bottomNavIds: [...DEFAULT_BOTTOM_NAV_IDS]
     },
     household: {
@@ -55,6 +103,13 @@
     coupons: [],
     hdoWindows: [],
     shopping: [],
+    shoppingCatalogCustom: [],
+    shoppingCloud: { units: [], categories: [], catalog: [], activeListId: '', loadedAt: '' },
+    hdoCloud: { settingId: '', loadedAt: '' },
+    wasteCloud: { types: [], loadedAt: '' },
+    parcelsCloud: { loadedAt: '' },
+    shoppingStats: {},
+    pwa: { installed: false, lastUpdateCheck: '', lastInstallPrompt: '' },
     homeTasks: [],
     waste: [],
     notes: [],
@@ -64,7 +119,16 @@
     services: [],
     contracts: [],
     contractFiles: [],
-    cameras: []
+    cameras: [],
+    cloud: {
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      userId: '',
+      email: '',
+      householdId: '',
+      lastSyncAt: '',
+      status: 'offline'
+    }
   };
 
   let state = loadState();
@@ -72,8 +136,14 @@
   let garageVehicleId = null;
   let activeContractId = null;
   let fuelioPreview = null;
+  let garageEditRecord = null;
   let toastTimer = null;
   let now = new Date();
+  let supabaseClientInstance = null;
+  let deferredInstallPrompt = null;
+  let serviceWorkerRegistration = null;
+  let pendingServiceWorker = null;
+  let pwaUpdateAvailable = false;
 
   const app = document.getElementById('app');
   document.documentElement.dataset.theme = state.settings.theme || 'light';
@@ -129,9 +199,9 @@
     const timestamp = new Date().toISOString();
 
     migrated.meta = {
-      schemaVersion: 8,
-      appBuild: 909,
-      mode: 'offline',
+      schemaVersion: 21,
+      appBuild: 22,
+      mode: 'pwa-cloud-parcels',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -171,6 +241,8 @@
     if (!migrated.profiles.some((profile) => profile.id === migrated.activeProfileId)) {
       migrated.activeProfileId = migrated.profiles[0]?.id || '';
     }
+
+    migrated.shoppingStats = migrated.shoppingStats && typeof migrated.shoppingStats === 'object' && !Array.isArray(migrated.shoppingStats) ? migrated.shoppingStats : {};
 
     migrated.enabledModules = normalizeModuleList(migrated.enabledModules);
     migrated.settings.bottomNavIds = normalizeBottomNavIds(migrated.settings.bottomNavIds, migrated.enabledModules);
@@ -214,7 +286,7 @@
   }
 
   function getCollectionNames() {
-    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'homeTasks', 'waste', 'notes', 'devices', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'cameras'];
+    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'notes', 'devices', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'cameras'];
   }
 
   function normalizeModuleList(value) {
@@ -378,7 +450,7 @@
             <div class="brand-mark">HW</div>
             <div class="brand-title">
               <h1>${escapeHtml(householdName())}</h1>
-              <p>${escapeHtml(APP_VERSION)} · ${escapeHtml(currentProfile()?.name || 'bez profilu')} · offline režim</p>
+              <p>${escapeHtml(APP_VERSION)} · ${escapeHtml(currentProfile()?.name || 'bez profilu')} · ${escapeHtml(cloudModeLabel())}</p>
             </div>
           </div>
           <div class="top-actions">
@@ -402,7 +474,7 @@
           ${renderModule(active.id)}
         </main>
 
-        <p class="footer-note">${escapeHtml(APP_VERSION)} · lokální data jsou už uložená ve struktuře household/profiles/module pro pozdější Supabase · zatím bez cloudu</p>
+        <p class="footer-note">${escapeHtml(APP_VERSION)} · cloud nákupy, smlouvy, garáž, HDO, odpad a balíky · lokální režim zůstává jako záloha</p>
       </div>
 
       <nav class="nav-shell" aria-label="Hlavní navigace">
@@ -513,7 +585,7 @@
       home: 'Rychlý domácí přehled pro tablet i mobil. Zatím bez cloudu, všechno běží jen offline.',
       calendar: 'Jednoduchý lokální kalendář. Později tady bude napojení na Google Kalendář.',
       packages: 'Základ pro sledování balíků. Teď ručně, později automatika přes backend.',
-      shopping: 'Sdílený nákupní seznam pro domácnost. Offline základ bez přihlašování.',
+      shopping: 'Sdílený nákupní seznam s katalogem položek, jednotkami a cloudovým oddělením domácností.',
       homecare: 'HDO, odpad, poznámky, úkoly a domácí zařízení na jednom místě.',
       garage: 'Auta v domácnosti, tankování, servis a základní přehled spotřeby.',
       contracts: 'Evidence smluv a pojistek s hlídáním platnosti.',
@@ -879,13 +951,19 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'v1.0 (909)', note: 'Hotovo: tabletový domácí dashboard, větší focus karty, časová osa „dnes a brzy“ a lepší přehled pro mobil/tablet.' },
-      { title: 'Cloud 1.1', note: 'Další logický krok: založit čistý Vercel + Supabase projekt, Auth, households, profiles a RLS pravidla.' },
-      { title: 'Cloud 1.2+', note: 'Migrace offline dat, Supabase Storage pro smlouvy, první synchronizace mezi iPhonem, Xiaomi a budoucím tabletem.' }
+      { title: 'Domácnost+ v.0.1_10', note: 'Hotovo: tabletový domácí dashboard a první cloudový základ.' },
+      { title: 'Domácnost+ v.0.1_11', note: 'Hotovo: Supabase Auth, domácnost, členové, profily a cloudový základ Nákupů.' },
+      { title: 'Domácnost+ v.0.1_12', note: 'Hotovo: instalovatelná PWA, update flow po deployi, katalog nákupů a cloudové Hotovo/Vrátit/Smazat.' },
+      { title: 'Domácnost+ v.0.1_13', note: 'Hotovo: rychlé přidání často používaných nákupů, lokální statistika katalogu a stabilnější PWA popisky.' },
+      { title: 'Domácnost+ v.0.1_14', note: 'Hotovo: cloudové Smlouvy bez příloh, načtení/odeslání/smazání přes Supabase.' },
+      { title: 'Domácnost+ v.0.1_17', note: 'Hotovo: cloudový základ Garáže — auta, tankování, servis, načtení a odeslání lokálních dat.' },
+      { title: 'Domácnost+ v.0.1_18', note: 'Hotovo: editace tankování/servisu, Fuelio import rovnou do cloudu a stabilnější Garáž sync.' },
+      { title: 'Domácnost+ v.0.1_20', note: 'Hotovo: cloudový svoz odpadu, základ připomínek a dashboardové stavy cloud/lokál.' },
+      { title: 'Domácnost+ v.0.1_21', note: 'Další: Domácí úkoly a obecné připomínky do cloudu.' }
     ];
     return `
       <section class="card roadmap-card">
-        <div class="card-header"><div><h2>Co mám v plánu dál</h2><p>Offline UX základ je po v1.0 použitelný. Další větší směr už je cloudová kostra.</p></div><span class="badge">roadmap</span></div>
+        <div class="card-header"><div><h2>Co mám v plánu dál</h2><p>Cloudová kostra běží. Další větší směr je převod modulů a synchronizace dat.</p></div><span class="badge">roadmap</span></div>
         <div class="list">
           ${steps.map((step, index) => `
             <div class="item">
@@ -950,21 +1028,33 @@
 
   function renderPackages() {
     const packages = [...state.packages].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const cloudReady = Boolean(state.cloud?.householdId);
+    const localOnly = packages.filter((pkg) => !pkg.cloudId).length;
     return `
       <div class="grid two">
         <section class="card">
-          <div class="card-header"><div><h2>Přidat balík</h2><p>První verze je ruční. Později přidáme rozpoznání z e-mailu/SMS a kontrolu přes backend.</p></div></div>
+          <div class="card-header">
+            <div><h2>Přidat balík</h2><p>Ruční sledování zásilek. Automatika přes e-mail/backend přijde později.</p></div>
+            <span class="badge ${packages.some((pkg) => pkg.cloudId) ? 'good' : ''}">${packages.some((pkg) => pkg.cloudId) ? 'cloud' : 'lokálně'}</span>
+          </div>
           <form data-form="add-package">
             <div class="form-grid two">
-              ${field('Dopravce', 'carrier', 'text', 'Zásilkovna / PPL / DPD / One')}
+              ${selectField('Dopravce', 'carrier', [['zasilkovna','Zásilkovna'], ['balikovna','Balíkovna'], ['ceska_posta','Česká pošta'], ['ppl','PPL'], ['dpd','DPD'], ['gls','GLS'], ['one','One by Allegro'], ['alza','Alza'], ['other','Jiný']])}
               ${field('Číslo zásilky', 'tracking', 'text', 'např. Z123456789', true)}
+              ${field('Název / obchod', 'title', 'text', 'např. Temu / Alza / dárek')}
               ${selectField('Stav', 'status', [['new', 'Nový'], ['transit', 'Na cestě'], ['pickup', 'K vyzvednutí'], ['delivered', 'Doručeno'], ['problem', 'Problém']])}
+              ${field('Předpoklad doručení', 'expectedDate', 'date', '')}
+              ${field('Výdejní místo', 'pickupPlace', 'text', 'volitelné')}
               ${field('Odkaz na tracking', 'url', 'url', 'volitelné')}
-              ${field('Poznámka', 'note', 'text', 'co to je / obchod')}
+              ${field('Poznámka', 'note', 'text', 'co to je / poznámka')}
             </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat balík</button></div>
+            <div class="form-actions">
+              <button class="primary-btn" type="submit">Přidat balík</button>
+              ${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-parcels">Načíst cloud balíky</button>' : ''}
+              ${cloudReady && localOnly ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-parcels">Odeslat lokální (${localOnly})</button>` : ''}
+            </div>
           </form>
-          <div class="inline-note" style="margin-top:12px;">Tip: když zatím neznáš přesný tracking odkaz, nech ho prázdný. Později doplníme automatické odkazy podle dopravce.</div>
+          <div class="inline-note" style="margin-top:12px;">Balíky jsou při cloudu oddělené podle domácnosti. Cizí domácnost neuvidí tvoje tracking čísla ani poznámky.</div>
         </section>
         <section class="card">
           <div class="card-header"><div><h2>Aktivní balíky</h2><p>${packages.length} položek</p></div></div>
@@ -979,16 +1069,17 @@
     return `
       <div class="item">
         <div class="item-top">
-          <div class="item-title">${escapeHtml(pkg.carrier || 'Balík')}</div>
+          <div class="item-title">${escapeHtml(pkg.title || carrierLabel(pkg.carrier) || 'Balík')}</div>
           <span class="badge ${status.kind}">${escapeHtml(status.label)}</span>
         </div>
-        <div class="item-meta">${escapeHtml(pkg.tracking)}${pkg.note ? ` · ${escapeHtml(pkg.note)}` : ''}</div>
+        <div class="item-meta">${escapeHtml(carrierLabel(pkg.carrier))} · ${escapeHtml(pkg.tracking)}${pkg.expectedDate ? ` · doručení ${formatDate(pkg.expectedDate)}` : ''}${pkg.pickupPlace ? ` · ${escapeHtml(pkg.pickupPlace)}` : ''}${pkg.note ? ` · ${escapeHtml(pkg.note)}` : ''}${pkg.cloudId ? ' · cloud' : ' · lokálně'}</div>
         <div class="item-actions">
           <button class="ghost-btn" type="button" data-action="copy" data-value="${escapeHtml(pkg.tracking)}">Kopírovat číslo</button>
           ${pkg.url ? `<a class="ghost-btn" href="${escapeHtml(pkg.url)}" target="_blank" rel="noopener">Tracking</a>` : ''}
           <button class="ghost-btn" type="button" data-action="package-status" data-id="${pkg.id}" data-status="pickup">K vyzvednutí</button>
           <button class="ghost-btn" type="button" data-action="package-status" data-id="${pkg.id}" data-status="delivered">Doručeno</button>
-          <button class="danger-btn" type="button" data-action="delete" data-collection="packages" data-id="${pkg.id}">Smazat</button>
+          ${state.cloud?.householdId && !pkg.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-parcel" data-id="${pkg.id}">Odeslat</button>` : ''}
+          <button class="danger-btn" type="button" data-action="delete-package" data-id="${pkg.id}">Smazat</button>
         </div>
       </div>
     `;
@@ -998,33 +1089,176 @@
     const map = {
       new: { label: 'Nový', kind: '' },
       transit: { label: 'Na cestě', kind: '' },
+      in_transit: { label: 'Na cestě', kind: '' },
       pickup: { label: 'K vyzvednutí', kind: 'good' },
+      ready_pickup: { label: 'K vyzvednutí', kind: 'good' },
       delivered: { label: 'Doručeno', kind: 'good' },
-      problem: { label: 'Problém', kind: 'bad' }
+      problem: { label: 'Problém', kind: 'bad' },
+      archived: { label: 'Archiv', kind: '' }
     };
     return map[status] || map.new;
+  }
+
+  function carrierLabel(value) {
+    const map = {
+      zasilkovna: 'Zásilkovna', balikovna: 'Balíkovna', ceska_posta: 'Česká pošta', ppl: 'PPL', dpd: 'DPD', gls: 'GLS', one: 'One by Allegro', alza: 'Alza', other: 'Jiný'
+    };
+    return map[value] || value || 'Jiný';
+  }
+
+  function parcelStatusToCloud(status) {
+    if (status === 'transit') return 'in_transit';
+    if (status === 'pickup') return 'ready_pickup';
+    return status || 'new';
+  }
+
+  function parcelStatusFromCloud(status) {
+    if (status === 'in_transit') return 'transit';
+    if (status === 'ready_pickup') return 'pickup';
+    return status || 'new';
+  }
+
+  function getShoppingUnits() {
+    const cloudUnits = state.shoppingCloud?.units || [];
+    if (cloudUnits.length) return cloudUnits.map((unit) => [unit.code, unit.label || unit.code]);
+    return SHOPPING_UNITS;
+  }
+
+  function getShoppingCategories() {
+    const cloudCategories = state.shoppingCloud?.categories || [];
+    if (cloudCategories.length) {
+      return cloudCategories.map((category) => [category.name, category.icon || '🛒']);
+    }
+    return SHOPPING_CATEGORIES;
+  }
+
+  function getShoppingCatalog() {
+    const cloudCatalog = state.shoppingCloud?.catalog || [];
+    const mappedCloud = cloudCatalog.map((item) => ({
+      id: item.id,
+      name: item.name,
+      defaultUnit: item.default_unit || item.defaultUnit || 'ks',
+      category: item.category_name || item.category || 'Ostatní',
+      householdId: item.household_id || '',
+      source: item.household_id ? 'household' : 'global'
+    }));
+    const localCustom = (state.shoppingCatalogCustom || []).map((item) => ({ ...item, source: 'local' }));
+    const base = mappedCloud.length ? mappedCloud : DEFAULT_SHOPPING_CATALOG;
+    const byName = new Map();
+    [...base, ...localCustom].forEach((item) => {
+      if (!item?.name) return;
+      byName.set(normalizeKey(item.name), item);
+    });
+    return [...byName.values()].sort((a, b) => String(a.name).localeCompare(String(b.name), 'cs'));
+  }
+
+  function findShoppingCatalogItem(name) {
+    const key = normalizeKey(name);
+    return getShoppingCatalog().find((item) => normalizeKey(item.name) === key) || null;
+  }
+
+
+  function getShoppingStat(name) {
+    const key = normalizeKey(name);
+    return state.shoppingStats?.[key] || null;
+  }
+
+  function trackShoppingUsage(name, unit = 'ks', category = 'Ostatní') {
+    const key = normalizeKey(name);
+    if (!key) return;
+    const current = state.shoppingStats?.[key] || {};
+    state.shoppingStats = {
+      ...(state.shoppingStats || {}),
+      [key]: {
+        name: normalizeText(name),
+        unit: normalizeText(unit) || current.unit || 'ks',
+        category: normalizeText(category) || current.category || 'Ostatní',
+        count: Number(current.count || 0) + 1,
+        lastUsedAt: new Date().toISOString()
+      }
+    };
+  }
+
+  function getShoppingQuickItems(limit = 10) {
+    const catalog = getShoppingCatalog();
+    const nowMs = Date.now();
+    const scored = catalog.map((item) => {
+      const stat = getShoppingStat(item.name);
+      const count = Number(stat?.count || item.usage_count || 0);
+      const lastUsedMs = stat?.lastUsedAt ? new Date(stat.lastUsedAt).getTime() : 0;
+      const recentBoost = lastUsedMs ? Math.max(0, 14 - Math.floor((nowMs - lastUsedMs) / 86400000)) : 0;
+      const ownBoost = item.householdId || item.source === 'local' ? 4 : 0;
+      return { ...item, score: count * 12 + recentBoost + ownBoost, count };
+    });
+    const active = scored.filter((item) => item.score > 0).sort((a, b) => b.score - a.score || String(a.name).localeCompare(String(b.name), 'cs'));
+    const fallback = scored.filter((item) => item.score <= 0).sort((a, b) => String(a.name).localeCompare(String(b.name), 'cs'));
+    return [...active, ...fallback].slice(0, limit);
+  }
+
+  function shoppingSourceLabel(item) {
+    if (item.householdId || item.source === 'local') return 'vlastní domácnost';
+    if (item.source === 'household') return 'vlastní domácnost';
+    return 'základní katalog';
   }
 
   function renderShopping() {
     const openItems = state.shopping.filter((item) => !item.done);
     const doneItems = state.shopping.filter((item) => item.done);
     const coupons = [...state.coupons].sort((a, b) => String(a.expiry || '9999').localeCompare(String(b.expiry || '9999')));
+    const units = getShoppingUnits();
+    const categories = getShoppingCategories();
+    const catalog = getShoppingCatalog();
+    const quickItems = getShoppingQuickItems(10);
+    const cloudReady = Boolean(state.cloud?.userId && state.cloud?.householdId);
+    const ownCatalogCount = catalog.filter((item) => item.householdId || item.source === 'local').length;
+    const localOnlyShoppingCount = state.shopping.filter((item) => !item.cloudId).length;
     return `
       <div class="grid two">
-        <section class="card">
-          <div class="card-header"><div><h2>Nákupní seznam</h2><p>Rychlé položky pro domácnost.</p></div></div>
+        <section class="card desktop-span-2">
+          <div class="card-header">
+            <div><h2>Nákupní seznam</h2><p>Vyber z katalogu, nastav množství a jednotku. Nově přidané položky zůstanou jen v tvojí domácnosti.</p></div>
+            <span class="badge ${cloudReady ? 'good' : ''}">${cloudReady ? 'cloud nákupy' : 'lokálně'}</span>
+          </div>
+          <div class="cloud-status-grid">
+            <div class="mini-stat"><span>Startovní katalog</span><strong>${catalog.length}</strong></div>
+            <div class="mini-stat"><span>Vlastní položky</span><strong>${ownCatalogCount}</strong></div>
+            <div class="mini-stat"><span>Na seznamu</span><strong>${openItems.length}</strong></div>
+            <div class="mini-stat"><span>Jednotky</span><strong>${units.length}</strong></div>
+          </div>
+          <div class="quick-add-panel">
+            <div class="quick-add-head"><strong>Rychlé přidání</strong><span>Časem se sem dostanou věci, které kupujete nejčastěji.</span></div>
+            <div class="quick-chip-row">
+              ${quickItems.map((item) => `<button class="quick-chip" type="button" data-action="quick-add-shopping" data-name="${escapeHtml(item.name)}"><span>${escapeHtml(item.name)}</span><small>${escapeHtml(item.defaultUnit || 'ks')}</small></button>`).join('')}
+            </div>
+          </div>
           <form data-form="add-shopping">
-            <div class="form-grid two">
-              ${field('Položka', 'name', 'text', 'mléko / granule / filtr', true)}
-              ${field('Kategorie', 'category', 'text', 'potraviny / drogerie')}
-              ${field('Počet', 'amount', 'text', '1 ks')}
+            <datalist id="shoppingCatalogList">
+              ${catalog.map((item) => `<option value="${escapeHtml(item.name)}"></option>`).join('')}
+            </datalist>
+            <div class="form-grid four">
+              <div class="field"><label>Položka</label><input class="input" name="name" list="shoppingCatalogList" placeholder="mléko / rohlíky / granule" required></div>
+              ${selectField('Kategorie', 'category', categories.map(([name]) => [name, name]), 'Ostatní')}
+              ${field('Množství', 'quantity', 'number', '1')}
+              ${selectField('Jednotka', 'unit', units, 'ks')}
               ${field('Poznámka', 'note', 'text', 'volitelné')}
             </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat do seznamu</button></div>
+            <div class="form-actions">
+              <button class="primary-btn" type="submit">Přidat do seznamu</button>
+              ${cloudReady ? `<button class="ghost-btn" type="button" data-action="cloud-load-shopping">Načíst cloud nákupy</button>` : ''}
+              ${cloudReady && localOnlyShoppingCount ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-shopping">Odeslat lokální (${localOnlyShoppingCount})</button>` : ''}
+            </div>
           </form>
+          <div class="hint-box">Když zadáš novou položku, která není v katalogu, uloží se jako vlastní položka téhle domácnosti. Nepřepíše se nikomu jinému.</div>
           <div style="height:14px"></div>
           ${openItems.length ? `<div class="list">${openItems.map(renderShoppingItem).join('')}</div>` : renderEmpty('Nákupní seznam je prázdný.')}
           ${doneItems.length ? `<div class="card-header" style="margin-top:16px"><div><h3>Hotovo</h3><p>${doneItems.length} položek</p></div></div><div class="list">${doneItems.slice(0, 6).map(renderShoppingItem).join('')}</div>` : ''}
+        </section>
+
+        <section class="card">
+          <div class="card-header"><div><h2>Katalog domácnosti</h2><p>Časté věci k nákupu. Základ je společný, tvoje vlastní položky jsou oddělené podle domácnosti.</p></div></div>
+          <div class="list compact-list">
+            ${catalog.slice(0, 24).map((item) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.name)}</div><span class="badge">${escapeHtml(item.defaultUnit || 'ks')}</span></div><div class="item-meta">${escapeHtml(item.category || 'Ostatní')} · ${shoppingSourceLabel(item)}${getShoppingStat(item.name)?.count ? ` · použito ${getShoppingStat(item.name).count}×` : ''}</div><div class="item-actions"><button class="ghost-btn" type="button" data-action="quick-add-shopping" data-name="${escapeHtml(item.name)}">Přidat</button></div></div>`).join('')}
+          </div>
         </section>
 
         <section class="card">
@@ -1047,13 +1281,14 @@
   }
 
   function renderShoppingItem(item) {
+    const amount = [item.quantity || item.amount || 1, item.unit || 'ks'].filter(Boolean).join(' ');
     return `
       <div class="item">
         <div class="item-top">
           <div class="item-title">${item.done ? '✓ ' : ''}${escapeHtml(item.name)}</div>
-          <span class="badge">${escapeHtml(item.amount || '1 ks')}</span>
+          <span class="badge">${escapeHtml(amount)}</span>
         </div>
-        <div class="item-meta">${escapeHtml(item.category || 'bez kategorie')}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div>
+        <div class="item-meta">${escapeHtml(item.category || 'bez kategorie')}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ''}</div>
         <div class="item-actions">
           <button class="ghost-btn" type="button" data-action="toggle-done" data-collection="shopping" data-id="${item.id}">${item.done ? 'Vrátit' : 'Hotovo'}</button>
           <button class="danger-btn" type="button" data-action="delete" data-collection="shopping" data-id="${item.id}">Smazat</button>
@@ -1094,7 +1329,7 @@
         <section class="card">
           <div class="card-header">
             <div><h2>HDO / nízký tarif</h2><p>${escapeHtml(hdo.message)}</p></div>
-            <span class="badge ${hdo.active ? 'good' : 'warn'}">${hdo.active ? 'běží' : 'neběží'}</span>
+            <span class="badge ${hdo.active ? 'good' : 'warn'}">${hdo.active ? 'běží' : 'neběží'} · ${state.hdoWindows.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
           </div>
           <form data-form="add-hdo">
             <div class="form-grid two">
@@ -1103,34 +1338,39 @@
               ${field('Do', 'end', 'time', '', true)}
               ${selectField('Dny', 'daysMode', [['all', 'Každý den'], ['workdays', 'Po–Pá'], ['weekend', 'Víkend']])}
             </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat HDO okno</button></div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Přidat HDO okno</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-hdo">Načíst cloud HDO</button>' : ''}${state.cloud?.householdId && state.hdoWindows.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-hdo">Odeslat lokální HDO (${state.hdoWindows.filter((item) => !item.cloudId).length})</button>` : ''}</div>
           </form>
           <div style="height:14px"></div>
           ${state.hdoWindows.length ? `<div class="list">${state.hdoWindows.map((item) => `
             <div class="item">
               <div class="item-top"><div class="item-title">${escapeHtml(item.label)}</div><span class="badge ${item.enabled ? 'good' : ''}">${item.enabled ? 'aktivní' : 'vypnuto'}</span></div>
-              <div class="item-meta">${escapeHtml(item.start)}–${escapeHtml(item.end)} · ${escapeHtml(daysLabel(item.days))}</div>
-              <div class="item-actions"><button class="ghost-btn" type="button" data-action="toggle-enabled" data-collection="hdoWindows" data-id="${item.id}">${item.enabled ? 'Vypnout' : 'Zapnout'}</button><button class="danger-btn" type="button" data-action="delete" data-collection="hdoWindows" data-id="${item.id}">Smazat</button></div>
+              <div class="item-meta">${escapeHtml(item.start)}–${escapeHtml(item.end)} · ${escapeHtml(daysLabel(item.days))}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
+              <div class="item-actions"><button class="ghost-btn" type="button" data-action="toggle-hdo" data-id="${item.id}">${item.enabled ? 'Vypnout' : 'Zapnout'}</button>${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-hdo" data-id="${item.id}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-hdo" data-id="${item.id}">Smazat</button></div>
             </div>
           `).join('')}</div>` : renderEmpty('Zatím není nastavené žádné HDO okno.')}
         </section>
 
         <section class="card">
-          <div class="card-header"><div><h2>Odpad</h2><p>Jednoduchý přehled svozu.</p></div></div>
+          <div class="card-header">
+            <div><h2>Odpad</h2><p>Svoz odpadu s přípravou na připomínky.</p></div>
+            <span class="badge ${waste.some((item) => item.cloudId) ? 'good' : ''}">${waste.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
+          </div>
           <form data-form="add-waste">
             <div class="form-grid two">
               ${field('Typ', 'type', 'text', 'plast / papír / komunál', true)}
               ${field('Datum svozu', 'date', 'date', '', true)}
+              ${selectField('Opakování', 'repeatRule', [['none', 'Jednorázově'], ['weekly', 'Týdně'], ['biweekly', 'Každé 2 týdny'], ['monthly', 'Měsíčně']])}
+              ${field('Upozornit předem (hod)', 'notifyBeforeHours', 'number', '12')}
               ${field('Poznámka', 'note', 'text', 'volitelné')}
             </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat svoz</button></div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Přidat svoz</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-waste">Načíst cloud odpad</button>' : ''}${state.cloud?.householdId && waste.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-waste">Odeslat lokální svozy (${waste.filter((item) => !item.cloudId).length})</button>` : ''}</div>
           </form>
           <div style="height:14px"></div>
           ${waste.length ? `<div class="list">${waste.map((item) => `
             <div class="item">
               <div class="item-top"><div class="item-title">${escapeHtml(item.type)}</div><span class="badge ${daysUntil(item.date) <= 1 ? 'warn' : ''}">${formatDate(item.date)}</span></div>
-              <div class="item-meta">${item.note ? escapeHtml(item.note) : 'Bez poznámky'}</div>
-              <div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="waste" data-id="${item.id}">Smazat</button></div>
+              <div class="item-meta">${escapeHtml(wasteRepeatLabel(item.repeatRule))}${item.notifyBeforeHours ? ` · připomenout ${escapeHtml(String(item.notifyBeforeHours))} h předem` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
+              <div class="item-actions">${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-waste" data-id="${item.id}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-waste" data-id="${item.id}">Smazat</button></div>
             </div>
           `).join('')}</div>` : renderEmpty('Žádný svoz zatím není uložený.')}
         </section>
@@ -1196,7 +1436,11 @@
     return `
       <div class="grid two">
         <section class="card">
-          <div class="card-header"><div><h2>Auta</h2><p>Seznam vozidel v domácnosti, termíny a rychlý stav.</p></div></div>
+          <div class="card-header"><div><h2>Auta</h2><p>Seznam vozidel v domácnosti, termíny a rychlý stav.</p></div><span class="badge ${state.cloud?.householdId ? 'good' : ''}">${state.cloud?.householdId ? 'cloud ready' : 'lokálně'}</span></div>
+          <div class="form-actions compact-actions">
+            <button class="ghost-btn" type="button" data-action="cloud-load-garage">Načíst cloud Garáž</button>
+            <button class="ghost-btn" type="button" data-action="cloud-sync-local-garage">Odeslat lokální Garáž</button>
+          </div>
           <form data-form="add-vehicle">
             <div class="form-grid two">
               ${field('Název auta', 'name', 'text', 'Elroq / Octavia', true)}
@@ -1236,7 +1480,7 @@
     return `
       <div class="item ${vehicle.id === garageVehicleId ? 'selected' : ''}">
         <div class="item-top">
-          <div class="item-title">${escapeHtml(vehicle.name)}</div>
+          <div class="item-title">${escapeHtml(vehicle.name)} ${vehicle.cloudId ? '<span class="soft-mark">cloud</span>' : '<span class="soft-mark">lokálně</span>'}</div>
           <span class="badge ${warningCount ? 'warn' : ''}">${warningCount ? `${warningCount} upozornění` : escapeHtml(vehicle.plate || 'bez SPZ')}</span>
         </div>
         <div class="item-meta">
@@ -1280,9 +1524,11 @@
           <div class="inline-note">Import půjde do existujících aut podle názvu. Pokud CSV nemá název auta, použije se aktuálně vybrané auto nebo se vytvoří „Fuelio import“.</div>
           ${renderFuelioPreviewTable(rows)}
           <div class="form-actions">
-            <button class="primary-btn" type="button" data-action="confirm-fuelio-import">Importovat do Garáže</button>
+            <button class="primary-btn" type="button" data-action="confirm-fuelio-import">Importovat lokálně</button>
+            <button class="ghost-btn" type="button" data-action="confirm-fuelio-import-cloud">Importovat + uložit do cloudu</button>
             <button class="ghost-btn" type="button" data-action="clear-fuelio-preview">Zrušit náhled</button>
           </div>
+          <div class="inline-note">Cloud import použije stejný náhled a potom odešle jen nové neuložené záznamy. Duplicity z Fuelia hlídá aplikace lokálně i databáze přes hash.</div>
         </div>
       ` : ''}
     `;
@@ -1314,6 +1560,72 @@
     `;
   }
 
+
+  function renderFuelListItem(item) {
+    const isEditing = garageEditRecord?.collection === 'fuel' && garageEditRecord?.id === item.id;
+    return `
+      <div class="item ${isEditing ? 'selected' : ''}">
+        <div class="item-top">
+          <div class="item-title">${formatDate(item.date)}</div>
+          <span class="badge ${item.cloudId ? 'good' : ''}">${item.cloudId ? 'cloud' : 'lokálně'} · ${escapeHtml(item.odometer || '—')} km</span>
+        </div>
+        <div class="item-meta">${escapeHtml(item.liters || 0)} l · ${formatCurrency(item.price)}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div>
+        ${isEditing ? renderGarageRecordEditForm('fuel', item) : ''}
+        <div class="item-actions">
+          <button class="ghost-btn" type="button" data-action="edit-garage-record" data-collection="fuel" data-id="${item.id}">${isEditing ? 'Zavřít úpravu' : 'Upravit'}</button>
+          <button class="danger-btn" type="button" data-action="delete" data-collection="fuel" data-id="${item.id}">Smazat</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderServiceListItem(item) {
+    const isEditing = garageEditRecord?.collection === 'services' && garageEditRecord?.id === item.id;
+    return `
+      <div class="item ${isEditing ? 'selected' : ''}">
+        <div class="item-top">
+          <div class="item-title">${escapeHtml(item.title)}</div>
+          <span class="badge ${item.cloudId ? 'good' : ''}">${item.cloudId ? 'cloud' : 'lokálně'} · ${formatDate(item.date)}</span>
+        </div>
+        <div class="item-meta">${formatCurrency(item.price)}${item.odometer ? ` · ${escapeHtml(item.odometer)} km` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div>
+        ${isEditing ? renderGarageRecordEditForm('services', item) : ''}
+        <div class="item-actions">
+          <button class="ghost-btn" type="button" data-action="edit-garage-record" data-collection="services" data-id="${item.id}">${isEditing ? 'Zavřít úpravu' : 'Upravit'}</button>
+          <button class="danger-btn" type="button" data-action="delete" data-collection="services" data-id="${item.id}">Smazat</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderGarageRecordEditForm(collection, item) {
+    if (collection === 'fuel') {
+      return `
+        <form class="inline-edit-form" data-form="update-fuel" data-id="${item.id}">
+          <div class="form-grid two">
+            ${field('Datum', 'date', 'date', '', true, item.date || todayISO())}
+            ${field('Stav km', 'odometer', 'number', 'např. 125000', true, item.odometer || '')}
+            ${field('Litry', 'liters', 'number', 'např. 42,5', false, item.liters || '')}
+            ${field('Cena celkem', 'price', 'number', 'např. 1600', false, item.price || '')}
+            ${field('Poznámka', 'note', 'text', 'volitelné', false, item.note || '')}
+          </div>
+          <div class="form-actions"><button class="primary-btn" type="submit">Uložit tankování</button><button class="ghost-btn" type="button" data-action="cancel-garage-edit">Zrušit</button></div>
+        </form>
+      `;
+    }
+    return `
+      <form class="inline-edit-form" data-form="update-service" data-id="${item.id}">
+        <div class="form-grid two">
+          ${field('Datum', 'date', 'date', '', true, item.date || todayISO())}
+          ${field('Stav km', 'odometer', 'number', 'volitelné', false, item.odometer || '')}
+          ${field('Popis', 'title', 'text', 'olej / pneu / STK', true, item.title || '')}
+          ${field('Cena', 'price', 'number', 'volitelné', false, item.price || '')}
+          ${field('Poznámka', 'note', 'text', 'volitelné', false, item.note || '')}
+        </div>
+        <div class="form-actions"><button class="primary-btn" type="submit">Uložit servis</button><button class="ghost-btn" type="button" data-action="cancel-garage-edit">Zrušit</button></div>
+      </form>
+    `;
+  }
+
   function renderVehicleDetail(vehicle) {
     const fuelRows = sortFuelRows(state.fuel.filter((item) => item.vehicleId === vehicle.id));
     const serviceRows = state.services.filter((item) => item.vehicleId === vehicle.id).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
@@ -1326,7 +1638,7 @@
     return `
       <div class="card-header">
         <div><h2>${escapeHtml(vehicle.name)}</h2><p>${escapeHtml(vehicle.plate || 'Bez SPZ')} · ${escapeHtml(vehicle.fuelType || 'palivo neuvedeno')}</p></div>
-        <span class="badge">${escapeHtml(vehicle.odometer || latestFuel?.odometer || 0)} km</span>
+        <span class="badge ${vehicle.cloudId ? 'good' : ''}">${vehicle.cloudId ? 'cloud' : 'lokálně'} · ${escapeHtml(vehicle.odometer || latestFuel?.odometer || 0)} km</span>
       </div>
       <div class="kpi-row compact">
         <div class="kpi"><strong>${stats.averageConsumption ? `${stats.averageConsumption.toFixed(2).replace('.', ',')}` : '—'}</strong><span>l/100 km</span></div>
@@ -1354,7 +1666,7 @@
               ${field('Další servis do data', 'nextServiceDate', 'date', '', false, vehicle.nextServiceDate || '')}
               ${field('Poznámka', 'note', 'text', 'pneu, rozměr, VIN...', false, vehicle.note || '')}
             </div>
-            <div class="form-actions"><button class="ghost-btn" type="submit">Uložit údaje auta</button></div>
+            <div class="form-actions"><button class="ghost-btn" type="submit">Uložit údaje auta</button><button class="ghost-btn" type="button" data-action="cloud-sync-vehicle" data-id="${vehicle.id}">Odeslat auto do cloudu</button></div>
           </form>
           ${renderMiniChart(fuelRows)}
         </div>
@@ -1383,15 +1695,11 @@
       <div class="grid two">
         <div>
           <div class="card-header"><div><h3>Tankování</h3><p>${fuelRows.length} záznamů</p></div></div>
-          ${fuelRows.length ? `<div class="list">${[...fuelRows].reverse().slice(0, 8).map((item) => `
-            <div class="item"><div class="item-top"><div class="item-title">${formatDate(item.date)}</div><span class="badge">${escapeHtml(item.odometer)} km</span></div><div class="item-meta">${escapeHtml(item.liters || 0)} l · ${formatCurrency(item.price)}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div><div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="fuel" data-id="${item.id}">Smazat</button></div></div>
-          `).join('')}</div>` : renderEmpty('Zatím žádné tankování.')}
+          ${fuelRows.length ? `<div class="list">${[...fuelRows].reverse().slice(0, 8).map((item) => renderFuelListItem(item)).join('')}</div>` : renderEmpty('Zatím žádné tankování.')}
         </div>
         <div>
           <div class="card-header"><div><h3>Servisy</h3><p>${serviceRows.length} záznamů</p></div></div>
-          ${serviceRows.length ? `<div class="list">${serviceRows.slice(0, 8).map((item) => `
-            <div class="item"><div class="item-top"><div class="item-title">${escapeHtml(item.title)}</div><span class="badge">${formatDate(item.date)}</span></div><div class="item-meta">${formatCurrency(item.price)}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div><div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="services" data-id="${item.id}">Smazat</button></div></div>
-          `).join('')}</div>` : renderEmpty('Zatím žádný servis.')}
+          ${serviceRows.length ? `<div class="list">${serviceRows.slice(0, 8).map((item) => renderServiceListItem(item)).join('')}</div>` : renderEmpty('Zatím žádný servis.')}
         </div>
       </div>
     `;
@@ -1514,11 +1822,11 @@
     return `
       <div class="grid two">
         <section class="card">
-          <div class="card-header"><div><h2>Přidat smlouvu / pojistku</h2><p>Základní evidence + lokální přílohy přes IndexedDB.</p></div></div>
+          <div class="card-header"><div><h2>Přidat smlouvu / pojistku</h2><p>Základní evidence se ukládá podle domácnosti. Typy jsou sjednocené, aby šly později filtrovat a napojit na Garáž.</p></div><span class="badge ${state.cloud?.householdId ? 'good' : ''}">${state.cloud?.householdId ? 'cloud smlouvy' : 'lokálně'}</span></div>
           <form data-form="add-contract">
             <div class="form-grid two">
               ${field('Název', 'name', 'text', 'Povinné ručení / internet / elektřina', true)}
-              ${field('Typ', 'type', 'text', 'auto / domácnost / energie')}
+              ${selectField('Typ', 'type', contractTypeOptions('other'), 'other')}
               ${field('Poskytovatel', 'provider', 'text', 'pojišťovna / dodavatel')}
               ${field('Číslo smlouvy', 'number', 'text', 'volitelné')}
               ${field('Platnost od', 'validFrom', 'date', '')}
@@ -1527,12 +1835,12 @@
               ${selectField('Frekvence platby', 'frequency', [['monthly', 'Měsíčně'], ['yearly', 'Ročně'], ['once', 'Jednorázově'], ['other', 'Jiné']])}
               ${field('Poznámka', 'note', 'text', 'volitelné')}
             </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Uložit</button></div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Uložit</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-contracts">Načíst cloud smlouvy</button>' : ''}${state.cloud?.householdId && state.contracts.some((contract) => !contract.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-contracts">Odeslat lokální (${state.contracts.filter((contract) => !contract.cloudId).length})</button>` : ''}</div>
           </form>
-          <div class="inline-note" style="margin-top:12px;">PDF a fotky dokumentů se zatím ukládají jen v tomto prohlížeči. JSON export zatím obsahuje metadata, ne samotné soubory.</div>
+          <div class="inline-note" style="margin-top:12px;">Základ smlouvy může být v cloudu podle domácnosti. PDF a fotky dokumentů se zatím ukládají jen v tomto prohlížeči. JSON export zatím obsahuje metadata, ne samotné soubory.</div>
         </section>
         <section class="card">
-          <div class="card-header"><div><h2>Přehled</h2><p>${contracts.length} položek</p></div></div>
+          <div class="card-header"><div><h2>Přehled</h2><p>${contracts.length} položek · ${contracts.filter((contract) => contract.cloudId).length} cloud</p></div></div>
           ${contracts.length ? `<div class="list">${contracts.map(renderContractItem).join('')}</div>` : renderEmpty('Zatím není uložená žádná smlouva ani pojistka.')}
         </section>
         <section class="card desktop-span-2">
@@ -1551,11 +1859,12 @@
       <div class="item ${contract.id === activeContractId ? 'selected' : ''}">
         <div class="item-top"><div class="item-title">${escapeHtml(contract.name)}</div><span class="badge ${badgeClass}">${escapeHtml(badgeText)}</span></div>
         <div class="item-meta">
-          ${escapeHtml(contract.provider || 'Bez poskytovatele')} · ${escapeHtml(contract.type || 'typ neuveden')}${contract.number ? ` · č. ${escapeHtml(contract.number)}` : ''}<br>
-          ${contract.validFrom ? `od ${formatDate(contract.validFrom)} · ` : ''}${contract.validTo ? `do ${formatDate(contract.validTo)} · ` : ''}${formatCurrency(contract.amount)} / ${frequencyLabel(contract.frequency)}${contract.note ? ` · ${escapeHtml(contract.note)}` : ''}
+          ${escapeHtml(contract.provider || 'Bez poskytovatele')} · ${escapeHtml(contractTypeLabel(contract.type))}${contract.number ? ` · č. ${escapeHtml(contract.number)}` : ''}<br>
+          ${contract.validFrom ? `od ${formatDate(contract.validFrom)} · ` : ''}${contract.validTo ? `do ${formatDate(contract.validTo)} · ` : ''}${formatCurrency(contract.amount)} / ${frequencyLabel(contract.frequency)}${contract.cloudId ? ' · cloud' : ''}${contract.note ? ` · ${escapeHtml(contract.note)}` : ''}
         </div>
         <div class="item-actions">
           <button class="ghost-btn" type="button" data-action="select-contract" data-id="${contract.id}">Detail</button>
+          ${state.cloud?.householdId && !contract.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-contract" data-id="${contract.id}">Odeslat</button>` : ''}
           <span class="badge">${files} příloh</span>
           <button class="danger-btn" type="button" data-action="delete" data-collection="contracts" data-id="${contract.id}">Smazat</button>
         </div>
@@ -1569,7 +1878,7 @@
     const statusText = left === null ? 'Bez nastaveného konce' : left < 0 ? `Propadlé před ${Math.abs(left)} dny` : left === 0 ? 'Končí dnes' : `Končí za ${left} dní`;
     return `
       <div class="card-header">
-        <div><h2>${escapeHtml(contract.name)}</h2><p>${escapeHtml(contract.provider || 'Bez poskytovatele')} · ${escapeHtml(contract.type || 'typ neuveden')}</p></div>
+        <div><h2>${escapeHtml(contract.name)}</h2><p>${escapeHtml(contract.provider || 'Bez poskytovatele')} · ${escapeHtml(contractTypeLabel(contract.type))}</p></div>
         <span class="badge ${left !== null && left <= 45 ? (left < 0 ? 'bad' : 'warn') : 'good'}">${escapeHtml(statusText)}</span>
       </div>
       <div class="grid two">
@@ -1581,23 +1890,46 @@
           ${contract.note ? `<div class="inline-note">${escapeHtml(contract.note)}</div>` : ''}
         </div>
         <div>
+          <form data-form="update-contract" data-contract-id="${contract.id}" class="compact-form">
+            <div class="card-header small"><div><h3>Upravit údaje</h3><p>Změna se uloží lokálně a u cloudové smlouvy rovnou i do Supabase.</p></div></div>
+            <div class="form-grid two">
+              ${field('Název', 'name', 'text', 'Název smlouvy', true, contract.name || '')}
+              ${selectField('Typ', 'type', contractTypeOptions(contract.type || 'other'), contract.type || 'other')}
+              ${field('Poskytovatel', 'provider', 'text', 'Poskytovatel', false, contract.provider || '')}
+              ${field('Číslo smlouvy', 'number', 'text', 'Číslo smlouvy', false, contract.number || '')}
+              ${field('Platnost od', 'validFrom', 'date', '', false, contract.validFrom || '')}
+              ${field('Platnost do', 'validTo', 'date', '', false, contract.validTo || '')}
+              ${field('Částka', 'amount', 'number', 'např. 1250', false, contract.amount || '')}
+              ${selectField('Frekvence platby', 'frequency', [['monthly', 'Měsíčně'], ['quarterly', 'Čtvrtletně'], ['yearly', 'Ročně'], ['once', 'Jednorázově'], ['other', 'Jiné']], contract.frequency || 'monthly')}
+              ${field('Poznámka', 'note', 'text', 'volitelné', false, contract.note || '')}
+            </div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button>${contract.cloudId ? '<span class="badge good">cloud update</span>' : '<span class="badge">lokální smlouva</span>'}</div>
+          </form>
+        </div>
+      </div>
+      <div style="height:14px"></div>
+      <div class="grid two">
+        <div>
           <form data-form="add-contract-file" data-contract-id="${contract.id}">
             <div class="upload-box">
               <label for="contractFiles">PDF / fotka smlouvy</label>
               <input id="contractFiles" class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf">
               <p>Na iPhonu/Androidu můžeš vybrat soubor, fotku z galerie nebo rovnou vyfotit dokument podle nabídky systému.</p>
             </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat přílohu</button></div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Přidat přílohu</button>${contract.cloudId ? '<span class="badge good">Supabase Storage</span>' : '<span class="badge">lokálně / po odeslání smlouvy cloud</span>'}</div>
           </form>
+        </div>
+        <div class="inline-note">
+          <strong>Cloud přílohy:</strong><br>U cloudové smlouvy se PDF/fotky ukládají do soukromého Supabase Storage bucketu. Otevírání jde přes dočasný odkaz, veřejné URL se nepoužívá. Lokální smlouvy dál používají IndexedDB.
         </div>
       </div>
       <div style="height:14px"></div>
-      <div class="card-header"><div><h3>Přílohy</h3><p>Uložené lokálně v IndexedDB.</p></div></div>
+      <div class="card-header"><div><h3>Přílohy</h3><p>${files.filter((file) => file.cloudId).length} cloud · ${files.filter((file) => !file.cloudId).length} lokálně</p></div>${contract.cloudId && state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-contract-files">Načíst cloud přílohy</button>' : ''}</div>
       ${files.length ? `<div class="file-list">${files.map((file) => `
         <div class="file-row">
           <div>
             <strong>${escapeHtml(file.fileName)}</strong>
-            <em>${escapeHtml(file.fileType || 'soubor')} · ${formatBytes(file.size)} · ${formatDate(file.createdAt?.slice(0, 10))}</em>
+            <em>${escapeHtml(file.fileType || 'soubor')} · ${formatBytes(file.size)} · ${formatDate(file.createdAt?.slice(0, 10))}${file.cloudId ? ' · cloud' : ' · lokálně'}</em>
           </div>
           <div class="item-actions">
             <button class="ghost-btn" type="button" data-action="open-contract-file" data-id="${file.id}">Otevřít</button>
@@ -1745,6 +2077,10 @@
 
         ${renderCloudReadiness(false)}
 
+        ${renderCloudAccount()}
+
+        ${renderPwaInstallCard()}
+
         <section class="card">
           <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos mezi prohlížeči, než bude Supabase. Přílohy smluv jsou zatím uložené zvlášť v IndexedDB.</p></div></div>
           <div class="form-actions">
@@ -1789,6 +2125,123 @@
           `;
         }).join('')}
       </div>
+    `;
+  }
+
+
+  function cloudModeLabel() {
+    if (state.cloud?.userId) return `cloud: ${state.cloud.email || 'přihlášeno'}`;
+    return 'cloud-ready / lokální režim';
+  }
+
+  function getSupabaseClient() {
+    if (supabaseClientInstance) return supabaseClientInstance;
+    const factory = window.supabase?.createClient;
+    if (!factory) return null;
+    supabaseClientInstance = factory(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: {
+        storageKey: SUPABASE_STORAGE_KEY,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
+    return supabaseClientInstance;
+  }
+
+  function renderCloudAccount() {
+    const cloud = state.cloud || {};
+    const signedIn = Boolean(cloud.userId);
+    return `
+      <section class="card desktop-span-2 cloud-card">
+        <div class="card-header">
+          <div><h2>Cloud účet</h2><p>Napojení na Supabase projekt Domácnost+. Základ domácnosti/profilů a Nákupy už umí cloud.</p></div>
+          <span class="badge ${signedIn ? 'good' : ''}">${signedIn ? 'přihlášeno' : 'lokálně'}</span>
+        </div>
+        <div class="cloud-status-grid">
+          <div class="mini-stat"><span>Supabase</span><strong>${escapeHtml(SUPABASE_URL.replace('https://', ''))}</strong></div>
+          <div class="mini-stat"><span>Účet</span><strong>${escapeHtml(cloud.email || 'nepřihlášeno')}</strong></div>
+          <div class="mini-stat"><span>Cloud domácnost</span><strong>${escapeHtml(cloud.householdId || 'zatím nevytvořena')}</strong></div>
+          <div class="mini-stat"><span>Poslední zápis</span><strong>${cloud.lastSyncAt ? escapeHtml(formatDateTime(cloud.lastSyncAt)) : 'nikdy'}</strong></div>
+        </div>
+        ${signedIn ? `
+          <div class="hint-box">Jsi přihlášený. Tlačítko níže vytvoří nebo napojí aktuální domácnost v Supabase: domácnost, owner člen a profily. Nákupy už se umí ukládat do cloudu.</div>
+          <div class="form-actions">
+            <button class="primary-btn" type="button" data-action="cloud-bootstrap">Vytvořit / napojit domácnost v cloudu</button>
+            <button class="ghost-btn" type="button" data-action="cloud-refresh-session">Obnovit stav účtu</button>
+            <button class="danger-btn" type="button" data-action="cloud-logout">Odhlásit</button>
+          </div>
+        ` : `
+          <div class="grid two cloud-auth-grid">
+            <form data-form="cloud-login">
+              <h3>Přihlášení</h3>
+              <div class="form-grid two">
+                ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
+                ${field('Heslo', 'password', 'password', 'min. 6 znaků', true)}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Přihlásit</button></div>
+            </form>
+            <form data-form="cloud-signup">
+              <h3>Nový účet</h3>
+              <div class="form-grid two">
+                ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
+                ${field('Heslo', 'password', 'password', 'min. 6 znaků', true)}
+              </div>
+              <div class="form-actions"><button class="ghost-btn" type="submit">Založit účet</button></div>
+            </form>
+          </div>
+          <div class="inline-note">Pokud bude v Supabase zapnuté potvrzení e-mailu, po registraci bude potřeba účet potvrdit přes e-mail a pak se přihlásit.</div>
+        `}
+      </section>
+    `;
+  }
+
+
+  function getPwaStatus() {
+    const standalone = window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone === true;
+    const secure = location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname);
+    const swSupported = 'serviceWorker' in navigator && location.protocol !== 'file:';
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent || '');
+    const android = /android/i.test(navigator.userAgent || '');
+    return {
+      standalone,
+      secure,
+      swSupported,
+      ios,
+      android,
+      canPrompt: Boolean(deferredInstallPrompt),
+      updateAvailable: Boolean(pwaUpdateAvailable),
+      fileMode: location.protocol === 'file:'
+    };
+  }
+
+  function renderPwaInstallCard() {
+    const pwa = getPwaStatus();
+    const statusLabel = pwa.standalone ? 'nainstalováno' : pwa.fileMode ? 'lokální soubor' : pwa.canPrompt ? 'lze instalovat' : 'připraveno';
+    return `
+      <section class="card desktop-span-2 pwa-card">
+        <div class="card-header">
+          <div><h2>Instalace aplikace</h2><p>Domácnost+ je připravená jako instalovatelná PWA appka. Na mobilu se otevře jako samostatná aplikace bez klasické lišty prohlížeče.</p></div>
+          <span class="badge ${pwa.standalone ? 'good' : pwa.updateAvailable ? 'warn' : ''}">${statusLabel}</span>
+        </div>
+        <div class="cloud-status-grid">
+          <div class="mini-stat"><span>Režim</span><strong>${pwa.standalone ? 'samostatná app' : 'prohlížeč'}</strong></div>
+          <div class="mini-stat"><span>Service worker</span><strong>${pwa.swSupported ? 'podporovaný' : 'není dostupný'}</strong></div>
+          <div class="mini-stat"><span>Instalace</span><strong>${pwa.canPrompt ? 'tlačítkem' : pwa.ios ? 'přes Safari' : 'přes menu'}</strong></div>
+          <div class="mini-stat"><span>Verze</span><strong>${escapeHtml(APP_VERSION)}</strong></div>
+        </div>
+        ${pwa.fileMode ? `<div class="hint-box warn-box">Teď je appka otevřená jako lokální soubor ze ZIPu. Instalace a automatické aktualizace fungují až přes HTTPS, tedy typicky přes Vercel.</div>` : ''}
+        <div class="install-steps">
+          <div class="install-step"><strong>iPhone / iPad</strong><span>Otevři ve Safari → Sdílet → Přidat na plochu.</span></div>
+          <div class="install-step"><strong>Android / Chrome</strong><span>Menu prohlížeče → Instalovat aplikaci. Když prohlížeč nabídne tlačítko, objeví se níže.</span></div>
+          <div class="install-step"><strong>Update</strong><span>Po novém deployi přes Vercel se zobrazí možnost aktualizovat. Tohle držíme podobně jako u RaK.</span></div>
+        </div>
+        <div class="form-actions">
+          ${pwa.canPrompt ? `<button class="primary-btn" type="button" data-action="pwa-install">Instalovat aplikaci</button>` : ''}
+          <button class="ghost-btn" type="button" data-action="pwa-check-update">Zkontrolovat update</button>
+          ${pwa.updateAvailable ? `<button class="primary-btn" type="button" data-action="pwa-apply-update">Aktualizovat na novou verzi</button>` : ''}
+        </div>
+      </section>
     `;
   }
 
@@ -1970,6 +2423,115 @@
     await withFileStore('readwrite', (store) => store.delete(id));
   }
 
+  function sanitizeStorageFileName(name) {
+    const fallback = 'priloha';
+    const raw = String(name || fallback).trim() || fallback;
+    const parts = raw.split('.');
+    const ext = parts.length > 1 ? `.${parts.pop().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8)}` : '';
+    const base = parts.join('.') || fallback;
+    return `${normalizeKey(base).replace(/\s+/g, '-').slice(0, 80) || fallback}${ext}`;
+  }
+
+  async function ensureCloudContract(contract) {
+    if (!contract) return null;
+    if (contract.cloudId) return contract.cloudId;
+    if (!state.cloud?.householdId) return null;
+    const cloudContract = await cloudAddContract(contract);
+    if (!cloudContract?.id) return null;
+    contract.cloudId = cloudContract.id;
+    touchState();
+    saveState();
+    return contract.cloudId;
+  }
+
+  async function cloudUploadContractFile(contract, file) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const cloudContractId = await ensureCloudContract(contract);
+    if (!cloudContractId) return null;
+    const storagePath = `${state.cloud.householdId}/${cloudContractId}/${Date.now()}-${uid()}-${sanitizeStorageFileName(file.name)}`;
+    const { error: uploadError } = await client.storage
+      .from('contract-files')
+      .upload(storagePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type || 'application/octet-stream'
+      });
+    if (uploadError) {
+      showToast(uploadError.message || 'Přílohu se nepovedlo nahrát');
+      return null;
+    }
+
+    const { data, error } = await client
+      .from('contract_files')
+      .insert({
+        household_id: state.cloud.householdId,
+        contract_id: cloudContractId,
+        bucket_id: 'contract-files',
+        storage_path: storagePath,
+        file_name: file.name || 'příloha',
+        mime_type: file.type || null,
+        file_size: file.size || 0,
+        source: file.type && file.type.startsWith('image/') ? 'camera' : 'upload',
+        created_by: user.id
+      })
+      .select('id,household_id,contract_id,storage_path,file_name,mime_type,file_size,source,created_at')
+      .single();
+    if (error) {
+      await client.storage.from('contract-files').remove([storagePath]).catch?.(() => {});
+      showToast(error.message || 'Metadata přílohy se nepovedlo uložit');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return mapCloudContractFile(data, contract.id);
+  }
+
+  function mapCloudContractFile(item, localContractId = null) {
+    const contract = localContractId
+      ? state.contracts.find((entry) => entry.id === localContractId)
+      : state.contracts.find((entry) => entry.cloudId === item.contract_id);
+    if (!contract) return null;
+    const existing = state.contractFiles.find((file) => file.cloudId === item.id);
+    return {
+      id: existing?.id || `cloud-file-${item.id}`,
+      cloudId: item.id,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      contractId: contract.id,
+      cloudContractId: item.contract_id,
+      storagePath: item.storage_path,
+      bucketId: 'contract-files',
+      fileName: item.file_name || 'příloha',
+      fileType: item.mime_type || 'soubor',
+      size: item.file_size || 0,
+      source: item.source || 'upload',
+      createdAt: item.created_at || new Date().toISOString()
+    };
+  }
+
+  async function cloudLoadContractFiles(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const user = await refreshCloudSession(false);
+    if (!user || !state.cloud?.householdId) return showToast('Nejdřív napoj domácnost na cloud');
+    const { data, error } = await client
+      .from('contract_files')
+      .select('id,household_id,contract_id,storage_path,file_name,mime_type,file_size,source,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .order('created_at', { ascending: false });
+    if (error) return showToast(error.message || 'Přílohy se nepovedlo načíst');
+    const cloudFiles = (data || []).map((item) => mapCloudContractFile(item)).filter(Boolean);
+    const localOnly = state.contractFiles.filter((file) => !file.cloudId);
+    state.contractFiles = [...localOnly, ...cloudFiles];
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast('Cloud přílohy načtené');
+  }
+
   async function addContractFiles(form) {
     const contractId = form.dataset.contractId;
     const contract = state.contracts.find((item) => item.id === contractId);
@@ -1979,12 +2541,19 @@
       showToast('Vyber soubor');
       return;
     }
-    if (!('indexedDB' in window)) {
-      showToast('Prohlížeč nepodporuje IndexedDB');
-      return;
-    }
     let added = 0;
     for (const file of files) {
+      const cloudFile = state.cloud?.householdId ? await cloudUploadContractFile(contract, file) : null;
+      if (cloudFile) {
+        state.contractFiles = state.contractFiles.filter((entry) => entry.cloudId !== cloudFile.cloudId);
+        state.contractFiles.push(cloudFile);
+        added += 1;
+        continue;
+      }
+      if (!('indexedDB' in window)) {
+        showToast('Prohlížeč nepodporuje IndexedDB');
+        continue;
+      }
       const id = `file-${uid()}`;
       const createdAt = new Date().toISOString();
       const meta = {
@@ -2008,8 +2577,25 @@
     showToast(added === 1 ? 'Příloha přidána' : `Přidáno ${added} příloh`);
   }
 
+  async function openCloudContractFile(meta, download = false) {
+    const client = getSupabaseClient();
+    if (!client || !meta?.storagePath) return showToast('Cloud příloha není dostupná');
+    const { data, error } = await client.storage
+      .from('contract-files')
+      .createSignedUrl(meta.storagePath, 60, download ? { download: meta.fileName || 'priloha' } : undefined);
+    if (error || !data?.signedUrl) {
+      showToast(error?.message || 'Dočasný odkaz nejde vytvořit');
+      return;
+    }
+    window.open(data.signedUrl, '_blank', 'noopener');
+  }
+
   async function openOrDownloadContractFile(id, openInNewTab = false) {
     const meta = state.contractFiles.find((file) => file.id === id);
+    if (meta?.cloudId) {
+      await openCloudContractFile(meta, !openInNewTab);
+      return;
+    }
     try {
       const record = await getStoredContractFile(id);
       if (!record?.blob) {
@@ -2034,11 +2620,35 @@
     }
   }
 
+  async function deleteCloudContractFile(meta) {
+    const client = getSupabaseClient();
+    if (!client || !meta?.cloudId || !meta?.storagePath || !state.cloud?.householdId) return false;
+    const { error: dbError } = await client
+      .from('contract_files')
+      .delete()
+      .eq('id', meta.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (dbError) {
+      showToast(dbError.message || 'Metadata přílohy se nepovedlo smazat');
+      return false;
+    }
+    const { error: storageError } = await client.storage.from('contract-files').remove([meta.storagePath]);
+    if (storageError) showToast('Metadata smazaná, soubor ve Storage může zůstat k dočištění');
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
   async function deleteContractFile(id) {
-    const ok = window.confirm('Smazat přílohu smlouvy z tohoto zařízení?');
+    const meta = state.contractFiles.find((file) => file.id === id);
+    const ok = window.confirm(meta?.cloudId ? 'Smazat přílohu smlouvy z cloudu?' : 'Smazat přílohu smlouvy z tohoto zařízení?');
     if (!ok) return;
+    if (meta?.cloudId) {
+      const deleted = await deleteCloudContractFile(meta);
+      if (!deleted) return;
+    } else {
+      deleteStoredContractFile(id).catch(() => {});
+    }
     state.contractFiles = state.contractFiles.filter((file) => file.id !== id);
-    deleteStoredContractFile(id).catch(() => {});
     touchState();
     saveState();
     render();
@@ -2169,7 +2779,8 @@
     return state.services.some((item) => item.vehicleId === vehicleId && String(item.date) === String(row.date) && String(item.title || '') === String(row.title || '') && Number(item.price || 0) === Number(row.price || 0));
   }
 
-  function confirmFuelioImport() {
+  async function confirmFuelioImport(options = {}) {
+    const syncCloud = Boolean(options.syncCloud);
     if (!fuelioPreview?.rows?.length) {
       showToast('Nejdřív načti náhled');
       return;
@@ -2185,6 +2796,7 @@
     let importedFuel = 0;
     let importedServices = 0;
     let skipped = 0;
+    const importedIds = { fuel: [], services: [], vehicles: [] };
 
     fuelioPreview.rows.forEach((row) => {
       let vehicle = row.vehicleName ? vehicleByName.get(normalizeKey(row.vehicleName)) : fallbackVehicle;
@@ -2192,6 +2804,7 @@
         vehicle = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name: row.vehicleName, plate: '', fuelType: '', odometer: row.odometer || '', technicalInspectionUntil: '', insuranceUntil: '', nextServiceKm: '', nextServiceDate: '', note: '' };
         state.vehicles.push(vehicle);
         vehicleByName.set(normalizeKey(row.vehicleName), vehicle);
+        importedIds.vehicles.push(vehicle.id);
       }
       const vehicleId = vehicle?.id || fallbackVehicle.id;
       if (row.kind === 'fuel') {
@@ -2199,7 +2812,9 @@
           skipped += 1;
           return;
         }
-        state.fuel.push({ id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), source: 'fuelio', vehicleId, date: row.date, odometer: row.odometer, liters: row.liters, price: row.price, note: row.note });
+        const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), source: 'fuelio', vehicleId, date: row.date, odometer: row.odometer, liters: row.liters, price: row.price, note: row.note };
+        state.fuel.push(item);
+        importedIds.fuel.push(item.id);
         if (row.odometer && Number(row.odometer) > Number(vehicle.odometer || 0)) vehicle.odometer = String(row.odometer);
         importedFuel += 1;
       }
@@ -2208,7 +2823,9 @@
           skipped += 1;
           return;
         }
-        state.services.push({ id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), source: 'fuelio', vehicleId, date: row.date, title: row.title, price: row.price, note: row.note });
+        const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), source: 'fuelio', vehicleId, date: row.date, odometer: row.odometer || '', title: row.title, price: row.price, note: row.note };
+        state.services.push(item);
+        importedIds.services.push(item.id);
         importedServices += 1;
       }
     });
@@ -2217,12 +2834,20 @@
     fuelioPreview = null;
     touchState();
     saveState();
+
+    if (syncCloud) {
+      const result = await cloudSyncGarageSubset(importedIds);
+      render();
+      showToast(`Fuelio import + cloud: ${importedFuel} tankování, ${importedServices} nákladů, ${skipped} duplicit · cloud ${result.fuel + result.services + result.vehicles} záznamů`);
+      return;
+    }
+
     render();
     showToast(`Fuelio import: ${importedFuel} tankování, ${importedServices} nákladů, ${skipped} duplicit`);
   }
 
 
-  function updateVehicle(vehicleId, data) {
+  async function updateVehicle(vehicleId, data) {
     const vehicle = state.vehicles.find((item) => item.id === vehicleId);
     if (!vehicle) {
       showToast('Auto se nepodařilo najít');
@@ -2237,10 +2862,1443 @@
     vehicle.nextServiceKm = normalizeText(data.nextServiceKm);
     vehicle.nextServiceDate = normalizeText(data.nextServiceDate);
     vehicle.note = normalizeText(data.note);
+    const ok = await cloudUpdateVehicle(vehicle);
+    if (!ok) return;
     touchState();
     saveState();
     render();
-    showToast('Údaje auta uloženy');
+    showToast(vehicle.cloudId ? 'Údaje auta uloženy v cloudu' : 'Údaje auta uloženy lokálně');
+  }
+
+
+  async function updateFuelLog(id, data) {
+    const item = state.fuel.find((entry) => entry.id === id);
+    if (!item) return showToast('Tankování nenalezeno');
+    item.date = normalizeText(data.date) || item.date;
+    item.odometer = normalizeText(data.odometer);
+    item.liters = decimalValue(data.liters);
+    item.price = decimalValue(data.price);
+    item.note = normalizeText(data.note);
+    item.updatedAt = new Date().toISOString();
+    const ok = await cloudUpdateFuelLog(item);
+    if (!ok) return;
+    garageEditRecord = null;
+    touchState();
+    saveState();
+    render();
+    showToast(item.cloudId ? 'Tankování upraveno v cloudu' : 'Tankování upraveno lokálně');
+  }
+
+  async function updateServiceLog(id, data) {
+    const item = state.services.find((entry) => entry.id === id);
+    if (!item) return showToast('Servis nenalezen');
+    item.date = normalizeText(data.date) || item.date;
+    item.odometer = normalizeText(data.odometer);
+    item.title = normalizeText(data.title) || item.title;
+    item.price = decimalValue(data.price);
+    item.note = normalizeText(data.note);
+    item.updatedAt = new Date().toISOString();
+    const ok = await cloudUpdateServiceLog(item);
+    if (!ok) return;
+    garageEditRecord = null;
+    touchState();
+    saveState();
+    render();
+    showToast(item.cloudId ? 'Servis upraven v cloudu' : 'Servis upraven lokálně');
+  }
+
+
+  async function addShoppingFromForm(data, form) {
+    const name = normalizeText(data.name);
+    if (!name) return showToast('Zadej položku');
+    const catalogItem = findShoppingCatalogItem(name);
+    const category = normalizeText(data.category) || catalogItem?.category || 'Ostatní';
+    const unit = normalizeText(data.unit) || catalogItem?.defaultUnit || 'ks';
+    const quantity = decimalValue(data.quantity) || 1;
+    const note = normalizeText(data.note);
+    const isKnown = Boolean(catalogItem);
+    const cloudReady = Boolean(state.cloud?.userId && state.cloud?.householdId);
+
+    if (!isKnown) {
+      state.shoppingCatalogCustom = state.shoppingCatalogCustom || [];
+      if (!state.shoppingCatalogCustom.some((item) => normalizeKey(item.name) === normalizeKey(name))) {
+        state.shoppingCatalogCustom.push({ id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name, defaultUnit: unit, category });
+      }
+    }
+
+    const localItem = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      name,
+      category,
+      quantity,
+      unit,
+      note,
+      done: false,
+      catalogItemId: catalogItem?.id || ''
+    };
+
+    if (cloudReady) {
+      const cloudItem = await cloudAddShoppingItem({ name, category, quantity, unit, note, catalogItem });
+      if (cloudItem) {
+        localItem.cloudId = cloudItem.id;
+        localItem.cloudListId = cloudItem.list_id;
+        localItem.catalogItemId = cloudItem.catalog_item_id || localItem.catalogItemId;
+      }
+    }
+
+    trackShoppingUsage(name, unit, category);
+    state.shopping.push(localItem);
+    touchState();
+    saveState();
+    form?.reset();
+    render();
+    showToast(isKnown ? 'Přidáno do nákupu' : 'Přidáno i do katalogu domácnosti');
+  }
+
+  async function quickAddShoppingByName(name) {
+    const catalogItem = findShoppingCatalogItem(name);
+    if (!catalogItem) return showToast('Položku se nepovedlo najít v katalogu');
+    await addShoppingFromForm({
+      name: catalogItem.name,
+      category: catalogItem.category || 'Ostatní',
+      quantity: '1',
+      unit: catalogItem.defaultUnit || 'ks',
+      note: ''
+    }, null);
+  }
+
+  async function cloudSyncLocalShoppingItems() {
+    const cloudReady = Boolean(state.cloud?.userId && state.cloud?.householdId);
+    if (!cloudReady) return showToast('Nejdřív napoj domácnost na cloud');
+    const localItems = state.shopping.filter((item) => !item.cloudId);
+    if (!localItems.length) return showToast('Není co odeslat');
+    let synced = 0;
+    for (const item of localItems) {
+      const catalogItem = findShoppingCatalogItem(item.name);
+      const cloudItem = await cloudAddShoppingItem({
+        name: item.name,
+        category: item.category || catalogItem?.category || 'Ostatní',
+        quantity: item.quantity || 1,
+        unit: item.unit || catalogItem?.defaultUnit || 'ks',
+        note: item.note || '',
+        catalogItem
+      });
+      if (cloudItem) {
+        item.cloudId = cloudItem.id;
+        item.cloudListId = cloudItem.list_id;
+        item.catalogItemId = cloudItem.catalog_item_id || item.catalogItemId || '';
+        synced += 1;
+      }
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(synced ? `Odesláno do cloudu: ${synced}` : 'Nic se nepovedlo odeslat');
+  }
+
+  async function cloudLoadShoppingData(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const user = await refreshCloudSession(false);
+    if (!user || !state.cloud?.householdId) return showToast('Nejdřív vytvoř / napoj domácnost v cloudu');
+    const householdId = state.cloud.householdId;
+
+    const [unitsRes, categoriesRes, catalogRes, listsRes] = await Promise.all([
+      client.from('shopping_units').select('code,label,kind,sort_order').order('sort_order'),
+      client.from('shopping_categories').select('id,household_id,name,icon,sort_order').or(`household_id.is.null,household_id.eq.${householdId}`).order('sort_order'),
+      client.from('shopping_catalog_items').select('id,household_id,name,default_unit,category_id,shopping_categories(name)').or(`household_id.is.null,household_id.eq.${householdId}`).order('name'),
+      client.from('shopping_lists').select('id,name,status,created_at').eq('household_id', householdId).eq('status', 'active').order('created_at', { ascending: false }).limit(1)
+    ]);
+
+    const firstError = unitsRes.error || categoriesRes.error || catalogRes.error || listsRes.error;
+    if (firstError) return showToast(firstError.message || 'Nákupy se nepovedlo načíst');
+
+    let activeListId = listsRes.data?.[0]?.id || '';
+    if (!activeListId) {
+      const { data: list, error: listError } = await client.from('shopping_lists').insert({ household_id: householdId, name: 'Nákup', status: 'active', created_by: user.id }).select('id').single();
+      if (listError) return showToast(listError.message || 'Seznam se nepovedlo vytvořit');
+      activeListId = list.id;
+    }
+
+    const itemsRes = await client.from('shopping_list_items').select('id,list_id,catalog_item_id,name,quantity,unit,note,is_done,position,created_at').eq('household_id', householdId).eq('list_id', activeListId).order('position').order('created_at');
+    if (itemsRes.error) return showToast(itemsRes.error.message || 'Položky nákupu se nepovedlo načíst');
+
+    state.shoppingCloud = {
+      units: unitsRes.data || [],
+      categories: categoriesRes.data || [],
+      catalog: (catalogRes.data || []).map((item) => ({ ...item, category_name: item.shopping_categories?.name || 'Ostatní' })),
+      activeListId,
+      loadedAt: new Date().toISOString()
+    };
+
+    const cloudItems = (itemsRes.data || []).map((item) => ({
+      id: state.shopping.find((local) => local.cloudId === item.id)?.id || uid(),
+      cloudId: item.id,
+      cloudListId: item.list_id,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: item.created_at || new Date().toISOString(),
+      name: item.name,
+      quantity: item.quantity || 1,
+      unit: item.unit || 'ks',
+      note: item.note || '',
+      done: Boolean(item.is_done),
+      catalogItemId: item.catalog_item_id || '',
+      category: findShoppingCatalogItem(item.name)?.category || 'Ostatní'
+    }));
+    const localOnly = state.shopping.filter((item) => !item.cloudId);
+    state.shopping = [...localOnly, ...cloudItems];
+
+    state.cloud.lastSyncAt = new Date().toISOString();
+    saveState();
+    render();
+    if (showMessage) showToast('Cloud nákupy načtené');
+  }
+
+  async function cloudFindOrCreateCatalogItem({ name, category, unit, catalogItem }) {
+    if (catalogItem?.id && !String(catalogItem.id).startsWith('default-') && catalogItem.source !== 'local') return catalogItem.id;
+    const client = getSupabaseClient();
+    const householdId = state.cloud?.householdId;
+    if (!client || !householdId) return '';
+
+    const { data: existing } = await client.from('shopping_catalog_items').select('id,name').eq('household_id', householdId).ilike('name', name).maybeSingle();
+    if (existing?.id) return existing.id;
+
+    let categoryId = '';
+    const cachedCategory = (state.shoppingCloud?.categories || []).find((item) => item.name === category);
+    if (cachedCategory?.id) categoryId = cachedCategory.id;
+    const { data, error } = await client.from('shopping_catalog_items').insert({ household_id: householdId, category_id: categoryId || null, name, default_unit: unit || 'ks', created_by: state.cloud.userId }).select('id').single();
+    if (error) {
+      showToast(error.message || 'Katalogovou položku se nepovedlo uložit');
+      return '';
+    }
+    state.shoppingCloud.catalog = [...(state.shoppingCloud?.catalog || []), { id: data.id, household_id: householdId, name, default_unit: unit || 'ks', category_name: category }];
+    return data.id;
+  }
+
+  async function cloudAddShoppingItem({ name, category, quantity, unit, note, catalogItem }) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    if (!state.shoppingCloud?.activeListId) await cloudLoadShoppingData(false);
+    const householdId = state.cloud.householdId;
+    const listId = state.shoppingCloud?.activeListId;
+    if (!listId) return null;
+    const catalogItemId = await cloudFindOrCreateCatalogItem({ name, category, unit, catalogItem });
+    const { data, error } = await client.from('shopping_list_items').insert({
+      household_id: householdId,
+      list_id: listId,
+      catalog_item_id: catalogItemId || null,
+      name,
+      quantity,
+      unit,
+      note,
+      is_done: false,
+      added_by_profile_id: null,
+      created_by: state.cloud.userId
+    }).select('id,list_id,catalog_item_id').single();
+    if (error) {
+      showToast(error.message || 'Cloud položka se nepovedla uložit');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+
+  async function cloudUpdateShoppingItem(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client
+      .from('shopping_list_items')
+      .update({
+        is_done: Boolean(item.done),
+        done_at: item.done ? new Date().toISOString() : null,
+        quantity: item.quantity || 1,
+        unit: item.unit || 'ks',
+        note: item.note || null
+      })
+      .eq('id', item.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Cloud nákup se nepovedlo aktualizovat');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteShoppingItem(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client
+      .from('shopping_list_items')
+      .delete()
+      .eq('id', item.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Cloud nákup se nepovedlo smazat');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+
+  function fuelTypeToCloud(value) {
+    const key = normalizeKey(value || '');
+    if (key.includes('nafta') || key.includes('diesel')) return 'diesel';
+    if (key.includes('elektro') || key.includes('electric')) return 'electric';
+    if (key.includes('hybrid')) return 'hybrid';
+    if (key.includes('lpg')) return 'lpg';
+    if (key.includes('cng')) return 'cng';
+    if (key.includes('benzin') || key.includes('benzín') || key.includes('gasoline')) return 'gasoline';
+    return key ? 'other' : 'other';
+  }
+
+  function fuelTypeFromCloud(value) {
+    const map = { gasoline: 'benzín', diesel: 'nafta', lpg: 'LPG', cng: 'CNG', hybrid: 'hybrid', electric: 'elektro', other: 'jiné' };
+    return map[value] || value || '';
+  }
+
+  function serviceTypeToCloud(value) {
+    const key = normalizeKey(value || '');
+    if (key.includes('stk')) return 'stk';
+    if (key.includes('emise')) return 'emissions';
+    if (key.includes('pneu') || key.includes('tire')) return 'tires';
+    if (key.includes('pojist')) return 'insurance';
+    if (key.includes('oprav') || key.includes('repair')) return 'repair';
+    if (key.includes('servis') || key.includes('service')) return 'service';
+    return 'other';
+  }
+
+  function garageSourceHash(prefix, item) {
+    const vehicle = state.vehicles.find((entry) => entry.id === item.vehicleId);
+    const vehicleKey = vehicle?.cloudId || vehicle?.name || item.vehicleId || '';
+    return [prefix, vehicleKey, item.date || '', item.odometer || '', item.liters || '', item.price || '', item.title || '', item.note || ''].map((part) => normalizeKey(part)).join('|').slice(0, 240);
+  }
+
+  async function ensureCloudVehicle(vehicle) {
+    if (!vehicle) return null;
+    if (vehicle.cloudId) return vehicle.cloudId;
+    const cloudVehicle = await cloudAddVehicle(vehicle);
+    if (!cloudVehicle?.id) return null;
+    vehicle.cloudId = cloudVehicle.id;
+    touchState();
+    saveState();
+    return vehicle.cloudId;
+  }
+
+  function cloudVehiclePayload(vehicle, userId) {
+    return {
+      household_id: state.cloud.householdId,
+      profile_id: null,
+      name: vehicle.name || 'Auto',
+      plate_number: vehicle.plate || null,
+      fuel_type: fuelTypeToCloud(vehicle.fuelType),
+      current_odometer: vehicle.odometer === '' || vehicle.odometer === undefined ? null : Number(vehicle.odometer),
+      stk_until: vehicle.technicalInspectionUntil || null,
+      insurance_until: vehicle.insuranceUntil || null,
+      next_service_odometer: vehicle.nextServiceKm === '' || vehicle.nextServiceKm === undefined ? null : Number(vehicle.nextServiceKm),
+      next_service_date: vehicle.nextServiceDate || null,
+      note: vehicle.note || null,
+      created_by: vehicle.cloudId ? undefined : userId,
+      updated_by: userId
+    };
+  }
+
+  async function cloudAddVehicle(vehicle) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const payload = cloudVehiclePayload(vehicle, user.id);
+    const { data, error } = await client.from('vehicles').insert(payload).select('id').single();
+    if (error) {
+      showToast(error.message || 'Auto se nepovedlo uložit do cloudu');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudUpdateVehicle(vehicle) {
+    const client = getSupabaseClient();
+    if (!client || !vehicle?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const payload = cloudVehiclePayload(vehicle, user.id);
+    delete payload.created_by;
+    const { error } = await client.from('vehicles').update(payload).eq('id', vehicle.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Auto se nepovedlo aktualizovat v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteVehicle(vehicle) {
+    const client = getSupabaseClient();
+    if (!client || !vehicle?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('vehicles').delete().eq('id', vehicle.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Auto se nepovedlo smazat v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudAddFuelLog(item) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const vehicle = state.vehicles.find((entry) => entry.id === item.vehicleId);
+    const vehicleCloudId = await ensureCloudVehicle(vehicle);
+    if (!vehicleCloudId) return null;
+    const liters = item.liters === '' || item.liters === undefined ? null : Number(item.liters);
+    const totalPrice = item.price === '' || item.price === undefined ? null : Number(item.price);
+    const payload = {
+      household_id: state.cloud.householdId,
+      vehicle_id: vehicleCloudId,
+      profile_id: null,
+      date: item.date || todayISO(),
+      odometer: item.odometer === '' || item.odometer === undefined ? null : Number(item.odometer),
+      liters,
+      total_price: totalPrice,
+      price_per_liter: liters && totalPrice ? Number((totalPrice / liters).toFixed(2)) : null,
+      full_tank: true,
+      note: item.note || null,
+      source: item.source === 'fuelio' ? 'fuelio_import' : 'manual',
+      source_hash: garageSourceHash('fuel', item),
+      created_by: user.id,
+      updated_by: user.id
+    };
+    const { data, error } = await client.from('fuel_logs').insert(payload).select('id').single();
+    if (error) {
+      if (!String(error.message || '').toLowerCase().includes('duplicate')) showToast(error.message || 'Tankování se nepovedlo uložit do cloudu');
+      return null;
+    }
+    item.cloudId = data.id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudAddServiceLog(item) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const vehicle = state.vehicles.find((entry) => entry.id === item.vehicleId);
+    const vehicleCloudId = await ensureCloudVehicle(vehicle);
+    if (!vehicleCloudId) return null;
+    const payload = {
+      household_id: state.cloud.householdId,
+      vehicle_id: vehicleCloudId,
+      profile_id: null,
+      date: item.date || todayISO(),
+      odometer: item.odometer === '' || item.odometer === undefined ? null : Number(item.odometer),
+      type: serviceTypeToCloud(item.title),
+      title: item.title || 'Servis',
+      total_price: item.price === '' || item.price === undefined ? null : Number(item.price),
+      note: item.note || null,
+      source: item.source === 'fuelio' ? 'fuelio_import' : 'manual',
+      source_hash: garageSourceHash('service', item),
+      created_by: user.id,
+      updated_by: user.id
+    };
+    const { data, error } = await client.from('service_logs').insert(payload).select('id').single();
+    if (error) {
+      if (!String(error.message || '').toLowerCase().includes('duplicate')) showToast(error.message || 'Servis se nepovedlo uložit do cloudu');
+      return null;
+    }
+    item.cloudId = data.id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+
+  async function cloudUpdateFuelLog(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const liters = item.liters === '' || item.liters === undefined ? null : Number(item.liters);
+    const totalPrice = item.price === '' || item.price === undefined ? null : Number(item.price);
+    const payload = {
+      date: item.date || todayISO(),
+      odometer: item.odometer === '' || item.odometer === undefined ? null : Number(item.odometer),
+      liters,
+      total_price: totalPrice,
+      price_per_liter: liters && totalPrice ? Number((totalPrice / liters).toFixed(2)) : null,
+      note: item.note || null,
+      updated_by: user.id
+    };
+    const { error } = await client.from('fuel_logs').update(payload).eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Tankování se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudUpdateServiceLog(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const payload = {
+      date: item.date || todayISO(),
+      odometer: item.odometer === '' || item.odometer === undefined ? null : Number(item.odometer),
+      type: serviceTypeToCloud(item.title),
+      title: item.title || 'Servis',
+      total_price: item.price === '' || item.price === undefined ? null : Number(item.price),
+      note: item.note || null,
+      updated_by: user.id
+    };
+    const { error } = await client.from('service_logs').update(payload).eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Servis se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteGarageRecord(collection, item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const table = collection === 'fuel' ? 'fuel_logs' : collection === 'services' ? 'service_logs' : '';
+    if (!table) return true;
+    const { error } = await client.from(table).delete().eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Záznam se nepovedlo smazat v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadGarageData(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return showToast('Nejdřív napoj domácnost na cloud');
+    const user = await refreshCloudSession(false);
+    if (!user) return showToast('Nejdřív se přihlas');
+
+    const [{ data: vehicles, error: vehicleError }, { data: fuel, error: fuelError }, { data: services, error: serviceError }] = await Promise.all([
+      client.from('vehicles').select('*').eq('household_id', state.cloud.householdId).order('created_at', { ascending: true }),
+      client.from('fuel_logs').select('*').eq('household_id', state.cloud.householdId).order('date', { ascending: true }),
+      client.from('service_logs').select('*').eq('household_id', state.cloud.householdId).order('date', { ascending: true })
+    ]);
+    if (vehicleError || fuelError || serviceError) {
+      showToast(vehicleError?.message || fuelError?.message || serviceError?.message || 'Garáž se nepovedlo načíst');
+      return;
+    }
+
+    const existingByCloud = new Map(state.vehicles.filter((vehicle) => vehicle.cloudId).map((vehicle) => [vehicle.cloudId, vehicle]));
+    const cloudVehicles = (vehicles || []).map((vehicle) => {
+      const existing = existingByCloud.get(vehicle.id);
+      return {
+        id: existing?.id || uid(),
+        cloudId: vehicle.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: vehicle.created_at || new Date().toISOString(),
+        name: vehicle.name || 'Auto',
+        plate: vehicle.plate_number || '',
+        fuelType: fuelTypeFromCloud(vehicle.fuel_type),
+        odometer: vehicle.current_odometer === null || vehicle.current_odometer === undefined ? '' : String(vehicle.current_odometer),
+        technicalInspectionUntil: vehicle.stk_until || '',
+        insuranceUntil: vehicle.insurance_until || '',
+        nextServiceKm: vehicle.next_service_odometer === null || vehicle.next_service_odometer === undefined ? '' : String(vehicle.next_service_odometer),
+        nextServiceDate: vehicle.next_service_date || '',
+        note: vehicle.note || ''
+      };
+    });
+    const vehicleIdByCloud = new Map(cloudVehicles.map((vehicle) => [vehicle.cloudId, vehicle.id]));
+    const localVehicles = state.vehicles.filter((vehicle) => !vehicle.cloudId);
+    state.vehicles = [...localVehicles, ...cloudVehicles];
+
+    const localFuel = state.fuel.filter((item) => !item.cloudId);
+    state.fuel = [
+      ...localFuel,
+      ...(fuel || []).map((item) => ({
+        id: state.fuel.find((entry) => entry.cloudId === item.id)?.id || uid(),
+        cloudId: item.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        source: item.source === 'fuelio_import' ? 'fuelio' : 'cloud',
+        vehicleId: vehicleIdByCloud.get(item.vehicle_id) || '',
+        date: item.date || '',
+        odometer: item.odometer === null || item.odometer === undefined ? '' : String(item.odometer),
+        liters: item.liters === null || item.liters === undefined ? '' : Number(item.liters),
+        price: item.total_price === null || item.total_price === undefined ? '' : Number(item.total_price),
+        note: item.note || ''
+      })).filter((item) => item.vehicleId)
+    ];
+
+    const localServices = state.services.filter((item) => !item.cloudId);
+    state.services = [
+      ...localServices,
+      ...(services || []).map((item) => ({
+        id: state.services.find((entry) => entry.cloudId === item.id)?.id || uid(),
+        cloudId: item.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        source: item.source === 'fuelio_import' ? 'fuelio' : 'cloud',
+        vehicleId: vehicleIdByCloud.get(item.vehicle_id) || '',
+        date: item.date || '',
+        odometer: item.odometer === null || item.odometer === undefined ? '' : String(item.odometer),
+        title: item.title || 'Servis',
+        price: item.total_price === null || item.total_price === undefined ? '' : Number(item.total_price),
+        note: item.note || ''
+      })).filter((item) => item.vehicleId)
+    ];
+
+    if (!garageVehicleId && state.vehicles.length) garageVehicleId = state.vehicles[0].id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast('Cloud Garáž načtená');
+  }
+
+
+  async function cloudSyncGarageSubset(ids = {}) {
+    if (!state.cloud?.householdId) {
+      showToast('Nejdřív napoj domácnost na cloud');
+      return { vehicles: 0, fuel: 0, services: 0 };
+    }
+    const vehicleIds = new Set(ids.vehicles || []);
+    const fuelIds = new Set(ids.fuel || []);
+    const serviceIds = new Set(ids.services || []);
+    let vehicles = 0;
+    let fuel = 0;
+    let services = 0;
+
+    const records = [
+      ...state.fuel.filter((item) => fuelIds.has(item.id)),
+      ...state.services.filter((item) => serviceIds.has(item.id))
+    ];
+    records.forEach((record) => {
+      if (record.vehicleId) vehicleIds.add(record.vehicleId);
+    });
+
+    for (const vehicle of state.vehicles.filter((item) => vehicleIds.has(item.id))) {
+      if (!vehicle.cloudId) {
+        const cloudVehicle = await cloudAddVehicle(vehicle);
+        if (cloudVehicle?.id) {
+          vehicle.cloudId = cloudVehicle.id;
+          vehicles += 1;
+        }
+      }
+    }
+    for (const item of state.fuel.filter((entry) => fuelIds.has(entry.id))) {
+      if (!item.cloudId) {
+        const saved = await cloudAddFuelLog(item);
+        if (saved?.id) fuel += 1;
+      }
+    }
+    for (const item of state.services.filter((entry) => serviceIds.has(entry.id))) {
+      if (!item.cloudId) {
+        const saved = await cloudAddServiceLog(item);
+        if (saved?.id) services += 1;
+      }
+    }
+    touchState();
+    saveState();
+    return { vehicles, fuel, services };
+  }
+
+  async function cloudSyncLocalGarage() {
+    if (!state.cloud?.householdId) return showToast('Nejdřív napoj domácnost na cloud');
+    let vehicles = 0;
+    let fuel = 0;
+    let services = 0;
+    for (const vehicle of state.vehicles) {
+      if (!vehicle.cloudId) {
+        const cloudVehicle = await cloudAddVehicle(vehicle);
+        if (cloudVehicle?.id) {
+          vehicle.cloudId = cloudVehicle.id;
+          vehicles += 1;
+        }
+      }
+    }
+    for (const item of state.fuel) {
+      if (!item.cloudId) {
+        const saved = await cloudAddFuelLog(item);
+        if (saved?.id) fuel += 1;
+      }
+    }
+    for (const item of state.services) {
+      if (!item.cloudId) {
+        const saved = await cloudAddServiceLog(item);
+        if (saved?.id) services += 1;
+      }
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(`Garáž odeslána: ${vehicles} aut, ${fuel} tankování, ${services} servisů`);
+  }
+
+
+  function frequencyToCloud(value) {
+    const map = { monthly: 'monthly', yearly: 'yearly', once: 'one_time', one_time: 'one_time', quarterly: 'quarterly', other: 'other' };
+    return map[value] || 'monthly';
+  }
+
+  function frequencyFromCloud(value) {
+    const map = { monthly: 'monthly', yearly: 'yearly', one_time: 'once', quarterly: 'quarterly', other: 'other' };
+    return map[value] || 'monthly';
+  }
+
+  function contractTypeOptions(selected = '') {
+    return CONTRACT_TYPE_OPTIONS.map(([value, label]) => [value, label]);
+  }
+
+  function contractTypeLabel(value) {
+    const found = CONTRACT_TYPE_OPTIONS.find(([key]) => key === value);
+    return found ? found[1] : (value || 'typ neuveden');
+  }
+
+  function cloudContractPayload(contract, userId) {
+    return {
+      household_id: state.cloud.householdId,
+      profile_id: null,
+      title: contract.name,
+      type: contract.type || null,
+      provider: contract.provider || null,
+      contract_number: contract.number || null,
+      valid_from: contract.validFrom || null,
+      valid_until: contract.validTo || null,
+      amount: contract.amount === '' || contract.amount === null || contract.amount === undefined ? null : Number(contract.amount),
+      currency: 'CZK',
+      payment_frequency: frequencyToCloud(contract.frequency),
+      reminder_days: 30,
+      note: contract.note || null,
+      status: 'active',
+      created_by: userId || state.cloud.userId || null,
+      updated_by: userId || state.cloud.userId || null
+    };
+  }
+
+  async function cloudAddContract(contract) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    if (contract.cloudId) return { id: contract.cloudId };
+    const { data, error } = await client
+      .from('contracts')
+      .insert(cloudContractPayload(contract, user.id))
+      .select('id')
+      .single();
+    if (error) {
+      showToast(error.message || 'Smlouvu se nepovedlo uložit do cloudu');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudUpdateContract(contract) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId || !contract?.cloudId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const payload = cloudContractPayload(contract, user.id);
+    delete payload.household_id;
+    delete payload.profile_id;
+    delete payload.created_by;
+    const { error } = await client
+      .from('contracts')
+      .update(payload)
+      .eq('id', contract.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Smlouvu se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadContracts(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const user = await refreshCloudSession(false);
+    if (!user || !state.cloud?.householdId) return showToast('Nejdřív vytvoř / napoj domácnost v cloudu');
+    const { data, error } = await client
+      .from('contracts')
+      .select('id,title,type,provider,contract_number,valid_from,valid_until,amount,payment_frequency,note,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .order('valid_until', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false });
+    if (error) return showToast(error.message || 'Smlouvy se nepovedlo načíst');
+
+    const cloudContracts = (data || []).map((item) => {
+      const existing = state.contracts.find((contract) => contract.cloudId === item.id);
+      return {
+        id: existing?.id || uid(),
+        cloudId: item.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        name: item.title || 'Smlouva',
+        type: item.type || '',
+        provider: item.provider || '',
+        number: item.contract_number || '',
+        validFrom: item.valid_from || '',
+        validTo: item.valid_until || '',
+        amount: item.amount === null || item.amount === undefined ? '' : Number(item.amount),
+        frequency: frequencyFromCloud(item.payment_frequency),
+        note: item.note || ''
+      };
+    });
+    const localOnly = state.contracts.filter((contract) => !contract.cloudId);
+    state.contracts = [...localOnly, ...cloudContracts];
+    if (!activeContractId && state.contracts.length) activeContractId = state.contracts[0].id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    await cloudLoadContractFiles(false);
+    if (showMessage) showToast('Cloud smlouvy načtené');
+  }
+
+  async function cloudSyncContractById(id) {
+    const contract = state.contracts.find((item) => item.id === id);
+    if (!contract) return;
+    if (contract.cloudId) {
+      const ok = await cloudUpdateContract(contract);
+      if (!ok) return;
+      showToast('Cloud smlouva aktualizovaná');
+    } else {
+      const cloudContract = await cloudAddContract(contract);
+      if (!cloudContract?.id) return;
+      contract.cloudId = cloudContract.id;
+      showToast('Smlouva odeslaná do cloudu');
+    }
+    touchState();
+    saveState();
+    render();
+  }
+
+  async function cloudSyncLocalContracts() {
+    const localContracts = state.contracts.filter((contract) => !contract.cloudId);
+    if (!state.cloud?.householdId) return showToast('Nejdřív napoj domácnost na cloud');
+    if (!localContracts.length) return showToast('Není co odeslat');
+    let synced = 0;
+    for (const contract of localContracts) {
+      const cloudContract = await cloudAddContract(contract);
+      if (cloudContract?.id) {
+        contract.cloudId = cloudContract.id;
+        synced += 1;
+      }
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(synced ? `Odesláno smluv: ${synced}` : 'Nic se nepovedlo odeslat');
+  }
+
+  async function cloudDeleteContract(contract) {
+    const client = getSupabaseClient();
+    if (!client || !contract?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client
+      .from('contracts')
+      .delete()
+      .eq('id', contract.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Cloud smlouvu se nepovedlo smazat');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+
+
+  function cloudParcelPayload(pkg, userId) {
+    return {
+      household_id: state.cloud.householdId,
+      profile_id: pkg.profileId && String(pkg.profileId).startsWith('profile-') ? null : pkg.profileId || null,
+      title: pkg.title || pkg.note || carrierLabel(pkg.carrier) || 'Balík',
+      carrier: pkg.carrier || 'other',
+      tracking_number: pkg.tracking || '',
+      tracking_url: pkg.url || null,
+      status: parcelStatusToCloud(pkg.status),
+      expected_date: pkg.expectedDate || null,
+      pickup_place: pkg.pickupPlace || null,
+      note: pkg.note || null,
+      source: pkg.source || 'manual',
+      created_by: pkg.cloudId ? undefined : userId,
+      updated_by: userId
+    };
+  }
+
+  async function cloudAddParcel(pkg) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const { data, error } = await client.from('parcels').insert(cloudParcelPayload(pkg, user.id)).select('id').single();
+    if (error) {
+      showToast(error.message || 'Balík se nepovedlo uložit do cloudu');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudUpdateParcel(pkg) {
+    const client = getSupabaseClient();
+    if (!client || !pkg?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const payload = cloudParcelPayload(pkg, user.id);
+    delete payload.created_by;
+    const { error } = await client.from('parcels').update(payload).eq('id', pkg.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Balík se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteParcel(pkg) {
+    const client = getSupabaseClient();
+    if (!client || !pkg?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('parcels').delete().eq('id', pkg.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Cloud balík se nepovedlo smazat');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadParcels(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return;
+    }
+    const { data, error } = await client
+      .from('parcels')
+      .select('id,title,carrier,tracking_number,tracking_url,status,expected_date,pickup_place,note,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .order('created_at', { ascending: false });
+    if (error) {
+      showToast(error.message || 'Balíky se nepovedlo načíst');
+      return;
+    }
+    const localOnly = state.packages.filter((pkg) => !pkg.cloudId);
+    const cloudItems = (data || []).map((item) => ({
+      id: state.packages.find((pkg) => pkg.cloudId === item.id)?.id || `parcel-cloud-${item.id}`,
+      cloudId: item.id,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: item.created_at || new Date().toISOString(),
+      title: item.title || '',
+      carrier: item.carrier || 'other',
+      tracking: item.tracking_number || '',
+      url: item.tracking_url || '',
+      status: parcelStatusFromCloud(item.status),
+      expectedDate: item.expected_date || '',
+      pickupPlace: item.pickup_place || '',
+      note: item.note || ''
+    }));
+    state.packages = [...localOnly, ...cloudItems];
+    state.parcelsCloud = { ...(state.parcelsCloud || {}), loadedAt: new Date().toISOString() };
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(`Načteno balíků: ${cloudItems.length}`);
+  }
+
+  async function cloudSyncParcelById(id) {
+    const pkg = state.packages.find((item) => item.id === id);
+    if (!pkg) return;
+    const saved = pkg.cloudId ? await cloudUpdateParcel(pkg) : await cloudAddParcel(pkg);
+    if (saved?.id) pkg.cloudId = saved.id;
+    touchState();
+    saveState();
+    render();
+    showToast(pkg.cloudId ? 'Balík uložen do cloudu' : 'Balík se nepovedlo odeslat');
+  }
+
+  async function cloudSyncLocalParcels() {
+    const local = state.packages.filter((pkg) => !pkg.cloudId);
+    let synced = 0;
+    for (const pkg of local) {
+      const saved = await cloudAddParcel(pkg);
+      if (saved?.id) {
+        pkg.cloudId = saved.id;
+        synced += 1;
+      }
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(synced ? `Odesláno balíků: ${synced}` : 'Žádný balík se nepovedlo odeslat');
+  }
+
+  async function addPackageFromForm(data, form) {
+    const item = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      title: normalizeText(data.title) || normalizeText(data.note) || carrierLabel(data.carrier),
+      carrier: data.carrier || 'other',
+      tracking: normalizeText(data.tracking),
+      status: data.status || 'new',
+      url: normalizeText(data.url),
+      expectedDate: normalizeText(data.expectedDate),
+      pickupPlace: normalizeText(data.pickupPlace),
+      note: normalizeText(data.note),
+      source: 'manual'
+    };
+    const saved = await cloudAddParcel(item);
+    if (saved?.id) item.cloudId = saved.id;
+    state.packages.push(item);
+    touchState();
+    saveState();
+    form?.reset();
+    render();
+    showToast(item.cloudId ? 'Balík uložen do cloudu' : 'Balík uložen lokálně');
+  }
+
+  async function deletePackage(id) {
+    const item = state.packages.find((pkg) => pkg.id === id);
+    if (!item) return;
+    const ok = await cloudDeleteParcel(item);
+    if (!ok) return;
+    state.packages = state.packages.filter((pkg) => pkg.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Balík smazán');
+  }
+
+  function cloudHdoDaysToDb(days) {
+    const list = Array.isArray(days) ? days : [];
+    return list.map((day) => Number(day) === 0 ? 7 : Number(day)).filter((day) => day >= 1 && day <= 7);
+  }
+
+  function cloudHdoDaysFromDb(days) {
+    const list = Array.isArray(days) ? days : [];
+    return list.map((day) => Number(day) === 7 ? 0 : Number(day)).filter((day) => day >= 0 && day <= 6);
+  }
+
+  async function ensureCloudHdoSetting() {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    if (state.hdoCloud?.settingId) return state.hdoCloud.settingId;
+    const payload = {
+      household_id: state.cloud.householdId,
+      title: 'HDO / nízký tarif',
+      created_by: user.id,
+      updated_by: user.id
+    };
+    const { data, error } = await client
+      .from('hdo_settings')
+      .upsert(payload, { onConflict: 'household_id' })
+      .select('id')
+      .single();
+    if (error) {
+      showToast(error.message || 'Nastavení HDO se nepovedlo založit v cloudu');
+      return null;
+    }
+    state.hdoCloud = { ...(state.hdoCloud || {}), settingId: data.id, loadedAt: new Date().toISOString() };
+    return data.id;
+  }
+
+  function cloudHdoPayload(item, settingId, userId) {
+    return {
+      household_id: state.cloud.householdId,
+      setting_id: settingId,
+      label: item.label || null,
+      days: cloudHdoDaysToDb(item.days),
+      start_time: item.start || '00:00',
+      end_time: item.end || '00:00',
+      is_enabled: item.enabled !== false,
+      source: 'manual',
+      created_by: item.cloudId ? undefined : userId,
+      updated_by: userId
+    };
+  }
+
+  async function cloudAddHdoWindow(item) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const settingId = await ensureCloudHdoSetting();
+    if (!settingId) return null;
+    const payload = cloudHdoPayload(item, settingId, user.id);
+    const { data, error } = await client.from('hdo_windows').insert(payload).select('id').single();
+    if (error) {
+      showToast(error.message || 'HDO okno se nepovedlo uložit do cloudu');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudUpdateHdoWindow(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const settingId = await ensureCloudHdoSetting();
+    if (!settingId) return false;
+    const payload = cloudHdoPayload(item, settingId, user.id);
+    delete payload.created_by;
+    const { error } = await client.from('hdo_windows').update(payload).eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'HDO okno se nepovedlo aktualizovat v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteHdoWindow(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('hdo_windows').delete().eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'HDO okno se nepovedlo smazat z cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadHdoData(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return;
+    }
+    const { data: settings, error: settingsError } = await client
+      .from('hdo_settings')
+      .select('id,title')
+      .eq('household_id', state.cloud.householdId)
+      .maybeSingle();
+    if (settingsError) {
+      showToast(settingsError.message || 'HDO nastavení se nepovedlo načíst');
+      return;
+    }
+    if (settings?.id) state.hdoCloud = { ...(state.hdoCloud || {}), settingId: settings.id, loadedAt: new Date().toISOString() };
+    const { data, error } = await client
+      .from('hdo_windows')
+      .select('id,label,days,start_time,end_time,is_enabled')
+      .eq('household_id', state.cloud.householdId)
+      .order('start_time', { ascending: true });
+    if (error) {
+      showToast(error.message || 'HDO okna se nepovedlo načíst');
+      return;
+    }
+    const localOnly = state.hdoWindows.filter((item) => !item.cloudId);
+    const cloudItems = (data || []).map((item) => ({
+      id: `hdo-cloud-${item.id}`,
+      cloudId: item.id,
+      householdId: state.household.id,
+      profileId: currentProfileId(),
+      label: item.label || 'HDO okno',
+      start: String(item.start_time || '').slice(0, 5),
+      end: String(item.end_time || '').slice(0, 5),
+      days: cloudHdoDaysFromDb(item.days),
+      enabled: item.is_enabled !== false,
+      createdAt: new Date().toISOString()
+    }));
+    state.hdoWindows = [...cloudItems, ...localOnly];
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(`Načteno HDO oken: ${cloudItems.length}`);
+  }
+
+  async function cloudSyncHdoById(id) {
+    const item = state.hdoWindows.find((entry) => entry.id === id);
+    if (!item) return;
+    const saved = item.cloudId ? await cloudUpdateHdoWindow(item) : await cloudAddHdoWindow(item);
+    if (saved?.id) item.cloudId = saved.id;
+    touchState();
+    saveState();
+    render();
+    showToast(item.cloudId ? 'HDO uloženo do cloudu' : 'HDO se nepovedlo odeslat');
+  }
+
+  async function cloudSyncLocalHdo() {
+    const local = state.hdoWindows.filter((item) => !item.cloudId);
+    let synced = 0;
+    for (const item of local) {
+      const saved = await cloudAddHdoWindow(item);
+      if (saved?.id) {
+        item.cloudId = saved.id;
+        synced += 1;
+      }
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(synced ? `Odesláno HDO oken: ${synced}` : 'Žádné HDO se nepovedlo odeslat');
+  }
+
+  async function addHdoWindowFromForm(data, form) {
+    const item = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      label: normalizeText(data.label),
+      start: normalizeText(data.start),
+      end: normalizeText(data.end),
+      days: daysModeToArray(data.daysMode),
+      enabled: true
+    };
+    const saved = await cloudAddHdoWindow(item);
+    if (saved?.id) item.cloudId = saved.id;
+    state.hdoWindows.push(item);
+    touchState();
+    saveState();
+    form?.reset();
+    render();
+    showToast(item.cloudId ? 'HDO okno uloženo do cloudu' : 'HDO okno uloženo lokálně');
+  }
+
+  async function toggleHdoWindow(id) {
+    const item = state.hdoWindows.find((entry) => entry.id === id);
+    if (!item) return;
+    item.enabled = !item.enabled;
+    const ok = await cloudUpdateHdoWindow(item);
+    if (!ok) {
+      item.enabled = !item.enabled;
+      return;
+    }
+    touchState();
+    saveState();
+    render();
+  }
+
+  async function deleteHdoWindow(id) {
+    const item = state.hdoWindows.find((entry) => entry.id === id);
+    if (!item) return;
+    const ok = await cloudDeleteHdoWindow(item);
+    if (!ok) return;
+    state.hdoWindows = state.hdoWindows.filter((entry) => entry.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('HDO okno smazáno');
+  }
+
+
+  function wasteRepeatLabel(value) {
+    return ({ none: 'jednorázově', weekly: 'týdně', biweekly: 'každé 2 týdny', monthly: 'měsíčně', custom: 'vlastní opakování' })[value || 'none'] || 'jednorázově';
+  }
+
+  function cloudWastePayload(item, userId) {
+    return {
+      household_id: state.cloud.householdId,
+      title: item.type || 'Svoz odpadu',
+      pickup_date: item.date || todayISO(),
+      repeat_rule: item.repeatRule || 'none',
+      repeat_interval: item.repeatRule === 'biweekly' ? 2 : 1,
+      notify_before_hours: item.notifyBeforeHours === '' || item.notifyBeforeHours === undefined ? 12 : Number(item.notifyBeforeHours),
+      is_enabled: item.enabled !== false,
+      note: item.note || null,
+      created_by: item.cloudId ? undefined : userId,
+      updated_by: userId
+    };
+  }
+
+  async function cloudAddWaste(item) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const payload = cloudWastePayload(item, user.id);
+    const { data, error } = await client.from('waste_schedules').insert(payload).select('id').single();
+    if (error) {
+      showToast(error.message || 'Svoz se nepovedlo uložit do cloudu');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudUpdateWaste(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const payload = cloudWastePayload(item, user.id);
+    delete payload.created_by;
+    const { error } = await client.from('waste_schedules').update(payload).eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Svoz se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteWaste(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('waste_schedules').delete().eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Svoz se nepovedlo smazat z cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadWaste(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return;
+    }
+    const { data, error } = await client
+      .from('waste_schedules')
+      .select('id,title,pickup_date,repeat_rule,notify_before_hours,is_enabled,note')
+      .eq('household_id', state.cloud.householdId)
+      .order('pickup_date', { ascending: true });
+    if (error) {
+      showToast(error.message || 'Svoz odpadu se nepovedlo načíst');
+      return;
+    }
+    const localOnly = state.waste.filter((item) => !item.cloudId);
+    const cloudItems = (data || []).map((item) => ({
+      id: state.waste.find((entry) => entry.cloudId === item.id)?.id || `waste-cloud-${item.id}`,
+      cloudId: item.id,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      type: item.title || 'Svoz odpadu',
+      date: item.pickup_date || '',
+      repeatRule: item.repeat_rule || 'none',
+      notifyBeforeHours: item.notify_before_hours ?? 12,
+      enabled: item.is_enabled !== false,
+      note: item.note || ''
+    }));
+    state.waste = [...cloudItems, ...localOnly];
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(`Načteno svozů: ${cloudItems.length}`);
+  }
+
+  async function cloudSyncWasteById(id) {
+    const item = state.waste.find((entry) => entry.id === id);
+    if (!item) return;
+    const saved = item.cloudId ? await cloudUpdateWaste(item) : await cloudAddWaste(item);
+    if (saved?.id) item.cloudId = saved.id;
+    touchState();
+    saveState();
+    render();
+    showToast(item.cloudId ? 'Svoz uložen do cloudu' : 'Svoz se nepovedlo odeslat');
+  }
+
+  async function cloudSyncLocalWaste() {
+    const local = state.waste.filter((item) => !item.cloudId);
+    let synced = 0;
+    for (const item of local) {
+      const saved = await cloudAddWaste(item);
+      if (saved?.id) {
+        item.cloudId = saved.id;
+        synced += 1;
+      }
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(synced ? `Odesláno svozů: ${synced}` : 'Žádný svoz se nepovedlo odeslat');
+  }
+
+  async function addWasteFromForm(data, form) {
+    const item = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      type: normalizeText(data.type),
+      date: normalizeText(data.date),
+      repeatRule: data.repeatRule || 'none',
+      notifyBeforeHours: data.notifyBeforeHours === '' || data.notifyBeforeHours === undefined ? 12 : Number(data.notifyBeforeHours),
+      enabled: true,
+      note: normalizeText(data.note)
+    };
+    const saved = await cloudAddWaste(item);
+    if (saved?.id) item.cloudId = saved.id;
+    state.waste.push(item);
+    touchState();
+    saveState();
+    form?.reset();
+    render();
+    showToast(item.cloudId ? 'Svoz uložen do cloudu' : 'Svoz uložen lokálně');
+  }
+
+  async function deleteWaste(id) {
+    const item = state.waste.find((entry) => entry.id === id);
+    if (!item) return;
+    const ok = await cloudDeleteWaste(item);
+    if (!ok) return;
+    state.waste = state.waste.filter((entry) => entry.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Svoz smazán');
+  }
+
+  async function toggleShoppingDone(id) {
+    const item = state.shopping.find((entry) => entry.id === id);
+    if (!item) return;
+    item.done = !item.done;
+    item.doneAt = item.done ? new Date().toISOString() : '';
+    const ok = await cloudUpdateShoppingItem(item);
+    if (!ok) {
+      item.done = !item.done;
+      item.doneAt = item.done ? item.doneAt : '';
+      return;
+    }
+    touchState();
+    saveState();
+    render();
+  }
+
+  async function deleteShoppingItem(id) {
+    const item = state.shopping.find((entry) => entry.id === id);
+    if (!item) return;
+    const ok = await cloudDeleteShoppingItem(item);
+    if (!ok) return;
+    state.shopping = state.shopping.filter((entry) => entry.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Smazáno');
   }
 
   async function handleForm(form) {
@@ -2248,15 +4306,15 @@
     const data = getFormData(form);
     const handlers = {
       'add-event': () => addItem('calendar', { title: data.title, date: data.date, time: data.time, endTime: data.endTime, type: data.type, note: data.note }),
-      'add-package': () => addItem('packages', { carrier: data.carrier, tracking: data.tracking, status: data.status || 'new', url: data.url, note: data.note, createdAt: new Date().toISOString() }),
-      'add-shopping': () => addItem('shopping', { name: data.name, category: data.category, amount: data.amount, note: data.note, done: false }),
+      'add-package': () => addPackageFromForm(data, form),
+      'add-shopping': () => addShoppingFromForm(data, form),
       'add-coupon': () => addItem('coupons', { store: data.store, code: data.code, discount: data.discount, expiry: data.expiry, note: data.note, used: false }),
-      'add-hdo': () => addItem('hdoWindows', { label: data.label, start: data.start, end: data.end, days: daysModeToArray(data.daysMode), enabled: true }),
-      'add-waste': () => addItem('waste', { type: data.type, date: data.date, note: data.note }),
+      'add-hdo': () => addHdoWindowFromForm(data, form),
+      'add-waste': () => addWasteFromForm(data, form),
       'add-task': () => addItem('homeTasks', { title: data.title, due: data.due, note: data.note, done: false }),
       'add-note': () => addItem('notes', { text: data.text, createdAt: new Date().toISOString() }),
       'add-device': () => addItem('devices', { name: data.name, type: data.type, address: data.address, note: data.note }),
-      'add-vehicle': () => {
+      'add-vehicle': async () => {
         const vehicle = {
           id: uid(),
           householdId: currentHouseholdId(),
@@ -2272,17 +4330,42 @@
           nextServiceDate: '',
           note: ''
         };
+        const cloudVehicle = await cloudAddVehicle(vehicle);
+        if (cloudVehicle?.id) vehicle.cloudId = cloudVehicle.id;
         state.vehicles.push(vehicle);
         garageVehicleId = vehicle.id;
         touchState();
         saveState();
         form.reset();
         render();
+        showToast(vehicle.cloudId ? 'Auto uloženo do cloudu' : 'Auto uloženo lokálně');
       },
       'update-vehicle': () => updateVehicle(form.dataset.vehicleId, data),
-      'add-fuel': () => addItem('fuel', { vehicleId: form.dataset.vehicleId, date: data.date, odometer: data.odometer, liters: decimalValue(data.liters), price: decimalValue(data.price), note: data.note }),
-      'add-service': () => addItem('services', { vehicleId: form.dataset.vehicleId, date: data.date, title: data.title, price: decimalValue(data.price), note: data.note }),
-      'add-contract': () => {
+      'add-fuel': async () => {
+        const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), vehicleId: form.dataset.vehicleId, date: data.date, odometer: data.odometer, liters: decimalValue(data.liters), price: decimalValue(data.price), note: data.note };
+        const saved = await cloudAddFuelLog(item);
+        if (saved?.id) item.cloudId = saved.id;
+        state.fuel.push(item);
+        touchState();
+        saveState();
+        form.reset();
+        render();
+        showToast(item.cloudId ? 'Tankování uloženo do cloudu' : 'Tankování uloženo lokálně');
+      },
+      'add-service': async () => {
+        const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), vehicleId: form.dataset.vehicleId, date: data.date, title: data.title, price: decimalValue(data.price), note: data.note };
+        const saved = await cloudAddServiceLog(item);
+        if (saved?.id) item.cloudId = saved.id;
+        state.services.push(item);
+        touchState();
+        saveState();
+        form.reset();
+        render();
+        showToast(item.cloudId ? 'Servis uložen do cloudu' : 'Servis uložen lokálně');
+      },
+      'update-fuel': async () => updateFuelLog(form.dataset.id, data),
+      'update-service': async () => updateServiceLog(form.dataset.id, data),
+      'add-contract': async () => {
         const contract = {
           id: uid(),
           householdId: currentHouseholdId(),
@@ -2298,14 +4381,17 @@
           frequency: data.frequency,
           note: normalizeText(data.note)
         };
+        const cloudContract = await cloudAddContract(contract);
+        if (cloudContract?.id) contract.cloudId = cloudContract.id;
         state.contracts.push(contract);
         activeContractId = contract.id;
         touchState();
         saveState();
         form.reset();
         render();
-        showToast('Smlouva uložena');
+        showToast(contract.cloudId ? 'Smlouva uložena do cloudu' : 'Smlouva uložena lokálně');
       },
+      'update-contract': async () => updateContract(form.dataset.contractId, data, form),
       'add-contract-file': () => addContractFiles(form),
       'fuelio-preview': () => previewFuelioImport(form),
       'add-camera': () => addItem('cameras', { name: data.name, location: data.location, snapshotUrl: data.snapshotUrl, status: data.status, note: data.note }),
@@ -2329,7 +4415,9 @@
         showToast('Nastavení uloženo');
       },
       'add-profile': () => addProfile(data.name, data.role),
-      'import-data': () => importData(data.json)
+      'import-data': () => importData(data.json),
+      'cloud-login': () => cloudLogin(data.email, data.password),
+      'cloud-signup': () => cloudSignUp(data.email, data.password)
     };
     const handler = handlers[type];
     if (handler) await handler();
@@ -2373,7 +4461,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 8, appBuild: 909, mode: 'offline', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 21, appBuild: 22, mode: 'pwa-cloud-parcels', updatedAt: new Date().toISOString() };
   }
 
   function addItem(collection, item) {
@@ -2390,6 +4478,27 @@
     saveState();
     render();
     showToast('Uloženo');
+  }
+
+  async function updateContract(id, data, form) {
+    const contract = state.contracts.find((item) => item.id === id);
+    if (!contract) return showToast('Smlouva nenalezena');
+    contract.name = normalizeText(data.name) || contract.name;
+    contract.type = normalizeText(data.type) || 'other';
+    contract.provider = normalizeText(data.provider);
+    contract.number = normalizeText(data.number);
+    contract.validFrom = normalizeText(data.validFrom);
+    contract.validTo = normalizeText(data.validTo);
+    contract.amount = decimalValue(data.amount);
+    contract.frequency = data.frequency || 'monthly';
+    contract.note = normalizeText(data.note);
+    contract.updatedAt = new Date().toISOString();
+    const ok = await cloudUpdateContract(contract);
+    if (!ok) return;
+    touchState();
+    saveState();
+    render();
+    showToast(contract.cloudId ? 'Smlouva upravena v cloudu' : 'Smlouva upravena lokálně');
   }
 
   function decimalValue(value) {
@@ -2413,15 +4522,31 @@
       return;
     }
     if (action === 'delete') {
+      if (button.dataset.collection === 'shopping') {
+        deleteShoppingItem(button.dataset.id);
+        return;
+      }
       deleteItem(button.dataset.collection, button.dataset.id);
       return;
     }
     if (action === 'toggle-done') {
+      if (button.dataset.collection === 'shopping') {
+        toggleShoppingDone(button.dataset.id);
+        return;
+      }
       toggleBoolean(button.dataset.collection, button.dataset.id, 'done');
       return;
     }
     if (action === 'toggle-enabled') {
       toggleBoolean(button.dataset.collection, button.dataset.id, 'enabled');
+      return;
+    }
+    if (action === 'toggle-hdo') {
+      toggleHdoWindow(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-hdo') {
+      deleteHdoWindow(button.dataset.id);
       return;
     }
     if (action === 'toggle-used') {
@@ -2436,9 +4561,28 @@
       const pkg = state.packages.find((item) => item.id === button.dataset.id);
       if (pkg) {
         pkg.status = button.dataset.status;
-        saveState();
-        render();
+        cloudUpdateParcel(pkg).then(() => {
+          touchState();
+          saveState();
+          render();
+        });
       }
+      return;
+    }
+    if (action === 'cloud-load-parcels') {
+      cloudLoadParcels(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-parcels') {
+      cloudSyncLocalParcels();
+      return;
+    }
+    if (action === 'cloud-sync-parcel') {
+      cloudSyncParcelById(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-package') {
+      deletePackage(button.dataset.id);
       return;
     }
     if (action === 'set-profile') {
@@ -2479,8 +4623,28 @@
       deleteContractFile(button.dataset.id);
       return;
     }
+    if (action === 'cloud-load-contract-files') {
+      cloudLoadContractFiles(true);
+      return;
+    }
     if (action === 'confirm-fuelio-import') {
-      confirmFuelioImport();
+      confirmFuelioImport({ syncCloud: false });
+      return;
+    }
+    if (action === 'confirm-fuelio-import-cloud') {
+      confirmFuelioImport({ syncCloud: true });
+      return;
+    }
+    if (action === 'edit-garage-record') {
+      const current = garageEditRecord;
+      const next = { collection: button.dataset.collection, id: button.dataset.id };
+      garageEditRecord = current?.collection === next.collection && current?.id === next.id ? null : next;
+      render();
+      return;
+    }
+    if (action === 'cancel-garage-edit') {
+      garageEditRecord = null;
+      render();
       return;
     }
     if (action === 'clear-fuelio-preview') {
@@ -2493,6 +4657,102 @@
       deleteVehicle(button.dataset.id);
       return;
     }
+    if (action === 'cloud-bootstrap') {
+      bootstrapCloudHousehold();
+      return;
+    }
+    if (action === 'cloud-load-shopping') {
+      cloudLoadShoppingData(true);
+      return;
+    }
+    if (action === 'quick-add-shopping') {
+      quickAddShoppingByName(button.dataset.name || '');
+      return;
+    }
+    if (action === 'cloud-sync-local-shopping') {
+      cloudSyncLocalShoppingItems();
+      return;
+    }
+    if (action === 'cloud-load-contracts') {
+      cloudLoadContracts(true);
+      return;
+    }
+    if (action === 'cloud-sync-contract') {
+      cloudSyncContractById(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-sync-local-contracts') {
+      cloudSyncLocalContracts();
+      return;
+    }
+    if (action === 'cloud-load-garage') {
+      cloudLoadGarageData(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-garage') {
+      cloudSyncLocalGarage();
+      return;
+    }
+    if (action === 'cloud-load-hdo') {
+      cloudLoadHdoData(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-hdo') {
+      cloudSyncLocalHdo();
+      return;
+    }
+    if (action === 'cloud-sync-hdo') {
+      cloudSyncHdoById(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-load-waste') {
+      cloudLoadWaste(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-waste') {
+      cloudSyncLocalWaste();
+      return;
+    }
+    if (action === 'cloud-sync-waste') {
+      cloudSyncWasteById(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-waste') {
+      deleteWaste(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-sync-vehicle') {
+      const vehicle = state.vehicles.find((item) => item.id === button.dataset.id);
+      if (!vehicle) return;
+      ensureCloudVehicle(vehicle).then(() => cloudUpdateVehicle(vehicle)).then((ok) => {
+        if (!ok) return;
+        touchState();
+        saveState();
+        render();
+        showToast('Auto odesláno do cloudu');
+      });
+      return;
+    }
+    if (action === 'pwa-install') {
+      promptInstallApp();
+      return;
+    }
+    if (action === 'pwa-check-update') {
+      checkForAppUpdate(true);
+      return;
+    }
+    if (action === 'pwa-apply-update') {
+      applyAppUpdate();
+      return;
+    }
+    if (action === 'cloud-refresh-session') {
+      refreshCloudSession(true);
+      return;
+    }
+    if (action === 'cloud-logout') {
+      cloudLogout();
+      return;
+    }
     if (action === 'export-data') {
       exportData();
       return;
@@ -2500,6 +4760,229 @@
     if (action === 'reset-data') {
       resetData();
     }
+  }
+
+
+
+  async function promptInstallApp() {
+    if (!deferredInstallPrompt) {
+      showToast('Instalace se teď nabízí přes menu prohlížeče');
+      return;
+    }
+    deferredInstallPrompt.prompt();
+    try {
+      const choice = await deferredInstallPrompt.userChoice;
+      if (choice?.outcome === 'accepted') {
+        state.pwa = { ...(state.pwa || {}), installed: true, lastInstallPrompt: new Date().toISOString() };
+        saveState();
+        showToast('Instalace potvrzena');
+      }
+    } catch {
+      showToast('Instalaci se nepovedlo spustit');
+    }
+    deferredInstallPrompt = null;
+    render();
+  }
+
+  async function checkForAppUpdate(showMessage = false) {
+    if (!serviceWorkerRegistration) {
+      if (showMessage) showToast('Service worker zatím není připravený');
+      return;
+    }
+    try {
+      await serviceWorkerRegistration.update();
+      state.pwa = { ...(state.pwa || {}), lastUpdateCheck: new Date().toISOString() };
+      saveState();
+      if (showMessage) showToast(pwaUpdateAvailable ? 'Je dostupná nová verze' : 'Update zkontrolován');
+      render();
+    } catch {
+      if (showMessage) showToast('Update se nepovedlo zkontrolovat');
+    }
+  }
+
+  function markUpdateAvailable(worker) {
+    pendingServiceWorker = worker || pendingServiceWorker;
+    pwaUpdateAvailable = true;
+    render();
+    showToast('Je dostupná nová verze aplikace');
+  }
+
+  function applyAppUpdate() {
+    if (pendingServiceWorker) {
+      pendingServiceWorker.postMessage({ type: 'SKIP_WAITING' });
+      showToast('Aktualizuji aplikaci');
+      return;
+    }
+    window.location.reload();
+  }
+
+  function setupInstallAndUpdateFlow() {
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      state.pwa = { ...(state.pwa || {}), lastInstallPrompt: new Date().toISOString() };
+      saveState();
+      render();
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      state.pwa = { ...(state.pwa || {}), installed: true };
+      saveState();
+      showToast('Domácnost+ je nainstalovaná');
+      render();
+    });
+  }
+
+  function registerServiceWorker() {
+    if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').then((registration) => {
+        serviceWorkerRegistration = registration;
+        if (registration.waiting && navigator.serviceWorker.controller) markUpdateAvailable(registration.waiting);
+        registration.addEventListener('updatefound', () => {
+          const worker = registration.installing;
+          if (!worker) return;
+          worker.addEventListener('statechange', () => {
+            if (worker.state === 'installed' && navigator.serviceWorker.controller) markUpdateAvailable(worker);
+          });
+        });
+      }).catch(() => {});
+    });
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
+  }
+
+  async function refreshCloudSession(showMessage = false) {
+    const client = getSupabaseClient();
+    if (!client) {
+      if (showMessage) showToast('Supabase knihovna není načtená');
+      return null;
+    }
+    const { data, error } = await client.auth.getUser();
+    if (error || !data?.user) {
+      state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, status: 'offline', userId: '', email: '' };
+      saveState();
+      if (showMessage) showToast('Nejsi přihlášený');
+      render();
+      return null;
+    }
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      status: 'signed-in',
+      userId: data.user.id,
+      email: data.user.email || ''
+    };
+    saveState();
+    if (showMessage) showToast('Stav účtu obnoven');
+    render();
+    return data.user;
+  }
+
+  async function cloudLogin(email, password) {
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const { data, error } = await client.auth.signInWithPassword({ email: normalizeText(email), password: String(password || '') });
+    if (error) return showToast(error.message || 'Přihlášení se nepovedlo');
+    const user = data?.user;
+    state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, provider: 'supabase', status: 'signed-in', userId: user?.id || '', email: user?.email || normalizeText(email) };
+    saveState();
+    render();
+    showToast('Přihlášeno');
+  }
+
+  async function cloudSignUp(email, password) {
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const { data, error } = await client.auth.signUp({ email: normalizeText(email), password: String(password || '') });
+    if (error) return showToast(error.message || 'Registrace se nepovedla');
+    const user = data?.user;
+    if (user) {
+      state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, provider: 'supabase', status: data.session ? 'signed-in' : 'email-confirmation', userId: user.id, email: user.email || normalizeText(email) };
+      saveState();
+      render();
+    }
+    showToast(data.session ? 'Účet vytvořen' : 'Zkontroluj e-mail pro potvrzení');
+  }
+
+  async function cloudLogout() {
+    const client = getSupabaseClient();
+    if (client) await client.auth.signOut();
+    state.cloud = { ...(state.cloud || {}), status: 'offline', userId: '', email: '' };
+    saveState();
+    render();
+    showToast('Odhlášeno');
+  }
+
+  async function bootstrapCloudHousehold() {
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const user = await refreshCloudSession(false);
+    if (!user) return showToast('Nejdřív se přihlas');
+
+    const existingHouseholdId = state.cloud?.householdId;
+    let cloudHouseholdId = existingHouseholdId || '';
+
+    if (!cloudHouseholdId) {
+      const { data: household, error: householdError } = await client
+        .from('households')
+        .insert({
+          name: householdName(),
+          timezone: 'Europe/Prague',
+          app_build: 14,
+          schema_version: 13,
+          created_by: user.id
+        })
+        .select('id')
+        .single();
+      if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
+      cloudHouseholdId = household.id;
+
+      const { error: memberError } = await client.from('household_members').insert({
+        household_id: cloudHouseholdId,
+        user_id: user.id,
+        role: 'owner',
+        status: 'active',
+        display_name: currentProfile()?.name || user.email || 'Owner',
+        joined_at: new Date().toISOString()
+      });
+      if (memberError) return showToast(memberError.message || 'Člen domácnosti se nepovedl vytvořit');
+    }
+
+    const profilesPayload = state.profiles.map((profile, index) => ({
+      household_id: cloudHouseholdId,
+      user_id: index === 0 ? user.id : null,
+      name: profile.name,
+      avatar_emoji: profile.avatarEmoji || '🙂',
+      is_default: profile.id === state.activeProfileId,
+      is_archived: false,
+      created_by: user.id
+    }));
+
+    if (profilesPayload.length) {
+      const { error: profileError } = await client.from('profiles').insert(profilesPayload);
+      if (profileError && !String(profileError.message || '').includes('duplicate')) {
+        return showToast(profileError.message || 'Profily se nepovedly uložit');
+      }
+    }
+
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      status: 'bootstrapped',
+      userId: user.id,
+      email: user.email || '',
+      householdId: cloudHouseholdId,
+      lastSyncAt: new Date().toISOString()
+    };
+    saveState();
+    render();
+    showToast('Domácnost je v cloudu');
   }
 
   function setActiveProfile(id) {
@@ -2561,9 +5044,17 @@
     render();
   }
 
-  function deleteItem(collection, id) {
+  async function deleteItem(collection, id) {
     if (!collection || !Array.isArray(state[collection])) return;
+    if (collection === 'fuel' || collection === 'services') {
+      const record = state[collection].find((item) => item.id === id);
+      const ok = await cloudDeleteGarageRecord(collection, record);
+      if (!ok) return;
+    }
     if (collection === 'contracts') {
+      const contract = state.contracts.find((item) => item.id === id);
+      const ok = await cloudDeleteContract(contract);
+      if (!ok) return;
       const files = state.contractFiles.filter((file) => file.contractId === id);
       files.forEach((file) => deleteStoredContractFile(file.id).catch(() => {}));
       state.contractFiles = state.contractFiles.filter((file) => file.contractId !== id);
@@ -2584,8 +5075,11 @@
     render();
   }
 
-  function deleteVehicle(id) {
-    state.vehicles = state.vehicles.filter((vehicle) => vehicle.id !== id);
+  async function deleteVehicle(id) {
+    const vehicle = state.vehicles.find((item) => item.id === id);
+    const ok = await cloudDeleteVehicle(vehicle);
+    if (!ok) return;
+    state.vehicles = state.vehicles.filter((entry) => entry.id !== id);
     state.fuel = state.fuel.filter((item) => item.vehicleId !== id);
     state.services = state.services.filter((item) => item.vehicleId !== id);
     if (garageVehicleId === id) garageVehicleId = state.vehicles[0]?.id || null;
@@ -2615,7 +5109,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `home-web-offline-909-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-18-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -2689,11 +5183,9 @@
     if (date) date.textContent = shortDateText(now);
   }, 30000);
 
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
-    });
-  }
+  setupInstallAndUpdateFlow();
+  registerServiceWorker();
 
   render();
+  refreshCloudSession(false).catch(() => {});
 })();

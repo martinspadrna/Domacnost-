@@ -755,6 +755,10 @@ button {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .form-grid.four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .hero-card {
     padding: 24px;
   }
@@ -1761,4 +1765,233 @@ button {
     grid-column: 2;
     justify-self: start;
   }
+}
+
+.cloud-card {
+  overflow: hidden;
+}
+
+.cloud-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.mini-stat {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.58);
+  border-radius: 20px;
+  padding: 14px;
+  box-shadow: var(--shadow-soft);
+  min-width: 0;
+}
+
+[data-theme="dark"] .mini-stat {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mini-stat span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-bottom: 6px;
+}
+
+.mini-stat strong {
+  display: block;
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cloud-auth-grid form {
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+[data-theme="dark"] .cloud-auth-grid form {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.cloud-auth-grid h3 {
+  margin: 0 0 12px;
+}
+
+@media (max-width: 760px) {
+  .cloud-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .cloud-status-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pwa-card {
+  overflow: hidden;
+}
+
+.install-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.install-step {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: var(--shadow-soft);
+}
+
+[data-theme="dark"] .install-step {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.install-step strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.install-step span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.warn-box {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+@media (max-width: 760px) {
+  .install-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Domácnost+ v.0.1_13 · rychlé nákupy */
+.quick-add-panel {
+  margin: 14px 0 16px;
+  padding: 14px;
+  border: 1px solid rgba(120, 144, 180, .22);
+  border-radius: 22px;
+  background: rgba(255,255,255,.52);
+  box-shadow: 0 12px 34px rgba(30, 55, 90, .08);
+}
+[data-theme="dark"] .quick-add-panel {
+  background: rgba(16, 24, 39, .52);
+  border-color: rgba(148, 163, 184, .18);
+}
+.quick-add-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+.quick-add-head strong {
+  font-size: .96rem;
+}
+.quick-add-head span {
+  color: var(--muted);
+  font-size: .82rem;
+  text-align: right;
+}
+.quick-chip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.quick-chip {
+  flex: 0 0 auto;
+  min-width: 92px;
+  max-width: 152px;
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(255,255,255,.88), rgba(238,245,255,.72));
+  color: var(--text);
+  box-shadow: 0 8px 18px rgba(30, 55, 90, .10);
+  cursor: pointer;
+  scroll-snap-align: start;
+  white-space: nowrap;
+}
+[data-theme="dark"] .quick-chip {
+  background: linear-gradient(135deg, rgba(30,41,59,.92), rgba(15,23,42,.74));
+}
+.quick-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.quick-chip small {
+  color: var(--muted);
+  font-size: .72rem;
+}
+@media (max-width: 520px) {
+  .quick-add-head {
+    display: block;
+  }
+  .quick-add-head span {
+    display: block;
+    margin-top: 3px;
+    text-align: left;
+  }
+  .quick-chip {
+    min-width: 86px;
+    max-width: 136px;
+  }
+}
+
+/* Domácnost+ v.0.1_17 */
+.soft-mark {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  background: rgba(255,255,255,.58);
+  border: 1px solid rgba(120,130,150,.18);
+  vertical-align: middle;
+}
+
+.compact-actions {
+  margin: -4px 0 14px;
+}
+
+.inline-edit-form {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.52);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
+}
+
+[data-theme="dark"] .inline-edit-form {
+  background: rgba(15, 23, 42, 0.42);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.inline-edit-form .form-actions {
+  margin-top: 10px;
 }

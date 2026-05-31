@@ -1,10 +1,26 @@
 {
-  "name": "Home Web Offline",
-  "short_name": "Home Web",
-  "description": "Offline domácí/rodinný dashboard pro RaK / Home Web.",
+  "name": "Domácnost+",
+  "short_name": "Domácnost+",
+  "description": "Instalovatelná domácí a rodinná PWA aplikace Domácnost+.",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#eef5ff",
   "theme_color": "#eef5ff",
-  "icons": []
+  "categories": ["productivity", "utilities", "lifestyle"],
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
