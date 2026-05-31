@@ -1,26 +1,55 @@
 {
+  "id": "/",
   "name": "Domácnost+",
   "short_name": "Domácnost+",
   "description": "Instalovatelná domácí a rodinná PWA aplikace Domácnost+.",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "display_override": [
+    "standalone",
+    "minimal-ui",
+    "browser"
+  ],
+  "orientation": "portrait-primary",
   "background_color": "#eef5ff",
   "theme_color": "#eef5ff",
-  "categories": ["productivity", "utilities", "lifestyle"],
+  "categories": [
+    "productivity",
+    "utilities",
+    "lifestyle"
+  ],
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "assets/icon-192.png",
+      "src": "/assets/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "assets/icon-512.png",
+      "src": "/assets/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/maskable-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/maskable-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

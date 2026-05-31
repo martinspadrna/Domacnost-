@@ -1,10 +1,10 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = 'Domácnost+ v.0.1_22';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_22';
-  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_20';
-  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
+  const APP_VERSION = 'Domácnost+ v.0.1_25';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_25';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_24';
+  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
     { id: 'home', label: 'Domů', icon: '🏠' },
@@ -44,6 +44,25 @@
     ['other', 'Jiné']
   ];
 
+  const TASK_CATEGORY_OPTIONS = [
+    ['domacnost', 'Domácnost'],
+    ['uklid', 'Úklid'],
+    ['udrzba', 'Údržba'],
+    ['nakupy', 'Nákupy'],
+    ['zahrada', 'Zahrada'],
+    ['auto', 'Auto'],
+    ['finance', 'Finance'],
+    ['zdravi', 'Zdraví'],
+    ['ostatni', 'Ostatní']
+  ];
+
+  const TASK_PRIORITY_OPTIONS = [
+    ['low', 'Nízká'],
+    ['normal', 'Normální'],
+    ['high', 'Vysoká'],
+    ['urgent', 'Urgentní']
+  ];
+
   const DEFAULT_SHOPPING_CATALOG = [
     ['Banány','kg','Ovoce a zelenina'], ['Jablka','kg','Ovoce a zelenina'], ['Hrušky','kg','Ovoce a zelenina'], ['Pomeranče','kg','Ovoce a zelenina'], ['Citrony','ks','Ovoce a zelenina'], ['Rajčata','kg','Ovoce a zelenina'], ['Okurka','ks','Ovoce a zelenina'], ['Paprika','ks','Ovoce a zelenina'], ['Brambory','kg','Ovoce a zelenina'], ['Cibule','kg','Ovoce a zelenina'], ['Česnek','ks','Ovoce a zelenina'], ['Mrkev','kg','Ovoce a zelenina'], ['Salát','ks','Ovoce a zelenina'],
     ['Rohlíky','ks','Pečivo'], ['Chléb','ks','Pečivo'], ['Toustový chléb','ks','Pečivo'], ['Bagety','ks','Pečivo'],
@@ -77,9 +96,9 @@
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 21,
-      appBuild: 22,
-      mode: 'pwa-cloud-parcels',
+      schemaVersion: 24,
+      appBuild: 25,
+      mode: 'pwa-icon-fix',
       createdAt: '',
       updatedAt: ''
     },
@@ -108,6 +127,8 @@
     hdoCloud: { settingId: '', loadedAt: '' },
     wasteCloud: { types: [], loadedAt: '' },
     parcelsCloud: { loadedAt: '' },
+    tasksCloud: { loadedAt: '' },
+    calendarCloud: { sources: [], loadedAt: '' },
     shoppingStats: {},
     pwa: { installed: false, lastUpdateCheck: '', lastInstallPrompt: '' },
     homeTasks: [],
@@ -199,9 +220,9 @@
     const timestamp = new Date().toISOString();
 
     migrated.meta = {
-      schemaVersion: 21,
-      appBuild: 22,
-      mode: 'pwa-cloud-parcels',
+      schemaVersion: 24,
+      appBuild: 25,
+      mode: 'pwa-icon-fix',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -243,6 +264,7 @@
     }
 
     migrated.shoppingStats = migrated.shoppingStats && typeof migrated.shoppingStats === 'object' && !Array.isArray(migrated.shoppingStats) ? migrated.shoppingStats : {};
+    migrated.tasksCloud = migrated.tasksCloud && typeof migrated.tasksCloud === 'object' && !Array.isArray(migrated.tasksCloud) ? migrated.tasksCloud : { loadedAt: '' };
 
     migrated.enabledModules = normalizeModuleList(migrated.enabledModules);
     migrated.settings.bottomNavIds = normalizeBottomNavIds(migrated.settings.bottomNavIds, migrated.enabledModules);
@@ -474,7 +496,7 @@
           ${renderModule(active.id)}
         </main>
 
-        <p class="footer-note">${escapeHtml(APP_VERSION)} · cloud nákupy, smlouvy, garáž, HDO, odpad a balíky · lokální režim zůstává jako záloha</p>
+        <p class="footer-note">${escapeHtml(APP_VERSION)} · cloud nákupy, smlouvy, garáž, HDO, odpad, balíky, úkoly a kalendář · lokální režim zůstává jako záloha</p>
       </div>
 
       <nav class="nav-shell" aria-label="Hlavní navigace">
@@ -583,7 +605,7 @@
   function getModuleSubtitle(moduleId) {
     const subtitles = {
       home: 'Rychlý domácí přehled pro tablet i mobil. Zatím bez cloudu, všechno běží jen offline.',
-      calendar: 'Jednoduchý lokální kalendář. Později tady bude napojení na Google Kalendář.',
+      calendar: 'Ruční kalendář už umí cloud. Google napojení přijde později přes bezpečný backend.',
       packages: 'Základ pro sledování balíků. Teď ručně, později automatika přes backend.',
       shopping: 'Sdílený nákupní seznam s katalogem položek, jednotkami a cloudovým oddělením domácností.',
       homecare: 'HDO, odpad, poznámky, úkoly a domácí zařízení na jednom místě.',
@@ -903,7 +925,7 @@
       calendar: { count: countBy('calendar'), label: 'událostí', note: 'Google napojení později přes backend.' },
       packages: { count: countBy('packages', (item) => item.status !== 'delivered'), label: 'aktivních', note: `${countBy('packages')} balíků celkem.` },
       shopping: { count: countBy('shopping', (item) => !item.done), label: 'koupit', note: `${countBy('coupons', (item) => !item.used)} nepoužitých kódů.` },
-      homecare: { count: countBy('homeTasks', (item) => !item.done) + countBy('hdoWindows') + countBy('waste'), label: 'položek', note: `${countBy('hdoWindows')} HDO oken, ${countBy('waste')} svozů.` },
+      homecare: { count: countBy('homeTasks', (item) => !item.done) + countBy('hdoWindows') + countBy('waste'), label: 'položek', note: `${countBy('hdoWindows')} HDO oken, ${countBy('waste')} svozů, ${countBy('homeTasks', (item) => !item.done)} úkolů.` },
       garage: { count: countBy('vehicles'), label: 'aut', note: `${countBy('fuel')} tankování, ${countBy('services')} servisů.` },
       contracts: { count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh lokálně v IndexedDB.` },
       cameras: { count: countBy('cameras'), label: 'kamer', note: 'Snapshot/stream zatím jen lokálně.' }
@@ -959,7 +981,8 @@
       { title: 'Domácnost+ v.0.1_17', note: 'Hotovo: cloudový základ Garáže — auta, tankování, servis, načtení a odeslání lokálních dat.' },
       { title: 'Domácnost+ v.0.1_18', note: 'Hotovo: editace tankování/servisu, Fuelio import rovnou do cloudu a stabilnější Garáž sync.' },
       { title: 'Domácnost+ v.0.1_20', note: 'Hotovo: cloudový svoz odpadu, základ připomínek a dashboardové stavy cloud/lokál.' },
-      { title: 'Domácnost+ v.0.1_21', note: 'Další: Domácí úkoly a obecné připomínky do cloudu.' }
+      { title: 'Domácnost+ v.0.1_24', note: 'Hotovo: cloudový Kalendář a příprava na Google Calendar bez tokenů ve frontendu.' },
+      { title: 'Domácnost+ v.0.1_25', note: 'Hotovo: opravené PWA ikony pro instalaci, apple-touch ikony, favicony a stabilnější manifest.' }
     ];
     return `
       <section class="card roadmap-card">
@@ -989,24 +1012,36 @@
 
   function renderCalendar() {
     const events = [...state.calendar].sort((a, b) => `${a.date || ''}${a.time || ''}`.localeCompare(`${b.date || ''}${b.time || ''}`));
+    const cloudReady = Boolean(state.cloud?.householdId);
+    const localOnly = events.filter((event) => !event.cloudId).length;
+    const cloudCount = events.filter((event) => event.cloudId).length;
     return `
       <div class="grid two">
         <section class="card">
-          <div class="card-header"><div><h2>Přidat událost</h2><p>Zatím lokální kalendář. Google napojení přijde později přes backend.</p></div></div>
+          <div class="card-header">
+            <div><h2>Přidat událost</h2><p>Ruční kalendář už umí cloud. Google Calendar přijde později přes backend bez tokenů ve frontendu.</p></div>
+            <span class="badge ${cloudCount ? 'good' : ''}">${cloudCount ? 'cloud' : 'lokálně'}</span>
+          </div>
           <form data-form="add-event">
             <div class="form-grid two">
               ${field('Název', 'title', 'text', 'Doktor / návštěva / výlet', true)}
               ${field('Datum', 'date', 'date', '', true, todayISO())}
               ${field('Začátek', 'time', 'time', '')}
               ${field('Konec', 'endTime', 'time', '')}
-              ${selectField('Typ', 'type', [['rodina', 'Rodina'], ['prace', 'Práce'], ['domacnost', 'Domácnost'], ['ostatni', 'Ostatní']])}
+              ${selectField('Typ', 'type', [['event', 'Událost'], ['family', 'Rodina'], ['shift', 'Směna'], ['reminder', 'Připomínka'], ['holiday', 'Volno/svátek'], ['other', 'Ostatní']])}
+              ${field('Místo', 'location', 'text', 'volitelné')}
               ${field('Poznámka', 'note', 'text', 'volitelné')}
             </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Uložit událost</button></div>
+            <div class="form-actions">
+              <button class="primary-btn" type="submit">Uložit událost</button>
+              ${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-calendar">Načíst cloud kalendář</button>' : ''}
+              ${cloudReady && localOnly ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-calendar">Odeslat lokální (${localOnly})</button>` : ''}
+            </div>
           </form>
+          <div class="inline-note" style="margin-top:12px;">Google Calendar bude později přes backend/Supabase/Vercel funkci. Tokeny se nebudou ukládat do frontendu.</div>
         </section>
         <section class="card">
-          <div class="card-header"><div><h2>Události</h2><p>${events.length} položek</p></div></div>
+          <div class="card-header"><div><h2>Události</h2><p>${events.length} položek · ${cloudCount} cloud</p></div></div>
           ${events.length ? renderEventList(events, true) : renderEmpty('Zatím žádná událost.')}
         </section>
       </div>
@@ -1018,10 +1053,10 @@
       <div class="item">
         <div class="item-top">
           <div class="item-title">${escapeHtml(event.title)}</div>
-          <span class="badge">${escapeHtml(event.type || 'ostatní')}</span>
+          <span class="badge ${event.cloudId ? 'good' : ''}">${event.cloudId ? 'cloud' : 'lokálně'}</span>
         </div>
-        <div class="item-meta">${formatDate(event.date)} · ${escapeHtml(event.time || 'celý den')}${event.endTime ? `–${escapeHtml(event.endTime)}` : ''}${event.note ? ` · ${escapeHtml(event.note)}` : ''}</div>
-        ${withDelete ? `<div class="item-actions"><button class="ghost-btn" type="button" data-action="delete" data-collection="calendar" data-id="${event.id}">Smazat</button></div>` : ''}
+        <div class="item-meta">${formatDate(event.date)} · ${escapeHtml(event.time || 'celý den')}${event.endTime ? `–${escapeHtml(event.endTime)}` : ''}${event.location ? ` · ${escapeHtml(event.location)}` : ''}${event.note ? ` · ${escapeHtml(event.note)}` : ''}</div>
+        ${withDelete ? `<div class="item-actions">${state.cloud?.householdId && !event.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-calendar" data-id="${event.id}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-calendar" data-id="${event.id}">Smazat</button></div>` : ''}
       </div>
     `).join('')}</div>`;
   }
@@ -1376,21 +1411,26 @@
         </section>
 
         <section class="card">
-          <div class="card-header"><div><h2>Úkoly a poznámky</h2><p>Rychlé domácí připomínky.</p></div></div>
+          <div class="card-header">
+            <div><h2>Úkoly a poznámky</h2><p>Domácí úkoly jsou připravené pro cloud i budoucí notifikace.</p></div>
+            <span class="badge ${tasks.some((task) => task.cloudId) ? 'good' : ''}">${tasks.some((task) => task.cloudId) ? 'cloud' : 'lokálně'}</span>
+          </div>
           <form data-form="add-task">
             <div class="form-grid two">
               ${field('Úkol', 'title', 'text', 'vyměnit filtr / koupit baterky', true)}
               ${field('Termín', 'due', 'date', '')}
+              ${selectField('Kategorie', 'category', TASK_CATEGORY_OPTIONS, 'domacnost')}
+              ${selectField('Priorita', 'priority', TASK_PRIORITY_OPTIONS, 'normal')}
               ${field('Poznámka', 'note', 'text', 'volitelné')}
             </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat úkol</button></div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Přidat úkol</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-tasks">Načíst cloud úkoly</button>' : ''}${state.cloud?.householdId && tasks.some((task) => !task.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-tasks">Odeslat lokální úkoly (${tasks.filter((task) => !task.cloudId).length})</button>` : ''}</div>
           </form>
           <div style="height:14px"></div>
           ${tasks.length ? `<div class="list">${tasks.map((task) => `
             <div class="item">
-              <div class="item-top"><div class="item-title">${task.done ? '✓ ' : ''}${escapeHtml(task.title)}</div><span class="badge">${task.due ? formatDate(task.due) : 'bez termínu'}</span></div>
-              <div class="item-meta">${task.note ? escapeHtml(task.note) : 'Bez poznámky'}</div>
-              <div class="item-actions"><button class="ghost-btn" type="button" data-action="toggle-done" data-collection="homeTasks" data-id="${task.id}">${task.done ? 'Vrátit' : 'Hotovo'}</button><button class="danger-btn" type="button" data-action="delete" data-collection="homeTasks" data-id="${task.id}">Smazat</button></div>
+              <div class="item-top"><div class="item-title">${task.done ? '✓ ' : ''}${escapeHtml(task.title)}</div><span class="badge ${task.due && daysUntil(task.due) <= 2 && !task.done ? 'warn' : ''}">${task.due ? formatDate(task.due) : 'bez termínu'}</span></div>
+              <div class="item-meta">${escapeHtml(taskCategoryLabel(task.category))} · ${escapeHtml(taskPriorityLabel(task.priority))}${task.note ? ` · ${escapeHtml(task.note)}` : ''}${task.cloudId ? ' · cloud' : ' · lokálně'}</div>
+              <div class="item-actions">${state.cloud?.householdId && !task.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-task" data-id="${task.id}">Odeslat</button>` : ''}<button class="ghost-btn" type="button" data-action="task-toggle" data-id="${task.id}">${task.done ? 'Vrátit' : 'Hotovo'}</button><button class="danger-btn" type="button" data-action="task-delete" data-id="${task.id}">Smazat</button></div>
             </div>
           `).join('')}</div>` : renderEmpty('Zatím žádný domácí úkol.')}
           <form data-form="add-note" style="margin-top:14px;">
@@ -2155,7 +2195,7 @@
     return `
       <section class="card desktop-span-2 cloud-card">
         <div class="card-header">
-          <div><h2>Cloud účet</h2><p>Napojení na Supabase projekt Domácnost+. Základ domácnosti/profilů a Nákupy už umí cloud.</p></div>
+          <div><h2>Cloud účet</h2><p>Napojení na Supabase projekt Domácnost+. Základ domácnosti/profilů a hlavní moduly včetně Kalendáře už umí cloud.</p></div>
           <span class="badge ${signedIn ? 'good' : ''}">${signedIn ? 'přihlášeno' : 'lokálně'}</span>
         </div>
         <div class="cloud-status-grid">
@@ -2165,7 +2205,7 @@
           <div class="mini-stat"><span>Poslední zápis</span><strong>${cloud.lastSyncAt ? escapeHtml(formatDateTime(cloud.lastSyncAt)) : 'nikdy'}</strong></div>
         </div>
         ${signedIn ? `
-          <div class="hint-box">Jsi přihlášený. Tlačítko níže vytvoří nebo napojí aktuální domácnost v Supabase: domácnost, owner člen a profily. Nákupy už se umí ukládat do cloudu.</div>
+          <div class="hint-box">Jsi přihlášený. Tlačítko níže vytvoří nebo napojí aktuální domácnost v Supabase: domácnost, owner člen a profily. Kalendář, nákupy a další moduly už se umí ukládat do cloudu.</div>
           <div class="form-actions">
             <button class="primary-btn" type="button" data-action="cloud-bootstrap">Vytvořit / napojit domácnost v cloudu</button>
             <button class="ghost-btn" type="button" data-action="cloud-refresh-session">Obnovit stav účtu</button>
@@ -2230,9 +2270,10 @@
           <div class="mini-stat"><span>Instalace</span><strong>${pwa.canPrompt ? 'tlačítkem' : pwa.ios ? 'přes Safari' : 'přes menu'}</strong></div>
           <div class="mini-stat"><span>Verze</span><strong>${escapeHtml(APP_VERSION)}</strong></div>
         </div>
-        ${pwa.fileMode ? `<div class="hint-box warn-box">Teď je appka otevřená jako lokální soubor ze ZIPu. Instalace a automatické aktualizace fungují až přes HTTPS, tedy typicky přes Vercel.</div>` : ''}
+        ${pwa.fileMode ? `<div class="hint-box warn-box">Teď je appka otevřená jako lokální soubor ze ZIPu. Instalace, ikona a automatické aktualizace fungují správně až přes HTTPS, tedy typicky přes Vercel.</div>` : ''}
+        <div class="hint-box">Ikona je připravená pro Android i iPhone: manifest používá PNG ikony 192/512, samostatné maskable ikony, favicony a Apple touch ikony 120/152/167/180.</div>
         <div class="install-steps">
-          <div class="install-step"><strong>iPhone / iPad</strong><span>Otevři ve Safari → Sdílet → Přidat na plochu.</span></div>
+          <div class="install-step"><strong>iPhone / iPad</strong><span>Otevři přes Safari → Sdílet → Přidat na plochu. iOS bere ikonu hlavně z apple-touch-icon, ne jen z manifestu.</span></div>
           <div class="install-step"><strong>Android / Chrome</strong><span>Menu prohlížeče → Instalovat aplikaci. Když prohlížeč nabídne tlačítko, objeví se níže.</span></div>
           <div class="install-step"><strong>Update</strong><span>Po novém deployi přes Vercel se zobrazí možnost aktualizovat. Tohle držíme podobně jako u RaK.</span></div>
         </div>
@@ -3728,6 +3769,218 @@
 
 
 
+  function buildCalendarDateTime(date, time, fallbackTime = '00:00') {
+    const d = date || todayISO();
+    const t = time || fallbackTime;
+    return `${d}T${t}:00`;
+  }
+
+  function splitCalendarDateTime(value) {
+    if (!value) return { date: '', time: '' };
+    const text = String(value);
+    return { date: text.slice(0, 10), time: text.length >= 16 ? text.slice(11, 16) : '' };
+  }
+
+  function normalizeCalendarType(value) {
+    const map = { rodina: 'family', prace: 'event', domacnost: 'event', ostatni: 'other' };
+    const next = map[value] || value || 'event';
+    return ['event', 'shift', 'family', 'reminder', 'holiday', 'other'].includes(next) ? next : 'event';
+  }
+
+  function cloudCalendarPayload(event, userId, sourceId = null) {
+    const start = buildCalendarDateTime(event.date, event.time, '00:00');
+    const end = event.endTime ? buildCalendarDateTime(event.date, event.endTime, event.time || '00:00') : null;
+    return {
+      household_id: state.cloud.householdId,
+      source_id: sourceId || event.sourceId || null,
+      profile_id: event.profileId && String(event.profileId).startsWith('profile-') ? null : event.profileId || null,
+      title: event.title || 'Událost',
+      description: event.note || null,
+      location: event.location || null,
+      starts_at: start,
+      ends_at: end,
+      all_day: !event.time,
+      event_type: normalizeCalendarType(event.type),
+      status: 'confirmed',
+      visibility: 'household',
+      created_by: event.cloudId ? undefined : userId,
+      updated_by: userId
+    };
+  }
+
+  async function ensureManualCalendarSource() {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const cached = (state.calendarCloud?.sources || []).find((source) => source.provider === 'manual');
+    if (cached?.id) return cached.id;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const { data: existing, error: existingError } = await client
+      .from('calendar_sources')
+      .select('id,name,provider')
+      .eq('household_id', state.cloud.householdId)
+      .eq('provider', 'manual')
+      .limit(1);
+    if (existingError) {
+      showToast(existingError.message || 'Zdroj kalendáře se nepovedlo načíst');
+      return null;
+    }
+    if (existing?.[0]?.id) {
+      state.calendarCloud = { ...(state.calendarCloud || {}), sources: existing };
+      return existing[0].id;
+    }
+    const { data, error } = await client.from('calendar_sources').insert({
+      household_id: state.cloud.householdId,
+      name: 'Ruční kalendář',
+      provider: 'manual',
+      is_enabled: true,
+      sync_enabled: false,
+      created_by: user.id,
+      updated_by: user.id
+    }).select('id,name,provider').single();
+    if (error) {
+      showToast(error.message || 'Zdroj kalendáře se nepovedlo vytvořit');
+      return null;
+    }
+    state.calendarCloud = { ...(state.calendarCloud || {}), sources: [data] };
+    return data.id;
+  }
+
+  async function cloudAddCalendarEvent(event) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const sourceId = await ensureManualCalendarSource();
+    const { data, error } = await client.from('calendar_events').insert(cloudCalendarPayload(event, user.id, sourceId)).select('id,source_id').single();
+    if (error) {
+      showToast(error.message || 'Událost se nepovedlo uložit do cloudu');
+      return null;
+    }
+    event.cloudId = data.id;
+    event.sourceId = data.source_id || sourceId || '';
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudDeleteCalendarEvent(event) {
+    const client = getSupabaseClient();
+    if (!client || !event?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('calendar_events').delete().eq('id', event.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Cloud událost se nepovedlo smazat');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadCalendar(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return false;
+    }
+    const { data, error } = await client
+      .from('calendar_events')
+      .select('id,source_id,title,description,location,starts_at,ends_at,all_day,event_type,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .neq('status', 'cancelled')
+      .order('starts_at', { ascending: true });
+    if (error) {
+      showToast(error.message || 'Kalendář se nepovedlo načíst');
+      return false;
+    }
+    const localOnly = state.calendar.filter((event) => !event.cloudId);
+    const cloudItems = (data || []).map((item) => {
+      const start = splitCalendarDateTime(item.starts_at);
+      const end = splitCalendarDateTime(item.ends_at);
+      return {
+        id: state.calendar.find((event) => event.cloudId === item.id)?.id || `event-cloud-${item.id}`,
+        cloudId: item.id,
+        sourceId: item.source_id || '',
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        title: item.title || 'Událost',
+        date: start.date,
+        time: item.all_day ? '' : start.time,
+        endTime: end.time || '',
+        type: normalizeCalendarType(item.event_type),
+        location: item.location || '',
+        note: item.description || ''
+      };
+    });
+    state.calendar = [...cloudItems, ...localOnly];
+    state.calendarCloud = { ...(state.calendarCloud || {}), loadedAt: new Date().toISOString() };
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast('Cloud kalendář načten');
+    return true;
+  }
+
+  async function cloudSyncCalendarById(id) {
+    const event = state.calendar.find((entry) => entry.id === id);
+    if (!event) return;
+    await cloudAddCalendarEvent(event);
+    touchState();
+    saveState();
+    render();
+    showToast(event.cloudId ? 'Událost odeslána do cloudu' : 'Událost zůstala lokálně');
+  }
+
+  async function cloudSyncLocalCalendar() {
+    const local = state.calendar.filter((event) => !event.cloudId);
+    if (!local.length) return showToast('Žádné lokální události k odeslání');
+    let count = 0;
+    for (const event of local) {
+      const saved = await cloudAddCalendarEvent(event);
+      if (saved?.id) count += 1;
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(`Odesláno událostí: ${count}`);
+  }
+
+  async function addEventFromForm(data, form) {
+    const event = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      title: normalizeText(data.title),
+      date: normalizeText(data.date),
+      time: normalizeText(data.time),
+      endTime: normalizeText(data.endTime),
+      type: normalizeCalendarType(data.type),
+      location: normalizeText(data.location),
+      note: normalizeText(data.note)
+    };
+    if (!event.title || !event.date) return showToast('Doplň název a datum');
+    const saved = await cloudAddCalendarEvent(event);
+    if (saved?.id) event.cloudId = saved.id;
+    state.calendar.push(event);
+    touchState();
+    saveState();
+    form.reset();
+    render();
+    showToast(event.cloudId ? 'Událost uložena do cloudu' : 'Událost uložena lokálně');
+  }
+
+  async function deleteCalendarEvent(id) {
+    const event = state.calendar.find((entry) => entry.id === id);
+    if (!event) return;
+    const ok = await cloudDeleteCalendarEvent(event);
+    if (!ok) return;
+    state.calendar = state.calendar.filter((entry) => entry.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Událost smazána');
+  }
+
   function cloudParcelPayload(pkg, userId) {
     return {
       household_id: state.cloud.householdId,
@@ -4273,6 +4526,203 @@
     showToast('Svoz smazán');
   }
 
+
+  function normalizeTaskCategory(value) {
+    const valid = new Set(TASK_CATEGORY_OPTIONS.map(([key]) => key));
+    return valid.has(value) ? value : 'domacnost';
+  }
+
+  function normalizeTaskPriority(value) {
+    const valid = new Set(TASK_PRIORITY_OPTIONS.map(([key]) => key));
+    return valid.has(value) ? value : 'normal';
+  }
+
+  function taskCategoryLabel(value) {
+    return TASK_CATEGORY_OPTIONS.find(([key]) => key === value)?.[1] || 'Domácnost';
+  }
+
+  function taskPriorityLabel(value) {
+    return TASK_PRIORITY_OPTIONS.find(([key]) => key === value)?.[1] || 'Normální';
+  }
+
+  function cloudTaskPayload(task, userId) {
+    return {
+      household_id: state.cloud.householdId,
+      profile_id: null,
+      assigned_profile_id: null,
+      title: task.title || 'Úkol',
+      description: task.note || null,
+      category: normalizeTaskCategory(task.category),
+      priority: normalizeTaskPriority(task.priority),
+      status: task.done ? 'done' : 'open',
+      due_date: task.due || null,
+      due_at: null,
+      repeat_rule: 'none',
+      repeat_interval: 1,
+      notify_before_minutes: 60,
+      completed_at: task.done ? (task.completedAt || new Date().toISOString()) : null,
+      completed_by_profile_id: null,
+      created_by: userId,
+      updated_by: userId
+    };
+  }
+
+  async function cloudAddTask(task) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const { data, error } = await client.from('household_tasks').insert(cloudTaskPayload(task, user.id)).select('id').single();
+    if (error) {
+      showToast(error.message || 'Úkol se nepovedlo uložit do cloudu');
+      return null;
+    }
+    task.cloudId = data.id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudUpdateTask(task) {
+    const client = getSupabaseClient();
+    if (!client || !task?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const { error } = await client
+      .from('household_tasks')
+      .update(cloudTaskPayload(task, user.id))
+      .eq('id', task.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Úkol se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteTask(task) {
+    const client = getSupabaseClient();
+    if (!client || !task?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('household_tasks').delete().eq('id', task.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Úkol se nepovedlo smazat v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadTasks(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return false;
+    const { data, error } = await client
+      .from('household_tasks')
+      .select('*')
+      .eq('household_id', state.cloud.householdId)
+      .order('status', { ascending: false })
+      .order('due_date', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false });
+    if (error) {
+      showToast(error.message || 'Úkoly se nepovedlo načíst z cloudu');
+      return false;
+    }
+    const localOnly = state.homeTasks.filter((task) => !task.cloudId);
+    const cloudItems = (data || []).map((item) => ({
+      id: state.homeTasks.find((task) => task.cloudId === item.id)?.id || `task-cloud-${item.id}`,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      cloudId: item.id,
+      title: item.title,
+      due: item.due_date || '',
+      note: item.description || '',
+      category: normalizeTaskCategory(item.category),
+      priority: normalizeTaskPriority(item.priority),
+      done: item.status === 'done',
+      completedAt: item.completed_at || '',
+      createdAt: item.created_at || new Date().toISOString()
+    }));
+    state.homeTasks = [...cloudItems, ...localOnly];
+    state.tasksCloud = { ...(state.tasksCloud || {}), loadedAt: new Date().toISOString() };
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast('Cloud úkoly načteny');
+    return true;
+  }
+
+  async function cloudSyncTaskById(id) {
+    const task = state.homeTasks.find((entry) => entry.id === id);
+    if (!task) return;
+    const saved = task.cloudId ? await cloudUpdateTask(task) : await cloudAddTask(task);
+    if (!saved && !task.cloudId) return;
+    touchState();
+    saveState();
+    render();
+    showToast('Úkol odeslán do cloudu');
+  }
+
+  async function cloudSyncLocalTasks() {
+    const local = state.homeTasks.filter((task) => !task.cloudId);
+    if (!local.length) return showToast('Žádné lokální úkoly k odeslání');
+    let count = 0;
+    for (const task of local) {
+      const saved = await cloudAddTask(task);
+      if (saved?.id) count += 1;
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(`Odesláno úkolů: ${count}`);
+  }
+
+  async function addTaskFromForm(data, form) {
+    const task = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      title: normalizeText(data.title),
+      due: normalizeText(data.due),
+      note: normalizeText(data.note),
+      category: normalizeTaskCategory(data.category),
+      priority: normalizeTaskPriority(data.priority),
+      done: false
+    };
+    if (!task.title) return showToast('Doplň název úkolu');
+    const saved = await cloudAddTask(task);
+    if (saved?.id) task.cloudId = saved.id;
+    state.homeTasks.push(task);
+    touchState();
+    saveState();
+    form.reset();
+    render();
+    showToast(task.cloudId ? 'Úkol uložen do cloudu' : 'Úkol uložen lokálně');
+  }
+
+  async function toggleTaskDone(id) {
+    const task = state.homeTasks.find((entry) => entry.id === id);
+    if (!task) return;
+    task.done = !task.done;
+    task.completedAt = task.done ? new Date().toISOString() : '';
+    const ok = await cloudUpdateTask(task);
+    if (!ok) return;
+    touchState();
+    saveState();
+    render();
+  }
+
+  async function deleteTask(id) {
+    const task = state.homeTasks.find((entry) => entry.id === id);
+    if (!task) return;
+    const ok = await cloudDeleteTask(task);
+    if (!ok) return;
+    state.homeTasks = state.homeTasks.filter((entry) => entry.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Úkol smazán');
+  }
+
   async function toggleShoppingDone(id) {
     const item = state.shopping.find((entry) => entry.id === id);
     if (!item) return;
@@ -4305,13 +4755,13 @@
     const type = form.dataset.form;
     const data = getFormData(form);
     const handlers = {
-      'add-event': () => addItem('calendar', { title: data.title, date: data.date, time: data.time, endTime: data.endTime, type: data.type, note: data.note }),
+      'add-event': () => addEventFromForm(data, form),
       'add-package': () => addPackageFromForm(data, form),
       'add-shopping': () => addShoppingFromForm(data, form),
       'add-coupon': () => addItem('coupons', { store: data.store, code: data.code, discount: data.discount, expiry: data.expiry, note: data.note, used: false }),
       'add-hdo': () => addHdoWindowFromForm(data, form),
       'add-waste': () => addWasteFromForm(data, form),
-      'add-task': () => addItem('homeTasks', { title: data.title, due: data.due, note: data.note, done: false }),
+      'add-task': () => addTaskFromForm(data, form),
       'add-note': () => addItem('notes', { text: data.text, createdAt: new Date().toISOString() }),
       'add-device': () => addItem('devices', { name: data.name, type: data.type, address: data.address, note: data.note }),
       'add-vehicle': async () => {
@@ -4461,7 +4911,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 21, appBuild: 22, mode: 'pwa-cloud-parcels', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 24, appBuild: 25, mode: 'pwa-icon-fix', updatedAt: new Date().toISOString() };
   }
 
   function addItem(collection, item) {
@@ -4567,6 +5017,22 @@
           render();
         });
       }
+      return;
+    }
+    if (action === 'cloud-load-calendar') {
+      cloudLoadCalendar(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-calendar') {
+      cloudSyncLocalCalendar();
+      return;
+    }
+    if (action === 'cloud-sync-calendar') {
+      cloudSyncCalendarById(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-calendar') {
+      deleteCalendarEvent(button.dataset.id);
       return;
     }
     if (action === 'cloud-load-parcels') {
@@ -4719,6 +5185,26 @@
     }
     if (action === 'delete-waste') {
       deleteWaste(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-load-tasks') {
+      cloudLoadTasks(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-tasks') {
+      cloudSyncLocalTasks();
+      return;
+    }
+    if (action === 'cloud-sync-task') {
+      cloudSyncTaskById(button.dataset.id);
+      return;
+    }
+    if (action === 'task-toggle') {
+      toggleTaskDone(button.dataset.id);
+      return;
+    }
+    if (action === 'task-delete') {
+      deleteTask(button.dataset.id);
       return;
     }
     if (action === 'cloud-sync-vehicle') {
@@ -4933,8 +5419,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 14,
-          schema_version: 13,
+          app_build: 24,
+          schema_version: 24,
           created_by: user.id
         })
         .select('id')

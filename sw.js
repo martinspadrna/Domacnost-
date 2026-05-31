@@ -1,12 +1,21 @@
-const CACHE_NAME = 'domacnost-plus-v0-1-22';
+const CACHE_NAME = 'domacnost-plus-v0-1-25';
 const APP_ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './manifest.webmanifest',
+  './favicon.ico',
   './assets/icon-192.png',
-  './assets/icon-512.png'
+  './assets/icon-512.png',
+  './assets/maskable-icon-192.png',
+  './assets/maskable-icon-512.png',
+  './assets/apple-touch-icon.png',
+  './assets/apple-touch-icon-167.png',
+  './assets/apple-touch-icon-152.png',
+  './assets/apple-touch-icon-120.png',
+  './assets/favicon-32.png',
+  './assets/favicon-16.png'
 ];
 
 self.addEventListener('install', (event) => {
