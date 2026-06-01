@@ -2214,7 +2214,7 @@ button {
 .soft-details .module-check-grid { margin-top: 14px; }
 @media (max-width: 760px) { .choice-tile { min-height: 0; } }
 
-/* Domácnost+ v.0.1_42 — demo sandbox */
+/* Domácnost+ v.0.1_44 — demo sandbox */
 .demo-readonly-banner {
   border-color: rgba(245, 158, 11, .35);
   background: linear-gradient(135deg, rgba(255,255,255,.88), rgba(254, 243, 199, .72));
@@ -2223,4 +2223,69 @@ button {
 .demo-readonly-banner p { margin: 0; color: var(--muted); line-height: 1.45; }
 [data-theme="dark"] .demo-readonly-banner {
   background: linear-gradient(135deg, rgba(30, 41, 59, .92), rgba(113, 63, 18, .34));
+}
+
+/* Domácnost+ v.0.1_44 — čisté přihlášení e-mailem */
+.oauth-block {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.oauth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+.oauth-divider::before,
+.oauth-divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--line);
+}
+
+.oauth-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.oauth-btn {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 16px;
+  min-height: 46px;
+  padding: 10px 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: var(--shadow-soft);
+}
+
+.oauth-btn span {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, .16);
+  font-weight: 900;
+}
+
+.compact-note {
+  font-size: .8rem;
+}
+
+@media (max-width: 420px) {
+  .oauth-actions {
+    grid-template-columns: 1fr;
+  }
 }
