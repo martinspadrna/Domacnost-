@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = 'Domácnost+ v.0.1_48';
+  const APP_VERSION = 'Domácnost+ v.0.1_50';
   const STORAGE_KEY = 'domacnostPlus.v0.1_46';
   const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_45';
   const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
@@ -111,7 +111,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-48.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-50.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -120,8 +120,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 46,
-      appBuild: 48,
-      mode: 'compact-tabs-v48',
+      appBuild: 50,
+      mode: 'compact-details-v50',
       createdAt: '',
       updatedAt: ''
     },
@@ -185,7 +185,7 @@
   let demoRuntimeActive = false;
   let activeModule = localStorage.getItem('homeWeb.activeModule') || 'home';
   let activeOverview = null;
-  let moduleTabs = safeParse(localStorage.getItem('domacnostPlus.moduleTabs'), {}) || {};
+  let moduleTabs = isStoredDemoState(state) ? {} : (safeParse(localStorage.getItem('domacnostPlus.moduleTabs'), {}) || {});
   let garageVehicleId = null;
   let activeContractId = null;
   let fuelioPreview = null;
@@ -305,8 +305,8 @@
 
     migrated.meta = {
       schemaVersion: 46,
-      appBuild: 48,
-      mode: 'compact-tabs-v48',
+      appBuild: 50,
+      mode: 'compact-details-v50',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -571,7 +571,7 @@
     const visibleModules = getVisibleModules();
     const selectableModules = [...visibleModules, MORE_MODULE];
     if (!selectableModules.some((module) => module.id === activeModule)) activeModule = 'home';
-    localStorage.setItem('homeWeb.activeModule', activeModule);
+    if (!isDemoOnlyState()) localStorage.setItem('homeWeb.activeModule', activeModule);
 
     const active = selectableModules.find((module) => module.id === activeModule) || visibleModules[0];
     const bottomNavModules = getBottomNavModules();
@@ -629,6 +629,7 @@
 
     promoteActiveContentBeforeForms();
     keepActiveNavCentered();
+    keepActiveSectionTabsCentered();
   }
 
   function renderDemoReadOnlyBanner() {
@@ -677,14 +678,30 @@
   }
 
 
+  function keepActiveSectionTabsCentered(behavior = 'auto') {
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.section-tabs').forEach((tabs) => {
+        const activeTab = tabs.querySelector('.section-tab.active');
+        if (!activeTab) return;
+        const maxLeft = tabs.scrollWidth - tabs.clientWidth;
+        const targetLeft = activeTab.offsetLeft - ((tabs.clientWidth - activeTab.clientWidth) / 2);
+        tabs.scrollTo({
+          left: Math.max(0, Math.min(maxLeft, targetLeft)),
+          behavior
+        });
+      });
+    });
+  }
+
   function getModuleTab(area, fallback) {
     return moduleTabs?.[area] || fallback;
   }
 
   function setModuleTab(area, tab) {
     moduleTabs = { ...(moduleTabs || {}), [area]: tab };
-    localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
     render();
+    keepActiveSectionTabsCentered('smooth');
   }
 
   function renderSectionTabs(area, tabs, fallback) {
@@ -698,6 +715,104 @@
         `).join('')}
       </div>
     `;
+  }
+
+  function renderOverviewItem({ title, badge = '', meta = '', badgeClass = '', icon = '' }) {
+    return `
+      <div class="item compact-item overview-list-item">
+        <div class="item-top">
+          <div class="item-title">${icon ? `${escapeHtml(icon)} ` : ''}${escapeHtml(title || '—')}</div>
+          ${badge ? `<span class="badge ${escapeHtml(badgeClass)}">${escapeHtml(badge)}</span>` : ''}
+        </div>
+        ${meta ? `<div class="item-meta">${escapeHtml(meta)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function renderPackageOverviewItem(pkg) {
+    const status = packageStatus(pkg.status);
+    return renderOverviewItem({
+      title: pkg.title || carrierLabel(pkg.carrier) || 'Balík',
+      badge: status.label,
+      badgeClass: status.kind,
+      meta: [carrierLabel(pkg.carrier), pkg.tracking, pkg.expectedDate ? `doručení ${formatDate(pkg.expectedDate)}` : '', pkg.pickupPlace, pkg.note, pkg.cloudId ? 'cloud' : 'lokálně'].filter(Boolean).join(' · '),
+      icon: '📦'
+    });
+  }
+
+  function renderShoppingOverviewItem(item) {
+    const amount = [item.quantity || item.amount || 1, item.unit || 'ks'].filter(Boolean).join(' ');
+    return renderOverviewItem({
+      title: item.name,
+      badge: amount,
+      meta: [item.category || 'bez kategorie', item.note, item.cloudId ? 'cloud' : ''].filter(Boolean).join(' · '),
+      icon: '🛒'
+    });
+  }
+
+  function renderContractOverviewItem(contract) {
+    const days = daysUntil(contract.validTo);
+    return renderOverviewItem({
+      title: contract.name,
+      badge: dueBadge(days),
+      badgeClass: days !== null && days <= 14 ? 'warn' : 'good',
+      meta: [contract.provider || 'Bez poskytovatele', contract.type ? contractTypeLabel(contract.type) : '', contract.validTo ? `do ${formatDate(contract.validTo)}` : '', contract.price ? formatCurrency(contract.price) : '', contract.cloudId ? 'cloud' : 'lokálně'].filter(Boolean).join(' · '),
+      icon: '📄'
+    });
+  }
+
+  function renderGarageOverviewItem(vehicle) {
+    return renderOverviewItem({
+      title: vehicle.name,
+      badge: vehicle.odometer ? `${vehicle.odometer} km` : '',
+      meta: [vehicle.brand, vehicle.model, vehicle.year, vehicle.plate].filter(Boolean).join(' · '),
+      icon: '🚗'
+    });
+  }
+
+  function renderVehicleAlertOverviewItem(item) {
+    return renderOverviewItem({
+      title: item.title,
+      badge: dueBadge(item.days),
+      badgeClass: item.days !== null && item.days <= 7 ? 'warn' : '',
+      meta: item.meta,
+      icon: '🚗'
+    });
+  }
+
+  function renderFinanceOverviewItem(item) {
+    const isIncome = item.type === 'income';
+    const isTransfer = item.type === 'transfer';
+    const account = financeAccountById(item.accountId);
+    const target = financeAccountById(item.transferAccountId);
+    return renderOverviewItem({
+      title: item.title,
+      badge: formatCurrency(item.amount),
+      badgeClass: isIncome || isTransfer ? 'good' : 'warn',
+      meta: [formatDate(item.date), isTransfer ? 'Přesun' : financeCategoryLabel(item.category), account?.name, target ? `→ ${target.name}` : '', financePaymentLabel(item.paymentMethod), item.note, item.cloudId ? 'cloud' : 'lokálně'].filter(Boolean).join(' · '),
+      icon: isTransfer ? '↔️' : isIncome ? '➕' : '➖'
+    });
+  }
+
+  function renderTaskOverviewItem(task) {
+    const days = daysUntil(task.due);
+    return renderOverviewItem({
+      title: task.title,
+      badge: task.due ? formatDate(task.due) : 'bez termínu',
+      badgeClass: task.due && days <= 2 ? 'warn' : '',
+      meta: task.note || taskCategoryLabel(task.category),
+      icon: '✅'
+    });
+  }
+
+  function renderWasteOverviewItem(item) {
+    return renderOverviewItem({
+      title: `${item.type} odpad`,
+      badge: item.days === null ? 'bez data' : dueBadge(item.days),
+      badgeClass: item.days !== null && item.days <= 1 ? 'warn' : '',
+      meta: `Svoz ${formatDate(item.date)}${item.note ? ` · ${item.note}` : ''}`,
+      icon: '♻️'
+    });
   }
 
   function renderOverviewDrawer() {
@@ -741,31 +856,31 @@
       body = rows.length ? renderEventList(rows, false) : renderEmpty('Nejsou tu žádné nejbližší události.');
     } else if (type === 'shopping') {
       const rows = state.shopping.filter((item) => !item.done).slice(0,10);
-      body = rows.length ? `<div class="list compact-list">${rows.map(renderShoppingItem).join('')}</div>` : renderEmpty('Nákupní seznam je prázdný.');
+      body = rows.length ? `<div class="list compact-list overview-list">${rows.map(renderShoppingOverviewItem).join('')}</div>` : renderEmpty('Nákupní seznam je prázdný.');
     } else if (type === 'packages') {
-      const rows = state.packages.filter((item) => item.status !== 'delivered').slice(0,8);
-      body = rows.length ? `<div class="list compact-list">${rows.map(renderPackageItem).join('')}</div>` : renderEmpty('Žádný aktivní balík.');
+      const rows = state.packages.filter((item) => !['delivered', 'archived'].includes(item.status)).slice(0,8);
+      body = rows.length ? `<div class="list compact-list overview-list">${rows.map(renderPackageOverviewItem).join('')}</div>` : renderEmpty('Žádný aktivní balík.');
     } else if (type === 'contracts') {
       const rows = state.contracts.map((contract) => ({...contract, days: daysUntil(contract.validTo)})).sort((a,b)=>(a.days ?? 9999)-(b.days ?? 9999)).slice(0,8);
-      body = rows.length ? `<div class="list compact-list">${rows.map(renderContractItem).join('')}</div>` : renderEmpty('Žádné smlouvy k zobrazení.');
+      body = rows.length ? `<div class="list compact-list overview-list">${rows.map(renderContractOverviewItem).join('')}</div>` : renderEmpty('Žádné smlouvy k zobrazení.');
     } else if (type === 'garage') {
       const alerts = getVehicleAlerts().slice(0,8);
-      body = alerts.length ? `<div class="list compact-list">${alerts.map((item)=>`<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.title)}</div><span class="badge ${item.days <= 7 ? 'warn' : ''}">${escapeHtml(dueBadge(item.days))}</span></div><div class="item-meta">${escapeHtml(item.meta)}</div></div>`).join('')}</div>` : `<div class="list compact-list">${state.vehicles.slice(0,6).map((vehicle)=>`<div class="item compact-item"><div class="item-title">${escapeHtml(vehicle.name)}</div><div class="item-meta">${escapeHtml(vehicle.brand || '')} ${escapeHtml(vehicle.model || '')} · ${escapeHtml(String(vehicle.odometer || 0))} km</div></div>`).join('')}</div>`;
+      body = alerts.length ? `<div class="list compact-list overview-list">${alerts.map(renderVehicleAlertOverviewItem).join('')}</div>` : `<div class="list compact-list overview-list">${state.vehicles.slice(0,6).map(renderGarageOverviewItem).join('')}</div>`;
     } else if (type === 'finance') {
       const summary = financeMonthSummary();
       const month = financeSelectedMonth();
-      const rows = state.finance.filter((item) => String(item.date || '').slice(0, 7) === month).slice(0, 8);
-      body = `<div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Příjmy</span><strong>${formatCurrency(summary.income)}</strong></div><div class="mini-stat"><span>Výdaje</span><strong>${formatCurrency(summary.expense)}</strong></div><div class="mini-stat"><span>Rozdíl</span><strong>${formatCurrency(summary.balance)}</strong></div></div><div class="list compact-list">${rows.map(renderFinanceItem).join('') || renderEmpty('Zatím žádné finance.')}</div>`;
+      const rows = state.finance.filter((item) => String(item.date || '').slice(0, 7) === month).sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 8);
+      body = `<div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Příjmy</span><strong>${formatCurrency(summary.income)}</strong></div><div class="mini-stat"><span>Výdaje</span><strong>${formatCurrency(summary.expense)}</strong></div><div class="mini-stat"><span>Rozdíl</span><strong>${formatCurrency(summary.balance)}</strong></div></div><div class="list compact-list overview-list">${rows.map(renderFinanceOverviewItem).join('') || renderEmpty('Zatím žádné finance.')}</div>`;
     } else if (type === 'tasks') {
       const tasks = state.homeTasks.filter((task) => !task.done).slice(0,8);
-      body = tasks.length ? `<div class="list compact-list">${tasks.map((task)=>`<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(task.title)}</div><span class="badge ${task.due && daysUntil(task.due) <= 2 ? 'warn' : ''}">${task.due ? formatDate(task.due) : 'bez termínu'}</span></div><div class="item-meta">${escapeHtml(task.note || taskCategoryLabel(task.category))}</div></div>`).join('')}</div>` : renderEmpty('Žádné otevřené úkoly.');
+      body = tasks.length ? `<div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : renderEmpty('Žádné otevřené úkoly.');
     } else if (type === 'waste') {
       const waste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days === null || item.days >= 0).sort((a,b)=>(a.days ?? 9999)-(b.days ?? 9999)).slice(0,8);
-      body = waste.length ? `<div class="list compact-list">${waste.map((item)=>`<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.type)}</div><span class="badge ${item.days !== null && item.days <= 1 ? 'warn' : ''}">${item.days === null ? 'bez data' : escapeHtml(dueBadge(item.days))}</span></div><div class="item-meta">Svoz ${formatDate(item.date)}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div></div>`).join('')}</div>` : renderEmpty('Žádný nejbližší svoz.');
+      body = waste.length ? `<div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmpty('Žádný nejbližší svoz.');
     } else {
       const tasks = state.homeTasks.filter((task) => !task.done).slice(0,5);
       const waste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days !== null && item.days >= 0).sort((a,b)=>a.days-b.days).slice(0,4);
-      body = `${tasks.length ? `<h3 class="overview-mini-title">Úkoly</h3><div class="list compact-list">${tasks.map((task)=>`<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(task.title)}</div><span class="badge">${task.due ? formatDate(task.due) : 'bez termínu'}</span></div><div class="item-meta">${escapeHtml(task.note || taskCategoryLabel(task.category))}</div></div>`).join('')}</div>` : ''}${waste.length ? `<h3 class="overview-mini-title">Odpad</h3><div class="list compact-list">${waste.map((item)=>`<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.type)}</div><span class="badge ${item.days <= 1 ? 'warn' : ''}">${escapeHtml(dueBadge(item.days))}</span></div><div class="item-meta">Svoz ${formatDate(item.date)}</div></div>`).join('')}</div>` : renderEmpty('Nic akutního tu není.')}`;
+      body = `${tasks.length ? `<h3 class="overview-mini-title">Úkoly</h3><div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : ''}${waste.length ? `<h3 class="overview-mini-title">Odpad</h3><div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmpty('Nic akutního tu není.')}`;
     }
 
     return `
@@ -775,6 +890,32 @@
       </div>
       <div class="overview-body">${body}</div>
       <div class="form-actions overview-actions"><button class="primary-btn" type="button" data-nav="${escapeHtml(navTarget)}">Otevřít modul</button><button class="ghost-btn" type="button" data-action="close-overview">Zavřít</button></div>
+    `;
+  }
+
+  function renderOnboardingFlowHint(mode = 'choice') {
+    const isChoice = mode === 'choice';
+    const items = isChoice
+      ? [
+        ['1', 'Online účet', 'Ostrá domácnost se zakládá přes e-mail a heslo.'],
+        ['2', 'Vlastní domácnost', 'Data se ukládají pod samostatné household_id.'],
+        ['3', 'Demo bokem', 'Ukázka se neukládá a po návratu začíná znovu.']
+      ]
+      : [
+        ['1', 'E-mail + heslo', 'Nejdřív přihlášení nebo registrace vlastníka.'],
+        ['2', 'Ověření e-mailu', 'Po potvrzení se účet napojí zpět na Domácnost+.'],
+        ['3', 'Profily a moduly', 'Pak se založí domácnost, profily a zapnuté části aplikace.']
+      ];
+    return `
+      <div class="onboarding-trust-strip" aria-label="Jak funguje založení domácnosti">
+        ${items.map(([step, title, text]) => `
+          <div class="onboarding-step-card">
+            <span>${escapeHtml(step)}</span>
+            <strong>${escapeHtml(title)}</strong>
+            <em>${escapeHtml(text)}</em>
+          </div>
+        `).join('')}
+      </div>
     `;
   }
 
@@ -794,6 +935,8 @@
                 <p>Rodinná aplikace pro domácnost, nákupy, smlouvy, finance, auta, HDO, odpad, balíky a další věci kolem domu.</p>
               </div>
             </div>
+
+            ${renderOnboardingFlowHint('choice')}
 
             <div class="grid two onboarding-choice-grid">
               <article class="card flat choice-tile">
@@ -831,6 +974,7 @@
           </div>
 
           ${renderEmailConfirmationCard()}
+          ${renderOnboardingFlowHint('account')}
 
           <div class="grid two">
             <section class="card flat">
@@ -1098,6 +1242,8 @@
     const firstTask = openTasks[0];
     const firstWaste = wasteSoon[0];
     const firstVehicle = vehicleAlerts[0];
+    const financeSummary = financeMonthSummary();
+    const financeMonth = financeSelectedMonth();
 
     const items = [
       {
@@ -1132,6 +1278,15 @@
         meta: openShopping.slice(0, 3).map((item) => item.name).filter(Boolean).join(' · ') || 'V seznamu není nic k nákupu.',
         badge: `${openShopping.length} položek`,
         tone: openShopping.length ? 'warn' : 'good'
+      },
+      {
+        nav: 'finance',
+        overview: 'finance',
+        icon: '💰',
+        title: financeSummary.balance >= 0 ? 'Finance drží plus' : 'Finance jsou v mínusu',
+        meta: `${financeMonthLabel(financeMonth)}: příjmy ${formatCurrency(financeSummary.income)} · výdaje ${formatCurrency(financeSummary.expense)}`,
+        badge: formatCurrency(financeSummary.balance),
+        tone: financeSummary.balance >= 0 ? 'good' : 'warn'
       },
       {
         nav: firstContract ? 'contracts' : firstVehicle ? 'garage' : 'homecare',
@@ -1395,6 +1550,8 @@
       { title: 'Domácnost+ v.0.1_40', note: 'Hotovo: bohatší demo, potvrzení e-mailu, opětovné odeslání ověřovacího e-mailu a přechod z demo do ostré domácnosti.' },
       { title: 'Domácnost+ v.0.1_43', note: 'Hotovo: kontrola Supabase Auth nastavení, bezpečnější přechod demo → ostrá domácnost a jasný stav redirect URL.' },
       { title: 'Domácnost+ v.0.1_48', note: 'Hotovo: kompaktní záložky v kalendáři, balících, financích, garáži a smlouvách + oprava rychlého přehledu financí.' },
+      { title: 'Domácnost+ v.0.1_49', note: 'Hotovo: čistší rychlé přehledy z dashboardu bez destruktivních akcí, finance na dashboardu a lepší mobilní centrování záložek.' },
+      { title: 'Domácnost+ v.0.1_50', note: 'Hotovo: kompaktní detaily Garáže a Smluv, rozbalovací editační bloky a čistší onboarding ostré domácnosti.' },
       { title: 'Domácnost+ v.0.1_34', note: 'Hotovo: variabilní finanční účty, peněženky, obálky a osobní zůstatky.' }
     ];
     return `
@@ -1960,10 +2117,12 @@
       <div class="grid two module-tabbed garage-tab-${activeGarageTab}" data-tab-area="garage">
         <section class="card desktop-span-2 garage-panel panel-overview">
           <div class="card-header"><div><h2>Garáž</h2><p>Seznam aut, termíny a rychlý stav bez dlouhého scrollování.</p></div><span class="badge ${state.cloud?.householdId ? 'good' : ''}">${state.cloud?.householdId ? 'cloud ready' : 'lokálně'}</span></div>
-          <div class="form-actions compact-actions">
-            <button class="ghost-btn" type="button" data-action="cloud-load-garage">Načíst cloud Garáž</button>
-            <button class="ghost-btn" type="button" data-action="cloud-sync-local-garage">Odeslat lokální Garáž</button>
-          </div>
+          ${state.cloud?.householdId ? `
+            <div class="form-actions compact-actions">
+              <button class="ghost-btn" type="button" data-action="cloud-load-garage">Načíst cloud Garáž</button>
+              <button class="ghost-btn" type="button" data-action="cloud-sync-local-garage">Odeslat lokální Garáž</button>
+            </div>
+          ` : '<div class="inline-note compact-note">Po přihlášení se Garáž ukládá podle domácnosti. Offline data zůstávají jen jako pracovní záloha.</div>'}
           <div class="cloud-status-grid compact-cloud-stats">
             <div class="mini-stat"><span>Auta</span><strong>${vehicles.length}</strong></div>
             <div class="mini-stat"><span>Tankování</span><strong>${fuelRowsAll.length}</strong></div>
@@ -2169,43 +2328,65 @@
     const serviceStatus = getServiceStatus(vehicle, latestService, latestFuel);
     const stk = dateStatus(vehicle.technicalInspectionUntil, 60);
     const insurance = dateStatus(vehicle.insuranceUntil, 45);
+    const totalCost = stats.fuelCost + stats.serviceCost;
+    const costPerKm = stats.totalKm > 0 ? totalCost / stats.totalKm : null;
     return `
-      <div class="card-header">
+      <div class="card-header compact-detail-head">
         <div><h2>${escapeHtml(vehicle.name)}</h2><p>${escapeHtml(vehicle.plate || 'Bez SPZ')} · ${escapeHtml(vehicle.fuelType || 'palivo neuvedeno')}</p></div>
         <span class="badge ${vehicle.cloudId ? 'good' : ''}">${vehicle.cloudId ? 'cloud' : 'lokálně'} · ${escapeHtml(vehicle.odometer || latestFuel?.odometer || 0)} km</span>
       </div>
       <div class="kpi-row compact">
         <div class="kpi"><strong>${stats.averageConsumption ? `${stats.averageConsumption.toFixed(2).replace('.', ',')}` : '—'}</strong><span>l/100 km</span></div>
         <div class="kpi"><strong>${formatCurrency(stats.thisYearCost)}</strong><span>náklady letos</span></div>
-        <div class="kpi"><strong>${formatCurrency(stats.fuelCost + stats.serviceCost)}</strong><span>celkem</span></div>
-        <div class="kpi"><strong>${latestFuel ? formatDate(latestFuel.date, { day: 'numeric', month: 'numeric', year: '2-digit' }) : '—'}</strong><span>poslední tankování</span></div>
+        <div class="kpi"><strong>${formatCurrency(totalCost)}</strong><span>celkem</span></div>
+        <div class="kpi"><strong>${costPerKm ? `${costPerKm.toFixed(2).replace('.', ',')} Kč` : '—'}</strong><span>cena / km</span></div>
       </div>
-      <div class="garage-status-grid">
+      <div class="garage-status-grid compact-status-grid">
         ${renderDueCard('STK', stk, 'Datum STK zatím není nastavené.')}
         ${renderDueCard('Pojistka', insurance, 'Datum konce pojistky zatím není nastavené.')}
         ${renderDueCard('Servis', serviceStatus, 'Servisní interval zatím není nastavený.')}
       </div>
-      <div class="grid two">
+      <div class="grid two detail-summary-grid">
+        <div class="detail-stack compact-detail-stack">
+          <div class="stat-line"><span>Poslední tankování</span><strong>${latestFuel ? `${formatDate(latestFuel.date)} · ${escapeHtml(latestFuel.odometer || '—')} km` : '—'}</strong></div>
+          <div class="stat-line"><span>Poslední servis</span><strong>${latestService ? `${formatDate(latestService.date)} · ${escapeHtml(latestService.title || 'servis')}` : '—'}</strong></div>
+          <div class="stat-line"><span>Záznamy</span><strong>${fuelRows.length} tankování · ${serviceRows.length} servisů</strong></div>
+          ${vehicle.note ? `<div class="inline-note compact-note">${escapeHtml(vehicle.note)}</div>` : ''}
+        </div>
+        <div class="compact-chart-box">${renderMiniChart(fuelRows)}</div>
+      </div>
+      <div class="grid two compact-record-grid">
         <div>
-          <div class="card-header"><div><h3>Údaje auta</h3><p>Termíny a servisní intervaly.</p></div></div>
-          <form data-form="update-vehicle" data-vehicle-id="${vehicle.id}">
-            <div class="form-grid two">
-              ${field('Název auta', 'name', 'text', 'Elroq / Octavia', true, vehicle.name)}
-              ${field('SPZ', 'plate', 'text', 'volitelné', false, vehicle.plate || '')}
-              ${field('Palivo', 'fuelType', 'text', 'benzín / nafta / elektro', false, vehicle.fuelType || '')}
-              ${field('Aktuální km', 'odometer', 'number', '0', false, vehicle.odometer || latestFuel?.odometer || '')}
-              ${field('STK do', 'technicalInspectionUntil', 'date', '', false, vehicle.technicalInspectionUntil || '')}
-              ${field('Pojistka do', 'insuranceUntil', 'date', '', false, vehicle.insuranceUntil || '')}
-              ${field('Další servis při km', 'nextServiceKm', 'number', 'např. 150000', false, vehicle.nextServiceKm || '')}
-              ${field('Další servis do data', 'nextServiceDate', 'date', '', false, vehicle.nextServiceDate || '')}
-              ${field('Poznámka', 'note', 'text', 'pneu, rozměr, VIN...', false, vehicle.note || '')}
-            </div>
-            <div class="form-actions"><button class="ghost-btn" type="submit">Uložit údaje auta</button><button class="ghost-btn" type="button" data-action="cloud-sync-vehicle" data-id="${vehicle.id}">Odeslat auto do cloudu</button></div>
-          </form>
-          ${renderMiniChart(fuelRows)}
+          <div class="card-header small"><div><h3>Tankování</h3><p>${fuelRows.length} záznamů · posledních 6</p></div></div>
+          ${fuelRows.length ? `<div class="list compact-list">${[...fuelRows].reverse().slice(0, 6).map((item) => renderFuelListItem(item)).join('')}</div>` : renderEmpty('Zatím žádné tankování.')}
         </div>
         <div>
-          <form data-form="add-fuel" data-vehicle-id="${vehicle.id}">
+          <div class="card-header small"><div><h3>Servisy</h3><p>${serviceRows.length} záznamů · posledních 6</p></div></div>
+          ${serviceRows.length ? `<div class="list compact-list">${serviceRows.slice(0, 6).map((item) => renderServiceListItem(item)).join('')}</div>` : renderEmpty('Zatím žádný servis.')}
+        </div>
+      </div>
+      <details class="action-details compact-edit-details">
+        <summary><span>Upravit údaje auta</span><em>termíny, km, servisní intervaly</em></summary>
+        <form data-form="update-vehicle" data-vehicle-id="${vehicle.id}" class="compact-form">
+          <div class="form-grid two">
+            ${field('Název auta', 'name', 'text', 'Elroq / Octavia', true, vehicle.name)}
+            ${field('SPZ', 'plate', 'text', 'volitelné', false, vehicle.plate || '')}
+            ${field('Palivo', 'fuelType', 'text', 'benzín / nafta / elektro', false, vehicle.fuelType || '')}
+            ${field('Aktuální km', 'odometer', 'number', '0', false, vehicle.odometer || latestFuel?.odometer || '')}
+            ${field('STK do', 'technicalInspectionUntil', 'date', '', false, vehicle.technicalInspectionUntil || '')}
+            ${field('Pojistka do', 'insuranceUntil', 'date', '', false, vehicle.insuranceUntil || '')}
+            ${field('Další servis při km', 'nextServiceKm', 'number', 'např. 150000', false, vehicle.nextServiceKm || '')}
+            ${field('Další servis do data', 'nextServiceDate', 'date', '', false, vehicle.nextServiceDate || '')}
+            ${field('Poznámka', 'note', 'text', 'pneu, rozměr, VIN...', false, vehicle.note || '')}
+          </div>
+          <div class="form-actions"><button class="ghost-btn" type="submit">Uložit údaje auta</button><button class="ghost-btn" type="button" data-action="cloud-sync-vehicle" data-id="${vehicle.id}">Odeslat auto do cloudu</button></div>
+        </form>
+      </details>
+      <details class="action-details compact-edit-details">
+        <summary><span>Přidat tankování / servis</span><em>formuláře jsou schované, ať je detail krátký</em></summary>
+        <div class="grid two compact-add-records">
+          <form data-form="add-fuel" data-vehicle-id="${vehicle.id}" class="compact-form">
+            <div class="card-header small"><div><h3>Tankování</h3><p>Nový záznam spotřeby.</p></div></div>
             <div class="form-grid">
               ${field('Datum tankování', 'date', 'date', '', true, todayISO())}
               ${field('Stav km', 'odometer', 'number', 'např. 125000', true)}
@@ -2214,7 +2395,8 @@
             </div>
             <div class="form-actions"><button class="primary-btn" type="submit">Přidat tankování</button></div>
           </form>
-          <form data-form="add-service" data-vehicle-id="${vehicle.id}" style="margin-top:14px;">
+          <form data-form="add-service" data-vehicle-id="${vehicle.id}" class="compact-form">
+            <div class="card-header small"><div><h3>Servis / náklad</h3><p>Oprava, pneu, STK nebo jiný náklad.</p></div></div>
             <div class="form-grid">
               ${field('Datum servisu', 'date', 'date', '', true, todayISO())}
               ${field('Popis', 'title', 'text', 'olej / pneu / STK', true)}
@@ -2224,18 +2406,7 @@
             <div class="form-actions"><button class="ghost-btn" type="submit">Přidat servis</button></div>
           </form>
         </div>
-      </div>
-      <div style="height:14px"></div>
-      <div class="grid two">
-        <div>
-          <div class="card-header"><div><h3>Tankování</h3><p>${fuelRows.length} záznamů</p></div></div>
-          ${fuelRows.length ? `<div class="list">${[...fuelRows].reverse().slice(0, 8).map((item) => renderFuelListItem(item)).join('')}</div>` : renderEmpty('Zatím žádné tankování.')}
-        </div>
-        <div>
-          <div class="card-header"><div><h3>Servisy</h3><p>${serviceRows.length} záznamů</p></div></div>
-          ${serviceRows.length ? `<div class="list">${serviceRows.slice(0, 8).map((item) => renderServiceListItem(item)).join('')}</div>` : renderEmpty('Zatím žádný servis.')}
-        </div>
-      </div>
+      </details>
     `;
   }
 
@@ -2430,68 +2601,67 @@
     const files = state.contractFiles.filter((file) => file.contractId === contract.id).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     const left = daysUntil(contract.validTo);
     const statusText = left === null ? 'Bez nastaveného konce' : left < 0 ? `Propadlé před ${Math.abs(left)} dny` : left === 0 ? 'Končí dnes' : `Končí za ${left} dní`;
+    const cloudFiles = files.filter((file) => file.cloudId).length;
+    const localFiles = files.length - cloudFiles;
     return `
-      <div class="card-header">
+      <div class="card-header compact-detail-head">
         <div><h2>${escapeHtml(contract.name)}</h2><p>${escapeHtml(contract.provider || 'Bez poskytovatele')} · ${escapeHtml(contractTypeLabel(contract.type))}</p></div>
         <span class="badge ${left !== null && left <= 45 ? (left < 0 ? 'bad' : 'warn') : 'good'}">${escapeHtml(statusText)}</span>
       </div>
-      <div class="grid two">
-        <div class="detail-stack">
+      <div class="grid two detail-summary-grid">
+        <div class="detail-stack compact-detail-stack">
           <div class="stat-line"><span>Číslo smlouvy</span><strong>${escapeHtml(contract.number || '—')}</strong></div>
           <div class="stat-line"><span>Platnost</span><strong>${contract.validFrom ? formatDate(contract.validFrom) : '—'} → ${contract.validTo ? formatDate(contract.validTo) : '—'}</strong></div>
           <div class="stat-line"><span>Platba</span><strong>${formatCurrency(contract.amount)} / ${frequencyLabel(contract.frequency)}</strong></div>
-          <div class="stat-line"><span>Přílohy</span><strong>${files.length}</strong></div>
-          ${contract.note ? `<div class="inline-note">${escapeHtml(contract.note)}</div>` : ''}
+          <div class="stat-line"><span>Přílohy</span><strong>${files.length} celkem · ${cloudFiles} cloud · ${localFiles} lokálně</strong></div>
+          ${contract.note ? `<div class="inline-note compact-note">${escapeHtml(contract.note)}</div>` : ''}
         </div>
-        <div>
-          <form data-form="update-contract" data-contract-id="${contract.id}" class="compact-form">
-            <div class="card-header small"><div><h3>Upravit údaje</h3><p>Změna se uloží lokálně a u cloudové smlouvy rovnou i do Supabase.</p></div></div>
-            <div class="form-grid two">
-              ${field('Název', 'name', 'text', 'Název smlouvy', true, contract.name || '')}
-              ${selectField('Typ', 'type', contractTypeOptions(contract.type || 'other'), contract.type || 'other')}
-              ${field('Poskytovatel', 'provider', 'text', 'Poskytovatel', false, contract.provider || '')}
-              ${field('Číslo smlouvy', 'number', 'text', 'Číslo smlouvy', false, contract.number || '')}
-              ${field('Platnost od', 'validFrom', 'date', '', false, contract.validFrom || '')}
-              ${field('Platnost do', 'validTo', 'date', '', false, contract.validTo || '')}
-              ${field('Částka', 'amount', 'number', 'např. 1250', false, contract.amount || '')}
-              ${selectField('Frekvence platby', 'frequency', [['monthly', 'Měsíčně'], ['quarterly', 'Čtvrtletně'], ['yearly', 'Ročně'], ['once', 'Jednorázově'], ['other', 'Jiné']], contract.frequency || 'monthly')}
-              ${field('Poznámka', 'note', 'text', 'volitelné', false, contract.note || '')}
-            </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button>${contract.cloudId ? '<span class="badge good">cloud update</span>' : '<span class="badge">lokální smlouva</span>'}</div>
-          </form>
+        <div class="inline-note compact-note">
+          <strong>Ukládání příloh</strong><br>Cloudové smlouvy používají soukromý Supabase Storage a dočasné odkazy. Lokální smlouvy dál používají IndexedDB jako fallback.
         </div>
       </div>
-      <div style="height:14px"></div>
-      <div class="grid two">
-        <div>
-          <form data-form="add-contract-file" data-contract-id="${contract.id}">
-            <div class="upload-box">
-              <label for="contractFiles">PDF / fotka smlouvy</label>
-              <input id="contractFiles" class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf">
-              <p>Na iPhonu/Androidu můžeš vybrat soubor, fotku z galerie nebo rovnou vyfotit dokument podle nabídky systému.</p>
-            </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat přílohu</button>${contract.cloudId ? '<span class="badge good">Supabase Storage</span>' : '<span class="badge">lokálně / po odeslání smlouvy cloud</span>'}</div>
-          </form>
-        </div>
-        <div class="inline-note">
-          <strong>Cloud přílohy:</strong><br>U cloudové smlouvy se PDF/fotky ukládají do soukromého Supabase Storage bucketu. Otevírání jde přes dočasný odkaz, veřejné URL se nepoužívá. Lokální smlouvy dál používají IndexedDB.
-        </div>
-      </div>
-      <div style="height:14px"></div>
-      <div class="card-header"><div><h3>Přílohy</h3><p>${files.filter((file) => file.cloudId).length} cloud · ${files.filter((file) => !file.cloudId).length} lokálně</p></div>${contract.cloudId && state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-contract-files">Načíst cloud přílohy</button>' : ''}</div>
-      ${files.length ? `<div class="file-list">${files.map((file) => `
-        <div class="file-row">
+      <div class="card-header small compact-files-head"><div><h3>Přílohy</h3><p>${cloudFiles} cloud · ${localFiles} lokálně</p></div>${contract.cloudId && state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-contract-files">Načíst cloud přílohy</button>' : ''}</div>
+      ${files.length ? `<div class="file-list compact-file-list">${files.map((file) => `
+        <div class="file-row compact-file-row">
           <div>
             <strong>${escapeHtml(file.fileName)}</strong>
             <em>${escapeHtml(file.fileType || 'soubor')} · ${formatBytes(file.size)} · ${formatDate(file.createdAt?.slice(0, 10))}${file.cloudId ? ' · cloud' : ' · lokálně'}</em>
           </div>
-          <div class="item-actions">
+          <div class="item-actions compact-actions">
             <button class="ghost-btn" type="button" data-action="open-contract-file" data-id="${file.id}">Otevřít</button>
             <button class="ghost-btn" type="button" data-action="download-contract-file" data-id="${file.id}">Stáhnout</button>
             <button class="danger-btn" type="button" data-action="delete-contract-file" data-id="${file.id}">Smazat</button>
           </div>
         </div>
       `).join('')}</div>` : renderEmpty('Zatím nejsou přidané žádné přílohy.')}
+      <details class="action-details compact-edit-details">
+        <summary><span>Upravit údaje smlouvy</span><em>název, platnost, částka, poznámka</em></summary>
+        <form data-form="update-contract" data-contract-id="${contract.id}" class="compact-form">
+          <div class="form-grid two">
+            ${field('Název', 'name', 'text', 'Název smlouvy', true, contract.name || '')}
+            ${selectField('Typ', 'type', contractTypeOptions(contract.type || 'other'), contract.type || 'other')}
+            ${field('Poskytovatel', 'provider', 'text', 'Poskytovatel', false, contract.provider || '')}
+            ${field('Číslo smlouvy', 'number', 'text', 'Číslo smlouvy', false, contract.number || '')}
+            ${field('Platnost od', 'validFrom', 'date', '', false, contract.validFrom || '')}
+            ${field('Platnost do', 'validTo', 'date', '', false, contract.validTo || '')}
+            ${field('Částka', 'amount', 'number', 'např. 1250', false, contract.amount || '')}
+            ${selectField('Frekvence platby', 'frequency', [['monthly', 'Měsíčně'], ['quarterly', 'Čtvrtletně'], ['yearly', 'Ročně'], ['once', 'Jednorázově'], ['other', 'Jiné']], contract.frequency || 'monthly')}
+            ${field('Poznámka', 'note', 'text', 'volitelné', false, contract.note || '')}
+          </div>
+          <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button>${contract.cloudId ? '<span class="badge good">cloud update</span>' : '<span class="badge">lokální smlouva</span>'}</div>
+        </form>
+      </details>
+      <details class="action-details compact-edit-details">
+        <summary><span>Přidat přílohu</span><em>PDF, fotka nebo scan dokumentu</em></summary>
+        <form data-form="add-contract-file" data-contract-id="${contract.id}" class="compact-form">
+          <div class="upload-box">
+            <label for="contractFiles">PDF / fotka smlouvy</label>
+            <input id="contractFiles" class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf">
+            <p>Na iPhonu/Androidu můžeš vybrat soubor, fotku z galerie nebo rovnou vyfotit dokument podle nabídky systému.</p>
+          </div>
+          <div class="form-actions"><button class="primary-btn" type="submit">Přidat přílohu</button>${contract.cloudId ? '<span class="badge good">Supabase Storage</span>' : '<span class="badge">lokálně / po odeslání smlouvy cloud</span>'}</div>
+        </form>
+      </details>
     `;
   }
 
@@ -5975,6 +6145,7 @@
     sessionStorage.removeItem('domacnostPlus.onboardingMode');
     sessionStorage.removeItem(DEMO_SESSION_KEY);
     activeModule = 'home';
+    moduleTabs = {};
     touchState();
     render();
     showToast('Spuštěná demo domácnost · změny se neukládají');
@@ -5987,6 +6158,7 @@
     sessionStorage.removeItem('domacnostPlus.onboardingMode');
     localStorage.setItem('homeWeb.activeModule', 'home');
     activeModule = 'home';
+    moduleTabs = {};
     state = migrateState(mergeState(DEFAULT_STATE, {}));
     document.documentElement.dataset.theme = state.settings.theme || 'light';
     render();
@@ -6159,7 +6331,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 46, appBuild: 48, mode: 'rich-demo-v48', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 46, appBuild: 50, mode: 'rich-demo-v50', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -6227,7 +6399,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 46, appBuild: 48, mode: 'demo-readonly-return-v48', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 46, appBuild: 50, mode: 'demo-readonly-return-v50', updatedAt: new Date().toISOString() };
   }
 
   function addItem(collection, item) {
@@ -6984,14 +7156,14 @@
     if (action === 'select-vehicle') {
       garageVehicleId = button.dataset.id;
       moduleTabs = { ...(moduleTabs || {}), garage: 'detail' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
       return;
     }
     if (action === 'select-contract') {
       activeContractId = button.dataset.id;
       moduleTabs = { ...(moduleTabs || {}), contracts: 'detail' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
       return;
     }
@@ -7687,7 +7859,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 46, schema_version: 45, created_by: user.id })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 50, schema_version: 46, created_by: user.id })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -7848,8 +8020,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 43,
-          schema_version: 45,
+          app_build: 50,
+          schema_version: 46,
           created_by: user.id
         })
         .select('id')
@@ -8026,7 +8198,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-48-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-50-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();

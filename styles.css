@@ -2290,7 +2290,7 @@ button {
   }
 }
 
-/* Domácnost+ v.0.1_48 – kompaktnější layout a rychlé přehledy */
+/* Domácnost+ v.0.1_50 – kompaktnější layout a rychlé přehledy */
 :root {
   --radius-xl: 22px;
   --radius-lg: 18px;
@@ -2491,4 +2491,244 @@ button {
   .card-header { align-items: flex-start; flex-direction: column; }
   .timeline-item { grid-template-columns: auto minmax(0, 1fr); }
   .timeline-item > .badge { grid-column: 2; justify-self: start; }
+}
+
+
+/* Domácnost+ v.0.1_50 – čistší dashboard přehledy a mobilní záložky */
+.section-tabs {
+  scroll-padding-inline: 14px;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+}
+.section-tab {
+  box-shadow: 0 8px 22px rgba(45,70,110,.08);
+  transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.section-tab.active {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(53,116,240,.14);
+}
+.overview-panel {
+  background: color-mix(in srgb, var(--card-strong) 88%, transparent);
+  backdrop-filter: blur(24px) saturate(1.18);
+  -webkit-backdrop-filter: blur(24px) saturate(1.18);
+}
+.overview-list-item {
+  border: 1px solid rgba(255,255,255,.42);
+  background: rgba(255,255,255,.42);
+}
+[data-theme="dark"] .overview-list-item {
+  border-color: rgba(255,255,255,.08);
+  background: rgba(255,255,255,.055);
+}
+.overview-list-item .item-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.overview-list-item .item-meta {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.overview-actions .primary-btn,
+.overview-actions .ghost-btn {
+  flex: 1 1 0;
+}
+
+@media (max-width: 560px) {
+  .section-tabs {
+    gap: 6px;
+    margin-inline: -4px;
+    padding: 1px 4px 9px;
+  }
+  .section-tab {
+    min-height: 35px;
+    padding: 7px 9px;
+    gap: 5px;
+  }
+  .section-tab strong { font-size: .78rem; }
+  .section-tab em { min-width: 18px; padding: 1px 5px; font-size: .68rem; }
+  .overview-backdrop {
+    padding: 10px 10px max(10px, env(safe-area-inset-bottom, 0px));
+  }
+  .overview-panel {
+    max-height: min(84vh, 760px);
+    border-radius: 24px;
+    padding: 12px;
+  }
+  .overview-head h2 { font-size: 1.02rem; }
+  .overview-icon { width: 36px; height: 36px; border-radius: 14px; }
+  .overview-actions { display: grid; grid-template-columns: 1fr 1fr; }
+}
+
+/* Domácnost+ v.0.1_50 – kompaktní detaily a čistší onboarding */
+.onboarding-trust-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.onboarding-step-card {
+  min-height: 96px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, .22);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .48);
+  box-shadow: 0 10px 26px rgba(45, 70, 110, .08);
+}
+[data-theme="dark"] .onboarding-step-card {
+  background: rgba(255, 255, 255, .06);
+}
+.onboarding-step-card span {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-bottom: 8px;
+  border-radius: 999px;
+  background: rgba(53, 116, 240, .14);
+  color: var(--text);
+  font-weight: 900;
+  font-size: .76rem;
+}
+.onboarding-step-card strong,
+.onboarding-step-card em {
+  display: block;
+}
+.onboarding-step-card strong {
+  font-size: .9rem;
+}
+.onboarding-step-card em {
+  margin-top: 4px;
+  color: var(--muted);
+  font-style: normal;
+  font-size: .78rem;
+  line-height: 1.3;
+}
+.compact-detail-head {
+  align-items: center;
+}
+.detail-summary-grid,
+.compact-record-grid,
+.compact-add-records {
+  margin-top: 10px;
+}
+.compact-detail-stack {
+  gap: 7px;
+}
+.compact-chart-box {
+  min-width: 0;
+}
+.compact-status-grid {
+  margin-top: 8px;
+}
+.compact-record-grid .card-header.small {
+  margin: 0 0 7px;
+}
+.compact-record-grid .empty {
+  min-height: 66px;
+}
+.action-details {
+  margin-top: 10px;
+  border: 1px solid rgba(148, 163, 184, .24);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .42);
+  overflow: hidden;
+}
+[data-theme="dark"] .action-details {
+  background: rgba(255, 255, 255, .055);
+}
+.action-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 12px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 900;
+}
+.action-details summary::-webkit-details-marker {
+  display: none;
+}
+.action-details summary::after {
+  content: '⌄';
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(53, 116, 240, .12);
+  transition: transform .18s ease;
+}
+.action-details[open] summary::after {
+  transform: rotate(180deg);
+}
+.action-details summary span,
+.action-details summary em {
+  display: block;
+}
+.action-details summary em {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: .74rem;
+  font-style: normal;
+  font-weight: 700;
+}
+.action-details > form,
+.action-details > .grid {
+  padding: 0 12px 12px;
+}
+.compact-file-list {
+  margin-top: 6px;
+}
+.compact-file-row {
+  padding: 9px 10px;
+  border-radius: 16px;
+}
+.compact-files-head {
+  margin-top: 10px;
+}
+@media (max-width: 760px) {
+  .onboarding-trust-strip {
+    grid-template-columns: 1fr;
+  }
+  .onboarding-step-card {
+    min-height: 0;
+    padding: 10px;
+  }
+  .compact-detail-head {
+    align-items: flex-start;
+  }
+  .action-details summary {
+    align-items: flex-start;
+  }
+  .compact-add-records {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 430px) {
+  .onboarding-card {
+    padding: 12px;
+    border-radius: 28px;
+  }
+  .onboarding-hero {
+    padding: 13px;
+    border-radius: 22px;
+  }
+  .onboarding-hero h1 {
+    font-size: clamp(1.8rem, 10vw, 3rem);
+    letter-spacing: -0.065em;
+  }
+  .action-details summary {
+    padding: 10px;
+  }
+  .action-details > form,
+  .action-details > .grid {
+    padding: 0 10px 10px;
+  }
 }
