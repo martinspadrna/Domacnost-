@@ -119,6 +119,21 @@ button {
   letter-spacing: -0.08em;
 }
 
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.brand-mark.logo-mark {
+  overflow: hidden;
+  background: transparent;
+  color: transparent;
+}
+
 .brand-title {
   min-width: 0;
 }
@@ -2198,3 +2213,14 @@ button {
 .soft-details summary { cursor: pointer; font-weight: 750; }
 .soft-details .module-check-grid { margin-top: 14px; }
 @media (max-width: 760px) { .choice-tile { min-height: 0; } }
+
+/* Domácnost+ v.0.1_42 — demo sandbox */
+.demo-readonly-banner {
+  border-color: rgba(245, 158, 11, .35);
+  background: linear-gradient(135deg, rgba(255,255,255,.88), rgba(254, 243, 199, .72));
+}
+.demo-readonly-banner h2 { margin: 0 0 4px; }
+.demo-readonly-banner p { margin: 0; color: var(--muted); line-height: 1.45; }
+[data-theme="dark"] .demo-readonly-banner {
+  background: linear-gradient(135deg, rgba(30, 41, 59, .92), rgba(113, 63, 18, .34));
+}

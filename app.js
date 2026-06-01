@@ -1,9 +1,9 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = 'Domácnost+ v.0.1_41';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_41';
-  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_40';
+  const APP_VERSION = 'Domácnost+ v.0.1_42';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_42';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_41';
   const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
@@ -110,6 +110,8 @@
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_v7jeuZC-MNUEO5nfE5xcUQ_Pu9pT-X_';
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
+  const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-42.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -117,9 +119,9 @@
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 40,
-      appBuild: 41,
-      mode: 'auth-setup-demo-safe',
+      schemaVersion: 41,
+      appBuild: 42,
+      mode: 'demo-gated-start-logo-fix',
       createdAt: '',
       updatedAt: ''
     },
@@ -180,6 +182,7 @@
   };
 
   let state = loadState();
+  let demoRuntimeActive = false;
   let activeModule = localStorage.getItem('homeWeb.activeModule') || 'home';
   let garageVehicleId = null;
   let activeContractId = null;
@@ -248,8 +251,18 @@
     return migrateState(mergeState(DEFAULT_STATE, {}));
   }
 
+  function isStoredDemoState(candidate) {
+    return Boolean(
+      candidate?.settings?.demoMode
+      || candidate?.cloud?.provider === 'demo'
+      || candidate?.cloud?.status === 'demo'
+      || String(candidate?.meta?.mode || '').includes('demo')
+    );
+  }
+
   function scoreStoredState(candidate, priority = 0) {
     if (!candidate || typeof candidate !== 'object') return -1;
+    if (isStoredDemoState(candidate)) return -1;
     let score = priority;
     const household = candidate.household || {};
     const collections = getCollectionNames ? getCollectionNames() : [];
@@ -289,9 +302,9 @@
     const timestamp = new Date().toISOString();
 
     migrated.meta = {
-      schemaVersion: 40,
-      appBuild: 41,
-      mode: 'auth-setup-demo-safe',
+      schemaVersion: 41,
+      appBuild: 42,
+      mode: 'demo-gated-start-logo-fix',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -462,6 +475,9 @@
   }
 
   function saveState() {
+    // Demo je jen dočasný sandbox. Nikdy ho neukládáme do localStorage,
+    // aby se všem při každém spuštění ukázala stejná plná demo domácnost.
+    if (isDemoOnlyState()) return;
     if (state?.meta) state.meta.updatedAt = new Date().toISOString();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
@@ -529,10 +545,23 @@
     return result;
   }
 
+  function isDemoOnlyState() {
+    return Boolean(state?.settings?.demoMode || state?.cloud?.provider === 'demo' || state?.cloud?.status === 'demo');
+  }
+
+  function shouldShowStartChoice() {
+    if (!state.household?.isConfigured) return true;
+    if (state.cloud?.status === 'email-confirmation') {
+      onboardingMode = 'account';
+      return true;
+    }
+    return isDemoOnlyState() && !demoRuntimeActive;
+  }
+
   function render() {
     document.documentElement.dataset.theme = state.settings.theme || 'light';
 
-    if (!state.household?.isConfigured) {
+    if (shouldShowStartChoice()) {
       renderOnboarding();
       return;
     }
@@ -549,7 +578,7 @@
       <div class="app-frame">
         <header class="topbar">
           <div class="brand">
-            <div class="brand-mark">D+</div>
+            <div class="brand-mark logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
             <div class="brand-title">
               <h1>${escapeHtml(householdName())}</h1>
               <p>${escapeHtml(APP_VERSION)} · ${escapeHtml(currentProfile()?.name || 'bez profilu')} · ${escapeHtml(cloudModeLabel())}</p>
@@ -573,7 +602,7 @@
             </div>
             ${renderPageActions(active.id)}
           </section>
-          ${renderModule(active.id)}
+          ${renderDemoReadOnlyBanner()}${renderModule(active.id)}
         </main>
 
         <p class="footer-note">${escapeHtml(APP_VERSION)} · cloud nákupy, smlouvy, garáž, HDO, odpad, balíky, úkoly, kalendář a finance · lokální režim zůstává jako záloha</p>
@@ -595,7 +624,35 @@
       <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
     `;
 
+    promoteActiveContentBeforeForms();
     keepActiveNavCentered();
+  }
+
+  function renderDemoReadOnlyBanner() {
+    if (!isDemoOnlyState()) return '';
+    return `
+      <section class="card demo-readonly-banner desktop-span-2">
+        <div class="item-top">
+          <div>
+            <h2>Demo verze</h2>
+            <p>Ukázková domácnost je vždy stejná. Všechno si můžeš proklikat, ale změny se neukládají a po novém spuštění začne demo znovu čisté.</p>
+          </div>
+          <span class="badge warn">bez ukládání</span>
+        </div>
+      </section>
+    `;
+  }
+
+  function promoteActiveContentBeforeForms() {
+    // V modulech má být nejdřív vidět aktivní obsah a až potom přidávání nové položky.
+    document.querySelectorAll('.card').forEach((card) => {
+      const form = card.querySelector(':scope > form');
+      const list = card.querySelector(':scope > .list');
+      if (!form || !list) return;
+      if (form.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING) {
+        card.insertBefore(list, form);
+      }
+    });
   }
 
   function keepActiveNavCentered(behavior = 'auto') {
@@ -622,7 +679,7 @@
         <div class="onboarding-screen">
           <section class="onboarding-card onboarding-choice-card">
             <div class="onboarding-hero">
-              <div class="brand-mark big">D+</div>
+              <div class="brand-mark big logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
               <div>
                 <span class="badge">${escapeHtml(APP_VERSION)}</span>
                 <h1>Domácnost+</h1>
@@ -657,7 +714,7 @@
       <div class="onboarding-screen">
         <section class="onboarding-card">
           <div class="onboarding-hero">
-            <div class="brand-mark big">D+</div>
+            <div class="brand-mark big logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
             <div>
               <span class="badge">${escapeHtml(APP_VERSION)}</span>
               <h1>Založení nebo přihlášení domácnosti</h1>
@@ -1218,7 +1275,7 @@
       { title: 'Domácnost+ v.0.1_30', note: 'Hotovo: správa více cloud domácností, přepínání domácnosti a připravený panel pozvánek.' },
       { title: 'Domácnost+ v.0.1_33', note: 'Hotovo: finance v cloudu a profil po přijetí pozvánky.' },
       { title: 'Domácnost+ v.0.1_40', note: 'Hotovo: bohatší demo, potvrzení e-mailu, opětovné odeslání ověřovacího e-mailu a přechod z demo do ostré domácnosti.' },
-      { title: 'Domácnost+ v.0.1_41', note: 'Hotovo: kontrola Supabase Auth nastavení, bezpečnější přechod demo → ostrá domácnost a jasný stav redirect URL.' },
+      { title: 'Domácnost+ v.0.1_42', note: 'Hotovo: kontrola Supabase Auth nastavení, bezpečnější přechod demo → ostrá domácnost a jasný stav redirect URL.' },
       { title: 'Domácnost+ v.0.1_34', note: 'Hotovo: variabilní finanční účty, peněženky, obálky a osobní zůstatky.' }
     ];
     return `
@@ -5489,8 +5546,10 @@
     state.activeProfileId = state.profiles[0]?.id || '';
     state.enabledModules = normalizeModuleList(data.modules);
     state.settings.dashboardNote = DEFAULT_STATE.settings.dashboardNote;
+    state.settings.demoMode = false;
     state.settings.bottomNavIds = normalizeBottomNavIds(DEFAULT_BOTTOM_NAV_IDS, state.enabledModules);
     activeModule = 'home';
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
     touchState();
     saveState();
 
@@ -5533,6 +5592,7 @@
       saveState();
       return 'email-confirmation';
     }
+    state.settings.demoMode = false;
     state.cloud = {
       ...(state.cloud || {}),
       supabaseUrl: SUPABASE_URL,
@@ -5555,6 +5615,7 @@
     const { data: authData, error } = await client.auth.signInWithPassword({ email, password });
     if (error) return showToast(error.message || 'Přihlášení se nepovedlo');
     const user = authData?.user;
+    state.settings.demoMode = false;
     state.cloud = {
       ...(state.cloud || {}),
       supabaseUrl: SUPABASE_URL,
@@ -5582,6 +5643,7 @@
     await cloudLoadAllModules(false);
     onboardingMode = 'choice';
     sessionStorage.removeItem('domacnostPlus.onboardingMode');
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
     activeModule = 'home';
     touchState();
     saveState();
@@ -5606,12 +5668,13 @@
       invitations: []
     };
     onboardingMode = 'choice';
+    demoRuntimeActive = true;
     sessionStorage.removeItem('domacnostPlus.onboardingMode');
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
     activeModule = 'home';
     touchState();
-    saveState();
     render();
-    showToast('Spuštěná demo domácnost');
+    showToast('Spuštěná demo domácnost · změny se neukládají');
   }
 
   function createDemoState() {
@@ -5780,7 +5843,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 40, appBuild: 41, mode: 'rich-demo-v41', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 41, appBuild: 42, mode: 'rich-demo-v41', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -5848,7 +5911,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 40, appBuild: 41, mode: 'demo-heavy-auth-confirm-flow-v41', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 41, appBuild: 42, mode: 'demo-gated-start-logo-fix-v42', updatedAt: new Date().toISOString() };
   }
 
   function addItem(collection, item) {
@@ -7611,7 +7674,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-41-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-42-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
