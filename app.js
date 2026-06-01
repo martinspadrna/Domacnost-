@@ -1,10 +1,10 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = 'Domácnost+ v.0.1_45';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_45';
-  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_44';
-  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
+  const APP_VERSION = 'Domácnost+ v.0.1_47';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_46';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_45';
+  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
     { id: 'home', label: 'Domů', icon: '🏠' },
@@ -111,7 +111,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-45.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-47.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -119,8 +119,8 @@
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 44,
-      appBuild: 45,
+      schemaVersion: 46,
+      appBuild: 47,
       mode: 'demo-gated-start-logo-fix',
       createdAt: '',
       updatedAt: ''
@@ -184,6 +184,8 @@
   let state = loadState();
   let demoRuntimeActive = false;
   let activeModule = localStorage.getItem('homeWeb.activeModule') || 'home';
+  let activeOverview = null;
+  let moduleTabs = safeParse(localStorage.getItem('domacnostPlus.moduleTabs'), {}) || {};
   let garageVehicleId = null;
   let activeContractId = null;
   let fuelioPreview = null;
@@ -302,8 +304,8 @@
     const timestamp = new Date().toISOString();
 
     migrated.meta = {
-      schemaVersion: 44,
-      appBuild: 45,
+      schemaVersion: 46,
+      appBuild: 47,
       mode: 'demo-gated-start-logo-fix',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
@@ -621,6 +623,7 @@
           }).join('')}
         </div>
       </nav>
+      ${renderOverviewDrawer()}
       <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
     `;
 
@@ -637,7 +640,10 @@
             <h2>Demo verze</h2>
             <p>Ukázková domácnost je vždy stejná. Všechno si můžeš proklikat, ale změny se neukládají a po novém spuštění začne demo znovu čisté.</p>
           </div>
-          <span class="badge warn">bez ukládání</span>
+          <div class="item-actions compact-actions">
+            <span class="badge warn">bez ukládání</span>
+            <button class="ghost-btn" type="button" data-action="exit-demo">Zpět na úvod</button>
+          </div>
         </div>
       </section>
     `;
@@ -668,6 +674,98 @@
         behavior
       });
     });
+  }
+
+
+  function getModuleTab(area, fallback) {
+    return moduleTabs?.[area] || fallback;
+  }
+
+  function setModuleTab(area, tab) {
+    moduleTabs = { ...(moduleTabs || {}), [area]: tab };
+    localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    render();
+  }
+
+  function renderSectionTabs(area, tabs, fallback) {
+    const active = getModuleTab(area, fallback || tabs[0]?.id || 'main');
+    return `
+      <div class="section-tabs compact-tabs" role="tablist" aria-label="Záložky modulu">
+        ${tabs.map((tab) => `
+          <button class="section-tab ${active === tab.id ? 'active' : ''}" type="button" data-action="set-section-tab" data-area="${escapeHtml(area)}" data-tab="${escapeHtml(tab.id)}">
+            <span>${escapeHtml(tab.icon || '')}</span><strong>${escapeHtml(tab.label)}</strong>${tab.count !== undefined ? `<em>${escapeHtml(String(tab.count))}</em>` : ''}
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function renderOverviewDrawer() {
+    if (!activeOverview) return '';
+    return `
+      <div class="overview-backdrop" data-action="close-overview" role="presentation">
+        <aside class="overview-panel" role="dialog" aria-modal="true" aria-label="Rychlý přehled" onclick="event.stopPropagation()">
+          ${renderOverviewContent(activeOverview)}
+        </aside>
+      </div>
+    `;
+  }
+
+  function renderOverviewContent(type) {
+    const hdo = getHdoStatus(now);
+    const titleMap = {
+      calendar: ['📅', 'Kalendář'],
+      hdo: ['💡', 'HDO / nízký tarif'],
+      homecare: ['🏠', 'Domácnost'],
+      shopping: ['🛒', 'Nákupy'],
+      packages: ['📦', 'Balíky'],
+      contracts: ['📄', 'Smlouvy'],
+      garage: ['🚗', 'Garáž'],
+      finance: ['💰', 'Finance'],
+      important: ['⭐', 'Důležité']
+    };
+    const [icon, title] = titleMap[type] || ['🏠', 'Přehled'];
+    let body = '';
+    let navTarget = type === 'hdo' || type === 'important' ? 'homecare' : type;
+
+    if (type === 'hdo') {
+      const rows = [...state.hdoWindows].sort((a, b) => String(a.start || '').localeCompare(String(b.start || '')));
+      body = `
+        <div class="overview-status ${hdo.active ? 'good' : 'warn'}"><strong>${hdo.active ? 'Nízký tarif právě běží' : 'Nízký tarif teď neběží'}</strong><span>${escapeHtml(hdo.message)}</span></div>
+        ${rows.length ? `<div class="list compact-list">${rows.map((item) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.label || 'HDO okno')}</div><span class="badge ${item.enabled ? 'good' : ''}">${item.enabled ? 'aktivní' : 'vypnuto'}</span></div><div class="item-meta">${escapeHtml(item.start)}–${escapeHtml(item.end)} · ${escapeHtml(daysLabel(item.days))}${item.cloudId ? ' · cloud' : ' · lokálně'}</div></div>`).join('')}</div>` : renderEmpty('HDO zatím nemá žádné uložené okno.')}
+      `;
+    } else if (type === 'calendar') {
+      const rows = [...state.calendar].filter((event) => !event.date || event.date >= todayISO()).sort((a,b)=>`${a.date||''}${a.time||''}`.localeCompare(`${b.date||''}${b.time||''}`)).slice(0,8);
+      body = rows.length ? renderEventList(rows, false) : renderEmpty('Nejsou tu žádné nejbližší události.');
+    } else if (type === 'shopping') {
+      const rows = state.shopping.filter((item) => !item.done).slice(0,10);
+      body = rows.length ? `<div class="list compact-list">${rows.map(renderShoppingItem).join('')}</div>` : renderEmpty('Nákupní seznam je prázdný.');
+    } else if (type === 'packages') {
+      const rows = state.packages.filter((item) => item.status !== 'delivered').slice(0,8);
+      body = rows.length ? `<div class="list compact-list">${rows.map(renderPackageItem).join('')}</div>` : renderEmpty('Žádný aktivní balík.');
+    } else if (type === 'contracts') {
+      const rows = state.contracts.map((contract) => ({...contract, days: daysUntil(contract.validTo)})).sort((a,b)=>(a.days ?? 9999)-(b.days ?? 9999)).slice(0,8);
+      body = rows.length ? `<div class="list compact-list">${rows.map(renderContractItem).join('')}</div>` : renderEmpty('Žádné smlouvy k zobrazení.');
+    } else if (type === 'garage') {
+      const alerts = getVehicleAlerts().slice(0,8);
+      body = alerts.length ? `<div class="list compact-list">${alerts.map((item)=>`<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.title)}</div><span class="badge ${item.days <= 7 ? 'warn' : ''}">${escapeHtml(dueBadge(item.days))}</span></div><div class="item-meta">${escapeHtml(item.meta)}</div></div>`).join('')}</div>` : `<div class="list compact-list">${state.vehicles.slice(0,6).map((vehicle)=>`<div class="item compact-item"><div class="item-title">${escapeHtml(vehicle.name)}</div><div class="item-meta">${escapeHtml(vehicle.brand || '')} ${escapeHtml(vehicle.model || '')} · ${escapeHtml(String(vehicle.odometer || 0))} km</div></div>`).join('')}</div>`;
+    } else if (type === 'finance') {
+      const summary = financeMonthSummary();
+      body = `<div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Příjmy</span><strong>${formatMoney(summary.income)}</strong></div><div class="mini-stat"><span>Výdaje</span><strong>${formatMoney(summary.expense)}</strong></div><div class="mini-stat"><span>Rozdíl</span><strong>${formatMoney(summary.balance)}</strong></div></div><div class="list compact-list">${state.finance.slice(0,8).map(renderFinanceItem).join('') || renderEmpty('Zatím žádné finance.')}</div>`;
+    } else {
+      const tasks = state.homeTasks.filter((task) => !task.done).slice(0,5);
+      const waste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days !== null && item.days >= 0).sort((a,b)=>a.days-b.days).slice(0,4);
+      body = `${tasks.length ? `<h3 class="overview-mini-title">Úkoly</h3><div class="list compact-list">${tasks.map((task)=>`<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(task.title)}</div><span class="badge">${task.due ? formatDate(task.due) : 'bez termínu'}</span></div><div class="item-meta">${escapeHtml(task.note || taskCategoryLabel(task.category))}</div></div>`).join('')}</div>` : ''}${waste.length ? `<h3 class="overview-mini-title">Odpad</h3><div class="list compact-list">${waste.map((item)=>`<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.type)}</div><span class="badge ${item.days <= 1 ? 'warn' : ''}">${escapeHtml(dueBadge(item.days))}</span></div><div class="item-meta">Svoz ${formatDate(item.date)}</div></div>`).join('')}</div>` : renderEmpty('Nic akutního tu není.')}`;
+    }
+
+    return `
+      <div class="overview-head">
+        <div><span class="overview-icon">${escapeHtml(icon)}</span><h2>${escapeHtml(title)}</h2></div>
+        <button class="icon-btn" type="button" data-action="close-overview" aria-label="Zavřít">×</button>
+      </div>
+      <div class="overview-body">${body}</div>
+      <div class="form-actions overview-actions"><button class="primary-btn" type="button" data-nav="${escapeHtml(navTarget)}">Otevřít modul</button><button class="ghost-btn" type="button" data-action="close-overview">Zavřít</button></div>
+    `;
   }
 
   function renderOnboarding() {
@@ -953,11 +1051,11 @@
             <span class="badge ${hdo.active ? 'good' : 'warn'}">HDO ${hdo.active ? 'běží' : 'neběží'}</span>
           </div>
           <div class="list">
-            <button class="item module-hub-item" type="button" data-nav="homecare">
+            <button class="item module-hub-item" type="button" data-action="open-overview" data-overview="hdo">
               <div class="item-top"><div class="item-title">Nízký tarif</div><span class="badge ${hdo.active ? 'good' : 'warn'}">${escapeHtml(hdo.label)}</span></div>
               <div class="item-meta">${escapeHtml(hdo.message)}</div>
             </button>
-            <button class="item module-hub-item" type="button" data-nav="shopping">
+            <button class="item module-hub-item" type="button" data-action="open-overview" data-overview="shopping">
               <div class="item-top"><div class="item-title">Nákupy</div><span class="badge ${openShopping.length ? 'warn' : 'good'}">${openShopping.length} koupit</span></div>
               <div class="item-meta">${openShopping.slice(0, 3).map((item) => item.name).filter(Boolean).join(' · ') || 'Nákupní seznam je prázdný.'}</div>
             </button>
@@ -1002,6 +1100,7 @@
       },
       {
         nav: 'homecare',
+        overview: 'hdo',
         icon: '💡',
         title: hdo.active ? 'Nízký tarif běží' : 'Nízký tarif neběží',
         meta: hdo.message,
@@ -1113,7 +1212,7 @@
 
   function renderDashboardFocusItem(item) {
     return `
-      <button class="card focus-tile ${item.tone || ''}" type="button" data-nav="${escapeHtml(item.nav)}">
+      <button class="card focus-tile ${item.tone || ''}" type="button" data-action="open-overview" data-overview="${escapeHtml(item.overview || item.nav)}">
         <div class="focus-icon">${escapeHtml(item.icon)}</div>
         <div>
           <div class="item-top"><h3>${escapeHtml(item.title)}</h3><span class="badge ${item.tone || ''}">${escapeHtml(item.badge)}</span></div>
@@ -1136,7 +1235,7 @@
     if (!rows.length) return '<div class="empty">Zatím tu není nic důležitého. Jakmile přidáš kalendář, smlouvy, úkoly nebo auto, dashboard se začne plnit sám.</div>';
 
     return rows.map((row) => `
-      <button class="timeline-item ${row.tone || ''}" type="button" data-nav="${escapeHtml(row.nav)}">
+      <button class="timeline-item ${row.tone || ''}" type="button" data-action="open-overview" data-overview="${escapeHtml(row.overview || row.nav)}">
         <span class="timeline-icon">${escapeHtml(row.icon)}</span>
         <span class="timeline-copy"><strong>${escapeHtml(row.title)}</strong><em>${escapeHtml(row.meta)}</em></span>
         <span class="badge ${row.tone || ''}">${escapeHtml(row.badge)}</span>
@@ -1549,9 +1648,15 @@
     const cloudReady = Boolean(state.cloud?.userId && state.cloud?.householdId);
     const ownCatalogCount = catalog.filter((item) => item.householdId || item.source === 'local').length;
     const localOnlyShoppingCount = state.shopping.filter((item) => !item.cloudId).length;
+    const activeShoppingTab = getModuleTab('shopping', 'list');
     return `
-      <div class="grid two">
-        <section class="card desktop-span-2">
+      ${renderSectionTabs('shopping', [
+        { id: 'list', label: 'Seznam', icon: '🛒', count: openItems.length },
+        { id: 'catalog', label: 'Katalog', icon: '📚', count: catalog.length },
+        { id: 'coupons', label: 'Kódy', icon: '🏷️', count: coupons.length }
+      ], 'list')}
+      <div class="grid two module-tabbed shopping-tab-${activeShoppingTab}">
+        <section class="card desktop-span-2 shopping-panel panel-list">
           <div class="card-header">
             <div><h2>Nákupní seznam</h2><p>Vyber z katalogu, nastav množství a jednotku. Nově přidané položky zůstanou jen v tvojí domácnosti.</p></div>
             <span class="badge ${cloudReady ? 'good' : ''}">${cloudReady ? 'cloud nákupy' : 'lokálně'}</span>
@@ -1591,14 +1696,14 @@
           ${doneItems.length ? `<div class="card-header" style="margin-top:16px"><div><h3>Hotovo</h3><p>${doneItems.length} položek</p></div></div><div class="list">${doneItems.slice(0, 6).map(renderShoppingItem).join('')}</div>` : ''}
         </section>
 
-        <section class="card">
+        <section class="card shopping-panel panel-catalog">
           <div class="card-header"><div><h2>Katalog domácnosti</h2><p>Časté věci k nákupu. Základ je společný, tvoje vlastní položky jsou oddělené podle domácnosti.</p></div></div>
           <div class="list compact-list">
             ${catalog.slice(0, 24).map((item) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.name)}</div><span class="badge">${escapeHtml(item.defaultUnit || 'ks')}</span></div><div class="item-meta">${escapeHtml(item.category || 'Ostatní')} · ${shoppingSourceLabel(item)}${getShoppingStat(item.name)?.count ? ` · použito ${getShoppingStat(item.name).count}×` : ''}</div><div class="item-actions"><button class="ghost-btn" type="button" data-action="quick-add-shopping" data-name="${escapeHtml(item.name)}">Přidat</button></div></div>`).join('')}
           </div>
         </section>
 
-        <section class="card">
+        <section class="card shopping-panel panel-coupons">
           <div class="card-header"><div><h2>Slevové kódy</h2><p>Kupóny a kódy, které nechceš zapomenout.</p></div></div>
           <form data-form="add-coupon">
             <div class="form-grid two">
@@ -1660,10 +1765,17 @@
     const waste = [...state.waste].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
     const notes = [...state.notes].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     const devices = [...state.devices].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    const activeHomecareTab = getModuleTab('homecare', 'hdo');
 
     return `
-      <div class="grid two">
-        <section class="card">
+      ${renderSectionTabs('homecare', [
+        { id: 'hdo', label: 'HDO', icon: '💡', count: state.hdoWindows.length },
+        { id: 'waste', label: 'Odpad', icon: '♻️', count: waste.length },
+        { id: 'tasks', label: 'Úkoly', icon: '✅', count: tasks.filter((task) => !task.done).length },
+        { id: 'devices', label: 'Zařízení', icon: '📡', count: devices.length }
+      ], 'hdo')}
+      <div class="grid two module-tabbed homecare-tab-${activeHomecareTab}">
+        <section class="card homecare-panel panel-hdo">
           <div class="card-header">
             <div><h2>HDO / nízký tarif</h2><p>${escapeHtml(hdo.message)}</p></div>
             <span class="badge ${hdo.active ? 'good' : 'warn'}">${hdo.active ? 'běží' : 'neběží'} · ${state.hdoWindows.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
@@ -1687,7 +1799,7 @@
           `).join('')}</div>` : renderEmpty('Zatím není nastavené žádné HDO okno.')}
         </section>
 
-        <section class="card">
+        <section class="card homecare-panel panel-waste">
           <div class="card-header">
             <div><h2>Odpad</h2><p>Svoz odpadu s přípravou na připomínky.</p></div>
             <span class="badge ${waste.some((item) => item.cloudId) ? 'good' : ''}">${waste.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
@@ -1712,7 +1824,7 @@
           `).join('')}</div>` : renderEmpty('Žádný svoz zatím není uložený.')}
         </section>
 
-        <section class="card">
+        <section class="card homecare-panel panel-tasks">
           <div class="card-header">
             <div><h2>Úkoly a poznámky</h2><p>Domácí úkoly jsou připravené pro cloud i budoucí notifikace.</p></div>
             <span class="badge ${tasks.some((task) => task.cloudId) ? 'good' : ''}">${tasks.some((task) => task.cloudId) ? 'cloud' : 'lokálně'}</span>
@@ -1746,7 +1858,7 @@
           `).join('')}</div>` : ''}
         </section>
 
-        <section class="card">
+        <section class="card homecare-panel panel-devices">
           <div class="card-header"><div><h2>Domácí zařízení / síť</h2><p>Routery, NAS, kamery, tablety a další věci doma.</p></div></div>
           <form data-form="add-device">
             <div class="form-grid two">
@@ -5769,6 +5881,19 @@
     showToast('Spuštěná demo domácnost · změny se neukládají');
   }
 
+  function exitDemoHome() {
+    demoRuntimeActive = false;
+    onboardingMode = 'choice';
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
+    sessionStorage.removeItem('domacnostPlus.onboardingMode');
+    localStorage.setItem('homeWeb.activeModule', 'home');
+    activeModule = 'home';
+    state = migrateState(mergeState(DEFAULT_STATE, {}));
+    document.documentElement.dataset.theme = state.settings.theme || 'light';
+    render();
+    showToast('Demo ukončeno · můžeš se přihlásit nebo znovu spustit demo');
+  }
+
   function createDemoState() {
     const nowIso = new Date().toISOString();
     const householdId = `demo-household-${uid()}`;
@@ -5935,7 +6060,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 42, appBuild: 43, mode: 'rich-demo-v41', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 46, appBuild: 47, mode: 'rich-demo-v47', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -6003,7 +6128,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 42, appBuild: 43, mode: 'demo-gated-start-logo-fix-v43', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 46, appBuild: 47, mode: 'demo-readonly-return-v47', updatedAt: new Date().toISOString() };
   }
 
   function addItem(collection, item) {
@@ -6616,6 +6741,20 @@
 
   function handleAction(button) {
     const action = button.dataset.action;
+    if (action === 'open-overview') {
+      activeOverview = button.dataset.overview || 'homecare';
+      render();
+      return;
+    }
+    if (action === 'close-overview') {
+      activeOverview = null;
+      render();
+      return;
+    }
+    if (action === 'set-section-tab') {
+      setModuleTab(button.dataset.area || activeModule, button.dataset.tab || 'main');
+      return;
+    }
     if (action === 'onboarding-mode') {
       onboardingMode = button.dataset.mode || 'choice';
       if (onboardingMode === 'choice') sessionStorage.removeItem('domacnostPlus.onboardingMode');
@@ -6627,10 +6766,20 @@
       startDemoHome();
       return;
     }
+    if (action === 'exit-demo') {
+      exitDemoHome();
+      return;
+    }
     if (action === 'toggle-theme') {
       state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = state.settings.theme || 'light';
+      if (button.classList.contains('icon-btn')) {
+        button.textContent = state.settings.theme === 'dark' ? '☀️' : '🌙';
+      }
+      button.setAttribute('aria-label', 'Přepnout vzhled');
+      touchState();
       saveState();
-      render();
+      showToast(state.settings.theme === 'dark' ? 'Tmavý vzhled' : 'Světlý vzhled');
       return;
     }
     if (action === 'delete') {
@@ -7435,7 +7584,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 43, schema_version: 42, created_by: user.id })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 46, schema_version: 45, created_by: user.id })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -7597,7 +7746,7 @@
           name: householdName(),
           timezone: 'Europe/Prague',
           app_build: 43,
-          schema_version: 42,
+          schema_version: 45,
           created_by: user.id
         })
         .select('id')
@@ -7774,7 +7923,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-45-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-47-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -7819,6 +7968,7 @@
   app.addEventListener('click', (event) => {
     const nav = event.target.closest('[data-nav]');
     if (nav) {
+      activeOverview = null;
       activeModule = nav.dataset.nav;
       render();
       keepActiveNavCentered('smooth');
