@@ -1,10 +1,10 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = 'Domácnost+ v.0.1_39';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_39';
-  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_38';
-  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
+  const APP_VERSION = 'Domácnost+ v.0.1_40';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_40';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_39';
+  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
     { id: 'home', label: 'Domů', icon: '🏠' },
@@ -117,9 +117,9 @@
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 38,
-      appBuild: 39,
-      mode: 'demo-heavy-auth-fix',
+      schemaVersion: 39,
+      appBuild: 40,
+      mode: 'demo-heavy-auth-confirm-flow',
       createdAt: '',
       updatedAt: ''
     },
@@ -289,9 +289,9 @@
     const timestamp = new Date().toISOString();
 
     migrated.meta = {
-      schemaVersion: 38,
-      appBuild: 39,
-      mode: 'demo-heavy-auth-fix',
+      schemaVersion: 39,
+      appBuild: 40,
+      mode: 'demo-heavy-auth-confirm-flow',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -665,6 +665,8 @@
             </div>
           </div>
 
+          ${renderEmailConfirmationCard()}
+
           <div class="grid two">
             <section class="card flat">
               <div class="card-header"><div><h2>Přihlásit existující domácnost</h2><p>Pro členy, kteří už mají účet nebo přijali pozvánku.</p></div></div>
@@ -708,6 +710,33 @@
         </section>
       </div>
       <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
+    `;
+  }
+
+
+
+  function renderEmailConfirmationCard() {
+    const cloud = state.cloud || {};
+    if (cloud.status !== 'email-confirmation') return '';
+    const email = cloud.email || '';
+    return `
+      <section class="card flat auth-confirm-card">
+        <div class="card-header">
+          <div>
+            <h2>Čeká se na ověření e-mailu</h2>
+            <p>Potvrzovací e-mail jsme poslali na <strong>${escapeHtml(email || 'zadaný e-mail')}</strong>. Po kliknutí na odkaz se vrať sem a aplikace se pokusí domácnost napojit na cloud.</p>
+          </div>
+          <span class="badge warn">ověření</span>
+        </div>
+        <div class="cloud-status-grid">
+          <div class="mini-stat"><span>Návratová adresa</span><strong>${escapeHtml(getAuthRedirectUrl())}</strong></div>
+          <div class="mini-stat"><span>Stav</span><strong>čeká na potvrzení</strong></div>
+        </div>
+        <div class="form-actions">
+          <button class="primary-btn" type="button" data-action="cloud-check-confirmation">Už jsem ověřil, zkusit napojit</button>
+          <button class="ghost-btn" type="button" data-action="cloud-resend-confirmation">Poslat ověřovací e-mail znovu</button>
+        </div>
+      </section>
     `;
   }
 
@@ -1188,7 +1217,7 @@
       { title: 'Domácnost+ v.0.1_28', note: 'Hotovo: PWA diagnostika manifestu, ikon, Apple touch ikon, service workeru a cache přímo v aplikaci.' },
       { title: 'Domácnost+ v.0.1_30', note: 'Hotovo: správa více cloud domácností, přepínání domácnosti a připravený panel pozvánek.' },
       { title: 'Domácnost+ v.0.1_33', note: 'Hotovo: finance v cloudu a profil po přijetí pozvánky.' },
-      { title: 'Domácnost+ v.0.1_39', note: 'Hotovo: spravované peníze/osoby, rychlé založení účtů a přehled zůstatků podle osoby.' },
+      { title: 'Domácnost+ v.0.1_40', note: 'Hotovo: bohatší demo, potvrzení e-mailu, opětovné odeslání ověřovacího e-mailu a přechod z demo do ostré domácnosti.' },
       { title: 'Domácnost+ v.0.1_34', note: 'Hotovo: variabilní finanční účty, peněženky, obálky a osobní zůstatky.' }
     ];
     return `
@@ -5697,7 +5726,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 38, appBuild: 39, mode: 'rich-demo', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 39, appBuild: 40, mode: 'rich-demo-v40', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -5765,7 +5794,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 38, appBuild: 39, mode: 'demo-heavy-auth-fix', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 39, appBuild: 40, mode: 'demo-heavy-auth-confirm-flow', updatedAt: new Date().toISOString() };
   }
 
   function addItem(collection, item) {
@@ -6727,6 +6756,14 @@
       applyAppUpdate();
       return;
     }
+    if (action === 'cloud-check-confirmation') {
+      cloudCheckEmailConfirmation();
+      return;
+    }
+    if (action === 'cloud-resend-confirmation') {
+      cloudResendConfirmation();
+      return;
+    }
     if (action === 'cloud-refresh-session') {
       refreshCloudSession(true);
       return;
@@ -7015,6 +7052,70 @@
   }
 
 
+
+  async function cloudResendConfirmation() {
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const email = normalizeText(state.cloud?.email || window.prompt('E-mail pro ověření') || '').toLowerCase();
+    if (!email) return showToast('Doplň e-mail');
+    const { error } = await client.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: getAuthRedirectUrl() }
+    });
+    if (error) return showToast(error.message || 'E-mail se nepovedlo odeslat');
+    state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, provider: 'supabase', status: 'email-confirmation', email };
+    saveState();
+    render();
+    showToast('Ověřovací e-mail znovu odeslán');
+  }
+
+  async function cloudCheckEmailConfirmation() {
+    const user = await refreshCloudSession(false);
+    if (!user) {
+      showToast('Zatím nejsi přihlášený. Zkus kliknout na odkaz v e-mailu nebo se přihlásit heslem.');
+      return;
+    }
+    state.cloud = { ...(state.cloud || {}), status: 'signed-in', userId: user.id, email: user.email || state.cloud?.email || '' };
+    if (state.household?.isConfigured && !state.cloud.householdId) {
+      await bootstrapCloudHousehold(false);
+    }
+    const households = await cloudLoadHouseholds(false);
+    if (households.length && !state.cloud.householdId) {
+      state.cloud.householdId = households[0].id;
+      state.household = { ...(state.household || {}), id: households[0].id, name: households[0].name || state.household?.name || 'Domácnost', isConfigured: true };
+      await cloudLoadProfilesForCurrentHousehold();
+      await cloudLoadAllModules(false);
+    }
+    onboardingMode = state.household?.isConfigured ? 'choice' : 'account';
+    sessionStorage.removeItem('domacnostPlus.onboardingMode');
+    touchState();
+    saveState();
+    render();
+    showToast('E-mail je ověřený a účet je přihlášený');
+  }
+
+  function isAuthReturnUrl() {
+    const search = new URLSearchParams(window.location.search || '');
+    if (search.get('auth') === 'confirmed') return true;
+    if (search.get('type') === 'signup') return true;
+    const hash = window.location.hash || '';
+    return hash.includes('access_token=') || hash.includes('refresh_token=') || hash.includes('type=signup');
+  }
+
+  function clearAuthReturnUrl() {
+    if (!isAuthReturnUrl()) return;
+    const clean = `${window.location.origin}${window.location.pathname}`;
+    window.history.replaceState({}, document.title, clean);
+  }
+
+  async function handleInitialAuthReturn() {
+    if (!isAuthReturnUrl()) return;
+    await new Promise((resolve) => window.setTimeout(resolve, 450));
+    await cloudCheckEmailConfirmation();
+    clearAuthReturnUrl();
+  }
+
   async function cloudLoadHouseholds(showMessage = false) {
     const client = getSupabaseClient();
     if (!client) { if (showMessage) showToast('Supabase knihovna není načtená'); return []; }
@@ -7117,7 +7218,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 38, schema_version: 37, created_by: user.id })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 40, schema_version: 39, created_by: user.id })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -7278,8 +7379,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 38,
-          schema_version: 37,
+          app_build: 40,
+          schema_version: 39,
           created_by: user.id
         })
         .select('id')
@@ -7456,7 +7557,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-39-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-40-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -7485,6 +7586,7 @@
     localStorage.removeItem(STORAGE_KEY);
     saveState();
     render();
+    sessionStorage.removeItem('domacnostPlus.onboardingMode');
     showToast('Data resetována');
   }
 
@@ -7535,4 +7637,5 @@
 
   render();
   refreshCloudSession(false).catch(() => {});
+  handleInitialAuthReturn().catch((error) => console.warn('Auth return handling failed', error));
 })();
