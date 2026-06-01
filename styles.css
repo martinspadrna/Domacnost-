@@ -2186,7 +2186,7 @@ button {
   .cloud-household-row .ghost-btn, .cloud-household-row .badge { align-self: stretch; text-align: center; }
 }
 
-/* Domácnost+ v.0.1_38 — vstupní obrazovka a demo */
+/* Domácnost+ v.0.1_39 — vstupní obrazovka a demo */
 .onboarding-choice-card { max-width: 980px; }
 .onboarding-choice-grid { margin-top: 24px; align-items: stretch; }
 .choice-tile { display: flex; flex-direction: column; gap: 12px; min-height: 260px; }

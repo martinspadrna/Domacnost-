@@ -1,8 +1,8 @@
 # Domácnost+ — nastavení Supabase Auth e-mailů
 
-Aby potvrzovací e-mail po registraci nepadal na `localhost`, nastav v Supabase Dashboardu přesně tyto adresy:
+Tahle část se nastavuje v Supabase Dashboardu, ne SQL migrací. Aplikace už posílá správný redirect na produkční adresu.
 
-## URL Configuration
+## 1) URL Configuration
 
 Supabase → Authentication → URL Configuration
 
@@ -11,15 +11,27 @@ Supabase → Authentication → URL Configuration
   - `https://domacnost-plus.vercel.app/`
   - `https://domacnost-plus.vercel.app/?auth=confirmed`
 
-## Confirmation e-mail template
+## 2) Confirm signup e-mail
 
 Supabase → Authentication → Email Templates → Confirm signup
 
 - **Subject**: `Potvrzení účtu Domácnost+`
-- **Body**: vložit obsah souboru `email-confirmation-template-domacnost-plus.html`
+- **Body**: zkopírovat celý obsah souboru:
 
-Šablona používá logo z:
+`supabase/email-confirmation-template-domacnost-plus.html`
+
+Šablona obsahuje logo aplikace z:
 
 `https://domacnost-plus.vercel.app/apple-touch-icon.png`
 
-Důležité: pokud se někdy změní doména aplikace, musí se změnit i `APP_PUBLIC_URL` v aplikaci, Redirect URLs v Supabase a URL loga v e-mailové šabloně.
+## 3) Kontrola
+
+Po uložení spusť novou registraci přes produkční adresu:
+
+`https://domacnost-plus.vercel.app/`
+
+Potvrzovací tlačítko v e-mailu má vést na:
+
+`https://domacnost-plus.vercel.app/?auth=confirmed`
+
+Pokud se objeví `localhost`, je pořád špatně nastavená **Site URL** nebo starý e-mail vznikl před uložením změny.

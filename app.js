@@ -1,10 +1,10 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = 'Domácnost+ v.0.1_38';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_38';
-  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_37';
-  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
+  const APP_VERSION = 'Domácnost+ v.0.1_39';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_39';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_38';
+  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
     { id: 'home', label: 'Domů', icon: '🏠' },
@@ -117,9 +117,9 @@
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 37,
-      appBuild: 38,
-      mode: 'entry-demo-auth-fix',
+      schemaVersion: 38,
+      appBuild: 39,
+      mode: 'demo-heavy-auth-fix',
       createdAt: '',
       updatedAt: ''
     },
@@ -289,9 +289,9 @@
     const timestamp = new Date().toISOString();
 
     migrated.meta = {
-      schemaVersion: 37,
-      appBuild: 38,
-      mode: 'entry-demo-auth-fix',
+      schemaVersion: 38,
+      appBuild: 39,
+      mode: 'demo-heavy-auth-fix',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1188,7 +1188,7 @@
       { title: 'Domácnost+ v.0.1_28', note: 'Hotovo: PWA diagnostika manifestu, ikon, Apple touch ikon, service workeru a cache přímo v aplikaci.' },
       { title: 'Domácnost+ v.0.1_30', note: 'Hotovo: správa více cloud domácností, přepínání domácnosti a připravený panel pozvánek.' },
       { title: 'Domácnost+ v.0.1_33', note: 'Hotovo: finance v cloudu a profil po přijetí pozvánky.' },
-      { title: 'Domácnost+ v.0.1_38', note: 'Hotovo: spravované peníze/osoby, rychlé založení účtů a přehled zůstatků podle osoby.' },
+      { title: 'Domácnost+ v.0.1_39', note: 'Hotovo: spravované peníze/osoby, rychlé založení účtů a přehled zůstatků podle osoby.' },
       { title: 'Domácnost+ v.0.1_34', note: 'Hotovo: variabilní finanční účty, peněženky, obálky a osobní zůstatky.' }
     ];
     return `
@@ -5534,140 +5534,224 @@
   function createDemoState() {
     const nowIso = new Date().toISOString();
     const householdId = `demo-household-${uid()}`;
-    const martinId = `demo-profile-martin-${uid()}`;
+    const petrId = `demo-profile-petr-${uid()}`;
     const janaId = `demo-profile-jana-${uid()}`;
-    const carId = `demo-car-${uid()}`;
-    const financeAccountMain = `demo-account-main-${uid()}`;
-    const financeAccountSavings = `demo-account-savings-${uid()}`;
-    const financeAccountCash = `demo-account-cash-${uid()}`;
-    const daysFromNow = (days) => {
+    const elaId = `demo-profile-ela-${uid()}`;
+    const babickaId = `demo-profile-babicka-${uid()}`;
+    const carOctaviaId = `demo-car-octavia-${uid()}`;
+    const carCityId = `demo-car-city-${uid()}`;
+    const accountMain = `demo-account-main-${uid()}`;
+    const accountSavings = `demo-account-savings-${uid()}`;
+    const accountCash = `demo-account-cash-${uid()}`;
+    const accountHoliday = `demo-account-holiday-${uid()}`;
+    const accountGrandma = `demo-account-grandma-${uid()}`;
+    const accountGrandmaSavings = `demo-account-grandma-savings-${uid()}`;
+    const createdAt = '2024-02-12T08:30:00.000Z';
+    const addDays = (days) => {
       const date = new Date();
       date.setDate(date.getDate() + days);
       return date.toISOString().slice(0, 10);
     };
-    const daysAgo = (days) => {
+    const daysFromNow = addDays;
+    const daysAgo = (days) => addDays(-days);
+    const isoAt = (days, hour = 9, minute = 0) => {
       const date = new Date();
-      date.setDate(date.getDate() - days);
-      return date.toISOString().slice(0, 10);
+      date.setDate(date.getDate() + days);
+      date.setHours(hour, minute, 0, 0);
+      return date.toISOString();
     };
+    const make = (base) => ({ id: uid(), householdId, createdAt: isoAt(-Math.floor(Math.random() * 420), 8, 15), ...base });
+
+    const profiles = [
+      { id: petrId, householdId, name: 'Petr', color: 'blue', role: 'owner', createdAt },
+      { id: janaId, householdId, name: 'Jana', color: 'violet', role: 'admin', createdAt },
+      { id: elaId, householdId, name: 'Eliška', color: 'pink', role: 'member', createdAt: isoAt(-410) },
+      { id: babickaId, householdId, name: 'Babička', color: 'green', role: 'member', createdAt: isoAt(-360) }
+    ];
+
+    const calendar = [
+      make({ profileId: petrId, title: 'Dentální hygiena', date: daysFromNow(1), time: '09:30', endTime: '10:15', type: 'event', location: 'Ordinace', note: 'Vzít kartičku pojišťovny' }),
+      make({ profileId: janaId, title: 'Třídní schůzky', date: daysFromNow(3), time: '17:00', endTime: '18:00', type: 'family', location: 'Škola', note: 'Probrat školu v přírodě' }),
+      make({ profileId: petrId, title: 'Servis auta', date: daysFromNow(8), time: '08:00', endTime: '10:00', type: 'event', location: 'Autoservis', note: 'Oleje + filtry' }),
+      make({ profileId: janaId, title: 'Narozeniny mamky', date: daysFromNow(16), time: '15:00', type: 'family', location: 'U rodičů', note: 'Koupit kytku' }),
+      make({ profileId: petrId, title: 'Dovolená Beskydy', date: daysFromNow(42), time: '', type: 'holiday', location: 'Beskydy', note: 'Zarezervovaná chata' }),
+      make({ profileId: elaId, title: 'Kroužek keramika', date: daysFromNow(5), time: '16:00', endTime: '17:30', type: 'family', location: 'DDM', note: 'Zaplatit pololetí' }),
+      make({ profileId: babickaId, title: 'Kontrola u doktora', date: daysFromNow(11), time: '11:00', type: 'event', location: 'Poliklinika', note: 'Odvoz autem' })
+    ];
+    ['Kino', 'Výlet na hrad', 'Rodinný oběd', 'Kontrola komína', 'Revize kotle', 'Zubař Eliška', 'Návštěva', 'Platba pojistky', 'Školní besídka', 'Dovolená záloha', 'Veterina Rex', 'Servis kol'].forEach((title, index) => {
+      calendar.push(make({ profileId: index % 2 ? janaId : petrId, title, date: addDays(index * 6 - 70), time: index % 3 === 0 ? '09:00' : index % 3 === 1 ? '16:30' : '', type: index % 4 === 0 ? 'family' : 'event', location: index % 2 ? 'Město' : '', note: index % 2 ? 'Historická demo událost' : '' }));
+    });
+
+    const packages = [
+      make({ profileId: janaId, title: 'Boty z e-shopu', carrier: 'zasilkovna', tracking: 'Z1234567890', status: 'pickup', expectedDate: daysFromNow(0), pickupPlace: 'Z-BOX u obchodu', url: '', note: 'Vyzvednout dnes' }),
+      make({ profileId: petrId, title: 'Filtry do vysavače', carrier: 'ppl', tracking: 'PPL987654321', status: 'transit', expectedDate: daysFromNow(2), pickupPlace: '', url: '', note: 'Do garáže' }),
+      make({ profileId: janaId, title: 'Drogerie', carrier: 'balikovna', tracking: 'BVK452981736', status: 'new', expectedDate: daysFromNow(4), pickupPlace: 'Balíkovna Coop', url: '', note: 'Prací gel v akci' }),
+      make({ profileId: petrId, title: 'Náhradní filtr do auta', carrier: 'dpd', tracking: 'DPD778812450', status: 'delivered', expectedDate: daysAgo(7), pickupPlace: '', url: '', note: 'Doručeno minulý týden' }),
+      make({ profileId: janaId, title: 'Dárek pro Elišku', carrier: 'gls', tracking: 'GLS99881233', status: 'problem', expectedDate: daysFromNow(1), pickupPlace: '', url: '', note: 'Změna adresy' })
+    ];
+
+    const shoppingNames = [
+      ['Mléko', 2, 'l', 'Mléčné', false], ['Rohlíky', 12, 'ks', 'Pečivo', false], ['Banány', 1.5, 'kg', 'Ovoce a zelenina', false], ['Rajčata', 1, 'kg', 'Ovoce a zelenina', false], ['Kuřecí maso', 1.2, 'kg', 'Maso a uzeniny', false], ['Tablety do myčky', 1, 'bal', 'Drogerie', true], ['Toaletní papír', 1, 'bal', 'Drogerie', false], ['Granule Rex', 5, 'kg', 'Zvířata', false], ['Káva', 2, 'bal', 'Trvanlivé', true], ['Zelenina mražená', 3, 'bal', 'Mražené', true], ['Pytle na odpad', 1, 'role', 'Domácnost', false], ['Paralen', 1, 'bal', 'Lékárna', true]
+    ];
+    const shopping = shoppingNames.map(([name, quantity, unit, category, done], index) => make({ profileId: index % 2 ? janaId : petrId, name, quantity, unit, category, note: done ? 'Už koupeno v demo historii' : '', done, doneAt: done ? isoAt(-index, 18, 0) : '', createdAt: isoAt(-index * 2, 10, 0) }));
+    const shoppingStats = {};
+    ['Mléko','Rohlíky','Banány','Rajčata','Jogurt','Máslo','Tablety do myčky','Granule Rex','Káva','Toaletní papír','Kuřecí maso','Sýr plátkový'].forEach((name, index) => {
+      shoppingStats[normalizeKey(name)] = { name, unit: index % 3 === 0 ? 'ks' : index % 3 === 1 ? 'bal' : 'kg', category: index < 6 ? 'Potraviny' : 'Domácnost', count: 28 - index * 2, lastUsedAt: isoAt(-index, 12, 0) };
+    });
+
+    const hdoWindows = [
+      make({ profileId: petrId, start: '02:00', end: '06:00', days: [0,1,2,3,4,5,6], enabled: true, note: 'Noční nízký tarif' }),
+      make({ profileId: petrId, start: '13:00', end: '15:00', days: [1,2,3,4,5], enabled: true, note: 'Odpolední okno po–pá' }),
+      make({ profileId: petrId, start: '22:00', end: '23:30', days: [0,6], enabled: true, note: 'Víkendové dohřátí' })
+    ];
+
+    const waste = [
+      make({ profileId: petrId, type: 'Plast', date: daysFromNow(1), repeat: 'biweekly', notifyBeforeHours: 12, note: 'Večer vyvézt žlutou' }),
+      make({ profileId: petrId, type: 'Směsný odpad', date: daysFromNow(4), repeat: 'weekly', notifyBeforeHours: 12, note: '' }),
+      make({ profileId: janaId, type: 'Papír', date: daysFromNow(7), repeat: 'monthly', notifyBeforeHours: 24, note: 'Složit krabice v garáži' }),
+      make({ profileId: janaId, type: 'Bioodpad', date: daysFromNow(3), repeat: 'weekly', notifyBeforeHours: 8, note: 'Hnědá nádoba za bránou' }),
+      make({ profileId: petrId, type: 'Sklo', date: daysFromNow(18), repeat: 'monthly', notifyBeforeHours: 24, note: 'Odvézt tašku skla do kontejneru' })
+    ];
+
+    const homeTasks = [
+      make({ profileId: petrId, title: 'Vyměnit filtr digestoře', category: 'udrzba', priority: 'normal', due: daysFromNow(5), note: 'Filtr je ve skříni', done: false }),
+      make({ profileId: janaId, title: 'Objednat kadeřnici', category: 'ostatni', priority: 'low', due: daysFromNow(10), note: '', done: false }),
+      make({ profileId: petrId, title: 'Zaplatit zálohu dovolené', category: 'finance', priority: 'high', due: daysFromNow(2), note: 'Podklady v e-mailu', done: false }),
+      make({ profileId: janaId, title: 'Připravit věci na sběrný dvůr', category: 'domacnost', priority: 'normal', due: daysFromNow(9), note: 'Staré elektro + krabice', done: false }),
+      make({ profileId: petrId, title: 'Umýt auto', category: 'auto', priority: 'low', due: daysAgo(8), note: 'Hotovo minulý týden', done: true, doneAt: isoAt(-7, 18, 0) }),
+      make({ profileId: janaId, title: 'Vytřídit dětské oblečení', category: 'domacnost', priority: 'normal', due: daysAgo(20), note: 'Část šla na charitu', done: true, doneAt: isoAt(-18, 20, 0) })
+    ];
+    ['Zalít kytky', 'Objednat granule', 'Zkontrolovat pojistku auta', 'Vyčistit filtr sušičky', 'Záloha fotek na NAS', 'Vyměnit baterie v ovladači', 'Zkontrolovat lékárničku', 'Vyčistit odpad v koupelně'].forEach((title, index) => {
+      homeTasks.push(make({ profileId: index % 2 ? janaId : petrId, title, category: index % 3 === 0 ? 'udrzba' : index % 3 === 1 ? 'domacnost' : 'zdravi', priority: index % 5 === 0 ? 'high' : 'normal', due: addDays(index * 4 - 12), note: index % 2 ? 'Opakovaný demo úkol' : '', done: index < 3, doneAt: index < 3 ? isoAt(-index * 3, 19, 0) : '' }));
+    });
+
+    const devices = [
+      make({ profileId: petrId, name: 'Router', type: 'Síť', address: '192.168.1.1', note: 'Hlavní router v pracovně' }),
+      make({ profileId: petrId, name: 'NAS', type: 'Úložiště', address: '192.168.1.50', note: 'Zálohy fotek a dokumentů' }),
+      make({ profileId: petrId, name: 'Switch garáž', type: 'Síť', address: '192.168.1.12', note: 'Kamery + AP' }),
+      make({ profileId: janaId, name: 'Tablet v kuchyni', type: 'Dashboard', address: '192.168.1.80', note: 'Budoucí domácí panel' }),
+      make({ profileId: petrId, name: 'Tiskárna', type: 'Tisk', address: '192.168.1.45', note: 'Toner objednat při 15 %' })
+    ];
+
+    const vehicles = [
+      make({ id: carOctaviaId, profileId: petrId, name: 'Škoda Octavia', brand: 'Škoda', model: 'Octavia', plate: '1AB 2345', fuelType: 'diesel', odometer: '184500', technicalInspectionUntil: daysFromNow(90), insuranceUntil: daysFromNow(45), nextServiceKm: '190000', nextServiceDate: daysFromNow(30), note: 'Rodinné auto' }),
+      make({ id: carCityId, profileId: janaId, name: 'Hyundai i20', brand: 'Hyundai', model: 'i20', plate: '2CD 9876', fuelType: 'gasoline', odometer: '76200', technicalInspectionUntil: daysFromNow(210), insuranceUntil: daysFromNow(160), nextServiceKm: '80000', nextServiceDate: daysFromNow(80), note: 'Městské auto' })
+    ];
+    const fuel = [];
+    for (let i = 0; i < 18; i += 1) {
+      const vehicleId = i % 3 === 0 ? carCityId : carOctaviaId;
+      const baseKm = vehicleId === carOctaviaId ? 176400 : 70500;
+      const liters = vehicleId === carOctaviaId ? 45 + (i % 5) * 1.7 : 32 + (i % 4) * 1.4;
+      fuel.push(make({ profileId: vehicleId === carOctaviaId ? petrId : janaId, vehicleId, date: daysAgo(20 + i * 18), odometer: String(baseKm + i * (vehicleId === carOctaviaId ? 460 : 310)), liters: Number(liters.toFixed(1)), price: Math.round(liters * (36 + (i % 4))), note: i % 4 === 0 ? 'Plná nádrž' : 'Běžné tankování' }));
+    }
+    const services = [
+      make({ profileId: petrId, vehicleId: carOctaviaId, date: daysAgo(60), title: 'Výměna oleje', price: 4200, note: 'Olej + filtry' }),
+      make({ profileId: petrId, vehicleId: carOctaviaId, date: daysAgo(190), title: 'Pneumatiky', price: 14800, note: 'Letní sada' }),
+      make({ profileId: janaId, vehicleId: carCityId, date: daysAgo(95), title: 'STK + emise', price: 2300, note: 'Bez závad' }),
+      make({ profileId: janaId, vehicleId: carCityId, date: daysAgo(35), title: 'Brzdy přední', price: 6200, note: 'Destičky + kotouče' })
+    ];
+
+    const contracts = [
+      make({ profileId: petrId, name: 'Pojištění auta Octavia', type: 'car_insurance', provider: 'Demo pojišťovna', number: 'AUTO-2026-001', validFrom: daysAgo(180), validTo: daysFromNow(45), amount: 8400, frequency: 'yearly', note: 'Navazuje na Garáž' }),
+      make({ profileId: janaId, name: 'Pojištění domácnosti', type: 'home_insurance', provider: 'Bezpečný domov', number: 'DOM-88421', validFrom: daysAgo(260), validTo: daysFromNow(70), amount: 3200, frequency: 'yearly', note: 'Hlídáno před výročím' }),
+      make({ profileId: petrId, name: 'Internet domácnost', type: 'internet', provider: 'DemoNet', number: 'NET-5544', validFrom: daysAgo(400), validTo: daysFromNow(120), amount: 599, frequency: 'monthly', note: 'Optika 1 Gb/s' }),
+      make({ profileId: petrId, name: 'Elektřina', type: 'electricity', provider: 'Energie Demo', number: 'EL-2025-77', validFrom: daysAgo(300), validTo: daysFromNow(22), amount: 3850, frequency: 'monthly', note: 'Brzy zkontrolovat ceník' }),
+      make({ profileId: janaId, name: 'Mobil Jana', type: 'mobile', provider: 'Operátor+', number: 'TEL-3312', validFrom: daysAgo(500), validTo: daysFromNow(300), amount: 649, frequency: 'monthly', note: '' }),
+      make({ profileId: petrId, name: 'Streamovací služba', type: 'subscription', provider: 'Stream Demo', number: 'SUB-908', validFrom: daysAgo(80), validTo: daysFromNow(285), amount: 239, frequency: 'monthly', note: 'Rodinný tarif' })
+    ];
+
+    const accountDefs = [
+      { id: accountMain, profileId: petrId, name: 'Domácí účet', accountType: 'bank', openingBalance: 24800, ownerLabel: 'Petr + Jana', note: 'Hlavní provoz domácnosti' },
+      { id: accountSavings, profileId: petrId, name: 'Rezerva / spoření', accountType: 'savings', openingBalance: 118000, ownerLabel: 'Domácnost', note: 'Peníze bokem' },
+      { id: accountCash, profileId: janaId, name: 'Hotovost doma', accountType: 'cash', openingBalance: 3600, ownerLabel: 'Domácnost', note: 'Obálka v šuplíku' },
+      { id: accountHoliday, profileId: janaId, name: 'Obálka dovolená', accountType: 'envelope', openingBalance: 18500, ownerLabel: 'Dovolená', note: 'Rezerva na léto' },
+      { id: accountGrandma, profileId: babickaId, name: 'Babička – u nás', accountType: 'person', openingBalance: 0, ownerLabel: 'Babička', note: 'Spravované peníze, které chodí na náš účet' },
+      { id: accountGrandmaSavings, profileId: babickaId, name: 'Babička – spoření', accountType: 'savings', openingBalance: 42000, ownerLabel: 'Babička', note: 'Peníze bokem pro babičku' }
+    ];
+    const financeAccounts = accountDefs.map((account) => make({ ...account, currentBalance: account.openingBalance, includeInTotal: true }));
+    const finance = [];
+    for (let month = 0; month < 14; month += 1) {
+      const base = month * 31;
+      finance.push(make({ profileId: petrId, type: 'income', title: 'Výplata Petr', amount: 42500 + (month % 3) * 1200, date: daysAgo(base + 7), category: 'salary', accountId: accountMain, paymentMethod: 'bank_transfer', note: month === 0 ? 'Aktuální měsíc' : '' }));
+      finance.push(make({ profileId: janaId, type: 'income', title: 'Výplata Jana', amount: 31800 + (month % 2) * 900, date: daysAgo(base + 9), category: 'salary', accountId: accountMain, paymentMethod: 'bank_transfer', note: '' }));
+      finance.push(make({ profileId: babickaId, type: 'income', title: 'Důchod babička', amount: 17480, date: daysAgo(base + 10), category: 'salary', accountId: accountGrandma, paymentMethod: 'bank_transfer', note: 'Připsáno na náš účet, vedeno odděleně' }));
+      finance.push(make({ profileId: babickaId, type: 'expense', title: 'Babička – nájem', amount: 6200, date: daysAgo(base + 11), category: 'housing', accountId: accountGrandma, paymentMethod: 'bank_transfer', note: 'Strženo za nájem' }));
+      finance.push(make({ profileId: babickaId, type: 'expense', title: 'Babička – energie', amount: 2800, date: daysAgo(base + 11), category: 'energy', accountId: accountGrandma, paymentMethod: 'bank_transfer', note: 'Záloha energie' }));
+      finance.push(make({ profileId: babickaId, type: 'expense', title: 'Babička – hotovost', amount: month % 2 ? 3000 : 2500, date: daysAgo(base + 13), category: 'other_expense', accountId: accountGrandma, paymentMethod: 'cash', note: 'Vybráno v hotovosti' }));
+      finance.push(make({ profileId: babickaId, type: 'transfer', title: 'Babička – bokem na spoření', amount: month % 3 === 0 ? 2000 : 1500, date: daysAgo(base + 15), category: 'other_expense', accountId: accountGrandma, transferAccountId: accountGrandmaSavings, paymentMethod: 'bank_transfer', note: 'Přesun na spořicí účet' }));
+      finance.push(make({ profileId: petrId, type: 'expense', title: 'Nájem / hypotéka', amount: 14500, date: daysAgo(base + 12), category: 'housing', accountId: accountMain, paymentMethod: 'bank_transfer', note: '' }));
+      finance.push(make({ profileId: janaId, type: 'expense', title: 'Potraviny', amount: 4200 + (month % 4) * 360, date: daysAgo(base + 3), category: 'groceries', accountId: accountMain, paymentMethod: 'card', note: 'Velký nákup' }));
+      finance.push(make({ profileId: petrId, type: 'expense', title: 'Energie', amount: 3850, date: daysAgo(base + 14), category: 'energy', accountId: accountMain, paymentMethod: 'direct_debit', note: '' }));
+      finance.push(make({ profileId: petrId, type: 'transfer', title: 'Přesun do rezervy', amount: month % 2 ? 4500 : 6000, date: daysAgo(base + 17), category: 'other_expense', accountId: accountMain, transferAccountId: accountSavings, paymentMethod: 'bank_transfer', note: 'Automaticky bokem' }));
+      if (month < 8) finance.push(make({ profileId: janaId, type: 'transfer', title: 'Dovolená obálka', amount: 2500, date: daysAgo(base + 19), category: 'other_expense', accountId: accountMain, transferAccountId: accountHoliday, paymentMethod: 'bank_transfer', note: 'Letní rezerva' }));
+    }
+    ['Lékárna', 'Kino', 'Restaurace', 'Školní výlet', 'Pojistka auto', 'Servis auta', 'Dárek narozeniny', 'Drogerie'].forEach((title, index) => {
+      finance.push(make({ profileId: index % 2 ? janaId : petrId, type: 'expense', title, amount: [680, 920, 1450, 1200, 8400, 4200, 1800, 760][index], date: addDays(index * -9 - 2), category: ['health','fun','restaurant','kids','contracts','car','other_expense','drugstore'][index], accountId: accountMain, paymentMethod: index % 2 ? 'card' : 'bank_transfer', note: index === 4 ? 'Roční platba' : '' }));
+    });
+
+    const coupons = [
+      make({ profileId: janaId, store: 'Drogerie', code: 'JARO15', discount: '15 %', expiry: daysFromNow(12), note: 'Použít na tablety do myčky', used: false }),
+      make({ profileId: petrId, store: 'Alza', code: 'DOPRAVA0', discount: 'doprava zdarma', expiry: daysFromNow(4), note: 'Na filtr do auta', used: false }),
+      make({ profileId: janaId, store: 'Lékárna', code: 'LETO10', discount: '10 %', expiry: daysFromNow(30), note: '', used: false }),
+      make({ profileId: petrId, store: 'Sport', code: 'BOTY20', discount: '20 %', expiry: daysAgo(9), note: 'Už použito', used: true })
+    ];
 
     return {
-      meta: {
-        schemaVersion: 37,
-        appBuild: 38,
-        mode: 'demo',
-        createdAt: nowIso,
-        updatedAt: nowIso
-      },
+      meta: { schemaVersion: 38, appBuild: 39, mode: 'rich-demo', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
-        dashboardNote: 'Demo domácnost ukazuje, jak může aplikace vypadat po delším používání.',
+        dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
         bottomNavIds: ['home', 'calendar', 'shopping', 'homecare', 'finance'],
         demoMode: true
       },
-      household: {
-        id: householdId,
-        name: 'Demo domácnost Novákovi',
-        isConfigured: true,
-        createdAt: nowIso
-      },
-      profiles: [
-        { id: martinId, householdId, name: 'Petr', color: 'blue', role: 'owner', createdAt: nowIso },
-        { id: janaId, householdId, name: 'Jana', color: 'violet', role: 'member', createdAt: nowIso }
-      ],
-      activeProfileId: martinId,
+      household: { id: householdId, name: 'Demo domácnost Královi', isConfigured: true, createdAt },
+      profiles,
+      activeProfileId: petrId,
       enabledModules: [...MANAGED_MODULE_IDS],
-      calendar: [
-        { id: uid(), householdId, profileId: martinId, title: 'Dentální hygiena', date: daysFromNow(1), time: '09:30', note: 'Připomenout ráno', createdAt: nowIso },
-        { id: uid(), householdId, profileId: janaId, title: 'Třídní schůzky', date: daysFromNow(3), time: '17:00', note: 'Vzít poznámky', createdAt: nowIso },
-        { id: uid(), householdId, profileId: martinId, title: 'Servis auta', date: daysFromNow(8), time: '08:00', note: 'Oleje + filtry', createdAt: nowIso }
-      ],
-      packages: [
-        { id: uid(), householdId, profileId: janaId, title: 'Boty z e-shopu', carrier: 'Zásilkovna', tracking: 'Z1234567890', status: 'pickup', expectedDate: daysFromNow(0), pickupPlace: 'Box u obchodu', note: 'Vyzvednout dnes', createdAt: nowIso },
-        { id: uid(), householdId, profileId: martinId, title: 'Filtry do vysavače', carrier: 'PPL', tracking: 'PPL987654321', status: 'transit', expectedDate: daysFromNow(2), pickupPlace: '', note: 'Do garáže', createdAt: nowIso }
-      ],
-      shopping: [
-        { id: uid(), householdId, profileId: martinId, name: 'Mléko', quantity: 2, unit: 'l', category: 'Mléčné', note: '', done: false, createdAt: nowIso },
-        { id: uid(), householdId, profileId: janaId, name: 'Rohlíky', quantity: 10, unit: 'ks', category: 'Pečivo', note: 'Na ráno', done: false, createdAt: nowIso },
-        { id: uid(), householdId, profileId: martinId, name: 'Tablety do myčky', quantity: 1, unit: 'bal', category: 'Drogerie', note: 'Akce', done: true, doneAt: nowIso, createdAt: nowIso }
-      ],
+      calendar,
+      packages,
+      coupons,
+      hdoWindows,
+      shopping,
       shoppingCatalogCustom: [
-        { id: uid(), householdId, profileId: martinId, name: 'Granule Rex', defaultUnit: 'kg', category: 'Zvířata', source: 'household', createdAt: nowIso }
+        make({ profileId: petrId, name: 'Granule Rex', defaultUnit: 'kg', category: 'Zvířata', source: 'household' }),
+        make({ profileId: janaId, name: 'Káva Guatemala', defaultUnit: 'bal', category: 'Trvanlivé', source: 'household' }),
+        make({ profileId: janaId, name: 'Jogurty Eliška', defaultUnit: 'ks', category: 'Mléčné', source: 'household' })
       ],
-      coupons: [
-        { id: uid(), householdId, profileId: janaId, store: 'Drogerie', code: 'JARO15', discount: '15 %', expiry: daysFromNow(12), note: 'Použít na tablety do myčky', used: false, createdAt: nowIso }
-      ],
-      hdoWindows: [
-        { id: uid(), householdId, profileId: martinId, start: '02:00', end: '06:00', days: 'Po-Ne', enabled: true, note: 'Noční nízký tarif', createdAt: nowIso },
-        { id: uid(), householdId, profileId: martinId, start: '13:00', end: '15:00', days: 'Po-Pá', enabled: true, note: 'Odpolední okno', createdAt: nowIso }
-      ],
-      waste: [
-        { id: uid(), householdId, profileId: martinId, type: 'Plast', date: daysFromNow(1), repeat: 'biweekly', notifyBeforeHours: 12, note: 'Večer vyvézt žlutou', createdAt: nowIso },
-        { id: uid(), householdId, profileId: martinId, type: 'Směsný odpad', date: daysFromNow(4), repeat: 'weekly', notifyBeforeHours: 12, note: '', createdAt: nowIso }
-      ],
-      homeTasks: [
-        { id: uid(), householdId, profileId: martinId, title: 'Vyměnit filtr digestoře', category: 'udrzba', priority: 'normal', due: daysFromNow(5), note: 'Filtr je ve skříni', done: false, createdAt: nowIso },
-        { id: uid(), householdId, profileId: janaId, title: 'Objednat kadeřnici', category: 'ostatni', priority: 'low', due: daysFromNow(10), note: '', done: false, createdAt: nowIso }
-      ],
-      notes: [
-        { id: uid(), householdId, profileId: martinId, text: 'V garáži dochází zimní směs do ostřikovačů.', createdAt: nowIso }
-      ],
-      devices: [
-        { id: uid(), householdId, profileId: martinId, name: 'Router', type: 'Síť', address: '192.168.1.1', note: 'Hlavní router', createdAt: nowIso },
-        { id: uid(), householdId, profileId: martinId, name: 'NAS', type: 'Úložiště', address: '192.168.1.50', note: 'Zálohy fotek', createdAt: nowIso }
-      ],
-      vehicles: [
-        { id: carId, householdId, profileId: martinId, name: 'Škoda Octavia', plate: '1AB 2345', fuelType: 'diesel', odometer: '184500', technicalInspectionUntil: daysFromNow(90), insuranceUntil: daysFromNow(45), nextServiceKm: '190000', nextServiceDate: daysFromNow(30), note: 'Rodinné auto', createdAt: nowIso }
-      ],
-      fuel: [
-        { id: uid(), householdId, profileId: martinId, vehicleId: carId, date: daysAgo(35), odometer: '183100', liters: 48.5, price: 1680, note: 'Plná nádrž', createdAt: nowIso },
-        { id: uid(), householdId, profileId: martinId, vehicleId: carId, date: daysAgo(12), odometer: '184000', liters: 46.2, price: 1595, note: 'Běžné tankování', createdAt: nowIso }
-      ],
-      services: [
-        { id: uid(), householdId, profileId: martinId, vehicleId: carId, date: daysAgo(60), title: 'Výměna oleje', price: 4200, note: 'Olej + filtry', createdAt: nowIso }
-      ],
-      contracts: [
-        { id: uid(), householdId, profileId: martinId, name: 'Pojištění auta', type: 'car_insurance', provider: 'Demo pojišťovna', number: 'AUTO-2026-001', validFrom: daysAgo(180), validTo: daysFromNow(45), amount: 8400, frequency: 'yearly', note: 'Navazuje na Garáž', createdAt: nowIso },
-        { id: uid(), householdId, profileId: martinId, name: 'Internet domácnost', type: 'internet', provider: 'DemoNet', number: 'NET-5544', validFrom: daysAgo(400), validTo: daysFromNow(120), amount: 599, frequency: 'monthly', note: '', createdAt: nowIso }
-      ],
-      contractFiles: [],
-      cameras: [
-        { id: uid(), householdId, profileId: martinId, name: 'Vchod', location: 'Před domem', snapshotUrl: '', status: 'online', note: 'Demo kamera bez streamu', createdAt: nowIso }
-      ],
-      financeAccounts: [
-        { id: financeAccountMain, householdId, profileId: martinId, name: 'Domácí účet', accountType: 'bank', openingBalance: 14500, currentBalance: 14500, includeInTotal: true, note: 'Hlavní účet domácnosti', createdAt: nowIso },
-        { id: financeAccountSavings, householdId, profileId: martinId, name: 'Rezerva / spoření', accountType: 'savings', openingBalance: 65000, currentBalance: 65000, includeInTotal: true, note: 'Peníze bokem', createdAt: nowIso },
-        { id: financeAccountCash, householdId, profileId: janaId, name: 'Hotovost', accountType: 'cash', openingBalance: 2300, currentBalance: 2300, includeInTotal: true, note: '', createdAt: nowIso }
-      ],
-      finance: [
-        { id: uid(), householdId, profileId: martinId, type: 'income', title: 'Výplata', amount: 42000, date: daysAgo(7), category: 'salary', accountId: financeAccountMain, paymentMethod: 'bank_transfer', note: '', createdAt: nowIso },
-        { id: uid(), householdId, profileId: martinId, type: 'expense', title: 'Nájem', amount: 14500, date: daysAgo(5), category: 'housing', accountId: financeAccountMain, paymentMethod: 'bank_transfer', note: '', createdAt: nowIso },
-        { id: uid(), householdId, profileId: janaId, type: 'expense', title: 'Nákup potravin', amount: 1830, date: daysAgo(2), category: 'groceries', accountId: financeAccountMain, paymentMethod: 'card', note: 'Týdenní nákup', createdAt: nowIso },
-        { id: uid(), householdId, profileId: martinId, type: 'transfer', title: 'Přesun do rezervy', amount: 5000, date: daysAgo(1), category: 'other_expense', accountId: financeAccountMain, transferAccountId: financeAccountSavings, paymentMethod: 'bank_transfer', note: 'Bokem na rezervu', createdAt: nowIso }
-      ],
-      financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: todayISO().slice(0, 7) },
-      shoppingCloud: { units: [], categories: [], catalog: [], activeListId: '', loadedAt: '' },
+      shoppingStats,
       hdoCloud: { settingId: '', loadedAt: '' },
+      shoppingCloud: { units: [], categories: [], catalog: [], activeListId: '', loadedAt: '' },
       wasteCloud: { types: [], loadedAt: '' },
       parcelsCloud: { loadedAt: '' },
       tasksCloud: { loadedAt: '' },
       calendarCloud: { sources: [], loadedAt: '' },
+      waste,
+      homeTasks,
+      notes: [
+        make({ profileId: petrId, text: 'V garáži dochází zimní směs do ostřikovačů.' }),
+        make({ profileId: janaId, text: 'Na příští týden domluvit návštěvu babičky.' }),
+        make({ profileId: petrId, text: 'Po výplatě zkontrolovat rezervu a obálku dovolená.' }),
+        make({ profileId: janaId, text: 'Koupit nové filtry do konvice, poslední je nasazený.' })
+      ],
+      devices,
+      vehicles,
+      fuel,
+      services,
+      contracts,
+      contractFiles: [],
+      cameras: [
+        make({ profileId: petrId, name: 'Vchod', location: 'Před domem', snapshotUrl: '', status: 'online', note: 'Demo kamera bez streamu' }),
+        make({ profileId: petrId, name: 'Garáž', location: 'Garáž', snapshotUrl: '', status: 'online', note: 'Snapshot se doplní později' }),
+        make({ profileId: janaId, name: 'Zahrada', location: 'Zadní část domu', snapshotUrl: '', status: 'offline', note: 'Výměna napájení' })
+      ],
+      financeAccounts,
+      finance,
+      financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: todayISO().slice(0, 7) },
       pwa: { installed: false, lastUpdateCheck: '', lastInstallPrompt: '', diagnostics: null },
-      cloud: {
-        supabaseUrl: SUPABASE_URL,
-        provider: 'demo',
-        userId: '',
-        email: '',
-        householdId: '',
-        lastSyncAt: '',
-        status: 'demo',
-        households: [],
-        invitations: []
-      },
+      cloud: { supabaseUrl: SUPABASE_URL, provider: 'demo', userId: '', email: '', householdId: '', lastSyncAt: '', status: 'demo', households: [], invitations: [] },
       householdWorkspaces: {}
     };
   }
-
   function addProfile(name, role = 'member') {
     const cleanName = normalizeText(name);
     if (!cleanName) return;
@@ -5681,7 +5765,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 35, appBuild: 36, mode: 'entry-demo-auth-fix', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 38, appBuild: 39, mode: 'demo-heavy-auth-fix', updatedAt: new Date().toISOString() };
   }
 
   function addItem(collection, item) {
@@ -7372,7 +7456,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-38-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-39-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
