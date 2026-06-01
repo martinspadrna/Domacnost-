@@ -2145,3 +2145,56 @@ button {
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
+
+/* Domácnost+ v.0.1_30 – více domácností */
+.cloud-household-panel {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, .28);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .56);
+}
+[data-theme="dark"] .cloud-household-panel {
+  background: rgba(15, 23, 42, .42);
+}
+.card-subheader h3 { margin: 0 0 4px; font-size: 1rem; }
+.card-subheader p { margin: 0 0 12px; color: var(--muted); }
+.compact-actions { margin-bottom: 12px; }
+.cloud-household-list {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.cloud-household-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, .24);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .64);
+}
+[data-theme="dark"] .cloud-household-row { background: rgba(2, 6, 23, .32); }
+.cloud-household-row.active {
+  border-color: rgba(34, 197, 94, .55);
+  box-shadow: 0 10px 28px rgba(34, 197, 94, .10);
+}
+.cloud-household-row span { display: block; margin-top: 2px; color: var(--muted); font-size: .82rem; }
+@media (max-width: 560px) {
+  .cloud-household-row { align-items: flex-start; flex-direction: column; }
+  .cloud-household-row .ghost-btn, .cloud-household-row .badge { align-self: stretch; text-align: center; }
+}
+
+/* Domácnost+ v.0.1_38 — vstupní obrazovka a demo */
+.onboarding-choice-card { max-width: 980px; }
+.onboarding-choice-grid { margin-top: 24px; align-items: stretch; }
+.choice-tile { display: flex; flex-direction: column; gap: 12px; min-height: 260px; }
+.choice-tile .choice-icon { width: 56px; height: 56px; border-radius: 22px; display: grid; place-items: center; font-size: 28px; background: rgba(255,255,255,.62); box-shadow: inset 0 0 0 1px rgba(255,255,255,.5); }
+.choice-tile h2 { margin: 0; }
+.choice-tile p { flex: 1; margin: 0; color: var(--muted); line-height: 1.55; }
+.stack-form { display: grid; gap: 14px; }
+.soft-details { border: 1px solid var(--line); border-radius: 18px; padding: 12px 14px; background: rgba(255,255,255,.42); }
+.soft-details summary { cursor: pointer; font-weight: 750; }
+.soft-details .module-check-grid { margin-top: 14px; }
+@media (max-width: 760px) { .choice-tile { min-height: 0; } }

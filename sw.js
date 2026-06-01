@@ -1,4 +1,4 @@
-const CACHE_NAME = 'domacnost-plus-v0-1-28';
+const CACHE_NAME = 'domacnost-plus-v0-1-38';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -10,30 +10,18 @@ const APP_ASSETS = [
   './favicon-32.png',
   './apple-touch-icon.png',
   './apple-touch-icon-precomposed.png',
-  './assets/icon-192.png',
-  './assets/icon-384.png',
-  './assets/icon-512.png',
-  './assets/icon-1024.png',
-  './assets/maskable-icon-192.png',
-  './assets/maskable-icon-512.png',
-  './assets/apple-touch-icon.png',
-  './assets/apple-touch-icon-167.png',
-  './assets/apple-touch-icon-152.png',
-  './assets/apple-touch-icon-120.png',
-  './assets/favicon-32.png',
-  './assets/favicon-16.png',
-  './assets/domacnost-plus-icon-16-v0-1-28.png',
-  './assets/domacnost-plus-icon-32-v0-1-28.png',
-  './assets/domacnost-plus-icon-120-v0-1-28.png',
-  './assets/domacnost-plus-icon-152-v0-1-28.png',
-  './assets/domacnost-plus-icon-167-v0-1-28.png',
-  './assets/domacnost-plus-icon-180-v0-1-28.png',
-  './assets/domacnost-plus-icon-192-v0-1-28.png',
-  './assets/domacnost-plus-icon-384-v0-1-28.png',
-  './assets/domacnost-plus-icon-512-v0-1-28.png',
-  './assets/domacnost-plus-icon-1024-v0-1-28.png',
-  './assets/domacnost-plus-maskable-192-v0-1-28.png',
-  './assets/domacnost-plus-maskable-512-v0-1-28.png'
+  './assets/domacnost-plus-icon-16-v0-1-38.png',
+  './assets/domacnost-plus-icon-32-v0-1-38.png',
+  './assets/domacnost-plus-icon-120-v0-1-38.png',
+  './assets/domacnost-plus-icon-152-v0-1-38.png',
+  './assets/domacnost-plus-icon-167-v0-1-38.png',
+  './assets/domacnost-plus-icon-180-v0-1-38.png',
+  './assets/domacnost-plus-icon-192-v0-1-38.png',
+  './assets/domacnost-plus-icon-384-v0-1-38.png',
+  './assets/domacnost-plus-icon-512-v0-1-38.png',
+  './assets/domacnost-plus-icon-1024-v0-1-38.png',
+  './assets/domacnost-plus-maskable-192-v0-1-38.png',
+  './assets/domacnost-plus-maskable-512-v0-1-38.png'
 ];
 
 self.addEventListener('install', (event) => {

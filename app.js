@@ -1,10 +1,10 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = 'Domácnost+ v.0.1_28';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_28';
-  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_27';
-  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
+  const APP_VERSION = 'Domácnost+ v.0.1_38';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_38';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_37';
+  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
     { id: 'home', label: 'Domů', icon: '🏠' },
@@ -15,6 +15,7 @@
     { id: 'garage', label: 'Garáž', icon: '🚗' },
     { id: 'contracts', label: 'Smlouvy', icon: '📄' },
     { id: 'cameras', label: 'Kamery', icon: '📹' },
+    { id: 'finance', label: 'Finance', icon: '💰' },
     { id: 'settings', label: 'Nastavení', icon: '⚙️' }
   ];
 
@@ -63,6 +64,25 @@
     ['urgent', 'Urgentní']
   ];
 
+  const FINANCE_CATEGORY_OPTIONS = [
+    ['salary', 'Výplata', 'income'],
+    ['bonus', 'Bonus / odměna', 'income'],
+    ['sale', 'Prodej', 'income'],
+    ['other_income', 'Ostatní příjem', 'income'],
+    ['groceries', 'Potraviny', 'expense'],
+    ['drugstore', 'Drogerie', 'expense'],
+    ['housing', 'Bydlení', 'expense'],
+    ['energy', 'Energie', 'expense'],
+    ['car', 'Auto', 'expense'],
+    ['kids', 'Děti', 'expense'],
+    ['health', 'Zdraví', 'expense'],
+    ['fun', 'Zábava', 'expense'],
+    ['restaurant', 'Restaurace', 'expense'],
+    ['subscription', 'Předplatné', 'expense'],
+    ['contracts', 'Smlouvy / pojistky', 'expense'],
+    ['other_expense', 'Ostatní výdaj', 'expense']
+  ];
+
   const DEFAULT_SHOPPING_CATALOG = [
     ['Banány','kg','Ovoce a zelenina'], ['Jablka','kg','Ovoce a zelenina'], ['Hrušky','kg','Ovoce a zelenina'], ['Pomeranče','kg','Ovoce a zelenina'], ['Citrony','ks','Ovoce a zelenina'], ['Rajčata','kg','Ovoce a zelenina'], ['Okurka','ks','Ovoce a zelenina'], ['Paprika','ks','Ovoce a zelenina'], ['Brambory','kg','Ovoce a zelenina'], ['Cibule','kg','Ovoce a zelenina'], ['Česnek','ks','Ovoce a zelenina'], ['Mrkev','kg','Ovoce a zelenina'], ['Salát','ks','Ovoce a zelenina'],
     ['Rohlíky','ks','Pečivo'], ['Chléb','ks','Pečivo'], ['Toustový chléb','ks','Pečivo'], ['Bagety','ks','Pečivo'],
@@ -89,6 +109,7 @@
   const SUPABASE_URL = 'https://cgshssdjgzzuprlwnabl.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_v7jeuZC-MNUEO5nfE5xcUQ_Pu9pT-X_';
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
+  const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -96,9 +117,9 @@
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 27,
-      appBuild: 28,
-      mode: 'pwa-install-diagnostics',
+      schemaVersion: 37,
+      appBuild: 38,
+      mode: 'entry-demo-auth-fix',
       createdAt: '',
       updatedAt: ''
     },
@@ -141,6 +162,9 @@
     contracts: [],
     contractFiles: [],
     cameras: [],
+    finance: [],
+    financeAccounts: [],
+    financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: '' },
     cloud: {
       supabaseUrl: SUPABASE_URL,
       provider: 'supabase',
@@ -148,8 +172,11 @@
       email: '',
       householdId: '',
       lastSyncAt: '',
-      status: 'offline'
-    }
+      status: 'offline',
+      households: [],
+      invitations: []
+    },
+    householdWorkspaces: {}
   };
 
   let state = loadState();
@@ -165,6 +192,7 @@
   let serviceWorkerRegistration = null;
   let pendingServiceWorker = null;
   let pwaUpdateAvailable = false;
+  let onboardingMode = sessionStorage.getItem('domacnostPlus.onboardingMode') || 'choice';
 
   const app = document.getElementById('app');
   document.documentElement.dataset.theme = state.settings.theme || 'light';
@@ -186,19 +214,60 @@
   }
 
   function loadState() {
-    const saved = safeParse(localStorage.getItem(STORAGE_KEY), null);
-    if (saved) return migrateState(mergeState(DEFAULT_STATE, saved));
+    const candidates = [];
+    const addCandidate = (key, raw, priority = 0) => {
+      const parsed = safeParse(raw, null);
+      if (!parsed || typeof parsed !== 'object') return;
+      candidates.push({ key, value: parsed, priority, score: scoreStoredState(parsed, priority) });
+    };
 
-    for (const key of LEGACY_STORAGE_KEYS) {
-      const legacy = safeParse(localStorage.getItem(key), null);
-      if (legacy) {
-        const migrated = migrateState(mergeState(DEFAULT_STATE, legacy), { fromLegacy: true });
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-        return migrated;
+    addCandidate(STORAGE_KEY, localStorage.getItem(STORAGE_KEY), 100);
+    LEGACY_STORAGE_KEYS.forEach((key, index) => addCandidate(key, localStorage.getItem(key), 80 - index));
+
+    // PWA/iOS cache při update může přepnout na nový storage klíč dřív,
+    // než se zkopíruje stará domácnost. Proto projdeme všechny známé klíče
+    // v prohlížeči a vybereme nejlépe vyplněnou domácnost.
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key || candidates.some((candidate) => candidate.key === key)) continue;
+      if (/^(domacnostPlus|homeWebOffline)\./.test(key)) {
+        addCandidate(key, localStorage.getItem(key), 20);
       }
     }
 
+    const best = candidates
+      .sort((a, b) => b.score - a.score)
+      .find((candidate) => candidate.value);
+
+    if (best) {
+      const migrated = migrateState(mergeState(DEFAULT_STATE, best.value), { fromLegacy: best.key !== STORAGE_KEY });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+
     return migrateState(mergeState(DEFAULT_STATE, {}));
+  }
+
+  function scoreStoredState(candidate, priority = 0) {
+    if (!candidate || typeof candidate !== 'object') return -1;
+    let score = priority;
+    const household = candidate.household || {};
+    const collections = getCollectionNames ? getCollectionNames() : [];
+
+    if (household.isConfigured) score += 1000;
+    if (household.id) score += 150;
+    if (normalizeText(household.name || candidate.settings?.householdName)) score += 150;
+    if (Array.isArray(candidate.profiles) && candidate.profiles.length) score += 120 + candidate.profiles.length;
+    if (candidate.cloud?.householdId) score += 200;
+    if (candidate.cloud?.userId) score += 80;
+
+    collections.forEach((collection) => {
+      if (Array.isArray(candidate[collection]) && candidate[collection].length) score += Math.min(100, candidate[collection].length * 3);
+    });
+
+    const updated = Date.parse(candidate.meta?.updatedAt || candidate.cloud?.lastSyncAt || candidate.household?.createdAt || '');
+    if (Number.isFinite(updated)) score += Math.min(50, Math.floor(updated / 86400000) % 50);
+    return score;
   }
 
   function mergeState(base, saved) {
@@ -220,9 +289,9 @@
     const timestamp = new Date().toISOString();
 
     migrated.meta = {
-      schemaVersion: 27,
-      appBuild: 28,
-      mode: 'pwa-install-diagnostics',
+      schemaVersion: 37,
+      appBuild: 38,
+      mode: 'entry-demo-auth-fix',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -265,6 +334,9 @@
 
     migrated.shoppingStats = migrated.shoppingStats && typeof migrated.shoppingStats === 'object' && !Array.isArray(migrated.shoppingStats) ? migrated.shoppingStats : {};
     migrated.tasksCloud = migrated.tasksCloud && typeof migrated.tasksCloud === 'object' && !Array.isArray(migrated.tasksCloud) ? migrated.tasksCloud : { loadedAt: '' };
+    migrated.householdWorkspaces = migrated.householdWorkspaces && typeof migrated.householdWorkspaces === 'object' && !Array.isArray(migrated.householdWorkspaces) ? migrated.householdWorkspaces : {};
+    migrated.cloud.households = Array.isArray(migrated.cloud?.households) ? migrated.cloud.households : [];
+    migrated.cloud.invitations = Array.isArray(migrated.cloud?.invitations) ? migrated.cloud.invitations : [];
 
     migrated.enabledModules = normalizeModuleList(migrated.enabledModules);
     migrated.settings.bottomNavIds = normalizeBottomNavIds(migrated.settings.bottomNavIds, migrated.enabledModules);
@@ -308,7 +380,7 @@
   }
 
   function getCollectionNames() {
-    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'notes', 'devices', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'cameras'];
+    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'notes', 'devices', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'cameras', 'finance', 'financeAccounts'];
   }
 
   function normalizeModuleList(value) {
@@ -356,6 +428,14 @@
 
   function householdName() {
     return state.household?.name || state.settings?.householdName || 'Domácnost';
+  }
+
+  function getAppBaseUrl() {
+    return APP_PUBLIC_URL;
+  }
+
+  function getAuthRedirectUrl() {
+    return `${APP_PUBLIC_URL}?auth=confirmed`;
   }
 
   function getVisibleModules() {
@@ -469,7 +549,7 @@
       <div class="app-frame">
         <header class="topbar">
           <div class="brand">
-            <div class="brand-mark">HW</div>
+            <div class="brand-mark">D+</div>
             <div class="brand-title">
               <h1>${escapeHtml(householdName())}</h1>
               <p>${escapeHtml(APP_VERSION)} · ${escapeHtml(currentProfile()?.name || 'bez profilu')} · ${escapeHtml(cloudModeLabel())}</p>
@@ -496,7 +576,7 @@
           ${renderModule(active.id)}
         </main>
 
-        <p class="footer-note">${escapeHtml(APP_VERSION)} · cloud nákupy, smlouvy, garáž, HDO, odpad, balíky, úkoly a kalendář · lokální režim zůstává jako záloha</p>
+        <p class="footer-note">${escapeHtml(APP_VERSION)} · cloud nákupy, smlouvy, garáž, HDO, odpad, balíky, úkoly, kalendář a finance · lokální režim zůstává jako záloha</p>
       </div>
 
       <nav class="nav-shell" aria-label="Hlavní navigace">
@@ -535,45 +615,96 @@
 
   function renderOnboarding() {
     document.documentElement.dataset.theme = state.settings.theme || 'light';
+    const authRedirect = getAuthRedirectUrl();
+
+    if (onboardingMode === 'choice') {
+      app.innerHTML = `
+        <div class="onboarding-screen">
+          <section class="onboarding-card onboarding-choice-card">
+            <div class="onboarding-hero">
+              <div class="brand-mark big">D+</div>
+              <div>
+                <span class="badge">${escapeHtml(APP_VERSION)}</span>
+                <h1>Domácnost+</h1>
+                <p>Rodinná aplikace pro domácnost, nákupy, smlouvy, finance, auta, HDO, odpad, balíky a další věci kolem domu.</p>
+              </div>
+            </div>
+
+            <div class="grid two onboarding-choice-grid">
+              <article class="card flat choice-tile">
+                <div class="choice-icon">🔐</div>
+                <h2>Založit / přihlásit domácnost</h2>
+                <p>Vytvoříš vlastní domácnost, účet, profily členů a data se budou držet odděleně od ostatních rodin přes Supabase.</p>
+                <button class="primary-btn" type="button" data-action="onboarding-mode" data-mode="account">Pokračovat k účtu</button>
+              </article>
+              <article class="card flat choice-tile">
+                <div class="choice-icon">🏡</div>
+                <h2>Demo verze</h2>
+                <p>Ukázková dlouho používaná domácnost s hotovými daty, historií financí, nákupy, smlouvami, garáží, odpadem a balíky.</p>
+                <button class="ghost-btn" type="button" data-action="start-demo">Spustit demo</button>
+              </article>
+            </div>
+
+            <div class="inline-note">Demo je jen lokální ukázka v tomhle zařízení. Skutečná domácnost se zakládá přes účet a má vlastní cloudové ID.</div>
+          </section>
+        </div>
+        <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
+      `;
+      return;
+    }
+
     app.innerHTML = `
       <div class="onboarding-screen">
         <section class="onboarding-card">
           <div class="onboarding-hero">
-            <div class="brand-mark big">HW</div>
+            <div class="brand-mark big">D+</div>
             <div>
               <span class="badge">${escapeHtml(APP_VERSION)}</span>
-              <h1>Vítej v Home Webu</h1>
-              <p>Nastav domácnost, profily a moduly. Tahle verze je pořád offline, ale datová struktura už počítá s tím, že později může běžet pro víc rodin přes Vercel + Supabase.</p>
+              <h1>Založení nebo přihlášení domácnosti</h1>
+              <p>Každá domácnost má vlastní účet a cloudové ID. Data jedné rodiny se nebudou míchat s jinou.</p>
             </div>
           </div>
 
-          <form data-form="onboarding" class="onboarding-form">
-            <div class="grid two">
-              <section class="card flat">
-                <div class="card-header"><div><h2>1. Domácnost</h2><p>Název rodinného účtu / domácnosti.</p></div></div>
-                ${field('Název domácnosti', 'householdName', 'text', 'Špadrnovi / Doma / Byt', true)}
-              </section>
-              <section class="card flat">
-                <div class="card-header"><div><h2>2. Profily</h2><p>Začni klidně dvěma profily. Další půjdou přidat v nastavení.</p></div></div>
-                <div class="form-grid two">
-                  ${field('První profil', 'profilePrimary', 'text', 'Martin', true)}
-                  ${field('Druhý profil', 'profileSecondary', 'text', 'Manželka')}
-                </div>
-              </section>
-            </div>
-
+          <div class="grid two">
             <section class="card flat">
-              <div class="card-header"><div><h2>3. Moduly</h2><p>Zapni jen to, co chceš používat. Později to můžeš změnit.</p></div></div>
-              <div class="module-check-grid">
-                ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => moduleCheckbox(module, true)).join('')}
-              </div>
+              <div class="card-header"><div><h2>Přihlásit existující domácnost</h2><p>Pro členy, kteří už mají účet nebo přijali pozvánku.</p></div></div>
+              <form data-form="onboarding-login" class="stack-form">
+                ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
+                ${field('Heslo', 'password', 'password', 'heslo', true)}
+                <div class="form-actions"><button class="primary-btn" type="submit">Přihlásit domácnost</button></div>
+              </form>
             </section>
 
-            <div class="form-actions onboarding-actions">
-              <button class="primary-btn" type="submit">Vytvořit domácnost</button>
-              <button class="ghost-btn" type="button" data-action="toggle-theme">Přepnout vzhled</button>
-            </div>
-          </form>
+            <section class="card flat">
+              <div class="card-header"><div><h2>Založit novou domácnost</h2><p>Název domácnosti, vlastník a první profily.</p></div></div>
+              <form data-form="onboarding" class="stack-form">
+                ${field('Název domácnosti', 'householdName', 'text', 'Špadrnovi / Doma / Byt', true)}
+                ${field('E-mail vlastníka', 'email', 'email', 'email@domena.cz', true)}
+                <div class="form-grid two">
+                  ${field('Heslo', 'password', 'password', 'min. 6 znaků', true)}
+                  ${field('Heslo znovu', 'passwordConfirm', 'password', 'pro kontrolu', true)}
+                </div>
+                <div class="form-grid two">
+                  ${field('Hlavní profil', 'profilePrimary', 'text', 'Martin', true)}
+                  ${field('Druhý profil', 'profileSecondary', 'text', 'Manželka')}
+                </div>
+                ${field('Další profily', 'profilesExtra', 'text', 'děti, babička… odděl čárkou')}
+                <details class="soft-details">
+                  <summary>Vybrat moduly</summary>
+                  <div class="module-check-grid">
+                    ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => moduleCheckbox(module, true)).join('')}
+                  </div>
+                </details>
+                <div class="form-actions"><button class="primary-btn" type="submit">Založit účet a domácnost</button></div>
+              </form>
+            </section>
+          </div>
+
+          <div class="inline-note">Ověřovací e-mail se teď posílá s návratem na: <strong>${escapeHtml(authRedirect)}</strong>. V Supabase musí být tahle adresa povolená v Auth Redirect URLs.</div>
+          <div class="form-actions onboarding-actions">
+            <button class="ghost-btn" type="button" data-action="onboarding-mode" data-mode="choice">Zpět na výběr</button>
+            <button class="ghost-btn" type="button" data-action="toggle-theme">Přepnout vzhled</button>
+          </div>
         </section>
       </div>
       <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
@@ -612,6 +743,7 @@
       garage: 'Auta v domácnosti, tankování, servis a základní přehled spotřeby.',
       contracts: 'Evidence smluv a pojistek s hlídáním platnosti.',
       cameras: 'Přehled kamer. Prozatím jen lokální karty a snapshot URL, žádné cloud streamy.',
+      finance: 'Jednoduchý přehled příjmů a výdajů domácnosti s cloudovým oddělením podle householdId.',
       settings: 'Domácnost, profily, zapnuté moduly, export/import a reset offline prototypu.',
       more: 'Všechny další moduly a nastavení na jednom místě. Spodní lišta zůstává čistá a krátká.'
     };
@@ -637,6 +769,7 @@
       garage: renderGarage,
       contracts: renderContracts,
       cameras: renderCameras,
+      finance: renderFinance,
       settings: renderSettings,
       more: renderMore
     };
@@ -829,7 +962,8 @@
       { nav: 'homecare', icon: '♻️', label: 'Odpad', items: state.waste || [], loadedAt: state.wasteCloud?.loadedAt },
       { nav: 'homecare', icon: '✅', label: 'Úkoly', items: state.homeTasks || [], loadedAt: state.tasksCloud?.loadedAt },
       { nav: 'packages', icon: '📦', label: 'Balíky', items: state.packages || [], loadedAt: state.parcelsCloud?.loadedAt },
-      { nav: 'calendar', icon: '📅', label: 'Kalendář', items: state.calendar || [], loadedAt: state.calendarCloud?.loadedAt }
+      { nav: 'calendar', icon: '📅', label: 'Kalendář', items: state.calendar || [], loadedAt: state.calendarCloud?.loadedAt },
+      { nav: 'finance', icon: '💰', label: 'Finance', items: state.finance || [], loadedAt: state.financeCloud?.loadedAt }
     ];
     return counters.map((entry) => {
       const total = entry.items.length;
@@ -995,7 +1129,8 @@
       homecare: { count: countBy('homeTasks', (item) => !item.done) + countBy('hdoWindows') + countBy('waste'), label: 'položek', note: `${countBy('hdoWindows')} HDO oken, ${countBy('waste')} svozů, ${countBy('homeTasks', (item) => !item.done)} úkolů.` },
       garage: { count: countBy('vehicles'), label: 'aut', note: `${countBy('fuel')} tankování, ${countBy('services')} servisů.` },
       contracts: { count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh lokálně v IndexedDB.` },
-      cameras: { count: countBy('cameras'), label: 'kamer', note: 'Snapshot/stream zatím jen lokálně.' }
+      cameras: { count: countBy('cameras'), label: 'kamer', note: 'Snapshot/stream zatím jen lokálně.' },
+      finance: { count: countBy('finance'), label: 'záznamů', note: `${formatCurrency(financeMonthSummary().balance)} rozdíl tento měsíc.` }
     };
     return stats[moduleId] || { count: 0, label: 'položek', note: getModuleSubtitle(moduleId) };
   }
@@ -1050,7 +1185,11 @@
       { title: 'Domácnost+ v.0.1_20', note: 'Hotovo: cloudový svoz odpadu, základ připomínek a dashboardové stavy cloud/lokál.' },
       { title: 'Domácnost+ v.0.1_24', note: 'Hotovo: cloudový Kalendář a příprava na Google Calendar bez tokenů ve frontendu.' },
       { title: 'Domácnost+ v.0.1_26', note: 'Hotovo: tvrdší oprava PWA ikon, relativní cesty, root apple-touch fallback a cache-busting pro iPhone/Android.' },
-      { title: 'Domácnost+ v.0.1_28', note: 'Hotovo: PWA diagnostika manifestu, ikon, Apple touch ikon, service workeru a cache přímo v aplikaci.' }
+      { title: 'Domácnost+ v.0.1_28', note: 'Hotovo: PWA diagnostika manifestu, ikon, Apple touch ikon, service workeru a cache přímo v aplikaci.' },
+      { title: 'Domácnost+ v.0.1_30', note: 'Hotovo: správa více cloud domácností, přepínání domácnosti a připravený panel pozvánek.' },
+      { title: 'Domácnost+ v.0.1_33', note: 'Hotovo: finance v cloudu a profil po přijetí pozvánky.' },
+      { title: 'Domácnost+ v.0.1_38', note: 'Hotovo: spravované peníze/osoby, rychlé založení účtů a přehled zůstatků podle osoby.' },
+      { title: 'Domácnost+ v.0.1_34', note: 'Hotovo: variabilní finanční účty, peněženky, obálky a osobní zůstatky.' }
     ];
     return `
       <section class="card roadmap-card">
@@ -2092,6 +2231,168 @@
     `;
   }
 
+
+  function renderFinance() {
+    const items = [...(state.finance || [])].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const accounts = financeAccountsSorted();
+    const selectedMonth = financeSelectedMonth();
+    const visibleItems = items.filter((item) => String(item.date || '').slice(0, 7) === selectedMonth);
+    const summary = financeMonthSummary(selectedMonth);
+    const balances = financeAccountBalances();
+    const totalBalance = accounts.reduce((sum, account) => account.includeInTotal === false ? sum : sum + (balances[account.id] || 0), 0);
+    const localOnly = items.filter((item) => !item.cloudId).length;
+    const localAccounts = accounts.filter((account) => !account.cloudId).length;
+    const categoryRows = financeCategoryBreakdown(selectedMonth);
+    const accountRows = financeAccountMonthSummary(selectedMonth);
+    const managedRows = financeManagedGroups(balances);
+    return `
+      <div class="grid two">
+        <section class="card desktop-span-2">
+          <div class="card-header">
+            <div><h2>Finance</h2><p>Obecný přehled příjmů, výdajů, zůstatků, peněženek, spoření i peněz spravovaných pro někoho dalšího.</p></div>
+            <span class="badge ${items.some((item) => item.cloudId) || accounts.some((item) => item.cloudId) ? 'good' : ''}">${items.some((item) => item.cloudId) || accounts.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
+          </div>
+          <div class="kpi-grid">
+            <div class="kpi"><strong>${formatCurrency(summary.income)}</strong><span>Příjmy za ${escapeHtml(financeMonthLabel(selectedMonth))}</span></div>
+            <div class="kpi"><strong>${formatCurrency(summary.expense)}</strong><span>Výdaje za ${escapeHtml(financeMonthLabel(selectedMonth))}</span></div>
+            <div class="kpi"><strong>${formatCurrency(summary.balance)}</strong><span>Rozdíl měsíce</span></div>
+            <div class="kpi"><strong>${formatCurrency(totalBalance)}</strong><span>Zůstatek účtů</span></div>
+          </div>
+          <div class="inline-note" style="margin-top:12px;">Tip: pro tvůj případ můžeš založit účty třeba „Tchyně – u mě“, „Tchyně – spoření“ a zapisovat výplatu, stržené energie/nájem, výběry i převod bokem. Jiná domácnost si z toho může udělat hotovost, banku, obálky nebo kapesné.</div>
+          <form data-form="finance-month-filter" style="margin-top:14px;">
+            <div class="form-grid two">
+              ${field('Měsíc přehledu', 'month', 'month', '', false, selectedMonth)}
+              <div class="field"><label>Rychlý posun</label><div class="item-actions"><button class="ghost-btn" type="button" data-action="finance-month-prev">Předchozí</button><button class="ghost-btn" type="button" data-action="finance-month-current">Aktuální</button><button class="ghost-btn" type="button" data-action="finance-month-next">Další</button></div></div>
+            </div>
+            <div class="form-actions"><button class="ghost-btn" type="submit">Zobrazit měsíc</button></div>
+          </form>
+          <div class="quick-add-panel" style="margin-top:14px;">
+            <div class="quick-add-head"><strong>Rychlé šablony</strong><span>Vyplní formulář, částku jen doplníš.</span></div>
+            <div class="quick-chip-row">
+              <button class="quick-chip" type="button" data-action="finance-template" data-template="salary">💼 <span>Výplata</span></button>
+              <button class="quick-chip" type="button" data-action="finance-template" data-template="rent">🏠 <span>Nájem</span></button>
+              <button class="quick-chip" type="button" data-action="finance-template" data-template="energy">⚡ <span>Energie</span></button>
+              <button class="quick-chip" type="button" data-action="finance-template" data-template="cash">💵 <span>Výběr</span></button>
+              <button class="quick-chip" type="button" data-action="finance-template" data-template="savings">🏦 <span>Na spoření</span></button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header"><div><h2>Rychlé nastavení spravovaných peněz</h2><p>Obecná šablona pro osobu, obálku nebo peníze, které držíš bokem. Hodí se i pro tchyni, kapesné, rezervu nebo společné cíle.</p></div></div>
+          <form data-form="add-managed-finance-set">
+            <div class="form-grid two">
+              ${field('Název osoby / obálky', 'ownerName', 'text', 'např. Tchyně / Dovolená / Kapesné', true)}
+              ${field('Hlavní účet', 'mainAccountName', 'text', 'např. Tchyně – u mě')}
+              ${field('Účet bokem / spoření', 'reserveAccountName', 'text', 'např. Tchyně – spoření')}
+              ${field('Počáteční zůstatek hlavní', 'mainOpeningBalance', 'number', '0')}
+              ${field('Počáteční zůstatek bokem', 'reserveOpeningBalance', 'number', '0')}
+              ${selectField('Započítat do celku', 'includeInTotal', [['yes', 'Ano'], ['no', 'Ne']], 'yes')}
+            </div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Založit dvojici účtů</button></div>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="card-header"><div><h2>Spravované zůstatky</h2><p>Součet účtů seskupený podle osoby/obálky. Přesně pro situace, kdy někomu držíš peníze na svém účtu a část dáváš bokem.</p></div></div>
+          ${managedRows.length ? `<div class="list">${managedRows.map((row) => `<div class="item"><div class="item-top"><div class="item-title">${escapeHtml(row.label)}</div><span class="badge good">${formatCurrency(row.total)}</span></div><div class="item-meta">${row.accounts.map((account) => `${financeAccountIcon(account.accountType)} ${escapeHtml(account.name)}: ${formatCurrency(balances[account.id] || 0)}`).join(' · ')}</div></div>`).join('')}</div>` : renderEmpty('Zatím tu nejsou spravované účty. Přidej účet s vlastníkem, nebo použij rychlé nastavení vlevo.')}
+        </section>
+
+        <section class="card">
+          <div class="card-header"><div><h2>Účty / peněženky</h2><p>Každý účet má vlastní zůstatek. Může to být banka, hotovost, spoření, obálka nebo osoba.</p></div><span class="badge">${accounts.length}</span></div>
+          <form data-form="add-finance-account">
+            <div class="form-grid two">
+              ${field('Název účtu', 'name', 'text', 'např. Tchyně – u mě', true)}
+              ${selectField('Typ účtu', 'accountType', financeAccountTypeOptions(), 'person')}
+              ${field('Počáteční zůstatek', 'openingBalance', 'number', 'např. 0')}
+              ${field('Vlastník / poznámka', 'ownerLabel', 'text', 'např. tchyně')}
+              ${selectField('Započítat do celku', 'includeInTotal', [['yes', 'Ano'], ['no', 'Ne']], 'yes')}
+              ${field('Poznámka', 'note', 'text', 'volitelné')}
+            </div>
+            <div class="form-actions">
+              <button class="primary-btn" type="submit">Přidat účet</button>
+              ${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-finance">Načíst cloud finance</button>' : ''}
+              ${state.cloud?.householdId && localAccounts ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-finance-accounts">Odeslat účty (${localAccounts})</button>` : ''}
+            </div>
+          </form>
+          ${accounts.length ? `<div class="list" style="margin-top:14px;">${accounts.map((account) => renderFinanceAccount(account, balances)).join('')}</div>` : renderEmpty('Zatím tu není žádný účet. Přidej aspoň jeden, třeba „Moje banka“, „Hotovost“ nebo „Tchyně – u mě“.')}
+        </section>
+
+        <section class="card">
+          <div class="card-header"><div><h2>Přidat pohyb</h2><p>Příjem, výdaj nebo přesun mezi účty. Přesun je vhodný pro peníze bokem na spoření.</p></div></div>
+          <form data-form="add-finance">
+            <div class="form-grid two">
+              ${selectField('Typ', 'type', [['expense', 'Výdaj'], ['income', 'Příjem'], ['transfer', 'Přesun mezi účty']], 'expense')}
+              ${selectField('Účet', 'accountId', financeAccountOptions(true), accounts[0]?.id || '')}
+              ${selectField('Cílový účet u přesunu', 'transferAccountId', financeAccountOptions(false), '')}
+              ${field('Název', 'title', 'text', 'např. výplata / energie / výběr', true)}
+              ${field('Částka', 'amount', 'number', 'např. 1250', true)}
+              ${field('Datum', 'date', 'date', '', false, todayISO())}
+              ${selectField('Kategorie', 'category', financeCategoryOptions(), 'groceries')}
+              ${selectField('Platba', 'paymentMethod', [['card', 'Kartou'], ['cash', 'Hotově'], ['bank_transfer', 'Převod'], ['direct_debit', 'Inkaso'], ['other', 'Jiné']], 'bank_transfer')}
+              ${field('Poznámka', 'note', 'text', 'volitelné')}
+            </div>
+            <div class="form-actions">
+              <button class="primary-btn" type="submit">Přidat pohyb</button>
+              ${state.cloud?.householdId && localOnly ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-finance">Odeslat pohyby (${localOnly})</button>` : ''}
+            </div>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="card-header"><div><h2>Souhrn podle kategorií</h2><p>${escapeHtml(financeMonthLabel(selectedMonth))}</p></div></div>
+          ${categoryRows.length ? `<div class="list">${categoryRows.map((row) => `<div class="item"><div class="item-top"><div class="item-title">${escapeHtml(row.label)}</div><span class="badge ${row.type === 'income' ? 'good' : ''}">${formatCurrency(row.amount)}</span></div><div class="item-meta">${row.type === 'income' ? 'příjmy' : 'výdaje'} · ${row.count}×</div></div>`).join('')}</div>` : renderEmpty('V tomhle měsíci zatím nejsou žádné kategorie.')}
+        </section>
+
+        <section class="card">
+          <div class="card-header"><div><h2>Souhrn podle účtů</h2><p>${escapeHtml(financeMonthLabel(selectedMonth))}</p></div></div>
+          ${accountRows.length ? `<div class="list">${accountRows.map((row) => `<div class="item"><div class="item-top"><div class="item-title">${escapeHtml(row.label)}</div><span class="badge">${formatCurrency(row.net)}</span></div><div class="item-meta">Příjmy ${formatCurrency(row.income)} · výdaje ${formatCurrency(row.expense)} · přesuny ${formatCurrency(row.transferIn - row.transferOut)}</div></div>`).join('')}</div>` : renderEmpty('V tomhle měsíci zatím nejsou žádné pohyby na účtech.')}
+        </section>
+
+        <section class="card desktop-span-2">
+          <div class="card-header"><div><h2>Pohyby za měsíc</h2><p>${visibleItems.length} položek · ${escapeHtml(financeMonthLabel(selectedMonth))}</p></div></div>
+          ${visibleItems.length ? `<div class="list">${visibleItems.map(renderFinanceItem).join('')}</div>` : renderEmpty('V tomhle měsíci zatím není žádný příjem, výdaj ani přesun.')}
+        </section>
+      </div>
+    `;
+  }
+
+  function renderFinanceAccount(account, balances = financeAccountBalances()) {
+    return `
+      <div class="item">
+        <div class="item-top">
+          <div class="item-title">${financeAccountIcon(account.accountType)} ${escapeHtml(account.name)}</div>
+          <span class="badge good">${formatCurrency(balances[account.id] || 0)}</span>
+        </div>
+        <div class="item-meta">${escapeHtml(financeAccountTypeLabel(account.accountType))}${account.ownerLabel ? ` · ${escapeHtml(account.ownerLabel)}` : ''}${account.includeInTotal === false ? ' · mimo celkový součet' : ''}${account.note ? ` · ${escapeHtml(account.note)}` : ''}${account.cloudId ? ' · cloud' : ' · lokálně'}</div>
+        <div class="item-actions">
+          ${state.cloud?.householdId && !account.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-finance-account" data-id="${account.id}">Odeslat</button>` : ''}
+          <button class="danger-btn" type="button" data-action="delete-finance-account" data-id="${account.id}">Smazat</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderFinanceItem(item) {
+    const isIncome = item.type === 'income';
+    const isTransfer = item.type === 'transfer';
+    const account = financeAccountById(item.accountId);
+    const target = financeAccountById(item.transferAccountId);
+    return `
+      <div class="item">
+        <div class="item-top">
+          <div class="item-title">${isTransfer ? '↔️' : isIncome ? '➕' : '➖'} ${escapeHtml(item.title)}</div>
+          <span class="badge ${isIncome || isTransfer ? 'good' : 'warn'}">${formatCurrency(item.amount)}</span>
+        </div>
+        <div class="item-meta">${formatDate(item.date)} · ${isTransfer ? 'Přesun' : escapeHtml(financeCategoryLabel(item.category))}${account ? ` · ${escapeHtml(account.name)}` : ''}${target ? ` → ${escapeHtml(target.name)}` : ''} · ${escapeHtml(financePaymentLabel(item.paymentMethod))}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
+        <div class="item-actions">
+          ${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-finance" data-id="${item.id}">Odeslat</button>` : ''}
+          <button class="danger-btn" type="button" data-action="delete-finance" data-id="${item.id}">Smazat</button>
+        </div>
+      </div>
+    `;
+  }
+
   function renderMore() {
     const visibleModules = getVisibleModules().filter((module) => !['home', 'settings'].includes(module.id));
     const primaryIds = new Set(normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules));
@@ -2257,6 +2558,79 @@
     return supabaseClientInstance;
   }
 
+
+  function renderCloudHouseholdManager() {
+    const households = Array.isArray(state.cloud?.households) ? state.cloud.households : [];
+    const activeCloudId = state.cloud?.householdId || '';
+    return `
+      <div class="cloud-household-panel">
+        <div class="card-subheader"><h3>Cloud domácnosti</h3><p>Každá domácnost má vlastní cloud ID. Při přepnutí se lokální pracovní pohled uloží zvlášť, aby se data mezi rodinami nemíchala.</p></div>
+        <div class="form-actions compact-actions">
+          <button class="ghost-btn" type="button" data-action="cloud-load-households">Načíst moje domácnosti</button>
+          <button class="ghost-btn" type="button" data-action="cloud-load-all">Načíst data aktivní domácnosti</button>
+        </div>
+        ${households.length ? `
+          <div class="cloud-household-list">
+            ${households.map((household) => `
+              <div class="cloud-household-row ${household.id === activeCloudId ? 'active' : ''}">
+                <div><strong>${escapeHtml(household.name || 'Domácnost')}</strong><span>${escapeHtml(household.role || 'member')} · ${escapeHtml(shortId(household.id))}</span></div>
+                ${household.id === activeCloudId ? '<span class="badge good">aktivní</span>' : `<button class="ghost-btn" type="button" data-action="cloud-switch-household" data-id="${escapeHtml(household.id)}" data-name="${escapeHtml(household.name || 'Domácnost')}">Přepnout</button>`}
+              </div>
+            `).join('')}
+          </div>
+        ` : '<div class="inline-note">Zatím není načtený seznam domácností. Klikni na „Načíst moje domácnosti“.</div>'}
+        <div class="grid two cloud-auth-grid">
+          <form data-form="cloud-create-household">
+            <h3>Nová domácnost</h3>
+            <div class="form-grid two">
+              ${field('Název', 'name', 'text', 'Novákovi / Chata / Byt', true)}
+              ${field('Hlavní profil', 'profileName', 'text', currentProfile()?.name || 'Já', false)}
+            </div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Vytvořit novou domácnost</button></div>
+          </form>
+          <form data-form="cloud-invite-member">
+            <h3>Pozvat člena</h3>
+            <div class="form-grid two">
+              ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
+              ${selectField('Role', 'role', [['member', 'Člen'], ['admin', 'Admin'], ['read_only', 'Jen čtení']], 'member')}
+            </div>
+            <div class="form-actions"><button class="ghost-btn" type="submit">Připravit pozvánku</button></div>
+          </form>
+        </div>
+        <div class="form-actions compact-actions">
+          <button class="ghost-btn" type="button" data-action="cloud-load-invitations">Načíst pozvánky</button>
+        </div>
+        ${renderCloudInvitationsPanel()}
+        <div class="inline-note">Pozvánky už jsou v Supabase. Pozvaný člověk se přihlásí stejným e-mailem, načte příchozí pozvánky a přijme je. Data se dál oddělují podle cloud ID domácnosti.</div>
+      </div>
+    `;
+  }
+
+  function renderCloudInvitationsPanel() {
+    const invitations = Array.isArray(state.cloud?.invitations) ? state.cloud.invitations : [];
+    const pending = invitations.filter((item) => item.status !== 'accepted' && item.status !== 'cancelled');
+    const incoming = pending.filter((item) => String(item.email || '').toLowerCase() === String(state.cloud?.email || '').toLowerCase());
+    const outgoing = pending.filter((item) => String(item.email || '').toLowerCase() !== String(state.cloud?.email || '').toLowerCase());
+    const row = (item, incomingMode = false) => `
+      <div class="cloud-household-row">
+        <div>
+          <strong>${escapeHtml(item.email || 'pozvánka')}</strong>
+          <span>${escapeHtml(item.role || 'member')} · ${escapeHtml(item.status || 'pending')}${item.expiresAt || item.expires_at ? ` · do ${escapeHtml(formatDate(item.expiresAt || item.expires_at))}` : ''}</span>
+        </div>
+        ${incomingMode ? `<button class="primary-btn" type="button" data-action="cloud-accept-invitation" data-id="${escapeHtml(item.id)}">Přijmout</button>` : `<span class="badge ${item.localOnly ? 'warn' : 'good'}">${item.localOnly ? 'lokálně' : 'cloud'}</span>`}
+      </div>`;
+    return `
+      <div class="cloud-invitations-panel">
+        <div class="card-subheader"><h3>Pozvánky</h3><p>${pending.length ? `${pending.length} aktivních pozvánek` : 'Zatím žádné aktivní pozvánky.'}</p></div>
+        ${incoming.length ? `<div class="cloud-household-list"><div class="inline-note">Příchozí pozvánky pro tvůj e-mail</div>${incoming.map((item) => row(item, true)).join('')}</div>` : ''}
+        ${outgoing.length ? `<div class="cloud-household-list"><div class="inline-note">Odeslané pozvánky z této domácnosti</div>${outgoing.map((item) => row(item, false)).join('')}</div>` : ''}
+      </div>`;
+  }
+
+  function shortId(value) {
+    return value ? `${String(value).slice(0, 8)}…` : '—';
+  }
+
   function renderCloudAccount() {
     const cloud = state.cloud || {};
     const signedIn = Boolean(cloud.userId);
@@ -2272,6 +2646,7 @@
           <div class="mini-stat"><span>Cloud domácnost</span><strong>${escapeHtml(cloud.householdId || 'zatím nevytvořena')}</strong></div>
           <div class="mini-stat"><span>Poslední zápis</span><strong>${cloud.lastSyncAt ? escapeHtml(formatDateTime(cloud.lastSyncAt)) : 'nikdy'}</strong></div>
         </div>
+        ${signedIn ? renderCloudHouseholdManager() : ''}
         ${signedIn ? `
           <div class="hint-box">Jsi přihlášený. Tlačítko níže vytvoří nebo napojí aktuální domácnost v Supabase: domácnost, owner člen a profily. Kalendář, nákupy a další moduly už se umí ukládat do cloudu.</div>
           <div class="form-actions">
@@ -2666,7 +3041,7 @@
 
   async function cloudLoadContractFiles(showMessage = true) {
     const client = getSupabaseClient();
-    if (!client) return showToast('Supabase knihovna není načtená');
+    if (!client) { if (showMessage) showToast('Supabase knihovna není načtená'); return null; }
     const user = await refreshCloudSession(false);
     if (!user || !state.cloud?.householdId) return showToast('Nejdřív napoj domácnost na cloud');
     const { data, error } = await client
@@ -3154,7 +3529,7 @@
 
   async function cloudLoadShoppingData(showMessage = true) {
     const client = getSupabaseClient();
-    if (!client) return showToast('Supabase knihovna není načtená');
+    if (!client) { if (showMessage) showToast('Supabase knihovna není načtená'); return null; }
     const user = await refreshCloudSession(false);
     if (!user || !state.cloud?.householdId) return showToast('Nejdřív vytvoř / napoj domácnost v cloudu');
     const householdId = state.cloud.householdId;
@@ -3541,7 +3916,7 @@
     const client = getSupabaseClient();
     if (!client || !state.cloud?.householdId) return showToast('Nejdřív napoj domácnost na cloud');
     const user = await refreshCloudSession(false);
-    if (!user) return showToast('Nejdřív se přihlas');
+    if (!user) { if (showMessage) showToast('Nejdřív se přihlas'); return null; }
 
     const [{ data: vehicles, error: vehicleError }, { data: fuel, error: fuelError }, { data: services, error: serviceError }] = await Promise.all([
       client.from('vehicles').select('*').eq('household_id', state.cloud.householdId).order('created_at', { ascending: true }),
@@ -4958,6 +5333,7 @@
       'fuelio-preview': () => previewFuelioImport(form),
       'add-camera': () => addItem('cameras', { name: data.name, location: data.location, snapshotUrl: data.snapshotUrl, status: data.status, note: data.note }),
       onboarding: () => completeOnboarding(data),
+      'onboarding-login': () => loginExistingHouseholdFromOnboarding(data),
       'household-settings': () => {
         state.household.name = normalizeText(data.householdName) || 'Domácnost';
         state.settings.theme = data.theme === 'dark' ? 'dark' : 'light';
@@ -4979,18 +5355,46 @@
       'add-profile': () => addProfile(data.name, data.role),
       'import-data': () => importData(data.json),
       'cloud-login': () => cloudLogin(data.email, data.password),
-      'cloud-signup': () => cloudSignUp(data.email, data.password)
+      'cloud-signup': () => cloudSignUp(data.email, data.password),
+      'cloud-create-household': () => cloudCreateHousehold(data.name, data.profileName),
+      'cloud-invite-member': () => cloudInviteMember(data.email, data.role),
+      'add-finance-account': () => addFinanceAccountFromForm(data, form),
+      'add-managed-finance-set': () => addManagedFinanceSetFromForm(data, form),
+      'add-finance': () => addFinanceFromForm(data, form),
+      'finance-month-filter': () => setFinanceMonth(data.month)
     };
     const handler = handlers[type];
     if (handler) await handler();
   }
 
-  function completeOnboarding(data) {
+  async function completeOnboarding(data) {
+    const email = normalizeText(data.email).toLowerCase();
+    const password = String(data.password || '');
+    const passwordConfirm = String(data.passwordConfirm || '');
+
+    if (!email || !password) {
+      showToast('Vyplň e-mail a heslo pro rodinný účet');
+      return;
+    }
+    if (password.length < 6) {
+      showToast('Heslo musí mít aspoň 6 znaků');
+      return;
+    }
+    if (password !== passwordConfirm) {
+      showToast('Hesla se neshodují');
+      return;
+    }
+
     const householdId = `household-${uid()}`;
+    const extraNames = normalizeText(data.profilesExtra)
+      .split(',')
+      .map((name) => normalizeText(name))
+      .filter(Boolean);
     const names = [data.profilePrimary, data.profileSecondary]
       .map(normalizeText)
-      .filter(Boolean);
-    if (!names.length) names.push('Já');
+      .filter(Boolean)
+      .concat(extraNames);
+    const uniqueNames = [...new Set(names.length ? names : ['Já'])];
 
     state.household = {
       id: householdId,
@@ -4998,7 +5402,7 @@
       isConfigured: true,
       createdAt: new Date().toISOString()
     };
-    state.profiles = names.map((name, index) => createProfile(name, index === 0 ? 'owner' : 'member', householdId));
+    state.profiles = uniqueNames.map((name, index) => createProfile(name, index === 0 ? 'owner' : 'member', householdId));
     state.activeProfileId = state.profiles[0]?.id || '';
     state.enabledModules = normalizeModuleList(data.modules);
     state.settings.dashboardNote = DEFAULT_STATE.settings.dashboardNote;
@@ -5006,8 +5410,262 @@
     activeModule = 'home';
     touchState();
     saveState();
+
+    const cloudResult = await registerCloudHouseholdFromOnboarding(email, password);
     render();
-    showToast('Domácnost vytvořena');
+    if (cloudResult === 'bootstrapped') showToast('Rodinný účet a cloudová domácnost vytvořeny');
+    else if (cloudResult === 'email-confirmation') showToast('Domácnost je lokálně. Potvrď e-mail a pak se přihlas');
+    else showToast('Domácnost vytvořena lokálně, cloud se nepovedl napojit');
+  }
+
+  async function registerCloudHouseholdFromOnboarding(email, password) {
+    const client = getSupabaseClient();
+    if (!client) return 'local-only';
+    const { data, error } = await client.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: getAuthRedirectUrl(),
+        data: {
+          app_name: 'Domácnost+',
+          household_name: householdName(),
+          owner_profile_name: currentProfile()?.name || ''
+        }
+      }
+    });
+    if (error) {
+      showToast(error.message || 'Registrace se nepovedla');
+      return 'local-only';
+    }
+    const user = data?.user;
+    if (!data?.session || !user) {
+      state.cloud = {
+        ...(state.cloud || {}),
+        supabaseUrl: SUPABASE_URL,
+        provider: 'supabase',
+        status: 'email-confirmation',
+        userId: user?.id || '',
+        email
+      };
+      saveState();
+      return 'email-confirmation';
+    }
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      status: 'signed-in',
+      userId: user.id,
+      email: user.email || email
+    };
+    saveState();
+    await bootstrapCloudHousehold(false);
+    return state.cloud?.householdId ? 'bootstrapped' : 'signed-in';
+  }
+
+  async function loginExistingHouseholdFromOnboarding(data) {
+    const email = normalizeText(data.email).toLowerCase();
+    const password = String(data.password || '');
+    if (!email || !password) return showToast('Vyplň e-mail a heslo');
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const { data: authData, error } = await client.auth.signInWithPassword({ email, password });
+    if (error) return showToast(error.message || 'Přihlášení se nepovedlo');
+    const user = authData?.user;
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      status: 'signed-in',
+      userId: user?.id || '',
+      email: user?.email || email
+    };
+    saveState();
+    const households = await cloudLoadHouseholds(false);
+    const firstHousehold = households[0];
+    if (!firstHousehold) {
+      render();
+      showToast('Přihlášeno, ale účet zatím není v žádné domácnosti');
+      return;
+    }
+    state.cloud.householdId = firstHousehold.id;
+    state.household = {
+      id: firstHousehold.id,
+      name: firstHousehold.name || 'Domácnost',
+      isConfigured: true,
+      createdAt: firstHousehold.createdAt || new Date().toISOString()
+    };
+    await cloudLoadProfilesForCurrentHousehold();
+    await cloudLoadAllModules(false);
+    onboardingMode = 'choice';
+    sessionStorage.removeItem('domacnostPlus.onboardingMode');
+    activeModule = 'home';
+    touchState();
+    saveState();
+    render();
+    showToast('Domácnost načtena');
+  }
+
+  function startDemoHome() {
+    const demo = createDemoState();
+    state = migrateState(mergeState(DEFAULT_STATE, demo));
+    state.settings.demoMode = true;
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'demo',
+      status: 'demo',
+      userId: '',
+      email: '',
+      householdId: '',
+      lastSyncAt: '',
+      households: [],
+      invitations: []
+    };
+    onboardingMode = 'choice';
+    sessionStorage.removeItem('domacnostPlus.onboardingMode');
+    activeModule = 'home';
+    touchState();
+    saveState();
+    render();
+    showToast('Spuštěná demo domácnost');
+  }
+
+  function createDemoState() {
+    const nowIso = new Date().toISOString();
+    const householdId = `demo-household-${uid()}`;
+    const martinId = `demo-profile-martin-${uid()}`;
+    const janaId = `demo-profile-jana-${uid()}`;
+    const carId = `demo-car-${uid()}`;
+    const financeAccountMain = `demo-account-main-${uid()}`;
+    const financeAccountSavings = `demo-account-savings-${uid()}`;
+    const financeAccountCash = `demo-account-cash-${uid()}`;
+    const daysFromNow = (days) => {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      return date.toISOString().slice(0, 10);
+    };
+    const daysAgo = (days) => {
+      const date = new Date();
+      date.setDate(date.getDate() - days);
+      return date.toISOString().slice(0, 10);
+    };
+
+    return {
+      meta: {
+        schemaVersion: 37,
+        appBuild: 38,
+        mode: 'demo',
+        createdAt: nowIso,
+        updatedAt: nowIso
+      },
+      settings: {
+        ...DEFAULT_STATE.settings,
+        dashboardNote: 'Demo domácnost ukazuje, jak může aplikace vypadat po delším používání.',
+        bottomNavIds: ['home', 'calendar', 'shopping', 'homecare', 'finance'],
+        demoMode: true
+      },
+      household: {
+        id: householdId,
+        name: 'Demo domácnost Novákovi',
+        isConfigured: true,
+        createdAt: nowIso
+      },
+      profiles: [
+        { id: martinId, householdId, name: 'Petr', color: 'blue', role: 'owner', createdAt: nowIso },
+        { id: janaId, householdId, name: 'Jana', color: 'violet', role: 'member', createdAt: nowIso }
+      ],
+      activeProfileId: martinId,
+      enabledModules: [...MANAGED_MODULE_IDS],
+      calendar: [
+        { id: uid(), householdId, profileId: martinId, title: 'Dentální hygiena', date: daysFromNow(1), time: '09:30', note: 'Připomenout ráno', createdAt: nowIso },
+        { id: uid(), householdId, profileId: janaId, title: 'Třídní schůzky', date: daysFromNow(3), time: '17:00', note: 'Vzít poznámky', createdAt: nowIso },
+        { id: uid(), householdId, profileId: martinId, title: 'Servis auta', date: daysFromNow(8), time: '08:00', note: 'Oleje + filtry', createdAt: nowIso }
+      ],
+      packages: [
+        { id: uid(), householdId, profileId: janaId, title: 'Boty z e-shopu', carrier: 'Zásilkovna', tracking: 'Z1234567890', status: 'pickup', expectedDate: daysFromNow(0), pickupPlace: 'Box u obchodu', note: 'Vyzvednout dnes', createdAt: nowIso },
+        { id: uid(), householdId, profileId: martinId, title: 'Filtry do vysavače', carrier: 'PPL', tracking: 'PPL987654321', status: 'transit', expectedDate: daysFromNow(2), pickupPlace: '', note: 'Do garáže', createdAt: nowIso }
+      ],
+      shopping: [
+        { id: uid(), householdId, profileId: martinId, name: 'Mléko', quantity: 2, unit: 'l', category: 'Mléčné', note: '', done: false, createdAt: nowIso },
+        { id: uid(), householdId, profileId: janaId, name: 'Rohlíky', quantity: 10, unit: 'ks', category: 'Pečivo', note: 'Na ráno', done: false, createdAt: nowIso },
+        { id: uid(), householdId, profileId: martinId, name: 'Tablety do myčky', quantity: 1, unit: 'bal', category: 'Drogerie', note: 'Akce', done: true, doneAt: nowIso, createdAt: nowIso }
+      ],
+      shoppingCatalogCustom: [
+        { id: uid(), householdId, profileId: martinId, name: 'Granule Rex', defaultUnit: 'kg', category: 'Zvířata', source: 'household', createdAt: nowIso }
+      ],
+      coupons: [
+        { id: uid(), householdId, profileId: janaId, store: 'Drogerie', code: 'JARO15', discount: '15 %', expiry: daysFromNow(12), note: 'Použít na tablety do myčky', used: false, createdAt: nowIso }
+      ],
+      hdoWindows: [
+        { id: uid(), householdId, profileId: martinId, start: '02:00', end: '06:00', days: 'Po-Ne', enabled: true, note: 'Noční nízký tarif', createdAt: nowIso },
+        { id: uid(), householdId, profileId: martinId, start: '13:00', end: '15:00', days: 'Po-Pá', enabled: true, note: 'Odpolední okno', createdAt: nowIso }
+      ],
+      waste: [
+        { id: uid(), householdId, profileId: martinId, type: 'Plast', date: daysFromNow(1), repeat: 'biweekly', notifyBeforeHours: 12, note: 'Večer vyvézt žlutou', createdAt: nowIso },
+        { id: uid(), householdId, profileId: martinId, type: 'Směsný odpad', date: daysFromNow(4), repeat: 'weekly', notifyBeforeHours: 12, note: '', createdAt: nowIso }
+      ],
+      homeTasks: [
+        { id: uid(), householdId, profileId: martinId, title: 'Vyměnit filtr digestoře', category: 'udrzba', priority: 'normal', due: daysFromNow(5), note: 'Filtr je ve skříni', done: false, createdAt: nowIso },
+        { id: uid(), householdId, profileId: janaId, title: 'Objednat kadeřnici', category: 'ostatni', priority: 'low', due: daysFromNow(10), note: '', done: false, createdAt: nowIso }
+      ],
+      notes: [
+        { id: uid(), householdId, profileId: martinId, text: 'V garáži dochází zimní směs do ostřikovačů.', createdAt: nowIso }
+      ],
+      devices: [
+        { id: uid(), householdId, profileId: martinId, name: 'Router', type: 'Síť', address: '192.168.1.1', note: 'Hlavní router', createdAt: nowIso },
+        { id: uid(), householdId, profileId: martinId, name: 'NAS', type: 'Úložiště', address: '192.168.1.50', note: 'Zálohy fotek', createdAt: nowIso }
+      ],
+      vehicles: [
+        { id: carId, householdId, profileId: martinId, name: 'Škoda Octavia', plate: '1AB 2345', fuelType: 'diesel', odometer: '184500', technicalInspectionUntil: daysFromNow(90), insuranceUntil: daysFromNow(45), nextServiceKm: '190000', nextServiceDate: daysFromNow(30), note: 'Rodinné auto', createdAt: nowIso }
+      ],
+      fuel: [
+        { id: uid(), householdId, profileId: martinId, vehicleId: carId, date: daysAgo(35), odometer: '183100', liters: 48.5, price: 1680, note: 'Plná nádrž', createdAt: nowIso },
+        { id: uid(), householdId, profileId: martinId, vehicleId: carId, date: daysAgo(12), odometer: '184000', liters: 46.2, price: 1595, note: 'Běžné tankování', createdAt: nowIso }
+      ],
+      services: [
+        { id: uid(), householdId, profileId: martinId, vehicleId: carId, date: daysAgo(60), title: 'Výměna oleje', price: 4200, note: 'Olej + filtry', createdAt: nowIso }
+      ],
+      contracts: [
+        { id: uid(), householdId, profileId: martinId, name: 'Pojištění auta', type: 'car_insurance', provider: 'Demo pojišťovna', number: 'AUTO-2026-001', validFrom: daysAgo(180), validTo: daysFromNow(45), amount: 8400, frequency: 'yearly', note: 'Navazuje na Garáž', createdAt: nowIso },
+        { id: uid(), householdId, profileId: martinId, name: 'Internet domácnost', type: 'internet', provider: 'DemoNet', number: 'NET-5544', validFrom: daysAgo(400), validTo: daysFromNow(120), amount: 599, frequency: 'monthly', note: '', createdAt: nowIso }
+      ],
+      contractFiles: [],
+      cameras: [
+        { id: uid(), householdId, profileId: martinId, name: 'Vchod', location: 'Před domem', snapshotUrl: '', status: 'online', note: 'Demo kamera bez streamu', createdAt: nowIso }
+      ],
+      financeAccounts: [
+        { id: financeAccountMain, householdId, profileId: martinId, name: 'Domácí účet', accountType: 'bank', openingBalance: 14500, currentBalance: 14500, includeInTotal: true, note: 'Hlavní účet domácnosti', createdAt: nowIso },
+        { id: financeAccountSavings, householdId, profileId: martinId, name: 'Rezerva / spoření', accountType: 'savings', openingBalance: 65000, currentBalance: 65000, includeInTotal: true, note: 'Peníze bokem', createdAt: nowIso },
+        { id: financeAccountCash, householdId, profileId: janaId, name: 'Hotovost', accountType: 'cash', openingBalance: 2300, currentBalance: 2300, includeInTotal: true, note: '', createdAt: nowIso }
+      ],
+      finance: [
+        { id: uid(), householdId, profileId: martinId, type: 'income', title: 'Výplata', amount: 42000, date: daysAgo(7), category: 'salary', accountId: financeAccountMain, paymentMethod: 'bank_transfer', note: '', createdAt: nowIso },
+        { id: uid(), householdId, profileId: martinId, type: 'expense', title: 'Nájem', amount: 14500, date: daysAgo(5), category: 'housing', accountId: financeAccountMain, paymentMethod: 'bank_transfer', note: '', createdAt: nowIso },
+        { id: uid(), householdId, profileId: janaId, type: 'expense', title: 'Nákup potravin', amount: 1830, date: daysAgo(2), category: 'groceries', accountId: financeAccountMain, paymentMethod: 'card', note: 'Týdenní nákup', createdAt: nowIso },
+        { id: uid(), householdId, profileId: martinId, type: 'transfer', title: 'Přesun do rezervy', amount: 5000, date: daysAgo(1), category: 'other_expense', accountId: financeAccountMain, transferAccountId: financeAccountSavings, paymentMethod: 'bank_transfer', note: 'Bokem na rezervu', createdAt: nowIso }
+      ],
+      financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: todayISO().slice(0, 7) },
+      shoppingCloud: { units: [], categories: [], catalog: [], activeListId: '', loadedAt: '' },
+      hdoCloud: { settingId: '', loadedAt: '' },
+      wasteCloud: { types: [], loadedAt: '' },
+      parcelsCloud: { loadedAt: '' },
+      tasksCloud: { loadedAt: '' },
+      calendarCloud: { sources: [], loadedAt: '' },
+      pwa: { installed: false, lastUpdateCheck: '', lastInstallPrompt: '', diagnostics: null },
+      cloud: {
+        supabaseUrl: SUPABASE_URL,
+        provider: 'demo',
+        userId: '',
+        email: '',
+        householdId: '',
+        lastSyncAt: '',
+        status: 'demo',
+        households: [],
+        invitations: []
+      },
+      householdWorkspaces: {}
+    };
   }
 
   function addProfile(name, role = 'member') {
@@ -5023,7 +5681,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 27, appBuild: 28, mode: 'pwa-install-diagnostics', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 35, appBuild: 36, mode: 'entry-demo-auth-fix', updatedAt: new Date().toISOString() };
   }
 
   function addItem(collection, item) {
@@ -5076,6 +5734,531 @@
   }
 
 
+  function financeCategoryOptions() {
+    return FINANCE_CATEGORY_OPTIONS.map(([key, label]) => [key, label]);
+  }
+
+  function financeCategoryLabel(value) {
+    return FINANCE_CATEGORY_OPTIONS.find(([key]) => key === value)?.[1] || value || 'Ostatní';
+  }
+
+  function financeAccountTypeOptions() {
+    return [['cash', 'Hotovost'], ['bank', 'Běžný účet'], ['savings', 'Spoření'], ['envelope', 'Obálka / rezerva'], ['person', 'Osoba / spravované peníze'], ['debt', 'Dluh / vyrovnání'], ['other', 'Jiné']];
+  }
+
+  function financeAccountTypeLabel(value) {
+    return financeAccountTypeOptions().find(([key]) => key === value)?.[1] || 'Jiné';
+  }
+
+  function financeAccountIcon(value) {
+    return { cash: '💵', bank: '🏦', savings: '🐷', envelope: '✉️', person: '👤', debt: '🧾', other: '💰' }[value] || '💰';
+  }
+
+  function financeAccountsSorted() {
+    return [...(state.financeAccounts || [])].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'cs'));
+  }
+
+  function financeAccountById(id) {
+    return (state.financeAccounts || []).find((account) => account.id === id || account.cloudId === id) || null;
+  }
+
+  function financeAccountOptions(includeEmpty = true) {
+    const options = financeAccountsSorted().map((account) => [account.id, `${financeAccountIcon(account.accountType)} ${account.name}`]);
+    return includeEmpty ? [['', 'Bez účtu / jen záznam'], ...options] : [['', 'Nevybráno'], ...options];
+  }
+
+  function financeManagedGroups(balances = financeAccountBalances()) {
+    const map = new Map();
+    (state.financeAccounts || []).forEach((account) => {
+      const explicitOwner = normalizeText(account.ownerLabel);
+      const isManagedType = ['person', 'savings', 'envelope', 'debt'].includes(account.accountType);
+      if (!explicitOwner && !isManagedType) return;
+      const label = explicitOwner || financeAccountTypeLabel(account.accountType);
+      if (!map.has(label)) map.set(label, { label, accounts: [], total: 0 });
+      const row = map.get(label);
+      row.accounts.push(account);
+      row.total += Number(balances[account.id] || 0);
+    });
+    return [...map.values()].sort((a, b) => Math.abs(b.total) - Math.abs(a.total) || a.label.localeCompare(b.label, 'cs'));
+  }
+
+  function financeCategoryType(value) {
+    return FINANCE_CATEGORY_OPTIONS.find(([key]) => key === value)?.[2] || 'expense';
+  }
+
+  function financePaymentLabel(value) {
+    const map = { cash: 'hotově', card: 'kartou', bank_transfer: 'převod', direct_debit: 'inkaso', other: 'jiné' };
+    return map[value] || 'jiné';
+  }
+
+  function financeSelectedMonth() {
+    const stored = state.financeCloud?.monthFilter;
+    return /^\d{4}-\d{2}$/.test(String(stored || '')) ? stored : todayISO().slice(0, 7);
+  }
+
+  function financeMonthLabel(month) {
+    const safeMonth = /^\d{4}-\d{2}$/.test(String(month || '')) ? month : todayISO().slice(0, 7);
+    const [year, monthIndex] = safeMonth.split('-').map(Number);
+    return new Intl.DateTimeFormat('cs-CZ', { month: 'long', year: 'numeric' }).format(new Date(year, monthIndex - 1, 1));
+  }
+
+  function setFinanceMonth(month) {
+    if (!/^\d{4}-\d{2}$/.test(String(month || ''))) return showToast('Vyber platný měsíc');
+    state.financeCloud = { ...(state.financeCloud || {}), monthFilter: month };
+    touchState();
+    saveState();
+    render();
+  }
+
+  function shiftFinanceMonth(delta) {
+    const month = financeSelectedMonth();
+    const [year, monthIndex] = month.split('-').map(Number);
+    const date = new Date(year, monthIndex - 1 + delta, 1);
+    const next = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    setFinanceMonth(next);
+  }
+
+  function financeMonthSummary(month = financeSelectedMonth()) {
+    return (state.finance || []).reduce((acc, item) => {
+      if (String(item.date || '').slice(0, 7) !== month) return acc;
+      const amount = Number(item.amount || 0);
+      if (item.type === 'income') acc.income += amount;
+      else if (item.type === 'expense') acc.expense += amount;
+      acc.balance = acc.income - acc.expense;
+      return acc;
+    }, { income: 0, expense: 0, balance: 0 });
+  }
+
+  function financeCategoryBreakdown(month = financeSelectedMonth()) {
+    const map = new Map();
+    (state.finance || []).forEach((item) => {
+      if (String(item.date || '').slice(0, 7) !== month || item.type === 'transfer') return;
+      const key = `${item.type}:${item.category || 'other'}`;
+      const current = map.get(key) || { key, type: item.type, category: item.category || 'other', label: financeCategoryLabel(item.category), amount: 0, count: 0 };
+      current.amount += Number(item.amount || 0);
+      current.count += 1;
+      map.set(key, current);
+    });
+    return [...map.values()].sort((a, b) => b.amount - a.amount);
+  }
+
+  function financeAccountMonthSummary(month = financeSelectedMonth()) {
+    const map = new Map();
+    const ensure = (account) => {
+      if (!account) return null;
+      const key = account.id;
+      if (!map.has(key)) map.set(key, { key, label: `${financeAccountIcon(account.accountType)} ${account.name}`, income: 0, expense: 0, transferIn: 0, transferOut: 0, net: 0 });
+      return map.get(key);
+    };
+    (state.finance || []).forEach((item) => {
+      if (String(item.date || '').slice(0, 7) !== month) return;
+      const amount = Number(item.amount || 0);
+      const account = financeAccountById(item.accountId);
+      const target = financeAccountById(item.transferAccountId);
+      if (item.type === 'income') { const row = ensure(account); if (row) { row.income += amount; row.net += amount; } }
+      if (item.type === 'expense') { const row = ensure(account); if (row) { row.expense += amount; row.net -= amount; } }
+      if (item.type === 'transfer') {
+        const from = ensure(account);
+        const to = ensure(target);
+        if (from) { from.transferOut += amount; from.net -= amount; }
+        if (to) { to.transferIn += amount; to.net += amount; }
+      }
+    });
+    return [...map.values()].sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
+  }
+
+  function financeAccountBalances() {
+    const balances = {};
+    (state.financeAccounts || []).forEach((account) => {
+      balances[account.id] = Number(account.openingBalance || 0);
+      if (account.cloudId) balances[account.cloudId] = balances[account.id];
+    });
+    (state.finance || []).forEach((item) => {
+      const amount = Number(item.amount || 0);
+      if (!amount) return;
+      const account = financeAccountById(item.accountId);
+      const target = financeAccountById(item.transferAccountId);
+      if (item.type === 'income' && account) balances[account.id] = (balances[account.id] || 0) + amount;
+      if (item.type === 'expense' && account) balances[account.id] = (balances[account.id] || 0) - amount;
+      if (item.type === 'transfer') {
+        if (account) balances[account.id] = (balances[account.id] || 0) - amount;
+        if (target) balances[target.id] = (balances[target.id] || 0) + amount;
+      }
+    });
+    return balances;
+  }
+
+  function cloudFinanceAccountPayload(account, userId) {
+    return {
+      household_id: state.cloud.householdId,
+      profile_id: null,
+      name: account.name,
+      account_type: ['cash', 'bank', 'savings', 'envelope', 'person', 'debt', 'other'].includes(account.accountType) ? account.accountType : 'other',
+      owner_label: account.ownerLabel || null,
+      currency: 'CZK',
+      opening_balance: Number(account.openingBalance || 0),
+      current_balance: Number(financeAccountBalances()[account.id] || account.openingBalance || 0),
+      include_in_total: account.includeInTotal !== false,
+      is_archived: false,
+      note: account.note || null,
+      created_by: userId,
+      updated_by: userId
+    };
+  }
+
+  async function cloudAddFinanceAccount(account) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const { data, error } = await client.from('finance_accounts').insert(cloudFinanceAccountPayload(account, user.id)).select('id').single();
+    if (error) {
+      showToast(error.message || 'Účet se nepovedlo uložit do cloudu');
+      return null;
+    }
+    account.cloudId = data.id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  function cloudFinancePayload(item, userId) {
+    const account = financeAccountById(item.accountId);
+    const target = financeAccountById(item.transferAccountId);
+    return {
+      household_id: state.cloud.householdId,
+      profile_id: null,
+      category_id: null,
+      account_id: account?.cloudId || null,
+      transfer_account_id: target?.cloudId || null,
+      type: item.type === 'transfer' ? 'transfer' : item.type === 'income' ? 'income' : 'expense',
+      title: item.title || financeCategoryLabel(item.category),
+      amount: Number(item.amount || 0),
+      currency: 'CZK',
+      transaction_date: item.date || todayISO(),
+      payment_method: ['cash', 'card', 'bank_transfer', 'direct_debit', 'other'].includes(item.paymentMethod) ? item.paymentMethod : 'other',
+      is_recurring: false,
+      recurring_rule: 'none',
+      note: item.note || null,
+      source: 'manual',
+      created_by: userId,
+      updated_by: userId
+    };
+  }
+
+  async function cloudAddFinance(item) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    if (item.accountId) {
+      const account = financeAccountById(item.accountId);
+      if (account && !account.cloudId) await cloudAddFinanceAccount(account);
+    }
+    if (item.transferAccountId) {
+      const target = financeAccountById(item.transferAccountId);
+      if (target && !target.cloudId) await cloudAddFinanceAccount(target);
+    }
+    const { data, error } = await client.from('finance_transactions').insert(cloudFinancePayload(item, user.id)).select('id').single();
+    if (error) {
+      showToast(error.message || 'Finance se nepovedlo uložit do cloudu');
+      return null;
+    }
+    item.cloudId = data.id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudLoadFinance(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return false;
+    const { data: accountData, error: accountError } = await client
+      .from('finance_accounts')
+      .select('id,name,account_type,owner_label,opening_balance,include_in_total,note,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .eq('is_archived', false)
+      .order('name', { ascending: true });
+    if (accountError) {
+      showToast(accountError.message || 'Finanční účty se nepovedlo načíst z cloudu');
+      return false;
+    }
+    const localAccounts = (state.financeAccounts || []).filter((item) => !item.cloudId);
+    const cloudAccounts = (accountData || []).map((item) => ({
+      id: state.financeAccounts.find((entry) => entry.cloudId === item.id)?.id || `finance-account-cloud-${item.id}`,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      cloudId: item.id,
+      name: item.name || 'Účet',
+      accountType: item.account_type || 'other',
+      ownerLabel: item.owner_label || '',
+      openingBalance: Number(item.opening_balance || 0),
+      includeInTotal: item.include_in_total !== false,
+      note: item.note || '',
+      createdAt: item.created_at || new Date().toISOString()
+    }));
+    state.financeAccounts = [...cloudAccounts, ...localAccounts];
+    const cloudAccountById = Object.fromEntries(state.financeAccounts.filter((account) => account.cloudId).map((account) => [account.cloudId, account]));
+
+    const { data, error } = await client
+      .from('finance_transactions')
+      .select('id,type,title,amount,transaction_date,payment_method,note,created_at,account_id,transfer_account_id')
+      .eq('household_id', state.cloud.householdId)
+      .order('transaction_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    if (error) {
+      showToast(error.message || 'Finance se nepovedlo načíst z cloudu');
+      return false;
+    }
+    const localOnly = (state.finance || []).filter((item) => !item.cloudId);
+    const cloudItems = (data || []).map((item) => ({
+      id: state.finance.find((entry) => entry.cloudId === item.id)?.id || `finance-cloud-${item.id}`,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      cloudId: item.id,
+      type: item.type === 'transfer' || item.transfer_account_id ? 'transfer' : item.type || 'expense',
+      title: item.title || 'Záznam',
+      amount: item.amount === null || item.amount === undefined ? 0 : Number(item.amount),
+      date: item.transaction_date || todayISO(),
+      paymentMethod: item.payment_method || 'other',
+      accountId: cloudAccountById[item.account_id]?.id || '',
+      transferAccountId: cloudAccountById[item.transfer_account_id]?.id || '',
+      category: item.type === 'income' ? 'other_income' : 'other_expense',
+      note: item.note || '',
+      createdAt: item.created_at || new Date().toISOString()
+    }));
+    state.finance = [...cloudItems, ...localOnly];
+    state.financeCloud = { ...(state.financeCloud || {}), accountsLoadedAt: new Date().toISOString(), loadedAt: new Date().toISOString() };
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast('Cloud finance načtené');
+    return true;
+  }
+
+  async function cloudDeleteFinance(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('finance_transactions').delete().eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Záznam se nepovedlo smazat v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteFinanceAccount(account) {
+    const client = getSupabaseClient();
+    if (!client || !account?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('finance_accounts').update({ is_archived: true }).eq('id', account.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Účet se nepovedlo archivovat v cloudu');
+      return false;
+    }
+    return true;
+  }
+
+  async function addFinanceAccountFromForm(data, form) {
+    const account = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      name: normalizeText(data.name),
+      accountType: normalizeText(data.accountType) || 'other',
+      ownerLabel: normalizeText(data.ownerLabel),
+      openingBalance: decimalValue(data.openingBalance) || 0,
+      includeInTotal: data.includeInTotal !== 'no',
+      note: normalizeText(data.note)
+    };
+    if (!account.name) return showToast('Doplň název účtu');
+    const saved = await cloudAddFinanceAccount(account);
+    if (saved?.id) account.cloudId = saved.id;
+    state.financeAccounts.push(account);
+    touchState();
+    saveState();
+    form.reset();
+    render();
+    showToast(account.cloudId ? 'Účet uložen do cloudu' : 'Účet uložen lokálně');
+  }
+
+  async function addManagedFinanceSetFromForm(data, form) {
+    const ownerName = normalizeText(data.ownerName);
+    if (!ownerName) return showToast('Doplň název osoby nebo obálky');
+    const includeInTotal = data.includeInTotal !== 'no';
+    const existingNames = new Set((state.financeAccounts || []).map((account) => normalizeText(account.name).toLowerCase()));
+    const mainName = normalizeText(data.mainAccountName) || `${ownerName} – u mě`;
+    const reserveName = normalizeText(data.reserveAccountName) || `${ownerName} – bokem`;
+    const drafts = [
+      { name: mainName, accountType: 'person', openingBalance: decimalValue(data.mainOpeningBalance) || 0, note: 'Hlavní spravovaný zůstatek' },
+      { name: reserveName, accountType: 'savings', openingBalance: decimalValue(data.reserveOpeningBalance) || 0, note: 'Peníze bokem / spoření' }
+    ].filter((draft) => draft.name && !existingNames.has(draft.name.toLowerCase()));
+    if (!drafts.length) return showToast('Tyhle účty už existují');
+    let cloudCount = 0;
+    for (const draft of drafts) {
+      const account = {
+        id: uid(),
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: new Date().toISOString(),
+        name: draft.name,
+        accountType: draft.accountType,
+        ownerLabel: ownerName,
+        openingBalance: draft.openingBalance,
+        includeInTotal,
+        note: draft.note
+      };
+      const saved = await cloudAddFinanceAccount(account);
+      if (saved?.id) {
+        account.cloudId = saved.id;
+        cloudCount += 1;
+      }
+      state.financeAccounts.push(account);
+    }
+    touchState();
+    saveState();
+    form.reset();
+    render();
+    showToast(cloudCount ? `Založeno účtů: ${drafts.length}, v cloudu: ${cloudCount}` : `Založeno účtů: ${drafts.length}`);
+  }
+
+  function fillFinanceTemplate(template) {
+    const form = document.querySelector('[data-form="add-finance"]');
+    if (!form) return;
+    const accounts = financeAccountsSorted();
+    const primary = accounts[0]?.id || '';
+    const secondary = accounts.find((account) => account.id !== primary && ['savings', 'envelope', 'person'].includes(account.accountType))?.id || accounts.find((account) => account.id !== primary)?.id || '';
+    const templates = {
+      salary: { type: 'income', title: 'Výplata', category: 'salary', paymentMethod: 'bank_transfer', accountId: primary },
+      rent: { type: 'expense', title: 'Nájem', category: 'housing', paymentMethod: 'bank_transfer', accountId: primary },
+      energy: { type: 'expense', title: 'Energie', category: 'energy', paymentMethod: 'direct_debit', accountId: primary },
+      cash: { type: 'expense', title: 'Výběr hotově', category: 'other_expense', paymentMethod: 'cash', accountId: primary },
+      savings: { type: 'transfer', title: 'Přesun na spoření', category: 'other_expense', paymentMethod: 'bank_transfer', accountId: primary, transferAccountId: secondary }
+    };
+    const values = templates[template];
+    if (!values) return;
+    Object.entries(values).forEach(([name, value]) => {
+      const field = form.elements[name];
+      if (field) field.value = value || '';
+    });
+    if (form.elements.date) form.elements.date.value = todayISO();
+    if (form.elements.amount) form.elements.amount.focus();
+    showToast('Šablona vyplněná, doplň částku');
+  }
+
+  async function addFinanceFromForm(data, form) {
+    let type = data.type === 'income' ? 'income' : data.type === 'transfer' ? 'transfer' : 'expense';
+    const accountId = normalizeText(data.accountId);
+    const transferAccountId = normalizeText(data.transferAccountId);
+    if (type === 'transfer' && (!accountId || !transferAccountId || accountId === transferAccountId)) {
+      return showToast('U přesunu vyber dva různé účty');
+    }
+    const category = normalizeText(data.category) || (type === 'income' ? 'other_income' : 'other_expense');
+    const item = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      type,
+      title: normalizeText(data.title) || (type === 'transfer' ? 'Přesun' : financeCategoryLabel(category)),
+      amount: decimalValue(data.amount),
+      date: normalizeText(data.date) || todayISO(),
+      category,
+      accountId,
+      transferAccountId: type === 'transfer' ? transferAccountId : '',
+      paymentMethod: normalizeText(data.paymentMethod) || 'other',
+      note: normalizeText(data.note)
+    };
+    if (!item.title || !Number(item.amount)) return showToast('Doplň název a částku');
+    const saved = await cloudAddFinance(item);
+    if (saved?.id) item.cloudId = saved.id;
+    state.finance.push(item);
+    touchState();
+    saveState();
+    form.reset();
+    render();
+    showToast(item.cloudId ? 'Finance uloženy do cloudu' : 'Finance uloženy lokálně');
+  }
+
+  async function cloudSyncFinanceAccountById(id) {
+    const account = state.financeAccounts.find((entry) => entry.id === id);
+    if (!account) return;
+    const saved = await cloudAddFinanceAccount(account);
+    if (!saved?.id) return;
+    touchState();
+    saveState();
+    render();
+    showToast('Účet odeslán do cloudu');
+  }
+
+  async function cloudSyncLocalFinanceAccounts() {
+    const local = (state.financeAccounts || []).filter((item) => !item.cloudId);
+    if (!local.length) return showToast('Žádné lokální účty k odeslání');
+    let count = 0;
+    for (const account of local) {
+      const saved = await cloudAddFinanceAccount(account);
+      if (saved?.id) count += 1;
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(`Odesláno finančních účtů: ${count}`);
+  }
+
+  async function cloudSyncFinanceById(id) {
+    const item = state.finance.find((entry) => entry.id === id);
+    if (!item) return;
+    const saved = await cloudAddFinance(item);
+    if (!saved?.id) return;
+    touchState();
+    saveState();
+    render();
+    showToast('Záznam odeslán do cloudu');
+  }
+
+  async function cloudSyncLocalFinance() {
+    const local = (state.finance || []).filter((item) => !item.cloudId);
+    if (!local.length) return showToast('Žádné lokální finance k odeslání');
+    let count = 0;
+    for (const item of local) {
+      const saved = await cloudAddFinance(item);
+      if (saved?.id) count += 1;
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(`Odesláno finančních záznamů: ${count}`);
+  }
+
+  async function deleteFinanceTransaction(id) {
+    const item = state.finance.find((entry) => entry.id === id);
+    if (!item) return;
+    const ok = await cloudDeleteFinance(item);
+    if (!ok) return;
+    state.finance = state.finance.filter((entry) => entry.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Záznam smazán');
+  }
+
+  async function deleteFinanceAccount(id) {
+    const account = state.financeAccounts.find((entry) => entry.id === id);
+    if (!account) return;
+    if ((state.finance || []).some((item) => item.accountId === id || item.transferAccountId === id)) {
+      showToast('Účet má pohyby. Nejdřív smaž nebo přesuň záznamy.');
+      return;
+    }
+    const ok = await cloudDeleteFinanceAccount(account);
+    if (!ok) return;
+    state.financeAccounts = state.financeAccounts.filter((entry) => entry.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Účet smazán');
+  }
+
+
+
   async function cloudLoadAllModules(showMessage = true) {
     if (!state.cloud?.userId || !state.cloud?.householdId) {
       showToast('Nejdřív napoj domácnost na cloud');
@@ -5090,7 +6273,8 @@
       cloudLoadTasks,
       cloudLoadParcels,
       cloudLoadCalendar,
-      cloudLoadContractFiles
+      cloudLoadContractFiles,
+      cloudLoadFinance
     ];
     let ok = 0;
     for (const loader of loaders) {
@@ -5110,6 +6294,17 @@
 
   function handleAction(button) {
     const action = button.dataset.action;
+    if (action === 'onboarding-mode') {
+      onboardingMode = button.dataset.mode || 'choice';
+      if (onboardingMode === 'choice') sessionStorage.removeItem('domacnostPlus.onboardingMode');
+      else sessionStorage.setItem('domacnostPlus.onboardingMode', onboardingMode);
+      render();
+      return;
+    }
+    if (action === 'start-demo') {
+      startDemoHome();
+      return;
+    }
     if (action === 'toggle-theme') {
       state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
       saveState();
@@ -5276,6 +6471,22 @@
       bootstrapCloudHousehold();
       return;
     }
+    if (action === 'cloud-load-households') {
+      cloudLoadHouseholds(true);
+      return;
+    }
+    if (action === 'cloud-load-invitations') {
+      cloudLoadInvitations(true);
+      return;
+    }
+    if (action === 'cloud-accept-invitation') {
+      cloudAcceptInvitation(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-switch-household') {
+      cloudSwitchHousehold(button.dataset.id, button.dataset.name);
+      return;
+    }
     if (action === 'cloud-load-shopping') {
       cloudLoadShoppingData(true);
       return;
@@ -5366,6 +6577,50 @@
         render();
         showToast('Auto odesláno do cloudu');
       });
+      return;
+    }
+    if (action === 'cloud-sync-finance-account') {
+      cloudSyncFinanceAccountById(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-sync-local-finance-accounts') {
+      cloudSyncLocalFinanceAccounts();
+      return;
+    }
+    if (action === 'delete-finance-account') {
+      deleteFinanceAccount(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-load-finance') {
+      cloudLoadFinance(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-finance') {
+      cloudSyncLocalFinance();
+      return;
+    }
+    if (action === 'cloud-sync-finance') {
+      cloudSyncFinanceById(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-finance') {
+      deleteFinanceTransaction(button.dataset.id);
+      return;
+    }
+    if (action === 'finance-month-prev') {
+      shiftFinanceMonth(-1);
+      return;
+    }
+    if (action === 'finance-month-current') {
+      setFinanceMonth(todayISO().slice(0, 7));
+      return;
+    }
+    if (action === 'finance-month-next') {
+      shiftFinanceMonth(1);
+      return;
+    }
+    if (action === 'finance-template') {
+      fillFinanceTemplate(button.dataset.template);
       return;
     }
     if (action === 'pwa-install') {
@@ -5657,7 +6912,14 @@
   async function cloudSignUp(email, password) {
     const client = getSupabaseClient();
     if (!client) return showToast('Supabase knihovna není načtená');
-    const { data, error } = await client.auth.signUp({ email: normalizeText(email), password: String(password || '') });
+    const { data, error } = await client.auth.signUp({
+      email: normalizeText(email),
+      password: String(password || ''),
+      options: {
+        emailRedirectTo: getAuthRedirectUrl(),
+        data: { app_name: 'Domácnost+' }
+      }
+    });
     if (error) return showToast(error.message || 'Registrace se nepovedla');
     const user = data?.user;
     if (user) {
@@ -5666,6 +6928,246 @@
       render();
     }
     showToast(data.session ? 'Účet vytvořen' : 'Zkontroluj e-mail pro potvrzení');
+  }
+
+
+  async function cloudLoadHouseholds(showMessage = false) {
+    const client = getSupabaseClient();
+    if (!client) { if (showMessage) showToast('Supabase knihovna není načtená'); return []; }
+    const user = await refreshCloudSession(false);
+    if (!user) { if (showMessage) showToast('Nejdřív se přihlas'); return []; }
+    const { data, error } = await client
+      .from('household_members')
+      .select('household_id, role, status, households(id, name, timezone, created_at)')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: true });
+    if (error) { if (showMessage) showToast(error.message || 'Domácnosti se nepovedlo načíst'); return []; }
+    const households = (data || []).map((row) => ({
+      id: row.household_id,
+      role: row.role || 'member',
+      status: row.status || 'active',
+      name: row.households?.name || 'Domácnost',
+      timezone: row.households?.timezone || 'Europe/Prague',
+      createdAt: row.households?.created_at || ''
+    })).filter((item) => item.id);
+    state.cloud = { ...(state.cloud || {}), households, lastSyncAt: new Date().toISOString() };
+    if (!state.cloud.householdId && households[0]) {
+      state.cloud.householdId = households[0].id;
+      state.household.name = households[0].name;
+      state.household.isConfigured = true;
+    }
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(`Načteno domácností: ${households.length}`);
+    return households;
+  }
+
+  function currentWorkspaceKey() {
+    return state.cloud?.householdId || state.household?.id || 'local';
+  }
+
+  function saveHouseholdWorkspace() {
+    const key = currentWorkspaceKey();
+    if (!key) return;
+    state.householdWorkspaces = state.householdWorkspaces || {};
+    const snapshot = {
+      household: structuredCloneSafe(state.household),
+      profiles: structuredCloneSafe(state.profiles),
+      activeProfileId: state.activeProfileId,
+      collections: {}
+    };
+    getCollectionNames().forEach((collection) => {
+      snapshot.collections[collection] = structuredCloneSafe(state[collection] || []);
+    });
+    state.householdWorkspaces[key] = snapshot;
+  }
+
+  function restoreHouseholdWorkspace(key, cloudName = 'Domácnost') {
+    const snapshot = state.householdWorkspaces?.[key];
+    if (snapshot) {
+      state.household = structuredCloneSafe(snapshot.household || state.household);
+      state.profiles = structuredCloneSafe(snapshot.profiles || []);
+      state.activeProfileId = snapshot.activeProfileId || state.profiles[0]?.id || '';
+      getCollectionNames().forEach((collection) => {
+        state[collection] = structuredCloneSafe(snapshot.collections?.[collection] || []);
+      });
+    } else {
+      state.household = {
+        id: `household-${key}`,
+        name: cloudName || 'Domácnost',
+        isConfigured: true,
+        createdAt: new Date().toISOString()
+      };
+      state.profiles = [createProfile(currentProfile()?.name || 'Já', 'owner', state.household.id)];
+      state.activeProfileId = state.profiles[0]?.id || '';
+      getCollectionNames().forEach((collection) => { state[collection] = []; });
+      state.shoppingStats = {};
+    }
+  }
+
+  async function cloudSwitchHousehold(householdId, name = 'Domácnost') {
+    if (!householdId || householdId === state.cloud?.householdId) return;
+    const ok = window.confirm(`Přepnout na domácnost „${name || 'Domácnost'}“? Lokální pohled aktuální domácnosti se uloží odděleně.`);
+    if (!ok) return;
+    saveHouseholdWorkspace();
+    state.cloud.householdId = householdId;
+    restoreHouseholdWorkspace(householdId, name);
+    state.household.name = name || state.household.name || 'Domácnost';
+    state.cloud.lastSyncAt = new Date().toISOString();
+    activeModule = 'home';
+    touchState();
+    saveState();
+    render();
+    await cloudLoadAllModules(false);
+    showToast('Domácnost přepnuta');
+  }
+
+  async function cloudCreateHousehold(name, profileName) {
+    const cleanName = normalizeText(name) || 'Nová domácnost';
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const user = await refreshCloudSession(false);
+    if (!user) return showToast('Nejdřív se přihlas');
+    saveHouseholdWorkspace();
+    const { data: household, error: householdError } = await client
+      .from('households')
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 38, schema_version: 37, created_by: user.id })
+      .select('id, name')
+      .single();
+    if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
+    const { error: memberError } = await client.from('household_members').insert({
+      household_id: household.id,
+      user_id: user.id,
+      role: 'owner',
+      status: 'active',
+      display_name: normalizeText(profileName) || currentProfile()?.name || user.email || 'Owner',
+      joined_at: new Date().toISOString()
+    });
+    if (memberError) return showToast(memberError.message || 'Člen domácnosti se nepovedl vytvořit');
+    state.cloud.householdId = household.id;
+    restoreHouseholdWorkspace(household.id, household.name);
+    state.household.name = household.name;
+    const cleanProfileName = normalizeText(profileName) || currentProfile()?.name || 'Já';
+    state.profiles = [createProfile(cleanProfileName, 'owner', state.household.id)];
+    state.activeProfileId = state.profiles[0].id;
+    await client.from('profiles').insert({ household_id: household.id, user_id: user.id, name: cleanProfileName, is_default: true, created_by: user.id });
+    await cloudLoadHouseholds(false);
+    touchState();
+    saveState();
+    render();
+    showToast('Nová domácnost vytvořena');
+  }
+
+  async function cloudInviteMember(email, role = 'member') {
+    const cleanEmail = normalizeText(email).toLowerCase();
+    if (!cleanEmail || !state.cloud?.householdId) return showToast('Doplň e-mail a napoj domácnost na cloud');
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const user = await refreshCloudSession(false);
+    if (!user) return showToast('Nejdřív se přihlas');
+    const payload = {
+      household_id: state.cloud.householdId,
+      email: cleanEmail,
+      role: ['admin', 'member', 'read_only'].includes(role) ? role : 'member',
+      status: 'pending',
+      invited_by: user.id,
+      expires_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString()
+    };
+    const { data, error } = await client.from('household_invitations').insert(payload).select('id, household_id, email, role, status, expires_at, created_at').single();
+    if (error) return showToast(error.message || 'Pozvánku se nepovedlo vytvořit');
+    state.cloud.invitations = [...(state.cloud.invitations || []).filter((item) => item.id !== data.id), mapCloudInvitation(data)];
+    touchState();
+    saveState();
+    render();
+    showToast('Pozvánka vytvořena');
+  }
+
+  function mapCloudInvitation(item) {
+    return {
+      id: item.id,
+      householdId: item.household_id,
+      email: item.email,
+      role: item.role,
+      status: item.status,
+      expiresAt: item.expires_at,
+      createdAt: item.created_at,
+      cloudId: item.id
+    };
+  }
+
+  async function cloudLoadInvitations(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client) { if (showMessage) showToast('Supabase knihovna není načtená'); return []; }
+    const user = await refreshCloudSession(false);
+    if (!user) { if (showMessage) showToast('Nejdřív se přihlas'); return []; }
+    const { data, error } = await client
+      .from('household_invitations')
+      .select('id, household_id, email, role, status, expires_at, created_at')
+      .in('status', ['pending', 'expired'])
+      .order('created_at', { ascending: false });
+    if (error) { if (showMessage) showToast(error.message || 'Pozvánky se nepovedlo načíst'); return []; }
+    state.cloud.invitations = (data || []).map(mapCloudInvitation);
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(`Načteno pozvánek: ${state.cloud.invitations.length}`);
+    return state.cloud.invitations;
+  }
+
+  async function cloudAcceptInvitation(invitationId) {
+    if (!invitationId) return;
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const user = await refreshCloudSession(false);
+    if (!user) return showToast('Nejdřív se přihlas');
+    const displayName = currentProfile()?.name || user.email || 'Člen domácnosti';
+    const { data: householdId, error } = await client.rpc('accept_household_invitation', {
+      invitation_id: invitationId,
+      member_display_name: displayName
+    });
+    if (error) return showToast(error.message || 'Pozvánku se nepovedlo přijmout');
+    await cloudLoadHouseholds(false);
+    const accepted = state.cloud.invitations?.find((item) => item.id === invitationId);
+    saveHouseholdWorkspace();
+    state.cloud.householdId = householdId;
+    restoreHouseholdWorkspace(householdId, accepted?.householdName || 'Sdílená domácnost');
+    state.cloud.lastSyncAt = new Date().toISOString();
+    await cloudLoadProfilesForCurrentHousehold();
+    await cloudLoadAllModules(false);
+    await cloudLoadInvitations(false);
+    activeModule = 'home';
+    touchState();
+    saveState();
+    render();
+    showToast('Pozvánka přijata');
+  }
+
+
+  async function cloudLoadProfilesForCurrentHousehold() {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return false;
+    const { data, error } = await client
+      .from('profiles')
+      .select('id, name, user_id, is_default, created_at')
+      .eq('household_id', state.cloud.householdId)
+      .eq('is_archived', false)
+      .order('created_at', { ascending: true });
+    if (error) return false;
+    if (!data?.length) return false;
+    state.profiles = data.map((profile, index) => ({
+      id: profile.id,
+      cloudId: profile.id,
+      householdId: currentHouseholdId(),
+      name: profile.name || `Profil ${index + 1}`,
+      color: ['blue', 'green', 'violet', 'orange'][index % 4],
+      role: profile.user_id === state.cloud.userId ? 'member' : 'member',
+      createdAt: profile.created_at || new Date().toISOString()
+    }));
+    const ownProfile = state.profiles.find((profile) => profile.cloudId);
+    state.activeProfileId = ownProfile?.id || state.profiles[0]?.id || '';
+    return true;
   }
 
   async function cloudLogout() {
@@ -5677,11 +7179,11 @@
     showToast('Odhlášeno');
   }
 
-  async function bootstrapCloudHousehold() {
+  async function bootstrapCloudHousehold(showMessage = true) {
     const client = getSupabaseClient();
-    if (!client) return showToast('Supabase knihovna není načtená');
+    if (!client) { if (showMessage) showToast('Supabase knihovna není načtená'); return null; }
     const user = await refreshCloudSession(false);
-    if (!user) return showToast('Nejdřív se přihlas');
+    if (!user) { if (showMessage) showToast('Nejdřív se přihlas'); return null; }
 
     const existingHouseholdId = state.cloud?.householdId;
     let cloudHouseholdId = existingHouseholdId || '';
@@ -5692,13 +7194,13 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 24,
-          schema_version: 25,
+          app_build: 38,
+          schema_version: 37,
           created_by: user.id
         })
         .select('id')
         .single();
-      if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
+      if (householdError) { if (showMessage) showToast(householdError.message || 'Domácnost se nepovedla vytvořit'); return null; }
       cloudHouseholdId = household.id;
 
       const { error: memberError } = await client.from('household_members').insert({
@@ -5709,7 +7211,7 @@
         display_name: currentProfile()?.name || user.email || 'Owner',
         joined_at: new Date().toISOString()
       });
-      if (memberError) return showToast(memberError.message || 'Člen domácnosti se nepovedl vytvořit');
+      if (memberError) { if (showMessage) showToast(memberError.message || 'Člen domácnosti se nepovedl vytvořit'); return null; }
     }
 
     const profilesPayload = state.profiles.map((profile, index) => ({
@@ -5725,7 +7227,8 @@
     if (profilesPayload.length) {
       const { error: profileError } = await client.from('profiles').insert(profilesPayload);
       if (profileError && !String(profileError.message || '').includes('duplicate')) {
-        return showToast(profileError.message || 'Profily se nepovedly uložit');
+        if (showMessage) showToast(profileError.message || 'Profily se nepovedly uložit');
+        return null;
       }
     }
 
@@ -5741,7 +7244,8 @@
     };
     saveState();
     render();
-    showToast('Domácnost je v cloudu');
+    if (showMessage) showToast('Domácnost je v cloudu');
+    return cloudHouseholdId;
   }
 
   function setActiveProfile(id) {
@@ -5868,7 +7372,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-18-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-38-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -5889,7 +7393,7 @@
   }
 
   function resetData() {
-    const ok = window.confirm('Opravdu smazat všechna offline data Home Web v tomto prohlížeči?');
+    const ok = window.confirm('Opravdu smazat všechna offline data Domácnost+ v tomto prohlížeči?');
     if (!ok) return;
     state = migrateState(structuredCloneSafe(DEFAULT_STATE));
     garageVehicleId = null;
