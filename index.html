@@ -11,26 +11,49 @@
     <meta name="apple-mobile-web-app-title" content="Domácnost+" />
     <meta name="application-name" content="Domácnost+" />
     <meta name="msapplication-TileColor" content="#12305f" />
-    <meta name="msapplication-TileImage" content="./assets/domacnost-plus-icon-180-v0-1-50.png" />
-    <title>Domácnost+ v.0.1_50</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=0-1-50" />
-    <link rel="shortcut icon" href="./favicon.ico?v=0-1-50" />
-    <link rel="icon" href="./favicon.ico?v=0-1-50" sizes="any" />
-    <link rel="icon" type="image/png" sizes="32x32" href="./assets/domacnost-plus-icon-32-v0-1-50.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="./assets/domacnost-plus-icon-16-v0-1-50.png" />
-    <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=0-1-50" />
-    <link rel="apple-touch-icon-precomposed" href="./apple-touch-icon-precomposed.png?v=0-1-50" />
-    <link rel="apple-touch-icon" sizes="180x180" href="./assets/domacnost-plus-icon-180-v0-1-50.png" />
-    <link rel="apple-touch-icon" sizes="167x167" href="./assets/domacnost-plus-icon-167-v0-1-50.png" />
-    <link rel="apple-touch-icon" sizes="152x152" href="./assets/domacnost-plus-icon-152-v0-1-50.png" />
-    <link rel="apple-touch-icon" sizes="120x120" href="./assets/domacnost-plus-icon-120-v0-1-50.png" />
-    <link rel="stylesheet" href="./styles.css?v=0-1-50" />
+    <meta name="msapplication-TileImage" content="./assets/domacnost-plus-icon-180-v0-1-57.png" />
+    <title>Domácnost+ v.0.1_57</title>
+    <link rel="manifest" href="./manifest.webmanifest?v=0-1-54" />
+    <link rel="shortcut icon" href="./favicon.ico?v=0-1-54" />
+    <link rel="icon" href="./favicon.ico?v=0-1-54" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/domacnost-plus-icon-32-v0-1-57.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/domacnost-plus-icon-16-v0-1-57.png" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=0-1-54" />
+    <link rel="apple-touch-icon-precomposed" href="./apple-touch-icon-precomposed.png?v=0-1-54" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/domacnost-plus-icon-180-v0-1-57.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="./assets/domacnost-plus-icon-167-v0-1-57.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="./assets/domacnost-plus-icon-152-v0-1-57.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="./assets/domacnost-plus-icon-120-v0-1-57.png" />
+    <link rel="stylesheet" href="./styles.css?v=0-1-54" />
   </head>
   <body>
     <div id="app" class="app-shell">
+      <div class="boot-loading-card">
+        <div class="brand-mark big logo-mark">🏠</div>
+        <strong>Spouštím Domácnost+</strong>
+        <span>Když se aplikace po aktualizaci zasekne, v dalším kroku se ukáže obnova místo bílé stránky.</span>
+      </div>
       <noscript>Pro spuštění aplikace je potřeba povolit JavaScript.</noscript>
     </div>
+    <script>
+      window.__DOMACNOST_APP_STARTED__ = false;
+      window.__DOMACNOST_BOOT_TIMEOUT__ = window.setTimeout(function () {
+        var root = document.getElementById('app');
+        if (window.__DOMACNOST_APP_STARTED__ || !root || !root.querySelector('.boot-loading-card')) return;
+        root.innerHTML = '<div class="boot-fallback-screen"><section class="boot-fallback-card"><div class="brand-mark big logo-mark">🏠</div><span class="badge">Domácnost+ v.0.1_57</span><h1>Aplikace se nenačetla</h1><p>Vypadá to, že se po aktualizaci nespustil hlavní soubor aplikace. Nejčastěji za to může stará PWA cache v prohlížeči.</p><div class="form-actions"><button class="primary-btn" type="button" data-boot-reload>Obnovit aplikaci</button><button class="ghost-btn" type="button" data-boot-clear>Vyčistit cache a obnovit</button></div><p class="small-muted">Tahle obnova nemaže data domácnosti, čistí jen cache aplikace v prohlížeči.</p></section></div>';
+        root.querySelector('[data-boot-reload]')?.addEventListener('click', function () { window.location.reload(); });
+        root.querySelector('[data-boot-clear]')?.addEventListener('click', async function () {
+          try {
+            if ('caches' in window) {
+              var keys = await caches.keys();
+              await Promise.all(keys.filter(function (key) { return key.indexOf('domacnost-plus-') === 0; }).map(function (key) { return caches.delete(key); }));
+            }
+          } catch (error) {}
+          window.location.reload();
+        });
+      }, 9000);
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-    <script src="app.js?v=0-1-50" defer></script>
+    <script src="app.js?v=0-1-54" defer></script>
   </body>
 </html>

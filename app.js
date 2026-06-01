@@ -1,7 +1,15 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = 'Domácnost+ v.0.1_50';
+  try {
+
+  window.__DOMACNOST_APP_STARTED__ = true;
+  if (window.__DOMACNOST_BOOT_TIMEOUT__) window.clearTimeout(window.__DOMACNOST_BOOT_TIMEOUT__);
+
+  const localStorage = createSafeStorage(window.localStorage, 'local');
+  const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
+
+  const APP_VERSION = 'Domácnost+ v.0.1_57';
   const STORAGE_KEY = 'domacnostPlus.v0.1_46';
   const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_45';
   const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
@@ -111,7 +119,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-50.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-57.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -120,8 +128,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 46,
-      appBuild: 50,
-      mode: 'compact-details-v50',
+      appBuild: 57,
+      mode: 'settings-empty-state-v57',
       createdAt: '',
       updatedAt: ''
     },
@@ -201,6 +209,78 @@
 
   const app = document.getElementById('app');
   document.documentElement.dataset.theme = state.settings.theme || 'light';
+
+  window.addEventListener?.('error', (event) => {
+    if (!app || app.getAttribute?.('data-boot-ok') === '1') return;
+    renderBootFallback(event.error || event.message || 'Neznámá chyba při spuštění');
+  });
+  window.addEventListener?.('unhandledrejection', (event) => {
+    if (!app || app.getAttribute?.('data-boot-ok') === '1') return;
+    renderBootFallback(event.reason || 'Nezachycená chyba při spuštění');
+  });
+
+  function createSafeStorage(storage, label = 'storage') {
+    const memory = new Map();
+    const readNativeLength = () => {
+      try {
+        return storage ? storage.length : 0;
+      } catch {
+        return 0;
+      }
+    };
+    const hasNative = () => {
+      try {
+        if (!storage) return false;
+        const testKey = `domacnostPlus.${label}.test`;
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    let nativeAvailable = hasNative();
+    const fallback = () => {
+      nativeAvailable = false;
+      return memory;
+    };
+    return {
+      get length() {
+        if (nativeAvailable) return readNativeLength();
+        return memory.size;
+      },
+      key(index) {
+        if (nativeAvailable) {
+          try { return storage.key(index); } catch { fallback(); }
+        }
+        return Array.from(memory.keys())[index] || null;
+      },
+      getItem(key) {
+        if (nativeAvailable) {
+          try { return storage.getItem(key); } catch { fallback(); }
+        }
+        return memory.has(key) ? memory.get(key) : null;
+      },
+      setItem(key, value) {
+        if (nativeAvailable) {
+          try { storage.setItem(key, value); return; } catch { fallback(); }
+        }
+        memory.set(key, String(value));
+      },
+      removeItem(key) {
+        if (nativeAvailable) {
+          try { storage.removeItem(key); return; } catch { fallback(); }
+        }
+        memory.delete(key);
+      },
+      clear() {
+        if (nativeAvailable) {
+          try { storage.clear(); return; } catch { fallback(); }
+        }
+        memory.clear();
+      }
+    };
+  }
 
   function uid() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
@@ -305,8 +385,8 @@
 
     migrated.meta = {
       schemaVersion: 46,
-      appBuild: 50,
-      mode: 'compact-details-v50',
+      appBuild: 57,
+      mode: 'settings-empty-state-v57',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -562,9 +642,13 @@
 
   function render() {
     document.documentElement.dataset.theme = state.settings.theme || 'light';
+    const showStartChoice = shouldShowStartChoice();
+    if (showStartChoice) activeOverview = null;
+    document.body.classList.toggle('overview-open', Boolean(activeOverview));
 
-    if (shouldShowStartChoice()) {
+    if (showStartChoice) {
       renderOnboarding();
+      if (app) app.setAttribute?.('data-boot-ok', '1');
       return;
     }
 
@@ -627,6 +711,7 @@
       <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
     `;
 
+    if (app) app.setAttribute?.('data-boot-ok', '1');
     promoteActiveContentBeforeForms();
     keepActiveNavCentered();
     keepActiveSectionTabsCentered();
@@ -662,8 +747,13 @@
     });
   }
 
+  function safeAnimationFrame(callback) {
+    const frame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
+    frame(callback);
+  }
+
   function keepActiveNavCentered(behavior = 'auto') {
-    requestAnimationFrame(() => {
+    safeAnimationFrame(() => {
       const navScroll = document.querySelector('.nav-scroll');
       const activeItem = navScroll?.querySelector('.nav-item.active');
       if (!navScroll || !activeItem) return;
@@ -679,7 +769,7 @@
 
 
   function keepActiveSectionTabsCentered(behavior = 'auto') {
-    requestAnimationFrame(() => {
+    safeAnimationFrame(() => {
       document.querySelectorAll('.section-tabs').forEach((tabs) => {
         const activeTab = tabs.querySelector('.section-tab.active');
         if (!activeTab) return;
@@ -705,12 +795,14 @@
   }
 
   function renderSectionTabs(area, tabs, fallback) {
-    const active = getModuleTab(area, fallback || tabs[0]?.id || 'main');
+    const fallbackTab = fallback || tabs[0]?.id || 'main';
+    const rawActive = getModuleTab(area, fallbackTab);
+    const active = tabs.some((tab) => tab.id === rawActive) ? rawActive : fallbackTab;
     return `
       <div class="section-tabs compact-tabs" role="tablist" aria-label="Záložky modulu">
         ${tabs.map((tab) => `
-          <button class="section-tab ${active === tab.id ? 'active' : ''}" type="button" data-action="set-section-tab" data-area="${escapeHtml(area)}" data-tab="${escapeHtml(tab.id)}">
-            <span>${escapeHtml(tab.icon || '')}</span><strong>${escapeHtml(tab.label)}</strong>${tab.count !== undefined ? `<em>${escapeHtml(String(tab.count))}</em>` : ''}
+          <button class="section-tab ${active === tab.id ? 'active' : ''}" type="button" role="tab" aria-selected="${active === tab.id ? 'true' : 'false'}" data-action="set-section-tab" data-area="${escapeHtml(area)}" data-tab="${escapeHtml(tab.id)}">
+            <span aria-hidden="true">${escapeHtml(tab.icon || '')}</span><strong>${escapeHtml(tab.label)}</strong>${tab.count !== undefined ? `<em>${escapeHtml(String(tab.count))}</em>` : ''}
           </button>
         `).join('')}
       </div>
@@ -725,6 +817,21 @@
           ${badge ? `<span class="badge ${escapeHtml(badgeClass)}">${escapeHtml(badge)}</span>` : ''}
         </div>
         ${meta ? `<div class="item-meta">${escapeHtml(meta)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function renderOverviewSummary(items = []) {
+    const cleanItems = items.filter((item) => item && item.value !== undefined && item.value !== null && item.value !== '');
+    if (!cleanItems.length) return '';
+    return `
+      <div class="overview-summary-grid">
+        ${cleanItems.map((item) => `
+          <div class="overview-summary-card ${escapeHtml(item.tone || '')}">
+            <span>${escapeHtml(item.label || '')}</span>
+            <strong>${escapeHtml(String(item.value))}</strong>
+          </div>
+        `).join('')}
       </div>
     `;
   }
@@ -819,11 +926,28 @@
     if (!activeOverview) return '';
     return `
       <div class="overview-backdrop" data-action="close-overview" role="presentation">
-        <aside class="overview-panel" role="dialog" aria-modal="true" aria-label="Rychlý přehled" onclick="event.stopPropagation()">
+        <aside class="overview-panel" role="dialog" aria-modal="true" aria-labelledby="overview-title" onclick="event.stopPropagation()">
           ${renderOverviewContent(activeOverview)}
         </aside>
       </div>
     `;
+  }
+
+  function overviewTarget(type) {
+    const map = {
+      calendar: { nav: 'calendar', tab: 'overview' },
+      hdo: { nav: 'homecare', tab: 'hdo' },
+      homecare: { nav: 'homecare', tab: 'hdo' },
+      shopping: { nav: 'shopping', tab: 'list' },
+      packages: { nav: 'packages', tab: 'active' },
+      contracts: { nav: 'contracts', tab: 'overview' },
+      garage: { nav: 'garage', tab: 'overview' },
+      finance: { nav: 'finance', tab: 'summary' },
+      tasks: { nav: 'homecare', tab: 'tasks' },
+      waste: { nav: 'homecare', tab: 'waste' },
+      important: { nav: 'homecare', tab: 'tasks' }
+    };
+    return map[type] || { nav: type || 'homecare', tab: '' };
   }
 
   function renderOverviewContent(type) {
@@ -843,40 +967,68 @@
     };
     const [icon, title] = titleMap[type] || ['🏠', 'Přehled'];
     let body = '';
-    let navTarget = ['hdo', 'important', 'tasks', 'waste'].includes(type) ? 'homecare' : type;
+    const target = overviewTarget(type);
+    const navTarget = target.nav;
+    const tabTarget = target.tab;
 
     if (type === 'hdo') {
       const rows = [...state.hdoWindows].sort((a, b) => String(a.start || '').localeCompare(String(b.start || '')));
+      const enabledRows = rows.filter((item) => item.enabled !== false);
+      const nextHdo = findNextHdoWindow(now);
       body = `
         <div class="overview-status ${hdo.active ? 'good' : 'warn'}"><strong>${hdo.active ? 'Nízký tarif právě běží' : 'Nízký tarif teď neběží'}</strong><span>${escapeHtml(hdo.message)}</span></div>
+        ${renderOverviewSummary([
+          { label: 'Okna', value: rows.length },
+          { label: 'Aktivní', value: enabledRows.length, tone: enabledRows.length ? 'good' : '' },
+          { label: 'Další změna', value: hdo.active ? 'běží' : nextHdo ? humanDuration(nextHdo.diffMinutes) : '—' }
+        ])}
         ${rows.length ? `<div class="list compact-list">${rows.map((item) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.label || 'HDO okno')}</div><span class="badge ${item.enabled ? 'good' : ''}">${item.enabled ? 'aktivní' : 'vypnuto'}</span></div><div class="item-meta">${escapeHtml(item.start)}–${escapeHtml(item.end)} · ${escapeHtml(daysLabel(item.days))}${item.cloudId ? ' · cloud' : ' · lokálně'}</div></div>`).join('')}</div>` : renderEmpty('HDO zatím nemá žádné uložené okno.')}
       `;
     } else if (type === 'calendar') {
-      const rows = [...state.calendar].filter((event) => !event.date || event.date >= todayISO()).sort((a,b)=>`${a.date||''}${a.time||''}`.localeCompare(`${b.date||''}${b.time||''}`)).slice(0,8);
-      body = rows.length ? renderEventList(rows, false) : renderEmpty('Nejsou tu žádné nejbližší události.');
+      const upcomingAll = [...state.calendar].filter((event) => !event.date || event.date >= todayISO()).sort((a,b)=>`${a.date||''}${a.time||''}`.localeCompare(`${b.date||''}${b.time||''}`));
+      const todayCount = upcomingAll.filter((event) => event.date === todayISO()).length;
+      const weekCount = upcomingAll.filter((event) => event.date && daysUntil(event.date) !== null && daysUntil(event.date) <= 7).length;
+      const rows = upcomingAll.slice(0,8);
+      body = `${renderOverviewSummary([{ label: 'Dnes', value: todayCount }, { label: 'Do 7 dnů', value: weekCount }, { label: 'Nadcházející', value: upcomingAll.length }])}${rows.length ? renderEventList(rows, false) : renderEmptyCta({ icon: '📅', title: 'Kalendář je prázdný', text: 'Přidej první událost a dashboard začne ukazovat dnešek i nejbližší dny.', nav: 'calendar', tab: 'add', label: 'Přidat událost' })}`;
     } else if (type === 'shopping') {
-      const rows = state.shopping.filter((item) => !item.done).slice(0,10);
-      body = rows.length ? `<div class="list compact-list overview-list">${rows.map(renderShoppingOverviewItem).join('')}</div>` : renderEmpty('Nákupní seznam je prázdný.');
+      const openItems = state.shopping.filter((item) => !item.done);
+      const doneCount = state.shopping.filter((item) => item.done).length;
+      const categoryCount = new Set(openItems.map((item) => item.category || 'Ostatní')).size;
+      const rows = openItems.slice(0,10);
+      body = `${renderOverviewSummary([{ label: 'Koupit', value: openItems.length }, { label: 'Hotovo', value: doneCount, tone: doneCount ? 'good' : '' }, { label: 'Kategorie', value: categoryCount }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map(renderShoppingOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '🛒', title: 'Nákup je prázdný', text: 'Přidej položku z katalogu nebo vlastní položku domácnosti.', nav: 'shopping', tab: 'list', label: 'Přidat položku' })}`;
     } else if (type === 'packages') {
-      const rows = state.packages.filter((item) => !['delivered', 'archived'].includes(item.status)).slice(0,8);
-      body = rows.length ? `<div class="list compact-list overview-list">${rows.map(renderPackageOverviewItem).join('')}</div>` : renderEmpty('Žádný aktivní balík.');
+      const activePackages = state.packages.filter((item) => !['delivered', 'archived'].includes(item.status));
+      const deliveredCount = state.packages.filter((item) => item.status === 'delivered').length;
+      const carrierCount = new Set(activePackages.map((item) => carrierLabel(item.carrier) || item.carrier || 'jiný')).size;
+      const rows = activePackages.slice(0,8);
+      body = `${renderOverviewSummary([{ label: 'Aktivní', value: activePackages.length }, { label: 'Doručené', value: deliveredCount, tone: deliveredCount ? 'good' : '' }, { label: 'Dopravci', value: carrierCount }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map(renderPackageOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '📦', title: 'Žádný aktivní balík', text: 'Přidej zásilku ručně. Později půjde automatika přes bezpečný backend.', nav: 'packages', tab: 'add', label: 'Přidat balík' })}`;
     } else if (type === 'contracts') {
-      const rows = state.contracts.map((contract) => ({...contract, days: daysUntil(contract.validTo)})).sort((a,b)=>(a.days ?? 9999)-(b.days ?? 9999)).slice(0,8);
-      body = rows.length ? `<div class="list compact-list overview-list">${rows.map(renderContractOverviewItem).join('')}</div>` : renderEmpty('Žádné smlouvy k zobrazení.');
+      const sortedContracts = state.contracts.map((contract) => ({...contract, days: daysUntil(contract.validTo)})).sort((a,b)=>(a.days ?? 9999)-(b.days ?? 9999));
+      const overdueCount = sortedContracts.filter((contract) => contract.days !== null && contract.days < 0).length;
+      const soonCount = sortedContracts.filter((contract) => contract.days !== null && contract.days >= 0 && contract.days <= 30).length;
+      const rows = sortedContracts.slice(0,8);
+      body = `${renderOverviewSummary([{ label: 'Celkem', value: state.contracts.length }, { label: 'Do 30 dnů', value: soonCount, tone: soonCount ? 'warn' : '' }, { label: 'Po termínu', value: overdueCount, tone: overdueCount ? 'bad' : '' }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map(renderContractOverviewItem).join('')}</div>` : renderEmpty('Žádné smlouvy k zobrazení.')}`;
     } else if (type === 'garage') {
-      const alerts = getVehicleAlerts().slice(0,8);
-      body = alerts.length ? `<div class="list compact-list overview-list">${alerts.map(renderVehicleAlertOverviewItem).join('')}</div>` : `<div class="list compact-list overview-list">${state.vehicles.slice(0,6).map(renderGarageOverviewItem).join('')}</div>`;
+      const allAlerts = getVehicleAlerts();
+      const alerts = allAlerts.slice(0,8);
+      body = `${renderOverviewSummary([{ label: 'Auta', value: state.vehicles.length }, { label: 'Upozornění', value: allAlerts.length, tone: allAlerts.length ? 'warn' : 'good' }, { label: 'Záznamy', value: state.fuel.length + state.services.length }])}${alerts.length ? `<div class="list compact-list overview-list">${alerts.map(renderVehicleAlertOverviewItem).join('')}</div>` : `<div class="list compact-list overview-list">${state.vehicles.slice(0,6).map(renderGarageOverviewItem).join('') || renderEmpty('Garáž zatím nemá žádné auto.')}</div>`}`;
     } else if (type === 'finance') {
       const summary = financeMonthSummary();
       const month = financeSelectedMonth();
       const rows = state.finance.filter((item) => String(item.date || '').slice(0, 7) === month).sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 8);
-      body = `<div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Příjmy</span><strong>${formatCurrency(summary.income)}</strong></div><div class="mini-stat"><span>Výdaje</span><strong>${formatCurrency(summary.expense)}</strong></div><div class="mini-stat"><span>Rozdíl</span><strong>${formatCurrency(summary.balance)}</strong></div></div><div class="list compact-list overview-list">${rows.map(renderFinanceOverviewItem).join('') || renderEmpty('Zatím žádné finance.')}</div>`;
+      body = `${renderOverviewSummary([{ label: 'Příjmy', value: formatCurrency(summary.income), tone: 'good' }, { label: 'Výdaje', value: formatCurrency(summary.expense), tone: 'warn' }, { label: 'Rozdíl', value: formatCurrency(summary.balance), tone: summary.balance >= 0 ? 'good' : 'bad' }])}<div class="list compact-list overview-list">${rows.map(renderFinanceOverviewItem).join('') || renderEmpty('Zatím žádné finance.')}</div>`;
     } else if (type === 'tasks') {
-      const tasks = state.homeTasks.filter((task) => !task.done).slice(0,8);
-      body = tasks.length ? `<div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : renderEmpty('Žádné otevřené úkoly.');
+      const openTasks = state.homeTasks.filter((task) => !task.done);
+      const urgentTasks = openTasks.filter((task) => task.due && daysUntil(task.due) !== null && daysUntil(task.due) <= 2).length;
+      const doneCount = state.homeTasks.filter((task) => task.done).length;
+      const tasks = openTasks.slice(0,8);
+      body = `${renderOverviewSummary([{ label: 'Otevřené', value: openTasks.length }, { label: 'Brzy', value: urgentTasks, tone: urgentTasks ? 'warn' : '' }, { label: 'Hotovo', value: doneCount, tone: doneCount ? 'good' : '' }])}${tasks.length ? `<div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : renderEmpty('Žádné otevřené úkoly.')}`;
     } else if (type === 'waste') {
-      const waste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days === null || item.days >= 0).sort((a,b)=>(a.days ?? 9999)-(b.days ?? 9999)).slice(0,8);
-      body = waste.length ? `<div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmpty('Žádný nejbližší svoz.');
+      const upcomingWaste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days === null || item.days >= 0).sort((a,b)=>(a.days ?? 9999)-(b.days ?? 9999));
+      const nextWaste = upcomingWaste.find((item) => item.days !== null);
+      const typeCount = new Set(state.waste.map((item) => item.type || 'jiný')).size;
+      const waste = upcomingWaste.slice(0,8);
+      body = `${renderOverviewSummary([{ label: 'Nejbližší', value: nextWaste ? dueBadge(nextWaste.days) : '—', tone: nextWaste?.days <= 1 ? 'warn' : '' }, { label: 'Typy', value: typeCount }, { label: 'Plánů', value: state.waste.length }])}${waste.length ? `<div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmpty('Žádný nejbližší svoz.')}`;
     } else {
       const tasks = state.homeTasks.filter((task) => !task.done).slice(0,5);
       const waste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days !== null && item.days >= 0).sort((a,b)=>a.days-b.days).slice(0,4);
@@ -885,11 +1037,11 @@
 
     return `
       <div class="overview-head">
-        <div><span class="overview-icon">${escapeHtml(icon)}</span><h2>${escapeHtml(title)}</h2></div>
+        <div><span class="overview-icon">${escapeHtml(icon)}</span><div><h2 id="overview-title">${escapeHtml(title)}</h2><p>Rychlý náhled bez úprav. Detail otevřeš dole.</p></div></div>
         <button class="icon-btn" type="button" data-action="close-overview" aria-label="Zavřít">×</button>
       </div>
       <div class="overview-body">${body}</div>
-      <div class="form-actions overview-actions"><button class="primary-btn" type="button" data-nav="${escapeHtml(navTarget)}">Otevřít modul</button><button class="ghost-btn" type="button" data-action="close-overview">Zavřít</button></div>
+      <div class="form-actions overview-actions"><button class="primary-btn" type="button" data-nav="${escapeHtml(navTarget)}" ${tabTarget ? `data-target-tab="${escapeHtml(tabTarget)}"` : ''}>Otevřít modul</button><button class="ghost-btn" type="button" data-action="close-overview">Zavřít</button></div>
     `;
   }
 
@@ -1171,10 +1323,10 @@
               <div class="hero-date">${escapeHtml(formatDateTime(now))}</div>
             </div>
             <div class="station-summary">
-              <div class="station-summary-item"><strong>${todayEvents.length}</strong><span>dnes v kalendáři</span></div>
-              <div class="station-summary-item"><strong>${activePackages.length}</strong><span>aktivní balíky</span></div>
-              <div class="station-summary-item"><strong>${openShopping.length}</strong><span>v nákupu</span></div>
-              <div class="station-summary-item"><strong>${hdo.active ? 'Běží' : 'Ne'}</strong><span>HDO</span></div>
+              <button class="station-summary-item" type="button" data-action="open-overview" data-overview="calendar"><strong>${todayEvents.length}</strong><span>dnes v kalendáři</span></button>
+              <button class="station-summary-item" type="button" data-action="open-overview" data-overview="packages"><strong>${activePackages.length}</strong><span>aktivní balíky</span></button>
+              <button class="station-summary-item" type="button" data-action="open-overview" data-overview="shopping"><strong>${openShopping.length}</strong><span>v nákupu</span></button>
+              <button class="station-summary-item" type="button" data-action="open-overview" data-overview="hdo"><strong>${hdo.active ? 'Běží' : 'Ne'}</strong><span>HDO</span></button>
             </div>
           </div>
           <div class="station-hero-bottom">
@@ -1184,6 +1336,8 @@
         </section>
 
         ${renderCloudSyncOverview('dashboard')}
+
+        ${renderStarterStateCard()}
 
         <section class="tablet-focus-grid">
           ${focusItems.map(renderDashboardFocusItem).join('')}
@@ -1229,8 +1383,6 @@
             ${visibleModules.filter((module) => module.id !== 'home' && module.id !== 'settings').map(renderModuleStatusCard).join('')}
           </div>
         </section>
-
-        ${renderDeleteAccountCard()}
       </div>
     `;
   }
@@ -1313,16 +1465,16 @@
 
   function getCloudSyncOverviewItems() {
     const counters = [
-      { nav: 'shopping', icon: '🛒', label: 'Nákupy', items: state.shopping || [], loadedAt: state.shoppingCloud?.loadedAt },
-      { nav: 'contracts', icon: '📄', label: 'Smlouvy', items: state.contracts || [] },
-      { nav: 'contracts', icon: '📎', label: 'Přílohy smluv', items: state.contractFiles || [] },
-      { nav: 'garage', icon: '🚗', label: 'Garáž', items: [...(state.vehicles || []), ...(state.fuel || []), ...(state.services || [])] },
-      { nav: 'homecare', icon: '💡', label: 'HDO', items: state.hdoWindows || [], loadedAt: state.hdoCloud?.loadedAt },
-      { nav: 'homecare', icon: '♻️', label: 'Odpad', items: state.waste || [], loadedAt: state.wasteCloud?.loadedAt },
-      { nav: 'homecare', icon: '✅', label: 'Úkoly', items: state.homeTasks || [], loadedAt: state.tasksCloud?.loadedAt },
-      { nav: 'packages', icon: '📦', label: 'Balíky', items: state.packages || [], loadedAt: state.parcelsCloud?.loadedAt },
-      { nav: 'calendar', icon: '📅', label: 'Kalendář', items: state.calendar || [], loadedAt: state.calendarCloud?.loadedAt },
-      { nav: 'finance', icon: '💰', label: 'Finance', items: state.finance || [], loadedAt: state.financeCloud?.loadedAt }
+      { nav: 'shopping', tab: 'list', icon: '🛒', label: 'Nákupy', items: state.shopping || [], loadedAt: state.shoppingCloud?.loadedAt },
+      { nav: 'contracts', tab: 'overview', icon: '📄', label: 'Smlouvy', items: state.contracts || [] },
+      { nav: 'contracts', tab: 'detail', icon: '📎', label: 'Přílohy smluv', items: state.contractFiles || [] },
+      { nav: 'garage', tab: 'overview', icon: '🚗', label: 'Garáž', items: [...(state.vehicles || []), ...(state.fuel || []), ...(state.services || [])] },
+      { nav: 'homecare', tab: 'hdo', icon: '💡', label: 'HDO', items: state.hdoWindows || [], loadedAt: state.hdoCloud?.loadedAt },
+      { nav: 'homecare', tab: 'waste', icon: '♻️', label: 'Odpad', items: state.waste || [], loadedAt: state.wasteCloud?.loadedAt },
+      { nav: 'homecare', tab: 'tasks', icon: '✅', label: 'Úkoly', items: state.homeTasks || [], loadedAt: state.tasksCloud?.loadedAt },
+      { nav: 'packages', tab: 'active', icon: '📦', label: 'Balíky', items: state.packages || [], loadedAt: state.parcelsCloud?.loadedAt },
+      { nav: 'calendar', tab: 'overview', icon: '📅', label: 'Kalendář', items: state.calendar || [], loadedAt: state.calendarCloud?.loadedAt },
+      { nav: 'finance', tab: 'summary', icon: '💰', label: 'Finance', items: state.finance || [], loadedAt: state.financeCloud?.loadedAt }
     ];
     return counters.map((entry) => {
       const total = entry.items.length;
@@ -1340,7 +1492,7 @@
     const totalCloud = items.reduce((sum, item) => sum + item.cloud, 0);
     const total = totalLocal + totalCloud;
     const overall = total ? Math.round((totalCloud / total) * 100) : (cloudReady ? 100 : 0);
-    const compactItems = mode === 'dashboard' ? items.filter((item) => item.total || ['Nákupy', 'Smlouvy', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář'].includes(item.label)).slice(0, 9) : items;
+    const compactItems = mode === 'dashboard' ? items.filter((item) => item.total || ['Nákupy', 'Smlouvy', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář', 'Finance'].includes(item.label)).slice(0, 9) : items;
     return `
       <section class="card desktop-span-2 cloud-sync-overview-card">
         <div class="card-header">
@@ -1358,7 +1510,7 @@
         </div>
         <div class="sync-overview-list">
           ${compactItems.map((item) => `
-            <button class="sync-overview-row" type="button" data-nav="${escapeHtml(item.nav)}">
+            <button class="sync-overview-row" type="button" data-nav="${escapeHtml(item.nav)}" ${item.tab ? `data-target-tab="${escapeHtml(item.tab)}"` : ''}>
               <span class="sync-overview-icon">${escapeHtml(item.icon)}</span>
               <span class="sync-overview-main">
                 <span class="sync-overview-title">${escapeHtml(item.label)}</span>
@@ -1547,12 +1699,19 @@
       { title: 'Domácnost+ v.0.1_28', note: 'Hotovo: PWA diagnostika manifestu, ikon, Apple touch ikon, service workeru a cache přímo v aplikaci.' },
       { title: 'Domácnost+ v.0.1_30', note: 'Hotovo: správa více cloud domácností, přepínání domácnosti a připravený panel pozvánek.' },
       { title: 'Domácnost+ v.0.1_33', note: 'Hotovo: finance v cloudu a profil po přijetí pozvánky.' },
+      { title: 'Domácnost+ v.0.1_34', note: 'Hotovo: variabilní finanční účty, peněženky, obálky a osobní zůstatky.' },
       { title: 'Domácnost+ v.0.1_40', note: 'Hotovo: bohatší demo, potvrzení e-mailu, opětovné odeslání ověřovacího e-mailu a přechod z demo do ostré domácnosti.' },
       { title: 'Domácnost+ v.0.1_43', note: 'Hotovo: kontrola Supabase Auth nastavení, bezpečnější přechod demo → ostrá domácnost a jasný stav redirect URL.' },
       { title: 'Domácnost+ v.0.1_48', note: 'Hotovo: kompaktní záložky v kalendáři, balících, financích, garáži a smlouvách + oprava rychlého přehledu financí.' },
       { title: 'Domácnost+ v.0.1_49', note: 'Hotovo: čistší rychlé přehledy z dashboardu bez destruktivních akcí, finance na dashboardu a lepší mobilní centrování záložek.' },
       { title: 'Domácnost+ v.0.1_50', note: 'Hotovo: kompaktní detaily Garáže a Smluv, rozbalovací editační bloky a čistší onboarding ostré domácnosti.' },
-      { title: 'Domácnost+ v.0.1_34', note: 'Hotovo: variabilní finanční účty, peněženky, obálky a osobní zůstatky.' }
+      { title: 'Domácnost+ v.0.1_51', note: 'Hotovo: nouzová oprava načítání, bezpečnější service worker fallback a startovací diagnostika místo bílé stránky.' },
+      { title: 'Domácnost+ v.0.1_52', note: 'Hotovo: pojistka proti visícímu startu bez app.js, přehlednější dashboard modaly a Finance v cloud přehledu.' },
+      { title: 'Domácnost+ v.0.1_53', note: 'Hotovo: klikací horní souhrny na dashboardu, chytřejší otevření správné záložky a smazání účtu jen v Nastavení.' },
+      { title: 'Domácnost+ v.0.1_54', note: 'Hotovo: stabilnější mobilní rychlé přehledy, zamknuté pozadí při otevřeném modalu, Escape zavření a opravené pořadí roadmapy.' },
+      { title: 'Domácnost+ v.0.1_55', note: 'Hotovo: kompaktnější dashboard karty, sjednocené výšky rychlých modulů a lepší mobilní zahuštění bez zásahu do startu aplikace.' },
+      { title: 'Domácnost+ v.0.1_56', note: 'Hotovo: sjednocené mobilní záložky a kompaktnější formuláře/listy ve Financích a Kamerách bez zásahu do boot/PWA flow.' },
+      { title: 'Domácnost+ v.0.1_57', note: 'Hotovo: kompaktnější Nastavení se záložkami a lepší prázdné stavy pro ostrou domácnost.' }
     ];
     return `
       <section class="card roadmap-card">
@@ -1606,7 +1765,7 @@
             <div class="mini-stat"><span>Cloud</span><strong>${cloudCount}</strong></div>
             <div class="mini-stat"><span>Lokálně</span><strong>${localOnly}</strong></div>
           </div>
-          ${upcoming.length ? renderEventList(upcoming, true) : renderEmpty('Nejsou tu žádné nejbližší události.')}
+          ${upcoming.length ? renderEventList(upcoming, true) : renderEmptyCta({ icon: '📅', title: 'Kalendář je prázdný', text: 'Přidej první událost a dashboard začne ukazovat dnešek i nejbližší dny.', nav: 'calendar', tab: 'add', label: 'Přidat událost' })}
         </section>
 
         <section class="card calendar-panel panel-add">
@@ -1680,7 +1839,7 @@
             <div class="mini-stat"><span>Cloud</span><strong>${cloudCount}</strong></div>
             <div class="mini-stat"><span>Lokálně</span><strong>${localOnly}</strong></div>
           </div>
-          ${activePackages.length ? `<div class="list compact-list">${activePackages.map(renderPackageItem).join('')}</div>` : renderEmpty('Žádný aktivní balík.')}
+          ${activePackages.length ? `<div class="list compact-list">${activePackages.map(renderPackageItem).join('')}</div>` : renderEmptyCta({ icon: '📦', title: 'Žádný aktivní balík', text: 'Přidej zásilku ručně. Později půjde automatika přes bezpečný backend.', nav: 'packages', tab: 'add', label: 'Přidat balík' })}
         </section>
 
         <section class="card packages-panel panel-add">
@@ -1710,7 +1869,7 @@
 
         <section class="card desktop-span-2 packages-panel panel-archive">
           <div class="card-header"><div><h2>Doručené / archiv</h2><p>Hotové balíky jsou mimo hlavní přehled, aby aktivní část zůstala krátká.</p></div></div>
-          ${deliveredPackages.length ? `<div class="list compact-list">${deliveredPackages.slice(0, 30).map(renderPackageItem).join('')}</div>` : renderEmpty('Archiv balíků je zatím prázdný.')}
+          ${deliveredPackages.length ? `<div class="list compact-list">${deliveredPackages.slice(0, 30).map(renderPackageItem).join('')}</div>` : renderEmptyCta({ icon: '✅', title: 'Archiv je prázdný', text: 'Doručené balíky se sem přesunou automaticky po označení jako doručené.' })}
         </section>
       </div>
     `;
@@ -1908,7 +2067,7 @@
           </form>
           <div class="hint-box">Když zadáš novou položku, která není v katalogu, uloží se jako vlastní položka téhle domácnosti. Nepřepíše se nikomu jinému.</div>
           <div style="height:14px"></div>
-          ${openItems.length ? `<div class="list">${openItems.map(renderShoppingItem).join('')}</div>` : renderEmpty('Nákupní seznam je prázdný.')}
+          ${openItems.length ? `<div class="list">${openItems.map(renderShoppingItem).join('')}</div>` : renderEmptyCta({ icon: '🛒', title: 'Nákup je prázdný', text: 'Přidej položku z katalogu nebo vlastní položku domácnosti.', nav: 'shopping', tab: 'list', label: 'Přidat položku' })}
           ${doneItems.length ? `<div class="card-header" style="margin-top:16px"><div><h3>Hotovo</h3><p>${doneItems.length} položek</p></div></div><div class="list">${doneItems.slice(0, 6).map(renderShoppingItem).join('')}</div>` : ''}
         </section>
 
@@ -2012,7 +2171,7 @@
               <div class="item-meta">${escapeHtml(item.start)}–${escapeHtml(item.end)} · ${escapeHtml(daysLabel(item.days))}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
               <div class="item-actions"><button class="ghost-btn" type="button" data-action="toggle-hdo" data-id="${item.id}">${item.enabled ? 'Vypnout' : 'Zapnout'}</button>${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-hdo" data-id="${item.id}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-hdo" data-id="${item.id}">Smazat</button></div>
             </div>
-          `).join('')}</div>` : renderEmpty('Zatím není nastavené žádné HDO okno.')}
+          `).join('')}</div>` : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard začne ukazovat aktuální stav.', nav: 'homecare', tab: 'hdo', label: 'Nastavit HDO' })}
         </section>
 
         <section class="card homecare-panel panel-waste">
@@ -2037,7 +2196,7 @@
               <div class="item-meta">${escapeHtml(wasteRepeatLabel(item.repeatRule))}${item.notifyBeforeHours ? ` · připomenout ${escapeHtml(String(item.notifyBeforeHours))} h předem` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
               <div class="item-actions">${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-waste" data-id="${item.id}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-waste" data-id="${item.id}">Smazat</button></div>
             </div>
-          `).join('')}</div>` : renderEmpty('Žádný svoz zatím není uložený.')}
+          `).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej první svoz a aplikace ho ukáže v přehledu Dnes a brzy.', nav: 'homecare', tab: 'waste', label: 'Přidat svoz' })}
         </section>
 
         <section class="card homecare-panel panel-tasks">
@@ -2062,7 +2221,7 @@
               <div class="item-meta">${escapeHtml(taskCategoryLabel(task.category))} · ${escapeHtml(taskPriorityLabel(task.priority))}${task.note ? ` · ${escapeHtml(task.note)}` : ''}${task.cloudId ? ' · cloud' : ' · lokálně'}</div>
               <div class="item-actions">${state.cloud?.householdId && !task.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-task" data-id="${task.id}">Odeslat</button>` : ''}<button class="ghost-btn" type="button" data-action="task-toggle" data-id="${task.id}">${task.done ? 'Vrátit' : 'Hotovo'}</button><button class="danger-btn" type="button" data-action="task-delete" data-id="${task.id}">Smazat</button></div>
             </div>
-          `).join('')}</div>` : renderEmpty('Zatím žádný domácí úkol.')}
+          `).join('')}</div>` : renderEmptyCta({ icon: '✅', title: 'Žádný domácí úkol', text: 'Přidej údržbu, připomínku nebo běžnou domácí poznámku.', nav: 'homecare', tab: 'tasks', label: 'Přidat úkol' })}
           <form data-form="add-note" style="margin-top:14px;">
             <div class="form-grid">
               ${field('Rychlá poznámka', 'text', 'text', 'např. zavolat servis', true)}
@@ -2134,11 +2293,11 @@
               ${vehicles.map((vehicle) => `<button class="tab-pill ${vehicle.id === garageVehicleId ? 'active' : ''}" type="button" data-action="select-vehicle" data-id="${vehicle.id}">${escapeHtml(vehicle.name)}</button>`).join('')}
             </div>
             <div class="list compact-list">${vehicles.map((vehicle) => renderVehicleListItem(vehicle)).join('')}</div>
-          ` : renderEmpty('Zatím není přidané žádné auto.')}
+          ` : renderEmptyCta({ icon: '🚗', title: 'Garáž je prázdná', text: 'Přidej první auto, potom půjdou řešit tankování, servis, STK a pojistka.', nav: 'garage', tab: 'add', label: 'Přidat auto' })}
         </section>
 
         <section class="card desktop-span-2 garage-panel panel-detail">
-          ${activeVehicle ? renderVehicleDetail(activeVehicle) : renderEmpty('Přidej první auto a tady se zobrazí tankování, servis, termíny a přehledy.')}
+          ${activeVehicle ? renderVehicleDetail(activeVehicle) : renderEmptyCta({ icon: '🚗', title: 'Nejdřív přidej auto', text: 'Detail se naplní tankováním, servisy, termíny STK a pojištěním.', nav: 'garage', tab: 'add', label: 'Přidat auto' })}
         </section>
 
         <section class="card garage-panel panel-add">
@@ -2546,11 +2705,11 @@
             <div class="mini-stat"><span>Cloud</span><strong>${cloudCount}</strong></div>
             <div class="mini-stat"><span>Lokálně</span><strong>${localCount}</strong></div>
           </div>
-          ${contracts.length ? `<div class="list compact-list">${contracts.map(renderContractItem).join('')}</div>` : renderEmpty('Zatím není uložená žádná smlouva ani pojistka.')}
+          ${contracts.length ? `<div class="list compact-list">${contracts.map(renderContractItem).join('')}</div>` : renderEmptyCta({ icon: '📄', title: 'Smlouvy jsou prázdné', text: 'Přidej pojistku, tarif nebo smlouvu a aplikace začne hlídat platnost.', nav: 'contracts', tab: 'add', label: 'Přidat smlouvu' })}
         </section>
 
         <section class="card desktop-span-2 contracts-panel panel-detail">
-          ${activeContract ? renderContractDetail(activeContract) : renderEmpty('Vyber nebo přidej smlouvu. Tady se zobrazí detail a přílohy.')}
+          ${activeContract ? renderContractDetail(activeContract) : renderEmptyCta({ icon: '📎', title: 'Detail smlouvy zatím není', text: 'Vyber existující smlouvu, nebo přidej první a potom k ní nahraj přílohy.', nav: 'contracts', tab: 'add', label: 'Přidat smlouvu' })}
         </section>
 
         <section class="card contracts-panel panel-add">
@@ -2671,11 +2830,22 @@
 
   function renderCameras() {
     const cameras = state.cameras;
+    const onlineCount = cameras.filter((camera) => camera.status === 'online').length;
+    const activeCamerasTab = getModuleTab('cameras', 'overview');
     return `
-      <div class="grid two">
-        <section class="card">
+      ${renderSectionTabs('cameras', [
+        { id: 'overview', label: 'Přehled', icon: '📷', count: cameras.length },
+        { id: 'add', label: 'Přidat', icon: '➕' }
+      ], 'overview')}
+      <div class="grid two module-tabbed cameras-tab-${activeCamerasTab}" data-tab-area="cameras">
+        <section class="card desktop-span-2 cameras-panel panel-overview">
+          <div class="card-header"><div><h2>Přehled kamer</h2><p>Rychlý grid kamer. Streamy později bezpečně přes lokální síť/VPN nebo backend proxy.</p></div><span class="badge ${onlineCount ? 'good' : ''}">${onlineCount}/${cameras.length} online</span></div>
+          ${cameras.length ? `<div class="grid two compact-camera-grid">${cameras.map(renderCameraCard).join('')}</div>` : renderEmptyCta({ icon: '📷', title: 'Kamery jsou prázdné', text: 'Přidej kartu kamery nebo snapshot URL. Streamy půjdou později bezpečně přes lokální síť/VPN.', nav: 'cameras', tab: 'add', label: 'Přidat kameru' })}
+        </section>
+
+        <section class="card cameras-panel panel-add">
           <div class="card-header"><div><h2>Přidat kameru</h2><p>Teď jen karta/snapshot. Streamy později lokálně přes HA/Frigate/go2rtc/VPN, ne veřejně přes cloud.</p></div></div>
-          <form data-form="add-camera">
+          <form data-form="add-camera" class="compact-form">
             <div class="form-grid two">
               ${field('Název', 'name', 'text', 'Vchod / garáž / zahrada', true)}
               ${field('Umístění', 'location', 'text', 'venku / chodba')}
@@ -2685,11 +2855,7 @@
             </div>
             <div class="form-actions"><button class="primary-btn" type="submit">Přidat kameru</button></div>
           </form>
-          <div class="inline-note" style="margin-top:12px;">Pozor na HTTPS/mixed-content: když poběží aplikace přes HTTPS a kamera jen přes HTTP, prohlížeč může náhled blokovat.</div>
-        </section>
-        <section class="card">
-          <div class="card-header"><div><h2>Přehled kamer</h2><p>${cameras.length} položek</p></div></div>
-          ${cameras.length ? `<div class="grid two">${cameras.map(renderCameraCard).join('')}</div>` : renderEmpty('Zatím není přidaná žádná kamera.')}
+          <div class="inline-note compact-note">Pozor na HTTPS/mixed-content: když poběží aplikace přes HTTPS a kamera jen přes HTTP, prohlížeč může náhled blokovat.</div>
         </section>
       </div>
     `;
@@ -2697,7 +2863,7 @@
 
   function renderCameraCard(camera) {
     return `
-      <div class="item">
+      <div class="item compact-item camera-card">
         <div class="camera-preview">
           ${camera.snapshotUrl ? `<img src="${escapeHtml(camera.snapshotUrl)}" alt="Náhled kamery ${escapeHtml(camera.name)}" loading="lazy" onerror="this.replaceWith(document.createTextNode('Náhled nejde načíst'))">` : `<div>📹<br>${escapeHtml(camera.name)}</div>`}
         </div>
@@ -2749,43 +2915,49 @@
             </div>
             <div class="form-actions"><button class="ghost-btn" type="submit">Zobrazit měsíc</button></div>
           </form>
-          ${visibleItems.length ? `<div class="list compact-list">${visibleItems.slice(0, 18).map(renderFinanceItem).join('')}</div>` : renderEmpty('V tomhle měsíci zatím není žádný příjem, výdaj ani přesun.')}
+          ${visibleItems.length ? `<div class="list compact-list">${visibleItems.slice(0, 18).map(renderFinanceItem).join('')}</div>` : renderEmptyCta({ icon: '💰', title: 'Měsíc je bez pohybů', text: 'Přidej příjem, výdaj nebo přesun mezi účty. Přehled se začne počítat automaticky.', nav: 'finance', tab: 'add', label: 'Přidat pohyb' })}
         </section>
 
         <section class="card finance-panel panel-accounts">
           <div class="card-header"><div><h2>Účty / peněženky</h2><p>Každý účet má vlastní zůstatek. Může to být banka, hotovost, spoření, obálka nebo osoba.</p></div><span class="badge">${accounts.length}</span></div>
-          ${accounts.length ? `<div class="list compact-list">${accounts.map((account) => renderFinanceAccount(account, balances)).join('')}</div>` : renderEmpty('Zatím tu není žádný účet. Přidej aspoň jeden, třeba „Moje banka“, „Hotovost“ nebo „Tchyně – u mě“.')}
-          <form data-form="add-finance-account" class="compact-form spaced-form">
-            <div class="form-grid two">
-              ${field('Název účtu', 'name', 'text', 'např. Tchyně – u mě', true)}
-              ${selectField('Typ účtu', 'accountType', financeAccountTypeOptions(), 'person')}
-              ${field('Počáteční zůstatek', 'openingBalance', 'number', 'např. 0')}
-              ${field('Vlastník / poznámka', 'ownerLabel', 'text', 'např. tchyně')}
-              ${selectField('Započítat do celku', 'includeInTotal', [['yes', 'Ano'], ['no', 'Ne']], 'yes')}
-              ${field('Poznámka', 'note', 'text', 'volitelné')}
-            </div>
-            <div class="form-actions">
-              <button class="primary-btn" type="submit">Přidat účet</button>
-              ${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-finance">Načíst cloud finance</button>' : ''}
-              ${state.cloud?.householdId && localAccounts ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-finance-accounts">Odeslat účty (${localAccounts})</button>` : ''}
-            </div>
-          </form>
+          ${accounts.length ? `<div class="list compact-list">${accounts.map((account) => renderFinanceAccount(account, balances)).join('')}</div>` : renderEmptyCta({ icon: '🏦', title: 'Nejdřív přidej účet', text: 'Účet může být banka, hotovost, spoření, obálka nebo spravované peníze pro někoho dalšího.' })}
+          <details class="action-details compact-edit-details finance-form-drawer">
+            <summary><span>Přidat účet / peněženku</span><em>banka, hotovost, obálka nebo osoba</em></summary>
+            <form data-form="add-finance-account" class="compact-form">
+              <div class="form-grid two">
+                ${field('Název účtu', 'name', 'text', 'např. Tchyně – u mě', true)}
+                ${selectField('Typ účtu', 'accountType', financeAccountTypeOptions(), 'person')}
+                ${field('Počáteční zůstatek', 'openingBalance', 'number', 'např. 0')}
+                ${field('Vlastník / poznámka', 'ownerLabel', 'text', 'např. tchyně')}
+                ${selectField('Započítat do celku', 'includeInTotal', [['yes', 'Ano'], ['no', 'Ne']], 'yes')}
+                ${field('Poznámka', 'note', 'text', 'volitelné')}
+              </div>
+              <div class="form-actions">
+                <button class="primary-btn" type="submit">Přidat účet</button>
+                ${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-finance">Načíst cloud finance</button>' : ''}
+                ${state.cloud?.householdId && localAccounts ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-finance-accounts">Odeslat účty (${localAccounts})</button>` : ''}
+              </div>
+            </form>
+          </details>
         </section>
 
         <section class="card finance-panel panel-accounts">
           <div class="card-header"><div><h2>Spravované zůstatky</h2><p>Součet účtů seskupený podle osoby/obálky.</p></div></div>
-          ${managedRows.length ? `<div class="list compact-list">${managedRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(row.label)}</div><span class="badge good">${formatCurrency(row.total)}</span></div><div class="item-meta">${row.accounts.map((account) => `${financeAccountIcon(account.accountType)} ${escapeHtml(account.name)}: ${formatCurrency(balances[account.id] || 0)}`).join(' · ')}</div></div>`).join('')}</div>` : renderEmpty('Zatím tu nejsou spravované účty. Přidej účet s vlastníkem, nebo použij rychlé nastavení.')}
-          <form data-form="add-managed-finance-set" class="compact-form spaced-form">
-            <div class="form-grid two">
-              ${field('Název osoby / obálky', 'ownerName', 'text', 'např. Tchyně / Dovolená / Kapesné', true)}
-              ${field('Hlavní účet', 'mainAccountName', 'text', 'např. Tchyně – u mě')}
-              ${field('Účet bokem / spoření', 'reserveAccountName', 'text', 'např. Tchyně – spoření')}
-              ${field('Počáteční zůstatek hlavní', 'mainOpeningBalance', 'number', '0')}
-              ${field('Počáteční zůstatek bokem', 'reserveOpeningBalance', 'number', '0')}
-              ${selectField('Započítat do celku', 'includeInTotal', [['yes', 'Ano'], ['no', 'Ne']], 'yes')}
-            </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Založit dvojici účtů</button></div>
-          </form>
+          ${managedRows.length ? `<div class="list compact-list">${managedRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(row.label)}</div><span class="badge good">${formatCurrency(row.total)}</span></div><div class="item-meta">${row.accounts.map((account) => `${financeAccountIcon(account.accountType)} ${escapeHtml(account.name)}: ${formatCurrency(balances[account.id] || 0)}`).join(' · ')}</div></div>`).join('')}</div>` : renderEmptyCta({ icon: '👥', title: 'Spravované peníze zatím nejsou', text: 'Přidej účet s vlastníkem, třeba babička / tchyně, nebo použij rychlé založení dvojice účtů.' })}
+          <details class="action-details compact-edit-details finance-form-drawer">
+            <summary><span>Založit spravované peníze</span><em>dvojice hlavní účet + spoření</em></summary>
+            <form data-form="add-managed-finance-set" class="compact-form">
+              <div class="form-grid two">
+                ${field('Název osoby / obálky', 'ownerName', 'text', 'např. Tchyně / Dovolená / Kapesné', true)}
+                ${field('Hlavní účet', 'mainAccountName', 'text', 'např. Tchyně – u mě')}
+                ${field('Účet bokem / spoření', 'reserveAccountName', 'text', 'např. Tchyně – spoření')}
+                ${field('Počáteční zůstatek hlavní', 'mainOpeningBalance', 'number', '0')}
+                ${field('Počáteční zůstatek bokem', 'reserveOpeningBalance', 'number', '0')}
+                ${selectField('Započítat do celku', 'includeInTotal', [['yes', 'Ano'], ['no', 'Ne']], 'yes')}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Založit dvojici účtů</button></div>
+            </form>
+          </details>
         </section>
 
         <section class="card finance-panel panel-add">
@@ -2800,7 +2972,7 @@
               <button class="quick-chip" type="button" data-action="finance-template" data-template="savings">🏦 <span>Na spoření</span></button>
             </div>
           </div>
-          <form data-form="add-finance" class="spaced-form">
+          <form data-form="add-finance" class="compact-form spaced-form">
             <div class="form-grid two">
               ${selectField('Typ', 'type', [['expense', 'Výdaj'], ['income', 'Příjem'], ['transfer', 'Přesun mezi účty']], 'expense')}
               ${selectField('Účet', 'accountId', financeAccountOptions(true), accounts[0]?.id || '')}
@@ -2907,76 +3079,98 @@
 
   function renderSettings() {
     const enabled = new Set(normalizeModuleList(state.enabledModules));
+    const settingsTabIds = ['household', 'modules', 'cloud', 'data'];
+    const activeSettingsTab = settingsTabIds.includes(getModuleTab('settings', 'household')) ? getModuleTab('settings', 'household') : 'household';
     return `
-      <div class="grid two">
-        <section class="card">
-          <div class="card-header"><div><h2>Domácnost</h2><p>Tohle je základ budoucího rodinného účtu.</p></div><span class="badge">${escapeHtml(state.household.id)}</span></div>
-          <form data-form="household-settings">
-            <div class="form-grid">
-              ${field('Název domácnosti', 'householdName', 'text', 'Domácnost', true, householdName())}
-              ${selectField('Vzhled', 'theme', [['light', 'Světlý'], ['dark', 'Tmavý']], state.settings.theme)}
-              <div class="field"><label for="dashboardNote">Poznámka na dashboard</label><textarea id="dashboardNote" class="textarea" name="dashboardNote">${escapeHtml(state.settings.dashboardNote || '')}</textarea></div>
-            </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Uložit domácnost</button></div>
-          </form>
-        </section>
-
-        <section class="card">
-          <div class="card-header"><div><h2>Profily</h2><p>Profily jsou uvnitř jedné domácnosti. Později se navážou na účty v Supabase.</p></div><span class="badge">${state.profiles.length} profilů</span></div>
-          <div class="profile-list">
-            ${state.profiles.map((profile) => `
-              <div class="profile-chip ${profile.id === currentProfileId() ? 'active' : ''}">
-                <button type="button" data-action="set-profile" data-id="${escapeHtml(profile.id)}">
-                  <strong>${escapeHtml(profile.name)}</strong>
-                  <span>${escapeHtml(profile.role === 'owner' ? 'správce' : 'člen domácnosti')}</span>
-                </button>
-                ${state.profiles.length > 1 ? `<button class="mini-danger" type="button" data-action="delete-profile" data-id="${escapeHtml(profile.id)}" aria-label="Smazat profil">×</button>` : ''}
+      ${renderSectionTabs('settings', [
+        { id: 'household', label: 'Domácnost', icon: '🏠', count: state.profiles.length },
+        { id: 'modules', label: 'Moduly', icon: '🧩', count: normalizeModuleList(state.enabledModules).length },
+        { id: 'cloud', label: 'Cloud / PWA', icon: '☁️', count: state.cloud?.userId ? 1 : 0 },
+        { id: 'data', label: 'Data', icon: '🛟' }
+      ], 'household')}
+      <div class="settings-tabbed settings-tab-${activeSettingsTab}" data-tab-area="settings">
+        <div class="settings-panel panel-household grid two">
+          <section class="card compact-settings-card">
+            <div class="card-header"><div><h2>Domácnost</h2><p>Základ rodinného účtu a vzhled celé aplikace.</p></div><span class="badge">${escapeHtml(state.household.id)}</span></div>
+            <form data-form="household-settings" class="compact-form">
+              <div class="form-grid two">
+                ${field('Název domácnosti', 'householdName', 'text', 'Domácnost', true, householdName())}
+                ${selectField('Vzhled', 'theme', [['light', 'Světlý'], ['dark', 'Tmavý']], state.settings.theme)}
+                <div class="field desktop-span-2"><label for="dashboardNote">Poznámka na dashboard</label><textarea id="dashboardNote" class="textarea" name="dashboardNote">${escapeHtml(state.settings.dashboardNote || '')}</textarea></div>
               </div>
-            `).join('')}
-          </div>
-          <form data-form="add-profile" style="margin-top:14px;">
-            <div class="form-grid two">
-              ${field('Nový profil', 'name', 'text', 'Jméno člena domácnosti', true)}
-              ${selectField('Role', 'role', [['member', 'Člen'], ['owner', 'Správce']], 'member')}
+              <div class="form-actions compact-actions"><button class="primary-btn" type="submit">Uložit domácnost</button></div>
+            </form>
+          </section>
+
+          <section class="card compact-settings-card">
+            <div class="card-header"><div><h2>Profily</h2><p>Členové jedné domácnosti. Každý může mít svoje položky a nastavení.</p></div><span class="badge">${state.profiles.length} profilů</span></div>
+            <div class="profile-list compact-profile-list">
+              ${state.profiles.map((profile) => `
+                <div class="profile-chip ${profile.id === currentProfileId() ? 'active' : ''}">
+                  <button type="button" data-action="set-profile" data-id="${escapeHtml(profile.id)}">
+                    <strong>${escapeHtml(profile.name)}</strong>
+                    <span>${escapeHtml(profile.role === 'owner' ? 'správce' : 'člen domácnosti')}</span>
+                  </button>
+                  ${state.profiles.length > 1 ? `<button class="mini-danger" type="button" data-action="delete-profile" data-id="${escapeHtml(profile.id)}" aria-label="Smazat profil">×</button>` : ''}
+                </div>
+              `).join('')}
             </div>
-            <div class="form-actions"><button class="ghost-btn" type="submit">Přidat profil</button></div>
-          </form>
-        </section>
+            <details class="action-details compact-edit-details settings-form-drawer">
+              <summary><span>Přidat profil</span><em>další člen domácnosti</em></summary>
+              <form data-form="add-profile" class="compact-form">
+                <div class="form-grid two">
+                  ${field('Nový profil', 'name', 'text', 'Jméno člena domácnosti', true)}
+                  ${selectField('Role', 'role', [['member', 'Člen'], ['owner', 'Správce']], 'member')}
+                </div>
+                <div class="form-actions"><button class="ghost-btn" type="submit">Přidat profil</button></div>
+              </form>
+            </details>
+          </section>
+        </div>
 
-        <section class="card desktop-span-2">
-          <div class="card-header"><div><h2>Zapnuté moduly</h2><p>Když app pošleš někomu dalšímu, vybere si vlastní moduly a začne s prázdnými daty.</p></div></div>
-          <div class="module-toggle-grid">
-            ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => `
-              <button class="module-toggle ${enabled.has(module.id) ? 'active' : ''}" type="button" data-action="toggle-module" data-id="${module.id}">
-                <span>${module.icon}</span>
-                <strong>${escapeHtml(module.label)}</strong>
-                <em>${enabled.has(module.id) ? 'zapnuto' : 'vypnuto'}</em>
-              </button>
-            `).join('')}
-          </div>
-        </section>
+        <div class="settings-panel panel-modules grid two">
+          <section class="card desktop-span-2 compact-settings-card">
+            <div class="card-header"><div><h2>Zapnuté moduly</h2><p>Každá domácnost si může nechat jen to, co opravdu používá.</p></div><span class="badge">${enabled.size}</span></div>
+            <div class="module-toggle-grid compact-module-toggle-grid">
+              ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => `
+                <button class="module-toggle ${enabled.has(module.id) ? 'active' : ''}" type="button" data-action="toggle-module" data-id="${module.id}">
+                  <span>${module.icon}</span>
+                  <strong>${escapeHtml(module.label)}</strong>
+                  <em>${enabled.has(module.id) ? 'zapnuto' : 'vypnuto'}</em>
+                </button>
+              `).join('')}
+            </div>
+          </section>
 
-        <section class="card desktop-span-2">
-          ${renderBottomNavSettings()}
-        </section>
+          <section class="card desktop-span-2 compact-settings-card">
+            ${renderBottomNavSettings()}
+          </section>
+        </div>
 
-        ${renderCloudAccount()}
+        <div class="settings-panel panel-cloud grid two">
+          ${renderCloudAccount()}
+          ${renderPwaInstallCard()}
+          ${renderAuthSetupCard()}
+        </div>
 
-        ${renderPwaInstallCard()}
+        <div class="settings-panel panel-data grid two">
+          <section class="card compact-settings-card">
+            <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv jsou zvlášť v IndexedDB/Supabase Storage.</p></div></div>
+            <div class="form-actions compact-actions">
+              <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
+              <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
+            </div>
+            <details class="action-details compact-edit-details settings-form-drawer">
+              <summary><span>Import JSON</span><em>vložit starší export</em></summary>
+              <form data-form="import-data" class="compact-form">
+                <div class="field"><label for="importJson">Import JSON</label><textarea id="importJson" class="textarea" name="json" placeholder="Sem vlož exportovaný JSON"></textarea></div>
+                <div class="form-actions"><button class="primary-btn" type="submit">Importovat</button></div>
+              </form>
+            </details>
+          </section>
 
-        <section class="card">
-          <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos mezi prohlížeči, než bude Supabase. Přílohy smluv jsou zatím uložené zvlášť v IndexedDB.</p></div></div>
-          <div class="form-actions">
-            <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
-            <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
-          </div>
-          <form data-form="import-data" style="margin-top:14px;">
-            <div class="field"><label for="importJson">Import JSON</label><textarea id="importJson" class="textarea" name="json" placeholder="Sem vlož exportovaný JSON"></textarea></div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Importovat</button></div>
-          </form>
-        </section>
-
-        ${renderDeleteAccountCard()}
+          ${renderDeleteAccountCard()}
+        </div>
       </div>
     `;
   }
@@ -3402,6 +3596,60 @@
 
   function renderEmpty(text) {
     return `<div class="empty">${escapeHtml(text)}</div>`;
+  }
+
+  function renderEmptyCta({ icon = '✨', title = 'Zatím prázdno', text = '', nav = '', tab = '', action = '', label = '' } = {}) {
+    const button = nav
+      ? `<button class="ghost-btn" type="button" data-nav="${escapeHtml(nav)}" ${tab ? `data-target-tab="${escapeHtml(tab)}"` : ''}>${escapeHtml(label || 'Otevřít')}</button>`
+      : action
+        ? `<button class="ghost-btn" type="button" data-action="${escapeHtml(action)}">${escapeHtml(label || 'Pokračovat')}</button>`
+        : '';
+    return `
+      <div class="empty empty-cta">
+        <div class="empty-cta-icon" aria-hidden="true">${escapeHtml(icon)}</div>
+        <div>
+          <strong>${escapeHtml(title)}</strong>
+          ${text ? `<p>${escapeHtml(text)}</p>` : ''}
+        </div>
+        ${button ? `<div class="form-actions compact-actions">${button}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function isRealHouseholdStarterState() {
+    if (isDemoOnlyState()) return false;
+    const counts = [
+      state.calendar?.length || 0,
+      state.packages?.length || 0,
+      state.shopping?.length || 0,
+      state.homeTasks?.length || 0,
+      state.waste?.length || 0,
+      state.vehicles?.length || 0,
+      state.contracts?.length || 0,
+      state.finance?.length || 0,
+      state.cameras?.length || 0
+    ];
+    return counts.reduce((sum, value) => sum + value, 0) <= 2;
+  }
+
+  function renderStarterStateCard() {
+    if (!isRealHouseholdStarterState()) return '';
+    const signedIn = Boolean(state.cloud?.userId);
+    const householdReady = Boolean(state.cloud?.householdId);
+    return `
+      <section class="card desktop-span-2 starter-state-card">
+        <div class="card-header">
+          <div><h2>Rychlé nastavení domácnosti</h2><p>Ostrá domácnost je zatím skoro prázdná. Tady jsou první kroky, které ji hned udělají použitelnou.</p></div>
+          <span class="badge ${householdReady ? 'good' : signedIn ? 'warn' : ''}">${householdReady ? 'cloud připraven' : signedIn ? 'napojit domácnost' : 'začít'}</span>
+        </div>
+        <div class="starter-action-grid">
+          <button class="starter-action-card" type="button" data-nav="homecare" data-target-tab="hdo"><span>💡</span><strong>Nastavit HDO</strong><em>nízký tarif a další přepnutí na dashboardu</em></button>
+          <button class="starter-action-card" type="button" data-nav="shopping" data-target-tab="list"><span>🛒</span><strong>Přidat nákup</strong><em>rychlý sdílený seznam pro domácnost</em></button>
+          <button class="starter-action-card" type="button" data-nav="garage" data-target-tab="add"><span>🚗</span><strong>Přidat auto</strong><em>STK, pojistka, tankování a servis</em></button>
+          <button class="starter-action-card" type="button" data-nav="contracts" data-target-tab="add"><span>📄</span><strong>Přidat smlouvu</strong><em>pojistky, platnost a později přílohy</em></button>
+        </div>
+      </section>
+    `;
   }
 
   function clockText(date) {
@@ -6331,7 +6579,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 46, appBuild: 50, mode: 'rich-demo-v50', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 46, appBuild: 57, mode: 'rich-demo-v57', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -6399,7 +6647,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 46, appBuild: 50, mode: 'demo-readonly-return-v50', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 46, appBuild: 57, mode: 'demo-readonly-return-v57', updatedAt: new Date().toISOString() };
   }
 
   function addItem(collection, item) {
@@ -7158,6 +7406,7 @@
       moduleTabs = { ...(moduleTabs || {}), garage: 'detail' };
       if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
+      keepActiveSectionTabsCentered('smooth');
       return;
     }
     if (action === 'select-contract') {
@@ -7165,6 +7414,7 @@
       moduleTabs = { ...(moduleTabs || {}), contracts: 'detail' };
       if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
+      keepActiveSectionTabsCentered('smooth');
       return;
     }
     if (action === 'open-contract-file') {
@@ -7859,7 +8109,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 50, schema_version: 46, created_by: user.id })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 57, schema_version: 46, created_by: user.id })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -8020,7 +8270,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 50,
+          app_build: 57,
           schema_version: 46,
           created_by: user.id
         })
@@ -8198,7 +8448,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-50-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-57-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -8240,13 +8490,25 @@
     toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
   }
 
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !activeOverview) return;
+    activeOverview = null;
+    render();
+  });
+
   app.addEventListener('click', (event) => {
     const nav = event.target.closest('[data-nav]');
     if (nav) {
       activeOverview = null;
       activeModule = nav.dataset.nav;
+      if (nav.dataset.targetTab) {
+        moduleTabs = { ...(moduleTabs || {}), [activeModule]: nav.dataset.targetTab };
+        if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      }
       render();
       keepActiveNavCentered('smooth');
+      keepActiveSectionTabsCentered('smooth');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -8292,4 +8554,50 @@
   render();
   refreshCloudSession(false).catch(() => {});
   handleInitialAuthReturn().catch((error) => console.warn('Auth return handling failed', error));
+
+  } catch (error) {
+    console.error('Domácnost+ boot failed', error);
+    renderBootFallback(error);
+  }
+
+  function renderBootFallback(error) {
+    const root = document.getElementById('app');
+    if (!root) return;
+    const message = escapeBootText(error?.message || error?.reason || String(error || 'Neznámá chyba při spuštění'));
+    root.innerHTML = `
+      <div class="boot-fallback-screen">
+        <section class="boot-fallback-card">
+          <div class="brand-mark big logo-mark">🏠</div>
+          <span class="badge">Domácnost+ v.0.1_57</span>
+          <h1>Aplikace se nespustila čistě</h1>
+          <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
+          <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
+          <div class="form-actions">
+            <button class="primary-btn" type="button" data-boot-action="reload">Obnovit aplikaci</button>
+            <button class="ghost-btn" type="button" data-boot-action="soft-reset">Vyčistit rozhraní a obnovit</button>
+          </div>
+          <p class="small-muted">Soft reset nemaže data domácnosti. Smaže jen aktivní záložku/modul a staré dočasné nastavení UI.</p>
+        </section>
+      </div>
+    `;
+    root.querySelector('[data-boot-action="reload"]')?.addEventListener('click', () => window.location.reload());
+    root.querySelector('[data-boot-action="soft-reset"]')?.addEventListener('click', async () => {
+      try {
+        window.localStorage?.removeItem('homeWeb.activeModule');
+        window.localStorage?.removeItem('domacnostPlus.moduleTabs');
+        window.sessionStorage?.removeItem('domacnostPlus.onboardingMode');
+      } catch {}
+      try {
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.filter((key) => key.startsWith('domacnost-plus-')).map((key) => caches.delete(key)));
+        }
+      } catch {}
+      window.location.reload();
+    });
+  }
+
+  function escapeBootText(value) {
+    return String(value || '').replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
+  }
 })();
