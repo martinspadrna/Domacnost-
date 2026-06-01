@@ -1,10 +1,10 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = 'Domácnost+ v.0.1_40';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_40';
-  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_39';
-  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
+  const APP_VERSION = 'Domácnost+ v.0.1_41';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_41';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_40';
+  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
     { id: 'home', label: 'Domů', icon: '🏠' },
@@ -117,9 +117,9 @@
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 39,
-      appBuild: 40,
-      mode: 'demo-heavy-auth-confirm-flow',
+      schemaVersion: 40,
+      appBuild: 41,
+      mode: 'auth-setup-demo-safe',
       createdAt: '',
       updatedAt: ''
     },
@@ -289,9 +289,9 @@
     const timestamp = new Date().toISOString();
 
     migrated.meta = {
-      schemaVersion: 39,
-      appBuild: 40,
-      mode: 'demo-heavy-auth-confirm-flow',
+      schemaVersion: 40,
+      appBuild: 41,
+      mode: 'auth-setup-demo-safe',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -946,7 +946,7 @@
       {
         nav: 'packages',
         icon: '📦',
-        title: firstPackage ? `${firstPackage.carrier || 'Balík'} · ${statusLabel(firstPackage.status)}` : 'Žádný aktivní balík',
+        title: firstPackage ? `${carrierLabel(firstPackage.carrier) || 'Balík'} · ${packageStatus(firstPackage.status).label}` : 'Žádný aktivní balík',
         meta: firstPackage ? `${firstPackage.tracking || 'bez čísla'}${firstPackage.note ? ` · ${firstPackage.note}` : ''}` : 'Tady se později ukáže nejbližší zásilka.',
         badge: `${activePackages.length} aktivní`,
         tone: activePackages.length ? 'warn' : 'good'
@@ -1218,6 +1218,7 @@
       { title: 'Domácnost+ v.0.1_30', note: 'Hotovo: správa více cloud domácností, přepínání domácnosti a připravený panel pozvánek.' },
       { title: 'Domácnost+ v.0.1_33', note: 'Hotovo: finance v cloudu a profil po přijetí pozvánky.' },
       { title: 'Domácnost+ v.0.1_40', note: 'Hotovo: bohatší demo, potvrzení e-mailu, opětovné odeslání ověřovacího e-mailu a přechod z demo do ostré domácnosti.' },
+      { title: 'Domácnost+ v.0.1_41', note: 'Hotovo: kontrola Supabase Auth nastavení, bezpečnější přechod demo → ostrá domácnost a jasný stav redirect URL.' },
       { title: 'Domácnost+ v.0.1_34', note: 'Hotovo: variabilní finanční účty, peněženky, obálky a osobní zůstatky.' }
     ];
     return `
@@ -2517,6 +2518,8 @@
 
         ${renderCloudAccount()}
 
+        ${renderAuthSetupCard()}
+
         ${renderPwaInstallCard()}
 
         <section class="card">
@@ -2658,6 +2661,57 @@
 
   function shortId(value) {
     return value ? `${String(value).slice(0, 8)}…` : '—';
+  }
+
+  function renderAuthSetupCard() {
+    const siteUrl = getAppBaseUrl();
+    const redirectUrl = getAuthRedirectUrl();
+    const currentUrl = location.protocol === 'file:' ? 'lokální soubor' : `${location.origin}/`;
+    const isProdHost = currentUrl === siteUrl;
+    const isLocalHost = ['localhost', '127.0.0.1'].includes(location.hostname);
+    const templatePath = 'supabase/email-confirmation-template-domacnost-plus.html';
+    const checks = [
+      {
+        ok: true,
+        title: 'Site URL v Supabase',
+        note: siteUrl
+      },
+      {
+        ok: true,
+        title: 'Povolený redirect URL',
+        note: redirectUrl
+      },
+      {
+        ok: !isLocalHost,
+        title: 'Aktuální adresa aplikace',
+        note: isProdHost ? 'Běží na produkční Vercel adrese.' : `${currentUrl} · potvrzovací e-mail se i tak posílá na produkční adresu.`
+      },
+      {
+        ok: true,
+        title: 'Šablona e-mailu',
+        note: `${templatePath} · vložit do Supabase → Authentication → Email Templates → Confirm signup`
+      }
+    ];
+    return `
+      <section class="card desktop-span-2 setup-card auth-setup-card">
+        <div class="card-header">
+          <div><h2>Supabase Auth nastavení</h2><p>Kontrola pro potvrzovací e-maily, aby odkazy nepadaly na localhost a šly zpět do Domácnost+.</p></div>
+          <span class="badge ${isProdHost ? 'good' : 'warn'}">${isProdHost ? 'produkce' : 'kontrola'}</span>
+        </div>
+        <div class="setup-list">
+          ${checks.map((item) => `
+            <div class="setup-item ${item.ok ? 'done' : ''}">
+              <span>${item.ok ? '✓' : '!'}</span>
+              <div><strong>${escapeHtml(item.title)}</strong><em>${escapeHtml(item.note)}</em></div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="hint-box" style="margin-top:12px;">
+          V Supabase musí být v Authentication → URL Configuration nastaveno <strong>${escapeHtml(siteUrl)}</strong> a <strong>${escapeHtml(redirectUrl)}</strong>. Aplikace při registraci používá produkční redirect natvrdo, takže už sama neposílá localhost.
+        </div>
+        <div class="inline-note" style="margin-top:12px;">Demo verze je lokální ukázka. Ostrou domácnost zakládej přes účet, aby měla vlastní cloudové ID a nemíchala se s demo daty.</div>
+      </section>
+    `;
   }
 
   function renderCloudAccount() {
@@ -5726,7 +5780,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 39, appBuild: 40, mode: 'rich-demo-v40', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 40, appBuild: 41, mode: 'rich-demo-v41', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -5794,7 +5848,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 39, appBuild: 40, mode: 'demo-heavy-auth-confirm-flow', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 40, appBuild: 41, mode: 'demo-heavy-auth-confirm-flow-v41', updatedAt: new Date().toISOString() };
   }
 
   function addItem(collection, item) {
@@ -7557,7 +7611,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-40-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-41-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -7610,12 +7664,24 @@
     }
 
     const action = event.target.closest('[data-action]');
-    if (action) handleAction(action);
+    if (action) {
+      try {
+        handleAction(action);
+      } catch (error) {
+        console.error('Action failed', action.dataset.action, error);
+        showToast('Akce se nepovedla. Zkus obnovit aplikaci.');
+      }
+    }
   });
 
   app.addEventListener('submit', (event) => {
     event.preventDefault();
-    handleForm(event.target);
+    try {
+      handleForm(event.target);
+    } catch (error) {
+      console.error('Form failed', event.target?.dataset?.form, error);
+      showToast('Formulář se nepovedlo uložit.');
+    }
   });
 
   app.addEventListener('change', (event) => {
