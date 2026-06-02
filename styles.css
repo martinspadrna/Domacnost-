@@ -3995,3 +3995,116 @@ body.overview-open {
 .settings-tab-cloud .danger-zone {
   scroll-margin-top: 14px;
 }
+
+/* v0.1_70: kompaktní počasí, detail počasí a upravitelný horní panel Home */
+.hero-actions-only {
+  justify-content: flex-end;
+}
+.plain-card-title,
+.weather-current-button {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.weather-title-button {
+  display: block;
+  min-width: 0;
+}
+.weather-current-button {
+  width: 100%;
+  padding: 0;
+}
+.weather-card-compact .weather-main-row {
+  margin-top: 4px;
+}
+.weather-card-compact .weather-current {
+  min-height: 86px;
+}
+.weather-metrics-compact .mini-stat {
+  min-height: 64px;
+}
+.weather-dashboard-details {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255,255,255,.18);
+  overflow: hidden;
+}
+[data-theme="dark"] .weather-dashboard-details {
+  background: rgba(255,255,255,.045);
+}
+.weather-dashboard-details summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 12px;
+  color: var(--muted);
+  font-weight: 900;
+  font-size: .82rem;
+}
+.weather-dashboard-details summary::-webkit-details-marker { display: none; }
+.weather-dashboard-details summary::after {
+  content: '⌄';
+  float: right;
+  opacity: .7;
+}
+.weather-dashboard-details[open] summary::after { content: '⌃'; }
+.weather-dashboard-details .weather-hourly-strip,
+.weather-dashboard-details .weather-daily-row {
+  padding: 0 10px 10px;
+}
+.weather-hourly-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.weather-hourly-strip::-webkit-scrollbar { display: none; }
+.weather-hour {
+  flex: 0 0 112px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255,255,255,.26);
+}
+[data-theme="dark"] .weather-hour { background: rgba(255,255,255,.045); }
+.weather-hour span,
+.weather-hour em {
+  display: block;
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 850;
+  font-style: normal;
+}
+.weather-hour strong {
+  display: block;
+  margin: 4px 0;
+  font-size: 1rem;
+}
+.weather-page-hero .weather-current-large {
+  min-height: 132px;
+}
+.weather-page .weather-daily-row {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+.station-summary-item:focus-visible,
+.weather-current-button:focus-visible,
+.weather-title-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent, #3a71ff) 38%, transparent);
+  outline-offset: 3px;
+}
+@media (max-width: 430px) {
+  .weather-card-compact .weather-main-row {
+    gap: 8px;
+  }
+  .weather-card-compact .weather-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .weather-hour { flex-basis: 104px; }
+}

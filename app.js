@@ -9,13 +9,14 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_69';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_69';
-  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_68';
+  const APP_VERSION = 'Domácnost+ v.0.1_70';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_70';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_69';
   const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
     { id: 'home', label: 'Domů', icon: '🏠' },
+    { id: 'weather', label: 'Počasí', icon: '🌤️' },
     { id: 'calendar', label: 'Kalendář', icon: '📅' },
     { id: 'packages', label: 'Balíky', icon: '📦' },
     { id: 'shopping', label: 'Nákupy', icon: '🛒' },
@@ -121,7 +122,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-69.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-70.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -136,14 +137,25 @@
     { id: 'modules', label: 'Rychlé moduly', icon: '🧩', note: 'Karty zapnutých modulů.' }
   ];
   const DEFAULT_DASHBOARD_WIDGET_IDS = ['weather', 'focus', 'timeline', 'now', 'setup', 'modules'];
+  const HOME_HERO_ITEMS = [
+    { id: 'calendar', label: 'Kalendář dnes', icon: '📅', overview: 'calendar', metric: (ctx) => ctx.todayEvents.length, text: () => 'dnes v kalendáři' },
+    { id: 'packages', label: 'Balíky', icon: '📦', overview: 'packages', metric: (ctx) => ctx.activePackages.length, text: () => 'aktivní balíky' },
+    { id: 'shopping', label: 'Nákup', icon: '🛒', overview: 'shopping', metric: (ctx) => ctx.openShopping.length, text: () => 'v nákupu' },
+    { id: 'hdo', label: 'HDO', icon: '💡', overview: 'hdo', metric: (ctx) => ctx.hdo.active ? 'Běží' : 'Ne', text: () => 'HDO' },
+    { id: 'tasks', label: 'Úkoly', icon: '✅', overview: 'tasks', metric: (ctx) => ctx.openTasks.length, text: () => 'otevřené úkoly' },
+    { id: 'waste', label: 'Odpad', icon: '♻️', overview: 'waste', metric: (ctx) => ctx.wasteSoon.length, text: () => 'svoz do 7 dnů' },
+    { id: 'finance', label: 'Finance', icon: '💰', overview: 'finance', metric: () => formatCurrency(financeMonthSummary().balance), text: () => 'měsíční rozdíl' },
+    { id: 'garage', label: 'Garáž', icon: '🚗', overview: 'garage', metric: (ctx) => ctx.vehicleAlerts.length, text: () => 'upozornění' }
+  ];
+  const DEFAULT_HOME_HERO_IDS = ['calendar', 'packages', 'shopping', 'hdo'];
   const WEATHER_DEFAULT_LOCATION = { name: 'Hostinné', country: 'CZ', latitude: 50.5407, longitude: 15.7233 };
   const WEATHER_CACHE_MS = 30 * 60 * 1000;
 
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 51,
-      appBuild: 69,
-      mode: 'modular-dashboard-cloud-flow-v69',
+      appBuild: 70,
+      mode: 'modular-dashboard-cloud-flow-v70',
       createdAt: '',
       updatedAt: ''
     },
@@ -152,7 +164,8 @@
       dashboardNote: 'Domácí přehled je připravený na cloud. Každý si nastaví vlastní domácnost, profily a zapnuté moduly.',
       cloudEnabled: false,
       bottomNavIds: [...DEFAULT_BOTTOM_NAV_IDS],
-      dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGET_IDS]
+      dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGET_IDS],
+      homeHeroItems: [...DEFAULT_HOME_HERO_IDS]
     },
     household: {
       id: '',
@@ -195,6 +208,7 @@
       location: { ...WEATHER_DEFAULT_LOCATION },
       current: null,
       daily: [],
+      hourly: [],
       updatedAt: '',
       error: '',
       loading: false,
@@ -593,8 +607,8 @@
 
     migrated.meta = {
       schemaVersion: 51,
-      appBuild: 69,
-      mode: 'modular-dashboard-cloud-flow-v69',
+      appBuild: 70,
+      mode: 'modular-dashboard-cloud-flow-v70',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -604,7 +618,8 @@
       theme: migrated.settings?.theme === 'dark' ? 'dark' : 'light',
       dashboardNote: migrated.settings?.dashboardNote || DEFAULT_STATE.settings.dashboardNote,
       bottomNavIds: Array.isArray(migrated.settings?.bottomNavIds) ? migrated.settings.bottomNavIds : [...DEFAULT_BOTTOM_NAV_IDS],
-      dashboardWidgets: normalizeDashboardWidgetIds(migrated.settings?.dashboardWidgets)
+      dashboardWidgets: normalizeDashboardWidgetIds(migrated.settings?.dashboardWidgets),
+      homeHeroItems: normalizeHomeHeroIds(migrated.settings?.homeHeroItems)
     };
 
     migrated.household = {
@@ -650,6 +665,7 @@
     migrated.weather = normalizeWeatherState(migrated.weather);
 
     migrated.enabledModules = normalizeModuleList(migrated.enabledModules);
+    if (!migrated.enabledModules.includes('weather')) migrated.enabledModules = ['weather', ...migrated.enabledModules];
     migrated.settings.bottomNavIds = normalizeBottomNavIds(migrated.settings.bottomNavIds, migrated.enabledModules);
 
     getCollectionNames().forEach((collection) => {
@@ -738,6 +754,20 @@
     return DASHBOARD_WIDGETS.find((item) => item.id === id) || DASHBOARD_WIDGETS[0];
   }
 
+  function normalizeHomeHeroIds(value) {
+    const allowed = new Set(HOME_HERO_ITEMS.map((item) => item.id));
+    const requested = Array.isArray(value) ? value : DEFAULT_HOME_HERO_IDS;
+    const result = [];
+    requested.forEach((id) => {
+      if (allowed.has(id) && !result.includes(id)) result.push(id);
+    });
+    return result.length ? result.slice(0, 4) : [...DEFAULT_HOME_HERO_IDS];
+  }
+
+  function homeHeroItemById(id) {
+    return HOME_HERO_ITEMS.find((item) => item.id === id) || HOME_HERO_ITEMS[0];
+  }
+
   function normalizeWeatherLocation(location) {
     const source = location && typeof location === 'object' ? location : WEATHER_DEFAULT_LOCATION;
     const latitude = Number(source.latitude ?? source.lat ?? WEATHER_DEFAULT_LOCATION.latitude);
@@ -756,6 +786,7 @@
       location: normalizeWeatherLocation(base.location),
       current: base.current && typeof base.current === 'object' ? base.current : null,
       daily: Array.isArray(base.daily) ? base.daily : [],
+      hourly: Array.isArray(base.hourly) ? base.hourly : [],
       updatedAt: base.updatedAt || '',
       error: base.error || '',
       loading: false,
@@ -790,7 +821,7 @@
 
   function getVisibleModules() {
     const enabled = new Set(normalizeModuleList(state.enabledModules));
-    return MODULES.filter((module) => module.id === 'home' || module.id === 'settings' || enabled.has(module.id));
+    return MODULES.filter((module) => module.id === 'home' || module.id === 'settings' || module.id === 'weather' || enabled.has(module.id));
   }
 
   function getBottomNavModules() {
@@ -808,7 +839,7 @@
   }
 
   function isModuleEnabled(moduleId) {
-    return moduleId === 'home' || moduleId === 'settings' || normalizeModuleList(state.enabledModules).includes(moduleId);
+    return moduleId === 'home' || moduleId === 'settings' || moduleId === 'weather' || normalizeModuleList(state.enabledModules).includes(moduleId);
   }
 
   function persistStateSnapshot() {
@@ -1494,6 +1525,7 @@
 
   function getModuleSubtitle(moduleId) {
     const subtitles = {
+      weather: 'Aktuální počasí, hodinový výhled a předpověď pro místo domácnosti.',
       home: 'Rychlý domácí přehled pro tablet i mobil. Online domácnost je hlavní zdroj, lokál jen cache/fallback.',
       calendar: 'Ruční kalendář už umí cloud. Google napojení přijde později přes bezpečný backend.',
       packages: 'Základ pro sledování balíků. Teď ručně, později automatika přes backend.',
@@ -1521,6 +1553,7 @@
   function renderModule(moduleId) {
     const renderers = {
       home: renderDashboard,
+      weather: renderWeatherPage,
       calendar: renderCalendar,
       packages: renderPackages,
       shopping: renderShopping,
@@ -1587,14 +1620,10 @@
               <div class="hero-date">${escapeHtml(formatDateTime(now))}</div>
             </div>
             <div class="station-summary">
-              <button class="station-summary-item" type="button" data-action="open-overview" data-overview="calendar"><strong>${todayEvents.length}</strong><span>dnes v kalendáři</span></button>
-              <button class="station-summary-item" type="button" data-action="open-overview" data-overview="packages"><strong>${activePackages.length}</strong><span>aktivní balíky</span></button>
-              <button class="station-summary-item" type="button" data-action="open-overview" data-overview="shopping"><strong>${openShopping.length}</strong><span>v nákupu</span></button>
-              <button class="station-summary-item" type="button" data-action="open-overview" data-overview="hdo"><strong>${hdo.active ? 'Běží' : 'Ne'}</strong><span>HDO</span></button>
+              ${renderHomeHeroSummaryItems(dashboardContext)}
             </div>
           </div>
-          <div class="station-hero-bottom">
-            <div class="inline-note hero-note">Profil: <strong>${escapeHtml(currentProfile()?.name || '—')}</strong> · hlavní obrazovka: <strong>${widgetIds.length} karet</strong></div>
+          <div class="station-hero-bottom hero-actions-only">
             <button class="ghost-btn" type="button" data-nav="settings" data-target-tab="dashboard">Upravit hlavní obrazovku</button>
           </div>
         </section>
@@ -1602,6 +1631,16 @@
         ${widgetIds.map((id) => renderDashboardWidget(id, dashboardContext)).join('')}
       </div>
     `;
+  }
+
+  function renderHomeHeroSummaryItems(ctx) {
+    const selected = normalizeHomeHeroIds(state.settings?.homeHeroItems);
+    return selected.map((id) => {
+      const item = homeHeroItemById(id);
+      const metric = typeof item.metric === 'function' ? item.metric(ctx) : '—';
+      const text = typeof item.text === 'function' ? item.text(ctx) : item.label;
+      return `<button class="station-summary-item" type="button" data-action="open-overview" data-overview="${escapeHtml(item.overview)}"><strong>${escapeHtml(metric)}</strong><span>${escapeHtml(text)}</span></button>`;
+    }).join('');
   }
 
   function renderDashboardWidget(id, ctx) {
@@ -1746,36 +1785,100 @@
     const [condition, icon] = weatherCodeLabel(current.weatherCode);
     const hasCurrent = Boolean(weather.current);
     const updated = weather.updatedAt ? formatDateTime(new Date(weather.updatedAt)) : 'nenačteno';
-    const daily = (weather.daily || []).slice(0, 4);
+    const today = (weather.daily || [])[0] || {};
+    const rain = Number.isFinite(Number(current.precipitation)) ? `${String(current.precipitation).replace('.', ',')} mm` : '—';
     return `
-      <section class="card weather-card dashboard-widget-block desktop-span-2" data-dashboard-widget="weather">
+      <section class="card weather-card weather-card-compact dashboard-widget-block desktop-span-2" data-dashboard-widget="weather">
         <div class="card-header compact-card-header">
-          <div><h2>Počasí</h2><p>${escapeHtml(weatherLocationLabel())} · ${weather.error ? escapeHtml(weather.error) : `Aktualizováno: ${escapeHtml(updated)}`}</p></div>
+          <button class="plain-card-title weather-title-button" type="button" data-nav="weather">
+            <div><h2>Počasí</h2><p>${escapeHtml(weatherLocationLabel())} · ${weather.error ? escapeHtml(weather.error) : `Aktualizováno: ${escapeHtml(updated)}`}</p></div>
+          </button>
           <span class="badge ${weather.error ? 'warn' : hasCurrent ? 'good' : ''}">${weather.loading ? 'načítám' : hasCurrent ? 'online' : 'není načtené'}</span>
         </div>
-        <div class="weather-main-row">
+        <button class="weather-main-row weather-current-button" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
           <div class="weather-current">
             <span class="weather-icon" aria-hidden="true">${escapeHtml(icon)}</span>
             <div><strong>${hasCurrent ? roundWeather(current.temperature, '°') : '—'}</strong><em>${escapeHtml(condition)}</em></div>
           </div>
-          <div class="weather-metrics">
+          <div class="weather-metrics weather-metrics-compact">
             <div class="mini-stat"><span>Pocitově</span><strong>${roundWeather(current.feelsLike, '°')}</strong></div>
-            <div class="mini-stat"><span>Vlhkost</span><strong>${roundWeather(current.humidity, '%')}</strong></div>
+            <div class="mini-stat"><span>Dnes</span><strong>${roundWeather(today.min, '°')} / ${roundWeather(today.max, '°')}</strong></div>
+            <div class="mini-stat"><span>Srážky</span><strong>${rain}</strong></div>
             <div class="mini-stat"><span>Vítr</span><strong>${roundWeather(current.windSpeed, ' km/h')}</strong></div>
-            <div class="mini-stat"><span>Srážky</span><strong>${Number.isFinite(Number(current.precipitation)) ? `${String(current.precipitation).replace('.', ',')} mm` : '—'}</strong></div>
           </div>
-        </div>
-        <div class="weather-daily-row">
-          ${daily.length ? daily.map((day) => {
-            const [label, dayIcon] = weatherCodeLabel(day.weatherCode);
-            return `<div class="weather-day"><span>${escapeHtml(shortWeekday(day.date))}</span><strong>${escapeHtml(dayIcon)} ${roundWeather(day.max, '°')}</strong><em>${roundWeather(day.min, '°')} · ${escapeHtml(label)}</em></div>`;
-          }).join('') : '<div class="empty">Předpověď zatím není načtená.</div>'}
-        </div>
+        </button>
+        <details class="weather-dashboard-details">
+          <summary>Ukázat rychlý výhled</summary>
+          ${renderWeatherHourlyStrip((weather.hourly || []).slice(0, 8))}
+          ${renderWeatherDailyGrid((weather.daily || []).slice(0, 5))}
+        </details>
         <div class="form-actions compact-actions">
-          <button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit počasí</button>
+          <button class="ghost-btn" type="button" data-nav="weather">Podrobné počasí</button>
+          <button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit</button>
           <button class="ghost-btn" type="button" data-nav="settings" data-target-tab="dashboard">Nastavit místo</button>
         </div>
       </section>
+    `;
+  }
+
+  function renderWeatherHourlyStrip(hours = []) {
+    if (!hours.length) return '<div class="empty">Hodinový výhled zatím není načtený.</div>';
+    return `<div class="weather-hourly-strip">${hours.map((hour) => {
+      const [label, hourIcon] = weatherCodeLabel(hour.weatherCode);
+      return `<div class="weather-hour"><span>${escapeHtml(shortTime(hour.time))}</span><strong>${escapeHtml(hourIcon)} ${roundWeather(hour.temperature, '°')}</strong><em>${roundWeather(hour.precipitation, ' mm')} · ${escapeHtml(label)}</em></div>`;
+    }).join('')}</div>`;
+  }
+
+  function renderWeatherDailyGrid(days = []) {
+    if (!days.length) return '<div class="empty">Denní předpověď zatím není načtená.</div>';
+    return `<div class="weather-daily-row">${days.map((day) => {
+      const [label, dayIcon] = weatherCodeLabel(day.weatherCode);
+      return `<div class="weather-day"><span>${escapeHtml(shortWeekday(day.date))}</span><strong>${escapeHtml(dayIcon)} ${roundWeather(day.max, '°')}</strong><em>${roundWeather(day.min, '°')} · ${roundWeather(day.precipitation, ' mm')} · ${escapeHtml(label)}</em></div>`;
+    }).join('')}</div>`;
+  }
+
+  function shortTime(value) {
+    const date = toSafeDate(value, null);
+    if (!date) return '—';
+    return new Intl.DateTimeFormat('cs-CZ', { hour: '2-digit', minute: '2-digit' }).format(date);
+  }
+
+  function renderWeatherPage() {
+    const weather = normalizeWeatherState(state.weather);
+    const current = weather.current || {};
+    const [condition, icon] = weatherCodeLabel(current.weatherCode);
+    const updated = weather.updatedAt ? formatDateTime(new Date(weather.updatedAt)) : 'nenačteno';
+    ensureWeatherFresh(false);
+    return `
+      <div class="grid two weather-page">
+        <section class="card desktop-span-2 weather-page-hero">
+          <div class="card-header compact-card-header">
+            <div><h2>${escapeHtml(weatherLocationLabel())}</h2><p>Podrobnější počasí pro domácnost · aktualizováno: ${escapeHtml(updated)}</p></div>
+            <span class="badge ${weather.current ? 'good' : weather.error ? 'warn' : ''}">${weather.loading ? 'načítám' : weather.current ? 'online' : 'není načtené'}</span>
+          </div>
+          <div class="weather-main-row">
+            <div class="weather-current weather-current-large">
+              <span class="weather-icon" aria-hidden="true">${escapeHtml(icon)}</span>
+              <div><strong>${roundWeather(current.temperature, '°')}</strong><em>${escapeHtml(condition)} · pocitově ${roundWeather(current.feelsLike, '°')}</em></div>
+            </div>
+            <div class="weather-metrics">
+              <div class="mini-stat"><span>Vlhkost</span><strong>${roundWeather(current.humidity, '%')}</strong></div>
+              <div class="mini-stat"><span>Vítr</span><strong>${roundWeather(current.windSpeed, ' km/h')}</strong></div>
+              <div class="mini-stat"><span>Srážky teď</span><strong>${Number.isFinite(Number(current.precipitation)) ? `${String(current.precipitation).replace('.', ',')} mm` : '—'}</strong></div>
+              <div class="mini-stat"><span>Zdroj</span><strong>Open-Meteo</strong></div>
+            </div>
+          </div>
+          <div class="form-actions compact-actions"><button class="primary-btn" type="button" data-action="weather-refresh">Obnovit počasí</button><button class="ghost-btn" type="button" data-nav="settings" data-target-tab="dashboard">Nastavit místo</button></div>
+        </section>
+        <section class="card desktop-span-2">
+          <div class="card-header"><div><h2>Po hodinách</h2><p>Nejbližších 24 hodin pro rychlé plánování.</p></div></div>
+          ${renderWeatherHourlyStrip((weather.hourly || []).slice(0, 24))}
+        </section>
+        <section class="card desktop-span-2">
+          <div class="card-header"><div><h2>Další dny</h2><p>Přehled dopředu, bez zbytečné omáčky.</p></div></div>
+          ${renderWeatherDailyGrid((weather.daily || []).slice(0, 7))}
+        </section>
+      </div>
     `;
   }
 
@@ -1810,15 +1913,17 @@
       latitude: String(location.latitude),
       longitude: String(location.longitude),
       current: 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m',
+      hourly: 'temperature_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m',
       daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum',
       timezone: 'auto',
-      forecast_days: '4'
+      forecast_days: '7'
     });
     const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`, { cache: 'no-store' });
     if (!response.ok) throw new Error(`Počasí HTTP ${response.status}`);
     const data = await response.json();
     const current = data.current || {};
     const daily = data.daily || {};
+    const hourly = data.hourly || {};
     state.weather = {
       location,
       current: {
@@ -1836,6 +1941,14 @@
         min: daily.temperature_2m_min?.[index],
         max: daily.temperature_2m_max?.[index],
         precipitation: daily.precipitation_sum?.[index]
+      })),
+      hourly: (hourly.time || []).map((time, index) => ({
+        time,
+        weatherCode: hourly.weather_code?.[index],
+        temperature: hourly.temperature_2m?.[index],
+        feelsLike: hourly.apparent_temperature?.[index],
+        windSpeed: hourly.wind_speed_10m?.[index],
+        precipitation: hourly.precipitation?.[index]
       })),
       updatedAt: new Date().toISOString(),
       error: '',
@@ -1876,7 +1989,7 @@
       } else {
         location = await findWeatherLocationByName(data.locationName || data.city || WEATHER_DEFAULT_LOCATION.name);
       }
-      state.weather = { ...normalizeWeatherState(state.weather), location, current: null, daily: [], updatedAt: '', error: '' };
+      state.weather = { ...normalizeWeatherState(state.weather), location, current: null, daily: [], hourly: [], updatedAt: '', error: '' };
       touchState();
       saveState();
       await cloudSaveHouseholdUiSettings(false);
@@ -2163,6 +2276,7 @@
       return predicate ? list.filter(predicate).length : list.length;
     };
     const stats = {
+      weather: { count: normalizeWeatherState(state.weather).current ? 1 : 0, label: 'místo', note: weatherLocationLabel() || 'Počasí podle místa domácnosti.' },
       calendar: { count: countBy('calendar'), label: 'událostí', note: 'Google napojení později přes backend.' },
       packages: { count: countBy('packages', (item) => item.status !== 'delivered'), label: 'aktivních', note: `${countBy('packages')} balíků celkem.` },
       shopping: { count: countBy('shopping', (item) => !item.done), label: 'koupit', note: `${countBy('coupons', (item) => !item.used)} nepoužitých kódů.` },
@@ -2252,7 +2366,8 @@
       { title: 'Domácnost+ v.0.1_66', note: 'Hotovo: modulární hlavní obrazovka, zapínání/odebírání karet a počasí podle místa domácnosti.' },
       { title: 'Domácnost+ v.0.1_67', note: 'Hotovo: čistší základní obrazovka bez horního panelu, název domácnosti místo Domů a oprava pádu DateTimeFormat při neplatném datu.' },
       { title: 'Domácnost+ v.0.1_68', note: 'Hotovo: název domácnosti na Home, cloud domácnost po vytvoření a globálně odstraněný horní panel s přepínačem vzhledu.' },
-      { title: 'Domácnost+ v.0.1_69', note: 'Hotovo: cloud stav, autosync, Realtime a technická připravenost přesunuté z hlavní obrazovky do Nastavení.' }
+      { title: 'Domácnost+ v.0.1_69', note: 'Hotovo: cloud stav, autosync, Realtime a technická připravenost přesunuté z hlavní obrazovky do Nastavení.' },
+      { title: 'Domácnost+ v.0.1_70', note: 'Hotovo: upravitelný horní panel Home, kompaktní počasí s detailní stránkou, cloudová změna názvu domácnosti a číselná klávesnice pro HDO.' }
     ];
     return `
       <section class="card roadmap-card">
@@ -2699,8 +2814,8 @@
           <form data-form="add-hdo">
             <div class="form-grid two">
               ${field('Název okna', 'label', 'text', 'např. Večerní tarif', true)}
-              ${field('Od', 'start', 'time', '', true)}
-              ${field('Do', 'end', 'time', '', true)}
+              ${field('Od', 'start', 'text', '0600 nebo 06:00', true, '', 'numeric')}
+              ${field('Do', 'end', 'text', '2200 nebo 22:00', true, '', 'numeric')}
               ${selectField('Dny', 'daysMode', [['all', 'Každý den'], ['workdays', 'Po–Pá'], ['weekend', 'Víkend']])}
             </div>
             <div class="form-actions"><button class="primary-btn" type="submit">Přidat HDO okno</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-hdo">Načíst cloud HDO</button>' : ''}${state.cloud?.householdId && state.hdoWindows.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-hdo">Odeslat lokální HDO (${state.hdoWindows.filter((item) => !item.cloudId).length})</button>` : ''}</div>
@@ -3638,7 +3753,6 @@
               <div class="form-grid two">
                 ${field('Název domácnosti', 'householdName', 'text', 'Domácnost', true, householdName())}
                 ${selectField('Vzhled', 'theme', [['light', 'Světlý'], ['dark', 'Tmavý']], state.settings.theme)}
-                <div class="field desktop-span-2"><label for="dashboardNote">Poznámka na dashboard</label><textarea id="dashboardNote" class="textarea" name="dashboardNote">${escapeHtml(state.settings.dashboardNote || '')}</textarea></div>
               </div>
               <div class="form-actions compact-actions"><button class="primary-btn" type="submit">Uložit domácnost</button></div>
             </form>
@@ -3731,7 +3845,24 @@
     const location = normalizeWeatherLocation(weather.location);
     return `
       <section class="card desktop-span-2 compact-settings-card dashboard-settings-card">
-        <div class="card-header"><div><h2>Hlavní obrazovka</h2><p>Tady si zapneš jen karty, které mají být na úvodní obrazovce. Moduly v aplikaci tím nemažeš, mění se jen dashboard.</p></div><span class="badge">${selected.size}/${DASHBOARD_WIDGETS.length}</span></div>
+        <div class="card-header"><div><h2>První panel na Home</h2><p>Vyber až čtyři rychlé ukazatele v horním panelu pod názvem domácnosti.</p></div><span class="badge">${normalizeHomeHeroIds(state.settings?.homeHeroItems).length}/4</span></div>
+        <div class="switch-list dashboard-widget-picker">
+          ${HOME_HERO_ITEMS.map((item) => {
+            const active = normalizeHomeHeroIds(state.settings?.homeHeroItems).includes(item.id);
+            return `
+              <button class="switch-row dashboard-widget-switch ${active ? 'active' : ''}" type="button" role="switch" aria-checked="${active ? 'true' : 'false'}" data-action="toggle-home-hero-item" data-id="${escapeHtml(item.id)}">
+                <span class="switch-row-icon">${escapeHtml(item.icon)}</span>
+                <span class="switch-row-copy"><strong>${escapeHtml(item.label)}</strong><em>${escapeHtml(item.text({ hdo: getHdoStatus(now), todayEvents: [], activePackages: [], openShopping: [], openTasks: [], wasteSoon: [], vehicleAlerts: [] }))}</em></span>
+                <span class="ios-switch" aria-hidden="true"><span></span></span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+        <div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="home-hero-reset">Obnovit horní panel</button>${cloudReady() ? '<span class="badge good">ukládá se i do domácnosti</span>' : '<span class="badge">lokálně</span>'}</div>
+      </section>
+
+      <section class="card desktop-span-2 compact-settings-card dashboard-settings-card">
+        <div class="card-header"><div><h2>Karty na Home</h2><p>Tady si zapneš jen karty, které mají být na úvodní obrazovce. Moduly v aplikaci tím nemažeš, mění se jen dashboard.</p></div><span class="badge">${selected.size}/${DASHBOARD_WIDGETS.length}</span></div>
         <div class="switch-list dashboard-widget-picker">
           ${DASHBOARD_WIDGETS.map((widget) => {
             const active = selected.has(widget.id);
@@ -4172,12 +4303,12 @@
     `;
   }
 
-  function field(label, name, type = 'text', placeholder = '', required = false, value = '') {
+  function field(label, name, type = 'text', placeholder = '', required = false, value = '', inputMode = '') {
     const inputId = `field-${name}-${Math.random().toString(36).slice(2, 7)}`;
     return `
       <div class="field">
         <label for="${inputId}">${escapeHtml(label)}</label>
-        <input class="input" id="${inputId}" name="${name}" type="${type}" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(value)}" ${required ? 'required' : ''} ${type === 'number' ? 'step="any" inputmode="decimal"' : ''}>
+        <input class="input" id="${inputId}" name="${name}" type="${type}" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(value)}" ${required ? 'required' : ''} ${type === 'number' ? 'step="any" inputmode="decimal"' : inputMode ? `inputmode="${escapeHtml(inputMode)}" pattern="[0-9:., ]*"` : ''}>
       </div>
     `;
   }
@@ -6491,15 +6622,40 @@
     showToast(synced ? `Odesláno HDO oken: ${synced}` : 'Žádné HDO se nepovedlo odeslat');
   }
 
+  function normalizeHdoTimeInput(value) {
+    const raw = normalizeText(value).replace(/\s+/g, '');
+    if (!raw) return '';
+    const colon = raw.match(/^(\d{1,2}):(\d{1,2})$/);
+    if (colon) {
+      const h = Number(colon[1]);
+      const m = Number(colon[2]);
+      if (h >= 0 && h <= 23 && m >= 0 && m <= 59) return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length === 3 || digits.length === 4) {
+      const h = Number(digits.slice(0, -2));
+      const m = Number(digits.slice(-2));
+      if (h >= 0 && h <= 23 && m >= 0 && m <= 59) return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+    if (digits.length <= 2) {
+      const h = Number(digits);
+      if (h >= 0 && h <= 23) return `${String(h).padStart(2, '0')}:00`;
+    }
+    return '';
+  }
+
   async function addHdoWindowFromForm(data, form) {
+    const start = normalizeHdoTimeInput(data.start);
+    const end = normalizeHdoTimeInput(data.end);
+    if (!start || !end) return showToast('Zadej čas HDO jako 0600 nebo 06:00');
     const item = {
       id: uid(),
       householdId: currentHouseholdId(),
       profileId: currentProfileId(),
       createdAt: new Date().toISOString(),
       label: normalizeText(data.label),
-      start: normalizeText(data.start),
-      end: normalizeText(data.end),
+      start,
+      end,
       days: daysModeToArray(data.daysMode),
       enabled: true
     };
@@ -7022,21 +7178,21 @@
       'add-camera': () => addItem('cameras', { name: data.name, location: data.location, snapshotUrl: data.snapshotUrl, status: data.status, note: data.note }),
       onboarding: () => completeOnboarding(data),
       'onboarding-login': () => loginExistingHouseholdFromOnboarding(data),
-      'household-settings': () => {
+      'household-settings': async () => {
         state.household.name = normalizeText(data.householdName) || 'Domácnost';
         state.settings.theme = data.theme === 'dark' ? 'dark' : 'light';
-        state.settings.dashboardNote = normalizeText(data.dashboardNote);
         touchState();
         saveState();
+        await cloudSaveHouseholdUiSettings(false, true);
         render();
-        showToast('Domácnost uložena');
+        showToast(state.cloud?.householdId ? 'Domácnost uložena do cloudu' : 'Domácnost uložena lokálně');
       },
-      settings: () => {
+      settings: async () => {
         state.household.name = normalizeText(data.householdName) || 'Domácnost';
         state.settings.theme = data.theme === 'dark' ? 'dark' : 'light';
-        state.settings.dashboardNote = normalizeText(data.dashboardNote);
         touchState();
         saveState();
+        await cloudSaveHouseholdUiSettings(false, true);
         render();
         showToast('Nastavení uloženo');
       },
@@ -7415,7 +7571,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 51, appBuild: 69, mode: 'rich-demo-v69', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 51, appBuild: 70, mode: 'rich-demo-v70', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -7556,7 +7712,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 51, appBuild: 69, mode: 'modular-dashboard-cloud-flow-v69', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 51, appBuild: 70, mode: 'modular-dashboard-cloud-flow-v70', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -8749,6 +8905,14 @@
       toggleDashboardWidget(button.dataset.id);
       return;
     }
+    if (action === 'toggle-home-hero-item') {
+      toggleHomeHeroItem(button.dataset.id);
+      return;
+    }
+    if (action === 'home-hero-reset') {
+      resetHomeHeroItems();
+      return;
+    }
     if (action === 'dashboard-reset-widgets') {
       resetDashboardWidgets();
       return;
@@ -9454,6 +9618,8 @@
     const weatherLocation = household.weatherLocation || household.weather_location || {};
     if (Array.isArray(layout.widgets)) state.settings.dashboardWidgets = normalizeDashboardWidgetIds(layout.widgets);
     else if (Array.isArray(layout.dashboardWidgets)) state.settings.dashboardWidgets = normalizeDashboardWidgetIds(layout.dashboardWidgets);
+    if (Array.isArray(layout.heroItems)) state.settings.homeHeroItems = normalizeHomeHeroIds(layout.heroItems);
+    else if (Array.isArray(layout.homeHeroItems)) state.settings.homeHeroItems = normalizeHomeHeroIds(layout.homeHeroItems);
     if (weatherLocation && typeof weatherLocation === 'object' && Object.keys(weatherLocation).length) {
       state.weather = { ...normalizeWeatherState(state.weather), location: normalizeWeatherLocation(weatherLocation) };
     }
@@ -9463,20 +9629,21 @@
     return {
       dashboard_layout: {
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
+        heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 69
+        appBuild: 70
       },
       weather_location: normalizeWeatherLocation(state.weather?.location)
     };
   }
 
-  async function cloudSaveHouseholdUiSettings(showMessage = false) {
+  async function cloudSaveHouseholdUiSettings(showMessage = false, includeName = false) {
     if (!cloudReady()) return false;
     const client = getSupabaseClient();
     if (!client) return false;
     const { error } = await client
       .from('households')
-      .update(householdUiPayload())
+      .update(includeName ? { ...householdUiPayload(), name: householdName() } : householdUiPayload())
       .eq('id', state.cloud.householdId);
     if (error) {
       if (showMessage) showToast(error.message || 'Nastavení hlavní obrazovky se nepovedlo uložit do cloudu');
@@ -9582,7 +9749,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 68, schema_version: 51, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 70, schema_version: 51, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -9754,7 +9921,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 68,
+          app_build: 70,
           schema_version: 51,
           created_by: user.id,
           ...householdUiPayload()
@@ -9901,6 +10068,32 @@
     showToast('Hlavní obrazovka vrácená na výchozí karty');
   }
 
+  function toggleHomeHeroItem(itemId) {
+    if (!HOME_HERO_ITEMS.some((item) => item.id === itemId)) return;
+    const selected = new Set(normalizeHomeHeroIds(state.settings?.homeHeroItems));
+    if (selected.has(itemId)) {
+      if (selected.size <= 1) return showToast('V horním panelu nech aspoň jednu položku');
+      selected.delete(itemId);
+    } else {
+      if (selected.size >= 4) return showToast('V horním panelu nech nejvýš čtyři položky');
+      selected.add(itemId);
+    }
+    state.settings.homeHeroItems = normalizeHomeHeroIds([...selected]);
+    touchState();
+    saveState();
+    cloudSaveHouseholdUiSettings(false);
+    render();
+  }
+
+  function resetHomeHeroItems() {
+    state.settings.homeHeroItems = [...DEFAULT_HOME_HERO_IDS];
+    touchState();
+    saveState();
+    cloudSaveHouseholdUiSettings(false);
+    render();
+    showToast('Horní panel vrácený na výchozí položky');
+  }
+
   async function deleteItem(collection, id) {
     if (!collection || !Array.isArray(state[collection])) return;
     if (collection === 'fuel' || collection === 'services') {
@@ -9977,7 +10170,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-69-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-70-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -10099,7 +10292,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_69</span>
+          <span class="badge">Domácnost+ v.0.1_70</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
