@@ -4108,3 +4108,109 @@ body.overview-open {
   }
   .weather-hour { flex-basis: 104px; }
 }
+
+/* Domácnost+ v.0.1_71 – počasí vedle času a širší volby horního panelu */
+.station-clock-area {
+  min-width: 0;
+}
+.hero-clock-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+.hero-clock-copy {
+  min-width: 0;
+}
+.hero-weather-pill {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  max-width: 142px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  color: var(--text);
+  background: rgba(255,255,255,.36);
+  box-shadow: 0 10px 24px rgba(35, 48, 70, .08);
+  cursor: pointer;
+  text-align: left;
+}
+[data-theme="dark"] .hero-weather-pill {
+  background: rgba(255,255,255,.06);
+}
+.hero-weather-pill:active {
+  transform: scale(.985);
+}
+.hero-weather-pill:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent, #3a71ff) 38%, transparent);
+  outline-offset: 3px;
+}
+.hero-weather-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 13px;
+  background: rgba(255,255,255,.42);
+  font-size: 1.15rem;
+}
+[data-theme="dark"] .hero-weather-icon {
+  background: rgba(255,255,255,.09);
+}
+.hero-weather-copy strong,
+.hero-weather-copy em {
+  display: block;
+  line-height: 1.05;
+}
+.hero-weather-copy strong {
+  font-size: 1.15rem;
+  letter-spacing: -.04em;
+}
+.hero-weather-copy em {
+  max-width: 78px;
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: .68rem;
+  font-style: normal;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.station-summary-item span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.station-summary-item span b {
+  font-size: .9rem;
+  line-height: 1;
+}
+@media (max-width: 420px) {
+  .hero-clock-row {
+    align-items: center;
+  }
+  .hero-weather-pill {
+    max-width: 118px;
+    min-height: 44px;
+    padding: 6px 8px;
+    border-radius: 17px;
+  }
+  .hero-weather-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 11px;
+    font-size: 1rem;
+  }
+  .hero-weather-copy strong {
+    font-size: 1rem;
+  }
+  .hero-weather-copy em {
+    max-width: 58px;
+    font-size: .62rem;
+  }
+}

@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_70';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_70';
+  const APP_VERSION = 'Domácnost+ v.0.1_71';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_71';
   const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_69';
   const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
@@ -122,7 +122,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-70.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-71.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -136,26 +136,32 @@
     { id: 'setup', label: 'První nastavení', icon: '🧭', note: 'Průvodce dokončením základního nastavení domácnosti.' },
     { id: 'modules', label: 'Rychlé moduly', icon: '🧩', note: 'Karty zapnutých modulů.' }
   ];
-  const DEFAULT_DASHBOARD_WIDGET_IDS = ['weather', 'focus', 'timeline', 'now', 'setup', 'modules'];
+  const DEFAULT_DASHBOARD_WIDGET_IDS = ['focus', 'timeline', 'now', 'setup', 'modules'];
   const HOME_HERO_ITEMS = [
+    { id: 'weather', label: 'Počasí', icon: '🌤️', nav: 'weather', metric: (ctx) => ctx.weather?.current ? roundWeather(ctx.weather.current.temperature, '°') : '—', text: (ctx) => ctx.weather?.current ? weatherCodeLabel(ctx.weather.current.weatherCode)[0] : 'počasí' },
     { id: 'calendar', label: 'Kalendář dnes', icon: '📅', overview: 'calendar', metric: (ctx) => ctx.todayEvents.length, text: () => 'dnes v kalendáři' },
     { id: 'packages', label: 'Balíky', icon: '📦', overview: 'packages', metric: (ctx) => ctx.activePackages.length, text: () => 'aktivní balíky' },
     { id: 'shopping', label: 'Nákup', icon: '🛒', overview: 'shopping', metric: (ctx) => ctx.openShopping.length, text: () => 'v nákupu' },
+    { id: 'coupons', label: 'Slevové kódy', icon: '🏷️', nav: 'shopping', tab: 'coupons', metric: () => state.coupons.filter((item) => !item.used).length, text: () => 'nepoužité kódy' },
     { id: 'hdo', label: 'HDO', icon: '💡', overview: 'hdo', metric: (ctx) => ctx.hdo.active ? 'Běží' : 'Ne', text: () => 'HDO' },
-    { id: 'tasks', label: 'Úkoly', icon: '✅', overview: 'tasks', metric: (ctx) => ctx.openTasks.length, text: () => 'otevřené úkoly' },
     { id: 'waste', label: 'Odpad', icon: '♻️', overview: 'waste', metric: (ctx) => ctx.wasteSoon.length, text: () => 'svoz do 7 dnů' },
+    { id: 'tasks', label: 'Úkoly', icon: '✅', overview: 'tasks', metric: (ctx) => ctx.openTasks.length, text: () => 'otevřené úkoly' },
+    { id: 'notes', label: 'Poznámky', icon: '📝', nav: 'homecare', tab: 'tasks', metric: () => state.notes.length, text: () => 'poznámky' },
+    { id: 'devices', label: 'Zařízení', icon: '🔌', nav: 'homecare', tab: 'devices', metric: () => state.devices.length, text: () => 'zařízení' },
+    { id: 'garage', label: 'Garáž', icon: '🚗', overview: 'garage', metric: (ctx) => ctx.vehicleAlerts.length, text: () => 'upozornění' },
+    { id: 'contracts', label: 'Smlouvy', icon: '📄', overview: 'contracts', metric: () => state.contracts.length, text: () => 'smlouvy' },
     { id: 'finance', label: 'Finance', icon: '💰', overview: 'finance', metric: () => formatCurrency(financeMonthSummary().balance), text: () => 'měsíční rozdíl' },
-    { id: 'garage', label: 'Garáž', icon: '🚗', overview: 'garage', metric: (ctx) => ctx.vehicleAlerts.length, text: () => 'upozornění' }
+    { id: 'cameras', label: 'Kamery', icon: '📹', nav: 'cameras', tab: 'overview', metric: () => state.cameras.length, text: () => 'kamery' }
   ];
-  const DEFAULT_HOME_HERO_IDS = ['calendar', 'packages', 'shopping', 'hdo'];
+  const DEFAULT_HOME_HERO_IDS = ['weather', 'calendar', 'packages', 'shopping'];
   const WEATHER_DEFAULT_LOCATION = { name: 'Hostinné', country: 'CZ', latitude: 50.5407, longitude: 15.7233 };
   const WEATHER_CACHE_MS = 30 * 60 * 1000;
 
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 51,
-      appBuild: 70,
-      mode: 'modular-dashboard-cloud-flow-v70',
+      appBuild: 71,
+      mode: 'modular-dashboard-weather-hero-v71',
       createdAt: '',
       updatedAt: ''
     },
@@ -607,8 +613,8 @@
 
     migrated.meta = {
       schemaVersion: 51,
-      appBuild: 70,
-      mode: 'modular-dashboard-cloud-flow-v70',
+      appBuild: 71,
+      mode: 'modular-dashboard-weather-hero-v71',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1607,17 +1613,23 @@
       vehicleAlerts
     });
     ensureWeatherFresh(false);
-    const dashboardContext = { hdo, todayEvents, upcomingEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, focusItems };
+    const weather = normalizeWeatherState(state.weather);
+    const dashboardContext = { hdo, todayEvents, upcomingEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, focusItems, weather, notes: state.notes, devices: state.devices, cameras: state.cameras, coupons: state.coupons, contracts: state.contracts };
     const widgetIds = normalizeDashboardWidgetIds(state.settings?.dashboardWidgets);
 
     return `
       <div class="dashboard-v10">
         <section class="card hero-card station-hero">
           <div class="station-hero-main">
-            <div>
+            <div class="station-clock-area">
               <span class="badge good">${escapeHtml(householdName())}</span>
-              <div class="hero-time">${clockText(now)}</div>
-              <div class="hero-date">${escapeHtml(formatDateTime(now))}</div>
+              <div class="hero-clock-row">
+                <div class="hero-clock-copy">
+                  <div class="hero-time">${clockText(now)}</div>
+                  <div class="hero-date">${escapeHtml(formatDateTime(now))}</div>
+                </div>
+                ${renderHeroWeatherPill(dashboardContext)}
+              </div>
             </div>
             <div class="station-summary">
               ${renderHomeHeroSummaryItems(dashboardContext)}
@@ -1633,13 +1645,31 @@
     `;
   }
 
+  function renderHeroWeatherPill(ctx) {
+    const weather = normalizeWeatherState(ctx?.weather || state.weather);
+    const current = weather.current || {};
+    const [condition, icon] = weatherCodeLabel(current.weatherCode);
+    const hasCurrent = Boolean(weather.current);
+    const label = weather.loading ? 'Načítám' : weather.error ? 'Chyba' : hasCurrent ? condition : 'Počasí';
+    const value = hasCurrent ? roundWeather(current.temperature, '°') : '—';
+    return `
+      <button class="hero-weather-pill" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
+        <span class="hero-weather-icon" aria-hidden="true">${escapeHtml(icon)}</span>
+        <span class="hero-weather-copy"><strong>${escapeHtml(value)}</strong><em>${escapeHtml(label)}</em></span>
+      </button>
+    `;
+  }
+
   function renderHomeHeroSummaryItems(ctx) {
     const selected = normalizeHomeHeroIds(state.settings?.homeHeroItems);
     return selected.map((id) => {
       const item = homeHeroItemById(id);
       const metric = typeof item.metric === 'function' ? item.metric(ctx) : '—';
       const text = typeof item.text === 'function' ? item.text(ctx) : item.label;
-      return `<button class="station-summary-item" type="button" data-action="open-overview" data-overview="${escapeHtml(item.overview)}"><strong>${escapeHtml(metric)}</strong><span>${escapeHtml(text)}</span></button>`;
+      const attrs = item.nav
+        ? `data-nav="${escapeHtml(item.nav)}"${item.tab ? ` data-target-tab="${escapeHtml(item.tab)}"` : ''}`
+        : `data-action="open-overview" data-overview="${escapeHtml(item.overview)}"`;
+      return `<button class="station-summary-item" type="button" ${attrs}><strong>${escapeHtml(metric)}</strong><span><b aria-hidden="true">${escapeHtml(item.icon || '')}</b>${escapeHtml(text)}</span></button>`;
     }).join('');
   }
 
@@ -2367,7 +2397,8 @@
       { title: 'Domácnost+ v.0.1_67', note: 'Hotovo: čistší základní obrazovka bez horního panelu, název domácnosti místo Domů a oprava pádu DateTimeFormat při neplatném datu.' },
       { title: 'Domácnost+ v.0.1_68', note: 'Hotovo: název domácnosti na Home, cloud domácnost po vytvoření a globálně odstraněný horní panel s přepínačem vzhledu.' },
       { title: 'Domácnost+ v.0.1_69', note: 'Hotovo: cloud stav, autosync, Realtime a technická připravenost přesunuté z hlavní obrazovky do Nastavení.' },
-      { title: 'Domácnost+ v.0.1_70', note: 'Hotovo: upravitelný horní panel Home, kompaktní počasí s detailní stránkou, cloudová změna názvu domácnosti a číselná klávesnice pro HDO.' }
+      { title: 'Domácnost+ v.0.1_70', note: 'Hotovo: upravitelný horní panel Home, kompaktní počasí s detailní stránkou, cloudová změna názvu domácnosti a číselná klávesnice pro HDO.' },
+      { title: 'Domácnost+ v.0.1_71', note: 'Hotovo: základ počasí vedle času na Home, počasí jako volitelná položka horního panelu a rozšíření horního panelu o hlavní funkce domácnosti.' }
     ];
     return `
       <section class="card roadmap-card">
@@ -3843,6 +3874,16 @@
     const selected = new Set(normalizeDashboardWidgetIds(state.settings?.dashboardWidgets));
     const weather = normalizeWeatherState(state.weather);
     const location = normalizeWeatherLocation(weather.location);
+    const previewCtx = {
+      hdo: getHdoStatus(now),
+      todayEvents: state.calendar.filter((event) => event.date === todayISO()),
+      activePackages: state.packages.filter((pkg) => pkg.status !== 'delivered'),
+      openShopping: state.shopping.filter((item) => !item.done),
+      openTasks: state.homeTasks.filter((task) => !task.done),
+      wasteSoon: state.waste.map((item) => ({ ...item, days: daysUntil(item.date) })).filter((item) => item.days !== null && item.days >= 0 && item.days <= 7),
+      vehicleAlerts: getVehicleAlerts(),
+      weather
+    };
     return `
       <section class="card desktop-span-2 compact-settings-card dashboard-settings-card">
         <div class="card-header"><div><h2>První panel na Home</h2><p>Vyber až čtyři rychlé ukazatele v horním panelu pod názvem domácnosti.</p></div><span class="badge">${normalizeHomeHeroIds(state.settings?.homeHeroItems).length}/4</span></div>
@@ -3852,7 +3893,7 @@
             return `
               <button class="switch-row dashboard-widget-switch ${active ? 'active' : ''}" type="button" role="switch" aria-checked="${active ? 'true' : 'false'}" data-action="toggle-home-hero-item" data-id="${escapeHtml(item.id)}">
                 <span class="switch-row-icon">${escapeHtml(item.icon)}</span>
-                <span class="switch-row-copy"><strong>${escapeHtml(item.label)}</strong><em>${escapeHtml(item.text({ hdo: getHdoStatus(now), todayEvents: [], activePackages: [], openShopping: [], openTasks: [], wasteSoon: [], vehicleAlerts: [] }))}</em></span>
+                <span class="switch-row-copy"><strong>${escapeHtml(item.label)}</strong><em>${escapeHtml(item.text(previewCtx))}</em></span>
                 <span class="ios-switch" aria-hidden="true"><span></span></span>
               </button>
             `;
@@ -7571,7 +7612,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 51, appBuild: 70, mode: 'rich-demo-v70', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 51, appBuild: 71, mode: 'rich-demo-v71', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -7712,7 +7753,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 51, appBuild: 70, mode: 'modular-dashboard-cloud-flow-v70', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 51, appBuild: 71, mode: 'modular-dashboard-weather-hero-v71', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -9631,7 +9672,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 70
+        appBuild: 71
       },
       weather_location: normalizeWeatherLocation(state.weather?.location)
     };
@@ -9749,7 +9790,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 70, schema_version: 51, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 71, schema_version: 51, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -9921,7 +9962,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 70,
+          app_build: 71,
           schema_version: 51,
           created_by: user.id,
           ...householdUiPayload()
@@ -10170,7 +10211,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-70-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-71-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -10292,7 +10333,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_70</span>
+          <span class="badge">Domácnost+ v.0.1_71</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
