@@ -9,10 +9,10 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_67';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_46';
-  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_45';
-  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
+  const APP_VERSION = 'Domácnost+ v.0.1_69';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_69';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_68';
+  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
     { id: 'home', label: 'Domů', icon: '🏠' },
@@ -121,7 +121,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-67.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-69.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -132,20 +132,18 @@
     { id: 'focus', label: 'Hlavní karty', icon: '⭐', note: 'Kalendář, HDO, balíky, nákup a finance v rychlých kartách.' },
     { id: 'timeline', label: 'Dnes a brzy', icon: '🕒', note: 'Časová osa nejbližších událostí, úkolů, svozů a upozornění.' },
     { id: 'now', label: 'Teď doma', icon: '🏠', note: 'Rychlý stav domácnosti, HDO a nákupy.' },
-    { id: 'cloud', label: 'Cloud stav', icon: '☁️', note: 'Přehled, co je v cloudu a co čeká na synchronizaci.' },
     { id: 'setup', label: 'První nastavení', icon: '🧭', note: 'Průvodce dokončením základního nastavení domácnosti.' },
-    { id: 'readiness', label: 'Technická připravenost', icon: '🛠️', note: 'Kontrolní karta cloud/PWA připravenosti.' },
     { id: 'modules', label: 'Rychlé moduly', icon: '🧩', note: 'Karty zapnutých modulů.' }
   ];
-  const DEFAULT_DASHBOARD_WIDGET_IDS = ['weather', 'focus', 'timeline', 'now', 'cloud', 'setup', 'modules'];
+  const DEFAULT_DASHBOARD_WIDGET_IDS = ['weather', 'focus', 'timeline', 'now', 'setup', 'modules'];
   const WEATHER_DEFAULT_LOCATION = { name: 'Hostinné', country: 'CZ', latitude: 50.5407, longitude: 15.7233 };
   const WEATHER_CACHE_MS = 30 * 60 * 1000;
 
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 51,
-      appBuild: 67,
-      mode: 'modular-dashboard-weather-v67',
+      appBuild: 69,
+      mode: 'modular-dashboard-cloud-flow-v69',
       createdAt: '',
       updatedAt: ''
     },
@@ -595,8 +593,8 @@
 
     migrated.meta = {
       schemaVersion: 51,
-      appBuild: 67,
-      mode: 'modular-dashboard-weather-v67',
+      appBuild: 69,
+      mode: 'modular-dashboard-cloud-flow-v69',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -943,25 +941,6 @@
 
     app.innerHTML = `
       <div class="app-frame ${isHomeModule ? 'home-clean-frame' : ''}">
-        ${isHomeModule ? '' : `
-        <header class="topbar">
-          <div class="brand">
-            <div class="brand-mark logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
-            <div class="brand-title">
-              <h1>${escapeHtml(householdName())}</h1>
-              <p>${escapeHtml(APP_VERSION)} · ${escapeHtml(currentProfile()?.name || 'bez profilu')} · ${escapeHtml(cloudModeLabel())}</p>
-            </div>
-          </div>
-          <div class="top-actions">
-            ${renderProfileSwitcher()}
-            <div class="clock-card">
-              <strong>${clockText(now)}</strong>
-              <span>${escapeHtml(shortDateText(now))}</span>
-            </div>
-            <button class="icon-btn" type="button" data-action="toggle-theme" aria-label="Přepnout vzhled">${state.settings.theme === 'dark' ? '☀️' : '🌙'}</button>
-          </div>
-        </header>`}
-
         <main>
           <section class="page-head ${isHomeModule ? 'home-page-head' : ''}">
             <div>
@@ -1603,7 +1582,7 @@
         <section class="card hero-card station-hero">
           <div class="station-hero-main">
             <div>
-              <span class="badge good">modulární dashboard</span>
+              <span class="badge good">${escapeHtml(householdName())}</span>
               <div class="hero-time">${clockText(now)}</div>
               <div class="hero-date">${escapeHtml(formatDateTime(now))}</div>
             </div>
@@ -1615,12 +1594,10 @@
             </div>
           </div>
           <div class="station-hero-bottom">
-            <div class="inline-note hero-note">Domácnost: <strong>${escapeHtml(householdName())}</strong> · profil: <strong>${escapeHtml(currentProfile()?.name || '—')}</strong> · hlavní obrazovka: <strong>${widgetIds.length} karet</strong></div>
+            <div class="inline-note hero-note">Profil: <strong>${escapeHtml(currentProfile()?.name || '—')}</strong> · hlavní obrazovka: <strong>${widgetIds.length} karet</strong></div>
             <button class="ghost-btn" type="button" data-nav="settings" data-target-tab="dashboard">Upravit hlavní obrazovku</button>
           </div>
         </section>
-
-        ${renderDashboardWidgetDock(widgetIds)}
 
         ${widgetIds.map((id) => renderDashboardWidget(id, dashboardContext)).join('')}
       </div>
@@ -1632,7 +1609,7 @@
       case 'weather':
         return renderDashboardWeatherCard();
       case 'cloud':
-        return renderCloudSyncOverview('dashboard');
+        return '';
       case 'setup':
         return `${renderStarterStateCard()}${renderSetupChecklist()}`;
       case 'focus':
@@ -1669,7 +1646,7 @@
           </section>
         `;
       case 'readiness':
-        return renderCloudReadiness(true);
+        return '';
       case 'modules':
         return `
           <section class="card desktop-span-2 tablet-modules-card dashboard-widget-block" data-dashboard-widget="modules">
@@ -2200,11 +2177,11 @@
 
   function getCloudReadiness() {
     const checks = [
-      { key: 'household', done: Boolean(state.household?.isConfigured && state.household?.id), title: 'Domácnost má svoje ID', note: 'Základ pro oddělení rodin v cloudu.' },
-      { key: 'profiles', done: state.profiles.length >= 1 && state.profiles.every((profile) => profile.householdId), title: 'Profily jsou navázané na domácnost', note: 'Později půjdou propojit s účty/rolemi.' },
+      { key: 'household', done: Boolean(state.household?.isConfigured && state.household?.id), title: 'Domácnost má svoje ID', note: 'Základ pro oddělení rodin a household_id v cloudu.' },
+      { key: 'profiles', done: state.profiles.length >= 1 && state.profiles.every((profile) => profile.householdId), title: 'Profily jsou navázané na domácnost', note: 'Profily se synchronizují přes cloud domácnosti.' },
       { key: 'modules', done: normalizeModuleList(state.enabledModules).length > 0, title: 'Moduly jsou volitelné', note: 'Každá rodina si vybere vlastní sestavu.' },
       { key: 'navigation', done: normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules).length >= BOTTOM_NAV_MIN, title: 'Spodní lišta je uživatelská', note: 'Dobré pro iPhone, Android i budoucí tablet.' },
-      { key: 'ids', done: getCollectionNames().every((collection) => (state[collection] || []).every((item) => item.householdId && item.profileId)), title: 'Data mají householdId/profileId', note: 'Nejdůležitější příprava na Supabase RLS.' },
+      { key: 'ids', done: getCollectionNames().every((collection) => (state[collection] || []).every((item) => item.householdId && item.profileId)), title: 'Data mají householdId/profileId', note: 'Důležité pro RLS a sdílení jen uvnitř domácnosti.' },
       { key: 'storage', done: true, title: 'Soubory jsou mimo localStorage', note: 'Přílohy smluv jedou online přes soukromý Supabase Storage, IndexedDB je jen fallback.' }
     ];
     const doneCount = checks.filter((item) => item.done).length;
@@ -2216,12 +2193,12 @@
     return `
       <section class="card ${compact ? '' : 'desktop-span-2'}">
         <div class="card-header">
-          <div><h2>Připravenost na cloud</h2><p>Kontrola, jestli se offline data později půjdou rozumně převést na Vercel + Supabase.</p></div>
+          <div><h2>Technická připravenost</h2><p>Kontrola cloud-first režimu, PWA a bezpečného fallbacku do lokální cache.</p></div>
           <span class="badge ${readiness.percent >= 90 ? 'good' : readiness.percent >= 70 ? 'warn' : ''}">${readiness.percent} %</span>
         </div>
         <div class="progress-shell"><span style="width:${readiness.percent}%"></span></div>
         ${compact ? `
-          <div class="inline-note" style="margin-top:12px;">${readiness.doneCount}/${readiness.total} technických bodů je připravených. Další krok bude doladit export/import a potom založit cloud projekt.</div>
+          <div class="inline-note" style="margin-top:12px;">${readiness.doneCount}/${readiness.total} technických bodů je připravených. Cloud je hlavní zdroj dat, lokál zůstává jen cache/fallback.</div>
         ` : `
           <div class="setup-list" style="margin-top:12px;">
             ${readiness.checks.map((item) => `
@@ -2272,8 +2249,10 @@
       { title: 'Domácnost+ v.0.1_63', note: 'Hotovo: Supabase Realtime pro sdílené moduly, automatické občerstvení dat mezi členy domácnosti a stabilnější cloud sync.' },
       { title: 'Domácnost+ v.0.1_64', note: 'Hotovo: cloud-first autosync, přehled položek cloud/lokál a cloud upload starších lokálních příloh smluv.' },
       { title: 'Domácnost+ v.0.1_65', note: 'Hotovo: cloudové profily domácnosti, archivace profilů a Realtime pro profily/členy.' },
+      { title: 'Domácnost+ v.0.1_66', note: 'Hotovo: modulární hlavní obrazovka, zapínání/odebírání karet a počasí podle místa domácnosti.' },
       { title: 'Domácnost+ v.0.1_67', note: 'Hotovo: čistší základní obrazovka bez horního panelu, název domácnosti místo Domů a oprava pádu DateTimeFormat při neplatném datu.' },
-      { title: 'Domácnost+ v.0.1_67', note: 'Hotovo: modulární hlavní obrazovka, zapínání/odebírání karet a počasí podle místa domácnosti.' }
+      { title: 'Domácnost+ v.0.1_68', note: 'Hotovo: název domácnosti na Home, cloud domácnost po vytvoření a globálně odstraněný horní panel s přepínačem vzhledu.' },
+      { title: 'Domácnost+ v.0.1_69', note: 'Hotovo: cloud stav, autosync, Realtime a technická připravenost přesunuté z hlavní obrazovky do Nastavení.' }
     ];
     return `
       <section class="card roadmap-card">
@@ -3717,6 +3696,8 @@
 
         <div class="settings-panel panel-cloud grid two">
           ${renderCloudAccount()}
+          ${renderCloudSyncOverview('settings')}
+          ${renderCloudReadiness(false)}
           ${renderPwaInstallCard()}
           ${renderAuthSetupCard()}
         </div>
@@ -4048,7 +4029,7 @@
     return `
       <section class="card desktop-span-2 cloud-card">
         <div class="card-header">
-          <div><h2>Cloud účet</h2><p>Napojení na Supabase projekt Domácnost+. Online domácnost je hlavní zdroj dat pro všechny členy; lokál zůstává jen cache/fallback.</p></div>
+          <div><h2>Cloud účet</h2><p>Online domácnost v Supabase. Při vytvoření domácnosti se cloud připraví automaticky; lokál zůstává jen cache/fallback.</p></div>
           <span class="badge ${signedIn ? 'good' : ''}">${signedIn ? 'přihlášeno' : 'lokálně'}</span>
         </div>
         <div class="cloud-status-grid">
@@ -4062,9 +4043,9 @@
         </div>
         ${signedIn ? renderCloudHouseholdManager() : ''}
         ${signedIn ? `
-          <div class="hint-box">Jsi přihlášený. Tlačítko níže vytvoří nebo napojí aktuální domácnost v Supabase: domácnost, owner člen a profily. Kalendář, nákupy a další moduly už se umí ukládat do cloudu.</div>
+          <div class="hint-box">Jsi přihlášený. Domácnost se při založení rovnou vytvoří v Supabase. Tady zůstává jen kontrola, ruční synchronizace a údržba účtu.</div>
           <div class="form-actions">
-            <button class="primary-btn" type="button" data-action="cloud-bootstrap">Vytvořit / napojit domácnost v cloudu</button>
+            <button class="ghost-btn" type="button" data-action="cloud-bootstrap">Opravit cloud napojení</button>
             <button class="ghost-btn" type="button" data-action="cloud-load-all">Načíst data domácnosti</button>
             <button class="ghost-btn" type="button" data-action="cloud-start-realtime">Zapnout živé změny</button>
             <button class="ghost-btn" type="button" data-action="cloud-run-autosync-now">Synchronizovat teď</button>
@@ -4257,15 +4238,6 @@
     const hasFinanceBase = (state.financeAccounts?.length || 0) > 0 || (state.finance?.length || 0) > 0;
     return [
       {
-        id: 'cloud',
-        done: Boolean(state.cloud?.userId && state.cloud?.householdId),
-        nav: 'settings',
-        tab: 'cloud',
-        icon: '☁️',
-        title: 'Napojit účet a domácnost',
-        note: state.cloud?.householdId ? 'Cloudová domácnost je připravená.' : 'Nejdřív účet, potvrzení e-mailu a vlastní household_id.'
-      },
-      {
         id: 'profiles',
         done: state.profiles.length >= 1,
         nav: 'settings',
@@ -4343,7 +4315,7 @@
 
   function getStarterPhaseSummary(progress) {
     const phaseDefs = [
-      { id: 'base', icon: '🏠', title: 'Základ', note: 'účet + profily', ids: ['cloud', 'profiles'] },
+      { id: 'base', icon: '🏠', title: 'Základ', note: 'profily domácnosti', ids: ['profiles'] },
       { id: 'daily', icon: '⚡', title: 'Denní provoz', note: 'HDO + nákupy', ids: ['hdo', 'shopping'] },
       { id: 'records', icon: '🗂️', title: 'Evidence', note: 'auto, smlouvy, finance', ids: ['garage', 'contracts', 'finance'] }
     ];
@@ -7139,8 +7111,8 @@
     }
     render();
     if (cloudResult === 'bootstrapped') showToast('Rodinný účet a cloudová domácnost vytvořeny');
-    else if (cloudResult === 'email-confirmation') showToast('Domácnost je lokálně. Potvrď e-mail a pak se přihlas');
-    else showToast('Domácnost vytvořena lokálně, cloud se nepovedl napojit');
+    else if (cloudResult === 'email-confirmation') showToast('Potvrď e-mail. Po potvrzení se domácnost automaticky napojí na cloud');
+    else showToast('Domácnost vytvořena, cloud se zkusí znovu po přihlášení');
   }
 
   async function registerCloudHouseholdFromOnboarding(email, password) {
@@ -7443,7 +7415,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 51, appBuild: 67, mode: 'rich-demo-v67', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 51, appBuild: 69, mode: 'rich-demo-v69', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -7584,7 +7556,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 51, appBuild: 67, mode: 'modular-dashboard-weather-v67', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 51, appBuild: 69, mode: 'modular-dashboard-cloud-flow-v69', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -8559,6 +8531,9 @@
       state.cloud.householdId = households[0].id;
       state.household = { ...(state.household || {}), id: households[0].id, name: households[0].name || state.household?.name || 'Domácnost', isConfigured: true };
     }
+    if (!state.cloud?.householdId && state.household?.isConfigured) {
+      await bootstrapCloudHousehold(false);
+    }
     if (!state.cloud?.householdId) return;
     await cloudLoadProfilesForCurrentHousehold();
     await cloudSyncLocalPendingData(false);
@@ -9359,9 +9334,13 @@
     if (user) {
       state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, provider: 'supabase', status: data.session ? 'signed-in' : 'email-confirmation', userId: user.id, email: user.email || normalizeText(email) };
       saveState();
+      if (data.session && state.household?.isConfigured && !state.cloud?.householdId) {
+        await bootstrapCloudHousehold(false);
+        await cloudLoadAllModules(false, { skipRealtimeSetup: true, silentWhenOffline: true });
+      }
       render();
     }
-    showToast(data.session ? 'Účet vytvořen' : 'Zkontroluj e-mail pro potvrzení');
+    showToast(data.session ? 'Účet vytvořený a domácnost napojená na cloud' : 'Zkontroluj e-mail pro potvrzení');
   }
 
 
@@ -9458,7 +9437,10 @@
       state.household.isConfigured = true;
     }
     const activeHousehold = households.find((item) => item.id === state.cloud.householdId);
-    if (activeHousehold) applyCloudHouseholdUiSettings(activeHousehold);
+    if (activeHousehold) {
+      state.household = { ...(state.household || {}), name: activeHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
+      applyCloudHouseholdUiSettings(activeHousehold);
+    }
     touchState();
     saveState();
     render();
@@ -9482,7 +9464,7 @@
       dashboard_layout: {
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         updatedAt: new Date().toISOString(),
-        appBuild: 67
+        appBuild: 69
       },
       weather_location: normalizeWeatherLocation(state.weather?.location)
     };
@@ -9600,7 +9582,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 66, schema_version: 51, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 68, schema_version: 51, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -9772,7 +9754,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 66,
+          app_build: 68,
           schema_version: 51,
           created_by: user.id,
           ...householdUiPayload()
@@ -9995,7 +9977,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-67-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-69-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -10117,7 +10099,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_67</span>
+          <span class="badge">Domácnost+ v.0.1_69</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

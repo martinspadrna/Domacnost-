@@ -3635,7 +3635,7 @@ body.overview-open {
 }
 
 
-/* Domácnost+ v.0.1_67 – fáze prvního nastavení a akčnější prázdné stavy */
+/* Domácnost+ v.0.1_69 – fáze prvního nastavení a akčnější prázdné stavy */
 .starter-phase-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3742,7 +3742,7 @@ body.overview-open {
 }
 
 
-/* Domácnost+ v.0.1_67 – zvýraznění dalšího kroku v průvodci */
+/* Domácnost+ v.0.1_69 – zvýraznění dalšího kroku v průvodci */
 .starter-step-card.is-next,
 .starter-phase-card.is-next,
 .starter-priority-chip.is-next,
@@ -3793,7 +3793,7 @@ body.overview-open {
   }
 }
 
-/* Domácnost+ v.0.1_67 – cloud autosync a jasnější stav sdílených dat */
+/* Domácnost+ v.0.1_69 – cloud autosync a jasnější stav sdílených dat */
 .cloud-automation-strip {
   margin-top: 12px;
   display: flex;
@@ -3851,7 +3851,7 @@ body.overview-open {
   }
 }
 
-/* Domácnost+ v.0.1_67 – modulární dashboard a počasí */
+/* Domácnost+ v.0.1_69 – modulární dashboard a počasí */
 .settings-tab-dashboard .settings-panel:not(.panel-dashboard),
 .settings-tab-household .settings-panel:not(.panel-household),
 .settings-tab-modules .settings-panel:not(.panel-modules),
@@ -3978,7 +3978,7 @@ body.overview-open {
 }
 
 
-/* v0.1_67: čistší základní obrazovka bez vrchního brand panelu */
+/* v0.1_68: čistší základní obrazovka bez vrchního brand panelu */
 .home-clean-frame {
   padding-top: max(12px, env(safe-area-inset-top));
 }
@@ -3988,4 +3988,10 @@ body.overview-open {
 }
 .home-page-head .page-title {
   letter-spacing: -0.04em;
+}
+
+/* Domácnost+ v.0.1_69 – cloudové/technické karty jen v Nastavení */
+.settings-tab-cloud .cloud-sync-overview-card,
+.settings-tab-cloud .danger-zone {
+  scroll-margin-top: 14px;
 }
