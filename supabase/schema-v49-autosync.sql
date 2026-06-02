@@ -1,0 +1,4 @@
+-- Domácnost+ v.0.1_64 / schema v49
+-- Frontendový cloud-first/autosync build.
+-- Databázové tabulky a Realtime publikace byly vytvořené v schema v47/v48.
+-- V tomhle buildu není potřeba další DDL migrace.

@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_57';
+  const APP_VERSION = 'Domácnost+ v.0.1_66';
   const STORAGE_KEY = 'domacnostPlus.v0.1_46';
   const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_45';
   const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
@@ -114,22 +114,38 @@
   const MORE_MODULE = { id: 'more', label: 'Více', icon: '•••' };
   const FILE_DB_NAME = 'homeWebOfflineFiles.v1';
   const FILE_STORE_CONTRACTS = 'contractFiles';
+  const CONTRACT_FILE_MAX_BYTES = 15 * 1024 * 1024;
+  const CONTRACT_FILE_ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
   const SUPABASE_URL = 'https://cgshssdjgzzuprlwnabl.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_v7jeuZC-MNUEO5nfE5xcUQ_Pu9pT-X_';
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-57.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-66.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
     .map((module) => module.id);
 
+  const DASHBOARD_WIDGETS = [
+    { id: 'weather', label: 'Počasí', icon: '🌤️', note: 'Aktuální počasí a krátký výhled pro místo domácnosti.' },
+    { id: 'focus', label: 'Hlavní karty', icon: '⭐', note: 'Kalendář, HDO, balíky, nákup a finance v rychlých kartách.' },
+    { id: 'timeline', label: 'Dnes a brzy', icon: '🕒', note: 'Časová osa nejbližších událostí, úkolů, svozů a upozornění.' },
+    { id: 'now', label: 'Teď doma', icon: '🏠', note: 'Rychlý stav domácnosti, HDO a nákupy.' },
+    { id: 'cloud', label: 'Cloud stav', icon: '☁️', note: 'Přehled, co je v cloudu a co čeká na synchronizaci.' },
+    { id: 'setup', label: 'První nastavení', icon: '🧭', note: 'Průvodce dokončením základního nastavení domácnosti.' },
+    { id: 'readiness', label: 'Technická připravenost', icon: '🛠️', note: 'Kontrolní karta cloud/PWA připravenosti.' },
+    { id: 'modules', label: 'Rychlé moduly', icon: '🧩', note: 'Karty zapnutých modulů.' }
+  ];
+  const DEFAULT_DASHBOARD_WIDGET_IDS = ['weather', 'focus', 'timeline', 'now', 'cloud', 'setup', 'modules'];
+  const WEATHER_DEFAULT_LOCATION = { name: 'Hostinné', country: 'CZ', latitude: 50.5407, longitude: 15.7233 };
+  const WEATHER_CACHE_MS = 30 * 60 * 1000;
+
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 46,
-      appBuild: 57,
-      mode: 'settings-empty-state-v57',
+      schemaVersion: 51,
+      appBuild: 66,
+      mode: 'modular-dashboard-weather-v66',
       createdAt: '',
       updatedAt: ''
     },
@@ -137,7 +153,8 @@
       theme: 'light',
       dashboardNote: 'Domácí přehled je připravený na cloud. Každý si nastaví vlastní domácnost, profily a zapnuté moduly.',
       cloudEnabled: false,
-      bottomNavIds: [...DEFAULT_BOTTOM_NAV_IDS]
+      bottomNavIds: [...DEFAULT_BOTTOM_NAV_IDS],
+      dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGET_IDS]
     },
     household: {
       id: '',
@@ -175,6 +192,16 @@
     finance: [],
     financeAccounts: [],
     financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: '' },
+    householdExtrasCloud: { loadedAt: '' },
+    weather: {
+      location: { ...WEATHER_DEFAULT_LOCATION },
+      current: null,
+      daily: [],
+      updatedAt: '',
+      error: '',
+      loading: false,
+      source: 'open-meteo'
+    },
     cloud: {
       supabaseUrl: SUPABASE_URL,
       provider: 'supabase',
@@ -182,11 +209,179 @@
       email: '',
       householdId: '',
       lastSyncAt: '',
+      profilesLoadedAt: '',
+      lastRealtimeAt: '',
+      lastAutosyncAt: '',
+      localPendingCount: 0,
+      autoSyncEnabled: true,
+      autosyncStatus: 'idle',
+      realtimeStatus: 'offline',
       status: 'offline',
       households: [],
       invitations: []
     },
     householdWorkspaces: {}
+  };
+
+
+  const CLOUD_EXTRA_COLLECTIONS = {
+    coupons: {
+      table: 'household_coupons',
+      select: 'id,store,code,discount,expiry,note,used,created_at',
+      order: { column: 'expiry', ascending: true },
+      payload: (item, userId) => ({
+        household_id: state.cloud.householdId,
+        profile_id: null,
+        store: item.store || 'Obchod',
+        code: item.code || null,
+        discount: item.discount || null,
+        expiry: item.expiry || null,
+        note: item.note || null,
+        used: Boolean(item.used),
+        created_by: item.cloudId ? undefined : userId,
+        updated_by: userId
+      }),
+      map: (item) => ({
+        id: state.coupons.find((entry) => entry.cloudId === item.id)?.id || `coupon-cloud-${item.id}`,
+        cloudId: item.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        store: item.store || 'Obchod',
+        code: item.code || '',
+        discount: item.discount || '',
+        expiry: item.expiry || '',
+        note: item.note || '',
+        used: Boolean(item.used)
+      })
+    },
+    notes: {
+      table: 'household_notes',
+      select: 'id,text,status,created_at',
+      order: { column: 'created_at', ascending: false },
+      payload: (item, userId) => ({
+        household_id: state.cloud.householdId,
+        profile_id: null,
+        text: item.text || 'Poznámka',
+        status: item.status || 'active',
+        created_by: item.cloudId ? undefined : userId,
+        updated_by: userId
+      }),
+      map: (item) => ({
+        id: state.notes.find((entry) => entry.cloudId === item.id)?.id || `note-cloud-${item.id}`,
+        cloudId: item.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        text: item.text || 'Poznámka',
+        status: item.status || 'active'
+      })
+    },
+    devices: {
+      table: 'household_devices',
+      select: 'id,name,type,address,note,status,created_at',
+      order: { column: 'created_at', ascending: false },
+      payload: (item, userId) => ({
+        household_id: state.cloud.householdId,
+        profile_id: null,
+        name: item.name || 'Zařízení',
+        type: item.type || null,
+        address: item.address || null,
+        note: item.note || null,
+        status: item.status || 'active',
+        created_by: item.cloudId ? undefined : userId,
+        updated_by: userId
+      }),
+      map: (item) => ({
+        id: state.devices.find((entry) => entry.cloudId === item.id)?.id || `device-cloud-${item.id}`,
+        cloudId: item.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        name: item.name || 'Zařízení',
+        type: item.type || '',
+        address: item.address || '',
+        note: item.note || '',
+        status: item.status || 'active'
+      })
+    },
+    cameras: {
+      table: 'camera_feeds',
+      select: 'id,name,location,snapshot_url,status,note,created_at',
+      order: { column: 'created_at', ascending: false },
+      payload: (item, userId) => ({
+        household_id: state.cloud.householdId,
+        profile_id: null,
+        name: item.name || 'Kamera',
+        location: item.location || null,
+        snapshot_url: item.snapshotUrl || null,
+        status: item.status || 'offline',
+        note: item.note || null,
+        created_by: item.cloudId ? undefined : userId,
+        updated_by: userId
+      }),
+      map: (item) => ({
+        id: state.cameras.find((entry) => entry.cloudId === item.id)?.id || `camera-cloud-${item.id}`,
+        cloudId: item.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        name: item.name || 'Kamera',
+        location: item.location || '',
+        snapshotUrl: item.snapshot_url || '',
+        status: item.status || 'offline',
+        note: item.note || ''
+      })
+    }
+  };
+
+
+  const REALTIME_CLOUD_TABLES = [
+    'shopping_lists',
+    'shopping_list_items',
+    'profiles',
+    'household_members',
+    'contracts',
+    'contract_files',
+    'vehicles',
+    'fuel_logs',
+    'service_logs',
+    'hdo_settings',
+    'hdo_windows',
+    'waste_types',
+    'waste_schedules',
+    'household_tasks',
+    'task_events',
+    'parcels',
+    'calendar_events',
+    'finance_accounts',
+    'finance_transactions',
+    'household_notes',
+    'household_devices',
+    'camera_feeds',
+    'household_coupons'
+  ];
+
+  const REALTIME_STATUS_LABELS = {
+    offline: 'vypnuto',
+    connecting: 'připojuji',
+    online: 'živě',
+    subscribed: 'živě',
+    timed_out: 'timeout',
+    channel_error: 'chyba',
+    closed: 'zavřeno',
+    refreshing: 'obnovuji',
+    unsupported: 'nedostupné'
+  };
+
+  const AUTOSYNC_STATUS_LABELS = {
+    idle: 'čeká',
+    pending: 'čeká na sync',
+    syncing: 'synchronizuje',
+    done: 'hotovo',
+    blocked: 'ručně dořešit',
+    error: 'chyba',
+    disabled: 'vypnuto'
   };
 
   let state = loadState();
@@ -206,6 +401,15 @@
   let pendingServiceWorker = null;
   let pwaUpdateAvailable = false;
   let onboardingMode = sessionStorage.getItem('domacnostPlus.onboardingMode') || 'choice';
+  let cloudWarmStartDone = false;
+  let cloudRealtimeChannel = null;
+  let cloudRealtimeHouseholdId = '';
+  let cloudRealtimeReloadTimer = null;
+  let cloudRealtimeReloading = false;
+  let cloudAutosyncTimer = null;
+  let cloudAutosyncRunning = false;
+  let cloudAutosyncLastAttempt = 0;
+  let suppressToastDepth = 0;
 
   const app = document.getElementById('app');
   document.documentElement.dataset.theme = state.settings.theme || 'light';
@@ -288,6 +492,12 @@
 
   function todayISO() {
     return new Date().toISOString().slice(0, 10);
+  }
+
+  function dateOffsetISO(days) {
+    const date = new Date();
+    date.setDate(date.getDate() + Number(days || 0));
+    return date.toISOString().slice(0, 10);
   }
 
   function safeParse(json, fallback) {
@@ -384,17 +594,19 @@
     const timestamp = new Date().toISOString();
 
     migrated.meta = {
-      schemaVersion: 46,
-      appBuild: 57,
-      mode: 'settings-empty-state-v57',
+      schemaVersion: 51,
+      appBuild: 66,
+      mode: 'modular-dashboard-weather-v66',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
 
     migrated.settings = {
+      ...(migrated.settings || {}),
       theme: migrated.settings?.theme === 'dark' ? 'dark' : 'light',
       dashboardNote: migrated.settings?.dashboardNote || DEFAULT_STATE.settings.dashboardNote,
-      bottomNavIds: Array.isArray(migrated.settings?.bottomNavIds) ? migrated.settings.bottomNavIds : [...DEFAULT_BOTTOM_NAV_IDS]
+      bottomNavIds: Array.isArray(migrated.settings?.bottomNavIds) ? migrated.settings.bottomNavIds : [...DEFAULT_BOTTOM_NAV_IDS],
+      dashboardWidgets: normalizeDashboardWidgetIds(migrated.settings?.dashboardWidgets)
     };
 
     migrated.household = {
@@ -432,6 +644,12 @@
     migrated.householdWorkspaces = migrated.householdWorkspaces && typeof migrated.householdWorkspaces === 'object' && !Array.isArray(migrated.householdWorkspaces) ? migrated.householdWorkspaces : {};
     migrated.cloud.households = Array.isArray(migrated.cloud?.households) ? migrated.cloud.households : [];
     migrated.cloud.invitations = Array.isArray(migrated.cloud?.invitations) ? migrated.cloud.invitations : [];
+    migrated.cloud.autoSyncEnabled = migrated.cloud?.autoSyncEnabled !== false;
+    migrated.cloud.autosyncStatus = migrated.cloud?.autosyncStatus || 'idle';
+    migrated.cloud.lastAutosyncAt = migrated.cloud?.lastAutosyncAt || '';
+    migrated.cloud.profilesLoadedAt = migrated.cloud?.profilesLoadedAt || '';
+    migrated.cloud.localPendingCount = Number(migrated.cloud?.localPendingCount || 0);
+    migrated.weather = normalizeWeatherState(migrated.weather);
 
     migrated.enabledModules = normalizeModuleList(migrated.enabledModules);
     migrated.settings.bottomNavIds = normalizeBottomNavIds(migrated.settings.bottomNavIds, migrated.enabledModules);
@@ -508,6 +726,45 @@
     return result.slice(0, BOTTOM_NAV_MAX);
   }
 
+  function normalizeDashboardWidgetIds(value) {
+    const allowed = new Set(DASHBOARD_WIDGETS.map((item) => item.id));
+    const requested = Array.isArray(value) ? value : DEFAULT_DASHBOARD_WIDGET_IDS;
+    const result = [];
+    requested.forEach((id) => {
+      if (allowed.has(id) && !result.includes(id)) result.push(id);
+    });
+    return result.length ? result : [...DEFAULT_DASHBOARD_WIDGET_IDS];
+  }
+
+  function dashboardWidgetById(id) {
+    return DASHBOARD_WIDGETS.find((item) => item.id === id) || DASHBOARD_WIDGETS[0];
+  }
+
+  function normalizeWeatherLocation(location) {
+    const source = location && typeof location === 'object' ? location : WEATHER_DEFAULT_LOCATION;
+    const latitude = Number(source.latitude ?? source.lat ?? WEATHER_DEFAULT_LOCATION.latitude);
+    const longitude = Number(source.longitude ?? source.lon ?? WEATHER_DEFAULT_LOCATION.longitude);
+    return {
+      name: normalizeText(source.name || source.city || WEATHER_DEFAULT_LOCATION.name),
+      country: normalizeText(source.country || WEATHER_DEFAULT_LOCATION.country),
+      latitude: Number.isFinite(latitude) ? latitude : WEATHER_DEFAULT_LOCATION.latitude,
+      longitude: Number.isFinite(longitude) ? longitude : WEATHER_DEFAULT_LOCATION.longitude
+    };
+  }
+
+  function normalizeWeatherState(value) {
+    const base = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    return {
+      location: normalizeWeatherLocation(base.location),
+      current: base.current && typeof base.current === 'object' ? base.current : null,
+      daily: Array.isArray(base.daily) ? base.daily : [],
+      updatedAt: base.updatedAt || '',
+      error: base.error || '',
+      loading: false,
+      source: base.source || 'open-meteo'
+    };
+  }
+
   function currentHouseholdId(createFallback = true) {
     if (state?.household?.id) return state.household.id;
     return createFallback ? `household-${uid()}` : '';
@@ -556,12 +813,18 @@
     return moduleId === 'home' || moduleId === 'settings' || normalizeModuleList(state.enabledModules).includes(moduleId);
   }
 
+  function persistStateSnapshot() {
+    if (isDemoOnlyState()) return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
   function saveState() {
     // Demo je jen dočasný sandbox. Nikdy ho neukládáme do localStorage,
     // aby se všem při každém spuštění ukázala stejná plná demo domácnost.
     if (isDemoOnlyState()) return;
     if (state?.meta) state.meta.updatedAt = new Date().toISOString();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    persistStateSnapshot();
+    scheduleCloudAutosync('save');
   }
 
   function escapeHtml(value) {
@@ -691,7 +954,7 @@
           ${renderDemoReadOnlyBanner()}${renderModule(active.id)}
         </main>
 
-        <p class="footer-note">${escapeHtml(APP_VERSION)} · cloud nákupy, smlouvy, garáž, HDO, odpad, balíky, úkoly, kalendář a finance · lokální režim zůstává jako záloha</p>
+        <p class="footer-note">${escapeHtml(APP_VERSION)} · cloud nákupy, smlouvy, garáž, HDO, odpad, balíky, úkoly, kalendář, finance, poznámky, zařízení, kamery a kódy · lokál je jen cache/fallback</p>
       </div>
 
       <nav class="nav-shell" aria-label="Hlavní navigace">
@@ -982,7 +1245,7 @@
           { label: 'Aktivní', value: enabledRows.length, tone: enabledRows.length ? 'good' : '' },
           { label: 'Další změna', value: hdo.active ? 'běží' : nextHdo ? humanDuration(nextHdo.diffMinutes) : '—' }
         ])}
-        ${rows.length ? `<div class="list compact-list">${rows.map((item) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.label || 'HDO okno')}</div><span class="badge ${item.enabled ? 'good' : ''}">${item.enabled ? 'aktivní' : 'vypnuto'}</span></div><div class="item-meta">${escapeHtml(item.start)}–${escapeHtml(item.end)} · ${escapeHtml(daysLabel(item.days))}${item.cloudId ? ' · cloud' : ' · lokálně'}</div></div>`).join('')}</div>` : renderEmpty('HDO zatím nemá žádné uložené okno.')}
+        ${rows.length ? `<div class="list compact-list">${rows.map((item) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.label || 'HDO okno')}</div><span class="badge ${item.enabled ? 'good' : ''}">${item.enabled ? 'aktivní' : 'vypnuto'}</span></div><div class="item-meta">${escapeHtml(item.start)}–${escapeHtml(item.end)} · ${escapeHtml(daysLabel(item.days))}${item.cloudId ? ' · cloud' : ' · lokálně'}</div></div>`).join('')}</div>` : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard ukáže aktuální stav i další přepnutí.', nav: 'homecare', tab: 'hdo', label: 'Nastavit HDO' })}
       `;
     } else if (type === 'calendar') {
       const upcomingAll = [...state.calendar].filter((event) => !event.date || event.date >= todayISO()).sort((a,b)=>`${a.date||''}${a.time||''}`.localeCompare(`${b.date||''}${b.time||''}`));
@@ -1007,32 +1270,32 @@
       const overdueCount = sortedContracts.filter((contract) => contract.days !== null && contract.days < 0).length;
       const soonCount = sortedContracts.filter((contract) => contract.days !== null && contract.days >= 0 && contract.days <= 30).length;
       const rows = sortedContracts.slice(0,8);
-      body = `${renderOverviewSummary([{ label: 'Celkem', value: state.contracts.length }, { label: 'Do 30 dnů', value: soonCount, tone: soonCount ? 'warn' : '' }, { label: 'Po termínu', value: overdueCount, tone: overdueCount ? 'bad' : '' }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map(renderContractOverviewItem).join('')}</div>` : renderEmpty('Žádné smlouvy k zobrazení.')}`;
+      body = `${renderOverviewSummary([{ label: 'Celkem', value: state.contracts.length }, { label: 'Do 30 dnů', value: soonCount, tone: soonCount ? 'warn' : '' }, { label: 'Po termínu', value: overdueCount, tone: overdueCount ? 'bad' : '' }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map(renderContractOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '📄', title: 'Žádné smlouvy', text: 'Přidej první pojistku, tarif nebo smlouvu a aplikace začne hlídat platnost.', nav: 'contracts', tab: 'add', label: 'Přidat smlouvu' })}`;
     } else if (type === 'garage') {
       const allAlerts = getVehicleAlerts();
       const alerts = allAlerts.slice(0,8);
-      body = `${renderOverviewSummary([{ label: 'Auta', value: state.vehicles.length }, { label: 'Upozornění', value: allAlerts.length, tone: allAlerts.length ? 'warn' : 'good' }, { label: 'Záznamy', value: state.fuel.length + state.services.length }])}${alerts.length ? `<div class="list compact-list overview-list">${alerts.map(renderVehicleAlertOverviewItem).join('')}</div>` : `<div class="list compact-list overview-list">${state.vehicles.slice(0,6).map(renderGarageOverviewItem).join('') || renderEmpty('Garáž zatím nemá žádné auto.')}</div>`}`;
+      body = `${renderOverviewSummary([{ label: 'Auta', value: state.vehicles.length }, { label: 'Upozornění', value: allAlerts.length, tone: allAlerts.length ? 'warn' : 'good' }, { label: 'Záznamy', value: state.fuel.length + state.services.length }])}${alerts.length ? `<div class="list compact-list overview-list">${alerts.map(renderVehicleAlertOverviewItem).join('')}</div>` : `<div class="list compact-list overview-list">${state.vehicles.slice(0,6).map(renderGarageOverviewItem).join('') || renderEmptyCta({ icon: '🚗', title: 'Garáž je prázdná', text: 'Přidej první auto a dashboard začne hlídat STK, pojistku a servis.', nav: 'garage', tab: 'add', label: 'Přidat auto' })}</div>`}`;
     } else if (type === 'finance') {
       const summary = financeMonthSummary();
       const month = financeSelectedMonth();
       const rows = state.finance.filter((item) => String(item.date || '').slice(0, 7) === month).sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 8);
-      body = `${renderOverviewSummary([{ label: 'Příjmy', value: formatCurrency(summary.income), tone: 'good' }, { label: 'Výdaje', value: formatCurrency(summary.expense), tone: 'warn' }, { label: 'Rozdíl', value: formatCurrency(summary.balance), tone: summary.balance >= 0 ? 'good' : 'bad' }])}<div class="list compact-list overview-list">${rows.map(renderFinanceOverviewItem).join('') || renderEmpty('Zatím žádné finance.')}</div>`;
+      body = `${renderOverviewSummary([{ label: 'Příjmy', value: formatCurrency(summary.income), tone: 'good' }, { label: 'Výdaje', value: formatCurrency(summary.expense), tone: 'warn' }, { label: 'Rozdíl', value: formatCurrency(summary.balance), tone: summary.balance >= 0 ? 'good' : 'bad' }])}<div class="list compact-list overview-list">${rows.map(renderFinanceOverviewItem).join('') || renderEmptyCta({ icon: '💰', title: 'Finance jsou prázdné', text: 'Založ účet nebo přidej první pohyb. Přehled se začne počítat automaticky.', nav: 'finance', tab: 'accounts', label: 'Založit finance' })}</div>`;
     } else if (type === 'tasks') {
       const openTasks = state.homeTasks.filter((task) => !task.done);
       const urgentTasks = openTasks.filter((task) => task.due && daysUntil(task.due) !== null && daysUntil(task.due) <= 2).length;
       const doneCount = state.homeTasks.filter((task) => task.done).length;
       const tasks = openTasks.slice(0,8);
-      body = `${renderOverviewSummary([{ label: 'Otevřené', value: openTasks.length }, { label: 'Brzy', value: urgentTasks, tone: urgentTasks ? 'warn' : '' }, { label: 'Hotovo', value: doneCount, tone: doneCount ? 'good' : '' }])}${tasks.length ? `<div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : renderEmpty('Žádné otevřené úkoly.')}`;
+      body = `${renderOverviewSummary([{ label: 'Otevřené', value: openTasks.length }, { label: 'Brzy', value: urgentTasks, tone: urgentTasks ? 'warn' : '' }, { label: 'Hotovo', value: doneCount, tone: doneCount ? 'good' : '' }])}${tasks.length ? `<div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '✅', title: 'Žádné otevřené úkoly', text: 'Přidej domácí úkol, údržbu nebo připomínku.', nav: 'homecare', tab: 'tasks', label: 'Přidat úkol' })}`;
     } else if (type === 'waste') {
       const upcomingWaste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days === null || item.days >= 0).sort((a,b)=>(a.days ?? 9999)-(b.days ?? 9999));
       const nextWaste = upcomingWaste.find((item) => item.days !== null);
       const typeCount = new Set(state.waste.map((item) => item.type || 'jiný')).size;
       const waste = upcomingWaste.slice(0,8);
-      body = `${renderOverviewSummary([{ label: 'Nejbližší', value: nextWaste ? dueBadge(nextWaste.days) : '—', tone: nextWaste?.days <= 1 ? 'warn' : '' }, { label: 'Typy', value: typeCount }, { label: 'Plánů', value: state.waste.length }])}${waste.length ? `<div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmpty('Žádný nejbližší svoz.')}`;
+      body = `${renderOverviewSummary([{ label: 'Nejbližší', value: nextWaste ? dueBadge(nextWaste.days) : '—', tone: nextWaste?.days <= 1 ? 'warn' : '' }, { label: 'Typy', value: typeCount }, { label: 'Plánů', value: state.waste.length }])}${waste.length ? `<div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej typ odpadu a termín. Dashboard pak ukáže nejbližší svoz.', nav: 'homecare', tab: 'waste', label: 'Přidat svoz' })}`;
     } else {
       const tasks = state.homeTasks.filter((task) => !task.done).slice(0,5);
       const waste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days !== null && item.days >= 0).sort((a,b)=>a.days-b.days).slice(0,4);
-      body = `${tasks.length ? `<h3 class="overview-mini-title">Úkoly</h3><div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : ''}${waste.length ? `<h3 class="overview-mini-title">Odpad</h3><div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmpty('Nic akutního tu není.')}`;
+      body = `${tasks.length ? `<h3 class="overview-mini-title">Úkoly</h3><div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : ''}${waste.length ? `<h3 class="overview-mini-title">Odpad</h3><div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '✨', title: 'Nic akutního tu není', text: 'Přidej úkol nebo svoz odpadu, ať má domácí přehled co hlídat.', nav: 'homecare', tab: 'tasks', label: 'Přidat úkol' })}`;
     }
 
     return `
@@ -1233,14 +1496,14 @@
 
   function getModuleSubtitle(moduleId) {
     const subtitles = {
-      home: 'Rychlý domácí přehled pro tablet i mobil. Zatím bez cloudu, všechno běží jen offline.',
+      home: 'Rychlý domácí přehled pro tablet i mobil. Online domácnost je hlavní zdroj, lokál jen cache/fallback.',
       calendar: 'Ruční kalendář už umí cloud. Google napojení přijde později přes bezpečný backend.',
       packages: 'Základ pro sledování balíků. Teď ručně, později automatika přes backend.',
       shopping: 'Sdílený nákupní seznam s katalogem položek, jednotkami a cloudovým oddělením domácností.',
       homecare: 'HDO, odpad, poznámky, úkoly a domácí zařízení na jednom místě.',
       garage: 'Auta v domácnosti, tankování, servis a základní přehled spotřeby.',
       contracts: 'Evidence smluv a pojistek s hlídáním platnosti.',
-      cameras: 'Přehled kamer. Prozatím jen lokální karty a snapshot URL, žádné cloud streamy.',
+      cameras: 'Přehled kamer. Metadata karet se sdílí cloudově, streamy později bezpečně přes lokální síť/VPN.',
       finance: 'Jednoduchý přehled příjmů a výdajů domácnosti s cloudovým oddělením podle householdId.',
       settings: 'Domácnost, profily, zapnuté moduly, export/import a reset offline prototypu.',
       more: 'Všechny další moduly a nastavení na jednom místě. Spodní lišta zůstává čistá a krátká.'
@@ -1312,13 +1575,16 @@
       wasteSoon,
       vehicleAlerts
     });
+    ensureWeatherFresh(false);
+    const dashboardContext = { hdo, todayEvents, upcomingEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, focusItems };
+    const widgetIds = normalizeDashboardWidgetIds(state.settings?.dashboardWidgets);
 
     return `
       <div class="dashboard-v10">
         <section class="card hero-card station-hero">
           <div class="station-hero-main">
             <div>
-              <span class="badge good">tabletový režim v1.0</span>
+              <span class="badge good">modulární dashboard</span>
               <div class="hero-time">${clockText(now)}</div>
               <div class="hero-date">${escapeHtml(formatDateTime(now))}</div>
             </div>
@@ -1330,61 +1596,300 @@
             </div>
           </div>
           <div class="station-hero-bottom">
-            <div class="inline-note hero-note">Domácnost: <strong>${escapeHtml(householdName())}</strong> · profil: <strong>${escapeHtml(currentProfile()?.name || '—')}</strong> · zapnuté moduly: <strong>${visibleModules.length - 2}</strong></div>
-            <button class="ghost-btn" type="button" data-nav="settings">Upravit</button>
+            <div class="inline-note hero-note">Domácnost: <strong>${escapeHtml(householdName())}</strong> · profil: <strong>${escapeHtml(currentProfile()?.name || '—')}</strong> · hlavní obrazovka: <strong>${widgetIds.length} karet</strong></div>
+            <button class="ghost-btn" type="button" data-nav="settings" data-target-tab="dashboard">Upravit hlavní obrazovku</button>
           </div>
         </section>
 
-        ${renderCloudSyncOverview('dashboard')}
+        ${renderDashboardWidgetDock(widgetIds)}
 
-        ${renderStarterStateCard()}
-
-        <section class="tablet-focus-grid">
-          ${focusItems.map(renderDashboardFocusItem).join('')}
-        </section>
-
-        <section class="card tablet-agenda-card">
-          <div class="card-header">
-            <div><h2>Dnes a brzy</h2><p>Rychlý přehled věcí, které by na domácím tabletu měly být vidět hned.</p></div>
-            <span class="badge">${focusItems.length} položek</span>
-          </div>
-          <div class="timeline-list">
-            ${renderDashboardTimeline(todayEvents, upcomingEvents, urgentContracts, openTasks, wasteSoon, vehicleAlerts)}
-          </div>
-        </section>
-
-        <section class="card tablet-now-card">
-          <div class="card-header">
-            <div><h2>Teď doma</h2><p>${escapeHtml(state.settings.dashboardNote || '')}</p></div>
-            <span class="badge ${hdo.active ? 'good' : 'warn'}">HDO ${hdo.active ? 'běží' : 'neběží'}</span>
-          </div>
-          <div class="list">
-            <button class="item module-hub-item" type="button" data-action="open-overview" data-overview="hdo">
-              <div class="item-top"><div class="item-title">Nízký tarif</div><span class="badge ${hdo.active ? 'good' : 'warn'}">${escapeHtml(hdo.label)}</span></div>
-              <div class="item-meta">${escapeHtml(hdo.message)}</div>
-            </button>
-            <button class="item module-hub-item" type="button" data-action="open-overview" data-overview="shopping">
-              <div class="item-top"><div class="item-title">Nákupy</div><span class="badge ${openShopping.length ? 'warn' : 'good'}">${openShopping.length} koupit</span></div>
-              <div class="item-meta">${openShopping.slice(0, 3).map((item) => item.name).filter(Boolean).join(' · ') || 'Nákupní seznam je prázdný.'}</div>
-            </button>
-          </div>
-        </section>
-
-        ${renderSetupChecklist()}
-
-        ${renderCloudReadiness(true)}
-
-        <section class="card desktop-span-2 tablet-modules-card">
-          <div class="card-header">
-            <div><h2>Rychlé moduly</h2><p>Všechny hlavní části jsou připravené jako offline kostra. Na tabletu jsou karty větší, na mobilu zůstanou pod sebou.</p></div>
-            <button class="ghost-btn" type="button" data-nav="more">Více</button>
-          </div>
-          <div class="grid four">
-            ${visibleModules.filter((module) => module.id !== 'home' && module.id !== 'settings').map(renderModuleStatusCard).join('')}
-          </div>
-        </section>
+        ${widgetIds.map((id) => renderDashboardWidget(id, dashboardContext)).join('')}
       </div>
     `;
+  }
+
+  function renderDashboardWidget(id, ctx) {
+    switch (id) {
+      case 'weather':
+        return renderDashboardWeatherCard();
+      case 'cloud':
+        return renderCloudSyncOverview('dashboard');
+      case 'setup':
+        return `${renderStarterStateCard()}${renderSetupChecklist()}`;
+      case 'focus':
+        return `<section class="tablet-focus-grid dashboard-widget-block" data-dashboard-widget="focus">${ctx.focusItems.map(renderDashboardFocusItem).join('')}</section>`;
+      case 'timeline':
+        return `
+          <section class="card tablet-agenda-card dashboard-widget-block" data-dashboard-widget="timeline">
+            <div class="card-header">
+              <div><h2>Dnes a brzy</h2><p>Rychlý přehled věcí, které by na domácím tabletu měly být vidět hned.</p></div>
+              <span class="badge">${ctx.focusItems.length} položek</span>
+            </div>
+            <div class="timeline-list">
+              ${renderDashboardTimeline(ctx.todayEvents, ctx.upcomingEvents, ctx.urgentContracts, ctx.openTasks, ctx.wasteSoon, ctx.vehicleAlerts)}
+            </div>
+          </section>
+        `;
+      case 'now':
+        return `
+          <section class="card tablet-now-card dashboard-widget-block" data-dashboard-widget="now">
+            <div class="card-header">
+              <div><h2>Teď doma</h2><p>${escapeHtml(state.settings.dashboardNote || '')}</p></div>
+              <span class="badge ${ctx.hdo.active ? 'good' : 'warn'}">HDO ${ctx.hdo.active ? 'běží' : 'neběží'}</span>
+            </div>
+            <div class="list">
+              <button class="item module-hub-item" type="button" data-action="open-overview" data-overview="hdo">
+                <div class="item-top"><div class="item-title">Nízký tarif</div><span class="badge ${ctx.hdo.active ? 'good' : 'warn'}">${escapeHtml(ctx.hdo.label)}</span></div>
+                <div class="item-meta">${escapeHtml(ctx.hdo.message)}</div>
+              </button>
+              <button class="item module-hub-item" type="button" data-action="open-overview" data-overview="shopping">
+                <div class="item-top"><div class="item-title">Nákupy</div><span class="badge ${ctx.openShopping.length ? 'warn' : 'good'}">${ctx.openShopping.length} koupit</span></div>
+                <div class="item-meta">${ctx.openShopping.slice(0, 3).map((item) => item.name).filter(Boolean).join(' · ') || 'Nákupní seznam je prázdný.'}</div>
+              </button>
+            </div>
+          </section>
+        `;
+      case 'readiness':
+        return renderCloudReadiness(true);
+      case 'modules':
+        return `
+          <section class="card desktop-span-2 tablet-modules-card dashboard-widget-block" data-dashboard-widget="modules">
+            <div class="card-header">
+              <div><h2>Rychlé moduly</h2><p>Zapnuté části domácnosti. Viditelnost karet hlavní obrazovky se nastavuje samostatně.</p></div>
+              <button class="ghost-btn" type="button" data-nav="more">Více</button>
+            </div>
+            <div class="grid four">
+              ${ctx.visibleModules.filter((module) => module.id !== 'home' && module.id !== 'settings').map(renderModuleStatusCard).join('')}
+            </div>
+          </section>
+        `;
+      default:
+        return '';
+    }
+  }
+
+  function renderDashboardWidgetDock(widgetIds) {
+    const selected = new Set(widgetIds);
+    const hiddenCount = DASHBOARD_WIDGETS.filter((widget) => !selected.has(widget.id)).length;
+    return `
+      <section class="card dashboard-layout-card dashboard-widget-block" data-dashboard-widget="layout">
+        <div class="card-header compact-card-header">
+          <div><h2>Hlavní obrazovka</h2><p>Zapnuté karty se dají přidávat a odebírat. Pořadí zatím drží pevné, aby se nerozbilo mobilní zobrazení.</p></div>
+          <span class="badge ${hiddenCount ? 'warn' : 'good'}">${widgetIds.length}/${DASHBOARD_WIDGETS.length}</span>
+        </div>
+        <div class="dashboard-widget-chip-row">
+          ${DASHBOARD_WIDGETS.map((widget) => `
+            <button class="quick-chip dashboard-widget-chip ${selected.has(widget.id) ? 'active' : ''}" type="button" data-action="toggle-dashboard-widget" data-id="${escapeHtml(widget.id)}">
+              <span>${escapeHtml(widget.icon)}</span><strong>${escapeHtml(widget.label)}</strong>
+            </button>
+          `).join('')}
+        </div>
+        <div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-nav="settings" data-target-tab="dashboard">Podrobné nastavení</button><button class="ghost-btn" type="button" data-action="dashboard-reset-widgets">Výchozí karty</button></div>
+      </section>
+    `;
+  }
+
+  function weatherCodeLabel(code) {
+    const labels = {
+      0: ['Jasno', '☀️'],
+      1: ['Skoro jasno', '🌤️'],
+      2: ['Polojasno', '⛅'],
+      3: ['Zataženo', '☁️'],
+      45: ['Mlha', '🌫️'],
+      48: ['Namrzající mlha', '🌫️'],
+      51: ['Slabé mrholení', '🌦️'],
+      53: ['Mrholení', '🌦️'],
+      55: ['Silné mrholení', '🌧️'],
+      61: ['Slabý déšť', '🌧️'],
+      63: ['Déšť', '🌧️'],
+      65: ['Silný déšť', '🌧️'],
+      71: ['Slabé sněžení', '🌨️'],
+      73: ['Sněžení', '🌨️'],
+      75: ['Silné sněžení', '❄️'],
+      80: ['Přeháňky', '🌦️'],
+      81: ['Silné přeháňky', '🌧️'],
+      82: ['Prudké přeháňky', '⛈️'],
+      95: ['Bouřka', '⛈️'],
+      96: ['Bouřka s kroupami', '⛈️'],
+      99: ['Silná bouřka', '⛈️']
+    };
+    return labels[Number(code)] || ['Počasí', '🌤️'];
+  }
+
+  function roundWeather(value, suffix = '') {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '—';
+    return `${Math.round(number)}${suffix}`;
+  }
+
+  function weatherLocationLabel() {
+    const location = normalizeWeatherLocation(state.weather?.location);
+    return [location.name, location.country].filter(Boolean).join(', ');
+  }
+
+  function makeDemoWeatherState() {
+    return {
+      location: { name: 'Demo Hostinné', country: 'CZ', latitude: 50.5407, longitude: 15.7233 },
+      current: { temperature: 18, feelsLike: 17, humidity: 63, windSpeed: 10, precipitation: 0, weatherCode: 2, time: new Date().toISOString() },
+      daily: [
+        { date: todayISO(), weatherCode: 2, min: 12, max: 21, precipitation: 0 },
+        { date: dateOffsetISO(1), weatherCode: 61, min: 11, max: 18, precipitation: 3 },
+        { date: dateOffsetISO(2), weatherCode: 3, min: 10, max: 19, precipitation: 1 },
+        { date: dateOffsetISO(3), weatherCode: 0, min: 13, max: 23, precipitation: 0 }
+      ],
+      updatedAt: new Date().toISOString(),
+      error: '',
+      loading: false,
+      source: 'demo'
+    };
+  }
+
+  function renderDashboardWeatherCard() {
+    const weather = normalizeWeatherState(state.weather);
+    const current = weather.current || {};
+    const [condition, icon] = weatherCodeLabel(current.weatherCode);
+    const hasCurrent = Boolean(weather.current);
+    const updated = weather.updatedAt ? formatDateTime(new Date(weather.updatedAt)) : 'nenačteno';
+    const daily = (weather.daily || []).slice(0, 4);
+    return `
+      <section class="card weather-card dashboard-widget-block desktop-span-2" data-dashboard-widget="weather">
+        <div class="card-header compact-card-header">
+          <div><h2>Počasí</h2><p>${escapeHtml(weatherLocationLabel())} · ${weather.error ? escapeHtml(weather.error) : `Aktualizováno: ${escapeHtml(updated)}`}</p></div>
+          <span class="badge ${weather.error ? 'warn' : hasCurrent ? 'good' : ''}">${weather.loading ? 'načítám' : hasCurrent ? 'online' : 'není načtené'}</span>
+        </div>
+        <div class="weather-main-row">
+          <div class="weather-current">
+            <span class="weather-icon" aria-hidden="true">${escapeHtml(icon)}</span>
+            <div><strong>${hasCurrent ? roundWeather(current.temperature, '°') : '—'}</strong><em>${escapeHtml(condition)}</em></div>
+          </div>
+          <div class="weather-metrics">
+            <div class="mini-stat"><span>Pocitově</span><strong>${roundWeather(current.feelsLike, '°')}</strong></div>
+            <div class="mini-stat"><span>Vlhkost</span><strong>${roundWeather(current.humidity, '%')}</strong></div>
+            <div class="mini-stat"><span>Vítr</span><strong>${roundWeather(current.windSpeed, ' km/h')}</strong></div>
+            <div class="mini-stat"><span>Srážky</span><strong>${Number.isFinite(Number(current.precipitation)) ? `${String(current.precipitation).replace('.', ',')} mm` : '—'}</strong></div>
+          </div>
+        </div>
+        <div class="weather-daily-row">
+          ${daily.length ? daily.map((day) => {
+            const [label, dayIcon] = weatherCodeLabel(day.weatherCode);
+            return `<div class="weather-day"><span>${escapeHtml(shortWeekday(day.date))}</span><strong>${escapeHtml(dayIcon)} ${roundWeather(day.max, '°')}</strong><em>${roundWeather(day.min, '°')} · ${escapeHtml(label)}</em></div>`;
+          }).join('') : '<div class="empty">Předpověď zatím není načtená.</div>'}
+        </div>
+        <div class="form-actions compact-actions">
+          <button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit počasí</button>
+          <button class="ghost-btn" type="button" data-nav="settings" data-target-tab="dashboard">Nastavit místo</button>
+        </div>
+      </section>
+    `;
+  }
+
+  function shortWeekday(dateISO) {
+    if (!dateISO) return '—';
+    const date = new Date(`${dateISO}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return '—';
+    return new Intl.DateTimeFormat('cs-CZ', { weekday: 'short', day: 'numeric' }).format(date);
+  }
+
+  let weatherFetchPromise = null;
+  async function ensureWeatherFresh(force = false) {
+    if (isDemoOnlyState()) return;
+    state.weather = normalizeWeatherState(state.weather);
+    const updatedAt = Date.parse(state.weather.updatedAt || '');
+    if (!force && state.weather.current && updatedAt && Date.now() - updatedAt < WEATHER_CACHE_MS) return;
+    if (weatherFetchPromise) return weatherFetchPromise;
+    weatherFetchPromise = fetchWeatherForLocation(force)
+      .catch((error) => {
+        state.weather = { ...normalizeWeatherState(state.weather), loading: false, error: error?.message || 'Počasí se nepovedlo načíst' };
+        saveState();
+      })
+      .finally(() => { weatherFetchPromise = null; });
+    return weatherFetchPromise;
+  }
+
+  async function fetchWeatherForLocation(force = false) {
+    const location = normalizeWeatherLocation(state.weather?.location);
+    state.weather = { ...normalizeWeatherState(state.weather), location, loading: true, error: '' };
+    if (force) render();
+    const params = new URLSearchParams({
+      latitude: String(location.latitude),
+      longitude: String(location.longitude),
+      current: 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m',
+      daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum',
+      timezone: 'auto',
+      forecast_days: '4'
+    });
+    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Počasí HTTP ${response.status}`);
+    const data = await response.json();
+    const current = data.current || {};
+    const daily = data.daily || {};
+    state.weather = {
+      location,
+      current: {
+        temperature: current.temperature_2m,
+        feelsLike: current.apparent_temperature,
+        humidity: current.relative_humidity_2m,
+        windSpeed: current.wind_speed_10m,
+        precipitation: current.precipitation,
+        weatherCode: current.weather_code,
+        time: current.time || new Date().toISOString()
+      },
+      daily: (daily.time || []).map((date, index) => ({
+        date,
+        weatherCode: daily.weather_code?.[index],
+        min: daily.temperature_2m_min?.[index],
+        max: daily.temperature_2m_max?.[index],
+        precipitation: daily.precipitation_sum?.[index]
+      })),
+      updatedAt: new Date().toISOString(),
+      error: '',
+      loading: false,
+      source: 'open-meteo'
+    };
+    touchState();
+    saveState();
+    render();
+  }
+
+  async function findWeatherLocationByName(name) {
+    const clean = normalizeText(name);
+    if (!clean) throw new Error('Doplň název místa');
+    const params = new URLSearchParams({ name: clean, count: '1', language: 'cs', format: 'json' });
+    const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${params.toString()}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Vyhledání místa HTTP ${response.status}`);
+    const data = await response.json();
+    const item = data.results?.[0];
+    if (!item) throw new Error('Místo se nepovedlo najít');
+    return {
+      name: item.name || clean,
+      country: item.country_code || item.country || '',
+      latitude: item.latitude,
+      longitude: item.longitude
+    };
+  }
+
+  async function saveWeatherSettings(data, form) {
+    try {
+      let location;
+      const rawLatitude = String(data.latitude ?? '').trim();
+      const rawLongitude = String(data.longitude ?? '').trim();
+      const latitude = Number(rawLatitude.replace(',', '.'));
+      const longitude = Number(rawLongitude.replace(',', '.'));
+      if (rawLatitude && rawLongitude && Number.isFinite(latitude) && Number.isFinite(longitude)) {
+        location = { name: normalizeText(data.locationName) || WEATHER_DEFAULT_LOCATION.name, country: normalizeText(data.country) || '', latitude, longitude };
+      } else {
+        location = await findWeatherLocationByName(data.locationName || data.city || WEATHER_DEFAULT_LOCATION.name);
+      }
+      state.weather = { ...normalizeWeatherState(state.weather), location, current: null, daily: [], updatedAt: '', error: '' };
+      touchState();
+      saveState();
+      await cloudSaveHouseholdUiSettings(false);
+      await ensureWeatherFresh(true);
+      form?.reset?.();
+      showToast(`Počasí nastavené: ${location.name}`);
+    } catch (error) {
+      showToast(error?.message || 'Počasí se nepovedlo nastavit');
+    }
   }
 
   function getDashboardFocusItems({ hdo, todayEvents, upcomingEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts }) {
@@ -1465,6 +1970,7 @@
 
   function getCloudSyncOverviewItems() {
     const counters = [
+      { nav: 'settings', tab: 'household', icon: '👥', label: 'Profily', items: state.profiles || [], loadedAt: state.cloud?.profilesLoadedAt },
       { nav: 'shopping', tab: 'list', icon: '🛒', label: 'Nákupy', items: state.shopping || [], loadedAt: state.shoppingCloud?.loadedAt },
       { nav: 'contracts', tab: 'overview', icon: '📄', label: 'Smlouvy', items: state.contracts || [] },
       { nav: 'contracts', tab: 'detail', icon: '📎', label: 'Přílohy smluv', items: state.contractFiles || [] },
@@ -1474,7 +1980,11 @@
       { nav: 'homecare', tab: 'tasks', icon: '✅', label: 'Úkoly', items: state.homeTasks || [], loadedAt: state.tasksCloud?.loadedAt },
       { nav: 'packages', tab: 'active', icon: '📦', label: 'Balíky', items: state.packages || [], loadedAt: state.parcelsCloud?.loadedAt },
       { nav: 'calendar', tab: 'overview', icon: '📅', label: 'Kalendář', items: state.calendar || [], loadedAt: state.calendarCloud?.loadedAt },
-      { nav: 'finance', tab: 'summary', icon: '💰', label: 'Finance', items: state.finance || [], loadedAt: state.financeCloud?.loadedAt }
+      { nav: 'finance', tab: 'summary', icon: '💰', label: 'Finance', items: state.finance || [], loadedAt: state.financeCloud?.loadedAt },
+      { nav: 'homecare', tab: 'tasks', icon: '📝', label: 'Poznámky', items: state.notes || [], loadedAt: state.householdExtrasCloud?.loadedAt },
+      { nav: 'homecare', tab: 'devices', icon: '🔌', label: 'Zařízení', items: state.devices || [], loadedAt: state.householdExtrasCloud?.loadedAt },
+      { nav: 'cameras', tab: 'overview', icon: '📹', label: 'Kamery', items: state.cameras || [], loadedAt: state.householdExtrasCloud?.loadedAt },
+      { nav: 'shopping', tab: 'coupons', icon: '🏷️', label: 'Slevové kódy', items: state.coupons || [], loadedAt: state.householdExtrasCloud?.loadedAt }
     ];
     return counters.map((entry) => {
       const total = entry.items.length;
@@ -1492,13 +2002,16 @@
     const totalCloud = items.reduce((sum, item) => sum + item.cloud, 0);
     const total = totalLocal + totalCloud;
     const overall = total ? Math.round((totalCloud / total) * 100) : (cloudReady ? 100 : 0);
-    const compactItems = mode === 'dashboard' ? items.filter((item) => item.total || ['Nákupy', 'Smlouvy', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář', 'Finance'].includes(item.label)).slice(0, 9) : items;
+    const autosyncEnabled = state.cloud?.autoSyncEnabled !== false;
+    const autosyncStatus = cloudAutosyncStatusLabel();
+    const featuredCloudLabels = ['Profily', 'Nákupy', 'Smlouvy', 'Přílohy smluv', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář', 'Finance', 'Poznámky', 'Zařízení', 'Kamery', 'Slevové kódy'];
+    const compactItems = mode === 'dashboard' ? items.filter((item) => item.total || featuredCloudLabels.includes(item.label)).slice(0, 14) : items;
     return `
       <section class="card desktop-span-2 cloud-sync-overview-card">
         <div class="card-header">
           <div>
-            <h2>Cloud / lokální data</h2>
-            <p>${cloudReady ? 'Rychlá kontrola, co už je v Supabase a co zůstává jen v tomto zařízení.' : 'Aplikace je připravená na cloud, ale domácnost zatím není napojená.'}</p>
+            <h2>Cloud-first data</h2>
+            <p>${cloudReady ? 'Online domácnost je hlavní zdroj. Lokál je jen cache nebo dočasný fallback při výpadku.' : 'Aplikace je připravená na cloud, ale domácnost zatím není napojená.'}</p>
           </div>
           <span class="badge ${cloudReady ? 'good' : 'warn'}">${cloudReady ? `${overall}% cloud` : 'lokálně'}</span>
         </div>
@@ -1506,23 +2019,28 @@
           <div class="mini-stat"><span>Cloud záznamy</span><strong>${totalCloud}</strong></div>
           <div class="mini-stat"><span>Jen lokálně</span><strong>${totalLocal}</strong></div>
           <div class="mini-stat"><span>Poslední sync</span><strong>${state.cloud?.lastSyncAt ? escapeHtml(formatDateTime(state.cloud.lastSyncAt)) : 'nikdy'}</strong></div>
-          <div class="mini-stat"><span>Domácnost</span><strong>${escapeHtml(state.cloud?.householdId ? 'napojená' : 'offline')}</strong></div>
+          <div class="mini-stat"><span>Realtime</span><strong data-cloud-realtime-status>${cloudReady ? escapeHtml(realtimeStatusLabel()) : 'offline'}</strong></div>
+          <div class="mini-stat"><span>Autosync</span><strong>${cloudReady ? escapeHtml(autosyncStatus) : 'offline'}</strong></div>
+          <div class="mini-stat"><span>Poslední autosync</span><strong>${state.cloud?.lastAutosyncAt ? escapeHtml(formatDateTime(state.cloud.lastAutosyncAt)) : 'nikdy'}</strong></div>
         </div>
+        ${cloudReady ? `<div class="cloud-automation-strip ${totalLocal ? 'warn' : 'good'}"><span class="sync-status-dot"></span><strong>${totalLocal ? `${totalLocal} položek čeká na cloud` : 'Cloud-first je čistý'}</strong><em>${autosyncEnabled ? 'Automatické dohnání je zapnuté.' : 'Automatické dohnání je vypnuté.'}</em></div>` : ''}
         <div class="sync-overview-list">
           ${compactItems.map((item) => `
-            <button class="sync-overview-row" type="button" data-nav="${escapeHtml(item.nav)}" ${item.tab ? `data-target-tab="${escapeHtml(item.tab)}"` : ''}>
+            <button class="sync-overview-row ${item.local ? 'pending' : item.cloud ? 'cloud-ok' : 'empty'}" type="button" data-nav="${escapeHtml(item.nav)}" ${item.tab ? `data-target-tab="${escapeHtml(item.tab)}"` : ''}>
               <span class="sync-overview-icon">${escapeHtml(item.icon)}</span>
               <span class="sync-overview-main">
                 <span class="sync-overview-title">${escapeHtml(item.label)}</span>
                 <span class="sync-progress"><i style="width:${item.percent}%"></i></span>
               </span>
-              <span class="sync-overview-meta"><strong>${item.cloud}</strong> cloud · <strong>${item.local}</strong> lokál</span>
+              <span class="sync-overview-meta"><strong>${item.cloud}</strong> cloud · <strong>${item.local}</strong> lokál${item.loadedAt ? ` · ${formatDateTime(item.loadedAt)}` : ''}</span>
             </button>
           `).join('')}
         </div>
         <div class="form-actions">
-          ${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-all">Načíst vše z cloudu</button>' : '<button class="ghost-btn" type="button" data-nav="settings">Napojit cloud v Nastavení</button>'}
-          ${cloudReady && totalLocal ? '<span class="badge warn">lokální položky odešli v daném modulu</span>' : '<span class="badge good">bez lokálních restů</span>'}
+          ${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-all">Načíst vše z cloudu</button><button class="ghost-btn" type="button" data-action="cloud-start-realtime">Zapnout živé změny</button><button class="ghost-btn" type="button" data-action="cloud-run-autosync-now">Synchronizovat teď</button>' : '<button class="ghost-btn" type="button" data-nav="settings">Napojit cloud v Nastavení</button>'}
+          ${cloudReady ? `<button class="ghost-btn" type="button" data-action="cloud-toggle-autosync">${autosyncEnabled ? 'Vypnout autosync' : 'Zapnout autosync'}</button>` : ''}
+          ${cloudReady && totalLocal ? '<button class="primary-btn" type="button" data-action="cloud-sync-pending">Dohnat lokální → cloud</button>' : ''}
+          ${cloudReady && totalLocal ? '<span class="badge warn">něco je jen v tomto zařízení</span>' : '<span class="badge good">cloud-first OK</span>'}
         </div>
       </section>
     `;
@@ -1550,7 +2068,19 @@
       ...vehicleAlerts.slice(0, 3).map((item) => ({ nav: 'garage', icon: '🚗', title: item.title, meta: item.meta, badge: dueBadge(item.days), tone: item.days < 0 ? 'bad' : item.days <= 30 ? 'warn' : '' }))
     ].slice(0, 9);
 
-    if (!rows.length) return '<div class="empty">Zatím tu není nic důležitého. Jakmile přidáš kalendář, smlouvy, úkoly nebo auto, dashboard se začne plnit sám.</div>';
+    if (!rows.length) {
+      if (isDemoOnlyState()) return renderEmpty('Zatím tu není nic důležitého. Jakmile přidáš kalendář, smlouvy, úkoly nebo auto, dashboard se začne plnit sám.');
+      const progress = getStarterSetupProgress();
+      const nextStep = progress.nextStep || { nav: 'calendar', tab: 'add' };
+      return renderEmptyCta({
+        icon: '✨',
+        title: 'Dashboard zatím čeká na první data',
+        text: 'Jakmile přidáš kalendář, úkol, svoz, auto nebo smlouvu, časová osa se začne plnit sama.',
+        nav: nextStep.nav,
+        tab: nextStep.tab,
+        label: `Pokračovat: ${nextStep.title || 'nastavení'}`
+      });
+    }
 
     return rows.map((row) => `
       <button class="timeline-item ${row.tone || ''}" type="button" data-action="open-overview" data-overview="${escapeHtml(row.overview || row.nav)}">
@@ -1600,28 +2130,31 @@
   }
 
   function renderSetupChecklist() {
-    const checks = [
-      { done: Boolean(state.household?.isConfigured), title: 'Domácnost vytvořená', note: 'Základ pro oddělení více rodin.' },
-      { done: state.profiles.length >= 2, title: 'Profily členů', note: 'Ideálně aspoň dva profily pro domácnost.' },
-      { done: normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules).length >= BOTTOM_NAV_MIN, title: 'Spodní lišta', note: 'Vybrané hlavní položky + pevné Více.' },
-      { done: state.hdoWindows.length > 0, title: 'HDO okna', note: 'Nízký tarif se pak ukáže na dashboardu.' },
-      { done: state.vehicles.length > 0, title: 'Garáž', note: 'Auta, tankování, servis a později Fuelio import.' },
-      { done: state.contracts.length > 0, title: 'Smlouvy', note: 'Pojistky/smlouvy včetně příloh přes IndexedDB.' }
-    ];
-    const doneCount = checks.filter((item) => item.done).length;
+    if (isDemoOnlyState()) return '';
+    const progress = getStarterSetupProgress();
+    const steps = progress.orderedSteps;
     return `
-      <section class="card setup-card">
+      <section class="card setup-card guided-checklist-card">
         <div class="card-header">
-          <div><h2>Dokončení základu</h2><p>Co je dobré nastavit, než půjdeme do cloudu.</p></div>
-          <span class="badge ${doneCount >= checks.length ? 'good' : ''}">${doneCount}/${checks.length}</span>
+          <div><h2>Dokončení základu</h2><p>Krátký stav toho, jestli je ostrá domácnost použitelná pro běžný den.</p></div>
+          <span class="badge ${progress.doneCount >= progress.total ? 'good' : progress.doneCount >= 3 ? 'warn' : ''}">${progress.doneCount}/${progress.total}</span>
         </div>
-        <div class="setup-list">
-          ${checks.map((item) => `
-            <div class="setup-item ${item.done ? 'done' : ''}">
-              <span>${item.done ? '✓' : '•'}</span>
-              <div><strong>${escapeHtml(item.title)}</strong><em>${escapeHtml(item.note)}</em></div>
-            </div>
-          `).join('')}
+        <div class="starter-priority-line">
+          <span>Další: ${escapeHtml(progress.nextStep?.title || 'základ je hotový')}</span>
+          <button class="ghost-btn mini-btn" type="button" data-nav="${escapeHtml(progress.nextStep?.nav || 'settings')}" data-target-tab="${escapeHtml(progress.nextStep?.tab || 'household')}">Pokračovat</button>
+        </div>
+        <div class="progress-shell setup-progress"><span style="width:${progress.percent}%"></span></div>
+        <div class="setup-list compact-setup-list">
+          ${steps.map((item) => {
+            const isNext = !item.done && item.id === progress.nextStep?.id;
+            return `
+              <button class="setup-item setup-action-item ${item.done ? 'done' : ''} ${isNext ? 'is-next' : ''}" type="button" data-nav="${escapeHtml(item.nav)}" data-target-tab="${escapeHtml(item.tab)}">
+                <span>${item.done ? '✓' : escapeHtml(item.icon)}</span>
+                <div><strong>${escapeHtml(item.title)}</strong><em>${escapeHtml(item.note)}</em></div>
+                ${isNext ? '<small>další</small>' : ''}
+              </button>
+            `;
+          }).join('')}
         </div>
       </section>
     `;
@@ -1639,7 +2172,7 @@
       shopping: { count: countBy('shopping', (item) => !item.done), label: 'koupit', note: `${countBy('coupons', (item) => !item.used)} nepoužitých kódů.` },
       homecare: { count: countBy('homeTasks', (item) => !item.done) + countBy('hdoWindows') + countBy('waste'), label: 'položek', note: `${countBy('hdoWindows')} HDO oken, ${countBy('waste')} svozů, ${countBy('homeTasks', (item) => !item.done)} úkolů.` },
       garage: { count: countBy('vehicles'), label: 'aut', note: `${countBy('fuel')} tankování, ${countBy('services')} servisů.` },
-      contracts: { count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh lokálně v IndexedDB.` },
+      contracts: { count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh, cloudově přes Storage / lokálně jen fallback.` },
       cameras: { count: countBy('cameras'), label: 'kamer', note: 'Snapshot/stream zatím jen lokálně.' },
       finance: { count: countBy('finance'), label: 'záznamů', note: `${formatCurrency(financeMonthSummary().balance)} rozdíl tento měsíc.` }
     };
@@ -1653,7 +2186,7 @@
       { key: 'modules', done: normalizeModuleList(state.enabledModules).length > 0, title: 'Moduly jsou volitelné', note: 'Každá rodina si vybere vlastní sestavu.' },
       { key: 'navigation', done: normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules).length >= BOTTOM_NAV_MIN, title: 'Spodní lišta je uživatelská', note: 'Dobré pro iPhone, Android i budoucí tablet.' },
       { key: 'ids', done: getCollectionNames().every((collection) => (state[collection] || []).every((item) => item.householdId && item.profileId)), title: 'Data mají householdId/profileId', note: 'Nejdůležitější příprava na Supabase RLS.' },
-      { key: 'storage', done: true, title: 'Soubory jsou mimo localStorage', note: 'Přílohy smluv jedou přes IndexedDB.' }
+      { key: 'storage', done: true, title: 'Soubory jsou mimo localStorage', note: 'Přílohy smluv jedou online přes soukromý Supabase Storage, IndexedDB je jen fallback.' }
     ];
     const doneCount = checks.filter((item) => item.done).length;
     return { checks, doneCount, total: checks.length, percent: Math.round((doneCount / checks.length) * 100) };
@@ -1711,11 +2244,20 @@
       { title: 'Domácnost+ v.0.1_54', note: 'Hotovo: stabilnější mobilní rychlé přehledy, zamknuté pozadí při otevřeném modalu, Escape zavření a opravené pořadí roadmapy.' },
       { title: 'Domácnost+ v.0.1_55', note: 'Hotovo: kompaktnější dashboard karty, sjednocené výšky rychlých modulů a lepší mobilní zahuštění bez zásahu do startu aplikace.' },
       { title: 'Domácnost+ v.0.1_56', note: 'Hotovo: sjednocené mobilní záložky a kompaktnější formuláře/listy ve Financích a Kamerách bez zásahu do boot/PWA flow.' },
-      { title: 'Domácnost+ v.0.1_57', note: 'Hotovo: kompaktnější Nastavení se záložkami a lepší prázdné stavy pro ostrou domácnost.' }
+      { title: 'Domácnost+ v.0.1_57', note: 'Hotovo: kompaktnější Nastavení se záložkami a lepší prázdné stavy pro ostrou domácnost.' },
+      { title: 'Domácnost+ v.0.1_58', note: 'Hotovo: průvodce prvním nastavením domácnosti, stavové kroky a čistší start pro prázdnou ostrou domácnost.' },
+      { title: 'Domácnost+ v.0.1_59', note: 'Hotovo: průvodce už neruší demo, prázdná časová osa navádí na další krok a setup karty mají lepší prioritu akcí.' },
+      { title: 'Domácnost+ v.0.1_60', note: 'Hotovo: průvodce prvním nastavením má fáze Základ / Denní provoz / Evidence a prázdné přehledy nově vedou rovnou na správné akce.' },
+      { title: 'Domácnost+ v.0.1_61', note: 'Hotovo: zvýrazněný nejbližší krok nastavení, jasnější fáze průvodce a oprava duplicitního meta řádku v dashboardu.' },
+      { title: 'Domácnost+ v.0.1_62', note: 'Hotovo: cloud-first režim, online drobné moduly, soukromé nahrávání příloh smluv a app-like chování bez zoomu/označování textu.' },
+      { title: 'Domácnost+ v.0.1_63', note: 'Hotovo: Supabase Realtime pro sdílené moduly, automatické občerstvení dat mezi členy domácnosti a stabilnější cloud sync.' },
+      { title: 'Domácnost+ v.0.1_64', note: 'Hotovo: cloud-first autosync, přehled položek cloud/lokál a cloud upload starších lokálních příloh smluv.' },
+      { title: 'Domácnost+ v.0.1_65', note: 'Hotovo: cloudové profily domácnosti, archivace profilů a Realtime pro profily/členy.' },
+      { title: 'Domácnost+ v.0.1_66', note: 'Hotovo: modulární hlavní obrazovka, zapínání/odebírání karet a počasí podle místa domácnosti.' }
     ];
     return `
       <section class="card roadmap-card">
-        <div class="card-header"><div><h2>Co mám v plánu dál</h2><p>Cloudová kostra běží. Další větší směr je převod modulů a synchronizace dat.</p></div><span class="badge">roadmap</span></div>
+        <div class="card-header"><div><h2>Co mám v plánu dál</h2><p>Cloudová kostra běží. Další větší směr je doladit sdílení členů domácnosti, pozvánky a konflikty změn.</p></div><span class="badge">roadmap</span></div>
         <div class="list">
           ${steps.map((step, index) => `
             <div class="item">
@@ -2079,7 +2621,7 @@
         </section>
 
         <section class="card shopping-panel panel-coupons">
-          <div class="card-header"><div><h2>Slevové kódy</h2><p>Kupóny a kódy, které nechceš zapomenout.</p></div></div>
+          <div class="card-header"><div><h2>Slevové kódy</h2><p>Kupóny a kódy, které nechceš zapomenout. V online domácnosti jsou sdílené pro všechny členy.</p></div><span class="badge ${coupons.some((item) => item.cloudId) ? 'good' : ''}">${coupons.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span></div>
           <form data-form="add-coupon">
             <div class="form-grid two">
               ${field('Obchod / služba', 'store', 'text', 'Alza / Temu / Allegro', true)}
@@ -2088,7 +2630,7 @@
               ${field('Platnost do', 'expiry', 'date', '')}
               ${field('Poznámka', 'note', 'text', 'volitelné')}
             </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Uložit kód</button></div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Uložit kód</button>${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud kódy</button>' : ''}${cloudReady && coupons.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální kódy (${coupons.filter((item) => !item.cloudId).length})</button>` : ''}</div>
           </form>
           <div style="height:14px"></div>
           ${coupons.length ? `<div class="list">${coupons.map(renderCouponItem).join('')}</div>` : renderEmpty('Zatím nemáš uložený žádný slevový kód.')}
@@ -2226,15 +2768,15 @@
             <div class="form-grid">
               ${field('Rychlá poznámka', 'text', 'text', 'např. zavolat servis', true)}
             </div>
-            <div class="form-actions"><button class="ghost-btn" type="submit">Přidat poznámku</button></div>
+            <div class="form-actions"><button class="ghost-btn" type="submit">Přidat poznámku</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud poznámky</button>' : ''}${state.cloud?.householdId && notes.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální poznámky (${notes.filter((item) => !item.cloudId).length})</button>` : ''}</div>
           </form>
           ${notes.length ? `<div class="list" style="margin-top:12px;">${notes.slice(0, 6).map((note) => `
-            <div class="item"><div class="item-top"><div class="item-title">${escapeHtml(note.text)}</div><button class="danger-btn" type="button" data-action="delete" data-collection="notes" data-id="${note.id}">Smazat</button></div></div>
+            <div class="item"><div class="item-top"><div class="item-title">${escapeHtml(note.text)}</div><span class="badge ${note.cloudId ? 'good' : ''}">${note.cloudId ? 'cloud' : 'lokálně'}</span></div><div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="notes" data-id="${note.id}">Smazat</button></div></div>
           `).join('')}</div>` : ''}
         </section>
 
         <section class="card homecare-panel panel-devices">
-          <div class="card-header"><div><h2>Domácí zařízení / síť</h2><p>Routery, NAS, kamery, tablety a další věci doma.</p></div></div>
+          <div class="card-header"><div><h2>Domácí zařízení / síť</h2><p>Routery, NAS, kamery, tablety a další věci doma. V online domácnosti jsou sdílené.</p></div><span class="badge ${devices.some((item) => item.cloudId) ? 'good' : ''}">${devices.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span></div>
           <form data-form="add-device">
             <div class="form-grid two">
               ${field('Název', 'name', 'text', 'WD My Cloud / router / kamera', true)}
@@ -2242,16 +2784,16 @@
               ${field('IP / adresa', 'address', 'text', '192.168.1.10')}
               ${field('Poznámka', 'note', 'text', 'volitelné')}
             </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat zařízení</button></div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Přidat zařízení</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud zařízení</button>' : ''}${state.cloud?.householdId && devices.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální zařízení (${devices.filter((item) => !item.cloudId).length})</button>` : ''}</div>
           </form>
           <div style="height:14px"></div>
           ${devices.length ? `<div class="list">${devices.map((device) => `
             <div class="item">
               <div class="item-top"><div class="item-title">${escapeHtml(device.name)}</div><span class="badge">${escapeHtml(device.type || 'zařízení')}</span></div>
-              <div class="item-meta">${escapeHtml(device.address || 'bez adresy')}${device.note ? ` · ${escapeHtml(device.note)}` : ''}</div>
+              <div class="item-meta">${escapeHtml(device.address || 'bez adresy')}${device.note ? ` · ${escapeHtml(device.note)}` : ''}${device.cloudId ? ' · cloud' : ' · lokálně'}</div>
               <div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="devices" data-id="${device.id}">Smazat</button></div>
             </div>
-          `).join('')}</div>` : renderEmpty('Zatím žádné zařízení.')}
+          `).join('')}</div>` : renderEmptyCta({ icon: '🔌', title: 'Zařízení jsou prázdná', text: 'Přidej router, kotel, spotřebič nebo jiné domácí zařízení.', nav: 'homecare', tab: 'devices', label: 'Přidat zařízení' })}
         </section>
       </div>
     `;
@@ -2776,10 +3318,10 @@
           ${contract.note ? `<div class="inline-note compact-note">${escapeHtml(contract.note)}</div>` : ''}
         </div>
         <div class="inline-note compact-note">
-          <strong>Ukládání příloh</strong><br>Cloudové smlouvy používají soukromý Supabase Storage a dočasné odkazy. Lokální smlouvy dál používají IndexedDB jako fallback.
+          <strong>Ukládání příloh</strong><br>Online domácnost ukládá přílohy rovnou do soukromého Supabase Storage a ostatní členové je otevřou přes dočasný odkaz. IndexedDB zůstává jen jako offline fallback.
         </div>
       </div>
-      <div class="card-header small compact-files-head"><div><h3>Přílohy</h3><p>${cloudFiles} cloud · ${localFiles} lokálně</p></div>${contract.cloudId && state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-contract-files">Načíst cloud přílohy</button>' : ''}</div>
+      <div class="card-header small compact-files-head"><div><h3>Přílohy</h3><p>${cloudFiles} cloud · ${localFiles} lokálně</p></div><div class="form-actions compact-actions">${contract.cloudId && state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-contract-files">Načíst cloud přílohy</button>' : ''}${cloudReady() && localFiles ? '<button class="primary-btn" type="button" data-action="cloud-sync-local-contract-files">Odeslat lokální přílohy</button>' : ''}</div></div>
       ${files.length ? `<div class="file-list compact-file-list">${files.map((file) => `
         <div class="file-row compact-file-row">
           <div>
@@ -2792,7 +3334,7 @@
             <button class="danger-btn" type="button" data-action="delete-contract-file" data-id="${file.id}">Smazat</button>
           </div>
         </div>
-      `).join('')}</div>` : renderEmpty('Zatím nejsou přidané žádné přílohy.')}
+      `).join('')}</div>` : renderEmptyCta({ icon: '📎', title: 'Zatím žádné přílohy', text: 'Přidej PDF nebo fotku smlouvy. U online domácnosti se příloha nahraje do soukromého Supabase Storage.', nav: 'contracts', tab: 'detail', label: 'Přidat přílohu' })}
       <details class="action-details compact-edit-details">
         <summary><span>Upravit údaje smlouvy</span><em>název, platnost, částka, poznámka</em></summary>
         <form data-form="update-contract" data-contract-id="${contract.id}" class="compact-form">
@@ -2818,7 +3360,7 @@
             <input id="contractFiles" class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf">
             <p>Na iPhonu/Androidu můžeš vybrat soubor, fotku z galerie nebo rovnou vyfotit dokument podle nabídky systému.</p>
           </div>
-          <div class="form-actions"><button class="primary-btn" type="submit">Přidat přílohu</button>${contract.cloudId ? '<span class="badge good">Supabase Storage</span>' : '<span class="badge">lokálně / po odeslání smlouvy cloud</span>'}</div>
+          <div class="form-actions"><button class="primary-btn" type="submit">Přidat přílohu</button>${cloudReady() ? '<span class="badge good">cloud upload</span>' : '<span class="badge">offline fallback</span>'}</div>
         </form>
       </details>
     `;
@@ -2839,7 +3381,7 @@
       ], 'overview')}
       <div class="grid two module-tabbed cameras-tab-${activeCamerasTab}" data-tab-area="cameras">
         <section class="card desktop-span-2 cameras-panel panel-overview">
-          <div class="card-header"><div><h2>Přehled kamer</h2><p>Rychlý grid kamer. Streamy později bezpečně přes lokální síť/VPN nebo backend proxy.</p></div><span class="badge ${onlineCount ? 'good' : ''}">${onlineCount}/${cameras.length} online</span></div>
+          <div class="card-header"><div><h2>Přehled kamer</h2><p>Rychlý grid kamer. Metadata karet jsou v online domácnosti sdílená, streamy později bezpečně přes lokální síť/VPN.</p></div><span class="badge ${onlineCount ? 'good' : ''}">${onlineCount}/${cameras.length} online</span></div><div class="form-actions compact-actions">${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud kamery</button>' : ''}${state.cloud?.householdId && cameras.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální kamery (${cameras.filter((item) => !item.cloudId).length})</button>` : ''}</div>
           ${cameras.length ? `<div class="grid two compact-camera-grid">${cameras.map(renderCameraCard).join('')}</div>` : renderEmptyCta({ icon: '📷', title: 'Kamery jsou prázdné', text: 'Přidej kartu kamery nebo snapshot URL. Streamy půjdou později bezpečně přes lokální síť/VPN.', nav: 'cameras', tab: 'add', label: 'Přidat kameru' })}
         </section>
 
@@ -2920,7 +3462,7 @@
 
         <section class="card finance-panel panel-accounts">
           <div class="card-header"><div><h2>Účty / peněženky</h2><p>Každý účet má vlastní zůstatek. Může to být banka, hotovost, spoření, obálka nebo osoba.</p></div><span class="badge">${accounts.length}</span></div>
-          ${accounts.length ? `<div class="list compact-list">${accounts.map((account) => renderFinanceAccount(account, balances)).join('')}</div>` : renderEmptyCta({ icon: '🏦', title: 'Nejdřív přidej účet', text: 'Účet může být banka, hotovost, spoření, obálka nebo spravované peníze pro někoho dalšího.' })}
+          ${accounts.length ? `<div class="list compact-list">${accounts.map((account) => renderFinanceAccount(account, balances)).join('')}</div>` : renderEmptyCta({ icon: '🏦', title: 'Nejdřív přidej účet', text: 'Účet může být banka, hotovost, spoření, obálka nebo spravované peníze pro někoho dalšího.', nav: 'finance', tab: 'accounts', label: 'Přidat účet' })}
           <details class="action-details compact-edit-details finance-form-drawer">
             <summary><span>Přidat účet / peněženku</span><em>banka, hotovost, obálka nebo osoba</em></summary>
             <form data-form="add-finance-account" class="compact-form">
@@ -2943,7 +3485,7 @@
 
         <section class="card finance-panel panel-accounts">
           <div class="card-header"><div><h2>Spravované zůstatky</h2><p>Součet účtů seskupený podle osoby/obálky.</p></div></div>
-          ${managedRows.length ? `<div class="list compact-list">${managedRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(row.label)}</div><span class="badge good">${formatCurrency(row.total)}</span></div><div class="item-meta">${row.accounts.map((account) => `${financeAccountIcon(account.accountType)} ${escapeHtml(account.name)}: ${formatCurrency(balances[account.id] || 0)}`).join(' · ')}</div></div>`).join('')}</div>` : renderEmptyCta({ icon: '👥', title: 'Spravované peníze zatím nejsou', text: 'Přidej účet s vlastníkem, třeba babička / tchyně, nebo použij rychlé založení dvojice účtů.' })}
+          ${managedRows.length ? `<div class="list compact-list">${managedRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(row.label)}</div><span class="badge good">${formatCurrency(row.total)}</span></div><div class="item-meta">${row.accounts.map((account) => `${financeAccountIcon(account.accountType)} ${escapeHtml(account.name)}: ${formatCurrency(balances[account.id] || 0)}`).join(' · ')}</div></div>`).join('')}</div>` : renderEmptyCta({ icon: '👥', title: 'Spravované peníze zatím nejsou', text: 'Přidej účet s vlastníkem, třeba babička / tchyně, nebo použij rychlé založení dvojice účtů.', nav: 'finance', tab: 'accounts', label: 'Přidat spravované peníze' })}
           <details class="action-details compact-edit-details finance-form-drawer">
             <summary><span>Založit spravované peníze</span><em>dvojice hlavní účet + spoření</em></summary>
             <form data-form="add-managed-finance-set" class="compact-form">
@@ -3079,12 +3621,13 @@
 
   function renderSettings() {
     const enabled = new Set(normalizeModuleList(state.enabledModules));
-    const settingsTabIds = ['household', 'modules', 'cloud', 'data'];
+    const settingsTabIds = ['household', 'modules', 'dashboard', 'cloud', 'data'];
     const activeSettingsTab = settingsTabIds.includes(getModuleTab('settings', 'household')) ? getModuleTab('settings', 'household') : 'household';
     return `
       ${renderSectionTabs('settings', [
         { id: 'household', label: 'Domácnost', icon: '🏠', count: state.profiles.length },
         { id: 'modules', label: 'Moduly', icon: '🧩', count: normalizeModuleList(state.enabledModules).length },
+        { id: 'dashboard', label: 'Dashboard', icon: '🧱', count: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets).length },
         { id: 'cloud', label: 'Cloud / PWA', icon: '☁️', count: state.cloud?.userId ? 1 : 0 },
         { id: 'data', label: 'Data', icon: '🛟' }
       ], 'household')}
@@ -3109,12 +3652,13 @@
                 <div class="profile-chip ${profile.id === currentProfileId() ? 'active' : ''}">
                   <button type="button" data-action="set-profile" data-id="${escapeHtml(profile.id)}">
                     <strong>${escapeHtml(profile.name)}</strong>
-                    <span>${escapeHtml(profile.role === 'owner' ? 'správce' : 'člen domácnosti')}</span>
+                    <span>${escapeHtml(profile.role === 'owner' ? 'správce' : 'člen domácnosti')}${profile.cloudId ? ' · cloud' : ' · lokálně'}</span>
                   </button>
                   ${state.profiles.length > 1 ? `<button class="mini-danger" type="button" data-action="delete-profile" data-id="${escapeHtml(profile.id)}" aria-label="Smazat profil">×</button>` : ''}
                 </div>
               `).join('')}
             </div>
+            ${state.cloud?.householdId ? `<div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="cloud-sync-local-profiles">Odeslat lokální profily</button><button class="ghost-btn" type="button" data-action="cloud-load-all">Načíst profily z cloudu</button></div>` : ''}
             <details class="action-details compact-edit-details settings-form-drawer">
               <summary><span>Přidat profil</span><em>další člen domácnosti</em></summary>
               <form data-form="add-profile" class="compact-form">
@@ -3147,6 +3691,10 @@
           </section>
         </div>
 
+        <div class="settings-panel panel-dashboard grid two">
+          ${renderDashboardSettings()}
+        </div>
+
         <div class="settings-panel panel-cloud grid two">
           ${renderCloudAccount()}
           ${renderPwaInstallCard()}
@@ -3175,6 +3723,49 @@
     `;
   }
 
+
+  function renderDashboardSettings() {
+    const selected = new Set(normalizeDashboardWidgetIds(state.settings?.dashboardWidgets));
+    const weather = normalizeWeatherState(state.weather);
+    const location = normalizeWeatherLocation(weather.location);
+    return `
+      <section class="card desktop-span-2 compact-settings-card dashboard-settings-card">
+        <div class="card-header"><div><h2>Hlavní obrazovka</h2><p>Tady si zapneš jen karty, které mají být na úvodní obrazovce. Moduly v aplikaci tím nemažeš, mění se jen dashboard.</p></div><span class="badge">${selected.size}/${DASHBOARD_WIDGETS.length}</span></div>
+        <div class="switch-list dashboard-widget-picker">
+          ${DASHBOARD_WIDGETS.map((widget) => {
+            const active = selected.has(widget.id);
+            return `
+              <button class="switch-row dashboard-widget-switch ${active ? 'active' : ''}" type="button" role="switch" aria-checked="${active ? 'true' : 'false'}" data-action="toggle-dashboard-widget" data-id="${escapeHtml(widget.id)}">
+                <span class="switch-row-icon">${escapeHtml(widget.icon)}</span>
+                <span class="switch-row-copy"><strong>${escapeHtml(widget.label)}</strong><em>${escapeHtml(widget.note)}</em></span>
+                <span class="ios-switch" aria-hidden="true"><span></span></span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+        <div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="dashboard-reset-widgets">Obnovit výchozí karty</button>${cloudReady() ? '<span class="badge good">ukládá se i do domácnosti</span>' : '<span class="badge">lokálně</span>'}</div>
+      </section>
+
+      <section class="card compact-settings-card weather-settings-card">
+        <div class="card-header"><div><h2>Počasí</h2><p>Počasí se načítá podle souřadnic domácnosti. Bez tajného klíče, jen veřejné počasí.</p></div><span class="badge ${weather.current ? 'good' : ''}">${weather.current ? 'aktivní' : 'nastavit'}</span></div>
+        <form data-form="weather-settings" class="compact-form">
+          <div class="form-grid two">
+            ${field('Místo', 'locationName', 'text', 'Hostinné', true, location.name)}
+            ${field('Země', 'country', 'text', 'CZ', false, location.country)}
+            ${field('Šířka', 'latitude', 'number', '50,5407', false, location.latitude)}
+            ${field('Délka', 'longitude', 'number', '15,7233', false, location.longitude)}
+          </div>
+          <div class="form-actions compact-actions"><button class="primary-btn" type="submit">Uložit a načíst počasí</button><button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit počasí</button></div>
+        </form>
+        <div class="inline-note compact-note">Když vyplníš jen název místa, aplikace ho zkusí najít přes geocoding. Souřadnice jsou přesnější a stabilnější.</div>
+      </section>
+
+      <section class="card compact-settings-card">
+        <div class="card-header"><div><h2>Jak to bude fungovat dál</h2><p>Teď je hotový základ zapnout/vypnout. Později půjde doplnit ruční řazení, velikosti karet a tabletový režim.</p></div></div>
+        <div class="hint-box">Dashboard je samostatná vrstva nad moduly. Když odebereš kartu z hlavní obrazovky, data a modul zůstanou v aplikaci.</div>
+      </section>
+    `;
+  }
 
   function renderDeleteAccountCard() {
     const signedIn = Boolean(state.cloud?.userId);
@@ -3312,10 +3903,11 @@
     const activeCloudId = state.cloud?.householdId || '';
     return `
       <div class="cloud-household-panel">
-        <div class="card-subheader"><h3>Cloud domácnosti</h3><p>Každá domácnost má vlastní cloud ID. Při přepnutí se lokální pracovní pohled uloží zvlášť, aby se data mezi rodinami nemíchala.</p></div>
+        <div class="card-subheader"><h3>Cloud domácnosti</h3><p>Cloud je hlavní zdroj dat pro všechny členy domácnosti. Lokální úložiště zůstává jen jako cache a nouzový fallback.</p></div>
         <div class="form-actions compact-actions">
           <button class="ghost-btn" type="button" data-action="cloud-load-households">Načíst moje domácnosti</button>
           <button class="ghost-btn" type="button" data-action="cloud-load-all">Načíst data aktivní domácnosti</button>
+          <button class="primary-btn" type="button" data-action="cloud-sync-pending">Dohnat lokální → cloud</button>
         </div>
         ${households.length ? `
           <div class="cloud-household-list">
@@ -3436,7 +4028,7 @@
     return `
       <section class="card desktop-span-2 cloud-card">
         <div class="card-header">
-          <div><h2>Cloud účet</h2><p>Napojení na Supabase projekt Domácnost+. Základ domácnosti/profilů a hlavní moduly včetně Kalendáře už umí cloud.</p></div>
+          <div><h2>Cloud účet</h2><p>Napojení na Supabase projekt Domácnost+. Online domácnost je hlavní zdroj dat pro všechny členy; lokál zůstává jen cache/fallback.</p></div>
           <span class="badge ${signedIn ? 'good' : ''}">${signedIn ? 'přihlášeno' : 'lokálně'}</span>
         </div>
         <div class="cloud-status-grid">
@@ -3444,12 +4036,19 @@
           <div class="mini-stat"><span>Účet</span><strong>${escapeHtml(cloud.email || 'nepřihlášeno')}</strong></div>
           <div class="mini-stat"><span>Cloud domácnost</span><strong>${escapeHtml(cloud.householdId || 'zatím nevytvořena')}</strong></div>
           <div class="mini-stat"><span>Poslední zápis</span><strong>${cloud.lastSyncAt ? escapeHtml(formatDateTime(cloud.lastSyncAt)) : 'nikdy'}</strong></div>
+          <div class="mini-stat"><span>Živé změny</span><strong data-cloud-realtime-status>${signedIn && cloud.householdId ? escapeHtml(realtimeStatusLabel(cloud.realtimeStatus)) : 'offline'}</strong></div>
+          <div class="mini-stat"><span>Autosync</span><strong>${signedIn && cloud.householdId ? escapeHtml(cloudAutosyncStatusLabel(cloud.autosyncStatus)) : 'offline'}</strong></div>
+          <div class="mini-stat"><span>Poslední autosync</span><strong>${cloud.lastAutosyncAt ? escapeHtml(formatDateTime(cloud.lastAutosyncAt)) : 'nikdy'}</strong></div>
         </div>
         ${signedIn ? renderCloudHouseholdManager() : ''}
         ${signedIn ? `
           <div class="hint-box">Jsi přihlášený. Tlačítko níže vytvoří nebo napojí aktuální domácnost v Supabase: domácnost, owner člen a profily. Kalendář, nákupy a další moduly už se umí ukládat do cloudu.</div>
           <div class="form-actions">
             <button class="primary-btn" type="button" data-action="cloud-bootstrap">Vytvořit / napojit domácnost v cloudu</button>
+            <button class="ghost-btn" type="button" data-action="cloud-load-all">Načíst data domácnosti</button>
+            <button class="ghost-btn" type="button" data-action="cloud-start-realtime">Zapnout živé změny</button>
+            <button class="ghost-btn" type="button" data-action="cloud-run-autosync-now">Synchronizovat teď</button>
+            <button class="ghost-btn" type="button" data-action="cloud-toggle-autosync">${cloud.autoSyncEnabled === false ? 'Zapnout autosync' : 'Vypnout autosync'}</button>
             <button class="ghost-btn" type="button" data-action="cloud-refresh-session">Obnovit stav účtu</button>
             <button class="danger-btn" type="button" data-action="cloud-logout">Odhlásit</button>
           </div>
@@ -3632,21 +4231,187 @@
     return counts.reduce((sum, value) => sum + value, 0) <= 2;
   }
 
+
+  function getStarterSetupSteps() {
+    const shoppingOpen = state.shopping?.some((item) => !item.done) || false;
+    const hasFinanceBase = (state.financeAccounts?.length || 0) > 0 || (state.finance?.length || 0) > 0;
+    return [
+      {
+        id: 'cloud',
+        done: Boolean(state.cloud?.userId && state.cloud?.householdId),
+        nav: 'settings',
+        tab: 'cloud',
+        icon: '☁️',
+        title: 'Napojit účet a domácnost',
+        note: state.cloud?.householdId ? 'Cloudová domácnost je připravená.' : 'Nejdřív účet, potvrzení e-mailu a vlastní household_id.'
+      },
+      {
+        id: 'profiles',
+        done: state.profiles.length >= 1,
+        nav: 'settings',
+        tab: 'household',
+        icon: '👤',
+        title: 'Doplnit profily',
+        note: state.profiles.length ? `${state.profiles.length} profilů v domácnosti.` : 'Aspoň jeden profil, později klidně celá rodina.'
+      },
+      {
+        id: 'hdo',
+        done: state.hdoWindows.length > 0,
+        nav: 'homecare',
+        tab: 'hdo',
+        icon: '💡',
+        title: 'Nastavit HDO',
+        note: state.hdoWindows.length ? `${state.hdoWindows.length} časových oken.` : 'Nízký tarif se pak ukáže na dashboardu.'
+      },
+      {
+        id: 'shopping',
+        done: shoppingOpen || (state.shopping?.length || 0) > 0,
+        nav: 'shopping',
+        tab: 'list',
+        icon: '🛒',
+        title: 'Přidat nákup',
+        note: shoppingOpen ? `${state.shopping.filter((item) => !item.done).length} položek k nákupu.` : 'První sdílený seznam hned oživí dashboard.'
+      },
+      {
+        id: 'garage',
+        done: state.vehicles.length > 0,
+        nav: 'garage',
+        tab: state.vehicles.length ? 'overview' : 'add',
+        icon: '🚗',
+        title: 'Přidat auto',
+        note: state.vehicles.length ? `${state.vehicles.length} aut v garáži.` : 'STK, pojistka, servis a později Fuelio import.'
+      },
+      {
+        id: 'contracts',
+        done: state.contracts.length > 0,
+        nav: 'contracts',
+        tab: state.contracts.length ? 'overview' : 'add',
+        icon: '📄',
+        title: 'Přidat smlouvu',
+        note: state.contracts.length ? `${state.contracts.length} smluv uložených.` : 'Pojistky, platnosti a později přílohy.'
+      },
+      {
+        id: 'finance',
+        done: hasFinanceBase,
+        nav: 'finance',
+        tab: hasFinanceBase ? 'summary' : 'accounts',
+        icon: '💰',
+        title: 'Založit finance',
+        note: hasFinanceBase ? 'Finance už mají první základ.' : 'Účty, hotovost, spoření a spravované peníze.'
+      }
+    ];
+  }
+
+
+  function getStarterSetupProgress() {
+    const steps = getStarterSetupSteps();
+    const doneSteps = steps.filter((step) => step.done);
+    const pendingSteps = steps.filter((step) => !step.done);
+    const total = Math.max(steps.length, 1);
+    const doneCount = doneSteps.length;
+    return {
+      steps,
+      orderedSteps: [...pendingSteps, ...doneSteps],
+      pendingSteps,
+      doneSteps,
+      doneCount,
+      total,
+      percent: Math.round((doneCount / total) * 100),
+      nextStep: pendingSteps[0] || steps[0]
+    };
+  }
+
+  function getStarterPhaseSummary(progress) {
+    const phaseDefs = [
+      { id: 'base', icon: '🏠', title: 'Základ', note: 'účet + profily', ids: ['cloud', 'profiles'] },
+      { id: 'daily', icon: '⚡', title: 'Denní provoz', note: 'HDO + nákupy', ids: ['hdo', 'shopping'] },
+      { id: 'records', icon: '🗂️', title: 'Evidence', note: 'auto, smlouvy, finance', ids: ['garage', 'contracts', 'finance'] }
+    ];
+    return phaseDefs.map((phase) => {
+      const steps = progress.steps.filter((step) => phase.ids.includes(step.id));
+      const doneCount = steps.filter((step) => step.done).length;
+      const firstPending = steps.find((step) => !step.done) || steps[0];
+      const total = Math.max(steps.length, 1);
+      return {
+        ...phase,
+        doneCount,
+        total,
+        percent: Math.round((doneCount / total) * 100),
+        firstPending,
+        done: doneCount >= total
+      };
+    });
+  }
+
+  function renderStarterPhaseStrip(progress) {
+    const phases = getStarterPhaseSummary(progress);
+    return `
+      <div class="starter-phase-grid" aria-label="Fáze prvního nastavení domácnosti">
+        ${phases.map((phase) => {
+          const isNext = !phase.done && phase.firstPending?.id === progress.nextStep?.id;
+          return `
+            <button class="starter-phase-card ${phase.done ? 'done' : ''} ${isNext ? 'is-next' : ''}" type="button" data-nav="${escapeHtml(phase.firstPending?.nav || 'settings')}" data-target-tab="${escapeHtml(phase.firstPending?.tab || 'household')}">
+              <span class="starter-phase-icon" aria-hidden="true">${escapeHtml(phase.done ? '✓' : phase.icon)}</span>
+              <span class="starter-phase-copy"><strong>${escapeHtml(phase.title)}</strong><em>${escapeHtml(isNext ? `Další: ${phase.firstPending?.title || phase.note}` : phase.note)}</em></span>
+              <span class="starter-phase-count">${isNext ? 'další' : `${phase.doneCount}/${phase.total}`}</span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  function renderStarterPriorityStrip(progress) {
+    const pending = progress.pendingSteps.slice(0, 3);
+    if (!pending.length) {
+      return '<div class="starter-priority-strip done"><span>✓ Základ domácnosti je připravený.</span></div>';
+    }
+    return `
+      <div class="starter-priority-strip" aria-label="Nejbližší doporučené kroky">
+        ${pending.map((step, index) => `
+          <button class="starter-priority-chip ${index === 0 ? 'is-next' : ''}" type="button" data-nav="${escapeHtml(step.nav)}" data-target-tab="${escapeHtml(step.tab)}">
+            <strong>${index + 1}</strong><span><b>${escapeHtml(step.title)}</b><em>${escapeHtml(index === 0 ? `Teď: ${step.note}` : step.note)}</em></span>
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function renderStarterSetupStep(step, nextStepId = '') {
+    const isNext = !step.done && step.id === nextStepId;
+    return `
+      <button class="starter-step-card ${step.done ? 'done' : ''} ${isNext ? 'is-next' : ''}" type="button" data-nav="${escapeHtml(step.nav)}" data-target-tab="${escapeHtml(step.tab)}">
+        <span class="starter-step-icon" aria-hidden="true">${escapeHtml(step.done ? '✓' : step.icon)}</span>
+        <span class="starter-step-copy"><strong>${escapeHtml(step.title)}</strong><em>${escapeHtml(step.note)}</em></span>
+        <span class="starter-step-status">${step.done ? 'hotovo' : isNext ? 'další' : 'nastavit'}</span>
+      </button>
+    `;
+  }
+
   function renderStarterStateCard() {
     if (!isRealHouseholdStarterState()) return '';
     const signedIn = Boolean(state.cloud?.userId);
     const householdReady = Boolean(state.cloud?.householdId);
+    const progress = getStarterSetupProgress();
+    const nextStep = progress.nextStep || progress.steps[0];
     return `
-      <section class="card desktop-span-2 starter-state-card">
+      <section class="card desktop-span-2 starter-state-card guided-starter-card">
         <div class="card-header">
           <div><h2>Rychlé nastavení domácnosti</h2><p>Ostrá domácnost je zatím skoro prázdná. Tady jsou první kroky, které ji hned udělají použitelnou.</p></div>
-          <span class="badge ${householdReady ? 'good' : signedIn ? 'warn' : ''}">${householdReady ? 'cloud připraven' : signedIn ? 'napojit domácnost' : 'začít'}</span>
+          <span class="badge ${householdReady ? 'good' : signedIn ? 'warn' : ''}">${progress.doneCount}/${progress.total}</span>
         </div>
-        <div class="starter-action-grid">
-          <button class="starter-action-card" type="button" data-nav="homecare" data-target-tab="hdo"><span>💡</span><strong>Nastavit HDO</strong><em>nízký tarif a další přepnutí na dashboardu</em></button>
-          <button class="starter-action-card" type="button" data-nav="shopping" data-target-tab="list"><span>🛒</span><strong>Přidat nákup</strong><em>rychlý sdílený seznam pro domácnost</em></button>
-          <button class="starter-action-card" type="button" data-nav="garage" data-target-tab="add"><span>🚗</span><strong>Přidat auto</strong><em>STK, pojistka, tankování a servis</em></button>
-          <button class="starter-action-card" type="button" data-nav="contracts" data-target-tab="add"><span>📄</span><strong>Přidat smlouvu</strong><em>pojistky, platnost a později přílohy</em></button>
+        <div class="starter-progress-head">
+          <div>
+            <strong>${progress.percent}% připraveno</strong>
+            <span>Další krok: ${escapeHtml(nextStep.title)}</span>
+          </div>
+          <button class="ghost-btn" type="button" data-nav="${escapeHtml(nextStep.nav)}" data-target-tab="${escapeHtml(nextStep.tab)}">Pokračovat</button>
+        </div>
+        <div class="starter-progress"><span style="width:${progress.percent}%"></span></div>
+        ${renderStarterPhaseStrip(progress)}
+        ${renderStarterPriorityStrip(progress)}
+        <div class="starter-step-grid">
+          ${progress.orderedSteps.map((step) => renderStarterSetupStep(step, progress.nextStep?.id)).join('')}
         </div>
       </section>
     `;
@@ -3892,6 +4657,21 @@
     };
   }
 
+  function isAllowedContractFile(file) {
+    if (!file) return false;
+    const name = String(file.name || '').toLowerCase();
+    const type = String(file.type || '').toLowerCase();
+    if (CONTRACT_FILE_ALLOWED_MIME.has(type)) return true;
+    return ['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'].some((ext) => name.endsWith(ext));
+  }
+
+  function contractFileValidationMessage(file) {
+    if (!file) return 'Soubor není dostupný';
+    if (file.size > CONTRACT_FILE_MAX_BYTES) return `${file.name || 'Soubor'} je větší než 15 MB`;
+    if (!isAllowedContractFile(file)) return `${file.name || 'Soubor'} není podporovaný typ. Použij PDF nebo fotku.`;
+    return '';
+  }
+
   async function cloudLoadContractFiles(showMessage = true) {
     const client = getSupabaseClient();
     if (!client) { if (showMessage) showToast('Supabase knihovna není načtená'); return null; }
@@ -3922,16 +4702,29 @@
       showToast('Vyber soubor');
       return;
     }
+    const useCloudStorage = cloudReady();
     let added = 0;
+    let failed = 0;
     for (const file of files) {
-      const cloudFile = state.cloud?.householdId ? await cloudUploadContractFile(contract, file) : null;
-      if (cloudFile) {
-        state.contractFiles = state.contractFiles.filter((entry) => entry.cloudId !== cloudFile.cloudId);
-        state.contractFiles.push(cloudFile);
-        added += 1;
+      const validationMessage = contractFileValidationMessage(file);
+      if (validationMessage) {
+        failed += 1;
+        showToast(validationMessage);
+        continue;
+      }
+      if (useCloudStorage) {
+        const cloudFile = await cloudUploadContractFile(contract, file);
+        if (cloudFile) {
+          state.contractFiles = state.contractFiles.filter((entry) => entry.cloudId !== cloudFile.cloudId);
+          state.contractFiles.push(cloudFile);
+          added += 1;
+        } else {
+          failed += 1;
+        }
         continue;
       }
       if (!('indexedDB' in window)) {
+        failed += 1;
         showToast('Prohlížeč nepodporuje IndexedDB');
         continue;
       }
@@ -3954,8 +4747,56 @@
     activeContractId = contractId;
     touchState();
     saveState();
+    if (input) input.value = '';
     render();
-    showToast(added === 1 ? 'Příloha přidána' : `Přidáno ${added} příloh`);
+    if (added && useCloudStorage) showToast(failed ? `Do cloudu nahráno ${added}, neprošlo ${failed}` : (added === 1 ? 'Příloha nahraná do cloudu' : `Do cloudu nahráno příloh: ${added}`));
+    else if (added) showToast(added === 1 ? 'Příloha uložená lokálně' : `Lokálně přidáno příloh: ${added}`);
+    else showToast('Přílohu se nepovedlo přidat');
+  }
+
+  async function cloudSyncLocalContractFiles(showMessage = true) {
+    if (!cloudReady()) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return 0;
+    }
+    const localFiles = state.contractFiles.filter((file) => !file.cloudId);
+    if (!localFiles.length) {
+      if (showMessage) showToast('Žádné lokální přílohy k odeslání');
+      return 0;
+    }
+    let uploaded = 0;
+    let missing = 0;
+    let failed = 0;
+    for (const meta of localFiles) {
+      const contract = state.contracts.find((item) => item.id === meta.contractId);
+      if (!contract) { failed += 1; continue; }
+      let stored = null;
+      try {
+        stored = await getStoredContractFile(meta.id);
+      } catch {
+        stored = null;
+      }
+      const blob = stored?.blob;
+      if (!blob) { missing += 1; continue; }
+      const fileName = meta.fileName || stored.fileName || 'priloha';
+      const fileType = meta.fileType || stored.fileType || blob.type || 'application/octet-stream';
+      const uploadFile = (typeof File !== 'undefined' && blob instanceof File) ? blob : new File([blob], fileName, { type: fileType });
+      const cloudFile = await cloudUploadContractFile(contract, uploadFile);
+      if (!cloudFile?.cloudId) { failed += 1; continue; }
+      state.contractFiles = state.contractFiles.filter((file) => file.id !== meta.id && file.cloudId !== cloudFile.cloudId);
+      state.contractFiles.push({ ...cloudFile, id: meta.id, createdAt: meta.createdAt || cloudFile.createdAt });
+      deleteStoredContractFile(meta.id).catch(() => {});
+      uploaded += 1;
+    }
+    if (uploaded) state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) {
+      const details = [uploaded ? `${uploaded} nahráno` : '', missing ? `${missing} nemá soubor v tomto prohlížeči` : '', failed ? `${failed} chyba` : ''].filter(Boolean).join(' · ');
+      showToast(details || 'Přílohy se nepodařilo dohnat');
+    }
+    return uploaded;
   }
 
   async function openCloudContractFile(meta, download = false) {
@@ -6206,6 +7047,7 @@
         showToast('Nastavení uloženo');
       },
       'add-profile': () => addProfile(data.name, data.role),
+      'weather-settings': () => saveWeatherSettings(data, form),
       'import-data': () => importData(data.json),
       'cloud-login': () => cloudLogin(data.email, data.password),
       'cloud-signup': () => cloudSignUp(data.email, data.password),
@@ -6579,11 +7421,12 @@
     ];
 
     return {
-      meta: { schemaVersion: 46, appBuild: 57, mode: 'rich-demo-v57', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 51, appBuild: 66, mode: 'rich-demo-v66', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
         bottomNavIds: ['home', 'calendar', 'shopping', 'homecare', 'finance'],
+        dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGET_IDS],
         demoMode: true
       },
       household: { id: householdId, name: 'Demo domácnost Královi', isConfigured: true, createdAt },
@@ -6629,41 +7472,116 @@
       financeAccounts,
       finance,
       financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: todayISO().slice(0, 7) },
+      householdExtrasCloud: { loadedAt: '' },
+      weather: makeDemoWeatherState(),
       pwa: { installed: false, lastUpdateCheck: '', lastInstallPrompt: '', diagnostics: null },
       cloud: { supabaseUrl: SUPABASE_URL, provider: 'demo', userId: '', email: '', householdId: '', lastSyncAt: '', status: 'demo', households: [], invitations: [] },
       householdWorkspaces: {}
     };
   }
-  function addProfile(name, role = 'member') {
+  async function cloudAddProfile(profile) {
+    if (!cloudReady() || !profile) return null;
+    const client = getSupabaseClient();
+    if (!client) return null;
+    const user = await refreshCloudSession(false);
+    if (!user || !state.cloud?.householdId) return null;
+    const payload = {
+      household_id: state.cloud.householdId,
+      user_id: profile.userId || null,
+      name: normalizeText(profile.name) || 'Profil',
+      avatar_emoji: profile.avatarEmoji || '🙂',
+      color: profile.color || 'blue',
+      is_default: Boolean(profile.id && profile.id === state.activeProfileId),
+      is_archived: false,
+      created_by: user.id
+    };
+    const { data, error } = await client.from('profiles').insert(payload).select('id, created_at').single();
+    if (error) {
+      showToast(error.message || 'Profil se nepovedlo uložit do cloudu');
+      return null;
+    }
+    profile.cloudId = data.id;
+    profile.householdId = state.cloud.householdId;
+    state.cloud.profilesLoadedAt = new Date().toISOString();
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudArchiveProfile(profile) {
+    if (!profile?.cloudId || !cloudReady()) return true;
+    const client = getSupabaseClient();
+    if (!client) return true;
+    const { error } = await client
+      .from('profiles')
+      .update({ is_archived: true, updated_at: new Date().toISOString() })
+      .eq('id', profile.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Profil se nepovedlo smazat v cloudu');
+      return false;
+    }
+    state.cloud.profilesLoadedAt = new Date().toISOString();
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudSyncLocalProfiles(showMessage = false) {
+    if (!cloudReady()) return 0;
+    const localProfiles = (state.profiles || []).filter((profile) => !profile.cloudId);
+    if (!localProfiles.length) {
+      if (showMessage) showToast('Žádné lokální profily k odeslání');
+      return 0;
+    }
+    let count = 0;
+    for (const profile of localProfiles) {
+      try {
+        const saved = await cloudAddProfile(profile);
+        if (saved?.id) count += 1;
+      } catch (error) {
+        console.warn('Cloud profile sync failed', error);
+      }
+    }
+    touchState();
+    saveState();
+    if (showMessage) showToast(`Odesláno profilů: ${count}`);
+    return count;
+  }
+
+  async function addProfile(name, role = 'member') {
     const cleanName = normalizeText(name);
     if (!cleanName) return;
     const profile = createProfile(cleanName, role === 'owner' ? 'owner' : 'member', currentHouseholdId());
+    const saved = await cloudAddProfile(profile);
+    if (saved?.id) profile.cloudId = saved.id;
     state.profiles.push(profile);
     state.activeProfileId = profile.id;
     touchState();
     saveState();
     render();
-    showToast('Profil přidán');
+    showToast(profile.cloudId ? 'Profil přidán do cloudu' : 'Profil přidán lokálně');
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 46, appBuild: 57, mode: 'demo-readonly-return-v57', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 51, appBuild: 66, mode: 'modular-dashboard-weather-v66', updatedAt: new Date().toISOString() };
   }
 
-  function addItem(collection, item) {
+  async function addItem(collection, item) {
     const normalized = Object.fromEntries(Object.entries(item).map(([key, value]) => [key, typeof value === 'string' ? normalizeText(value) : value]));
     if (!state[collection]) state[collection] = [];
-    state[collection].push({
+    const record = {
       id: uid(),
       householdId: currentHouseholdId(),
       profileId: currentProfileId(),
       createdAt: new Date().toISOString(),
       ...normalized
-    });
+    };
+    const saved = await cloudAddExtraItem(collection, record);
+    if (saved?.id) record.cloudId = saved.id;
+    state[collection].push(record);
     touchState();
     saveState();
     render();
-    showToast('Uloženo');
+    showToast(record.cloudId ? 'Uloženo do cloudu' : 'Uloženo lokálně');
   }
 
   async function updateContract(id, data, form) {
@@ -7225,12 +8143,415 @@
 
 
 
-  async function cloudLoadAllModules(showMessage = true) {
+
+  function cloudReady() {
+    return Boolean(state.cloud?.userId && state.cloud?.householdId && state.cloud?.provider === 'supabase');
+  }
+
+
+  function realtimeStatusLabel(status = state.cloud?.realtimeStatus) {
+    return REALTIME_STATUS_LABELS[String(status || 'offline').toLowerCase()] || String(status || 'vypnuto');
+  }
+
+  function cloudAutosyncStatusLabel(status = state.cloud?.autosyncStatus) {
+    if (state.cloud?.autoSyncEnabled === false) return AUTOSYNC_STATUS_LABELS.disabled;
+    return AUTOSYNC_STATUS_LABELS[String(status || 'idle').toLowerCase()] || String(status || 'čeká');
+  }
+
+  function cloudLocalPendingCount(items = null) {
+    try {
+      const rows = items || getCloudSyncOverviewItems();
+      return rows.reduce((sum, item) => sum + Number(item.local || 0), 0);
+    } catch {
+      return 0;
+    }
+  }
+
+  function scheduleCloudAutosync(source = 'save') {
+    if (!cloudReady() || isDemoOnlyState()) return;
+    if (state.cloud?.autoSyncEnabled === false) return;
+    if (cloudAutosyncRunning || cloudRealtimeReloading || suppressToastDepth > 0) return;
+    const pending = cloudLocalPendingCount();
+    state.cloud.localPendingCount = pending;
+    if (!pending) return;
+    if (Date.now() - cloudAutosyncLastAttempt < 6500) return;
+    if (cloudAutosyncTimer) window.clearTimeout(cloudAutosyncTimer);
+    state.cloud.autosyncStatus = 'pending';
+    state.cloud.autosyncSource = source;
+    persistStateSnapshot();
+    cloudAutosyncTimer = window.setTimeout(() => {
+      cloudAutosyncTimer = null;
+      runCloudAutosyncNow(false);
+    }, 2600);
+  }
+
+  async function runCloudAutosyncNow(showMessage = true) {
+    if (!cloudReady()) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return false;
+    }
+    if (isDemoOnlyState()) return false;
+    if (cloudAutosyncTimer) {
+      window.clearTimeout(cloudAutosyncTimer);
+      cloudAutosyncTimer = null;
+    }
+    const before = cloudLocalPendingCount();
+    state.cloud.localPendingCount = before;
+    if (!before) {
+      state.cloud.autosyncStatus = 'done';
+      state.cloud.lastAutosyncAt = new Date().toISOString();
+      persistStateSnapshot();
+      if (showMessage) showToast('Cloud je aktuální');
+      render();
+      return true;
+    }
+    cloudAutosyncRunning = true;
+    cloudAutosyncLastAttempt = Date.now();
+    state.cloud.autosyncStatus = 'syncing';
+    persistStateSnapshot();
+    render();
+    try {
+      await withMutedToasts(async () => {
+        await cloudSyncLocalPendingData(false);
+        await cloudLoadAllModules(false, { skipRealtimeSetup: true, silentWhenOffline: true });
+      });
+      const after = cloudLocalPendingCount();
+      state.cloud = {
+        ...(state.cloud || {}),
+        autosyncStatus: after ? 'blocked' : 'done',
+        lastAutosyncAt: new Date().toISOString(),
+        localPendingCount: after,
+        lastAutosyncError: ''
+      };
+      touchState();
+      persistStateSnapshot();
+      render();
+      if (showMessage) showToast(after ? `Cloud sync hotový, ${after} položek chce ruční kontrolu` : 'Lokální záznamy jsou v cloudu');
+      return !after;
+    } catch (error) {
+      console.warn('Cloud autosync failed', error);
+      state.cloud = {
+        ...(state.cloud || {}),
+        autosyncStatus: 'error',
+        lastAutosyncError: error?.message || 'Autosync selhal',
+        localPendingCount: cloudLocalPendingCount()
+      };
+      persistStateSnapshot();
+      render();
+      if (showMessage) showToast('Automatická synchronizace se nepovedla');
+      return false;
+    } finally {
+      cloudAutosyncRunning = false;
+    }
+  }
+
+  function setCloudAutosyncEnabled(enabled) {
+    state.cloud = {
+      ...(state.cloud || {}),
+      autoSyncEnabled: Boolean(enabled),
+      autosyncStatus: enabled ? 'idle' : 'disabled'
+    };
+    touchState();
+    saveState();
+    render();
+    showToast(enabled ? 'Autosync zapnutý' : 'Autosync vypnutý');
+    if (enabled) scheduleCloudAutosync('manual-toggle');
+  }
+
+  function disposeCloudRealtime() {
+    if (cloudRealtimeReloadTimer) {
+      window.clearTimeout(cloudRealtimeReloadTimer);
+      cloudRealtimeReloadTimer = null;
+    }
+    const client = supabaseClientInstance;
+    if (cloudRealtimeChannel && client?.removeChannel) {
+      try { client.removeChannel(cloudRealtimeChannel); } catch (error) { console.warn('Realtime remove failed', error); }
+    }
+    cloudRealtimeChannel = null;
+    cloudRealtimeHouseholdId = '';
+    cloudRealtimeReloading = false;
+  }
+
+  function scheduleCloudRealtimeRefresh(source = 'cloud') {
+    if (!cloudReady() || isDemoOnlyState()) return;
+    if (cloudRealtimeReloadTimer) window.clearTimeout(cloudRealtimeReloadTimer);
+    state.cloud = {
+      ...(state.cloud || {}),
+      realtimeStatus: 'refreshing',
+      realtimeSource: source,
+      lastRealtimeAt: new Date().toISOString()
+    };
+    saveState();
+    cloudRealtimeReloadTimer = window.setTimeout(async () => {
+      if (cloudRealtimeReloading || !cloudReady() || isDemoOnlyState()) return;
+      cloudRealtimeReloading = true;
+      try {
+        await withMutedToasts(() => cloudLoadAllModules(false, { skipRealtimeSetup: true }));
+        state.cloud = {
+          ...(state.cloud || {}),
+          realtimeStatus: 'online',
+          realtimeSource: source,
+          lastRealtimeAt: new Date().toISOString()
+        };
+        touchState();
+        saveState();
+        render();
+      } catch (error) {
+        console.warn('Realtime cloud refresh failed', error);
+        state.cloud = { ...(state.cloud || {}), realtimeStatus: 'channel_error' };
+        saveState();
+      } finally {
+        cloudRealtimeReloading = false;
+        cloudRealtimeReloadTimer = null;
+      }
+    }, 1200);
+  }
+
+  function setupCloudRealtimeSubscriptions(force = false) {
+    if (!cloudReady() || isDemoOnlyState()) {
+      disposeCloudRealtime();
+      return false;
+    }
+    const client = getSupabaseClient();
+    if (!client?.channel) {
+      state.cloud = { ...(state.cloud || {}), realtimeStatus: 'unsupported' };
+      saveState();
+      return false;
+    }
+    const householdId = state.cloud.householdId;
+    if (!force && cloudRealtimeChannel && cloudRealtimeHouseholdId === householdId) return true;
+    disposeCloudRealtime();
+    cloudRealtimeHouseholdId = householdId;
+    state.cloud = { ...(state.cloud || {}), realtimeStatus: 'connecting' };
+    const channel = client.channel(`domacnost-plus-household-${householdId}`);
+    REALTIME_CLOUD_TABLES.forEach((table) => {
+      channel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table, filter: `household_id=eq.${householdId}` },
+        (payload) => scheduleCloudRealtimeRefresh(payload?.table || table)
+      );
+    });
+    cloudRealtimeChannel = channel;
+    channel.subscribe((status) => {
+      const key = String(status || '').toLowerCase();
+      state.cloud = {
+        ...(state.cloud || {}),
+        realtimeStatus: key === 'subscribed' ? 'online' : key,
+        realtimeStartedAt: key === 'subscribed' ? new Date().toISOString() : state.cloud?.realtimeStartedAt || ''
+      };
+      saveState();
+      const realtimeBadge = document.querySelector('[data-cloud-realtime-status]');
+      if (realtimeBadge) realtimeBadge.textContent = realtimeStatusLabel();
+    });
+    return true;
+  }
+
+  async function withMutedToasts(callback) {
+    suppressToastDepth += 1;
+    try {
+      return await callback();
+    } finally {
+      suppressToastDepth = Math.max(0, suppressToastDepth - 1);
+    }
+  }
+
+  function extraCloudConfig(collection) {
+    return CLOUD_EXTRA_COLLECTIONS[collection] || null;
+  }
+
+  async function cloudAddExtraItem(collection, item) {
+    const config = extraCloudConfig(collection);
+    if (!config || !cloudReady()) return null;
+    const client = getSupabaseClient();
+    if (!client) return null;
+    const user = await refreshCloudSession(false);
+    if (!user || !state.cloud?.householdId) return null;
+    const payload = config.payload(item, user.id);
+    const { data, error } = await client
+      .from(config.table)
+      .insert(payload)
+      .select('id')
+      .single();
+    if (error) {
+      showToast(error.message || 'Záznam se nepovedlo uložit do cloudu');
+      return null;
+    }
+    item.cloudId = data.id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudUpdateExtraItem(collection, item) {
+    const config = extraCloudConfig(collection);
+    if (!config || !cloudReady() || !item?.cloudId) return true;
+    const client = getSupabaseClient();
+    if (!client) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const payload = config.payload(item, user.id);
+    delete payload.created_by;
+    const { error } = await client
+      .from(config.table)
+      .update(payload)
+      .eq('id', item.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Záznam se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteExtraItem(collection, item) {
+    const config = extraCloudConfig(collection);
+    if (!config || !item?.cloudId || !cloudReady()) return true;
+    const client = getSupabaseClient();
+    if (!client) return true;
+    const { error } = await client
+      .from(config.table)
+      .delete()
+      .eq('id', item.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Záznam se nepovedlo smazat z cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadExtraCollection(collection, showMessage = false) {
+    const config = extraCloudConfig(collection);
+    if (!config || !cloudReady()) return false;
+    const client = getSupabaseClient();
+    if (!client) return false;
+    let query = client
+      .from(config.table)
+      .select(config.select)
+      .eq('household_id', state.cloud.householdId);
+    if (config.order) query = query.order(config.order.column, { ascending: config.order.ascending });
+    const { data, error } = await query;
+    if (error) {
+      if (showMessage) showToast(error.message || 'Cloud data se nepovedlo načíst');
+      return false;
+    }
+    const localOnly = (state[collection] || []).filter((item) => !item.cloudId);
+    const cloudItems = (data || []).map((item) => config.map(item));
+    state[collection] = [...cloudItems, ...localOnly];
+    state.householdExtrasCloud = { ...(state.householdExtrasCloud || {}), loadedAt: new Date().toISOString() };
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    if (showMessage) showToast('Cloud data načtená');
+    return true;
+  }
+
+  async function cloudLoadExtraCollections(showMessage = false) {
+    if (!cloudReady()) return false;
+    let count = 0;
+    for (const collection of Object.keys(CLOUD_EXTRA_COLLECTIONS)) {
+      try {
+        const ok = await cloudLoadExtraCollection(collection, false);
+        if (ok) count += 1;
+      } catch (error) {
+        console.warn('Cloud extra load failed', collection, error);
+      }
+    }
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(`Cloud drobné moduly načtené: ${count}/${Object.keys(CLOUD_EXTRA_COLLECTIONS).length}`);
+    return true;
+  }
+
+  async function cloudSyncLocalExtraCollections(showMessage = true) {
+    if (!cloudReady()) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return 0;
+    }
+    let synced = 0;
+    for (const collection of Object.keys(CLOUD_EXTRA_COLLECTIONS)) {
+      const localItems = (state[collection] || []).filter((item) => !item.cloudId);
+      for (const item of localItems) {
+        try {
+          const saved = await cloudAddExtraItem(collection, item);
+          if (saved?.id) synced += 1;
+        } catch (error) {
+          console.warn('Cloud extra sync failed', collection, error);
+        }
+      }
+    }
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(synced ? `Odesláno drobných záznamů: ${synced}` : 'Žádné lokální drobné záznamy k odeslání');
+    return synced;
+  }
+
+  async function cloudSyncLocalPendingData(showMessage = true) {
+    if (!cloudReady()) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return;
+    }
+    const syncers = [
+      cloudSyncLocalProfiles,
+      cloudSyncLocalShoppingItems,
+      cloudSyncLocalContracts,
+      cloudSyncLocalContractFiles,
+      cloudSyncLocalGarage,
+      cloudSyncLocalHdo,
+      cloudSyncLocalWaste,
+      cloudSyncLocalTasks,
+      cloudSyncLocalParcels,
+      cloudSyncLocalCalendar,
+      cloudSyncLocalFinanceAccounts,
+      cloudSyncLocalFinance,
+      () => cloudSyncLocalExtraCollections(false)
+    ];
+    await withMutedToasts(async () => {
+      for (const syncer of syncers) {
+        try {
+          await syncer();
+        } catch (error) {
+          console.warn('Cloud pending sync failed', error);
+        }
+      }
+    });
+    if (showMessage) await withMutedToasts(() => cloudLoadAllModules(false));
+    setupCloudRealtimeSubscriptions(false);
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast('Lokální záznamy byly zkontrolované a cloud je načtený');
+  }
+
+  async function cloudWarmStartLoad(showMessage = false, force = false) {
+    if ((cloudWarmStartDone && !force) || isDemoOnlyState()) return;
+    const user = await refreshCloudSession(false);
+    if (!user) return;
+    cloudWarmStartDone = true;
+    const households = await cloudLoadHouseholds(false);
+    if (!state.cloud?.householdId && households[0]) {
+      state.cloud.householdId = households[0].id;
+      state.household = { ...(state.household || {}), id: households[0].id, name: households[0].name || state.household?.name || 'Domácnost', isConfigured: true };
+    }
+    if (!state.cloud?.householdId) return;
+    await cloudLoadProfilesForCurrentHousehold();
+    await cloudSyncLocalPendingData(false);
+    await cloudLoadAllModules(false);
+    if (showMessage) showToast('Cloud domácnost načtená');
+  }
+
+  async function cloudLoadAllModules(showMessage = true, options = {}) {
     if (!state.cloud?.userId || !state.cloud?.householdId) {
-      showToast('Nejdřív napoj domácnost na cloud');
+      if (!options.silentWhenOffline) showToast('Nejdřív napoj domácnost na cloud');
       return;
     }
     const loaders = [
+      cloudLoadHouseholdUiSettings,
+      cloudLoadProfilesForCurrentHousehold,
       cloudLoadShoppingData,
       cloudLoadContracts,
       cloudLoadGarageData,
@@ -7240,7 +8561,8 @@
       cloudLoadParcels,
       cloudLoadCalendar,
       cloudLoadContractFiles,
-      cloudLoadFinance
+      cloudLoadFinance,
+      cloudLoadExtraCollections
     ];
     let ok = 0;
     for (const loader of loaders) {
@@ -7255,6 +8577,7 @@
     touchState();
     saveState();
     render();
+    if (!options.skipRealtimeSetup) setupCloudRealtimeSubscriptions(false);
     if (showMessage) showToast(`Cloud načten: ${ok}/${loaders.length} částí`);
   }
 
@@ -7353,6 +8676,30 @@
       cloudLoadAllModules(true);
       return;
     }
+    if (action === 'cloud-load-extras') {
+      cloudLoadExtraCollections(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-extras') {
+      cloudSyncLocalExtraCollections(true).then(() => cloudLoadExtraCollections(false));
+      return;
+    }
+    if (action === 'cloud-sync-pending') {
+      cloudSyncLocalPendingData(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-profiles') {
+      cloudSyncLocalProfiles(true).then(() => cloudLoadProfilesForCurrentHousehold());
+      return;
+    }
+    if (action === 'cloud-run-autosync-now') {
+      runCloudAutosyncNow(true);
+      return;
+    }
+    if (action === 'cloud-toggle-autosync') {
+      setCloudAutosyncEnabled(state.cloud?.autoSyncEnabled === false);
+      return;
+    }
     if (action === 'cloud-load-calendar') {
       cloudLoadCalendar(true);
       return;
@@ -7401,6 +8748,21 @@
       toggleBottomNav(button.dataset.id);
       return;
     }
+    if (action === 'toggle-dashboard-widget') {
+      toggleDashboardWidget(button.dataset.id);
+      return;
+    }
+    if (action === 'dashboard-reset-widgets') {
+      resetDashboardWidgets();
+      return;
+    }
+    if (action === 'weather-refresh') {
+      ensureWeatherFresh(true).then(() => {
+        const error = normalizeWeatherState(state.weather).error;
+        showToast(error || 'Počasí obnoveno');
+      });
+      return;
+    }
     if (action === 'select-vehicle') {
       garageVehicleId = button.dataset.id;
       moduleTabs = { ...(moduleTabs || {}), garage: 'detail' };
@@ -7431,6 +8793,10 @@
     }
     if (action === 'cloud-load-contract-files') {
       cloudLoadContractFiles(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-contract-files') {
+      cloudSyncLocalContractFiles(true).then(() => cloudLoadContractFiles(false));
       return;
     }
     if (action === 'confirm-fuelio-import') {
@@ -7648,7 +9014,13 @@
       return;
     }
     if (action === 'cloud-refresh-session') {
-      refreshCloudSession(true);
+      refreshCloudSession(true).then(() => setupCloudRealtimeSubscriptions(true));
+      return;
+    }
+    if (action === 'cloud-start-realtime') {
+      const ok = setupCloudRealtimeSubscriptions(true);
+      showToast(ok ? 'Živá synchronizace zapnutá' : 'Realtime zatím nejde zapnout');
+      render();
       return;
     }
     if (action === 'cloud-oauth-signin') {
@@ -7669,6 +9041,26 @@
   }
 
 
+
+  function isEditableTarget(target) {
+    return Boolean(target?.closest?.('input, textarea, select, [contenteditable="true"], .selectable-text'));
+  }
+
+  function installAppLikeTouchGuards() {
+    let lastTouchEnd = 0;
+    const preventGesture = (event) => event.preventDefault();
+    document.addEventListener('gesturestart', preventGesture, { passive: false });
+    document.addEventListener('gesturechange', preventGesture, { passive: false });
+    document.addEventListener('gestureend', preventGesture, { passive: false });
+    document.addEventListener('touchmove', (event) => {
+      if (event.touches && event.touches.length > 1 && !isEditableTarget(event.target)) event.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchend', (event) => {
+      const current = Date.now();
+      if (current - lastTouchEnd <= 300 && !isEditableTarget(event.target)) event.preventDefault();
+      lastTouchEnd = current;
+    }, { passive: false });
+  }
 
   function addDiagnostic(checks, label, status, message) {
     checks.push({ label, status, message });
@@ -7884,6 +9276,13 @@
       return null;
     }
     const { data, error } = await client.auth.getUser();
+    try {
+      const sessionResult = await client.auth.getSession?.();
+      const token = sessionResult?.data?.session?.access_token;
+      if (token && client.realtime?.setAuth) client.realtime.setAuth(token);
+    } catch (sessionError) {
+      console.warn('Realtime auth refresh failed', sessionError);
+    }
     if (error || !data?.user) {
       state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, status: 'offline', userId: '', email: '' };
       saveState();
@@ -7913,8 +9312,9 @@
     const user = data?.user;
     state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, provider: 'supabase', status: 'signed-in', userId: user?.id || '', email: user?.email || normalizeText(email) };
     saveState();
+    await cloudWarmStartLoad(false, true);
     render();
-    showToast('Přihlášeno');
+    showToast('Přihlášeno a cloud domácnost načtená');
   }
 
   async function cloudSignUp(email, password) {
@@ -8014,7 +9414,7 @@
     if (!user) { if (showMessage) showToast('Nejdřív se přihlas'); return []; }
     const { data, error } = await client
       .from('household_members')
-      .select('household_id, role, status, households(id, name, timezone, created_at)')
+      .select('household_id, role, status, households(id, name, timezone, dashboard_layout, weather_location, created_at)')
       .eq('user_id', user.id)
       .eq('status', 'active')
       .order('created_at', { ascending: true });
@@ -8025,6 +9425,8 @@
       status: row.status || 'active',
       name: row.households?.name || 'Domácnost',
       timezone: row.households?.timezone || 'Europe/Prague',
+      dashboardLayout: row.households?.dashboard_layout || {},
+      weatherLocation: row.households?.weather_location || {},
       createdAt: row.households?.created_at || ''
     })).filter((item) => item.id);
     state.cloud = { ...(state.cloud || {}), households, lastSyncAt: new Date().toISOString() };
@@ -8033,11 +9435,78 @@
       state.household.name = households[0].name;
       state.household.isConfigured = true;
     }
+    const activeHousehold = households.find((item) => item.id === state.cloud.householdId);
+    if (activeHousehold) applyCloudHouseholdUiSettings(activeHousehold);
     touchState();
     saveState();
     render();
     if (showMessage) showToast(`Načteno domácností: ${households.length}`);
     return households;
+  }
+
+  function applyCloudHouseholdUiSettings(household) {
+    if (!household) return;
+    const layout = household.dashboardLayout || household.dashboard_layout || {};
+    const weatherLocation = household.weatherLocation || household.weather_location || {};
+    if (Array.isArray(layout.widgets)) state.settings.dashboardWidgets = normalizeDashboardWidgetIds(layout.widgets);
+    else if (Array.isArray(layout.dashboardWidgets)) state.settings.dashboardWidgets = normalizeDashboardWidgetIds(layout.dashboardWidgets);
+    if (weatherLocation && typeof weatherLocation === 'object' && Object.keys(weatherLocation).length) {
+      state.weather = { ...normalizeWeatherState(state.weather), location: normalizeWeatherLocation(weatherLocation) };
+    }
+  }
+
+  function householdUiPayload() {
+    return {
+      dashboard_layout: {
+        widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
+        updatedAt: new Date().toISOString(),
+        appBuild: 66
+      },
+      weather_location: normalizeWeatherLocation(state.weather?.location)
+    };
+  }
+
+  async function cloudSaveHouseholdUiSettings(showMessage = false) {
+    if (!cloudReady()) return false;
+    const client = getSupabaseClient();
+    if (!client) return false;
+    const { error } = await client
+      .from('households')
+      .update(householdUiPayload())
+      .eq('id', state.cloud.householdId);
+    if (error) {
+      if (showMessage) showToast(error.message || 'Nastavení hlavní obrazovky se nepovedlo uložit do cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    saveState();
+    if (showMessage) showToast('Nastavení hlavní obrazovky uloženo do cloudu');
+    return true;
+  }
+
+  async function cloudLoadHouseholdUiSettings(showMessage = false) {
+    if (!cloudReady()) return false;
+    const client = getSupabaseClient();
+    if (!client) return false;
+    const { data, error } = await client
+      .from('households')
+      .select('id, name, dashboard_layout, weather_location')
+      .eq('id', state.cloud.householdId)
+      .single();
+    if (error) {
+      if (showMessage) showToast(error.message || 'Nastavení domácnosti se nepovedlo načíst');
+      return false;
+    }
+    if (data) {
+      state.household.name = data.name || state.household.name || 'Domácnost';
+      applyCloudHouseholdUiSettings(data);
+      state.cloud.lastSyncAt = new Date().toISOString();
+      touchState();
+      saveState();
+      render();
+    }
+    if (showMessage) showToast('Nastavení hlavní obrazovky načtené');
+    return true;
   }
 
   function currentWorkspaceKey() {
@@ -8109,7 +9578,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 57, schema_version: 46, created_by: user.id })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 66, schema_version: 51, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -8130,6 +9599,7 @@
     state.activeProfileId = state.profiles[0].id;
     await client.from('profiles').insert({ household_id: household.id, user_id: user.id, name: cleanProfileName, is_default: true, created_by: user.id });
     await cloudLoadHouseholds(false);
+    setupCloudRealtimeSubscriptions(true);
     touchState();
     saveState();
     render();
@@ -8224,9 +9694,10 @@
   async function cloudLoadProfilesForCurrentHousehold() {
     const client = getSupabaseClient();
     if (!client || !state.cloud?.householdId) return false;
+    const previousActive = state.profiles?.find((profile) => profile.id === state.activeProfileId) || null;
     const { data, error } = await client
       .from('profiles')
-      .select('id, name, user_id, is_default, created_at')
+      .select('id, name, user_id, avatar_emoji, color, is_default, created_at')
       .eq('household_id', state.cloud.householdId)
       .eq('is_archived', false)
       .order('created_at', { ascending: true });
@@ -8235,18 +9706,27 @@
     state.profiles = data.map((profile, index) => ({
       id: profile.id,
       cloudId: profile.id,
-      householdId: currentHouseholdId(),
+      householdId: state.cloud.householdId,
       name: profile.name || `Profil ${index + 1}`,
-      color: ['blue', 'green', 'violet', 'orange'][index % 4],
+      avatarEmoji: profile.avatar_emoji || '🙂',
+      color: profile.color || ['blue', 'green', 'violet', 'orange'][index % 4],
       role: profile.user_id === state.cloud.userId ? 'member' : 'member',
+      userId: profile.user_id || '',
+      isDefault: Boolean(profile.is_default),
       createdAt: profile.created_at || new Date().toISOString()
     }));
-    const ownProfile = state.profiles.find((profile) => profile.cloudId);
-    state.activeProfileId = ownProfile?.id || state.profiles[0]?.id || '';
+    const preserved = state.profiles.find((profile) => profile.cloudId && profile.cloudId === previousActive?.cloudId)
+      || state.profiles.find((profile) => normalizeText(profile.name).toLowerCase() === normalizeText(previousActive?.name).toLowerCase())
+      || state.profiles.find((profile) => profile.isDefault)
+      || state.profiles[0];
+    state.activeProfileId = preserved?.id || '';
+    state.cloud.profilesLoadedAt = new Date().toISOString();
+    state.cloud.lastSyncAt = new Date().toISOString();
     return true;
   }
 
   async function cloudLogout() {
+    disposeCloudRealtime();
     const client = getSupabaseClient();
     if (client) await client.auth.signOut();
     state.cloud = { ...(state.cloud || {}), status: 'offline', userId: '', email: '' };
@@ -8270,9 +9750,10 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 57,
-          schema_version: 46,
-          created_by: user.id
+          app_build: 66,
+          schema_version: 51,
+          created_by: user.id,
+          ...householdUiPayload()
         })
         .select('id')
         .single();
@@ -8318,6 +9799,7 @@
       householdId: cloudHouseholdId,
       lastSyncAt: new Date().toISOString()
     };
+    setupCloudRealtimeSubscriptions(true);
     saveState();
     render();
     if (showMessage) showToast('Domácnost je v cloudu');
@@ -8331,20 +9813,23 @@
     render();
   }
 
-  function deleteProfile(id) {
+  async function deleteProfile(id) {
     if (state.profiles.length <= 1) {
       showToast('Poslední profil nejde smazat');
       return;
     }
     const profile = state.profiles.find((item) => item.id === id);
     if (!profile) return;
-    const ok = window.confirm(`Smazat profil ${profile.name}? Data z modulů zůstanou uložená, jen už nebudou patřit aktivnímu profilu.`);
+    const confirmed = window.confirm(`Smazat profil ${profile.name}? Data z modulů zůstanou uložená, jen už nebudou patřit aktivnímu profilu.`);
+    if (!confirmed) return;
+    const ok = await cloudArchiveProfile(profile);
     if (!ok) return;
     state.profiles = state.profiles.filter((item) => item.id !== id);
     if (state.activeProfileId === id) state.activeProfileId = state.profiles[0]?.id || '';
+    touchState();
     saveState();
     render();
-    showToast('Profil smazán');
+    showToast(profile.cloudId ? 'Profil smazán v cloudu' : 'Profil smazán');
   }
 
   function toggleModule(moduleId) {
@@ -8383,6 +9868,35 @@
     render();
   }
 
+
+  function toggleDashboardWidget(widgetId) {
+    if (!DASHBOARD_WIDGETS.some((widget) => widget.id === widgetId)) return;
+    const selected = new Set(normalizeDashboardWidgetIds(state.settings?.dashboardWidgets));
+    if (selected.has(widgetId)) {
+      if (selected.size <= 1) {
+        showToast('Na hlavní obrazovce nech aspoň jednu kartu');
+        return;
+      }
+      selected.delete(widgetId);
+    } else {
+      selected.add(widgetId);
+    }
+    state.settings.dashboardWidgets = normalizeDashboardWidgetIds([...selected]);
+    touchState();
+    saveState();
+    cloudSaveHouseholdUiSettings(false);
+    render();
+  }
+
+  function resetDashboardWidgets() {
+    state.settings.dashboardWidgets = [...DEFAULT_DASHBOARD_WIDGET_IDS];
+    touchState();
+    saveState();
+    cloudSaveHouseholdUiSettings(false);
+    render();
+    showToast('Hlavní obrazovka vrácená na výchozí karty');
+  }
+
   async function deleteItem(collection, id) {
     if (!collection || !Array.isArray(state[collection])) return;
     if (collection === 'fuel' || collection === 'services') {
@@ -8399,6 +9913,11 @@
       state.contractFiles = state.contractFiles.filter((file) => file.contractId !== id);
       if (activeContractId === id) activeContractId = state.contracts.find((contract) => contract.id !== id)?.id || null;
     }
+    if (extraCloudConfig(collection)) {
+      const item = state[collection].find((entry) => entry.id === id);
+      const ok = await cloudDeleteExtraItem(collection, item);
+      if (!ok) return;
+    }
     state[collection] = state[collection].filter((item) => item.id !== id);
     touchState();
     saveState();
@@ -8406,10 +9925,16 @@
     showToast('Smazáno');
   }
 
-  function toggleBoolean(collection, id, key) {
+  async function toggleBoolean(collection, id, key) {
     const item = state[collection]?.find((entry) => entry.id === id);
     if (!item) return;
     item[key] = !item[key];
+    const ok = await cloudUpdateExtraItem(collection, item);
+    if (!ok) {
+      item[key] = !item[key];
+      return;
+    }
+    touchState();
     saveState();
     render();
   }
@@ -8448,7 +9973,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-57-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-66-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -8482,6 +10007,7 @@
   }
 
   function showToast(text) {
+    if (suppressToastDepth > 0) return;
     const toast = document.getElementById('copy-toast');
     if (!toast) return;
     toast.textContent = text;
@@ -8550,9 +10076,10 @@
 
   setupInstallAndUpdateFlow();
   registerServiceWorker();
+  installAppLikeTouchGuards();
 
   render();
-  refreshCloudSession(false).catch(() => {});
+  cloudWarmStartLoad(false).catch((error) => console.warn('Cloud warm start failed', error));
   handleInitialAuthReturn().catch((error) => console.warn('Auth return handling failed', error));
 
   } catch (error) {
@@ -8568,7 +10095,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_57</span>
+          <span class="badge">Domácnost+ v.0.1_66</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

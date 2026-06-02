@@ -45,10 +45,17 @@
 html {
   min-height: 100%;
   background: var(--bg);
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
 }
 
 body {
   min-height: 100%;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
   margin: 0;
   color: var(--text);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -64,6 +71,30 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+input,
+select,
+textarea {
+  font-size: max(16px, 1em);
+}
+
+input,
+select,
+textarea,
+[contenteditable="true"],
+.selectable-text {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+a,
+button,
+[role="button"],
+[data-action],
+[data-nav] {
+  touch-action: manipulation;
 }
 
 button {
@@ -3100,7 +3131,7 @@ body.overview-open {
   }
 }
 
-/* Domácnost+ v.0.1_57 – sjednocené mobilní záložky a kompaktní formuláře */
+/* Domácnost+ v.0.1_58 – sjednocené mobilní záložky a kompaktní formuláře */
 .section-tabs.compact-tabs {
   position: relative;
   margin-bottom: 2px;
@@ -3225,7 +3256,7 @@ body.overview-open {
   }
 }
 
-/* Domácnost+ v.0.1_57 – kompaktní Nastavení a lepší prázdné stavy */
+/* Domácnost+ v.0.1_58 – kompaktní Nastavení a lepší prázdné stavy */
 .settings-tabbed {
   display: block;
 }
@@ -3347,4 +3378,601 @@ body.overview-open {
     min-height: 92px;
     padding: 12px;
   }
+}
+
+/* Domácnost+ v.0.1_58 – průvodce prvním nastavením domácnosti */
+.guided-starter-card {
+  overflow: hidden;
+}
+.starter-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 9px;
+}
+.starter-progress-head strong,
+.starter-progress-head span {
+  display: block;
+}
+.starter-progress-head strong {
+  color: var(--text);
+  font-size: .98rem;
+}
+.starter-progress-head span {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: .78rem;
+}
+.starter-progress {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, .18);
+}
+.starter-progress span,
+.setup-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), #22c55e);
+}
+.starter-step-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.starter-step-card,
+.setup-action-item {
+  appearance: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.starter-step-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "icon copy" "status copy";
+  gap: 7px 9px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, .24);
+  border-radius: 18px;
+  color: var(--text);
+  background: rgba(255,255,255,.48);
+  box-shadow: 0 10px 24px rgba(45,70,110,.07);
+}
+[data-theme="dark"] .starter-step-card {
+  background: rgba(255,255,255,.055);
+}
+.starter-step-card.done {
+  border-color: rgba(34, 197, 94, .28);
+  background: rgba(34, 197, 94, .08);
+}
+.starter-step-icon {
+  grid-area: icon;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(53, 116, 240, .12);
+  font-size: 1rem;
+  font-weight: 900;
+}
+.starter-step-card.done .starter-step-icon {
+  color: white;
+  background: linear-gradient(135deg, var(--good), #22c55e);
+}
+.starter-step-copy {
+  grid-area: copy;
+  min-width: 0;
+}
+.starter-step-copy strong,
+.starter-step-copy em {
+  display: block;
+}
+.starter-step-copy strong {
+  font-size: .86rem;
+  line-height: 1.18;
+}
+.starter-step-copy em {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: .74rem;
+  font-style: normal;
+  line-height: 1.28;
+}
+.starter-step-status {
+  grid-area: status;
+  justify-self: start;
+  padding: 2px 6px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(148, 163, 184, .14);
+  font-size: .66rem;
+  font-weight: 800;
+}
+.starter-step-card.done .starter-step-status {
+  color: var(--good);
+  background: rgba(34, 197, 94, .12);
+}
+.setup-progress {
+  margin: 0 0 10px;
+}
+.compact-setup-list {
+  gap: 7px;
+}
+.setup-action-item {
+  width: 100%;
+  color: inherit;
+}
+.setup-action-item:hover,
+.starter-step-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(53, 116, 240, .32);
+}
+@media (max-width: 940px) {
+  .starter-step-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .starter-progress-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .starter-progress-head .ghost-btn {
+    width: 100%;
+  }
+  .starter-step-grid {
+    grid-template-columns: 1fr;
+  }
+  .starter-step-card {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "icon copy status";
+    align-items: center;
+  }
+}
+
+
+/* Domácnost+ v.0.1_59 – priorita průvodce a chytřejší prázdné stavy */
+.starter-priority-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: -2px 0 9px;
+  padding: 8px 10px;
+  border: 1px solid rgba(53, 116, 240, .14);
+  border-radius: 16px;
+  color: var(--muted);
+  background: rgba(53, 116, 240, .055);
+  font-size: .78rem;
+}
+.starter-priority-line span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mini-btn {
+  min-height: 32px;
+  padding: 7px 10px;
+  border-radius: 12px;
+  font-size: .76rem;
+}
+.starter-priority-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.starter-priority-strip.done {
+  display: block;
+  padding: 9px 10px;
+  border-radius: 16px;
+  color: var(--good);
+  background: rgba(34, 197, 94, .09);
+  font-size: .82rem;
+  font-weight: 800;
+}
+.starter-priority-chip {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(53, 116, 240, .18);
+  border-radius: 16px;
+  color: var(--text);
+  background: rgba(255,255,255,.52);
+  box-shadow: 0 8px 20px rgba(45,70,110,.06);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+[data-theme="dark"] .starter-priority-chip {
+  background: rgba(255,255,255,.055);
+}
+.starter-priority-chip strong {
+  display: grid;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 10px;
+  color: white;
+  background: linear-gradient(135deg, var(--accent), #7c3aed);
+  font-size: .72rem;
+}
+.starter-priority-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .78rem;
+  font-weight: 800;
+}
+@media (max-width: 760px) {
+  .starter-priority-strip {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 430px) {
+  .starter-priority-line {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .starter-priority-line span {
+    white-space: normal;
+  }
+  .starter-priority-line .mini-btn {
+    width: 100%;
+  }
+}
+
+
+/* Domácnost+ v.0.1_66 – fáze prvního nastavení a akčnější prázdné stavy */
+.starter-phase-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.starter-phase-card {
+  appearance: none;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid rgba(53, 116, 240, .16);
+  border-radius: 17px;
+  color: var(--text);
+  background: rgba(255,255,255,.5);
+  box-shadow: 0 8px 22px rgba(45,70,110,.06);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+[data-theme="dark"] .starter-phase-card {
+  background: rgba(255,255,255,.055);
+}
+.starter-phase-card.done {
+  border-color: rgba(34, 197, 94, .25);
+  background: rgba(34, 197, 94, .075);
+}
+.starter-phase-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 13px;
+  background: rgba(53, 116, 240, .11);
+  font-weight: 900;
+}
+.starter-phase-card.done .starter-phase-icon {
+  color: white;
+  background: linear-gradient(135deg, var(--good), #22c55e);
+}
+.starter-phase-copy,
+.starter-phase-copy strong,
+.starter-phase-copy em {
+  display: block;
+  min-width: 0;
+}
+.starter-phase-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .82rem;
+  line-height: 1.15;
+}
+.starter-phase-copy em {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--muted);
+  font-style: normal;
+  font-size: .7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.starter-phase-count {
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(148, 163, 184, .13);
+  font-size: .68rem;
+  font-weight: 900;
+}
+.starter-priority-chip span b,
+.starter-priority-chip span em {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.starter-priority-chip span b {
+  font-size: .78rem;
+  line-height: 1.12;
+}
+.starter-priority-chip span em {
+  margin-top: 2px;
+  color: var(--muted);
+  font-style: normal;
+  font-size: .66rem;
+  font-weight: 700;
+}
+.empty-cta .compact-actions {
+  justify-content: center;
+}
+@media (max-width: 760px) {
+  .starter-phase-grid {
+    grid-template-columns: 1fr;
+  }
+  .starter-phase-card {
+    padding: 8px 9px;
+    border-radius: 16px;
+  }
+}
+
+
+/* Domácnost+ v.0.1_66 – zvýraznění dalšího kroku v průvodci */
+.starter-step-card.is-next,
+.starter-phase-card.is-next,
+.starter-priority-chip.is-next,
+.setup-action-item.is-next {
+  border-color: rgba(53, 116, 240, .42);
+  background: linear-gradient(135deg, rgba(53, 116, 240, .13), rgba(255,255,255,.58));
+  box-shadow: 0 12px 30px rgba(53, 116, 240, .12);
+}
+[data-theme="dark"] .starter-step-card.is-next,
+[data-theme="dark"] .starter-phase-card.is-next,
+[data-theme="dark"] .starter-priority-chip.is-next,
+[data-theme="dark"] .setup-action-item.is-next {
+  background: linear-gradient(135deg, rgba(53, 116, 240, .22), rgba(255,255,255,.07));
+}
+.starter-step-card.is-next .starter-step-icon,
+.starter-phase-card.is-next .starter-phase-icon {
+  color: white;
+  background: linear-gradient(135deg, var(--accent), #7c3aed);
+}
+.starter-step-card.is-next .starter-step-status,
+.starter-phase-card.is-next .starter-phase-count,
+.setup-action-item.is-next small {
+  color: white;
+  background: linear-gradient(135deg, var(--accent), #7c3aed);
+}
+.setup-action-item small {
+  align-self: center;
+  margin-left: auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: .66rem;
+  font-weight: 900;
+}
+.starter-priority-chip.is-next strong {
+  background: linear-gradient(135deg, #16a34a, var(--accent));
+}
+.starter-priority-chip.is-next span b::after {
+  content: " · další";
+  color: var(--accent);
+  font-weight: 900;
+}
+@media (max-width: 560px) {
+  .setup-action-item.is-next {
+    align-items: center;
+  }
+  .setup-action-item small {
+    display: none;
+  }
+}
+
+/* Domácnost+ v.0.1_66 – cloud autosync a jasnější stav sdílených dat */
+.cloud-automation-strip {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  border: 1px solid rgba(148, 163, 184, 0.20);
+  border-radius: 18px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.46);
+  color: var(--muted);
+  font-size: 13px;
+}
+[data-theme="dark"] .cloud-automation-strip {
+  background: rgba(15, 23, 42, 0.46);
+}
+.cloud-automation-strip strong {
+  color: var(--text);
+}
+.cloud-automation-strip em {
+  font-style: normal;
+}
+.cloud-automation-strip.good {
+  border-color: rgba(14, 159, 110, 0.22);
+}
+.cloud-automation-strip.warn {
+  border-color: rgba(217, 119, 6, 0.28);
+}
+.sync-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--good);
+  box-shadow: 0 0 0 5px rgba(14, 159, 110, 0.10);
+}
+.cloud-automation-strip.warn .sync-status-dot {
+  background: var(--warn);
+  box-shadow: 0 0 0 5px rgba(217, 119, 6, 0.12);
+}
+.sync-overview-row.pending {
+  border-color: rgba(217, 119, 6, 0.30);
+  background: rgba(255, 251, 235, 0.62);
+}
+[data-theme="dark"] .sync-overview-row.pending {
+  background: rgba(69, 45, 10, 0.22);
+}
+.sync-overview-row.cloud-ok .sync-overview-icon {
+  background: rgba(14, 159, 110, 0.12);
+}
+@media (max-width: 520px) {
+  .cloud-automation-strip {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+/* Domácnost+ v.0.1_66 – modulární dashboard a počasí */
+.settings-tab-dashboard .settings-panel:not(.panel-dashboard),
+.settings-tab-household .settings-panel:not(.panel-household),
+.settings-tab-modules .settings-panel:not(.panel-modules),
+.settings-tab-cloud .settings-panel:not(.panel-cloud),
+.settings-tab-data .settings-panel:not(.panel-data) {
+  display: none;
+}
+.dashboard-layout-card,
+.weather-card {
+  grid-column: 1 / -1;
+}
+.dashboard-widget-chip-row {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 2px 1px 6px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.dashboard-widget-chip-row::-webkit-scrollbar { display: none; }
+.dashboard-widget-chip {
+  flex: 0 0 auto;
+  min-height: 38px;
+  gap: 6px;
+  opacity: .74;
+}
+.dashboard-widget-chip.active {
+  opacity: 1;
+  border-color: rgba(58, 113, 255, .28);
+  background: color-mix(in srgb, var(--accent, #3a71ff) 10%, var(--glass));
+}
+.weather-main-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+.weather-current {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--glass);
+}
+.weather-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border-radius: 22px;
+  background: rgba(255,255,255,.38);
+  font-size: 2rem;
+}
+[data-theme="dark"] .weather-icon { background: rgba(255,255,255,.08); }
+.weather-current strong {
+  display: block;
+  font-size: clamp(2rem, 8vw, 3.4rem);
+  line-height: .92;
+  letter-spacing: -.07em;
+}
+.weather-current em,
+.weather-day em {
+  display: block;
+  color: var(--muted);
+  font-style: normal;
+  font-weight: 750;
+  font-size: .78rem;
+}
+.weather-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+.weather-daily-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 10px;
+}
+.weather-day {
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255,255,255,.25);
+}
+[data-theme="dark"] .weather-day { background: rgba(255,255,255,.045); }
+.weather-day span {
+  display: block;
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.weather-day strong {
+  display: block;
+  margin-top: 3px;
+  font-size: .98rem;
+}
+.dashboard-widget-picker,
+.dashboard-settings-card .switch-list {
+  gap: 7px;
+}
+.dashboard-widget-switch .switch-row-copy em {
+  line-height: 1.25;
+}
+@media (min-width: 760px) {
+  .weather-main-row {
+    grid-template-columns: minmax(220px, .85fr) 1.15fr;
+  }
+  .weather-metrics,
+  .weather-daily-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 430px) {
+  .weather-card { padding: 10px; }
+  .weather-current { padding: 10px; border-radius: 19px; }
+  .weather-icon { width: 48px; height: 48px; font-size: 1.6rem; border-radius: 18px; }
+  .weather-current strong { font-size: 2rem; }
+  .dashboard-layout-card .card-header p { display: none; }
 }
