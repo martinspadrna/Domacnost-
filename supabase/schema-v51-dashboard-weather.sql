@@ -1,4 +1,4 @@
--- Domácnost+ v.0.1_66 / schema v51
+-- Domácnost+ v.0.1_67 / schema v51
 -- Modulární hlavní obrazovka a nastavení počasí pro celou domácnost.
 
 alter table public.households

@@ -3635,7 +3635,7 @@ body.overview-open {
 }
 
 
-/* Domácnost+ v.0.1_66 – fáze prvního nastavení a akčnější prázdné stavy */
+/* Domácnost+ v.0.1_67 – fáze prvního nastavení a akčnější prázdné stavy */
 .starter-phase-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3742,7 +3742,7 @@ body.overview-open {
 }
 
 
-/* Domácnost+ v.0.1_66 – zvýraznění dalšího kroku v průvodci */
+/* Domácnost+ v.0.1_67 – zvýraznění dalšího kroku v průvodci */
 .starter-step-card.is-next,
 .starter-phase-card.is-next,
 .starter-priority-chip.is-next,
@@ -3793,7 +3793,7 @@ body.overview-open {
   }
 }
 
-/* Domácnost+ v.0.1_66 – cloud autosync a jasnější stav sdílených dat */
+/* Domácnost+ v.0.1_67 – cloud autosync a jasnější stav sdílených dat */
 .cloud-automation-strip {
   margin-top: 12px;
   display: flex;
@@ -3851,7 +3851,7 @@ body.overview-open {
   }
 }
 
-/* Domácnost+ v.0.1_66 – modulární dashboard a počasí */
+/* Domácnost+ v.0.1_67 – modulární dashboard a počasí */
 .settings-tab-dashboard .settings-panel:not(.panel-dashboard),
 .settings-tab-household .settings-panel:not(.panel-household),
 .settings-tab-modules .settings-panel:not(.panel-modules),
@@ -3975,4 +3975,17 @@ body.overview-open {
   .weather-icon { width: 48px; height: 48px; font-size: 1.6rem; border-radius: 18px; }
   .weather-current strong { font-size: 2rem; }
   .dashboard-layout-card .card-header p { display: none; }
+}
+
+
+/* v0.1_67: čistší základní obrazovka bez vrchního brand panelu */
+.home-clean-frame {
+  padding-top: max(12px, env(safe-area-inset-top));
+}
+.home-page-head {
+  margin-top: 0;
+  padding-top: 0;
+}
+.home-page-head .page-title {
+  letter-spacing: -0.04em;
 }

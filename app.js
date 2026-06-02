@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_66';
+  const APP_VERSION = 'Domácnost+ v.0.1_67';
   const STORAGE_KEY = 'domacnostPlus.v0.1_46';
   const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_45';
   const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
@@ -121,7 +121,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-66.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-67.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -144,8 +144,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 51,
-      appBuild: 66,
-      mode: 'modular-dashboard-weather-v66',
+      appBuild: 67,
+      mode: 'modular-dashboard-weather-v67',
       createdAt: '',
       updatedAt: ''
     },
@@ -595,8 +595,8 @@
 
     migrated.meta = {
       schemaVersion: 51,
-      appBuild: 66,
-      mode: 'modular-dashboard-weather-v66',
+      appBuild: 67,
+      mode: 'modular-dashboard-weather-v67',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -843,7 +843,22 @@
     return new Intl.DateTimeFormat('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric', ...options }).format(date);
   }
 
-  function formatDateTime(date) {
+  function toSafeDate(value, fallback = null) {
+    if (value instanceof Date) return Number.isFinite(value.getTime()) ? value : fallback;
+    if (typeof value === 'number') {
+      const date = new Date(value);
+      return Number.isFinite(date.getTime()) ? date : fallback;
+    }
+    if (typeof value === 'string' && value.trim()) {
+      const date = new Date(value);
+      return Number.isFinite(date.getTime()) ? date : fallback;
+    }
+    return fallback;
+  }
+
+  function formatDateTime(value) {
+    const date = toSafeDate(value);
+    if (!date) return '—';
     return new Intl.DateTimeFormat('cs-CZ', {
       weekday: 'long',
       day: 'numeric',
@@ -922,9 +937,13 @@
 
     const active = selectableModules.find((module) => module.id === activeModule) || visibleModules[0];
     const bottomNavModules = getBottomNavModules();
+    const isHomeModule = active.id === 'home';
+    const pageTitle = isHomeModule ? householdName() : active.label;
+    const pageSubtitle = isHomeModule ? '' : getModuleSubtitle(active.id);
 
     app.innerHTML = `
-      <div class="app-frame">
+      <div class="app-frame ${isHomeModule ? 'home-clean-frame' : ''}">
+        ${isHomeModule ? '' : `
         <header class="topbar">
           <div class="brand">
             <div class="brand-mark logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
@@ -941,13 +960,13 @@
             </div>
             <button class="icon-btn" type="button" data-action="toggle-theme" aria-label="Přepnout vzhled">${state.settings.theme === 'dark' ? '☀️' : '🌙'}</button>
           </div>
-        </header>
+        </header>`}
 
         <main>
-          <section class="page-head">
+          <section class="page-head ${isHomeModule ? 'home-page-head' : ''}">
             <div>
-              <h2 class="page-title">${escapeHtml(active.label)}</h2>
-              <p class="page-subtitle">${escapeHtml(getModuleSubtitle(active.id))}</p>
+              <h2 class="page-title">${escapeHtml(pageTitle)}</h2>
+              ${pageSubtitle ? `<p class="page-subtitle">${escapeHtml(pageSubtitle)}</p>` : ''}
             </div>
             ${renderPageActions(active.id)}
           </section>
@@ -1512,7 +1531,7 @@
   }
 
   function renderPageActions(moduleId) {
-    if (moduleId === 'settings' || moduleId === 'more') return '';
+    if (moduleId === 'home' || moduleId === 'settings' || moduleId === 'more') return '';
     return `
       <div class="top-actions">
         <button class="ghost-btn" type="button" data-nav="settings">Nastavení</button>
@@ -2253,7 +2272,8 @@
       { title: 'Domácnost+ v.0.1_63', note: 'Hotovo: Supabase Realtime pro sdílené moduly, automatické občerstvení dat mezi členy domácnosti a stabilnější cloud sync.' },
       { title: 'Domácnost+ v.0.1_64', note: 'Hotovo: cloud-first autosync, přehled položek cloud/lokál a cloud upload starších lokálních příloh smluv.' },
       { title: 'Domácnost+ v.0.1_65', note: 'Hotovo: cloudové profily domácnosti, archivace profilů a Realtime pro profily/členy.' },
-      { title: 'Domácnost+ v.0.1_66', note: 'Hotovo: modulární hlavní obrazovka, zapínání/odebírání karet a počasí podle místa domácnosti.' }
+      { title: 'Domácnost+ v.0.1_67', note: 'Hotovo: čistší základní obrazovka bez horního panelu, název domácnosti místo Domů a oprava pádu DateTimeFormat při neplatném datu.' },
+      { title: 'Domácnost+ v.0.1_67', note: 'Hotovo: modulární hlavní obrazovka, zapínání/odebírání karet a počasí podle místa domácnosti.' }
     ];
     return `
       <section class="card roadmap-card">
@@ -4417,11 +4437,13 @@
     `;
   }
 
-  function clockText(date) {
+  function clockText(value) {
+    const date = toSafeDate(value, new Date());
     return new Intl.DateTimeFormat('cs-CZ', { hour: '2-digit', minute: '2-digit' }).format(date);
   }
 
-  function shortDateText(date) {
+  function shortDateText(value) {
+    const date = toSafeDate(value, new Date());
     return new Intl.DateTimeFormat('cs-CZ', { weekday: 'short', day: 'numeric', month: 'numeric' }).format(date);
   }
 
@@ -7421,7 +7443,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 51, appBuild: 66, mode: 'rich-demo-v66', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 51, appBuild: 67, mode: 'rich-demo-v67', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -7562,7 +7584,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 51, appBuild: 66, mode: 'modular-dashboard-weather-v66', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 51, appBuild: 67, mode: 'modular-dashboard-weather-v67', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -9460,7 +9482,7 @@
       dashboard_layout: {
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         updatedAt: new Date().toISOString(),
-        appBuild: 66
+        appBuild: 67
       },
       weather_location: normalizeWeatherLocation(state.weather?.location)
     };
@@ -9973,7 +9995,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-66-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-67-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -10095,7 +10117,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_66</span>
+          <span class="badge">Domácnost+ v.0.1_67</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
