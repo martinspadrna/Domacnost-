@@ -1,4 +1,6 @@
-declare const Deno: { serve: (handler: (req: Request) => Response | Promise<Response>) => void };
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+
+type JsonRecord = Record<string, unknown>;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -6,184 +8,241 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const CHMI_FORECAST_INDEX = 'https://opendata.chmi.cz/meteorology/weather/forecast/now/';
-const CHMI_FORECAST_SCHEMA_DOC = 'https://opendata.chmi.cz/meteorology/weather/forecast/metadata/chmi_forecast_schema_doc.html';
+const CHMI_FORECAST_ROOT = 'https://opendata.chmi.cz/meteorology/weather/forecast/';
+const CHMI_FORECAST_NOW_ROOT = 'https://opendata.chmi.cz/meteorology/weather/forecast/now/';
+const CHMI_SCHEMA_DOC = 'https://opendata.chmi.cz/meteorology/weather/forecast/metadata/chmi_forecast_schema_doc.html';
 
-type WeatherLocation = {
-  name?: string;
-  country?: string;
-  latitude?: number;
-  longitude?: number;
-};
+const REGIONS = [
+  { code: 'RPPH', name: 'Praha', lat: 50.0755, lon: 14.4378, terms: ['praha', 'hmp'] },
+  { code: 'RPSC', name: 'Středočeský kraj', lat: 49.8782, lon: 14.9363, terms: ['stredocesk', 'středočesk'] },
+  { code: 'RPCB', name: 'Jihočeský kraj', lat: 48.9458, lon: 14.4416, terms: ['jihocesk', 'jihočesk'] },
+  { code: 'RPPL', name: 'Plzeňský kraj', lat: 49.7384, lon: 13.3736, terms: ['plzen', 'plzeň'] },
+  { code: 'RPKV', name: 'Karlovarský kraj', lat: 50.1435, lon: 12.7502, terms: ['karlovar'] },
+  { code: 'RPUL', name: 'Ústecký kraj', lat: 50.6119, lon: 13.7870, terms: ['usteck', 'ústeck'] },
+  { code: 'RPLB', name: 'Liberecký kraj', lat: 50.6594, lon: 14.7632, terms: ['liberec', 'jablonec'] },
+  { code: 'RPHK', name: 'Královéhradecký kraj', lat: 50.3512, lon: 15.7976, terms: ['kralovehradeck', 'královéhradeck', 'hostinne', 'hostinné', 'trutnov', 'vrchlabi', 'vrchlabí', 'hradec', 'krkonos'] },
+  { code: 'RPPD', name: 'Pardubický kraj', lat: 49.9444, lon: 16.2857, terms: ['pardubice', 'pardubick'] },
+  { code: 'RPJI', name: 'Kraj Vysočina', lat: 49.4490, lon: 15.6406, terms: ['vysocina', 'vysočina', 'jihlava'] },
+  { code: 'RPBM', name: 'Jihomoravský kraj', lat: 49.1240, lon: 16.7666, terms: ['jihomorav', 'brno'] },
+  { code: 'RPOL', name: 'Olomoucký kraj', lat: 49.6587, lon: 17.0811, terms: ['olomouc', 'olomouck'] },
+  { code: 'RPZL', name: 'Zlínský kraj', lat: 49.2162, lon: 17.7720, terms: ['zlin', 'zlín'] },
+  { code: 'RPOS', name: 'Moravskoslezský kraj', lat: 49.7305, lon: 18.2333, terms: ['moravskoslez', 'ostrava', 'frenstat', 'frenštát'] },
+];
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'content-type': 'application/json; charset=utf-8' },
+    headers: { ...corsHeaders, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=900, s-maxage=900' },
   });
 }
 
-async function readBody(req: Request) {
-  try { return await req.json(); } catch (_) { return {}; }
+function numberOrNull(value: unknown): number | null {
+  const number = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+  return Number.isFinite(number) ? number : null;
 }
 
-function normalizeLocation(value: unknown): Required<WeatherLocation> {
-  const raw = value && typeof value === 'object' ? value as WeatherLocation : {};
-  const latitude = Number(raw.latitude ?? 50.5407);
-  const longitude = Number(raw.longitude ?? 15.7233);
+function normalizeTerm(value: string) {
+  return value.toLocaleLowerCase('cs-CZ').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number) {
+  const toRad = (value: number) => value * Math.PI / 180;
+  const r = 6371;
+  const dLat = toRad(bLat - aLat);
+  const dLon = toRad(bLon - aLon);
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * r * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+function pickRegion(text: string, latitude: number, longitude: number) {
+  const normalized = normalizeTerm(text || '');
+  const exact = REGIONS.find((region) => region.terms.some((term) => normalized.includes(normalizeTerm(term))));
+  if (exact) return exact;
+  return REGIONS.map((region) => ({ region, distance: distanceKm(latitude, longitude, region.lat, region.lon) })).sort((a, b) => a.distance - b.distance)[0].region;
+}
+
+function weatherTextToCode(text: string): number | null {
+  const value = normalizeTerm(text);
+  if (value.includes('bour')) return 95;
+  if (value.includes('sne') || value.includes('snih')) return 71;
+  if (value.includes('dest') || value.includes('prehank') || value.includes('srazk')) return 61;
+  if (value.includes('mlh')) return 45;
+  if (value.includes('jasno') || value.includes('slunecno')) return 0;
+  if (value.includes('polojas')) return 2;
+  if (value.includes('oblac') || value.includes('zatazen')) return 3;
+  return null;
+}
+
+function codeToText(code: number | null) {
+  if (code === 0) return 'Jasno';
+  if (code === 1 || code === 2) return 'Polojasno';
+  if (code === 3) return 'Oblačno až zataženo';
+  if (code === 45 || code === 48) return 'Mlha';
+  if (code && [61, 63, 65, 80, 81, 82].includes(code)) return 'Déšť nebo přeháňky';
+  if (code && [71, 73, 75, 85, 86].includes(code)) return 'Sněžení';
+  if (code && [95, 96, 99].includes(code)) return 'Bouřky';
+  return 'Počasí';
+}
+
+function extractDisplayText(value: unknown): string[] {
+  const out: string[] = [];
+  const walk = (node: unknown) => {
+    if (!node || out.length > 18) return;
+    if (Array.isArray(node)) return node.forEach(walk);
+    if (typeof node !== 'object') return;
+    const rec = node as JsonRecord;
+    const direct = rec.displayText ?? rec.text ?? rec.forecastText ?? rec.description ?? rec.value;
+    if (typeof direct === 'string' && direct.trim().length > 20) out.push(direct.trim().replace(/\s+/g, ' '));
+    Object.keys(rec).forEach((key) => !['displayText', 'text', 'forecastText', 'description', 'value'].includes(key) && walk(rec[key]));
+  };
+  walk(value);
+  return Array.from(new Set(out));
+}
+
+function pickForecastText(payload: unknown, regionName: string, regionCode: string) {
+  const texts = extractDisplayText(payload);
+  if (!texts.length) return '';
+  const normalizedRegion = normalizeTerm(regionName);
+  const normalizedCode = normalizeTerm(regionCode);
+  return texts.find((text) => normalizeTerm(text).includes(normalizedRegion) || normalizeTerm(text).includes(normalizedCode)) || texts[0];
+}
+
+async function fetchJson(url: string, timeoutMs = 7000): Promise<unknown> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal, headers: { accept: 'application/json,text/plain,*/*' } });
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    return await response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchText(url: string, timeoutMs = 7000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal, headers: { accept: 'text/html,text/plain,*/*' } });
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    return await response.text();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function extractJsonLinks(html: string) {
+  const urls = new Set<string>();
+  const rx = /href=["']([^"']+\.json(?:\?[^"']*)?)["']/gi;
+  let match: RegExpExecArray | null;
+  while ((match = rx.exec(html))) {
+    try { urls.add(new URL(match[1], CHMI_FORECAST_NOW_ROOT).toString()); } catch (_) { /* ignore */ }
+  }
+  return [...urls].sort((a, b) => b.localeCompare(a));
+}
+
+async function loadChmi(regionName: string, regionCode: string) {
+  const candidates = [
+    `${CHMI_FORECAST_ROOT}forecast.json`,
+    `${CHMI_FORECAST_NOW_ROOT}forecast.json`,
+    `${CHMI_FORECAST_NOW_ROOT}weather-forecast.json`,
+    `${CHMI_FORECAST_NOW_ROOT}regional_forecast.json`,
+  ];
+  for (const url of candidates) {
+    try {
+      const json = await fetchJson(url);
+      const text = pickForecastText(json, regionName, regionCode);
+      if (text) return { text, url, code: weatherTextToCode(text) };
+    } catch (_) { /* try next */ }
+  }
+  const listing = await fetchText(CHMI_FORECAST_NOW_ROOT);
+  for (const url of extractJsonLinks(listing).slice(0, 10)) {
+    try {
+      const json = await fetchJson(url);
+      const text = pickForecastText(json, regionName, regionCode);
+      if (text) return { text, url, code: weatherTextToCode(text) };
+    } catch (_) { /* try next */ }
+  }
+  throw new Error('ČHMÚ předpověď se nepodařilo načíst');
+}
+
+async function loadOpenMeteo(latitude: number, longitude: number, name: string) {
+  const params = new URLSearchParams({
+    latitude: String(latitude), longitude: String(longitude), timezone: 'Europe/Prague', forecast_days: '5',
+    current: 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m',
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset',
+    hourly: 'temperature_2m,precipitation,weather_code,wind_speed_10m',
+  });
+  const payload = await fetchJson(`https://api.open-meteo.com/v1/forecast?${params}`) as JsonRecord;
+  const current = (payload.current || {}) as JsonRecord;
+  const daily = (payload.daily || {}) as JsonRecord;
+  const hourly = (payload.hourly || {}) as JsonRecord;
+  const dailyTime = Array.isArray(daily.time) ? daily.time : [];
+  const hourlyTime = Array.isArray(hourly.time) ? hourly.time : [];
+  const currentCode = numberOrNull(current.weather_code);
   return {
-    name: String(raw.name || 'Hostinné'),
-    country: String(raw.country || 'CZ'),
-    latitude: Number.isFinite(latitude) ? latitude : 50.5407,
-    longitude: Number.isFinite(longitude) ? longitude : 15.7233,
+    location: { name, country: 'CZ', latitude, longitude },
+    current: {
+      temperature: numberOrNull(current.temperature_2m),
+      feelsLike: numberOrNull(current.apparent_temperature),
+      humidity: numberOrNull(current.relative_humidity_2m),
+      windSpeed: numberOrNull(current.wind_speed_10m),
+      precipitation: numberOrNull(current.precipitation),
+      weatherCode: currentCode,
+      time: typeof current.time === 'string' ? current.time : new Date().toISOString(),
+      text: codeToText(currentCode),
+    },
+    daily: dailyTime.slice(0, 5).map((date: unknown, index: number) => ({
+      date: String(date),
+      weatherCode: numberOrNull((daily.weather_code as unknown[])?.[index]),
+      min: numberOrNull((daily.temperature_2m_min as unknown[])?.[index]),
+      max: numberOrNull((daily.temperature_2m_max as unknown[])?.[index]),
+      precipitation: numberOrNull((daily.precipitation_sum as unknown[])?.[index]),
+      sunrise: typeof (daily.sunrise as unknown[])?.[index] === 'string' ? (daily.sunrise as string[])[index] : null,
+      sunset: typeof (daily.sunset as unknown[])?.[index] === 'string' ? (daily.sunset as string[])[index] : null,
+      text: codeToText(numberOrNull((daily.weather_code as unknown[])?.[index])),
+    })),
+    hourly: hourlyTime.slice(0, 24).map((time: unknown, index: number) => ({
+      time: String(time),
+      temperature: numberOrNull((hourly.temperature_2m as unknown[])?.[index]),
+      precipitation: numberOrNull((hourly.precipitation as unknown[])?.[index]),
+      weatherCode: numberOrNull((hourly.weather_code as unknown[])?.[index]),
+      windSpeed: numberOrNull((hourly.wind_speed_10m as unknown[])?.[index]),
+    })),
+    updatedAt: new Date().toISOString(),
+    error: '',
+    loading: false,
+    source: 'open-meteo-fallback',
   };
 }
 
-function regionCodeForLocation(location: Required<WeatherLocation>) {
-  const lat = location.latitude;
-  const lon = location.longitude;
-  const name = `${location.name || ''}`.toLowerCase();
-  if (name.includes('hostinn') || name.includes('vrchlab') || name.includes('trutnov') || name.includes('hradec') || name.includes('krkono')) return 'RPHK';
-  if (name.includes('liberec') || name.includes('jablonec')) return 'RPLB';
-  if (name.includes('pardubic')) return 'RPPU';
-  if (name.includes('ostr') || name.includes('frýd') || name.includes('frenšt')) return 'RPMS';
-  if (name.includes('brno')) return 'RPJM';
-  if (name.includes('praha')) return 'RPPH';
-  if (name.includes('plze')) return 'RPPL';
-  if (name.includes('olomouc')) return 'RPOL';
-  if (name.includes('zlín') || name.includes('zlin')) return 'RPZL';
-  if (name.includes('ústí') || name.includes('usti')) return 'RPUL';
-  if (name.includes('české budějovice') || name.includes('ceske budejovice')) return 'RPCB';
-  if (name.includes('vysočina') || name.includes('vysocina') || name.includes('jihlava')) return 'RPVY';
-  if (lon > 15.0 && lon < 16.7 && lat > 50.0 && lat < 51.2) return 'RPHK';
-  if (lon > 14.2 && lon < 15.5 && lat > 50.3) return 'RPLB';
-  if (lon > 17.0 && lat > 49.2) return 'RPMS';
-  if (lon > 16.0 && lon < 17.4 && lat < 49.5) return 'RPJM';
-  return 'RPHK';
-}
-
-function latestForecastUrl(indexHtml: string, regionCode: string) {
-  const upper = regionCode.toUpperCase();
-  const files = [...indexHtml.matchAll(/href="([^"]+\.json)"/gi)]
-    .map((match) => match[1])
-    .filter((file) => file.toUpperCase().includes(`_${upper}_`));
-  const preferred = files.filter((file) => /pCK0tx/i.test(file) || /pCH1tx/i.test(file));
-  const candidates = (preferred.length ? preferred : files).sort();
-  const file = candidates.at(-1);
-  if (!file) throw new Error(`ČHMÚ soubor pro region ${upper} nebyl nalezen`);
-  return new URL(file, CHMI_FORECAST_INDEX).toString();
-}
-
-function flattenForecastText(data: unknown) {
-  const texts: string[] = [];
-  function walk(value: unknown) {
-    if (!value) return;
-    if (Array.isArray(value)) { value.forEach(walk); return; }
-    if (typeof value !== 'object') return;
-    const raw = value as Record<string, unknown>;
-    for (const key of ['displayText', 'text', 'headline']) {
-      if (typeof raw[key] === 'string' && raw[key]) texts.push(raw[key] as string);
-    }
-    Object.values(raw).forEach(walk);
-  }
-  walk(data);
-  return [...new Set(texts.map((text) => text.replace(/\s+/g, ' ').trim()).filter(Boolean))];
-}
-
-function codeFromText(text: string) {
-  const lower = text.toLowerCase();
-  if (lower.includes('bouř')) return 95;
-  if (lower.includes('sně') || lower.includes('sneh')) return 71;
-  if (lower.includes('déšť') || lower.includes('dest') || lower.includes('přeháň') || lower.includes('prehán')) return 61;
-  if (lower.includes('mlh')) return 45;
-  if (lower.includes('zataž') || lower.includes('oblačno až zataženo')) return 3;
-  if (lower.includes('oblač') || lower.includes('oblac')) return 2;
-  if (lower.includes('polojas')) return 2;
-  if (lower.includes('jasno')) return 0;
-  return 2;
-}
-
-function temperatureRangeFromText(text: string) {
-  const patterns = [
-    /(-?\d{1,2})\s*(?:až|-|az)\s*(-?\d{1,2})\s*°?\s*C/gi,
-    /teplot\w*[^\d-]{0,40}(-?\d{1,2})\s*(?:až|-|az)\s*(-?\d{1,2})/gi,
-  ];
-  for (const pattern of patterns) {
-    const match = pattern.exec(text);
-    if (!match) continue;
-    const a = Number(match[1]);
-    const b = Number(match[2]);
-    if (Number.isFinite(a) && Number.isFinite(b)) return { min: Math.min(a, b), max: Math.max(a, b) };
-  }
-  return { min: null as number | null, max: null as number | null };
-}
-
-function toDailyForecast(texts: string[], updatedAt: string) {
-  const base = new Date(updatedAt || new Date().toISOString());
-  return texts.slice(0, 4).map((text, index) => {
-    const date = new Date(base);
-    date.setDate(base.getDate() + index);
-    const range = temperatureRangeFromText(text);
-    return {
-      date: date.toISOString().slice(0, 10),
-      weatherCode: codeFromText(text),
-      min: range.min,
-      max: range.max,
-      precipitation: null,
-      sunrise: null,
-      sunset: null,
-      text,
-    };
-  });
-}
-
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
+  let body: JsonRecord = {};
+  try { body = await req.json(); } catch (_) { body = {}; }
+  const location = body.location && typeof body.location === 'object' ? body.location as JsonRecord : {};
+  const latitude = numberOrNull(body.latitude ?? body.lat ?? location.latitude ?? location.lat) ?? 49.8175;
+  const longitude = numberOrNull(body.longitude ?? body.lon ?? location.longitude ?? location.lon) ?? 15.4730;
+  const name = String(body.locationName || body.name || location.name || 'Domácnost');
+  const region = pickRegion(String(body.region || name), latitude, longitude);
+  const warnings: string[] = [];
+
+  let weather = await loadOpenMeteo(latitude, longitude, name);
+  weather.location = { ...weather.location, regionCode: region.code, regionName: region.name } as typeof weather.location & { regionCode: string; regionName: string };
   try {
-    const body = await readBody(req) as { location?: WeatherLocation; regionCode?: string };
-    const location = normalizeLocation(body.location);
-    const regionCode = String(body.regionCode || regionCodeForLocation(location)).toUpperCase();
-    const indexResponse = await fetch(CHMI_FORECAST_INDEX, { cache: 'no-store' });
-    if (!indexResponse.ok) throw new Error(`ČHMÚ index HTTP ${indexResponse.status}`);
-    const indexHtml = await indexResponse.text();
-    const forecastUrl = latestForecastUrl(indexHtml, regionCode);
-    const forecastResponse = await fetch(forecastUrl, { cache: 'no-store' });
-    if (!forecastResponse.ok) throw new Error(`ČHMÚ forecast HTTP ${forecastResponse.status}`);
-    const forecast = await forecastResponse.json();
-    const updatedAt = forecast?.datumVytvoreni || forecast?.data?.features?.[0]?.properties?.sent || new Date().toISOString();
-    const texts = flattenForecastText(forecast);
-    if (!texts.length) throw new Error('ČHMÚ odpověď neobsahuje čitelný text předpovědi');
-    const summary = texts[0];
-    const daily = toDailyForecast(texts, updatedAt);
-    const range = (daily.find((day) => Number.isFinite(day.max) || Number.isFinite(day.min)) || daily[0] || {}) as Partial<{ min: number | null; max: number | null }>;
-    const temperature = Number.isFinite(range.max) ? range.max : Number.isFinite(range.min) ? range.min : null;
-    return jsonResponse({
-      provider: 'chmi',
-      regionCode,
-      sourceUrl: forecastUrl,
-      schemaDoc: CHMI_FORECAST_SCHEMA_DOC,
-      weather: {
-        location: { ...location, regionCode },
-        current: {
-          temperature,
-          feelsLike: temperature,
-          humidity: null,
-          windSpeed: null,
-          precipitation: null,
-          weatherCode: codeFromText(summary),
-          time: updatedAt,
-          text: summary,
-        },
-        daily,
-        hourly: [],
-        updatedAt,
-        error: '',
-        loading: false,
-        source: 'chmi',
-      },
-    });
+    const chmi = await loadChmi(region.name, region.code);
+    const code = chmi.code ?? weather.current.weatherCode;
+    weather = {
+      ...weather,
+      source: 'chmi',
+      current: { ...weather.current, weatherCode: code, text: chmi.text },
+      daily: weather.daily.map((day: JsonRecord, index: number) => index === 0 ? { ...day, weatherCode: code, text: chmi.text } : day),
+      meta: { providerLabel: 'ČHMÚ + číselný fallback', chmiRegion: region.name, chmiRegionCode: region.code, chmiUrl: chmi.url, chmiSchemaDoc: CHMI_SCHEMA_DOC, numericFallback: 'Open-Meteo', warnings },
+    } as typeof weather & { meta: JsonRecord };
   } catch (error) {
-    return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 400);
+    warnings.push(error instanceof Error ? error.message : String(error));
+    weather = { ...weather, meta: { providerLabel: 'Open-Meteo fallback', chmiRegion: region.name, chmiRegionCode: region.code, numericFallback: 'Open-Meteo', warnings } } as typeof weather & { meta: JsonRecord };
   }
+  return jsonResponse(weather);
 });

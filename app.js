@@ -9,10 +9,10 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_82';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_82';
-  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_81';
-  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_80', 'domacnostPlus.v0.1_79', 'domacnostPlus.v0.1_78', 'domacnostPlus.v0.1_77', 'domacnostPlus.v0.1_72', 'domacnostPlus.v0.1_71', 'domacnostPlus.v0.1_70', 'domacnostPlus.v0.1_69', 'domacnostPlus.v0.1_68', 'domacnostPlus.v0.1_67', 'domacnostPlus.v0.1_66', 'domacnostPlus.v0.1_65', 'domacnostPlus.v0.1_64', 'domacnostPlus.v0.1_63', 'domacnostPlus.v0.1_62', 'domacnostPlus.v0.1_61', 'domacnostPlus.v0.1_60', 'domacnostPlus.v0.1_59', 'domacnostPlus.v0.1_58', 'domacnostPlus.v0.1_57', 'domacnostPlus.v0.1_56', 'domacnostPlus.v0.1_55', 'domacnostPlus.v0.1_54', 'domacnostPlus.v0.1_53', 'domacnostPlus.v0.1_52', 'domacnostPlus.v0.1_51', 'domacnostPlus.v0.1_50', 'domacnostPlus.v0.1_49', 'domacnostPlus.v0.1_48', 'domacnostPlus.v0.1_47', 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
+  const APP_VERSION = 'Domácnost+ v.0.1_83';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_83';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_82';
+  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_81', 'domacnostPlus.v0.1_80', 'domacnostPlus.v0.1_79', 'domacnostPlus.v0.1_78', 'domacnostPlus.v0.1_77', 'domacnostPlus.v0.1_72', 'domacnostPlus.v0.1_71', 'domacnostPlus.v0.1_70', 'domacnostPlus.v0.1_69', 'domacnostPlus.v0.1_68', 'domacnostPlus.v0.1_67', 'domacnostPlus.v0.1_66', 'domacnostPlus.v0.1_65', 'domacnostPlus.v0.1_64', 'domacnostPlus.v0.1_63', 'domacnostPlus.v0.1_62', 'domacnostPlus.v0.1_61', 'domacnostPlus.v0.1_60', 'domacnostPlus.v0.1_59', 'domacnostPlus.v0.1_58', 'domacnostPlus.v0.1_57', 'domacnostPlus.v0.1_56', 'domacnostPlus.v0.1_55', 'domacnostPlus.v0.1_54', 'domacnostPlus.v0.1_53', 'domacnostPlus.v0.1_52', 'domacnostPlus.v0.1_51', 'domacnostPlus.v0.1_50', 'domacnostPlus.v0.1_49', 'domacnostPlus.v0.1_48', 'domacnostPlus.v0.1_47', 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
     { id: 'home', label: 'Domů', icon: '🏠' },
@@ -122,7 +122,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-82.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-83.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -157,8 +157,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 54,
-      appBuild: 82,
-      mode: 'weather-chmi-nav-fixed-v82',
+      appBuild: 83,
+      mode: 'weather-chmi-nav-fixed-v83',
       createdAt: '',
       updatedAt: ''
     },
@@ -612,8 +612,8 @@
 
     migrated.meta = {
       schemaVersion: 54,
-      appBuild: 82,
-      mode: 'weather-chmi-nav-fixed-v82',
+      appBuild: 83,
+      mode: 'weather-chmi-nav-fixed-v83',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2101,9 +2101,16 @@
   async function fetchChmiWeatherForLocation(location) {
     const client = getSupabaseClient();
     if (!client?.functions?.invoke) throw new Error('ČHMÚ backend zatím není dostupný');
+    const normalizedLocation = normalizeWeatherLocation(location);
     const body = {
       householdId: state.cloud?.householdId || '',
-      location: normalizeWeatherLocation(location)
+      location: normalizedLocation,
+      locationName: normalizedLocation.name,
+      name: normalizedLocation.name,
+      country: normalizedLocation.country,
+      latitude: normalizedLocation.latitude,
+      longitude: normalizedLocation.longitude,
+      region: normalizedLocation.region || normalizedLocation.name
     };
     const { data, error } = await client.functions.invoke(WEATHER_CHMI_FUNCTION, { body });
     if (error || data?.error) throw new Error(error?.message || data?.error || 'ČHMÚ počasí se nepovedlo načíst');
@@ -2610,7 +2617,7 @@
       { title: 'Domácnost+ v.0.1_79', note: 'Hotfix: variabilní Home panel drží rozložení 0–4 položek a počasí v prázdném panelu ukazuje více detailů.' },
       { title: 'Domácnost+ v.0.1_80', note: 'Hotovo: Home horní panel má stabilní výšku, položky se přizpůsobují uvnitř panelu a mini karty ukazují konkrétní stav, například HDO do kdy běží nebo kdy sepne.' },
       { title: 'Domácnost+ v.0.1_81', note: 'Hotfix: při Home bez dalších panelů jsou čas a počasí pod sebou, hlavní panel zůstává stabilní a ve Více je nastavení hned nahoře.' },
-      { title: 'Domácnost+ v.0.1_82', note: 'Hotovo: první bezpečný krok ČHMÚ počasí přes Edge Function s Open-Meteo fallbackem a pevně ukotvený spodní panel.' }
+      { title: 'Domácnost+ v.0.1_83', note: 'Hotovo: první bezpečný krok ČHMÚ počasí přes Edge Function s Open-Meteo fallbackem a pevně ukotvený spodní panel.' }
     ];
     return `
       <section class="card roadmap-card">
@@ -8364,7 +8371,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 54, appBuild: 82, mode: 'rich-demo-v82', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 54, appBuild: 83, mode: 'rich-demo-v83', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -8505,7 +8512,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 54, appBuild: 82, mode: 'weather-chmi-nav-fixed-v82', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 54, appBuild: 83, mode: 'weather-chmi-nav-fixed-v83', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -10509,7 +10516,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 82
+        appBuild: 83
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -11086,7 +11093,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-82-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-83-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -11213,7 +11220,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_82</span>
+          <span class="badge">Domácnost+ v.0.1_83</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
