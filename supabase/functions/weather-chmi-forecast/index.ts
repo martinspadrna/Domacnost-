@@ -10,6 +10,7 @@ const corsHeaders = {
 
 const CHMI_FORECAST_ROOT = 'https://opendata.chmi.cz/meteorology/weather/forecast/';
 const CHMI_FORECAST_NOW_ROOT = 'https://opendata.chmi.cz/meteorology/weather/forecast/now/';
+// Domácnost+ v.0.1_84 – ČHMÚ jako hlavní zdroj + Open-Meteo pro astronomii/číselné detaily
 const CHMI_SCHEMA_DOC = 'https://opendata.chmi.cz/meteorology/weather/forecast/metadata/chmi_forecast_schema_doc.html';
 
 const REGIONS = [
@@ -238,11 +239,11 @@ Deno.serve(async (req: Request) => {
       source: 'chmi',
       current: { ...weather.current, weatherCode: code, text: chmi.text },
       daily: weather.daily.map((day: JsonRecord, index: number) => index === 0 ? { ...day, weatherCode: code, text: chmi.text } : day),
-      meta: { providerLabel: 'ČHMÚ + číselný fallback', chmiRegion: region.name, chmiRegionCode: region.code, chmiUrl: chmi.url, chmiSchemaDoc: CHMI_SCHEMA_DOC, numericFallback: 'Open-Meteo', warnings },
+      meta: { providerLabel: 'ČHMÚ + číselný fallback', chmiRegion: region.name, chmiRegionCode: region.code, chmiUrl: chmi.url, chmiSchemaDoc: CHMI_SCHEMA_DOC, numericFallback: 'Open-Meteo', astronomySource: 'Open-Meteo', warnings },
     } as typeof weather & { meta: JsonRecord };
   } catch (error) {
     warnings.push(error instanceof Error ? error.message : String(error));
-    weather = { ...weather, meta: { providerLabel: 'Open-Meteo fallback', chmiRegion: region.name, chmiRegionCode: region.code, numericFallback: 'Open-Meteo', warnings } } as typeof weather & { meta: JsonRecord };
+    weather = { ...weather, meta: { providerLabel: 'Open-Meteo fallback', chmiRegion: region.name, chmiRegionCode: region.code, numericFallback: 'Open-Meteo', astronomySource: 'Open-Meteo', warnings } } as typeof weather & { meta: JsonRecord };
   }
   return jsonResponse(weather);
 });

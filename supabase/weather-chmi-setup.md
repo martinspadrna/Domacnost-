@@ -1,4 +1,4 @@
-# Domácnost+ v.0.1_83 – ČHMÚ počasí
+# Domácnost+ v.0.1_84 – ČHMÚ počasí
 
 Tahle verze přidává první bezpečný krok pro počasí z ČHMÚ přes Supabase Edge Function.
 Frontend nečte ČHMÚ jako hlavní zdroj napřímo, ale volá vlastní backend funkci:

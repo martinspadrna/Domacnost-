@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_83';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_83';
+  const APP_VERSION = 'Domácnost+ v.0.1_84';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_84';
   const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_82';
   const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_81', 'domacnostPlus.v0.1_80', 'domacnostPlus.v0.1_79', 'domacnostPlus.v0.1_78', 'domacnostPlus.v0.1_77', 'domacnostPlus.v0.1_72', 'domacnostPlus.v0.1_71', 'domacnostPlus.v0.1_70', 'domacnostPlus.v0.1_69', 'domacnostPlus.v0.1_68', 'domacnostPlus.v0.1_67', 'domacnostPlus.v0.1_66', 'domacnostPlus.v0.1_65', 'domacnostPlus.v0.1_64', 'domacnostPlus.v0.1_63', 'domacnostPlus.v0.1_62', 'domacnostPlus.v0.1_61', 'domacnostPlus.v0.1_60', 'domacnostPlus.v0.1_59', 'domacnostPlus.v0.1_58', 'domacnostPlus.v0.1_57', 'domacnostPlus.v0.1_56', 'domacnostPlus.v0.1_55', 'domacnostPlus.v0.1_54', 'domacnostPlus.v0.1_53', 'domacnostPlus.v0.1_52', 'domacnostPlus.v0.1_51', 'domacnostPlus.v0.1_50', 'domacnostPlus.v0.1_49', 'domacnostPlus.v0.1_48', 'domacnostPlus.v0.1_47', 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
@@ -122,7 +122,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-83.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-84.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -157,8 +157,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 54,
-      appBuild: 83,
-      mode: 'weather-chmi-nav-fixed-v83',
+      appBuild: 84,
+      mode: 'weather-chmi-modal-safe-v84',
       createdAt: '',
       updatedAt: ''
     },
@@ -215,7 +215,8 @@
       updatedAt: '',
       error: '',
       loading: false,
-      source: 'chmi'
+      source: 'chmi',
+      meta: {}
     },
     cloud: {
       supabaseUrl: SUPABASE_URL,
@@ -612,8 +613,8 @@
 
     migrated.meta = {
       schemaVersion: 54,
-      appBuild: 83,
-      mode: 'weather-chmi-nav-fixed-v83',
+      appBuild: 84,
+      mode: 'weather-chmi-modal-safe-v84',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -672,6 +673,12 @@
       migrated.weather.source = 'chmi';
       migrated.weather.updatedAt = '';
       migrated.weather.error = '';
+    }
+    if (previousAppBuild < 84) {
+      migrated.weather.source = 'chmi';
+      migrated.weather.updatedAt = '';
+      migrated.weather.error = '';
+      migrated.weather.loading = false;
     }
 
     migrated.enabledModules = normalizeModuleList(migrated.enabledModules);
@@ -800,7 +807,8 @@
       updatedAt: base.updatedAt || '',
       error: base.error || '',
       loading: false,
-      source: normalizeWeatherSource(base.source)
+      source: normalizeWeatherSource(base.source),
+      meta: base.meta && typeof base.meta === 'object' ? base.meta : {}
     };
   }
 
@@ -2001,13 +2009,24 @@
     }).join('')}</div>`;
   }
 
+  function compactWeatherText(value, maxLength = 92) {
+    const text = normalizeText(value);
+    if (!text) return '';
+    return text.length > maxLength ? `${text.slice(0, maxLength - 1).trim()}…` : text;
+  }
+
   function renderWeatherDailyGrid(days = []) {
     if (!days.length) return '<div class="empty">Denní předpověď zatím není načtená.</div>';
     return `<div class="weather-daily-row">${days.map((day) => {
       const [label, dayIcon] = weatherCodeLabel(day.weatherCode);
-      const detail = day.text
-        ? String(day.text).slice(0, 180)
-        : `${roundWeather(day.min, '°')} · ${roundWeather(day.precipitation, ' mm')} · ☀ ${shortTime(day.sunrise)}/${shortTime(day.sunset)} · ${label}`;
+      const sunLine = day.sunrise || day.sunset ? `☀ ${shortTime(day.sunrise)}/${shortTime(day.sunset)}` : '';
+      const textLine = compactWeatherText(day.text && day.text !== label ? day.text : '', 86);
+      const detail = [
+        `${roundWeather(day.min, '°')} / ${roundWeather(day.max, '°')}`,
+        roundWeather(day.precipitation, ' mm'),
+        sunLine,
+        textLine || label
+      ].filter((part) => part && part !== '—').join(' · ');
       return `<div class="weather-day"><span>${escapeHtml(shortWeekday(day.date))}</span><strong>${escapeHtml(dayIcon)} ${roundWeather(day.max, '°')}</strong><em>${escapeHtml(detail)}</em></div>`;
     }).join('')}</div>`;
   }
@@ -2025,13 +2044,15 @@
     const updated = weather.updatedAt ? formatDateTime(new Date(weather.updatedAt)) : 'nenačteno';
     const todayWeather = (weather.daily || [])[0] || {};
     const sourceLabel = weatherSourceLabel(weather.source);
+    const providerLabel = normalizeText(weather.meta?.providerLabel) || (weather.source === 'chmi' ? 'ČHMÚ + doplněné číselné detaily' : sourceLabel);
+    const astronomySource = normalizeText(weather.meta?.astronomySource || weather.meta?.numericFallback) || (weather.source === 'chmi' ? 'Open-Meteo' : sourceLabel);
     ensureWeatherFresh(false);
     return `
       <div class="grid two weather-page">
         <section class="card desktop-span-2 weather-page-hero">
           <div class="card-header compact-card-header">
-            <div><h2>${escapeHtml(weatherLocationLabel())}</h2><p>Podrobnější počasí pro domácnost · ${escapeHtml(sourceLabel)} · aktualizováno: ${escapeHtml(updated)}</p></div>
-            <span class="badge ${weather.current ? 'good' : weather.error ? 'warn' : ''}">${weather.loading ? 'načítám' : weather.current ? escapeHtml(sourceLabel) : 'není načtené'}</span>
+            <div><h2>${escapeHtml(weatherLocationLabel())}</h2><p>Hlavní předpověď: ${escapeHtml(sourceLabel)} · detaily jako východ/západ: ${escapeHtml(astronomySource)} · aktualizováno: ${escapeHtml(updated)}</p></div>
+            <span class="badge ${weather.current ? 'good' : weather.error ? 'warn' : ''}">${weather.loading ? 'načítám' : weather.current ? escapeHtml(providerLabel) : 'není načtené'}</span>
           </div>
           <div class="weather-main-row">
             <div class="weather-current weather-current-large">
@@ -2094,7 +2115,8 @@
       updatedAt: raw.updatedAt || new Date().toISOString(),
       error: raw.error || fallbackError || '',
       loading: false,
-      source: normalizeWeatherSource(raw.source || source)
+      source: normalizeWeatherSource(raw.source || source),
+      meta: raw.meta && typeof raw.meta === 'object' ? raw.meta : {}
     };
   }
 
@@ -2617,7 +2639,9 @@
       { title: 'Domácnost+ v.0.1_79', note: 'Hotfix: variabilní Home panel drží rozložení 0–4 položek a počasí v prázdném panelu ukazuje více detailů.' },
       { title: 'Domácnost+ v.0.1_80', note: 'Hotovo: Home horní panel má stabilní výšku, položky se přizpůsobují uvnitř panelu a mini karty ukazují konkrétní stav, například HDO do kdy běží nebo kdy sepne.' },
       { title: 'Domácnost+ v.0.1_81', note: 'Hotfix: při Home bez dalších panelů jsou čas a počasí pod sebou, hlavní panel zůstává stabilní a ve Více je nastavení hned nahoře.' },
-      { title: 'Domácnost+ v.0.1_83', note: 'Hotovo: první bezpečný krok ČHMÚ počasí přes Edge Function s Open-Meteo fallbackem a pevně ukotvený spodní panel.' }
+      { title: 'Domácnost+ v.0.1_82', note: 'Hotovo: první bezpečný krok ČHMÚ počasí přes Edge Function s Open-Meteo fallbackem a pevně ukotvený spodní panel.' },
+      { title: 'Domácnost+ v.0.1_83', note: 'Hotovo: ČHMÚ Edge Function nasazená v Supabase, spodní panel níž a rychlé detaily z Home nad navigací.' },
+      { title: 'Domácnost+ v.0.1_84', note: 'Hotfix: rychlé detaily z Home už nejsou schované dole, spodní panel je níž a počasí doplňuje východ/západ slunce z číselného fallbacku.' }
     ];
     return `
       <section class="card roadmap-card">
@@ -8371,7 +8395,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 54, appBuild: 83, mode: 'rich-demo-v83', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 54, appBuild: 84, mode: 'rich-demo-v84', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -8512,7 +8536,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 54, appBuild: 83, mode: 'weather-chmi-nav-fixed-v83', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 54, appBuild: 84, mode: 'weather-chmi-modal-safe-v84', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -10516,7 +10540,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 83
+        appBuild: 84
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -11093,7 +11117,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-83-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-84-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -11220,7 +11244,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_83</span>
+          <span class="badge">Domácnost+ v.0.1_84</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
