@@ -2211,6 +2211,7 @@ button {
   gap: 8px;
   margin: 12px 0;
 }
+.inline-note.warn-note { border-color: rgba(245, 158, 11, .28); background: rgba(245, 158, 11, .10); color: var(--text); }
 .cloud-household-row {
   display: flex;
   align-items: center;
@@ -2433,6 +2434,7 @@ button {
 .shopping-tab-catalog .shopping-panel:not(.panel-catalog),
 .shopping-tab-coupons .shopping-panel:not(.panel-coupons),
 .calendar-tab-overview .calendar-panel:not(.panel-overview),
+.calendar-tab-sources .calendar-panel:not(.panel-sources),
 .calendar-tab-add .calendar-panel:not(.panel-add),
 .calendar-tab-history .calendar-panel:not(.panel-history),
 .packages-tab-active .packages-panel:not(.panel-active),
@@ -4212,5 +4214,994 @@ body.overview-open {
   .hero-weather-copy em {
     max-width: 58px;
     font-size: .62rem;
+  }
+}
+
+/* v0.1_74: počasí jen v horním panelu, ne jako samostatná Home karta */
+.dashboard-widget-block[data-dashboard-widget="weather"] { display: none !important; }
+
+/* Domácnost+ home reset – čistý základ */
+.dashboard-empty-home {
+  gap: 10px;
+}
+.home-minimal-hero {
+  padding: clamp(16px, 4vw, 24px);
+}
+.home-minimal-hero .station-hero-main {
+  gap: 12px;
+}
+.hero-clock-button {
+  appearance: none;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 18px;
+}
+.hero-clock-button:active {
+  transform: scale(.995);
+}
+.hero-clock-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent, #3a71ff) 38%, transparent);
+  outline-offset: 4px;
+}
+.home-minimal-hero .station-summary {
+  margin-top: 2px;
+}
+.home-minimal-hero .station-summary:empty {
+  display: none;
+}
+.weather-page .weather-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+
+/* Domácnost+ v.0.1_81 – první globální iOS / liquid glass polish */
+:root {
+  --ios-glass: rgba(255, 255, 255, 0.46);
+  --ios-glass-strong: rgba(255, 255, 255, 0.72);
+  --ios-glass-edge: rgba(255, 255, 255, 0.68);
+  --ios-glass-shadow: 0 18px 54px rgba(31, 54, 88, 0.14);
+  --ios-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+}
+[data-theme="dark"] {
+  --ios-glass: rgba(17, 26, 42, 0.58);
+  --ios-glass-strong: rgba(22, 33, 53, 0.78);
+  --ios-glass-edge: rgba(255, 255, 255, 0.14);
+  --ios-glass-shadow: 0 22px 64px rgba(0, 0, 0, 0.34);
+  --ios-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(255, 255, 255, .56), transparent 24%),
+    radial-gradient(circle at 80% 0%, rgba(92, 149, 255, .26), transparent 30%),
+    radial-gradient(circle at 54% 88%, rgba(169, 110, 255, .13), transparent 32%);
+  content: "";
+}
+[data-theme="dark"] body::before {
+  background:
+    radial-gradient(circle at 18% 8%, rgba(78, 135, 255, .16), transparent 28%),
+    radial-gradient(circle at 82% 6%, rgba(178, 127, 255, .13), transparent 30%),
+    radial-gradient(circle at 48% 90%, rgba(255, 255, 255, .045), transparent 34%);
+}
+.card,
+.nav-shell,
+.overview-panel,
+.onboarding-card,
+.boot-fallback-card,
+.station-summary-item,
+.item,
+.section-tab,
+.profile-switcher,
+.action-details,
+.sync-overview-row,
+.weather-current-button,
+.hero-weather-pill {
+  border-color: color-mix(in srgb, var(--ios-glass-edge) 70%, var(--line));
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--ios-glass-strong) 72%, transparent), color-mix(in srgb, var(--ios-glass) 86%, transparent)),
+    var(--card);
+  box-shadow: var(--ios-glass-shadow), var(--ios-inner-highlight);
+  backdrop-filter: blur(28px) saturate(1.28);
+  -webkit-backdrop-filter: blur(28px) saturate(1.28);
+}
+.item,
+.station-summary-item,
+.section-tab,
+.action-details,
+.sync-overview-row,
+.weather-current-button,
+.hero-weather-pill {
+  box-shadow: 0 10px 28px rgba(31, 54, 88, 0.08), var(--ios-inner-highlight);
+}
+[data-theme="dark"] .item,
+[data-theme="dark"] .station-summary-item,
+[data-theme="dark"] .section-tab,
+[data-theme="dark"] .action-details,
+[data-theme="dark"] .sync-overview-row,
+[data-theme="dark"] .weather-current-button,
+[data-theme="dark"] .hero-weather-pill {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.20), var(--ios-inner-highlight);
+}
+.card::before,
+.overview-panel::before,
+.nav-shell::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,.34), transparent 34%);
+  content: "";
+}
+.card > *,
+.overview-panel > *,
+.nav-shell > * {
+  position: relative;
+  z-index: 1;
+}
+.primary-btn {
+  background: linear-gradient(135deg, #2f73ff, #73b8ff);
+  box-shadow: 0 16px 34px rgba(47, 115, 255, .26), inset 0 1px 0 rgba(255,255,255,.38);
+}
+.ghost-btn,
+.danger-btn,
+.icon-btn,
+.badge,
+.quick-chip,
+.module-chip,
+.nav-item.active {
+  border-color: color-mix(in srgb, var(--ios-glass-edge) 64%, var(--line));
+  background: color-mix(in srgb, var(--ios-glass-strong) 68%, transparent);
+  box-shadow: var(--ios-inner-highlight);
+  backdrop-filter: blur(18px) saturate(1.18);
+  -webkit-backdrop-filter: blur(18px) saturate(1.18);
+}
+.nav-shell {
+  border-radius: 30px;
+  background: color-mix(in srgb, var(--ios-glass-strong) 82%, transparent);
+}
+.nav-item.active {
+  color: var(--text);
+  transform: translateY(-1px);
+}
+.overview-backdrop {
+  background: rgba(8, 14, 25, .34);
+  backdrop-filter: blur(22px) saturate(1.18);
+  -webkit-backdrop-filter: blur(22px) saturate(1.18);
+}
+.overview-panel {
+  border-radius: 30px;
+}
+.overview-head {
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
+  padding-bottom: 10px;
+}
+.home-minimal-hero {
+  border-radius: 32px;
+}
+.hero-weather-icon,
+.overview-icon {
+  background: color-mix(in srgb, var(--ios-glass-strong) 68%, transparent);
+  box-shadow: var(--ios-inner-highlight);
+}
+input,
+select,
+textarea {
+  border-color: color-mix(in srgb, var(--ios-glass-edge) 58%, var(--line));
+  background: color-mix(in srgb, var(--ios-glass-strong) 62%, transparent);
+  backdrop-filter: blur(16px) saturate(1.12);
+  -webkit-backdrop-filter: blur(16px) saturate(1.12);
+}
+@media (max-width: 560px) {
+  .overview-panel {
+    border-radius: 30px 30px 0 0;
+  }
+  .overview-head {
+    border-radius: 30px 30px 0 0;
+  }
+  .nav-shell {
+    border-radius: 28px;
+  }
+}
+
+
+/* Domácnost+ v.0.1_81 – více zdrojů kalendáře */
+.calendar-source-list .item {
+  gap: 8px;
+}
+.calendar-source-icon {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.46);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
+  font-weight: 800;
+}
+.muted-item {
+  opacity: .64;
+}
+.source-mini-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 560px) {
+  .source-mini-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Domácnost+ v.0.1_81 – oprava variabilního Home panelu */
+.home-clean-frame .footer-note,
+.dashboard-empty-home .footer-note {
+  display: none !important;
+}
+
+.home-minimal-hero {
+  overflow: hidden;
+}
+
+.home-minimal-hero .station-hero-main {
+  display: grid;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.home-minimal-hero .station-clock-area {
+  min-width: 0;
+}
+
+.home-minimal-hero .hero-clock-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(108px, .92fr);
+  gap: 10px;
+  align-items: stretch;
+  margin-top: 0;
+}
+
+.home-minimal-hero .hero-clock-button,
+.home-minimal-hero .hero-weather-pill {
+  min-height: 78px;
+  width: 100%;
+  max-width: none;
+  padding: 13px;
+  border: 1px solid color-mix(in srgb, var(--ios-glass-edge, rgba(255,255,255,.52)) 70%, var(--line));
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--ios-glass-strong, rgba(255,255,255,.72)) 76%, transparent), color-mix(in srgb, var(--ios-glass, rgba(255,255,255,.46)) 90%, transparent)),
+    var(--card);
+  box-shadow: 0 14px 34px rgba(31, 54, 88, 0.10), var(--ios-inner-highlight, inset 0 1px 0 rgba(255,255,255,.5));
+  backdrop-filter: blur(28px) saturate(1.25);
+  -webkit-backdrop-filter: blur(28px) saturate(1.25);
+}
+
+.home-minimal-hero .hero-clock-button {
+  display: grid;
+  align-content: center;
+  justify-content: start;
+  gap: 4px;
+  text-align: left;
+}
+
+.home-hero-count-0 .hero-clock-row {
+  grid-template-columns: minmax(0, 1.05fr) minmax(150px, .95fr);
+  min-height: clamp(168px, 34vw, 260px);
+}
+
+.home-hero-count-0 .hero-clock-button,
+.home-hero-count-0 .hero-weather-pill {
+  min-height: 100%;
+  padding: clamp(16px, 4vw, 24px);
+}
+
+.home-hero-count-0 .hero-clock-button {
+  place-items: center;
+  align-content: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.home-hero-count-0 .hero-time {
+  font-size: clamp(3rem, 15vw, 6.2rem);
+  text-align: center;
+}
+
+.home-hero-count-0 .hero-date {
+  font-size: clamp(.86rem, 3.2vw, 1.05rem);
+  text-align: center;
+}
+
+.home-hero-count-0 .hero-weather-pill-expanded {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  align-items: center;
+  justify-content: stretch;
+  gap: 10px 12px;
+}
+
+.home-hero-count-0 .hero-weather-icon {
+  width: clamp(46px, 12vw, 74px);
+  height: clamp(46px, 12vw, 74px);
+  border-radius: clamp(18px, 4vw, 28px);
+  font-size: clamp(1.7rem, 6vw, 3rem);
+}
+
+.home-hero-count-0 .hero-weather-copy strong {
+  font-size: clamp(2rem, 8vw, 4rem);
+}
+
+.home-hero-count-0 .hero-weather-copy em {
+  max-width: none;
+  font-size: clamp(.75rem, 2.6vw, .95rem);
+}
+
+.hero-weather-forecast {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.hero-weather-day {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  padding: 7px 6px;
+  border: 1px solid rgba(255,255,255,.42);
+  border-radius: 15px;
+  background: rgba(255,255,255,.34);
+  text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.38);
+}
+
+[data-theme="dark"] .hero-weather-day {
+  border-color: rgba(255,255,255,.08);
+  background: rgba(255,255,255,.07);
+}
+
+.hero-weather-day em,
+.hero-weather-day small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: .62rem;
+  font-style: normal;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero-weather-day strong {
+  overflow: hidden;
+  font-size: .78rem;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-minimal-hero .station-summary {
+  display: grid;
+  gap: 10px;
+  margin-top: 0;
+}
+
+.station-summary-count-1 {
+  grid-template-columns: 1fr;
+}
+
+.station-summary-count-2,
+.station-summary-count-3,
+.station-summary-count-4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.station-summary-count-3 .station-summary-item:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.home-minimal-hero .station-summary-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 84px;
+  padding: 12px;
+  text-align: left;
+}
+
+.station-summary-count-1 .station-summary-item,
+.station-summary-count-3 .station-summary-item:nth-child(3) {
+  min-height: 108px;
+}
+
+.home-minimal-hero .station-summary-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(255,255,255,.42);
+  font-size: 1.18rem;
+}
+
+[data-theme="dark"] .home-minimal-hero .station-summary-icon {
+  background: rgba(255,255,255,.09);
+}
+
+.home-minimal-hero .station-summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.home-minimal-hero .station-summary-copy em {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: .7rem;
+  font-style: normal;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  white-space: nowrap;
+}
+
+.home-minimal-hero .station-summary-copy strong {
+  display: block;
+  overflow: hidden;
+  font-size: clamp(1.15rem, 4.5vw, 2rem);
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-minimal-hero .station-summary-copy span {
+  display: block;
+  overflow: hidden;
+  margin: 0;
+  color: var(--muted);
+  font-size: .72rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.station-summary-count-1 .station-summary-copy span,
+.station-summary-count-3 .station-summary-item:nth-child(3) .station-summary-copy span {
+  white-space: normal;
+}
+
+@media (min-width: 720px) {
+  .home-hero-count-1 .station-hero-main,
+  .home-hero-count-2 .station-hero-main,
+  .home-hero-count-3 .station-hero-main,
+  .home-hero-count-4 .station-hero-main {
+    grid-template-columns: minmax(230px, .78fr) minmax(0, 1.22fr);
+    align-items: stretch;
+  }
+
+  .home-hero-count-1 .hero-clock-row,
+  .home-hero-count-2 .hero-clock-row,
+  .home-hero-count-3 .hero-clock-row,
+  .home-hero-count-4 .hero-clock-row {
+    grid-template-columns: 1fr;
+    height: 100%;
+  }
+
+  .home-hero-count-1 .hero-clock-button,
+  .home-hero-count-1 .hero-weather-pill,
+  .home-hero-count-2 .hero-clock-button,
+  .home-hero-count-2 .hero-weather-pill,
+  .home-hero-count-3 .hero-clock-button,
+  .home-hero-count-3 .hero-weather-pill,
+  .home-hero-count-4 .hero-clock-button,
+  .home-hero-count-4 .hero-weather-pill {
+    min-height: 0;
+  }
+
+  .home-hero-count-1 .station-summary {
+    height: 100%;
+  }
+
+  .home-hero-count-1 .station-summary-item {
+    min-height: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .home-minimal-hero .hero-clock-row {
+    grid-template-columns: minmax(0, 1.04fr) minmax(96px, .96fr);
+    gap: 8px;
+  }
+
+  .home-minimal-hero .hero-clock-button,
+  .home-minimal-hero .hero-weather-pill {
+    min-height: 72px;
+    padding: 10px;
+    border-radius: 20px;
+  }
+
+  .home-hero-count-0 .hero-clock-row {
+    min-height: 152px;
+  }
+
+  .home-hero-count-0 .hero-clock-button,
+  .home-hero-count-0 .hero-weather-pill {
+    padding: 12px;
+  }
+
+  .home-hero-count-0 .hero-time {
+    font-size: clamp(2.55rem, 14vw, 4.4rem);
+  }
+
+  .home-hero-count-0 .hero-weather-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 17px;
+    font-size: 1.55rem;
+  }
+
+  .hero-weather-forecast {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-minimal-hero .station-summary-item {
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: 8px;
+    min-height: 86px;
+  }
+
+  .home-minimal-hero .station-summary-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 14px;
+  }
+}
+/* Domácnost+ v.0.1_81 – Google Calendar bezpečný konektor */
+.google-calendar-connector {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,.56);
+  border-radius: 26px;
+  background: linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,255,255,.38));
+  box-shadow: 0 20px 50px rgba(15, 23, 42, .10);
+  backdrop-filter: blur(24px) saturate(1.15);
+  -webkit-backdrop-filter: blur(24px) saturate(1.15);
+}
+
+.connector-head {
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.google-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.72);
+  color: #2563eb;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .12), 0 10px 24px rgba(37, 99, 235, .16);
+}
+
+.connector-actions {
+  justify-content: flex-start;
+}
+
+.google-calendar-picker {
+  display: grid;
+  gap: 12px;
+}
+
+.google-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.google-calendar-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  min-height: 68px;
+  padding: 12px 13px;
+  border: 1px solid rgba(148, 163, 184, .22);
+  border-radius: 20px;
+  background: rgba(255,255,255,.52);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.68);
+  cursor: pointer;
+  transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.google-calendar-option:hover {
+  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, .22);
+  background: rgba(255,255,255,.72);
+}
+
+.google-calendar-option.active {
+  border-color: rgba(37, 99, 235, .34);
+  background: linear-gradient(135deg, rgba(219, 234, 254, .78), rgba(255,255,255,.62));
+  box-shadow: 0 14px 34px rgba(37, 99, 235, .12), inset 0 1px 0 rgba(255,255,255,.72);
+}
+
+.google-calendar-option input {
+  width: 20px;
+  height: 20px;
+  accent-color: #2563eb;
+}
+
+.google-calendar-option span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.google-calendar-option strong,
+.google-calendar-option em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.google-calendar-option em {
+  color: var(--muted);
+  font-size: .82rem;
+  font-style: normal;
+}
+
+@media (max-width: 560px) {
+  .google-calendar-connector {
+    padding: 13px;
+    border-radius: 22px;
+  }
+
+  .google-calendar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .connector-actions {
+    align-items: stretch;
+  }
+
+  .connector-actions .primary-btn,
+  .connector-actions .ghost-btn,
+  .connector-actions .danger-btn {
+    width: 100%;
+  }
+}
+
+
+/* Domácnost+ v.0.1_81 – stabilní Home panel a chytřejší mini karty */
+.home-minimal-hero {
+  display: flex;
+  min-height: 0;
+  height: clamp(286px, 42svh, 374px);
+  max-height: 374px;
+}
+
+.home-minimal-hero .station-hero-main {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: minmax(84px, .72fr) minmax(0, 1fr);
+}
+
+.home-minimal-hero .station-clock-area,
+.home-minimal-hero .hero-clock-row,
+.home-minimal-hero .station-summary {
+  min-height: 0;
+}
+
+.home-hero-count-0 .station-hero-main {
+  grid-template-rows: 1fr;
+}
+
+.home-hero-count-0 .hero-clock-row {
+  height: 100%;
+  min-height: 0;
+}
+
+.home-hero-count-0 .hero-clock-button,
+.home-hero-count-0 .hero-weather-pill {
+  min-height: 0;
+}
+
+.home-hero-count-1 .station-hero-main,
+.home-hero-count-2 .station-hero-main,
+.home-hero-count-3 .station-hero-main,
+.home-hero-count-4 .station-hero-main {
+  grid-template-columns: 1fr;
+}
+
+.home-hero-count-1 .station-summary,
+.home-hero-count-2 .station-summary,
+.home-hero-count-3 .station-summary,
+.home-hero-count-4 .station-summary {
+  height: 100%;
+  overflow: hidden;
+}
+
+.home-minimal-hero .station-summary-item {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.station-summary-count-1 .station-summary-item,
+.station-summary-count-3 .station-summary-item:nth-child(3) {
+  min-height: 0;
+}
+
+.home-minimal-hero .station-summary-copy {
+  align-content: center;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.home-minimal-hero .station-summary-copy strong {
+  font-size: clamp(1rem, 4vw, 1.68rem);
+}
+
+.home-minimal-hero .station-summary-copy small {
+  display: block;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: .68rem;
+  font-weight: 760;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-minimal-hero .station-summary-copy .station-summary-chipline {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  overflow: hidden;
+  margin-top: 1px;
+}
+
+.home-minimal-hero .station-summary-copy .station-summary-chipline b {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px solid color-mix(in srgb, var(--ios-glass-edge, rgba(255,255,255,.48)) 64%, transparent);
+  border-radius: 999px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--ios-glass-strong, rgba(255,255,255,.72)) 52%, transparent);
+  font-size: .58rem;
+  font-weight: 850;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.station-summary-tone-good .station-summary-icon {
+  color: #087f5b;
+}
+
+.station-summary-tone-warn .station-summary-icon {
+  color: #b45309;
+}
+
+.station-summary-count-1 .station-summary-item {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.station-summary-count-2,
+.station-summary-count-3,
+.station-summary-count-4 {
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+.station-summary-count-1 {
+  grid-template-rows: 1fr;
+}
+
+.station-summary-count-2 {
+  grid-template-rows: 1fr;
+}
+
+.station-summary-count-3,
+.station-summary-count-4 {
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.station-summary-count-3 .station-summary-item:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 720px) {
+  .home-minimal-hero {
+    height: clamp(292px, 34svh, 380px);
+  }
+
+  .home-hero-count-1 .station-hero-main,
+  .home-hero-count-2 .station-hero-main,
+  .home-hero-count-3 .station-hero-main,
+  .home-hero-count-4 .station-hero-main {
+    grid-template-columns: minmax(210px, .74fr) minmax(0, 1.26fr);
+    grid-template-rows: 1fr;
+  }
+
+  .home-hero-count-1 .hero-clock-row,
+  .home-hero-count-2 .hero-clock-row,
+  .home-hero-count-3 .hero-clock-row,
+  .home-hero-count-4 .hero-clock-row {
+    height: 100%;
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .home-minimal-hero {
+    height: clamp(278px, 39svh, 340px);
+    max-height: 340px;
+  }
+
+  .home-hero-count-1 .station-hero-main,
+  .home-hero-count-2 .station-hero-main,
+  .home-hero-count-3 .station-hero-main,
+  .home-hero-count-4 .station-hero-main {
+    grid-template-rows: minmax(72px, .64fr) minmax(0, 1fr);
+  }
+
+  .home-minimal-hero .hero-clock-button,
+  .home-minimal-hero .hero-weather-pill {
+    min-height: 0;
+    padding: 9px 10px;
+  }
+
+  .home-minimal-hero .station-summary {
+    gap: 8px;
+  }
+
+  .home-minimal-hero .station-summary-item {
+    gap: 7px;
+    padding: 9px;
+  }
+
+  .home-minimal-hero .station-summary-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 13px;
+    font-size: 1rem;
+  }
+
+  .home-minimal-hero .station-summary-copy em {
+    font-size: .58rem;
+  }
+
+  .home-minimal-hero .station-summary-copy strong {
+    font-size: clamp(.95rem, 3.6vw, 1.24rem);
+  }
+
+  .home-minimal-hero .station-summary-copy span,
+  .home-minimal-hero .station-summary-copy small {
+    font-size: .61rem;
+  }
+
+  .home-minimal-hero .station-summary-copy .station-summary-chipline {
+    display: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .home-minimal-hero {
+    height: 300px;
+  }
+
+  .home-minimal-hero .station-summary-item {
+    grid-template-columns: 1fr;
+    align-content: center;
+  }
+
+  .home-minimal-hero .station-summary-icon {
+    display: none;
+  }
+}
+
+
+/* Domácnost+ v.0.1_81 – čas a počasí pod sebou při prázdném Home panelu + nastavení nahoře ve Více */
+.home-hero-count-0 .station-hero-main {
+  grid-template-rows: 1fr;
+}
+
+.home-hero-count-0 .hero-clock-row {
+  display: grid;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: minmax(0, .92fr) minmax(0, 1.08fr);
+  height: 100%;
+  min-height: 0;
+}
+
+.home-hero-count-0 .hero-clock-button,
+.home-hero-count-0 .hero-weather-pill {
+  min-height: 0;
+  height: 100%;
+}
+
+.home-hero-count-0 .hero-clock-button {
+  place-items: center;
+  align-content: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.home-hero-count-0 .hero-weather-pill-expanded {
+  overflow: hidden;
+  align-content: center;
+}
+
+.home-hero-count-0 .hero-weather-forecast {
+  min-height: 0;
+}
+
+.home-hero-count-0 .hero-weather-day {
+  min-width: 0;
+  padding: clamp(5px, 1.5vw, 8px) 6px;
+}
+
+.more-settings-priority {
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--line));
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent-soft) 42%, transparent), color-mix(in srgb, var(--card) 92%, transparent)),
+    var(--card);
+}
+
+.more-settings-priority .module-hub-item {
+  margin-top: 4px;
+}
+
+@media (max-width: 560px) {
+  .home-hero-count-0 .hero-clock-row {
+    grid-template-rows: minmax(0, .86fr) minmax(0, 1.14fr);
+  }
+
+  .home-hero-count-0 .hero-time {
+    font-size: clamp(2.85rem, 16vw, 5rem);
+  }
+
+  .home-hero-count-0 .hero-weather-pill-expanded {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 10px;
+  }
+
+  .home-hero-count-0 .hero-weather-forecast {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .home-hero-count-0 .hero-weather-day em,
+  .home-hero-count-0 .hero-weather-day small {
+    font-size: .54rem;
+  }
+
+  .home-hero-count-0 .hero-weather-day strong {
+    font-size: .66rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .home-hero-count-0 .hero-weather-forecast {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

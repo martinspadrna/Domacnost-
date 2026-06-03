@@ -9,10 +9,10 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_71';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_71';
-  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_69';
-  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
+  const APP_VERSION = 'Domácnost+ v.0.1_81';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_81';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_78';
+  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_77', 'domacnostPlus.v0.1_72', 'domacnostPlus.v0.1_71', 'domacnostPlus.v0.1_70', 'domacnostPlus.v0.1_69', 'domacnostPlus.v0.1_68', 'domacnostPlus.v0.1_67', 'domacnostPlus.v0.1_66', 'domacnostPlus.v0.1_65', 'domacnostPlus.v0.1_64', 'domacnostPlus.v0.1_63', 'domacnostPlus.v0.1_62', 'domacnostPlus.v0.1_61', 'domacnostPlus.v0.1_60', 'domacnostPlus.v0.1_59', 'domacnostPlus.v0.1_58', 'domacnostPlus.v0.1_57', 'domacnostPlus.v0.1_56', 'domacnostPlus.v0.1_55', 'domacnostPlus.v0.1_54', 'domacnostPlus.v0.1_53', 'domacnostPlus.v0.1_52', 'domacnostPlus.v0.1_51', 'domacnostPlus.v0.1_50', 'domacnostPlus.v0.1_49', 'domacnostPlus.v0.1_48', 'domacnostPlus.v0.1_47', 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
     { id: 'home', label: 'Domů', icon: '🏠' },
@@ -122,23 +122,15 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-71.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-81.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
     .map((module) => module.id);
 
-  const DASHBOARD_WIDGETS = [
-    { id: 'weather', label: 'Počasí', icon: '🌤️', note: 'Aktuální počasí a krátký výhled pro místo domácnosti.' },
-    { id: 'focus', label: 'Hlavní karty', icon: '⭐', note: 'Kalendář, HDO, balíky, nákup a finance v rychlých kartách.' },
-    { id: 'timeline', label: 'Dnes a brzy', icon: '🕒', note: 'Časová osa nejbližších událostí, úkolů, svozů a upozornění.' },
-    { id: 'now', label: 'Teď doma', icon: '🏠', note: 'Rychlý stav domácnosti, HDO a nákupy.' },
-    { id: 'setup', label: 'První nastavení', icon: '🧭', note: 'Průvodce dokončením základního nastavení domácnosti.' },
-    { id: 'modules', label: 'Rychlé moduly', icon: '🧩', note: 'Karty zapnutých modulů.' }
-  ];
-  const DEFAULT_DASHBOARD_WIDGET_IDS = ['focus', 'timeline', 'now', 'setup', 'modules'];
+  const DASHBOARD_WIDGETS = [];
+  const DEFAULT_DASHBOARD_WIDGET_IDS = [];
   const HOME_HERO_ITEMS = [
-    { id: 'weather', label: 'Počasí', icon: '🌤️', nav: 'weather', metric: (ctx) => ctx.weather?.current ? roundWeather(ctx.weather.current.temperature, '°') : '—', text: (ctx) => ctx.weather?.current ? weatherCodeLabel(ctx.weather.current.weatherCode)[0] : 'počasí' },
     { id: 'calendar', label: 'Kalendář dnes', icon: '📅', overview: 'calendar', metric: (ctx) => ctx.todayEvents.length, text: () => 'dnes v kalendáři' },
     { id: 'packages', label: 'Balíky', icon: '📦', overview: 'packages', metric: (ctx) => ctx.activePackages.length, text: () => 'aktivní balíky' },
     { id: 'shopping', label: 'Nákup', icon: '🛒', overview: 'shopping', metric: (ctx) => ctx.openShopping.length, text: () => 'v nákupu' },
@@ -153,15 +145,15 @@
     { id: 'finance', label: 'Finance', icon: '💰', overview: 'finance', metric: () => formatCurrency(financeMonthSummary().balance), text: () => 'měsíční rozdíl' },
     { id: 'cameras', label: 'Kamery', icon: '📹', nav: 'cameras', tab: 'overview', metric: () => state.cameras.length, text: () => 'kamery' }
   ];
-  const DEFAULT_HOME_HERO_IDS = ['weather', 'calendar', 'packages', 'shopping'];
+  const DEFAULT_HOME_HERO_IDS = [];
   const WEATHER_DEFAULT_LOCATION = { name: 'Hostinné', country: 'CZ', latitude: 50.5407, longitude: 15.7233 };
   const WEATHER_CACHE_MS = 30 * 60 * 1000;
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 51,
-      appBuild: 71,
-      mode: 'modular-dashboard-weather-hero-v71',
+      schemaVersion: 53,
+      appBuild: 81,
+      mode: 'home-panel-content-v81',
       createdAt: '',
       updatedAt: ''
     },
@@ -193,7 +185,7 @@
     wasteCloud: { types: [], loadedAt: '' },
     parcelsCloud: { loadedAt: '' },
     tasksCloud: { loadedAt: '' },
-    calendarCloud: { sources: [], loadedAt: '' },
+    calendarCloud: { sources: [], loadedAt: '', sourcesLoadedAt: '', googleConnection: null, googleCalendars: [], googleCalendarsLoadedAt: '', googleLastSyncAt: '' },
     shoppingStats: {},
     pwa: { installed: false, lastUpdateCheck: '', lastInstallPrompt: '', diagnostics: null },
     homeTasks: [],
@@ -372,6 +364,7 @@
     'task_events',
     'parcels',
     'calendar_events',
+    'calendar_sources',
     'finance_accounts',
     'finance_transactions',
     'household_notes',
@@ -610,11 +603,12 @@
   function migrateState(input, options = {}) {
     const migrated = structuredCloneSafe(input || DEFAULT_STATE);
     const timestamp = new Date().toISOString();
+    const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 51,
-      appBuild: 71,
-      mode: 'modular-dashboard-weather-hero-v71',
+      schemaVersion: 53,
+      appBuild: 81,
+      mode: 'home-panel-content-v81',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -624,8 +618,8 @@
       theme: migrated.settings?.theme === 'dark' ? 'dark' : 'light',
       dashboardNote: migrated.settings?.dashboardNote || DEFAULT_STATE.settings.dashboardNote,
       bottomNavIds: Array.isArray(migrated.settings?.bottomNavIds) ? migrated.settings.bottomNavIds : [...DEFAULT_BOTTOM_NAV_IDS],
-      dashboardWidgets: normalizeDashboardWidgetIds(migrated.settings?.dashboardWidgets),
-      homeHeroItems: normalizeHomeHeroIds(migrated.settings?.homeHeroItems)
+      dashboardWidgets: [],
+      homeHeroItems: previousAppBuild && previousAppBuild < 74 ? [] : normalizeHomeHeroIds(migrated.settings?.homeHeroItems)
     };
 
     migrated.household = {
@@ -747,13 +741,7 @@
   }
 
   function normalizeDashboardWidgetIds(value) {
-    const allowed = new Set(DASHBOARD_WIDGETS.map((item) => item.id));
-    const requested = Array.isArray(value) ? value : DEFAULT_DASHBOARD_WIDGET_IDS;
-    const result = [];
-    requested.forEach((id) => {
-      if (allowed.has(id) && !result.includes(id)) result.push(id);
-    });
-    return result.length ? result : [...DEFAULT_DASHBOARD_WIDGET_IDS];
+    return [];
   }
 
   function dashboardWidgetById(id) {
@@ -767,7 +755,7 @@
     requested.forEach((id) => {
       if (allowed.has(id) && !result.includes(id)) result.push(id);
     });
-    return result.length ? result.slice(0, 4) : [...DEFAULT_HOME_HERO_IDS];
+    return result.slice(0, 4);
   }
 
   function homeHeroItemById(id) {
@@ -988,8 +976,6 @@
           </section>
           ${renderDemoReadOnlyBanner()}${renderModule(active.id)}
         </main>
-
-        <p class="footer-note">${escapeHtml(APP_VERSION)} · cloud nákupy, smlouvy, garáž, HDO, odpad, balíky, úkoly, kalendář, finance, poznámky, zařízení, kamery a kódy · lokál je jen cache/fallback</p>
       </div>
 
       <nav class="nav-shell" aria-label="Hlavní navigace">
@@ -1223,12 +1209,30 @@
   function renderOverviewDrawer() {
     if (!activeOverview) return '';
     return `
-      <div class="overview-backdrop" data-action="close-overview" role="presentation">
-        <aside class="overview-panel" role="dialog" aria-modal="true" aria-labelledby="overview-title" onclick="event.stopPropagation()">
+      <div class="overview-backdrop" data-overview-backdrop role="presentation">
+        <aside class="overview-panel" data-overview-panel role="dialog" aria-modal="true" aria-labelledby="overview-title">
           ${renderOverviewContent(activeOverview)}
         </aside>
       </div>
     `;
+  }
+
+  function closeOverview() {
+    if (!activeOverview) return;
+    activeOverview = null;
+    render();
+  }
+
+  function openOverview(type) {
+    activeOverview = type || 'homecare';
+    try {
+      render();
+    } catch (error) {
+      console.error('Overview render failed', type, error);
+      activeOverview = null;
+      render();
+      showToast('Rychlý přehled se nepovedlo otevřít. Data jsem neuložil ani nesmazal.');
+    }
   }
 
   function overviewTarget(type) {
@@ -1270,8 +1274,8 @@
     const tabTarget = target.tab;
 
     if (type === 'hdo') {
-      const rows = [...state.hdoWindows].sort((a, b) => String(a.start || '').localeCompare(String(b.start || '')));
-      const enabledRows = rows.filter((item) => item.enabled !== false);
+      const rows = getSafeHdoWindows().sort((a, b) => String(a.start || '').localeCompare(String(b.start || '')));
+      const enabledRows = rows.filter((item) => item.enabled && timeToMinutes(item.start) !== null && timeToMinutes(item.end) !== null);
       const nextHdo = findNextHdoWindow(now);
       body = `
         <div class="overview-status ${hdo.active ? 'good' : 'warn'}"><strong>${hdo.active ? 'Nízký tarif právě běží' : 'Nízký tarif teď neběží'}</strong><span>${escapeHtml(hdo.message)}</span></div>
@@ -1280,7 +1284,10 @@
           { label: 'Aktivní', value: enabledRows.length, tone: enabledRows.length ? 'good' : '' },
           { label: 'Další změna', value: hdo.active ? 'běží' : nextHdo ? humanDuration(nextHdo.diffMinutes) : '—' }
         ])}
-        ${rows.length ? `<div class="list compact-list">${rows.map((item) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.label || 'HDO okno')}</div><span class="badge ${item.enabled ? 'good' : ''}">${item.enabled ? 'aktivní' : 'vypnuto'}</span></div><div class="item-meta">${escapeHtml(item.start)}–${escapeHtml(item.end)} · ${escapeHtml(daysLabel(item.days))}${item.cloudId ? ' · cloud' : ' · lokálně'}</div></div>`).join('')}</div>` : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard ukáže aktuální stav i další přepnutí.', nav: 'homecare', tab: 'hdo', label: 'Nastavit HDO' })}
+        ${rows.length ? `<div class="list compact-list">${rows.map((item) => {
+          const isValidTime = timeToMinutes(item.start) !== null && timeToMinutes(item.end) !== null;
+          return `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.label || 'HDO okno')}</div><span class="badge ${item.enabled && isValidTime ? 'good' : ''}">${item.enabled && isValidTime ? 'aktivní' : item.enabled ? 'zkontrolovat čas' : 'vypnuto'}</span></div><div class="item-meta">${escapeHtml(isValidTime ? hdoWindowTimeLabel(item) : 'čas není správně')} · ${escapeHtml(daysLabel(item.days))}${item.cloudId ? ' · cloud' : ' · lokálně'}</div></div>`;
+        }).join('')}</div>` : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard ukáže aktuální stav i další přepnutí.', nav: 'homecare', tab: 'hdo', label: 'Nastavit HDO' })}
       `;
     } else if (type === 'calendar') {
       const upcomingAll = [...state.calendar].filter((event) => !event.date || event.date >= todayISO()).sort((a,b)=>`${a.date||''}${a.time||''}`.localeCompare(`${b.date||''}${b.time||''}`));
@@ -1533,7 +1540,7 @@
     const subtitles = {
       weather: 'Aktuální počasí, hodinový výhled a předpověď pro místo domácnosti.',
       home: 'Rychlý domácí přehled pro tablet i mobil. Online domácnost je hlavní zdroj, lokál jen cache/fallback.',
-      calendar: 'Ruční kalendář už umí cloud. Google napojení přijde později přes bezpečný backend.',
+      calendar: 'Kalendář umí více zdrojů. Google Calendar je připravený přes bezpečný backend, ne přes tokeny ve frontendu.',
       packages: 'Základ pro sledování balíků. Teď ručně, později automatika přes backend.',
       shopping: 'Sdílený nákupní seznam s katalogem položek, jednotkami a cloudovým oddělením domácností.',
       homecare: 'HDO, odpad, poznámky, úkoly a domácí zařízení na jednom místě.',
@@ -1575,10 +1582,10 @@
   }
 
   function renderDashboard() {
-    const todayEvents = state.calendar
+    const todayEvents = visibleCalendarEvents()
       .filter((event) => event.date === todayISO())
       .sort((a, b) => String(a.time).localeCompare(String(b.time)));
-    const upcomingEvents = state.calendar
+    const upcomingEvents = visibleCalendarEvents()
       .filter((event) => !event.date || event.date >= todayISO())
       .sort((a, b) => `${a.date || ''}${a.time || ''}`.localeCompare(`${b.date || ''}${b.time || ''}`))
       .slice(0, 6);
@@ -1601,61 +1608,53 @@
       .slice(0, 3);
     const vehicleAlerts = getVehicleAlerts().slice(0, 4);
     const visibleModules = getVisibleModules();
-    const focusItems = getDashboardFocusItems({
-      hdo,
-      todayEvents,
-      upcomingEvents,
-      activePackages,
-      urgentContracts,
-      openShopping,
-      openTasks,
-      wasteSoon,
-      vehicleAlerts
-    });
     ensureWeatherFresh(false);
     const weather = normalizeWeatherState(state.weather);
-    const dashboardContext = { hdo, todayEvents, upcomingEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, focusItems, weather, notes: state.notes, devices: state.devices, cameras: state.cameras, coupons: state.coupons, contracts: state.contracts };
-    const widgetIds = normalizeDashboardWidgetIds(state.settings?.dashboardWidgets);
+    const dashboardContext = { hdo, todayEvents, upcomingEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, weather, notes: state.notes, devices: state.devices, cameras: state.cameras, coupons: state.coupons, contracts: state.contracts };
+    const selectedHeroItems = normalizeHomeHeroIds(state.settings?.homeHeroItems);
+    const heroCount = selectedHeroItems.length;
 
     return `
-      <div class="dashboard-v10">
-        <section class="card hero-card station-hero">
+      <div class="dashboard-v10 dashboard-empty-home">
+        <section class="card hero-card station-hero home-minimal-hero home-hero-count-${heroCount}">
           <div class="station-hero-main">
             <div class="station-clock-area">
-              <span class="badge good">${escapeHtml(householdName())}</span>
               <div class="hero-clock-row">
-                <div class="hero-clock-copy">
+                <button class="hero-clock-copy hero-clock-button" type="button" data-action="open-overview" data-overview="calendar" aria-label="Otevřít kalendář">
                   <div class="hero-time">${clockText(now)}</div>
                   <div class="hero-date">${escapeHtml(formatDateTime(now))}</div>
-                </div>
-                ${renderHeroWeatherPill(dashboardContext)}
+                </button>
+                ${renderHeroWeatherPill(dashboardContext, { expanded: heroCount === 0 })}
               </div>
             </div>
-            <div class="station-summary">
-              ${renderHomeHeroSummaryItems(dashboardContext)}
-            </div>
-          </div>
-          <div class="station-hero-bottom hero-actions-only">
-            <button class="ghost-btn" type="button" data-nav="settings" data-target-tab="dashboard">Upravit hlavní obrazovku</button>
+            ${heroCount ? `<div class="station-summary station-summary-count-${heroCount}">${renderHomeHeroSummaryItems(dashboardContext)}</div>` : ''}
           </div>
         </section>
-
-        ${widgetIds.map((id) => renderDashboardWidget(id, dashboardContext)).join('')}
       </div>
     `;
   }
 
-  function renderHeroWeatherPill(ctx) {
+  function renderHeroWeatherPill(ctx, options = {}) {
     const weather = normalizeWeatherState(ctx?.weather || state.weather);
     const current = weather.current || {};
     const [condition, icon] = weatherCodeLabel(current.weatherCode);
     const hasCurrent = Boolean(weather.current);
     const label = weather.loading ? 'Načítám' : weather.error ? 'Chyba' : hasCurrent ? condition : 'Počasí';
     const value = hasCurrent ? roundWeather(current.temperature, '°') : '—';
+    const daily = Array.isArray(weather.daily) ? weather.daily.slice(0, 4) : [];
+    const forecast = options.expanded && daily.length ? `
+          <span class="hero-weather-forecast" aria-label="Výhled počasí na další dny">
+            ${daily.map((day, index) => {
+              const [, dayIcon] = weatherCodeLabel(day.weatherCode);
+              const label = index === 0 ? 'Dnes' : shortWeekday(day.date);
+              return `<span class="hero-weather-day"><em>${escapeHtml(label)}</em><strong>${escapeHtml(dayIcon)} ${roundWeather(day.max, '°')}</strong><small>${roundWeather(day.min, '°')}</small></span>`;
+            }).join('')}
+          </span>` : '';
     return `
-      <button class="hero-weather-pill" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
+      <button class="hero-weather-pill ${options.expanded ? 'hero-weather-pill-expanded' : ''}" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
         <span class="hero-weather-icon" aria-hidden="true">${escapeHtml(icon)}</span>
         <span class="hero-weather-copy"><strong>${escapeHtml(value)}</strong><em>${escapeHtml(label)}</em></span>
+        ${forecast}
       </button>
     `;
   }
@@ -1666,17 +1665,134 @@
       const item = homeHeroItemById(id);
       const metric = typeof item.metric === 'function' ? item.metric(ctx) : '—';
       const text = typeof item.text === 'function' ? item.text(ctx) : item.label;
+      const presentation = getHomeHeroItemPresentation(id, ctx, item, metric, text);
       const attrs = item.nav
         ? `data-nav="${escapeHtml(item.nav)}"${item.tab ? ` data-target-tab="${escapeHtml(item.tab)}"` : ''}`
         : `data-action="open-overview" data-overview="${escapeHtml(item.overview)}"`;
-      return `<button class="station-summary-item" type="button" ${attrs}><strong>${escapeHtml(metric)}</strong><span><b aria-hidden="true">${escapeHtml(item.icon || '')}</b>${escapeHtml(text)}</span></button>`;
+      const chips = Array.isArray(presentation.chips) && presentation.chips.length
+        ? `<span class="station-summary-chipline">${presentation.chips.slice(0, 3).map((chip) => `<b>${escapeHtml(chip)}</b>`).join('')}</span>`
+        : '';
+      return `
+        <button class="station-summary-item station-summary-tone-${escapeHtml(presentation.tone || 'neutral')}" type="button" ${attrs}>
+          <span class="station-summary-icon" aria-hidden="true">${escapeHtml(item.icon || '')}</span>
+          <span class="station-summary-copy">
+            <em>${escapeHtml(item.label)}</em>
+            <strong>${escapeHtml(presentation.metric)}</strong>
+            <span>${escapeHtml(presentation.text)}</span>
+            ${presentation.detail ? `<small>${escapeHtml(presentation.detail)}</small>` : ''}
+            ${chips}
+          </span>
+        </button>`;
     }).join('');
+  }
+
+  function getHomeHeroItemPresentation(id, ctx, item, metric, text) {
+    const base = { metric: metric ?? '—', text: text || item?.label || '', detail: '', chips: [], tone: 'neutral' };
+    const firstTitle = (value, fallback = '—') => normalizeText(value?.title || value?.name || value?.label || value?.store || value?.provider || value?.note || fallback);
+    const nextDateLine = (date, prefix = '') => {
+      const days = daysUntil(date);
+      if (days === null) return '';
+      return `${prefix}${dueBadge(days)}`.trim();
+    };
+    if (id === 'hdo') return getHdoHeroPresentation(ctx);
+    if (id === 'calendar') {
+      const next = (ctx.todayEvents || [])[0] || (ctx.upcomingEvents || [])[0];
+      return {
+        ...base,
+        metric: ctx.todayEvents?.length ? `${ctx.todayEvents.length} dnes` : 'Volno',
+        text: next ? firstTitle(next, 'Událost') : 'Žádná událost dnes',
+        detail: next ? `${next.time ? `${next.time} · ` : ''}${next.date ? shortDateText(next.date) : 'dnes'}` : 'Kliknutím otevřeš kalendář',
+        chips: ctx.upcomingEvents?.slice(0, 2).map((event) => event.time || shortDateText(event.date)).filter(Boolean) || [],
+        tone: ctx.todayEvents?.length ? 'good' : 'neutral'
+      };
+    }
+    if (id === 'packages') {
+      const active = ctx.activePackages || [];
+      const first = active[0];
+      return { ...base, metric: active.length, text: first ? firstTitle(first, 'Balík') : 'Žádný aktivní balík', detail: first ? normalizeText(first.statusLabel || first.status || first.carrier || first.trackingNumber || 'sledovat zásilku') : 'Nový balík přidáš ručně', tone: active.length ? 'warn' : 'good' };
+    }
+    if (id === 'shopping') {
+      const open = ctx.openShopping || [];
+      return { ...base, metric: open.length, text: open[0] ? firstTitle(open[0], 'Položka') : 'Nákup je prázdný', detail: open.length > 1 ? `+${open.length - 1} další položky` : 'Kliknutím otevřeš seznam', chips: open.slice(0, 2).map((entry) => firstTitle(entry, '')).filter(Boolean), tone: open.length ? 'warn' : 'good' };
+    }
+    if (id === 'coupons') {
+      const unused = (state.coupons || []).filter((entry) => !entry.used);
+      const expiring = unused.map((entry) => ({ ...entry, days: daysUntil(entry.expiry) })).filter((entry) => entry.days !== null).sort((a, b) => a.days - b.days)[0];
+      return { ...base, metric: unused.length, text: expiring ? firstTitle(expiring, 'Kupón') : 'Žádný nepoužitý kód', detail: expiring ? `platí ${dueBadge(expiring.days)}` : 'Ulož si slevový kód', tone: expiring && expiring.days <= 7 ? 'warn' : unused.length ? 'good' : 'neutral' };
+    }
+    if (id === 'waste') {
+      const upcoming = (state.waste || []).map((entry) => ({ ...entry, days: daysUntil(entry.date) })).filter((entry) => entry.days !== null && entry.days >= 0).sort((a, b) => a.days - b.days);
+      const next = upcoming[0];
+      return { ...base, metric: next ? dueBadge(next.days) : '—', text: next ? firstTitle(next, 'Svoz') : 'Svoz není nastavený', detail: next ? shortDateText(next.date) : 'Přidej termín odpadu', tone: next?.days <= 1 ? 'warn' : next ? 'good' : 'neutral' };
+    }
+    if (id === 'tasks') {
+      const open = ctx.openTasks || [];
+      const first = open[0];
+      return { ...base, metric: open.length, text: first ? firstTitle(first, 'Úkol') : 'Nic nečeká', detail: first?.due ? `termín ${dueBadge(daysUntil(first.due))}` : 'Domácí úkoly jsou čisté', tone: open.length ? 'warn' : 'good' };
+    }
+    if (id === 'notes') {
+      const notes = state.notes || [];
+      const last = notes[0];
+      return { ...base, metric: notes.length, text: last ? firstTitle(last, 'Poznámka') : 'Žádné poznámky', detail: last?.text ? normalizeText(last.text).slice(0, 48) : 'Rychlé domácí poznámky', tone: notes.length ? 'good' : 'neutral' };
+    }
+    if (id === 'devices') {
+      const devices = state.devices || [];
+      const active = devices.filter((device) => device.status !== 'offline' && device.status !== 'archived').length;
+      return { ...base, metric: devices.length, text: devices[0] ? firstTitle(devices[0], 'Zařízení') : 'Žádné zařízení', detail: devices.length ? `${active} aktivní / ${devices.length} celkem` : 'Přidej domácí zařízení', tone: devices.length ? 'good' : 'neutral' };
+    }
+    if (id === 'garage') {
+      const alert = (ctx.vehicleAlerts || [])[0];
+      return { ...base, metric: ctx.vehicleAlerts?.length || 0, text: alert ? firstTitle(alert, 'Upozornění') : `${state.vehicles.length} aut`, detail: alert?.meta || (state.vehicles.length ? 'Garáž bez akutního varování' : 'Přidej první auto'), tone: alert ? 'warn' : state.vehicles.length ? 'good' : 'neutral' };
+    }
+    if (id === 'contracts') {
+      const urgent = (ctx.urgentContracts || [])[0];
+      return { ...base, metric: state.contracts.length, text: urgent ? firstTitle(urgent, 'Smlouva') : 'Žádná akutní smlouva', detail: urgent ? `končí ${dueBadge(urgent.days)}` : 'Hlídání platností je klidné', tone: urgent ? 'warn' : state.contracts.length ? 'good' : 'neutral' };
+    }
+    if (id === 'finance') {
+      const summary = financeMonthSummary();
+      return { ...base, metric: formatCurrency(summary.balance), text: summary.balance >= 0 ? 'měsíc v plusu' : 'měsíc v mínusu', detail: `Příjmy ${formatCurrency(summary.income)} · výdaje ${formatCurrency(summary.expense)}`, tone: summary.balance >= 0 ? 'good' : 'warn' };
+    }
+    if (id === 'cameras') {
+      const cameras = state.cameras || [];
+      const online = cameras.filter((camera) => camera.status === 'online' || camera.status === 'active').length;
+      return { ...base, metric: cameras.length, text: cameras[0] ? firstTitle(cameras[0], 'Kamera') : 'Žádná kamera', detail: cameras.length ? `${online} online / ${cameras.length} celkem` : 'Přidej kameru do přehledu', tone: cameras.length ? 'good' : 'neutral' };
+    }
+    return base;
+  }
+
+  function getHdoHeroPresentation(ctx) {
+    const safeDate = toSafeDate(now, new Date());
+    const minuteNow = safeDate.getHours() * 60 + safeDate.getMinutes();
+    const enabled = getSafeHdoWindows().filter((entry) => entry.enabled && entry.days.includes(safeDate.getDay()) && timeToMinutes(entry.start) !== null && timeToMinutes(entry.end) !== null);
+    const active = enabled.find((entry) => isTimeInWindow(minuteNow, entry.start, entry.end));
+    if (active) {
+      const endMinutes = timeToMinutes(active.end);
+      let diff = endMinutes - minuteNow;
+      if (diff <= 0) diff += 1440;
+      return {
+        metric: 'Běží',
+        text: `do ${active.end}`,
+        detail: `${active.label || 'Nízký tarif'} · ještě ${humanDuration(diff)}`,
+        chips: [hdoWindowTimeLabel(active), daysLabel(active.days)],
+        tone: 'good'
+      };
+    }
+    const next = findNextHdoWindow(safeDate);
+    if (next) {
+      return {
+        metric: `za ${humanDuration(next.diffMinutes)}`,
+        text: `sepne v ${next.item.start}`,
+        detail: `${next.item.label || 'Nízký tarif'} · ${hdoWindowTimeLabel(next.item)}`,
+        chips: [daysLabel(next.item.days)],
+        tone: 'warn'
+      };
+    }
+    return { metric: '—', text: 'HDO není nastavené', detail: 'Přidej okna nízkého tarifu', chips: [], tone: 'neutral' };
   }
 
   function renderDashboardWidget(id, ctx) {
     switch (id) {
       case 'weather':
-        return renderDashboardWeatherCard();
       case 'cloud':
         return '';
       case 'setup':
@@ -1739,7 +1855,7 @@
     return `
       <section class="card dashboard-layout-card dashboard-widget-block" data-dashboard-widget="layout">
         <div class="card-header compact-card-header">
-          <div><h2>Hlavní obrazovka</h2><p>Zapnuté karty se dají přidávat a odebírat. Pořadí zatím drží pevné, aby se nerozbilo mobilní zobrazení.</p></div>
+          <div><h2>Hlavní obrazovka</h2><p>Zapnuté sekce Home se dají přidávat a odebírat. Počasí se nastavuje v horním rychlém panelu.</p></div>
           <span class="badge ${hiddenCount ? 'warn' : 'good'}">${widgetIds.length}/${DASHBOARD_WIDGETS.length}</span>
         </div>
         <div class="dashboard-widget-chip-row">
@@ -1797,7 +1913,7 @@
       location: { name: 'Demo Hostinné', country: 'CZ', latitude: 50.5407, longitude: 15.7233 },
       current: { temperature: 18, feelsLike: 17, humidity: 63, windSpeed: 10, precipitation: 0, weatherCode: 2, time: new Date().toISOString() },
       daily: [
-        { date: todayISO(), weatherCode: 2, min: 12, max: 21, precipitation: 0 },
+        { date: todayISO(), weatherCode: 2, min: 12, max: 21, precipitation: 0, sunrise: `${todayISO()}T05:02`, sunset: `${todayISO()}T20:57` },
         { date: dateOffsetISO(1), weatherCode: 61, min: 11, max: 18, precipitation: 3 },
         { date: dateOffsetISO(2), weatherCode: 3, min: 10, max: 19, precipitation: 1 },
         { date: dateOffsetISO(3), weatherCode: 0, min: 13, max: 23, precipitation: 0 }
@@ -1863,7 +1979,7 @@
     if (!days.length) return '<div class="empty">Denní předpověď zatím není načtená.</div>';
     return `<div class="weather-daily-row">${days.map((day) => {
       const [label, dayIcon] = weatherCodeLabel(day.weatherCode);
-      return `<div class="weather-day"><span>${escapeHtml(shortWeekday(day.date))}</span><strong>${escapeHtml(dayIcon)} ${roundWeather(day.max, '°')}</strong><em>${roundWeather(day.min, '°')} · ${roundWeather(day.precipitation, ' mm')} · ${escapeHtml(label)}</em></div>`;
+      return `<div class="weather-day"><span>${escapeHtml(shortWeekday(day.date))}</span><strong>${escapeHtml(dayIcon)} ${roundWeather(day.max, '°')}</strong><em>${roundWeather(day.min, '°')} · ${roundWeather(day.precipitation, ' mm')} · ☀ ${escapeHtml(shortTime(day.sunrise))}/${escapeHtml(shortTime(day.sunset))} · ${escapeHtml(label)}</em></div>`;
     }).join('')}</div>`;
   }
 
@@ -1878,6 +1994,7 @@
     const current = weather.current || {};
     const [condition, icon] = weatherCodeLabel(current.weatherCode);
     const updated = weather.updatedAt ? formatDateTime(new Date(weather.updatedAt)) : 'nenačteno';
+    const todayWeather = (weather.daily || [])[0] || {};
     ensureWeatherFresh(false);
     return `
       <div class="grid two weather-page">
@@ -1895,6 +2012,8 @@
               <div class="mini-stat"><span>Vlhkost</span><strong>${roundWeather(current.humidity, '%')}</strong></div>
               <div class="mini-stat"><span>Vítr</span><strong>${roundWeather(current.windSpeed, ' km/h')}</strong></div>
               <div class="mini-stat"><span>Srážky teď</span><strong>${Number.isFinite(Number(current.precipitation)) ? `${String(current.precipitation).replace('.', ',')} mm` : '—'}</strong></div>
+              <div class="mini-stat"><span>Východ</span><strong>${escapeHtml(shortTime(todayWeather.sunrise))}</strong></div>
+              <div class="mini-stat"><span>Západ</span><strong>${escapeHtml(shortTime(todayWeather.sunset))}</strong></div>
               <div class="mini-stat"><span>Zdroj</span><strong>Open-Meteo</strong></div>
             </div>
           </div>
@@ -1944,7 +2063,7 @@
       longitude: String(location.longitude),
       current: 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m',
       hourly: 'temperature_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m',
-      daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum',
+      daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset',
       timezone: 'auto',
       forecast_days: '7'
     });
@@ -1970,7 +2089,9 @@
         weatherCode: daily.weather_code?.[index],
         min: daily.temperature_2m_min?.[index],
         max: daily.temperature_2m_max?.[index],
-        precipitation: daily.precipitation_sum?.[index]
+        precipitation: daily.precipitation_sum?.[index],
+        sunrise: daily.sunrise?.[index],
+        sunset: daily.sunset?.[index]
       })),
       hourly: (hourly.time || []).map((time, index) => ({
         time,
@@ -2119,6 +2240,7 @@
       { nav: 'homecare', tab: 'tasks', icon: '✅', label: 'Úkoly', items: state.homeTasks || [], loadedAt: state.tasksCloud?.loadedAt },
       { nav: 'packages', tab: 'active', icon: '📦', label: 'Balíky', items: state.packages || [], loadedAt: state.parcelsCloud?.loadedAt },
       { nav: 'calendar', tab: 'overview', icon: '📅', label: 'Kalendář', items: state.calendar || [], loadedAt: state.calendarCloud?.loadedAt },
+      { nav: 'calendar', tab: 'sources', icon: '🧩', label: 'Zdroje kalendáře', items: getCalendarSources(), loadedAt: state.calendarCloud?.sourcesLoadedAt },
       { nav: 'finance', tab: 'summary', icon: '💰', label: 'Finance', items: state.finance || [], loadedAt: state.financeCloud?.loadedAt },
       { nav: 'homecare', tab: 'tasks', icon: '📝', label: 'Poznámky', items: state.notes || [], loadedAt: state.householdExtrasCloud?.loadedAt },
       { nav: 'homecare', tab: 'devices', icon: '🔌', label: 'Zařízení', items: state.devices || [], loadedAt: state.householdExtrasCloud?.loadedAt },
@@ -2398,11 +2520,20 @@
       { title: 'Domácnost+ v.0.1_68', note: 'Hotovo: název domácnosti na Home, cloud domácnost po vytvoření a globálně odstraněný horní panel s přepínačem vzhledu.' },
       { title: 'Domácnost+ v.0.1_69', note: 'Hotovo: cloud stav, autosync, Realtime a technická připravenost přesunuté z hlavní obrazovky do Nastavení.' },
       { title: 'Domácnost+ v.0.1_70', note: 'Hotovo: upravitelný horní panel Home, kompaktní počasí s detailní stránkou, cloudová změna názvu domácnosti a číselná klávesnice pro HDO.' },
-      { title: 'Domácnost+ v.0.1_71', note: 'Hotovo: základ počasí vedle času na Home, počasí jako volitelná položka horního panelu a rozšíření horního panelu o hlavní funkce domácnosti.' }
+      { title: 'Domácnost+ v.0.1_71', note: 'Hotovo: základ počasí vedle času na Home, počasí jako volitelná položka horního panelu a rozšíření horního panelu o hlavní funkce domácnosti.' },
+      { title: 'Domácnost+ v.0.1_73', note: 'Hotfix: bezpečný HDO rychlý přehled, sanitace HDO časů/dnů a ochrana proti zaseknutí při otevření přehledu.' },
+      { title: 'Domácnost+ v.0.1_72', note: 'Hotovo: odstranění samostatné weather karty z Home, sanitace starého dashboard nastavení a prevence duplicitních cloud domácností.' },
+      { title: 'Domácnost+ v.0.1_75', note: 'Hotfix: zavírání kalendáře/rychlých přehledů z Home a první globální posun UI do iOS glass stylu.' },
+      { title: 'Domácnost+ v.0.1_76', note: 'Hotovo: více zdrojů kalendáře, příprava Google Calendar napojení a výběr zdroje u událostí.' },
+      { title: 'Domácnost+ v.0.1_77', note: 'Hotovo: Home bez verze/popisků, bez badge nad časem a adaptivní horní panel s časem, počasím a 0–4 volitelnými položkami.' },
+      { title: 'Domácnost+ v.0.1_78', note: 'Hotovo: bezpečný první krok Google Calendar integrace: UI ve Zdrojích, výběr více Google kalendářů, sync akce, SQL migrace a Edge Function skeletony bez tokenů ve frontendu.' },
+      { title: 'Domácnost+ v.0.1_79', note: 'Hotfix: variabilní Home panel drží rozložení 0–4 položek a počasí v prázdném panelu ukazuje více detailů.' },
+      { title: 'Domácnost+ v.0.1_80', note: 'Hotovo: Home horní panel má stabilní výšku, položky se přizpůsobují uvnitř panelu a mini karty ukazují konkrétní stav, například HDO do kdy běží nebo kdy sepne.' },
+      { title: 'Domácnost+ v.0.1_81', note: 'Hotfix: při Home bez dalších panelů jsou čas a počasí pod sebou, hlavní panel zůstává stabilní a ve Více je nastavení hned nahoře.' }
     ];
     return `
       <section class="card roadmap-card">
-        <div class="card-header"><div><h2>Co mám v plánu dál</h2><p>Cloudová kostra běží. Další větší směr je doladit sdílení členů domácnosti, pozvánky a konflikty změn.</p></div><span class="badge">roadmap</span></div>
+        <div class="card-header"><div><h2>Co mám v plánu dál</h2><p>Cloudová kostra běží. Další větší směr je dokončit nasazení Google OAuth, sync pravidla a potom doladit sdílení členů domácnosti.</p></div><span class="badge">roadmap</span></div>
         <div class="list">
           ${steps.map((step, index) => `
             <div class="item">
@@ -2426,43 +2557,254 @@
     `;
   }
 
+  function getCalendarSources() {
+    return Array.isArray(state.calendarCloud?.sources) ? state.calendarCloud.sources : [];
+  }
+
+  function normalizeCalendarSourceProvider(provider = '') {
+    const value = String(provider || '').toLowerCase();
+    if (['google', 'manual', 'family', 'work', 'ical', 'other'].includes(value)) return value;
+    return 'manual';
+  }
+
+  function calendarSourceProviderLabel(provider = '') {
+    const labels = {
+      manual: 'Ruční',
+      family: 'Rodinný',
+      work: 'Práce',
+      google: 'Google',
+      ical: 'iCal',
+      other: 'Jiný'
+    };
+    return labels[normalizeCalendarSourceProvider(provider)] || 'Kalendář';
+  }
+
+  function calendarSourceIcon(provider = '') {
+    const icons = { manual: '✍️', family: '👨‍👩‍👧', work: '🏭', google: 'G', ical: '📥', other: '📅' };
+    return icons[normalizeCalendarSourceProvider(provider)] || '📅';
+  }
+
+  function mapCalendarSource(row = {}) {
+    return {
+      id: row.id || row.cloudId || uid(),
+      cloudId: row.cloudId || row.id || '',
+      householdId: row.household_id || row.householdId || currentHouseholdId(),
+      profileId: row.profile_id || row.profileId || '',
+      name: row.name || 'Kalendář',
+      provider: normalizeCalendarSourceProvider(row.provider),
+      providerCalendarId: row.provider_calendar_id || row.providerCalendarId || '',
+      color: row.color || '',
+      isEnabled: row.is_enabled !== undefined ? Boolean(row.is_enabled) : row.isEnabled !== false,
+      syncEnabled: row.sync_enabled !== undefined ? Boolean(row.sync_enabled) : Boolean(row.syncEnabled),
+      lastSyncedAt: row.last_synced_at || row.lastSyncedAt || '',
+      note: row.note || '',
+      createdAt: row.created_at || row.createdAt || new Date().toISOString()
+    };
+  }
+
+  function getCalendarSource(sourceId) {
+    const id = String(sourceId || '');
+    if (!id) return null;
+    return getCalendarSources().find((source) => [source.id, source.cloudId].filter(Boolean).map(String).includes(id)) || null;
+  }
+
+  function isCalendarSourceEnabled(sourceId) {
+    const source = getCalendarSource(sourceId);
+    return !source || source.isEnabled !== false;
+  }
+
+  function visibleCalendarEvents() {
+    return (state.calendar || []).filter((event) => isCalendarSourceEnabled(event.sourceId));
+  }
+
+  function calendarSourceName(sourceId) {
+    const source = getCalendarSource(sourceId);
+    return source?.name || 'Ruční kalendář';
+  }
+
+  function calendarSourceOptions(selected = '') {
+    const sources = getCalendarSources().filter((source) => source.isEnabled !== false);
+    const options = sources.map((source) => [source.id || source.cloudId, `${source.name} · ${calendarSourceProviderLabel(source.provider)}`]);
+    if (!options.length) options.push(['manual', 'Ruční kalendář']);
+    return selectField('Kalendář', 'sourceId', options, selected || options[0]?.[0] || 'manual');
+  }
+
+  function googleCalendarConnection() {
+    return state.calendarCloud?.googleConnection || null;
+  }
+
+  function googleCalendarItems() {
+    return Array.isArray(state.calendarCloud?.googleCalendars) ? state.calendarCloud.googleCalendars : [];
+  }
+
+  function googleCalendarStatusLabel(connection = googleCalendarConnection()) {
+    const status = String(connection?.status || '').toLowerCase();
+    if (status === 'connected') return 'připojeno';
+    if (status === 'oauth_pending') return 'čeká na dokončení';
+    if (status === 'error') return 'chyba';
+    if (status === 'disconnected') return 'odpojeno';
+    return 'nepřipojeno';
+  }
+
+  function isGoogleCalendarSelected(calendarId, sourceList = getCalendarSources()) {
+    const id = String(calendarId || '');
+    return Boolean(id && sourceList.some((source) => normalizeCalendarSourceProvider(source.provider) === 'google' && String(source.providerCalendarId || '') === id));
+  }
+
+  function renderGoogleCalendarConnector(cloudReady, sourceList = getCalendarSources()) {
+    const connection = googleCalendarConnection();
+    const calendars = googleCalendarItems();
+    const connected = String(connection?.status || '').toLowerCase() === 'connected';
+    const googleSources = sourceList.filter((source) => normalizeCalendarSourceProvider(source.provider) === 'google');
+    return `
+      <section class="google-calendar-connector">
+        <div class="item-top connector-head">
+          <div>
+            <div class="item-title"><span class="calendar-source-icon google-icon">G</span> Google kalendáře</div>
+            <div class="item-meta">Bezpečné napojení přes Supabase Edge Functions. Dlouhodobý Google refresh token nikdy nepatří do frontendu.</div>
+          </div>
+          <span class="badge ${connected ? 'good' : ''}">${escapeHtml(googleCalendarStatusLabel(connection))}</span>
+        </div>
+        <div class="cloud-status-grid compact-cloud-stats google-calendar-stats">
+          <div class="mini-stat"><span>Účet</span><strong>${escapeHtml(connection?.googleAccountEmail || connection?.email || '—')}</strong></div>
+          <div class="mini-stat"><span>Vybrané</span><strong>${googleSources.length}</strong></div>
+          <div class="mini-stat"><span>Dostupné</span><strong>${calendars.length || '—'}</strong></div>
+          <div class="mini-stat"><span>Poslední sync</span><strong>${connection?.lastSyncAt ? escapeHtml(formatDateTime(connection.lastSyncAt)) : '—'}</strong></div>
+        </div>
+        <div class="form-actions connector-actions">
+          ${cloudReady ? `<button class="primary-btn" type="button" data-action="google-calendar-start">${connected ? 'Znovu připojit Google' : 'Připojit Google kalendář'}</button>` : '<span class="badge">nejdřív online účet</span>'}
+          ${cloudReady ? '<button class="ghost-btn" type="button" data-action="google-calendar-list-calendars">Načíst kalendáře</button>' : ''}
+          ${cloudReady && googleSources.length ? '<button class="ghost-btn" type="button" data-action="google-calendar-sync">Spustit sync</button>' : ''}
+          ${cloudReady && connected ? '<button class="danger-btn" type="button" data-action="google-calendar-disconnect">Odpojit Google</button>' : ''}
+        </div>
+        ${!cloudReady ? '<div class="inline-note">Google napojení funguje jen v ostrém online účtu domácnosti. Demo zůstává read-only sandbox.</div>' : ''}
+        ${calendars.length ? `
+          <form data-form="google-calendar-save-sources" class="google-calendar-picker">
+            <div class="item-meta">Vyber kalendáře, které chceš zobrazovat v Domácnost+. Každý vybraný kalendář se uloží jako samostatný zdroj.</div>
+            <div class="google-calendar-grid">
+              ${calendars.map((calendar) => {
+                const checked = isGoogleCalendarSelected(calendar.id, sourceList) || calendar.selected;
+                return `
+                  <label class="google-calendar-option ${checked ? 'active' : ''}">
+                    <input type="checkbox" name="googleCalendarIds" value="${escapeHtml(calendar.id)}" ${checked ? 'checked' : ''}>
+                    <span>
+                      <strong>${escapeHtml(calendar.summary || calendar.name || 'Google kalendář')}</strong>
+                      <em>${escapeHtml(calendar.id || '')}${calendar.primary ? ' · hlavní' : ''}${calendar.accessRole ? ` · ${escapeHtml(calendar.accessRole)}` : ''}</em>
+                    </span>
+                  </label>
+                `;
+              }).join('')}
+            </div>
+            <div class="form-actions">
+              <button class="primary-btn" type="submit">Uložit vybrané kalendáře</button>
+            </div>
+          </form>
+        ` : '<div class="inline-note">Po nasazení Google OAuth klikni na Připojit Google kalendář a potom načti seznam kalendářů.</div>'}
+      </section>
+    `;
+  }
+
+  function renderCalendarSourceList(sources = getCalendarSources()) {
+    if (!sources.length) {
+      return renderEmptyCta({ icon: '📅', title: 'Zatím žádné zdroje', text: 'Začni ručním rodinným kalendářem. Google Calendar bude připravený přes bezpečný backend.', action: 'cloud-load-calendar-sources', label: 'Načíst zdroje' });
+    }
+    return `<div class="list compact-list calendar-source-list">${sources.map((source) => {
+      const linkedEvents = (state.calendar || []).filter((event) => String(event.sourceId || '') === String(source.id || source.cloudId || '')).length;
+      const google = normalizeCalendarSourceProvider(source.provider) === 'google';
+      return `
+        <div class="item calendar-source-item ${source.isEnabled === false ? 'muted-item' : ''}">
+          <div class="item-top">
+            <div class="item-title"><span class="calendar-source-icon">${escapeHtml(calendarSourceIcon(source.provider))}</span> ${escapeHtml(source.name)}</div>
+            <span class="badge ${source.isEnabled === false ? '' : 'good'}">${source.isEnabled === false ? 'skrytý' : 'aktivní'}</span>
+          </div>
+          <div class="item-meta">${escapeHtml(calendarSourceProviderLabel(source.provider))}${source.providerCalendarId ? ` · ${escapeHtml(source.providerCalendarId)}` : ''}${source.syncEnabled ? ' · sync zapnutý' : ''}${source.lastSyncedAt ? ` · poslední sync ${formatDateTime(source.lastSyncedAt)}` : ''}</div>
+          ${source.note ? `<div class="item-meta">${escapeHtml(source.note)}</div>` : ''}
+          <div class="cloud-status-grid compact-cloud-stats source-mini-stats">
+            <div class="mini-stat"><span>Události</span><strong>${linkedEvents}</strong></div>
+            <div class="mini-stat"><span>Typ</span><strong>${escapeHtml(calendarSourceProviderLabel(source.provider))}</strong></div>
+            <div class="mini-stat"><span>Stav</span><strong>${source.isEnabled === false ? 'skrytý' : 'viditelný'}</strong></div>
+          </div>
+          <div class="item-actions">
+            <button class="ghost-btn" type="button" data-action="calendar-toggle-source" data-source-id="${escapeHtml(source.id || source.cloudId || '')}" data-enabled="${source.isEnabled === false ? 'true' : 'false'}">${source.isEnabled === false ? 'Zobrazit' : 'Skrýt'}</button>
+            ${google && state.cloud?.householdId ? `<button class="ghost-btn" type="button" data-action="google-calendar-sync" data-source-id="${escapeHtml(source.cloudId || source.id || '')}">Sync</button>` : ''}
+            ${google && !state.cloud?.householdId ? '<span class="badge">čeká na online účet</span>' : ''}
+          </div>
+        </div>
+      `;
+    }).join('')}</div>`;
+  }
+
   function renderCalendar() {
-    const events = [...state.calendar].sort((a, b) => `${a.date || ''}${a.time || ''}`.localeCompare(`${b.date || ''}${b.time || ''}`));
+    const sourceList = getCalendarSources();
+    const enabledSourceIds = new Set(sourceList.filter((source) => source.isEnabled !== false).map((source) => String(source.id || source.cloudId || '')));
+    const events = [...visibleCalendarEvents()].sort((a, b) => `${a.date || ''}${a.time || ''}`.localeCompare(`${b.date || ''}${b.time || ''}`));
     const upcoming = events.filter((event) => !event.date || event.date >= todayISO()).slice(0, 12);
     const past = events.filter((event) => event.date && event.date < todayISO()).reverse().slice(0, 8);
+    const hiddenEvents = (state.calendar || []).filter((event) => event.sourceId && !enabledSourceIds.has(String(event.sourceId)) && getCalendarSource(event.sourceId)).length;
     const cloudReady = Boolean(state.cloud?.householdId);
     const localOnly = events.filter((event) => !event.cloudId).length;
     const cloudCount = events.filter((event) => event.cloudId).length;
+    const activeSources = sourceList.filter((source) => source.isEnabled !== false).length;
     const activeCalendarTab = getModuleTab('calendar', 'overview');
     return `
       ${renderSectionTabs('calendar', [
         { id: 'overview', label: 'Přehled', icon: '📅', count: upcoming.length },
+        { id: 'sources', label: 'Zdroje', icon: '🧩', count: sourceList.length },
         { id: 'add', label: 'Přidat', icon: '➕' },
         { id: 'history', label: 'Historie', icon: '🕘', count: past.length }
       ], 'overview')}
       <div class="grid two module-tabbed calendar-tab-${activeCalendarTab}" data-tab-area="calendar">
         <section class="card desktop-span-2 calendar-panel panel-overview">
           <div class="card-header">
-            <div><h2>Kalendář</h2><p>Nejdřív nejbližší události. Ruční cloudový základ je hotový, Google Calendar přijde později přes bezpečný backend.</p></div>
-            <span class="badge ${cloudCount ? 'good' : ''}">${events.length} položek · ${cloudCount} cloud</span>
+            <div><h2>Kalendář</h2><p>Události se dají držet ve více kalendářích. Google Calendar je připravený přes bezpečný backend, ne přes tokeny ve frontendu.</p></div>
+            <span class="badge ${cloudCount ? 'good' : ''}">${events.length} položek · ${activeSources} zdrojů</span>
           </div>
           <div class="cloud-status-grid compact-cloud-stats">
             <div class="mini-stat"><span>Dnes</span><strong>${events.filter((event) => event.date === todayISO()).length}</strong></div>
             <div class="mini-stat"><span>Brzy</span><strong>${upcoming.length}</strong></div>
-            <div class="mini-stat"><span>Cloud</span><strong>${cloudCount}</strong></div>
+            <div class="mini-stat"><span>Zdroje</span><strong>${activeSources}/${sourceList.length || 1}</strong></div>
             <div class="mini-stat"><span>Lokálně</span><strong>${localOnly}</strong></div>
           </div>
-          ${upcoming.length ? renderEventList(upcoming, true) : renderEmptyCta({ icon: '📅', title: 'Kalendář je prázdný', text: 'Přidej první událost a dashboard začne ukazovat dnešek i nejbližší dny.', nav: 'calendar', tab: 'add', label: 'Přidat událost' })}
+          ${hiddenEvents ? `<div class="inline-note">${hiddenEvents} událostí je schovaných, protože jejich kalendář je vypnutý.</div>` : ''}
+          ${upcoming.length ? renderEventList(upcoming, true) : renderEmptyCta({ icon: '📅', title: 'Kalendář je prázdný', text: 'Přidej první událost nebo zdroj kalendáře. Později se sem budou propisovat i Google kalendáře.', nav: 'calendar', tab: 'add', label: 'Přidat událost' })}
+        </section>
+
+        <section class="card desktop-span-2 calendar-panel panel-sources">
+          <div class="card-header">
+            <div><h2>Zdroje kalendáře</h2><p>Tady se spravují ruční, rodinné, pracovní a Google kalendáře. Google se páruje přes bezpečný backend.</p></div>
+            <span class="badge ${cloudReady ? 'good' : ''}">${cloudReady ? 'cloud' : 'lokálně'}</span>
+          </div>
+          ${renderGoogleCalendarConnector(cloudReady, sourceList)}
+          ${renderCalendarSourceList(sourceList)}
+          <details class="compact-edit-details" open>
+            <summary><span>Přidat zdroj kalendáře</span><em>ruční / Google připravený na backend</em></summary>
+            <form data-form="add-calendar-source" class="compact-form">
+              <div class="form-grid two">
+                ${field('Název kalendáře', 'name', 'text', 'Rodina / Práce / Google osobní', true)}
+                ${selectField('Typ', 'provider', [['manual', 'Ruční'], ['family', 'Rodinný'], ['work', 'Práce'], ['google', 'Google Calendar'], ['ical', 'iCal / externí'], ['other', 'Jiný']])}
+                ${field('ID / popis kalendáře', 'providerCalendarId', 'text', 'volitelné, např. primární / práce')}
+                ${field('Barva', 'color', 'text', '#8b5cf6')}
+                ${field('Poznámka', 'note', 'text', 'volitelné')}
+              </div>
+              <div class="form-actions">
+                <button class="primary-btn" type="submit">Přidat zdroj</button>
+                ${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-calendar-sources">Načíst zdroje</button>' : ''}
+                ${cloudReady && sourceList.filter((source) => !source.cloudId).length ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-calendar-sources">Odeslat lokální zdroje (${sourceList.filter((source) => !source.cloudId).length})</button>` : ''}
+              </div>
+            </form>
+          </details>
+          <div class="inline-note">Google Calendar v tomhle buildu počítá se Supabase Edge Functions. Bez Google Cloud credentials půjde UI připravit, ale reálné přihlášení poběží až po nasazení funkcí a doplnění secrets.</div>
         </section>
 
         <section class="card calendar-panel panel-add">
           <div class="card-header">
-            <div><h2>Přidat událost</h2><p>Ruční kalendář už umí cloud. Google Calendar přijde později přes backend bez tokenů ve frontendu.</p></div>
+            <div><h2>Přidat událost</h2><p>Vyber kalendář/zdroj, aby šlo později oddělit rodinu, práci, Google nebo další externí kalendáře.</p></div>
             <span class="badge ${cloudCount ? 'good' : ''}">${cloudCount ? 'cloud' : 'lokálně'}</span>
           </div>
           <form data-form="add-event">
             <div class="form-grid two">
               ${field('Název', 'title', 'text', 'Doktor / návštěva / výlet', true)}
+              ${calendarSourceOptions()}
               ${field('Datum', 'date', 'date', '', true, todayISO())}
               ${field('Začátek', 'time', 'time', '')}
               ${field('Konec', 'endTime', 'time', '')}
@@ -2476,7 +2818,6 @@
               ${cloudReady && localOnly ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-calendar">Odeslat lokální (${localOnly})</button>` : ''}
             </div>
           </form>
-          <div class="inline-note">Tokeny z Google Calendar se nebudou ukládat do frontendu. Napojení půjde přes backend/Supabase/Vercel funkci.</div>
         </section>
 
         <section class="card desktop-span-2 calendar-panel panel-history">
@@ -2494,7 +2835,7 @@
           <div class="item-title">${escapeHtml(event.title)}</div>
           <span class="badge ${event.cloudId ? 'good' : ''}">${event.cloudId ? 'cloud' : 'lokálně'}</span>
         </div>
-        <div class="item-meta">${formatDate(event.date)} · ${escapeHtml(event.time || 'celý den')}${event.endTime ? `–${escapeHtml(event.endTime)}` : ''}${event.location ? ` · ${escapeHtml(event.location)}` : ''}${event.note ? ` · ${escapeHtml(event.note)}` : ''}</div>
+        <div class="item-meta">${formatDate(event.date)} · ${escapeHtml(event.time || 'celý den')}${event.endTime ? `–${escapeHtml(event.endTime)}` : ''}${event.location ? ` · ${escapeHtml(event.location)}` : ''}${event.note ? ` · ${escapeHtml(event.note)}` : ''} · ${escapeHtml(calendarSourceName(event.sourceId))}</div>
         ${withDelete ? `<div class="item-actions">${state.cloud?.householdId && !event.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-calendar" data-id="${event.id}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-calendar" data-id="${event.id}">Smazat</button></div>` : ''}
       </div>
     `).join('')}</div>`;
@@ -3735,7 +4076,15 @@
     const primaryModules = visibleModules.filter((module) => primaryIds.has(module.id));
 
     return `
-      <div class="grid two">
+      <div class="grid two more-hub-grid">
+        <section class="card desktop-span-2 more-settings-priority">
+          <div class="card-header"><div><h2>Nastavení</h2><p>Domácnost, profily, zapnuté moduly, Home panel, cloud a export/import.</p></div><span class="badge">nahoře</span></div>
+          <button class="item module-hub-item" type="button" data-nav="settings">
+            <div class="item-top"><div class="item-title">⚙️ Nastavení aplikace</div><span class="badge">otevřít</span></div>
+            <div class="item-meta">Tady upravíš domácnost, profily, zapnuté moduly i rozložení Home bez scrollování dolů.</div>
+          </button>
+        </section>
+
         <section class="card desktop-span-2">
           <div class="card-header">
             <div><h2>Další moduly</h2><p>Spodní lišta drží jen věci, které si zvolíš v Nastavení. Všechno ostatní je tady.</p></div>
@@ -3746,19 +4095,11 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card desktop-span-2">
           <div class="card-header"><div><h2>Rychlý přístup</h2><p>Moduly, které máš aktuálně připnuté ve spodní liště.</p></div></div>
-          <div class="list">
+          <div class="grid four">
             ${primaryModules.map(renderModuleStatusCard).join('')}
           </div>
-        </section>
-
-        <section class="card">
-          <div class="card-header"><div><h2>Nastavení</h2><p>Domácnost, profily, zapnuté moduly, export/import a reset.</p></div></div>
-          <button class="item module-hub-item" type="button" data-nav="settings">
-            <div class="item-top"><div class="item-title">⚙️ Nastavení aplikace</div><span class="badge">otevřít</span></div>
-            <div class="item-meta">Tady si každý upraví domácnost, profily a moduly podle sebe.</div>
-          </button>
         </section>
       </div>
     `;
@@ -3772,7 +4113,7 @@
       ${renderSectionTabs('settings', [
         { id: 'household', label: 'Domácnost', icon: '🏠', count: state.profiles.length },
         { id: 'modules', label: 'Moduly', icon: '🧩', count: normalizeModuleList(state.enabledModules).length },
-        { id: 'dashboard', label: 'Dashboard', icon: '🧱', count: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets).length },
+        { id: 'dashboard', label: 'Home', icon: '🧱', count: normalizeHomeHeroIds(state.settings?.homeHeroItems).length },
         { id: 'cloud', label: 'Cloud / PWA', icon: '☁️', count: state.cloud?.userId ? 1 : 0 },
         { id: 'data', label: 'Data', icon: '🛟' }
       ], 'household')}
@@ -3876,7 +4217,7 @@
     const location = normalizeWeatherLocation(weather.location);
     const previewCtx = {
       hdo: getHdoStatus(now),
-      todayEvents: state.calendar.filter((event) => event.date === todayISO()),
+      todayEvents: visibleCalendarEvents().filter((event) => event.date === todayISO()),
       activePackages: state.packages.filter((pkg) => pkg.status !== 'delivered'),
       openShopping: state.shopping.filter((item) => !item.done),
       openTasks: state.homeTasks.filter((task) => !task.done),
@@ -3886,7 +4227,7 @@
     };
     return `
       <section class="card desktop-span-2 compact-settings-card dashboard-settings-card">
-        <div class="card-header"><div><h2>První panel na Home</h2><p>Vyber až čtyři rychlé ukazatele v horním panelu pod názvem domácnosti.</p></div><span class="badge">${normalizeHomeHeroIds(state.settings?.homeHeroItems).length}/4</span></div>
+        <div class="card-header"><div><h2>Panely v horním bloku Home</h2><p>Čas a počasí jsou na Home pevně. Vyber 0–4 další panely pod ně.</p></div><span class="badge">${normalizeHomeHeroIds(state.settings?.homeHeroItems).length}/4</span></div>
         <div class="switch-list dashboard-widget-picker">
           ${HOME_HERO_ITEMS.map((item) => {
             const active = normalizeHomeHeroIds(state.settings?.homeHeroItems).includes(item.id);
@@ -3899,24 +4240,7 @@
             `;
           }).join('')}
         </div>
-        <div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="home-hero-reset">Obnovit horní panel</button>${cloudReady() ? '<span class="badge good">ukládá se i do domácnosti</span>' : '<span class="badge">lokálně</span>'}</div>
-      </section>
-
-      <section class="card desktop-span-2 compact-settings-card dashboard-settings-card">
-        <div class="card-header"><div><h2>Karty na Home</h2><p>Tady si zapneš jen karty, které mají být na úvodní obrazovce. Moduly v aplikaci tím nemažeš, mění se jen dashboard.</p></div><span class="badge">${selected.size}/${DASHBOARD_WIDGETS.length}</span></div>
-        <div class="switch-list dashboard-widget-picker">
-          ${DASHBOARD_WIDGETS.map((widget) => {
-            const active = selected.has(widget.id);
-            return `
-              <button class="switch-row dashboard-widget-switch ${active ? 'active' : ''}" type="button" role="switch" aria-checked="${active ? 'true' : 'false'}" data-action="toggle-dashboard-widget" data-id="${escapeHtml(widget.id)}">
-                <span class="switch-row-icon">${escapeHtml(widget.icon)}</span>
-                <span class="switch-row-copy"><strong>${escapeHtml(widget.label)}</strong><em>${escapeHtml(widget.note)}</em></span>
-                <span class="ios-switch" aria-hidden="true"><span></span></span>
-              </button>
-            `;
-          }).join('')}
-        </div>
-        <div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="dashboard-reset-widgets">Obnovit výchozí karty</button>${cloudReady() ? '<span class="badge good">ukládá se i do domácnosti</span>' : '<span class="badge">lokálně</span>'}</div>
+        <div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="home-hero-reset">Bez dalších panelů</button>${cloudReady() ? '<span class="badge good">ukládá se i do domácnosti</span>' : '<span class="badge">lokálně</span>'}</div>
       </section>
 
       <section class="card compact-settings-card weather-settings-card">
@@ -4083,11 +4407,14 @@
           <button class="primary-btn" type="button" data-action="cloud-sync-pending">Dohnat lokální → cloud</button>
         </div>
         ${households.length ? `
+          ${households.length > 1 ? '<div class="inline-note warn-note">Pod účtem je víc aktivních domácností. Appka teď novou nevytváří automaticky; duplicitní můžeš jen skrýt z tohoto účtu.</div>' : ''}
           <div class="cloud-household-list">
             ${households.map((household) => `
               <div class="cloud-household-row ${household.id === activeCloudId ? 'active' : ''}">
                 <div><strong>${escapeHtml(household.name || 'Domácnost')}</strong><span>${escapeHtml(household.role || 'member')} · ${escapeHtml(shortId(household.id))}</span></div>
-                ${household.id === activeCloudId ? '<span class="badge good">aktivní</span>' : `<button class="ghost-btn" type="button" data-action="cloud-switch-household" data-id="${escapeHtml(household.id)}" data-name="${escapeHtml(household.name || 'Domácnost')}">Přepnout</button>`}
+                <div class="item-actions compact-actions">
+                  ${household.id === activeCloudId ? '<span class="badge good">aktivní</span>' : `<button class="ghost-btn" type="button" data-action="cloud-switch-household" data-id="${escapeHtml(household.id)}" data-name="${escapeHtml(household.name || 'Domácnost')}">Přepnout</button><button class="ghost-btn" type="button" data-action="cloud-archive-household" data-id="${escapeHtml(household.id)}">Skrýt</button>`}
+                </div>
               </div>
             `).join('')}
           </div>
@@ -4583,32 +4910,38 @@
 
   function clockText(value) {
     const date = toSafeDate(value, new Date());
+    if (!date || !Number.isFinite(date.getTime())) return '—:—';
     return new Intl.DateTimeFormat('cs-CZ', { hour: '2-digit', minute: '2-digit' }).format(date);
   }
 
   function shortDateText(value) {
     const date = toSafeDate(value, new Date());
+    if (!date || !Number.isFinite(date.getTime())) return '—';
     return new Intl.DateTimeFormat('cs-CZ', { weekday: 'short', day: 'numeric', month: 'numeric' }).format(date);
   }
 
   function getHdoStatus(date) {
-    const day = date.getDay();
-    const minutesNow = date.getHours() * 60 + date.getMinutes();
-    const enabled = state.hdoWindows.filter((item) => item.enabled && Array.isArray(item.days) && item.days.includes(day));
+    const safeDate = toSafeDate(date, new Date());
+    if (!safeDate || !Number.isFinite(safeDate.getTime())) {
+      return { active: false, label: 'není nastaveno', message: 'HDO se teď nepovedlo spočítat. Zkontroluj časová okna.' };
+    }
+    const day = safeDate.getDay();
+    const minutesNow = safeDate.getHours() * 60 + safeDate.getMinutes();
+    const enabled = getSafeHdoWindows().filter((item) => item.enabled && item.days.includes(day) && timeToMinutes(item.start) !== null && timeToMinutes(item.end) !== null);
     const active = enabled.find((item) => isTimeInWindow(minutesNow, item.start, item.end));
     if (active) {
       return {
         active: true,
         label: active.label,
-        message: `Právě běží ${active.label} (${active.start}–${active.end}).`
+        message: `Právě běží ${active.label} (${hdoWindowTimeLabel(active)}).`
       };
     }
-    const next = findNextHdoWindow(date);
+    const next = findNextHdoWindow(safeDate);
     if (!next) return { active: false, label: 'není nastaveno', message: 'Není nastavené žádné aktivní HDO okno.' };
     return {
       active: false,
       label: next.item.label,
-      message: `Další nízký tarif: ${next.item.label} za ${humanDuration(next.diffMinutes)} (${next.item.start}–${next.item.end}).`
+      message: `Další nízký tarif: ${next.item.label} za ${humanDuration(next.diffMinutes)} (${hdoWindowTimeLabel(next.item)}).`
     };
   }
 
@@ -4626,14 +4959,46 @@
     if (!match) return null;
     const hours = Number(match[1]);
     const minutes = Number(match[2]);
-    if (hours > 23 || minutes > 59) return null;
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours > 23 || minutes > 59) return null;
     return hours * 60 + minutes;
   }
 
+  function sanitizeHdoDays(days) {
+    if (!Array.isArray(days)) return [];
+    return [...new Set(days.map((day) => Number(day)).filter((day) => Number.isInteger(day) && day >= 0 && day <= 6))].sort((a, b) => a - b);
+  }
+
+  function normalizeHdoWindowView(item) {
+    if (!item || typeof item !== 'object') return null;
+    const start = normalizeHdoTimeInput(item.start || item.start_time || item.from || '');
+    const end = normalizeHdoTimeInput(item.end || item.end_time || item.to || '');
+    return {
+      ...item,
+      label: normalizeText(item.label || item.title || 'HDO okno') || 'HDO okno',
+      start,
+      end,
+      days: sanitizeHdoDays(item.days),
+      enabled: item.enabled !== false && item.is_enabled !== false
+    };
+  }
+
+  function getSafeHdoWindows() {
+    return (Array.isArray(state.hdoWindows) ? state.hdoWindows : [])
+      .map(normalizeHdoWindowView)
+      .filter(Boolean);
+  }
+
+  function hdoWindowTimeLabel(item) {
+    const start = item?.start || '—';
+    const end = item?.end || '—';
+    return `${start}–${end}`;
+  }
+
   function findNextHdoWindow(date) {
-    const windows = state.hdoWindows.filter((item) => item.enabled && Array.isArray(item.days));
+    const base = toSafeDate(date, new Date());
+    if (!base || !Number.isFinite(base.getTime())) return null;
+    const windows = getSafeHdoWindows().filter((item) => item.enabled && item.days.length);
     if (!windows.length) return null;
-    const base = new Date(date);
     const candidates = [];
     windows.forEach((item) => {
       const startMinutes = timeToMinutes(item.start);
@@ -4644,17 +5009,19 @@
         const day = candidate.getDay();
         if (!item.days.includes(day)) continue;
         candidate.setHours(Math.floor(startMinutes / 60), startMinutes % 60, 0, 0);
-        const diffMinutes = Math.round((candidate - base) / 60000);
-        if (diffMinutes > 0) candidates.push({ item, diffMinutes });
+        const diffMinutes = Math.round((candidate.getTime() - base.getTime()) / 60000);
+        if (Number.isFinite(diffMinutes) && diffMinutes > 0) candidates.push({ item, diffMinutes });
       }
     });
     return candidates.sort((a, b) => a.diffMinutes - b.diffMinutes)[0] || null;
   }
 
   function humanDuration(minutes) {
-    if (minutes < 60) return `${minutes} min`;
-    const hours = Math.floor(minutes / 60);
-    const rest = minutes % 60;
+    const safeMinutes = Number(minutes);
+    if (!Number.isFinite(safeMinutes) || safeMinutes < 0) return '—';
+    if (safeMinutes < 60) return `${Math.round(safeMinutes)} min`;
+    const hours = Math.floor(safeMinutes / 60);
+    const rest = Math.round(safeMinutes % 60);
     if (hours < 24) return rest ? `${hours} h ${rest} min` : `${hours} h`;
     const days = Math.floor(hours / 24);
     const leftHours = hours % 24;
@@ -4662,12 +5029,14 @@
   }
 
   function daysLabel(days) {
-    const normalized = [...(days || [])].sort((a, b) => a - b).join(',');
+    const safeDays = sanitizeHdoDays(days);
+    if (!safeDays.length) return 'bez dnů';
+    const normalized = safeDays.join(',');
     if (normalized === '0,1,2,3,4,5,6') return 'každý den';
     if (normalized === '1,2,3,4,5') return 'po–pá';
     if (normalized === '0,6') return 'víkend';
     const names = ['ne', 'po', 'út', 'st', 'čt', 'pá', 'so'];
-    return (days || []).map((day) => names[day] || '?').join(', ');
+    return safeDays.map((day) => names[day] || '?').join(', ');
   }
 
   function frequencyLabel(value) {
@@ -6155,16 +6524,50 @@
     };
   }
 
+  async function cloudLoadCalendarSources(showMessage = false) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return [];
+    }
+    const { data, error } = await client
+      .from('calendar_sources')
+      .select('id,household_id,profile_id,name,provider,provider_calendar_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .order('created_at', { ascending: true });
+    if (error) {
+      if (showMessage) showToast(error.message || 'Zdroje kalendáře se nepovedlo načíst');
+      return getCalendarSources();
+    }
+    const sources = (data || []).map(mapCalendarSource);
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      sources,
+      sourcesLoadedAt: new Date().toISOString()
+    };
+    touchState();
+    saveState();
+    if (showMessage) {
+      render();
+      showToast('Zdroje kalendáře načtené');
+    }
+    return sources;
+  }
+
   async function ensureManualCalendarSource() {
     const client = getSupabaseClient();
     if (!client || !state.cloud?.householdId) return null;
-    const cached = (state.calendarCloud?.sources || []).find((source) => source.provider === 'manual');
+    let sources = getCalendarSources();
+    let cached = sources.find((source) => source.provider === 'manual' && source.isEnabled !== false);
+    if (cached?.id) return cached.id;
+    if (!sources.length) sources = await cloudLoadCalendarSources(false);
+    cached = sources.find((source) => source.provider === 'manual' && source.isEnabled !== false);
     if (cached?.id) return cached.id;
     const user = await refreshCloudSession(false);
     if (!user) return null;
     const { data: existing, error: existingError } = await client
       .from('calendar_sources')
-      .select('id,name,provider')
+      .select('id,household_id,profile_id,name,provider,provider_calendar_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at')
       .eq('household_id', state.cloud.householdId)
       .eq('provider', 'manual')
       .limit(1);
@@ -6173,8 +6576,9 @@
       return null;
     }
     if (existing?.[0]?.id) {
-      state.calendarCloud = { ...(state.calendarCloud || {}), sources: existing };
-      return existing[0].id;
+      const source = mapCalendarSource(existing[0]);
+      state.calendarCloud = { ...(state.calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), [source]) };
+      return source.id;
     }
     const { data, error } = await client.from('calendar_sources').insert({
       household_id: state.cloud.householdId,
@@ -6184,13 +6588,260 @@
       sync_enabled: false,
       created_by: user.id,
       updated_by: user.id
-    }).select('id,name,provider').single();
+    }).select('id,household_id,profile_id,name,provider,provider_calendar_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at').single();
     if (error) {
       showToast(error.message || 'Zdroj kalendáře se nepovedlo vytvořit');
       return null;
     }
-    state.calendarCloud = { ...(state.calendarCloud || {}), sources: [data] };
-    return data.id;
+    const source = mapCalendarSource(data);
+    state.calendarCloud = { ...(state.calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), [source]) };
+    return source.id;
+  }
+
+  function mergeCalendarSources(current = [], incoming = []) {
+    const map = new Map();
+    [...current, ...incoming].forEach((source) => {
+      const normalized = mapCalendarSource(source);
+      const key = String(normalized.id || normalized.cloudId || normalized.name);
+      map.set(key, normalized);
+    });
+    return [...map.values()].sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+  }
+
+  async function addCalendarSourceFromForm(data, form) {
+    const source = mapCalendarSource({
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      name: normalizeText(data.name),
+      provider: normalizeCalendarSourceProvider(data.provider),
+      providerCalendarId: normalizeText(data.providerCalendarId),
+      color: normalizeText(data.color),
+      isEnabled: true,
+      syncEnabled: normalizeCalendarSourceProvider(data.provider) === 'manual' ? false : false,
+      note: normalizeText(data.note),
+      createdAt: new Date().toISOString()
+    });
+    if (!source.name) return showToast('Doplň název kalendáře');
+    const saved = await cloudAddCalendarSource(source);
+    if (saved?.id) {
+      source.id = saved.id;
+      source.cloudId = saved.id;
+    }
+    state.calendarCloud = { ...(state.calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), [source]) };
+    touchState();
+    saveState();
+    form.reset();
+    render();
+    const google = source.provider === 'google';
+    showToast(saved?.id ? (google ? 'Google zdroj připravený v cloudu' : 'Zdroj kalendáře uložen do cloudu') : 'Zdroj kalendáře uložen lokálně');
+  }
+
+  async function cloudAddCalendarSource(source) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const payload = {
+      household_id: state.cloud.householdId,
+      profile_id: source.profileId && String(source.profileId).startsWith('profile-') ? null : source.profileId || null,
+      name: source.name || 'Kalendář',
+      provider: normalizeCalendarSourceProvider(source.provider),
+      provider_calendar_id: source.providerCalendarId || null,
+      color: source.color || null,
+      is_enabled: source.isEnabled !== false,
+      sync_enabled: Boolean(source.syncEnabled),
+      note: source.note || null,
+      created_by: user.id,
+      updated_by: user.id
+    };
+    const { data, error } = await client
+      .from('calendar_sources')
+      .insert(payload)
+      .select('id,household_id,profile_id,name,provider,provider_calendar_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at')
+      .single();
+    if (error) {
+      showToast(error.message || 'Zdroj kalendáře se nepovedlo uložit do cloudu');
+      return null;
+    }
+    return data;
+  }
+
+
+  async function cloudSyncLocalCalendarSources(showMessage = false) {
+    if (!cloudReady()) return 0;
+    const localSources = getCalendarSources().filter((source) => !source.cloudId);
+    if (!localSources.length) {
+      if (showMessage) showToast('Žádné lokální zdroje kalendáře k odeslání');
+      return 0;
+    }
+    let count = 0;
+    const savedSources = [];
+    for (const source of localSources) {
+      try {
+        const saved = await cloudAddCalendarSource(source);
+        if (saved?.id) {
+          source.id = saved.id;
+          source.cloudId = saved.id;
+          savedSources.push(mapCalendarSource(saved));
+          count += 1;
+        }
+      } catch (error) {
+        console.warn('Cloud calendar source sync failed', error);
+      }
+    }
+    state.calendarCloud = { ...(state.calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), savedSources) };
+    touchState();
+    saveState();
+    if (showMessage) showToast(`Odesláno zdrojů kalendáře: ${count}`);
+    return count;
+  }
+
+  function normalizeGoogleCalendarItem(item = {}) {
+    return {
+      id: String(item.id || item.calendarId || ''),
+      summary: item.summary || item.name || 'Google kalendář',
+      description: item.description || '',
+      primary: Boolean(item.primary),
+      accessRole: item.accessRole || item.access_role || '',
+      backgroundColor: item.backgroundColor || item.background_color || '',
+      foregroundColor: item.foregroundColor || item.foreground_color || '',
+      selected: Boolean(item.selected)
+    };
+  }
+
+  async function invokeGoogleCalendarFunction(functionName, body = {}, showMessage = true) {
+    if (!cloudReady()) {
+      if (showMessage) showToast('Google kalendář jde připojit jen v online domácnosti');
+      return null;
+    }
+    const client = getSupabaseClient();
+    if (!client?.functions?.invoke) {
+      if (showMessage) showToast('Supabase funkce nejsou dostupné');
+      return null;
+    }
+    const user = await refreshCloudSession(false);
+    if (!user) {
+      if (showMessage) showToast('Nejdřív se přihlas');
+      return null;
+    }
+    const payload = {
+      householdId: state.cloud.householdId,
+      profileId: currentProfileId(),
+      ...body
+    };
+    try {
+      const { data, error } = await client.functions.invoke(functionName, { body: payload });
+      if (error || data?.error) {
+        console.warn(`${functionName} failed`, error || data?.error);
+        if (showMessage) showToast(error?.message || data?.error || 'Google backend zatím není připravený');
+        return null;
+      }
+      return data || {};
+    } catch (error) {
+      console.warn(`${functionName} failed`, error);
+      if (showMessage) showToast('Google backend zatím není nasazený nebo nemá credentials');
+      return null;
+    }
+  }
+
+  async function googleCalendarStart() {
+    const data = await invokeGoogleCalendarFunction('google-calendar-start', { returnTo: APP_PUBLIC_URL }, true);
+    if (data?.authUrl) {
+      window.location.href = data.authUrl;
+      return;
+    }
+    showToast('Nepřišla OAuth adresa. Zkontroluj Edge Function secrets.');
+  }
+
+  async function googleCalendarListCalendars(showMessage = true) {
+    const data = await invokeGoogleCalendarFunction('google-calendar-list-calendars', {}, showMessage);
+    if (!data) return [];
+    const calendars = (data.calendars || data.items || []).map(normalizeGoogleCalendarItem).filter((calendar) => calendar.id);
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      googleConnection: data.connection || state.calendarCloud?.googleConnection || null,
+      googleCalendars: calendars,
+      googleCalendarsLoadedAt: new Date().toISOString()
+    };
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(calendars.length ? `Načteno Google kalendářů: ${calendars.length}` : 'Google účet nemá dostupné kalendáře');
+    return calendars;
+  }
+
+  async function saveGoogleCalendarSourcesFromForm(form) {
+    if (!form) return;
+    const checkedIds = [...form.querySelectorAll('input[name="googleCalendarIds"]:checked')].map((input) => input.value);
+    if (!checkedIds.length) return showToast('Vyber aspoň jeden Google kalendář');
+    const calendars = googleCalendarItems().filter((calendar) => checkedIds.includes(calendar.id));
+    const data = await invokeGoogleCalendarFunction('google-calendar-save-sources', { calendars }, true);
+    if (!data) return;
+    const savedSources = (data.sources || []).map(mapCalendarSource);
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      sources: mergeCalendarSources(getCalendarSources(), savedSources),
+      googleConnection: data.connection || state.calendarCloud?.googleConnection || null
+    };
+    touchState();
+    saveState();
+    render();
+    showToast(savedSources.length ? `Uloženo Google kalendářů: ${savedSources.length}` : 'Výběr Google kalendářů uložen');
+  }
+
+  async function googleCalendarSync(sourceId = '') {
+    const cleanSourceId = normalizeText(sourceId);
+    const data = await invokeGoogleCalendarFunction('google-calendar-sync', cleanSourceId ? { sourceId: cleanSourceId } : {}, true);
+    if (!data) return;
+    const syncedSources = (data.sources || []).map(mapCalendarSource);
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      sources: syncedSources.length ? mergeCalendarSources(getCalendarSources(), syncedSources) : getCalendarSources(),
+      googleConnection: data.connection || state.calendarCloud?.googleConnection || null,
+      googleLastSyncAt: new Date().toISOString()
+    };
+    await cloudLoadCalendar(false);
+    render();
+    showToast(`Google sync hotový${Number.isFinite(data.eventsUpserted) ? ` · ${data.eventsUpserted} událostí` : ''}`);
+  }
+
+  async function googleCalendarDisconnect() {
+    const data = await invokeGoogleCalendarFunction('google-calendar-disconnect', {}, true);
+    if (!data) return;
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      googleConnection: data.connection || { ...(state.calendarCloud?.googleConnection || {}), status: 'disconnected' },
+      googleCalendars: []
+    };
+    await cloudLoadCalendarSources(false);
+    render();
+    showToast('Google kalendář odpojený');
+  }
+
+  async function toggleCalendarSource(sourceId, enabled) {
+    const source = getCalendarSource(sourceId);
+    if (!source) return showToast('Zdroj kalendáře nenalezen');
+    const nextEnabled = enabled !== undefined ? enabled : source.isEnabled === false;
+    source.isEnabled = Boolean(nextEnabled);
+    const client = getSupabaseClient();
+    if (client && state.cloud?.householdId && source.cloudId) {
+      const user = await refreshCloudSession(false);
+      const { error } = await client
+        .from('calendar_sources')
+        .update({ is_enabled: source.isEnabled, updated_by: user?.id || undefined })
+        .eq('id', source.cloudId)
+        .eq('household_id', state.cloud.householdId);
+      if (error) {
+        showToast(error.message || 'Zdroj kalendáře se nepovedlo upravit');
+        return;
+      }
+    }
+    state.calendarCloud = { ...(state.calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), [source]) };
+    touchState();
+    saveState();
+    render();
+    showToast(source.isEnabled ? 'Kalendář zobrazen' : 'Kalendář skrytý');
   }
 
   async function cloudAddCalendarEvent(event) {
@@ -6198,7 +6849,22 @@
     if (!client || !state.cloud?.householdId) return null;
     const user = await refreshCloudSession(false);
     if (!user) return null;
-    const sourceId = await ensureManualCalendarSource();
+    let sourceId = event.sourceId || '';
+    let source = getCalendarSource(sourceId);
+    if (source && !source.cloudId) {
+      const savedSource = await cloudAddCalendarSource(source);
+      if (savedSource?.id) {
+        source.cloudId = savedSource.id;
+        source.id = savedSource.id;
+        sourceId = savedSource.id;
+        state.calendarCloud = { ...(state.calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), [source, mapCalendarSource(savedSource)]) };
+      }
+    }
+    source = getCalendarSource(sourceId);
+    if (source?.cloudId) sourceId = source.cloudId;
+    if (sourceId === 'manual' || !sourceId || !getCalendarSource(sourceId)) {
+      sourceId = await ensureManualCalendarSource();
+    }
     const { data, error } = await client.from('calendar_events').insert(cloudCalendarPayload(event, user.id, sourceId)).select('id,source_id').single();
     if (error) {
       showToast(error.message || 'Událost se nepovedlo uložit do cloudu');
@@ -6228,6 +6894,7 @@
       if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
       return false;
     }
+    await cloudLoadCalendarSources(false);
     const { data, error } = await client
       .from('calendar_events')
       .select('id,source_id,title,description,location,starts_at,ends_at,all_day,event_type,created_at')
@@ -6259,7 +6926,7 @@
       };
     });
     state.calendar = [...cloudItems, ...localOnly];
-    state.calendarCloud = { ...(state.calendarCloud || {}), loadedAt: new Date().toISOString() };
+    state.calendarCloud = { ...(state.calendarCloud || {}), loadedAt: new Date().toISOString(), sourcesLoadedAt: state.calendarCloud?.sourcesLoadedAt || new Date().toISOString() };
     touchState();
     saveState();
     render();
@@ -6302,6 +6969,7 @@
       time: normalizeText(data.time),
       endTime: normalizeText(data.endTime),
       type: normalizeCalendarType(data.type),
+      sourceId: normalizeText(data.sourceId) || 'manual',
       location: normalizeText(data.location),
       note: normalizeText(data.note)
     };
@@ -7128,6 +7796,8 @@
     const data = getFormData(form);
     const handlers = {
       'add-event': () => addEventFromForm(data, form),
+      'add-calendar-source': () => addCalendarSourceFromForm(data, form),
+      'google-calendar-save-sources': () => saveGoogleCalendarSourcesFromForm(form),
       'add-package': () => addPackageFromForm(data, form),
       'add-shopping': () => addShoppingFromForm(data, form),
       'add-coupon': () => addItem('coupons', { store: data.store, code: data.code, discount: data.discount, expiry: data.expiry, note: data.note, used: false }),
@@ -7380,7 +8050,7 @@
     };
     saveState();
     const households = await cloudLoadHouseholds(false);
-    const firstHousehold = households[0];
+    const firstHousehold = pickBestCloudHousehold(households);
     if (!firstHousehold) {
       render();
       showToast('Přihlášeno, ale účet zatím není v žádné domácnosti');
@@ -7612,7 +8282,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 51, appBuild: 71, mode: 'rich-demo-v71', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 53, appBuild: 81, mode: 'rich-demo-v81', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -7640,7 +8310,7 @@
       wasteCloud: { types: [], loadedAt: '' },
       parcelsCloud: { loadedAt: '' },
       tasksCloud: { loadedAt: '' },
-      calendarCloud: { sources: [], loadedAt: '' },
+      calendarCloud: { sources: [], loadedAt: '', sourcesLoadedAt: '', googleConnection: null, googleCalendars: [], googleCalendarsLoadedAt: '', googleLastSyncAt: '' },
       waste,
       homeTasks,
       notes: [
@@ -7753,7 +8423,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 51, appBuild: 71, mode: 'modular-dashboard-weather-hero-v71', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 53, appBuild: 81, mode: 'home-panel-content-v81', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -8695,6 +9365,7 @@
       cloudSyncLocalWaste,
       cloudSyncLocalTasks,
       cloudSyncLocalParcels,
+      cloudSyncLocalCalendarSources,
       cloudSyncLocalCalendar,
       cloudSyncLocalFinanceAccounts,
       cloudSyncLocalFinance,
@@ -8724,9 +9395,10 @@
     if (!user) return;
     cloudWarmStartDone = true;
     const households = await cloudLoadHouseholds(false);
-    if (!state.cloud?.householdId && households[0]) {
-      state.cloud.householdId = households[0].id;
-      state.household = { ...(state.household || {}), id: households[0].id, name: households[0].name || state.household?.name || 'Domácnost', isConfigured: true };
+    if (!state.cloud?.householdId && households.length) {
+      const preferredHousehold = pickBestCloudHousehold(households);
+      state.cloud.householdId = preferredHousehold.id;
+      state.household = { ...(state.household || {}), id: preferredHousehold.id, name: preferredHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
     }
     if (!state.cloud?.householdId && state.household?.isConfigured) {
       await bootstrapCloudHousehold(false);
@@ -8753,6 +9425,7 @@
       cloudLoadWaste,
       cloudLoadTasks,
       cloudLoadParcels,
+      cloudLoadCalendarSources,
       cloudLoadCalendar,
       cloudLoadContractFiles,
       cloudLoadFinance,
@@ -8778,13 +9451,11 @@
   function handleAction(button) {
     const action = button.dataset.action;
     if (action === 'open-overview') {
-      activeOverview = button.dataset.overview || 'homecare';
-      render();
+      openOverview(button.dataset.overview || 'homecare');
       return;
     }
     if (action === 'close-overview') {
-      activeOverview = null;
-      render();
+      closeOverview();
       return;
     }
     if (action === 'set-section-tab') {
@@ -8894,8 +9565,36 @@
       setCloudAutosyncEnabled(state.cloud?.autoSyncEnabled === false);
       return;
     }
+    if (action === 'google-calendar-start') {
+      googleCalendarStart();
+      return;
+    }
+    if (action === 'google-calendar-list-calendars') {
+      googleCalendarListCalendars(true);
+      return;
+    }
+    if (action === 'google-calendar-sync') {
+      googleCalendarSync(button.dataset.sourceId || '');
+      return;
+    }
+    if (action === 'google-calendar-disconnect') {
+      googleCalendarDisconnect();
+      return;
+    }
     if (action === 'cloud-load-calendar') {
       cloudLoadCalendar(true);
+      return;
+    }
+    if (action === 'cloud-load-calendar-sources') {
+      cloudLoadCalendarSources(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-calendar-sources') {
+      cloudSyncLocalCalendarSources(true);
+      return;
+    }
+    if (action === 'calendar-toggle-source') {
+      toggleCalendarSource(button.dataset.sourceId, button.dataset.enabled === 'true');
       return;
     }
     if (action === 'cloud-sync-local-calendar') {
@@ -9049,6 +9748,10 @@
     }
     if (action === 'cloud-switch-household') {
       cloudSwitchHousehold(button.dataset.id, button.dataset.name);
+      return;
+    }
+    if (action === 'cloud-archive-household') {
+      cloudArchiveHouseholdForCurrentUser(button.dataset.id);
       return;
     }
     if (action === 'cloud-load-shopping') {
@@ -9574,13 +10277,16 @@
       return;
     }
     state.cloud = { ...(state.cloud || {}), status: 'signed-in', userId: user.id, email: user.email || state.cloud?.email || '' };
+    const households = await cloudLoadHouseholds(false);
+    if (households.length && !state.cloud.householdId) {
+      const preferredHousehold = pickBestCloudHousehold(households);
+      state.cloud.householdId = preferredHousehold.id;
+      state.household = { ...(state.household || {}), id: preferredHousehold.id, name: preferredHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
+    }
     if (state.household?.isConfigured && !state.cloud.householdId) {
       await bootstrapCloudHousehold(false);
     }
-    const households = await cloudLoadHouseholds(false);
-    if (households.length && !state.cloud.householdId) {
-      state.cloud.householdId = households[0].id;
-      state.household = { ...(state.household || {}), id: households[0].id, name: households[0].name || state.household?.name || 'Domácnost', isConfigured: true };
+    if (state.cloud.householdId) {
       await cloudLoadProfilesForCurrentHousehold();
       await cloudLoadAllModules(false);
     }
@@ -9600,17 +10306,61 @@
     return hash.includes('access_token=') || hash.includes('refresh_token=') || hash.includes('type=signup');
   }
 
-  function clearAuthReturnUrl() {
-    if (!isAuthReturnUrl()) return;
+  function hasGoogleCalendarReturnUrl() {
+    const params = new URLSearchParams(window.location.search || '');
+    return params.has('googleCalendar');
+  }
+
+  function clearAuthReturnUrl(force = false) {
+    if (!force && !isAuthReturnUrl() && !hasGoogleCalendarReturnUrl()) return;
     const clean = `${window.location.origin}${window.location.pathname}`;
     window.history.replaceState({}, document.title, clean);
   }
 
   async function handleInitialAuthReturn() {
+    if (hasGoogleCalendarReturnUrl()) {
+      const params = new URLSearchParams(window.location.search || '');
+      const result = params.get('googleCalendar');
+      activeModule = 'calendar';
+      moduleTabs = { ...(moduleTabs || {}), calendar: 'sources' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      render();
+      if (result === 'connected') {
+        showToast('Google účet připojený. Načítám kalendáře.');
+        await googleCalendarListCalendars(false);
+      } else if (result === 'error') {
+        showToast('Google připojení se nepovedlo. Zkontroluj callback a credentials.');
+      }
+      clearAuthReturnUrl(true);
+      return;
+    }
     if (!isAuthReturnUrl()) return;
     await new Promise((resolve) => window.setTimeout(resolve, 450));
     await cloudCheckEmailConfirmation();
     clearAuthReturnUrl();
+  }
+
+  function scoreCloudHouseholdCandidate(item) {
+    if (!item) return 0;
+    let score = 0;
+    const activeId = state.cloud?.householdId || '';
+    const localName = normalizeText(state.household?.name || state.settings?.householdName || '').toLowerCase();
+    const candidateName = normalizeText(item.name || '').toLowerCase();
+    if (item.id && item.id === activeId) score += 10000;
+    if (candidateName && localName && candidateName === localName) score += 800;
+    if (item.role === 'owner') score += 300;
+    if (item.status === 'active') score += 100;
+    const created = Date.parse(item.createdAt || '');
+    if (Number.isFinite(created)) score += Math.min(250, Math.max(0, created / 100000000000));
+    return score;
+  }
+
+  function pickBestCloudHousehold(households = []) {
+    return [...households].sort((a, b) => scoreCloudHouseholdCandidate(b) - scoreCloudHouseholdCandidate(a))[0] || null;
+  }
+
+  function hasMultipleCloudHouseholds() {
+    return Array.isArray(state.cloud?.households) && state.cloud.households.length > 1;
   }
 
   async function cloudLoadHouseholds(showMessage = false) {
@@ -9636,9 +10386,10 @@
       createdAt: row.households?.created_at || ''
     })).filter((item) => item.id);
     state.cloud = { ...(state.cloud || {}), households, lastSyncAt: new Date().toISOString() };
-    if (!state.cloud.householdId && households[0]) {
-      state.cloud.householdId = households[0].id;
-      state.household.name = households[0].name;
+    if (!state.cloud.householdId && households.length) {
+      const preferredHousehold = pickBestCloudHousehold(households);
+      state.cloud.householdId = preferredHousehold.id;
+      state.household.name = preferredHousehold.name;
       state.household.isConfigured = true;
     }
     const activeHousehold = households.find((item) => item.id === state.cloud.householdId);
@@ -9672,7 +10423,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 71
+        appBuild: 81
       },
       weather_location: normalizeWeatherLocation(state.weather?.location)
     };
@@ -9790,7 +10541,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 71, schema_version: 51, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 78, schema_version: 52, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -9816,6 +10567,32 @@
     saveState();
     render();
     showToast('Nová domácnost vytvořena');
+  }
+
+  async function cloudArchiveHouseholdForCurrentUser(householdId) {
+    const cleanId = normalizeText(householdId);
+    if (!cleanId) return;
+    if (cleanId === state.cloud?.householdId) {
+      showToast('Aktivní domácnost nejdřív přepni na jinou, pak ji můžeš skrýt');
+      return;
+    }
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const user = await refreshCloudSession(false);
+    if (!user) return showToast('Nejdřív se přihlas');
+    const ok = window.confirm('Skrýt tuhle domácnost z mého účtu? Data v databázi se nemažou, jen se ukončí tvoje aktivní členství.');
+    if (!ok) return;
+    const { error } = await client
+      .from('household_members')
+      .update({ status: 'archived', updated_at: new Date().toISOString() })
+      .eq('household_id', cleanId)
+      .eq('user_id', user.id);
+    if (error) return showToast(error.message || 'Domácnost se nepovedlo skrýt');
+    state.cloud.households = (state.cloud.households || []).filter((item) => item.id !== cleanId);
+    touchState();
+    saveState();
+    render();
+    showToast('Domácnost skrytá z aktivního seznamu');
   }
 
   async function cloudInviteMember(email, role = 'member') {
@@ -9957,13 +10734,23 @@
     let cloudHouseholdId = existingHouseholdId || '';
 
     if (!cloudHouseholdId) {
+      const households = await cloudLoadHouseholds(false);
+      const preferredHousehold = pickBestCloudHousehold(households);
+      if (preferredHousehold?.id) {
+        cloudHouseholdId = preferredHousehold.id;
+        state.household = { ...(state.household || {}), id: preferredHousehold.id, name: preferredHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
+        applyCloudHouseholdUiSettings(preferredHousehold);
+      }
+    }
+
+    if (!cloudHouseholdId) {
       const { data: household, error: householdError } = await client
         .from('households')
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 71,
-          schema_version: 51,
+          app_build: 78,
+          schema_version: 52,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -10106,14 +10893,13 @@
     saveState();
     cloudSaveHouseholdUiSettings(false);
     render();
-    showToast('Hlavní obrazovka vrácená na výchozí karty');
+    showToast('Home vyčištěná');
   }
 
   function toggleHomeHeroItem(itemId) {
     if (!HOME_HERO_ITEMS.some((item) => item.id === itemId)) return;
     const selected = new Set(normalizeHomeHeroIds(state.settings?.homeHeroItems));
     if (selected.has(itemId)) {
-      if (selected.size <= 1) return showToast('V horním panelu nech aspoň jednu položku');
       selected.delete(itemId);
     } else {
       if (selected.size >= 4) return showToast('V horním panelu nech nejvýš čtyři položky');
@@ -10132,7 +10918,7 @@
     saveState();
     cloudSaveHouseholdUiSettings(false);
     render();
-    showToast('Horní panel vrácený na výchozí položky');
+    showToast('Panely na Home vyčištěné');
   }
 
   async function deleteItem(collection, id) {
@@ -10211,7 +10997,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-71-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-81-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -10257,11 +11043,16 @@
 
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape' || !activeOverview) return;
-    activeOverview = null;
-    render();
+    closeOverview();
   });
 
   app.addEventListener('click', (event) => {
+    const backdrop = event.target.closest('[data-overview-backdrop]');
+    if (backdrop && !event.target.closest('[data-overview-panel]')) {
+      closeOverview();
+      return;
+    }
+
     const nav = event.target.closest('[data-nav]');
     if (nav) {
       activeOverview = null;
@@ -10333,7 +11124,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_71</span>
+          <span class="badge">Domácnost+ v.0.1_81</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
