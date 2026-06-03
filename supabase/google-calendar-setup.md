@@ -1,4 +1,4 @@
-# Domácnost+ v.0.1_81 – Google Calendar backend setup
+# Domácnost+ v.0.1_82 – Google Calendar backend setup
 
 Tahle verze už má frontend UI, SQL migraci a Edge Function soubory pro bezpečné napojení Google Kalendáře. Reálné přihlášení začne fungovat až po doplnění Google Cloud credentials a nasazení funkcí.
 

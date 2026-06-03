@@ -9,10 +9,10 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_81';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_81';
-  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_78';
-  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_77', 'domacnostPlus.v0.1_72', 'domacnostPlus.v0.1_71', 'domacnostPlus.v0.1_70', 'domacnostPlus.v0.1_69', 'domacnostPlus.v0.1_68', 'domacnostPlus.v0.1_67', 'domacnostPlus.v0.1_66', 'domacnostPlus.v0.1_65', 'domacnostPlus.v0.1_64', 'domacnostPlus.v0.1_63', 'domacnostPlus.v0.1_62', 'domacnostPlus.v0.1_61', 'domacnostPlus.v0.1_60', 'domacnostPlus.v0.1_59', 'domacnostPlus.v0.1_58', 'domacnostPlus.v0.1_57', 'domacnostPlus.v0.1_56', 'domacnostPlus.v0.1_55', 'domacnostPlus.v0.1_54', 'domacnostPlus.v0.1_53', 'domacnostPlus.v0.1_52', 'domacnostPlus.v0.1_51', 'domacnostPlus.v0.1_50', 'domacnostPlus.v0.1_49', 'domacnostPlus.v0.1_48', 'domacnostPlus.v0.1_47', 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
+  const APP_VERSION = 'Domácnost+ v.0.1_82';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_82';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_81';
+  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_80', 'domacnostPlus.v0.1_79', 'domacnostPlus.v0.1_78', 'domacnostPlus.v0.1_77', 'domacnostPlus.v0.1_72', 'domacnostPlus.v0.1_71', 'domacnostPlus.v0.1_70', 'domacnostPlus.v0.1_69', 'domacnostPlus.v0.1_68', 'domacnostPlus.v0.1_67', 'domacnostPlus.v0.1_66', 'domacnostPlus.v0.1_65', 'domacnostPlus.v0.1_64', 'domacnostPlus.v0.1_63', 'domacnostPlus.v0.1_62', 'domacnostPlus.v0.1_61', 'domacnostPlus.v0.1_60', 'domacnostPlus.v0.1_59', 'domacnostPlus.v0.1_58', 'domacnostPlus.v0.1_57', 'domacnostPlus.v0.1_56', 'domacnostPlus.v0.1_55', 'domacnostPlus.v0.1_54', 'domacnostPlus.v0.1_53', 'domacnostPlus.v0.1_52', 'domacnostPlus.v0.1_51', 'domacnostPlus.v0.1_50', 'domacnostPlus.v0.1_49', 'domacnostPlus.v0.1_48', 'domacnostPlus.v0.1_47', 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
     { id: 'home', label: 'Domů', icon: '🏠' },
@@ -122,7 +122,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-81.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-82.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -148,12 +148,17 @@
   const DEFAULT_HOME_HERO_IDS = [];
   const WEATHER_DEFAULT_LOCATION = { name: 'Hostinné', country: 'CZ', latitude: 50.5407, longitude: 15.7233 };
   const WEATHER_CACHE_MS = 30 * 60 * 1000;
+  const WEATHER_PROVIDER_OPTIONS = [
+    ['chmi', 'ČHMÚ – preferovaný zdroj'],
+    ['open-meteo', 'Open-Meteo fallback']
+  ];
+  const WEATHER_CHMI_FUNCTION = 'weather-chmi-forecast';
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 53,
-      appBuild: 81,
-      mode: 'home-panel-content-v81',
+      schemaVersion: 54,
+      appBuild: 82,
+      mode: 'weather-chmi-nav-fixed-v82',
       createdAt: '',
       updatedAt: ''
     },
@@ -210,7 +215,7 @@
       updatedAt: '',
       error: '',
       loading: false,
-      source: 'open-meteo'
+      source: 'chmi'
     },
     cloud: {
       supabaseUrl: SUPABASE_URL,
@@ -606,9 +611,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 53,
-      appBuild: 81,
-      mode: 'home-panel-content-v81',
+      schemaVersion: 54,
+      appBuild: 82,
+      mode: 'weather-chmi-nav-fixed-v82',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -663,6 +668,11 @@
     migrated.cloud.profilesLoadedAt = migrated.cloud?.profilesLoadedAt || '';
     migrated.cloud.localPendingCount = Number(migrated.cloud?.localPendingCount || 0);
     migrated.weather = normalizeWeatherState(migrated.weather);
+    if (previousAppBuild < 82 && migrated.weather.source === 'open-meteo') {
+      migrated.weather.source = 'chmi';
+      migrated.weather.updatedAt = '';
+      migrated.weather.error = '';
+    }
 
     migrated.enabledModules = normalizeModuleList(migrated.enabledModules);
     if (!migrated.enabledModules.includes('weather')) migrated.enabledModules = ['weather', ...migrated.enabledModules];
@@ -774,6 +784,12 @@
     };
   }
 
+  function normalizeWeatherSource(value) {
+    const clean = String(value || '').trim().toLowerCase();
+    if (clean === 'chmi' || clean === 'open-meteo' || clean === 'open-meteo-fallback' || clean === 'demo') return clean;
+    return 'chmi';
+  }
+
   function normalizeWeatherState(value) {
     const base = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
     return {
@@ -784,7 +800,7 @@
       updatedAt: base.updatedAt || '',
       error: base.error || '',
       loading: false,
-      source: base.source || 'open-meteo'
+      source: normalizeWeatherSource(base.source)
     };
   }
 
@@ -1639,7 +1655,7 @@
     const current = weather.current || {};
     const [condition, icon] = weatherCodeLabel(current.weatherCode);
     const hasCurrent = Boolean(weather.current);
-    const label = weather.loading ? 'Načítám' : weather.error ? 'Chyba' : hasCurrent ? condition : 'Počasí';
+    const label = weather.loading ? 'Načítám' : (weather.error && !hasCurrent) ? 'Chyba' : hasCurrent ? condition : 'Počasí';
     const value = hasCurrent ? roundWeather(current.temperature, '°') : '—';
     const daily = Array.isArray(weather.daily) ? weather.daily.slice(0, 4) : [];
     const forecast = options.expanded && daily.length ? `
@@ -1870,6 +1886,14 @@
     `;
   }
 
+  function weatherSourceLabel(source = state.weather?.source) {
+    const normalized = normalizeWeatherSource(source);
+    if (normalized === 'chmi') return 'ČHMÚ';
+    if (normalized === 'open-meteo-fallback') return 'Open-Meteo fallback';
+    if (normalized === 'demo') return 'Demo';
+    return 'Open-Meteo';
+  }
+
   function weatherCodeLabel(code) {
     const labels = {
       0: ['Jasno', '☀️'],
@@ -1898,6 +1922,7 @@
   }
 
   function roundWeather(value, suffix = '') {
+    if (value === null || value === undefined || value === '') return '—';
     const number = Number(value);
     if (!Number.isFinite(number)) return '—';
     return `${Math.round(number)}${suffix}`;
@@ -1933,13 +1958,14 @@
     const updated = weather.updatedAt ? formatDateTime(new Date(weather.updatedAt)) : 'nenačteno';
     const today = (weather.daily || [])[0] || {};
     const rain = Number.isFinite(Number(current.precipitation)) ? `${String(current.precipitation).replace('.', ',')} mm` : '—';
+    const sourceLabel = weatherSourceLabel(weather.source);
     return `
       <section class="card weather-card weather-card-compact dashboard-widget-block desktop-span-2" data-dashboard-widget="weather">
         <div class="card-header compact-card-header">
           <button class="plain-card-title weather-title-button" type="button" data-nav="weather">
-            <div><h2>Počasí</h2><p>${escapeHtml(weatherLocationLabel())} · ${weather.error ? escapeHtml(weather.error) : `Aktualizováno: ${escapeHtml(updated)}`}</p></div>
+            <div><h2>Počasí</h2><p>${escapeHtml(weatherLocationLabel())} · ${escapeHtml(sourceLabel)} · ${weather.error ? escapeHtml(weather.error) : `Aktualizováno: ${escapeHtml(updated)}`}</p></div>
           </button>
-          <span class="badge ${weather.error ? 'warn' : hasCurrent ? 'good' : ''}">${weather.loading ? 'načítám' : hasCurrent ? 'online' : 'není načtené'}</span>
+          <span class="badge ${weather.error ? 'warn' : hasCurrent ? 'good' : ''}">${weather.loading ? 'načítám' : hasCurrent ? escapeHtml(sourceLabel) : 'není načtené'}</span>
         </div>
         <button class="weather-main-row weather-current-button" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
           <div class="weather-current">
@@ -1979,7 +2005,10 @@
     if (!days.length) return '<div class="empty">Denní předpověď zatím není načtená.</div>';
     return `<div class="weather-daily-row">${days.map((day) => {
       const [label, dayIcon] = weatherCodeLabel(day.weatherCode);
-      return `<div class="weather-day"><span>${escapeHtml(shortWeekday(day.date))}</span><strong>${escapeHtml(dayIcon)} ${roundWeather(day.max, '°')}</strong><em>${roundWeather(day.min, '°')} · ${roundWeather(day.precipitation, ' mm')} · ☀ ${escapeHtml(shortTime(day.sunrise))}/${escapeHtml(shortTime(day.sunset))} · ${escapeHtml(label)}</em></div>`;
+      const detail = day.text
+        ? String(day.text).slice(0, 180)
+        : `${roundWeather(day.min, '°')} · ${roundWeather(day.precipitation, ' mm')} · ☀ ${shortTime(day.sunrise)}/${shortTime(day.sunset)} · ${label}`;
+      return `<div class="weather-day"><span>${escapeHtml(shortWeekday(day.date))}</span><strong>${escapeHtml(dayIcon)} ${roundWeather(day.max, '°')}</strong><em>${escapeHtml(detail)}</em></div>`;
     }).join('')}</div>`;
   }
 
@@ -1995,13 +2024,14 @@
     const [condition, icon] = weatherCodeLabel(current.weatherCode);
     const updated = weather.updatedAt ? formatDateTime(new Date(weather.updatedAt)) : 'nenačteno';
     const todayWeather = (weather.daily || [])[0] || {};
+    const sourceLabel = weatherSourceLabel(weather.source);
     ensureWeatherFresh(false);
     return `
       <div class="grid two weather-page">
         <section class="card desktop-span-2 weather-page-hero">
           <div class="card-header compact-card-header">
-            <div><h2>${escapeHtml(weatherLocationLabel())}</h2><p>Podrobnější počasí pro domácnost · aktualizováno: ${escapeHtml(updated)}</p></div>
-            <span class="badge ${weather.current ? 'good' : weather.error ? 'warn' : ''}">${weather.loading ? 'načítám' : weather.current ? 'online' : 'není načtené'}</span>
+            <div><h2>${escapeHtml(weatherLocationLabel())}</h2><p>Podrobnější počasí pro domácnost · ${escapeHtml(sourceLabel)} · aktualizováno: ${escapeHtml(updated)}</p></div>
+            <span class="badge ${weather.current ? 'good' : weather.error ? 'warn' : ''}">${weather.loading ? 'načítám' : weather.current ? escapeHtml(sourceLabel) : 'není načtené'}</span>
           </div>
           <div class="weather-main-row">
             <div class="weather-current weather-current-large">
@@ -2014,7 +2044,7 @@
               <div class="mini-stat"><span>Srážky teď</span><strong>${Number.isFinite(Number(current.precipitation)) ? `${String(current.precipitation).replace('.', ',')} mm` : '—'}</strong></div>
               <div class="mini-stat"><span>Východ</span><strong>${escapeHtml(shortTime(todayWeather.sunrise))}</strong></div>
               <div class="mini-stat"><span>Západ</span><strong>${escapeHtml(shortTime(todayWeather.sunset))}</strong></div>
-              <div class="mini-stat"><span>Zdroj</span><strong>Open-Meteo</strong></div>
+              <div class="mini-stat"><span>Zdroj</span><strong>${escapeHtml(sourceLabel)}</strong></div>
             </div>
           </div>
           <div class="form-actions compact-actions"><button class="primary-btn" type="button" data-action="weather-refresh">Obnovit počasí</button><button class="ghost-btn" type="button" data-nav="settings" data-target-tab="dashboard">Nastavit místo</button></div>
@@ -2054,10 +2084,33 @@
     return weatherFetchPromise;
   }
 
-  async function fetchWeatherForLocation(force = false) {
-    const location = normalizeWeatherLocation(state.weather?.location);
-    state.weather = { ...normalizeWeatherState(state.weather), location, loading: true, error: '' };
-    if (force) render();
+  function normalizeWeatherPayload(payload, location, source = 'chmi', fallbackError = '') {
+    const raw = payload?.weather && typeof payload.weather === 'object' ? payload.weather : payload || {};
+    return {
+      location: normalizeWeatherLocation(raw.location || location),
+      current: raw.current && typeof raw.current === 'object' ? raw.current : null,
+      daily: Array.isArray(raw.daily) ? raw.daily : [],
+      hourly: Array.isArray(raw.hourly) ? raw.hourly : [],
+      updatedAt: raw.updatedAt || new Date().toISOString(),
+      error: raw.error || fallbackError || '',
+      loading: false,
+      source: normalizeWeatherSource(raw.source || source)
+    };
+  }
+
+  async function fetchChmiWeatherForLocation(location) {
+    const client = getSupabaseClient();
+    if (!client?.functions?.invoke) throw new Error('ČHMÚ backend zatím není dostupný');
+    const body = {
+      householdId: state.cloud?.householdId || '',
+      location: normalizeWeatherLocation(location)
+    };
+    const { data, error } = await client.functions.invoke(WEATHER_CHMI_FUNCTION, { body });
+    if (error || data?.error) throw new Error(error?.message || data?.error || 'ČHMÚ počasí se nepovedlo načíst');
+    return normalizeWeatherPayload(data, location, 'chmi');
+  }
+
+  async function fetchOpenMeteoWeatherForLocation(location) {
     const params = new URLSearchParams({
       latitude: String(location.latitude),
       longitude: String(location.longitude),
@@ -2073,7 +2126,7 @@
     const current = data.current || {};
     const daily = data.daily || {};
     const hourly = data.hourly || {};
-    state.weather = {
+    return {
       location,
       current: {
         temperature: current.temperature_2m,
@@ -2106,6 +2159,32 @@
       loading: false,
       source: 'open-meteo'
     };
+  }
+
+  async function fetchWeatherForLocation(force = false) {
+    const location = normalizeWeatherLocation(state.weather?.location);
+    const storedSource = normalizeWeatherSource(state.weather?.source || 'chmi');
+    const preferredSource = storedSource === 'open-meteo-fallback' ? 'chmi' : storedSource;
+    state.weather = { ...normalizeWeatherState(state.weather), location, loading: true, error: '' };
+    if (force) render();
+
+    let nextWeather;
+    try {
+      nextWeather = preferredSource === 'chmi'
+        ? await fetchChmiWeatherForLocation(location)
+        : await fetchOpenMeteoWeatherForLocation(location);
+    } catch (error) {
+      const message = error?.message || 'Počasí se nepovedlo načíst';
+      if (preferredSource === 'chmi') {
+        nextWeather = await fetchOpenMeteoWeatherForLocation(location);
+        nextWeather.source = 'open-meteo-fallback';
+        nextWeather.error = `ČHMÚ zatím nedostupné, dočasně fallback: ${message}`;
+      } else {
+        throw error;
+      }
+    }
+
+    state.weather = normalizeWeatherPayload(nextWeather, location, nextWeather.source || preferredSource);
     touchState();
     saveState();
     render();
@@ -2135,12 +2214,13 @@
       const rawLongitude = String(data.longitude ?? '').trim();
       const latitude = Number(rawLatitude.replace(',', '.'));
       const longitude = Number(rawLongitude.replace(',', '.'));
+      const weatherSource = normalizeWeatherSource(data.weatherSource || state.weather?.source || 'chmi');
       if (rawLatitude && rawLongitude && Number.isFinite(latitude) && Number.isFinite(longitude)) {
         location = { name: normalizeText(data.locationName) || WEATHER_DEFAULT_LOCATION.name, country: normalizeText(data.country) || '', latitude, longitude };
       } else {
         location = await findWeatherLocationByName(data.locationName || data.city || WEATHER_DEFAULT_LOCATION.name);
       }
-      state.weather = { ...normalizeWeatherState(state.weather), location, current: null, daily: [], hourly: [], updatedAt: '', error: '' };
+      state.weather = { ...normalizeWeatherState(state.weather), location, current: null, daily: [], hourly: [], updatedAt: '', error: '', source: weatherSource };
       touchState();
       saveState();
       await cloudSaveHouseholdUiSettings(false);
@@ -2529,7 +2609,8 @@
       { title: 'Domácnost+ v.0.1_78', note: 'Hotovo: bezpečný první krok Google Calendar integrace: UI ve Zdrojích, výběr více Google kalendářů, sync akce, SQL migrace a Edge Function skeletony bez tokenů ve frontendu.' },
       { title: 'Domácnost+ v.0.1_79', note: 'Hotfix: variabilní Home panel drží rozložení 0–4 položek a počasí v prázdném panelu ukazuje více detailů.' },
       { title: 'Domácnost+ v.0.1_80', note: 'Hotovo: Home horní panel má stabilní výšku, položky se přizpůsobují uvnitř panelu a mini karty ukazují konkrétní stav, například HDO do kdy běží nebo kdy sepne.' },
-      { title: 'Domácnost+ v.0.1_81', note: 'Hotfix: při Home bez dalších panelů jsou čas a počasí pod sebou, hlavní panel zůstává stabilní a ve Více je nastavení hned nahoře.' }
+      { title: 'Domácnost+ v.0.1_81', note: 'Hotfix: při Home bez dalších panelů jsou čas a počasí pod sebou, hlavní panel zůstává stabilní a ve Více je nastavení hned nahoře.' },
+      { title: 'Domácnost+ v.0.1_82', note: 'Hotovo: první bezpečný krok ČHMÚ počasí přes Edge Function s Open-Meteo fallbackem a pevně ukotvený spodní panel.' }
     ];
     return `
       <section class="card roadmap-card">
@@ -4244,9 +4325,10 @@
       </section>
 
       <section class="card compact-settings-card weather-settings-card">
-        <div class="card-header"><div><h2>Počasí</h2><p>Počasí se načítá podle souřadnic domácnosti. Bez tajného klíče, jen veřejné počasí.</p></div><span class="badge ${weather.current ? 'good' : ''}">${weather.current ? 'aktivní' : 'nastavit'}</span></div>
+        <div class="card-header"><div><h2>Počasí</h2><p>Preferovaný zdroj je ČHMÚ přes Edge Function. Když backend nebo data vypadnou, appka bezpečně použije Open-Meteo fallback.</p></div><span class="badge ${weather.current ? 'good' : ''}">${weather.current ? 'aktivní' : 'nastavit'}</span></div>
         <form data-form="weather-settings" class="compact-form">
           <div class="form-grid two">
+            ${selectField('Zdroj', 'weatherSource', WEATHER_PROVIDER_OPTIONS, normalizeWeatherSource(weather.source))}
             ${field('Místo', 'locationName', 'text', 'Hostinné', true, location.name)}
             ${field('Země', 'country', 'text', 'CZ', false, location.country)}
             ${field('Šířka', 'latitude', 'number', '50,5407', false, location.latitude)}
@@ -4254,7 +4336,7 @@
           </div>
           <div class="form-actions compact-actions"><button class="primary-btn" type="submit">Uložit a načíst počasí</button><button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit počasí</button></div>
         </form>
-        <div class="inline-note compact-note">Když vyplníš jen název místa, aplikace ho zkusí najít přes geocoding. Souřadnice jsou přesnější a stabilnější.</div>
+        <div class="inline-note compact-note">Když vyplníš jen název místa, aplikace ho zkusí najít přes geocoding. ČHMÚ data běží přes backend mezivrstvu, aby se Home nerozbilo ani při změně datového formátu.</div>
       </section>
 
       <section class="card compact-settings-card">
@@ -8282,7 +8364,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 53, appBuild: 81, mode: 'rich-demo-v81', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 54, appBuild: 82, mode: 'rich-demo-v82', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -8423,7 +8505,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 53, appBuild: 81, mode: 'home-panel-content-v81', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 54, appBuild: 82, mode: 'weather-chmi-nav-fixed-v82', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -10413,7 +10495,11 @@
     if (Array.isArray(layout.heroItems)) state.settings.homeHeroItems = normalizeHomeHeroIds(layout.heroItems);
     else if (Array.isArray(layout.homeHeroItems)) state.settings.homeHeroItems = normalizeHomeHeroIds(layout.homeHeroItems);
     if (weatherLocation && typeof weatherLocation === 'object' && Object.keys(weatherLocation).length) {
-      state.weather = { ...normalizeWeatherState(state.weather), location: normalizeWeatherLocation(weatherLocation) };
+      state.weather = {
+        ...normalizeWeatherState(state.weather),
+        location: normalizeWeatherLocation(weatherLocation),
+        source: normalizeWeatherSource(weatherLocation.source || weatherLocation.provider || state.weather?.source)
+      };
     }
   }
 
@@ -10423,9 +10509,12 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 81
+        appBuild: 82
       },
-      weather_location: normalizeWeatherLocation(state.weather?.location)
+      weather_location: {
+        ...normalizeWeatherLocation(state.weather?.location),
+        source: normalizeWeatherSource(state.weather?.source)
+      }
     };
   }
 
@@ -10997,7 +11086,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-81-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-82-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -11124,7 +11213,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_81</span>
+          <span class="badge">Domácnost+ v.0.1_82</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
