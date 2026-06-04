@@ -9,7 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_95';
+  const APP_VERSION = 'Domácnost+ v.0.1_99';
+  const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -124,7 +125,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-95.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-99.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -155,12 +156,11 @@
     ['open-meteo', 'Open-Meteo fallback']
   ];
   const WEATHER_CHMI_FUNCTION = 'weather-chmi-forecast';
-
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 64,
-      appBuild: 95,
-      mode: 'auth-gate-calendar-sync-v95',
+      schemaVersion: 65,
+      appBuild: 99,
+      mode: 'manual-hdo-only-v99',
       createdAt: '',
       updatedAt: ''
     },
@@ -615,9 +615,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 64,
-      appBuild: 95,
-      mode: 'auth-gate-calendar-sync-v95',
+      schemaVersion: 65,
+      appBuild: 99,
+      mode: 'manual-hdo-only-v99',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -663,6 +663,9 @@
 
     migrated.shoppingStats = migrated.shoppingStats && typeof migrated.shoppingStats === 'object' && !Array.isArray(migrated.shoppingStats) ? migrated.shoppingStats : {};
     migrated.tasksCloud = migrated.tasksCloud && typeof migrated.tasksCloud === 'object' && !Array.isArray(migrated.tasksCloud) ? migrated.tasksCloud : { loadedAt: '' };
+    migrated.hdoCloud = migrated.hdoCloud && typeof migrated.hdoCloud === 'object' && !Array.isArray(migrated.hdoCloud)
+      ? { settingId: migrated.hdoCloud.settingId || '', loadedAt: migrated.hdoCloud.loadedAt || '' }
+      : { ...DEFAULT_STATE.hdoCloud };
     migrated.householdWorkspaces = migrated.householdWorkspaces && typeof migrated.householdWorkspaces === 'object' && !Array.isArray(migrated.householdWorkspaces) ? migrated.householdWorkspaces : {};
     migrated.cloud.households = Array.isArray(migrated.cloud?.households) ? migrated.cloud.households : [];
     migrated.cloud.invitations = Array.isArray(migrated.cloud?.invitations) ? migrated.cloud.invitations : [];
@@ -1070,13 +1073,15 @@
       const navScroll = document.querySelector('.nav-scroll');
       const activeItem = navScroll?.querySelector('.nav-item.active');
       if (!navScroll || !activeItem) return;
-
-      const maxLeft = navScroll.scrollWidth - navScroll.clientWidth;
-      const targetLeft = activeItem.offsetLeft - ((navScroll.clientWidth - activeItem.clientWidth) / 2);
-      navScroll.scrollTo({
-        left: Math.max(0, Math.min(maxLeft, targetLeft)),
-        behavior
-      });
+      const maxLeft = Math.max(0, navScroll.scrollWidth - navScroll.clientWidth);
+      if (!maxLeft) return;
+      const itemLeft = activeItem.offsetLeft;
+      const itemRight = itemLeft + activeItem.clientWidth;
+      const visibleLeft = navScroll.scrollLeft;
+      const visibleRight = visibleLeft + navScroll.clientWidth;
+      if (itemLeft >= visibleLeft && itemRight <= visibleRight) return;
+      const targetLeft = itemLeft - ((navScroll.clientWidth - activeItem.clientWidth) / 2);
+      navScroll.scrollTo({ left: Math.max(0, Math.min(maxLeft, targetLeft)), behavior });
     });
   }
 
@@ -1709,19 +1714,24 @@
 
   function renderHomeHeroSummaryItems(ctx) {
     const selected = normalizeHomeHeroIds(state.settings?.homeHeroItems);
+    const heroCount = selected.length;
+    const density = heroCount <= 1 ? 'large' : heroCount === 2 ? 'medium' : 'small';
     return selected.map((id) => {
       const item = homeHeroItemById(id);
       const metric = typeof item.metric === 'function' ? item.metric(ctx) : '—';
       const text = typeof item.text === 'function' ? item.text(ctx) : item.label;
-      const presentation = getHomeHeroItemPresentation(id, ctx, item, metric, text);
+      const presentation = getHomeHeroItemPresentation(id, ctx, item, metric, text, { density, heroCount });
       const attrs = item.nav
         ? `data-nav="${escapeHtml(item.nav)}"${item.tab ? ` data-target-tab="${escapeHtml(item.tab)}"` : ''}`
         : `data-action="open-overview" data-overview="${escapeHtml(item.overview)}"`;
       const chips = Array.isArray(presentation.chips) && presentation.chips.length
-        ? `<span class="station-summary-chipline">${presentation.chips.slice(0, 3).map((chip) => `<b>${escapeHtml(chip)}</b>`).join('')}</span>`
+        ? `<span class="station-summary-chipline">${presentation.chips.slice(0, density === 'large' ? 4 : 3).map((chip) => `<b>${escapeHtml(chip)}</b>`).join('')}</span>`
+        : '';
+      const extraRows = Array.isArray(presentation.extraRows) && presentation.extraRows.length
+        ? `<span class="station-summary-extra" aria-label="Další položky">${presentation.extraRows.slice(0, density === 'large' ? 5 : density === 'medium' ? 2 : 0).map((row) => `<b>${escapeHtml(row)}</b>`).join('')}</span>`
         : '';
       return `
-        <button class="station-summary-item station-summary-tone-${escapeHtml(presentation.tone || 'neutral')}" type="button" ${attrs}>
+        <button class="station-summary-item station-summary-size-${density} station-summary-tone-${escapeHtml(presentation.tone || 'neutral')}" type="button" ${attrs}>
           <span class="station-summary-icon" aria-hidden="true">${escapeHtml(item.icon || '')}</span>
           <span class="station-summary-copy">
             <em>${escapeHtml(item.label)}</em>
@@ -1729,39 +1739,45 @@
             <span>${escapeHtml(presentation.text)}</span>
             ${presentation.detail ? `<small>${escapeHtml(presentation.detail)}</small>` : ''}
             ${chips}
+            ${extraRows}
           </span>
         </button>`;
     }).join('');
   }
 
-  function getHomeHeroItemPresentation(id, ctx, item, metric, text) {
-    const base = { metric: metric ?? '—', text: text || item?.label || '', detail: '', chips: [], tone: 'neutral' };
+  function getHomeHeroItemPresentation(id, ctx, item, metric, text, options = {}) {
+    const density = options.density || 'small';
+    const extraLimit = density === 'large' ? 5 : density === 'medium' ? 2 : 0;
+    const base = { metric: metric ?? '—', text: text || item?.label || '', detail: '', chips: [], extraRows: [], tone: 'neutral' };
     const firstTitle = (value, fallback = '—') => normalizeText(value?.title || value?.name || value?.label || value?.store || value?.provider || value?.note || fallback);
+    const detailRows = (rows, mapper) => extraLimit ? rows.slice(0, extraLimit).map(mapper).filter(Boolean) : [];
     const nextDateLine = (date, prefix = '') => {
       const days = daysUntil(date);
       if (days === null) return '';
       return `${prefix}${dueBadge(days)}`.trim();
     };
-    if (id === 'hdo') return getHdoHeroPresentation(ctx);
+    if (id === 'hdo') return getHdoHeroPresentation(ctx, options);
     if (id === 'calendar') {
-      const next = (ctx.todayEvents || [])[0] || (ctx.upcomingEvents || [])[0];
+      const events = (ctx.upcomingEvents || []);
+      const next = (ctx.todayEvents || [])[0] || events[0];
       return {
         ...base,
         metric: ctx.todayEvents?.length ? `${ctx.todayEvents.length} dnes` : 'Volno',
         text: next ? firstTitle(next, 'Událost') : 'Žádná událost dnes',
         detail: next ? `${next.time ? `${next.time} · ` : ''}${next.date ? shortDateText(next.date) : 'dnes'}` : 'Kliknutím otevřeš kalendář',
-        chips: ctx.upcomingEvents?.slice(0, 2).map((event) => event.time || shortDateText(event.date)).filter(Boolean) || [],
+        chips: events.slice(0, density === 'large' ? 4 : 2).map((event) => event.time || shortDateText(event.date)).filter(Boolean) || [],
+        extraRows: detailRows(events, (event) => `${event.time || shortDateText(event.date)} · ${firstTitle(event, 'Událost')}`),
         tone: ctx.todayEvents?.length ? 'good' : 'neutral'
       };
     }
     if (id === 'packages') {
       const active = ctx.activePackages || [];
       const first = active[0];
-      return { ...base, metric: active.length, text: first ? firstTitle(first, 'Balík') : 'Žádný aktivní balík', detail: first ? normalizeText(first.statusLabel || first.status || first.carrier || first.trackingNumber || 'sledovat zásilku') : 'Nový balík přidáš ručně', tone: active.length ? 'warn' : 'good' };
+      return { ...base, metric: active.length, text: first ? firstTitle(first, 'Balík') : 'Žádný aktivní balík', detail: first ? normalizeText(first.statusLabel || first.status || first.carrier || first.trackingNumber || 'sledovat zásilku') : 'Nový balík přidáš ručně', extraRows: detailRows(active, (entry) => `${carrierLabel(entry.carrier) || 'Balík'} · ${firstTitle(entry, entry.tracking || 'zásilka')}`), tone: active.length ? 'warn' : 'good' };
     }
     if (id === 'shopping') {
       const open = ctx.openShopping || [];
-      return { ...base, metric: open.length, text: open[0] ? firstTitle(open[0], 'Položka') : 'Nákup je prázdný', detail: open.length > 1 ? `+${open.length - 1} další položky` : 'Kliknutím otevřeš seznam', chips: open.slice(0, 2).map((entry) => firstTitle(entry, '')).filter(Boolean), tone: open.length ? 'warn' : 'good' };
+      return { ...base, metric: open.length, text: open[0] ? firstTitle(open[0], 'Položka') : 'Nákup je prázdný', detail: open.length > 1 ? `+${open.length - 1} další položky` : 'Kliknutím otevřeš seznam', chips: open.slice(0, density === 'large' ? 4 : 2).map((entry) => firstTitle(entry, '')).filter(Boolean), extraRows: detailRows(open, (entry) => `${firstTitle(entry, 'Položka')}${entry.quantity ? ` · ${entry.quantity}` : ''}`), tone: open.length ? 'warn' : 'good' };
     }
     if (id === 'coupons') {
       const unused = (state.coupons || []).filter((entry) => !entry.used);
@@ -1771,12 +1787,12 @@
     if (id === 'waste') {
       const upcoming = (state.waste || []).map((entry) => ({ ...entry, days: daysUntil(entry.date) })).filter((entry) => entry.days !== null && entry.days >= 0).sort((a, b) => a.days - b.days);
       const next = upcoming[0];
-      return { ...base, metric: next ? dueBadge(next.days) : '—', text: next ? firstTitle(next, 'Svoz') : 'Svoz není nastavený', detail: next ? shortDateText(next.date) : 'Přidej termín odpadu', tone: next?.days <= 1 ? 'warn' : next ? 'good' : 'neutral' };
+      return { ...base, metric: next ? dueBadge(next.days) : '—', text: next ? firstTitle(next, 'Svoz') : 'Svoz není nastavený', detail: next ? shortDateText(next.date) : 'Přidej termín odpadu', extraRows: detailRows(upcoming, (entry) => `${shortDateText(entry.date)} · ${firstTitle(entry, 'Svoz')}`), tone: next?.days <= 1 ? 'warn' : next ? 'good' : 'neutral' };
     }
     if (id === 'tasks') {
       const open = ctx.openTasks || [];
       const first = open[0];
-      return { ...base, metric: open.length, text: first ? firstTitle(first, 'Úkol') : 'Nic nečeká', detail: first?.due ? `termín ${dueBadge(daysUntil(first.due))}` : 'Domácí úkoly jsou čisté', tone: open.length ? 'warn' : 'good' };
+      return { ...base, metric: open.length, text: first ? firstTitle(first, 'Úkol') : 'Nic nečeká', detail: first?.due ? `termín ${dueBadge(daysUntil(first.due))}` : 'Domácí úkoly jsou čisté', extraRows: detailRows(open, (entry) => `${entry.due ? `${shortDateText(entry.due)} · ` : ''}${firstTitle(entry, 'Úkol')}`), tone: open.length ? 'warn' : 'good' };
     }
     if (id === 'notes') {
       const notes = state.notes || [];
@@ -1808,11 +1824,15 @@
     return base;
   }
 
-  function getHdoHeroPresentation(ctx) {
+  function getHdoHeroPresentation(ctx, options = {}) {
     const safeDate = toSafeDate(now, new Date());
     const minuteNow = safeDate.getHours() * 60 + safeDate.getMinutes();
-    const enabled = getSafeHdoWindows().filter((entry) => entry.enabled && entry.days.includes(safeDate.getDay()) && timeToMinutes(entry.start) !== null && timeToMinutes(entry.end) !== null);
-    const active = enabled.find((entry) => isTimeInWindow(minuteNow, entry.start, entry.end));
+    const extraLimit = options.density === 'large' ? 5 : options.density === 'medium' ? 2 : 0;
+    const allEnabled = getSafeHdoWindows().filter((entry) => entry.enabled && timeToMinutes(entry.start) !== null && timeToMinutes(entry.end) !== null);
+    const enabledToday = allEnabled.filter((entry) => entry.days.includes(safeDate.getDay()));
+    const enabled = enabledToday.length ? enabledToday : allEnabled;
+    const extraRows = extraLimit ? enabled.slice().sort((a, b) => String(a.start || '').localeCompare(String(b.start || ''))).slice(0, extraLimit).map((entry) => `${hdoWindowTimeLabel(entry)} · ${entry.label || 'Nízký tarif'}`) : [];
+    const active = enabledToday.find((entry) => isTimeInWindow(minuteNow, entry.start, entry.end));
     if (active) {
       const endMinutes = timeToMinutes(active.end);
       let diff = endMinutes - minuteNow;
@@ -1822,6 +1842,7 @@
         text: `do ${active.end}`,
         detail: `${active.label || 'Nízký tarif'} · ještě ${humanDuration(diff)}`,
         chips: [hdoWindowTimeLabel(active), daysLabel(active.days)],
+        extraRows,
         tone: 'good'
       };
     }
@@ -1832,11 +1853,13 @@
         text: `sepne v ${next.item.start}`,
         detail: `${next.item.label || 'Nízký tarif'} · ${hdoWindowTimeLabel(next.item)}`,
         chips: [daysLabel(next.item.days)],
+        extraRows,
         tone: 'warn'
       };
     }
-    return { metric: '—', text: 'HDO není nastavené', detail: 'Přidej okna nízkého tarifu', chips: [], tone: 'neutral' };
+    return { metric: '—', text: 'HDO není nastavené', detail: 'Přidej okna nízkého tarifu', chips: [], extraRows: [], tone: 'neutral' };
   }
+
 
   function renderDashboardWidget(id, ctx) {
     switch (id) {
@@ -2614,7 +2637,9 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_95', note: 'Hotovo: auth gate už nepustí starou lokální domácnost bez Supabase session, sync Google kalendářů posílá sourceId/calendarIds podle uložených zdrojů a dlouhé názvy kalendářů se bezpečně zalamují v kartách.' },
+      { title: 'Domácnost+ v.0.1_99', note: 'Hotovo: automatické HDO podle distributora/kódu/importu bylo odstraněné. HDO se zadává jen ručně, zůstává rychlé číselné zadávání časů a cloudové uložení ručních oken.' },
+      { title: 'Domácnost+ v.0.1_98', note: 'Hotovo: HDO import měl fallback pro hlavní distributory v ČR a kalendář převáděl cloudové a Google události do Europe/Prague.' },
+      { title: 'Domácnost+ v.0.1_97', note: 'Hotovo: HDO dohledání bylo připravené pro ČEZ Distribuci, EG.D, PREdistribuci i ruční fallback. U kalendářů přibylo odebrání zdroje včetně jeho událostí a spodní lišta má stabilnější pozici po startu.' },
       { title: 'Domácnost+ v.0.1_94', note: 'Hotovo: Google Calendar ukládá a čte serverové tokeny přes bezpečné RPC funkce do app_private, bez vystavení privátního schématu do API. Google login zůstává jen přihlášení.' },
       { title: 'Domácnost+ v.0.1_10', note: 'Hotovo: tabletový domácí dashboard a první cloudový základ.' },
       { title: 'Domácnost+ v.0.1_11', note: 'Hotovo: Supabase Auth, domácnost, členové, profily a cloudový základ Nákupů.' },
@@ -2889,6 +2914,7 @@
           <div class="item-actions">
             <button class="ghost-btn" type="button" data-action="calendar-toggle-source" data-source-id="${escapeHtml(source.id || source.cloudId || '')}" data-enabled="${source.isEnabled === false ? 'true' : 'false'}">${source.isEnabled === false ? 'Zobrazit' : 'Skrýt'}</button>
             ${google && state.cloud?.householdId ? `<button class="ghost-btn" type="button" data-action="google-calendar-sync" data-source-id="${escapeHtml(source.cloudId || source.id || '')}">Sync</button>` : ''}
+            <button class="danger-btn" type="button" data-action="calendar-delete-source" data-source-id="${escapeHtml(source.id || source.cloudId || '')}">Odebrat</button>
             ${google && !state.cloud?.householdId ? '<span class="badge">čeká na online účet</span>' : ''}
           </div>
         </div>
@@ -3345,15 +3371,18 @@
             <div><h2>HDO / nízký tarif</h2><p>${escapeHtml(hdo.message)}</p></div>
             <span class="badge ${hdo.active ? 'good' : 'warn'}">${hdo.active ? 'běží' : 'neběží'} · ${state.hdoWindows.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
           </div>
-          <form data-form="add-hdo">
-            <div class="form-grid two">
-              ${field('Název okna', 'label', 'text', 'např. Večerní tarif', true)}
-              ${field('Od', 'start', 'text', '0600 nebo 06:00', true, '', 'numeric')}
-              ${field('Do', 'end', 'text', '2200 nebo 22:00', true, '', 'numeric')}
-              ${selectField('Dny', 'daysMode', [['all', 'Každý den'], ['workdays', 'Po–Pá'], ['weekend', 'Víkend']])}
-            </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat HDO okno</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-hdo">Načíst cloud HDO</button>' : ''}${state.cloud?.householdId && state.hdoWindows.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-hdo">Odeslat lokální HDO (${state.hdoWindows.filter((item) => !item.cloudId).length})</button>` : ''}</div>
-          </form>
+          <details class="compact-edit-details hdo-manual-details" open>
+            <summary><span>Ruční zadání časů</span><em>funguje pořád stejně</em></summary>
+            <form data-form="add-hdo" class="compact-form hdo-manual-form">
+              <div class="form-grid two">
+                ${field('Název okna', 'label', 'text', 'např. Večerní tarif', true)}
+                ${hdoTimeField('Od', 'start', '0600 nebo 06:00', true)}
+                ${hdoTimeField('Do', 'end', '2200 nebo 22:00', true)}
+                ${selectField('Dny', 'daysMode', [['all', 'Každý den'], ['workdays', 'Po–Pá'], ['weekend', 'Víkend']])}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Přidat HDO okno</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-hdo">Načíst cloud HDO</button>' : ''}${state.cloud?.householdId && state.hdoWindows.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-hdo">Odeslat lokální HDO (${state.hdoWindows.filter((item) => !item.cloudId).length})</button>` : ''}</div>
+            </form>
+          </details>
           <div style="height:14px"></div>
           ${state.hdoWindows.length ? `<div class="list">${state.hdoWindows.map((item) => `
             <div class="item">
@@ -4897,6 +4926,16 @@
       <div class="field">
         <label for="${inputId}">${escapeHtml(label)}</label>
         <input class="input" id="${inputId}" name="${name}" type="${type}" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(value)}" ${required ? 'required' : ''} ${type === 'number' ? 'step="any" inputmode="decimal"' : inputMode ? `inputmode="${escapeHtml(inputMode)}" pattern="[0-9:., ]*"` : ''}>
+      </div>
+    `;
+  }
+
+  function hdoTimeField(label, name, placeholder = '06:00', required = false, value = '') {
+    const inputId = `field-${name}-${Math.random().toString(36).slice(2, 7)}`;
+    return `
+      <div class="field">
+        <label for="${inputId}">${escapeHtml(label)}</label>
+        <input class="input" id="${inputId}" name="${name}" type="text" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(value)}" ${required ? 'required' : ''} inputmode="numeric" pattern="[0-9:]*" autocomplete="off" data-hdo-time-input>
       </div>
     `;
   }
@@ -6705,16 +6744,66 @@
 
 
 
-  function buildCalendarDateTime(date, time, fallbackTime = '00:00') {
-    const d = date || todayISO();
-    const t = time || fallbackTime;
-    return `${d}T${t}:00`;
+  function pad2(value) {
+    return String(value).padStart(2, '0');
   }
 
-  function splitCalendarDateTime(value) {
+  function lastSundayIso(year, monthIndex) {
+    const date = new Date(Date.UTC(year, monthIndex + 1, 0));
+    date.setUTCDate(date.getUTCDate() - date.getUTCDay());
+    return date.toISOString().slice(0, 10);
+  }
+
+  function pragueOffsetForLocalDateTime(date, time = '00:00') {
+    const cleanDate = String(date || todayISO()).slice(0, 10);
+    const cleanTime = String(time || '00:00').slice(0, 5);
+    const year = Number(cleanDate.slice(0, 4));
+    if (!Number.isFinite(year)) return '+01:00';
+    const dstStart = lastSundayIso(year, 2);
+    const dstEnd = lastSundayIso(year, 9);
+    if (cleanDate > dstStart && cleanDate < dstEnd) return '+02:00';
+    if (cleanDate === dstStart && cleanTime >= '02:00') return '+02:00';
+    if (cleanDate === dstEnd && cleanTime < '03:00') return '+02:00';
+    return '+01:00';
+  }
+
+  function buildCalendarDateTime(date, time, fallbackTime = '00:00') {
+    const d = String(date || todayISO()).slice(0, 10);
+    const t = String(time || fallbackTime || '00:00').slice(0, 5);
+    return `${d}T${t}:00${pragueOffsetForLocalDateTime(d, t)}`;
+  }
+
+  function zonedDateTimeParts(value, timeZone = APP_TIME_ZONE) {
+    const date = toSafeDate(value);
+    if (!date) return { date: '', time: '' };
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23'
+    }).formatToParts(date).reduce((acc, part) => {
+      if (part.type !== 'literal') acc[part.type] = part.value;
+      return acc;
+    }, {});
+    return {
+      date: `${parts.year}-${parts.month}-${parts.day}`,
+      time: `${parts.hour}:${parts.minute}`
+    };
+  }
+
+  function splitCalendarDateTime(value, options = {}) {
     if (!value) return { date: '', time: '' };
     const text = String(value);
-    return { date: text.slice(0, 10), time: text.length >= 16 ? text.slice(11, 16) : '' };
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return { date: text, time: '' };
+    const hasExplicitZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(text);
+    if (hasExplicitZone) {
+      const parts = zonedDateTimeParts(text, APP_TIME_ZONE);
+      return { date: parts.date, time: options.allDay ? '' : parts.time };
+    }
+    return { date: text.slice(0, 10), time: options.allDay ? '' : (text.length >= 16 ? text.slice(11, 16) : '') };
   }
 
   function normalizeCalendarType(value) {
@@ -7185,6 +7274,52 @@
     showToast(source.isEnabled ? 'Kalendář zobrazen' : 'Kalendář skrytý');
   }
 
+  async function deleteCalendarSource(sourceId) {
+    const source = getCalendarSource(sourceId);
+    if (!source) return showToast('Zdroj kalendáře nenalezen');
+    const label = source.name || 'kalendář';
+    const ok = window.confirm(`Odebrat kalendář „${label}“ a jeho události z Domácnost+?`);
+    if (!ok) return;
+
+    const sourceKeys = [source.id, source.cloudId].filter(Boolean).map(String);
+    const client = getSupabaseClient();
+    if (client && state.cloud?.householdId && source.cloudId) {
+      const { error: eventsError } = await client
+        .from('calendar_events')
+        .delete()
+        .eq('source_id', source.cloudId)
+        .eq('household_id', state.cloud.householdId);
+      if (eventsError) {
+        showToast(eventsError.message || 'Události kalendáře se nepovedlo odebrat');
+        return;
+      }
+      const { error } = await client
+        .from('calendar_sources')
+        .delete()
+        .eq('id', source.cloudId)
+        .eq('household_id', state.cloud.householdId);
+      if (error) {
+        showToast(error.message || 'Kalendář se nepovedlo odebrat');
+        return;
+      }
+    }
+
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      sources: getCalendarSources().filter((item) => !sourceKeys.includes(String(item.id || '')) && !sourceKeys.includes(String(item.cloudId || ''))),
+      sourcesLoadedAt: new Date().toISOString()
+    };
+    state.calendar = (state.calendar || []).filter((event) => !sourceKeys.includes(String(event.sourceId || '')));
+    if (state.calendarCloud?.googleCalendars?.length && source.providerCalendarId) {
+      state.calendarCloud.googleCalendars = state.calendarCloud.googleCalendars.map((calendar) => String(calendar.id || '') === String(source.providerCalendarId) ? { ...calendar, selected: false } : calendar);
+    }
+    if (state.cloud) state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    showToast('Kalendář odebraný');
+  }
+
   async function cloudAddCalendarEvent(event) {
     const client = getSupabaseClient();
     if (!client || !state.cloud?.householdId) return null;
@@ -7248,8 +7383,8 @@
     }
     const localOnly = state.calendar.filter((event) => !event.cloudId);
     const cloudItems = (data || []).map((item) => {
-      const start = splitCalendarDateTime(item.starts_at);
-      const end = splitCalendarDateTime(item.ends_at);
+      const start = splitCalendarDateTime(item.starts_at, { allDay: item.all_day });
+      const end = splitCalendarDateTime(item.ends_at, { allDay: item.all_day });
       return {
         id: state.calendar.find((event) => event.cloudId === item.id)?.id || `event-cloud-${item.id}`,
         cloudId: item.id,
@@ -7607,14 +7742,20 @@
     }
     const { data: settings, error: settingsError } = await client
       .from('hdo_settings')
-      .select('id,title')
+      .select('id,title,note')
       .eq('household_id', state.cloud.householdId)
       .maybeSingle();
     if (settingsError) {
       showToast(settingsError.message || 'HDO nastavení se nepovedlo načíst');
       return;
     }
-    if (settings?.id) state.hdoCloud = { ...(state.hdoCloud || {}), settingId: settings.id, loadedAt: new Date().toISOString() };
+    if (settings?.id) {
+      state.hdoCloud = {
+        ...(state.hdoCloud || {}),
+        settingId: settings.id,
+        loadedAt: new Date().toISOString()
+      };
+    }
     const { data, error } = await client
       .from('hdo_windows')
       .select('id,label,days,start_time,end_time,is_enabled')
@@ -7693,6 +7834,38 @@
     }
     return '';
   }
+
+  function formatHdoTimeInputLive(input, event = {}) {
+    if (!input) return;
+    const raw = String(input.value || '');
+    if (!raw) return;
+    if (raw.includes(':')) {
+      const [h = '', m = ''] = raw.split(':');
+      input.value = `${h.replace(/\D/g, '').slice(0, 2)}:${m.replace(/\D/g, '').slice(0, 2)}`;
+      return;
+    }
+    const digits = raw.replace(/\D/g, '').slice(0, 4);
+    if (!digits) {
+      input.value = '';
+      return;
+    }
+    if (digits.length === 2 && !String(event.inputType || '').startsWith('delete')) {
+      input.value = `${digits}:`;
+      return;
+    }
+    if (digits.length > 2) {
+      input.value = `${digits.slice(0, 2)}:${digits.slice(2, 4)}`;
+      return;
+    }
+    input.value = digits;
+  }
+
+  function normalizeHdoTimeInputOnBlur(input) {
+    if (!input) return;
+    const normalized = normalizeHdoTimeInput(input.value);
+    if (normalized) input.value = normalized;
+  }
+
 
   async function addHdoWindowFromForm(data, form) {
     const start = normalizeHdoTimeInput(data.start);
@@ -8679,7 +8852,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 64, appBuild: 95, mode: 'rich-demo-v95', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 65, appBuild: 99, mode: 'rich-demo-v99', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -8820,7 +8993,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 64, appBuild: 95, mode: 'auth-gate-calendar-sync-v95', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 65, appBuild: 99, mode: 'manual-hdo-only-v99', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -10003,6 +10176,10 @@
       toggleCalendarSource(button.dataset.sourceId, button.dataset.enabled === 'true');
       return;
     }
+    if (action === 'calendar-delete-source') {
+      deleteCalendarSource(button.dataset.sourceId);
+      return;
+    }
     if (action === 'cloud-sync-local-calendar') {
       cloudSyncLocalCalendar();
       return;
@@ -11045,7 +11222,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 95
+        appBuild: 99
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -11627,7 +11804,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-95-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-99-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -11724,6 +11901,16 @@
     if (profileSwitch) setActiveProfile(profileSwitch.value);
   });
 
+  app.addEventListener('input', (event) => {
+    const hdoTimeInput = event.target.closest('[data-hdo-time-input]');
+    if (hdoTimeInput) formatHdoTimeInputLive(hdoTimeInput, event);
+  });
+
+  app.addEventListener('focusout', (event) => {
+    const hdoTimeInput = event.target.closest('[data-hdo-time-input]');
+    if (hdoTimeInput) normalizeHdoTimeInputOnBlur(hdoTimeInput);
+  });
+
   setInterval(() => {
     now = new Date();
     if (activeModule === 'home' || activeModule === 'homecare') render();
@@ -11754,7 +11941,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_95</span>
+          <span class="badge">Domácnost+ v.0.1_99</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

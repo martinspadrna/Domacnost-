@@ -1,4 +1,4 @@
-# Domácnost+ v.0.1_95 — Google Calendar napojení
+# Domácnost+ v.0.1_96 — Google Calendar napojení
 
 Tahle verze přidává ostrý backendový základ pro Google Calendar přes Supabase Edge Functions.
 
@@ -82,7 +82,7 @@ Tokeny se nikdy neukládají do frontendu.
 - První sync bere události od 30 dnů zpět do 365 dnů dopředu.
 - Smazané Google události se ukládají jako `status='cancelled'`, nemažou se bezhlavě.
 
-## Domácnost+ v.0.1_95 — jednodušší cesta přes Google login
+## Domácnost+ v.0.1_96 — jednodušší cesta přes Google login
 
 Od v0.1_95 je Google login používaný jen pro přihlášení do aplikace. Google Kalendář se připojuje výhradně přes samostatný OAuth flow `google-calendar-start` → `google-calendar-callback`; tokeny zůstávají server-side v `app_private.calendar_provider_connection_secrets`.
 

@@ -1,4 +1,4 @@
-# Domácnost+ v.0.1_95 — Google přihlášení + kalendář diagnostika
+# Domácnost+ v.0.1_96 — Google přihlášení + kalendář diagnostika
 
 Tento build opravuje obecnou hlášku `Edge Function returned a non-2xx status code` při napojení kalendáře.
 
