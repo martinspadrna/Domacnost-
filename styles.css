@@ -5682,7 +5682,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_97 – stabilnější spodní lišta a menší HDO ověření */
+/* Domácnost+ v.0.1_98 – stabilnější spodní lišta a menší HDO ověření */
 .nav-shell {
   bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + 4px);
   transform: translate3d(0, 0, 0);
@@ -5736,5 +5736,42 @@ textarea {
   .hdo-lookup-actions {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+
+/* Domácnost+ v.0.1_98 – HDO import textu z kalkulaček distributorů */
+.hdo-paste-form {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.hdo-paste-input {
+  min-height: 104px;
+  resize: vertical;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.hdo-paste-form small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.hdo-paste-actions {
+  justify-content: flex-start;
+}
+
+@media (max-width: 520px) {
+  .hdo-paste-input {
+    min-height: 118px;
+  }
+
+  .hdo-paste-actions .ghost-btn {
+    width: 100%;
   }
 }

@@ -9,7 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_97';
+  const APP_VERSION = 'Domácnost+ v.0.1_98';
+  const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -124,7 +125,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-97.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-98.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -176,8 +177,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 65,
-      appBuild: 97,
-      mode: 'hdo-distributors-calendar-delete-nav-v97',
+      appBuild: 98,
+      mode: 'hdo-import-calendar-timezone-v98',
       createdAt: '',
       updatedAt: ''
     },
@@ -633,8 +634,8 @@
 
     migrated.meta = {
       schemaVersion: 65,
-      appBuild: 97,
-      mode: 'hdo-distributors-calendar-delete-nav-v97',
+      appBuild: 98,
+      mode: 'hdo-import-calendar-timezone-v98',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1900,6 +1901,14 @@
     return 'Oblast / poznámka';
   }
 
+  function hdoAreaOptions(distributor = state.hdoCloud?.distributor) {
+    const id = normalizeHdoDistributor(distributor);
+    if (id === 'cez') return HDO_CEZ_AREA_OPTIONS;
+    if (id === 'egd') return [['', 'Distribuční území EG.D'], ['jih', 'Jižní Čechy / Jižní Morava'], ['manual', 'Upřesním ručně']];
+    if (id === 'pre') return [['praha', 'Praha / PREdistribuce'], ['', 'Bez upřesnění']];
+    return [['', 'Zatím ručně / podle distributora']];
+  }
+
   function normalizeHdoLookupSettings(raw = {}) {
     return {
       distributor: normalizeHdoDistributor(raw.distributor || raw.hdoDistributor || state.hdoCloud?.distributor || 'cez'),
@@ -1915,7 +1924,7 @@
 
   function hdoOfficialLookupUrl(distributor = state.hdoCloud?.distributor) {
     const id = normalizeHdoDistributor(distributor);
-    if (id === 'cez') return 'https://www.cezdistribuce.cz/cs/pro-zakazniky/spinani-hdo';
+    if (id === 'cez') return 'https://www.cezdistribuce.cz/cs/pro-zakazniky/potrebuji-vyresit/stavajici-pripojeni/casy-spinani-nizkeho-tarifu';
     if (id === 'egd') return 'https://www.egd.cz/hdo';
     if (id === 'pre') return 'https://www.predistribuce.cz/cs/potrebuji-zaridit/sluzby-distribuce/hromadne-dalkove-ovladani/';
     return 'https://www.eru.gov.cz/';
@@ -1925,9 +1934,9 @@
     const result = settings.lookupResult || {};
     const message = settings.lookupMessage || result.message || '';
     if (settings.lookupStatus === 'ready') return { tone: 'good', title: 'Časy z kódu připravené', text: message || 'Dohledané časy můžeš porovnat s realitou.' };
-    if (settings.lookupStatus === 'manual') return { tone: 'warn', title: 'Kód uložený, ověření ručně', text: message || 'Automatické načtení časů se nepovedlo. Otevři oficiální kalkulačku distributora a časy porovnej.' };
+    if (settings.lookupStatus === 'manual') return { tone: 'warn', title: 'Kód uložený, ověření ručně', text: message || 'Automatické načtení časů se nepovedlo. Zkopíruj výsledek z oficiální kalkulačky níže a appka časy propíše do HDO.' };
     if (settings.lookupStatus === 'error') return { tone: 'danger', title: 'Dohledání se nepovedlo', text: message || 'Zkontroluj distributora, oblast a kód.' };
-    return { tone: '', title: 'HDO podle kódu', text: 'Vyber distributora, případně oblast, a zadej povel/kód z přijímače HDO. Dohledaná okna se rovnou přidají do HDO.' };
+    return { tone: '', title: 'HDO podle kódu', text: 'Vyber distributora a zadej povel/kód. Když distributor časy nevrátí přímo, vlož sem text z oficiální kalkulačky a appka ho převede do HDO.' };
   }
 
   function renderHdoCodeLookupPanel() {
@@ -1940,7 +1949,7 @@
         <form data-form="hdo-code-lookup" class="compact-form hdo-code-form">
           <div class="form-grid two">
             ${selectField('Distributor', 'hdoDistributor', HDO_DISTRIBUTOR_OPTIONS, settings.distributor)}
-            ${selectField(hdoAreaFieldLabel(settings.distributor), 'hdoArea', HDO_CEZ_AREA_OPTIONS, settings.area)}
+            ${selectField(hdoAreaFieldLabel(settings.distributor), 'hdoArea', hdoAreaOptions(settings.distributor), settings.area)}
             <div class="field">
               <label for="field-hdo-code">Povel / kód HDO</label>
               <input class="input" id="field-hdo-code" name="hdoCode" type="text" placeholder="181 / P64 / A1B6DP1" value="${escapeHtml(settings.code)}" autocomplete="off" autocapitalize="characters" spellcheck="false">
@@ -1955,6 +1964,16 @@
           <div class="form-actions hdo-lookup-actions">
             <button class="primary-btn" type="submit">Dohledat podle kódu</button>
             <button class="ghost-btn small-action-btn" type="button" data-action="hdo-open-official">Neznám kód</button>
+          </div>
+        </form>
+        <form data-form="hdo-paste-windows" class="compact-form hdo-paste-form">
+          <div class="field">
+            <label for="field-hdo-paste">Vložit časy z kalkulačky distributora</label>
+            <textarea class="input hdo-paste-input" id="field-hdo-paste" name="hdoText" rows="4" placeholder="Sem zkopíruj výsledek: např. Po–Pá 06:00–08:00, 13:00–15:00..."></textarea>
+            <small>Funguje pro text z ČEZ Distribuce, EG.D, PREdistribuce i ručně opsané časy. Časy se po vložení propíšou do HDO oken.</small>
+          </div>
+          <div class="form-actions hdo-paste-actions">
+            <button class="ghost-btn" type="submit">Převést vložené časy do HDO</button>
           </div>
         </form>
       </details>
@@ -2737,6 +2756,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_98', note: 'Hotovo: HDO import má jistý fallback pro všechny hlavní distributory v ČR, výsledek z kalkulačky lze vložit ručně a appka z něj převede časy do HDO oken. Kalendář nově převádí cloudové a Google události do Europe/Prague, aby časy neutíkaly přes UTC.' },
       { title: 'Domácnost+ v.0.1_97', note: 'Hotovo: HDO dohledání je připravené pro ČEZ Distribuci, EG.D, PREdistribuci i ruční fallback. Dohledaná časová okna se rovnou přidávají do HDO. U kalendářů přibylo odebrání zdroje včetně jeho událostí a spodní lišta má stabilnější pozici po startu.' },
       { title: 'Domácnost+ v.0.1_94', note: 'Hotovo: Google Calendar ukládá a čte serverové tokeny přes bezpečné RPC funkce do app_private, bez vystavení privátního schématu do API. Google login zůstává jen přihlášení.' },
       { title: 'Domácnost+ v.0.1_10', note: 'Hotovo: tabletový domácí dashboard a první cloudový základ.' },
@@ -6843,16 +6863,66 @@
 
 
 
-  function buildCalendarDateTime(date, time, fallbackTime = '00:00') {
-    const d = date || todayISO();
-    const t = time || fallbackTime;
-    return `${d}T${t}:00`;
+  function pad2(value) {
+    return String(value).padStart(2, '0');
   }
 
-  function splitCalendarDateTime(value) {
+  function lastSundayIso(year, monthIndex) {
+    const date = new Date(Date.UTC(year, monthIndex + 1, 0));
+    date.setUTCDate(date.getUTCDate() - date.getUTCDay());
+    return date.toISOString().slice(0, 10);
+  }
+
+  function pragueOffsetForLocalDateTime(date, time = '00:00') {
+    const cleanDate = String(date || todayISO()).slice(0, 10);
+    const cleanTime = String(time || '00:00').slice(0, 5);
+    const year = Number(cleanDate.slice(0, 4));
+    if (!Number.isFinite(year)) return '+01:00';
+    const dstStart = lastSundayIso(year, 2);
+    const dstEnd = lastSundayIso(year, 9);
+    if (cleanDate > dstStart && cleanDate < dstEnd) return '+02:00';
+    if (cleanDate === dstStart && cleanTime >= '02:00') return '+02:00';
+    if (cleanDate === dstEnd && cleanTime < '03:00') return '+02:00';
+    return '+01:00';
+  }
+
+  function buildCalendarDateTime(date, time, fallbackTime = '00:00') {
+    const d = String(date || todayISO()).slice(0, 10);
+    const t = String(time || fallbackTime || '00:00').slice(0, 5);
+    return `${d}T${t}:00${pragueOffsetForLocalDateTime(d, t)}`;
+  }
+
+  function zonedDateTimeParts(value, timeZone = APP_TIME_ZONE) {
+    const date = toSafeDate(value);
+    if (!date) return { date: '', time: '' };
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23'
+    }).formatToParts(date).reduce((acc, part) => {
+      if (part.type !== 'literal') acc[part.type] = part.value;
+      return acc;
+    }, {});
+    return {
+      date: `${parts.year}-${parts.month}-${parts.day}`,
+      time: `${parts.hour}:${parts.minute}`
+    };
+  }
+
+  function splitCalendarDateTime(value, options = {}) {
     if (!value) return { date: '', time: '' };
     const text = String(value);
-    return { date: text.slice(0, 10), time: text.length >= 16 ? text.slice(11, 16) : '' };
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return { date: text, time: '' };
+    const hasExplicitZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(text);
+    if (hasExplicitZone) {
+      const parts = zonedDateTimeParts(text, APP_TIME_ZONE);
+      return { date: parts.date, time: options.allDay ? '' : parts.time };
+    }
+    return { date: text.slice(0, 10), time: options.allDay ? '' : (text.length >= 16 ? text.slice(11, 16) : '') };
   }
 
   function normalizeCalendarType(value) {
@@ -7432,8 +7502,8 @@
     }
     const localOnly = state.calendar.filter((event) => !event.cloudId);
     const cloudItems = (data || []).map((item) => {
-      const start = splitCalendarDateTime(item.starts_at);
-      const end = splitCalendarDateTime(item.ends_at);
+      const start = splitCalendarDateTime(item.starts_at, { allDay: item.all_day });
+      const end = splitCalendarDateTime(item.ends_at, { allDay: item.all_day });
       return {
         id: state.calendar.find((event) => event.cloudId === item.id)?.id || `event-cloud-${item.id}`,
         cloudId: item.id,
@@ -7987,6 +8057,82 @@
     }
   }
 
+  function hdoDaysFromLookupTextLine(line = '') {
+    const raw = String(line || '').toLowerCase();
+    if (!raw.trim()) return daysModeToArray('all');
+    const normalized = raw
+      .replace(/pondělí|pondeli|po\.?/g, ' po ')
+      .replace(/úterý|utery|út\.?|ut\.?/g, ' ut ')
+      .replace(/středa|streda|st\.?/g, ' st ')
+      .replace(/čtvrtek|ctvrtek|čt\.?|ct\.?/g, ' ct ')
+      .replace(/pátek|patek|pá\.?|pa\.?/g, ' pa ')
+      .replace(/sobota|so\.?/g, ' so ')
+      .replace(/neděle|nedele|ne\.?/g, ' ne ');
+    if (/(po\s*[-–—]\s*pa|pracovní\s*dny|pracovni\s*dny|po\s*až\s*pa|po\s*az\s*pa)/.test(normalized)) return [1, 2, 3, 4, 5];
+    if (/(so\s*[-–—]\s*ne|víkend|vikend)/.test(normalized)) return [6, 0];
+    if (/(každý\s*den|kazdy\s*den|denně|denne|všechny\s*dny|vsechny\s*dny)/.test(normalized)) return daysModeToArray('all');
+    const map = { po: 1, ut: 2, st: 3, ct: 4, pa: 5, so: 6, ne: 0 };
+    const found = [];
+    Object.entries(map).forEach(([token, value]) => {
+      if (new RegExp(`(^|\\s)${token}(\\s|$)`).test(normalized)) found.push(value);
+    });
+    return found.length ? [...new Set(found)].sort((a, b) => a - b) : daysModeToArray('all');
+  }
+
+  function parseHdoWindowsFromText(text = '') {
+    const input = String(text || '').replace(/\r/g, '\n');
+    const lines = input.split(/\n|;/).map((line) => line.trim()).filter(Boolean);
+    const candidates = lines.length ? lines : [input];
+    const windows = [];
+    const addWindow = (line, startRaw, endRaw) => {
+      const start = normalizeHdoTimeInput(startRaw);
+      const end = normalizeHdoTimeInput(endRaw);
+      if (!start || !end) return;
+      const days = hdoDaysFromLookupTextLine(line);
+      const key = `${start}|${end}|${days.join(',')}`;
+      if (windows.some((item) => item._key === key)) return;
+      windows.push({
+        _key: key,
+        label: `HDO ${windows.length + 1}`,
+        startTime: start,
+        endTime: end,
+        days,
+        source: 'hdo_text_import'
+      });
+    };
+    const rangePattern = /(\d{1,2}\s*[:.]\s*\d{2})\s*(?:-|–|—|do|až|az)\s*(\d{1,2}\s*[:.]\s*\d{2})/gi;
+    candidates.forEach((line) => {
+      let match;
+      while ((match = rangePattern.exec(line))) addWindow(line, match[1], match[2]);
+    });
+    if (!windows.length) {
+      const compact = input.replace(/\s+/g, ' ');
+      let match;
+      while ((match = rangePattern.exec(compact))) addWindow(compact, match[1], match[2]);
+    }
+    return windows.map(({ _key, ...item }) => item).slice(0, 24);
+  }
+
+  async function importHdoWindowsFromPastedText(data, form) {
+    const text = String(data.hdoText || '').trim();
+    if (!text) return showToast('Vlož text s časy z kalkulačky distributora');
+    const settings = normalizeHdoLookupSettings(state.hdoCloud || {});
+    const windows = parseHdoWindowsFromText(text);
+    if (!windows.length) return showToast('V textu jsem nenašel časová okna ve formátu 06:00–08:00');
+    const added = await addHdoWindowsFromLookup(windows, settings);
+    state.hdoCloud = {
+      ...(state.hdoCloud || {}),
+      lookupStatus: added ? 'ready' : 'manual',
+      lookupMessage: added ? `Z vloženého textu přidáno HDO oken: ${added}` : 'Časy už v HDO byly, nic nového jsem nepřidal.',
+      lookupUpdatedAt: new Date().toISOString()
+    };
+    touchState();
+    saveState();
+    form?.reset?.();
+    render();
+    showToast(added ? `HDO časy přidány: ${added}` : 'Časy už byly zadané');
+  }
+
   async function addHdoWindowsFromLookup(windows = [], settings = normalizeHdoLookupSettings()) {
     let added = 0;
     for (const row of windows) {
@@ -8036,7 +8182,7 @@
     const windows = Array.isArray(result?.windows) ? result.windows : [];
     const added = windows.length ? await addHdoWindowsFromLookup(windows, settings) : 0;
     const officialUrl = result?.officialUrl || hdoOfficialLookupUrl(settings.distributor);
-    const manualMessage = result?.message || result?.error || 'Kód je uložený. Automatické načtení časů zatím vyžaduje ověření přes oficiální kalkulačku distributora.';
+    const manualMessage = result?.message || result?.error || 'Kód je uložený. Distributor nevrátil časy přímo do aplikace, proto zkopíruj výsledek z oficiální kalkulačky do pole „Vložit časy z kalkulačky distributora“.';
 
     state.hdoCloud = {
       ...(state.hdoCloud || {}),
@@ -8051,7 +8197,7 @@
     saveState();
     form?.reset?.();
     render();
-    showToast(added ? `HDO časy přidány: ${added}` : 'Kód uložený, ověř časy přes oficiální kalkulačku');
+    showToast(added ? `HDO časy přidány: ${added}` : 'Kód uložený, vlož výsledek z kalkulačky do importu níže');
   }
 
   async function addHdoWindowFromForm(data, form) {
@@ -8504,6 +8650,7 @@
       'add-coupon': () => addItem('coupons', { store: data.store, code: data.code, discount: data.discount, expiry: data.expiry, note: data.note, used: false }),
       'add-hdo': () => addHdoWindowFromForm(data, form),
       'hdo-code-lookup': () => lookupHdoByCodeFromForm(data, form),
+      'hdo-paste-windows': () => importHdoWindowsFromPastedText(data, form),
       'add-waste': () => addWasteFromForm(data, form),
       'add-task': () => addTaskFromForm(data, form),
       'add-note': () => addItem('notes', { text: data.text, createdAt: new Date().toISOString() }),
@@ -9040,7 +9187,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 65, appBuild: 97, mode: 'rich-demo-v97', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 65, appBuild: 98, mode: 'rich-demo-v98', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -9181,7 +9328,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 65, appBuild: 97, mode: 'hdo-distributors-calendar-delete-nav-v97', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 65, appBuild: 98, mode: 'hdo-import-calendar-timezone-v98', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -11416,7 +11563,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 97
+        appBuild: 98
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -11998,7 +12145,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-97-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-98-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -12135,7 +12282,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_97</span>
+          <span class="badge">Domácnost+ v.0.1_98</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
