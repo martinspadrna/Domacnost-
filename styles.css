@@ -4259,7 +4259,7 @@ body.overview-open {
   grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
 }
 
-/* Domácnost+ v.0.1_95 – první globální iOS / liquid glass polish */
+/* Domácnost+ v.0.1_96 – první globální iOS / liquid glass polish */
 :root {
   --ios-glass: rgba(255, 255, 255, 0.46);
   --ios-glass-strong: rgba(255, 255, 255, 0.72);
@@ -4412,7 +4412,7 @@ textarea {
 }
 
 
-/* Domácnost+ v.0.1_95 – více zdrojů kalendáře */
+/* Domácnost+ v.0.1_96 – více zdrojů kalendáře */
 .calendar-source-list .item {
   gap: 8px;
 }
@@ -4438,7 +4438,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_95 – oprava variabilního Home panelu */
+/* Domácnost+ v.0.1_96 – oprava variabilního Home panelu */
 .home-clean-frame .footer-note,
 .dashboard-empty-home .footer-note {
   display: none !important;
@@ -4768,7 +4768,7 @@ textarea {
     border-radius: 14px;
   }
 }
-/* Domácnost+ v.0.1_95 – Google Calendar bezpečný konektor */
+/* Domácnost+ v.0.1_96 – Google Calendar bezpečný konektor */
 .google-calendar-connector {
   display: grid;
   gap: 14px;
@@ -4886,7 +4886,7 @@ textarea {
     width: 100%;
   }
 }
-/* Domácnost+ v.0.1_95 – stavové hlášky Google Calendar bez redirect smyčky */
+/* Domácnost+ v.0.1_96 – stavové hlášky Google Calendar bez redirect smyčky */
 .google-calendar-state-note {
   display: grid;
   gap: 4px;
@@ -4916,7 +4916,7 @@ textarea {
 }
 
 
-/* Domácnost+ v.0.1_95 – stabilní Home panel a chytřejší mini karty */
+/* Domácnost+ v.0.1_96 – stabilní Home panel a chytřejší mini karty */
 .home-minimal-hero {
   display: flex;
   min-height: 0;
@@ -5148,7 +5148,7 @@ textarea {
 }
 
 
-/* Domácnost+ v.0.1_95 – čas a počasí pod sebou při prázdném Home panelu + nastavení nahoře ve Více */
+/* Domácnost+ v.0.1_96 – čas a počasí pod sebou při prázdném Home panelu + nastavení nahoře ve Více */
 .home-hero-count-0 .station-hero-main {
   grid-template-rows: 1fr;
 }
@@ -5234,7 +5234,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_95 – pevně ukotvený spodní panel */
+/* Domácnost+ v.0.1_96 – pevně ukotvený spodní panel */
 :root {
   --nav-fixed-gap: max(8px, env(safe-area-inset-bottom, 0px));
 }
@@ -5268,7 +5268,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_95 – nižší spodní panel a oprava detailů z Home */
+/* Domácnost+ v.0.1_96 – nižší spodní panel a oprava detailů z Home */
 :root {
   --nav-fixed-gap: max(2px, calc(env(safe-area-inset-bottom, 0px) - 8px));
 }
@@ -5317,7 +5317,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_95 – spodní panel níž + bezpečné rychlé detaily z Home */
+/* Domácnost+ v.0.1_96 – spodní panel níž + bezpečné rychlé detaily z Home */
 :root {
   --nav-fixed-gap: max(-6px, calc(env(safe-area-inset-bottom, 0px) - 22px));
 }
@@ -5367,7 +5367,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_95 — Google přihlášení + kalendář */
+/* Domácnost+ v.0.1_96 — Google přihlášení + kalendář */
 .oauth-actions.single {
   grid-template-columns: 1fr;
 }
@@ -5399,7 +5399,7 @@ textarea {
   border-color: rgba(148, 163, 184, .24);
 }
 
-/* Domácnost+ v.0.1_95 – čistý login/registrace bez krokových bodů */
+/* Domácnost+ v.0.1_96 – čistý login/registrace bez krokových bodů */
 .compact-auth-card {
   max-width: 980px;
 }
@@ -5430,7 +5430,7 @@ textarea {
 }
 
 
-/* Domácnost+ v.0.1_95 – Google Calendar theme/glass kontrast */
+/* Domácnost+ v.0.1_96 – Google Calendar theme/glass kontrast */
 .google-calendar-connector,
 .google-calendar-picker,
 .google-calendar-option,
@@ -5505,7 +5505,7 @@ textarea {
   border-color: rgba(148,163,184,.18);
 }
 
-/* Domácnost+ v.0.1_95 – bezpečné zalamování uložených Google kalendářů */
+/* Domácnost+ v.0.1_96 – bezpečné zalamování uložených Google kalendářů */
 .calendar-source-list,
 .calendar-source-item,
 .google-calendar-connector,
@@ -5580,5 +5580,104 @@ textarea {
 
   .source-mini-stats {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Domácnost+ v.0.1_96 – variabilní Home panely + HDO kód */
+.home-minimal-hero .station-summary-item {
+  min-width: 0;
+}
+
+.station-summary-size-large {
+  align-items: start;
+}
+
+.station-summary-size-large .station-summary-copy {
+  align-content: start;
+}
+
+.station-summary-extra {
+  display: grid !important;
+  gap: 4px;
+  min-width: 0;
+  margin-top: 2px;
+}
+
+.station-summary-extra b {
+  display: block;
+  overflow: hidden;
+  min-width: 0;
+  padding: 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--ios-glass-edge, rgba(255,255,255,.48)) 58%, transparent);
+  border-radius: 12px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--ios-glass-strong, rgba(255,255,255,.72)) 42%, transparent);
+  font-size: .64rem;
+  font-weight: 820;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.station-summary-size-small .station-summary-extra {
+  display: none !important;
+}
+
+.station-summary-size-medium .station-summary-extra b:nth-child(n+3) {
+  display: none;
+}
+
+.station-summary-count-1 .station-summary-item {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+}
+
+.station-summary-count-1 .station-summary-copy small,
+.station-summary-count-1 .station-summary-copy span {
+  white-space: normal;
+}
+
+.hdo-code-details,
+.hdo-manual-details {
+  margin-top: 12px;
+}
+
+.hdo-code-form,
+.hdo-manual-form {
+  padding-top: 10px;
+}
+
+.hdo-official-field .full-width {
+  width: 100%;
+  min-height: 43px;
+}
+
+.hdo-code-note {
+  margin-top: 10px;
+}
+
+.hdo-code-note small,
+.hdo-code-note a {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.hdo-code-note a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+@media (max-width: 560px) {
+  .station-summary-extra b {
+    padding: 3px 6px;
+    font-size: .58rem;
+  }
+
+  .station-summary-size-medium .station-summary-extra {
+    display: none !important;
   }
 }
