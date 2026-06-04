@@ -1,4 +1,4 @@
-const CACHE_NAME = 'domacnost-plus-v0-1-100';
+const CACHE_NAME = 'domacnost-plus-v0-1-101';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -6,23 +6,23 @@ const APP_ASSETS = [
   './app.js',
   './sw.js',
   './manifest.webmanifest',
-  './favicon.ico',
-  './favicon-16.png',
-  './favicon-32.png',
-  './apple-touch-icon.png',
-  './apple-touch-icon-precomposed.png',
-  './assets/domacnost-plus-icon-16-v0-1-100.png',
-  './assets/domacnost-plus-icon-32-v0-1-100.png',
-  './assets/domacnost-plus-icon-120-v0-1-100.png',
-  './assets/domacnost-plus-icon-152-v0-1-100.png',
-  './assets/domacnost-plus-icon-167-v0-1-100.png',
-  './assets/domacnost-plus-icon-180-v0-1-100.png',
-  './assets/domacnost-plus-icon-192-v0-1-100.png',
-  './assets/domacnost-plus-icon-384-v0-1-100.png',
-  './assets/domacnost-plus-icon-512-v0-1-100.png',
-  './assets/domacnost-plus-icon-1024-v0-1-100.png',
-  './assets/domacnost-plus-maskable-192-v0-1-100.png',
-  './assets/domacnost-plus-maskable-512-v0-1-100.png'
+  './assets/icons/favicon.ico',
+  './assets/icons/favicon-16.png',
+  './assets/icons/favicon-32.png',
+  './assets/icons/apple-touch-icon.png',
+  './assets/icons/apple-touch-icon-precomposed.png',
+  './assets/icons/domacnost-plus-icon-16-v0-1-101.png',
+  './assets/icons/domacnost-plus-icon-32-v0-1-101.png',
+  './assets/icons/domacnost-plus-icon-120-v0-1-101.png',
+  './assets/icons/domacnost-plus-icon-152-v0-1-101.png',
+  './assets/icons/domacnost-plus-icon-167-v0-1-101.png',
+  './assets/icons/domacnost-plus-icon-180-v0-1-101.png',
+  './assets/icons/domacnost-plus-icon-192-v0-1-101.png',
+  './assets/icons/domacnost-plus-icon-384-v0-1-101.png',
+  './assets/icons/domacnost-plus-icon-512-v0-1-101.png',
+  './assets/icons/domacnost-plus-icon-1024-v0-1-101.png',
+  './assets/icons/domacnost-plus-maskable-192-v0-1-101.png',
+  './assets/icons/domacnost-plus-maskable-512-v0-1-101.png'
 ];
 
 const CORE_FALLBACKS = {

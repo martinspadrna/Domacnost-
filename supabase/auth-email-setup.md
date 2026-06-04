@@ -22,7 +22,7 @@ Supabase → Authentication → Email Templates → Confirm signup
 
 Šablona obsahuje logo aplikace z:
 
-`https://domacnost-plus.vercel.app/apple-touch-icon.png`
+`https://domacnost-plus.vercel.app/assets/icons/apple-touch-icon.png`
 
 ## 3) Kontrola
 

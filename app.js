@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_100';
+  const APP_VERSION = 'Domácnost+ v.0.1_101';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -125,7 +125,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-100.png';
+  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180-v0-1-101.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -159,8 +159,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 65,
-      appBuild: 100,
-      mode: 'calendar-home-flow-v100',
+      appBuild: 101,
+      mode: 'fuelio-holidays-home-v101',
       createdAt: '',
       updatedAt: ''
     },
@@ -528,6 +528,65 @@
     return localISODate(new Date(), APP_TIME_ZONE);
   }
 
+  function easterSundayDate(year) {
+    const y = Number(year);
+    if (!Number.isInteger(y) || y < 1900 || y > 2200) return null;
+    const a = y % 19;
+    const b = Math.floor(y / 100);
+    const c = y % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31);
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(Date.UTC(y, month - 1, day));
+  }
+
+  function addDaysIso(isoDate, days) {
+    const [year, month, day] = String(isoDate || '').slice(0, 10).split('-').map(Number);
+    if (!year || !month || !day) return '';
+    const date = new Date(Date.UTC(year, month - 1, day));
+    date.setUTCDate(date.getUTCDate() + Number(days || 0));
+    return date.toISOString().slice(0, 10);
+  }
+
+  function czechPublicHolidayName(isoDate) {
+    const value = String(isoDate || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
+    const fixed = {
+      '01-01': 'Nový rok / Den obnovy samostatného českého státu',
+      '05-01': 'Svátek práce',
+      '05-08': 'Den vítězství',
+      '07-05': 'Cyril a Metoděj',
+      '07-06': 'Jan Hus',
+      '09-28': 'Den české státnosti',
+      '10-28': 'Den vzniku samostatného československého státu',
+      '11-17': 'Den boje za svobodu a demokracii',
+      '12-24': 'Štědrý den',
+      '12-25': '1. svátek vánoční',
+      '12-26': '2. svátek vánoční'
+    };
+    const fixedName = fixed[value.slice(5)];
+    if (fixedName) return fixedName;
+    const year = Number(value.slice(0, 4));
+    const easter = easterSundayDate(year);
+    if (!easter) return '';
+    const easterIso = easter.toISOString().slice(0, 10);
+    if (value === addDaysIso(easterIso, -2)) return 'Velký pátek';
+    if (value === addDaysIso(easterIso, 1)) return 'Velikonoční pondělí';
+    return '';
+  }
+
+  function isCzechPublicHolidayDate(date) {
+    return Boolean(czechPublicHolidayName(localISODate(date, APP_TIME_ZONE)));
+  }
+
   function dateOffsetISO(days) {
     const date = new Date();
     date.setDate(date.getDate() + Number(days || 0));
@@ -630,8 +689,8 @@
 
     migrated.meta = {
       schemaVersion: 65,
-      appBuild: 100,
-      mode: 'calendar-home-flow-v100',
+      appBuild: 101,
+      mode: 'fuelio-holidays-home-v101',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1829,15 +1888,14 @@
       const events = (ctx.calendarPanelEvents || ctx.upcomingEvents || []);
       const running = events.find((event) => calendarEventIsRunning(event, now));
       const next = running || events[0];
-      const todayCount = events.filter((event) => event.date === todayISO()).length;
       return {
         ...base,
-        metric: running ? 'Teď běží' : todayCount ? `${todayCount} dnes` : events.length ? `${events.length} brzy` : 'Volno',
+        metric: running ? 'Teď běží' : next ? 'Další' : 'Volno',
         text: next ? firstTitle(next, 'Událost') : 'Žádná nadcházející událost',
         detail: next ? calendarEventTimeLabel(next, now) : 'Kliknutím otevřeš kalendář',
-        chips: events.slice(0, density === 'large' ? 4 : 2).map((event) => calendarEventTimeLabel(event, now)).filter(Boolean) || [],
-        extraRows: detailRows(events, (event) => `${calendarEventTimeLabel(event, now)} · ${firstTitle(event, 'Událost')}`),
-        tone: running || todayCount ? 'good' : 'neutral'
+        chips: [],
+        extraRows: [],
+        tone: running || next ? 'good' : 'neutral'
       };
     }
     if (id === 'packages') {
@@ -1899,7 +1957,7 @@
     const minuteNow = safeDate.getHours() * 60 + safeDate.getMinutes();
     const extraLimit = options.density === 'large' ? 5 : options.density === 'medium' ? 2 : 0;
     const allEnabled = getSafeHdoWindows().filter((entry) => entry.enabled && timeToMinutes(entry.start) !== null && timeToMinutes(entry.end) !== null);
-    const enabledToday = allEnabled.filter((entry) => entry.days.includes(safeDate.getDay()));
+    const enabledToday = allEnabled.filter((entry) => hdoWindowMatchesDate(entry, safeDate));
     const enabled = enabledToday.length ? enabledToday : allEnabled;
     const extraRows = extraLimit ? enabled.slice().sort((a, b) => String(a.start || '').localeCompare(String(b.start || ''))).slice(0, extraLimit).map((entry) => `${hdoWindowTimeLabel(entry)} · ${entry.label || 'Nízký tarif'}`) : [];
     const active = enabledToday.find((entry) => isTimeInWindow(minuteNow, entry.start, entry.end));
@@ -2394,7 +2452,7 @@
         icon: '📅',
         title: firstEvent ? firstEvent.title : 'Kalendář je volný',
         meta: firstEvent ? calendarEventMetaLabel(firstEvent, now) : 'Žádná událost na dnešek ani nejbližší dny.',
-        badge: firstEvent && calendarEventIsRunning(firstEvent, now) ? 'běží' : todayEvents.length ? `${todayEvents.length} dnes` : 'volno',
+        badge: firstEvent && calendarEventIsRunning(firstEvent, now) ? 'běží' : firstEvent ? 'další' : 'volno',
         tone: todayEvents.length ? 'good' : ''
       },
       {
@@ -2707,6 +2765,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_101', note: 'Hotovo: uklizené ikony do assets/icons, Home panel Kalendář ukazuje jen jednu aktuální nebo nejbližší událost, HDO víkend platí i pro české svátky a Fuelio import je tolerantnější na CSV exporty.' },
       { title: 'Domácnost+ v.0.1_100', note: 'Hotovo: Home panel Kalendář ukazuje jen probíhající a nadcházející události. Skončené události z hlavní plochy mizí, probíhající ukazují čas konce.' },
       { title: 'Domácnost+ v.0.1_99', note: 'Hotovo: automatické HDO podle distributora/kódu/importu bylo odstraněné. HDO se zadává jen ručně, zůstává rychlé číselné zadávání časů a cloudové uložení ručních oken.' },
       { title: 'Domácnost+ v.0.1_98', note: 'Hotovo: HDO import měl fallback pro hlavní distributory v ČR a kalendář převáděl cloudové a Google události do Europe/Prague.' },
@@ -5252,6 +5311,16 @@
     return new Intl.DateTimeFormat('cs-CZ', { weekday: 'short', day: 'numeric', month: 'numeric' }).format(date);
   }
 
+  function hdoWindowMatchesDate(item, date) {
+    const safeDate = toSafeDate(date, new Date());
+    if (!safeDate || !Number.isFinite(safeDate.getTime())) return false;
+    const days = sanitizeHdoDays(item?.days);
+    if (days.includes(safeDate.getDay())) return true;
+    const isHoliday = isCzechPublicHolidayDate(safeDate);
+    const hasWeekend = days.includes(0) || days.includes(6);
+    return isHoliday && hasWeekend;
+  }
+
   function getHdoStatus(date) {
     const safeDate = toSafeDate(date, new Date());
     if (!safeDate || !Number.isFinite(safeDate.getTime())) {
@@ -5259,7 +5328,7 @@
     }
     const day = safeDate.getDay();
     const minutesNow = safeDate.getHours() * 60 + safeDate.getMinutes();
-    const enabled = getSafeHdoWindows().filter((item) => item.enabled && item.days.includes(day) && timeToMinutes(item.start) !== null && timeToMinutes(item.end) !== null);
+    const enabled = getSafeHdoWindows().filter((item) => item.enabled && hdoWindowMatchesDate(item, safeDate) && timeToMinutes(item.start) !== null && timeToMinutes(item.end) !== null);
     const active = enabled.find((item) => isTimeInWindow(minutesNow, item.start, item.end));
     if (active) {
       return {
@@ -5338,8 +5407,7 @@
       for (let offset = 0; offset <= 7; offset += 1) {
         const candidate = new Date(base);
         candidate.setDate(base.getDate() + offset);
-        const day = candidate.getDay();
-        if (!item.days.includes(day)) continue;
+        if (!hdoWindowMatchesDate(item, candidate)) continue;
         candidate.setHours(Math.floor(startMinutes / 60), startMinutes % 60, 0, 0);
         const diffMinutes = Math.round((candidate.getTime() - base.getTime()) / 60000);
         if (Number.isFinite(diffMinutes) && diffMinutes > 0) candidates.push({ item, diffMinutes });
@@ -5366,9 +5434,10 @@
     const normalized = safeDays.join(',');
     if (normalized === '0,1,2,3,4,5,6') return 'každý den';
     if (normalized === '1,2,3,4,5') return 'po–pá';
-    if (normalized === '0,6') return 'víkend';
+    if (normalized === '0,6') return 'víkend + svátky';
     const names = ['ne', 'po', 'út', 'st', 'čt', 'pá', 'so'];
-    return safeDays.map((day) => names[day] || '?').join(', ');
+    const base = safeDays.map((day) => names[day] || '?').join(', ');
+    return safeDays.includes(0) || safeDays.includes(6) ? `${base} + svátky` : base;
   }
 
   function frequencyLabel(value) {
@@ -5753,9 +5822,22 @@
       .trim();
   }
 
-  function parseCsv(text) {
-    const firstLine = String(text || '').split(/\r?\n/).find((line) => line.trim()) || '';
-    const delimiter = (firstLine.match(/;/g) || []).length >= (firstLine.match(/,/g) || []).length ? ';' : ',';
+  function detectCsvDelimiter(line) {
+    const candidates = [';', ',', '\t'];
+    let best = ';';
+    let bestCount = -1;
+    candidates.forEach((candidate) => {
+      const delimiter = candidate === '\t' ? '\t' : candidate;
+      const count = (String(line || '').match(new RegExp(delimiter === '\t' ? '\\t' : `\\${delimiter}`, 'g')) || []).length;
+      if (count > bestCount) {
+        best = candidate;
+        bestCount = count;
+      }
+    });
+    return best === '\t' ? '\t' : best;
+  }
+
+  function splitCsvRows(text, delimiter) {
     const rows = [];
     let row = [];
     let cell = '';
@@ -5786,8 +5868,30 @@
     }
     row.push(cell);
     if (row.some((value) => String(value).trim() !== '')) rows.push(row);
-    const headers = (rows.shift() || []).map((header) => normalizeKey(header));
-    return rows.map((values) => Object.fromEntries(headers.map((header, index) => [header || `col ${index}`, normalizeText(values[index])])));
+    return rows;
+  }
+
+  function parseCsv(text) {
+    const raw = String(text || '').replace(/^\uFEFF/, '').replace(/^sep=(.)\s*\r?\n/i, '');
+    const firstLine = raw.split(/\r?\n/).find((line) => line.trim() && !/^sep=/i.test(line.trim())) || '';
+    const delimiter = detectCsvDelimiter(firstLine);
+    const rows = splitCsvRows(raw, delimiter);
+    if (!rows.length) return [];
+    const headerScore = (cells) => cells.map(normalizeKey).reduce((score, header) => {
+      if (/date|datum|time|cas|odometer|tachometer|mileage|km|volume|lit|fuel|palivo|cost|price|cena|vehicle|vozidlo|service|servis|expense|naklad/.test(header)) return score + 1;
+      return score;
+    }, 0);
+    let headerIndex = 0;
+    let bestScore = -1;
+    rows.slice(0, 12).forEach((cells, index) => {
+      const score = headerScore(cells);
+      if (score > bestScore) {
+        bestScore = score;
+        headerIndex = index;
+      }
+    });
+    const headers = (rows[headerIndex] || []).map((header, index) => normalizeKey(header) || `col ${index}`);
+    return rows.slice(headerIndex + 1).map((values) => Object.fromEntries(headers.map((header, index) => [header, normalizeText(values[index])])));
   }
 
   function getRowValue(row, keys) {
@@ -5795,17 +5899,16 @@
     for (const key of normalizedKeys) {
       if (row[key] !== undefined && row[key] !== '') return row[key];
     }
-    const found = Object.keys(row).find((rowKey) => normalizedKeys.some((key) => rowKey.includes(key)));
+    const found = Object.keys(row).find((rowKey) => normalizedKeys.some((key) => rowKey === key || rowKey.includes(key) || key.includes(rowKey)));
     return found ? row[found] : '';
   }
 
   function parseCzNumber(value) {
     if (value === undefined || value === null || value === '') return '';
-    const clean = String(value)
-      .replace(/\s/g, '')
-      .replace(/Kč|CZK|EUR|€/gi, '')
-      .replace(',', '.')
-      .replace(/[^0-9.\-]/g, '');
+    let clean = String(value).trim().replace(/\s/g, '').replace(/Kč|CZK|EUR|€/gi, '');
+    if (clean.includes(',') && clean.includes('.')) clean = clean.replace(/\./g, '').replace(',', '.');
+    else clean = clean.replace(',', '.');
+    clean = clean.replace(/[^0-9.\-]/g, '');
     const number = Number(clean);
     return Number.isFinite(number) ? number : '';
   }
@@ -5820,25 +5923,35 @@
       const year = cz[3].length === 2 ? `20${cz[3]}` : cz[3];
       return `${year}-${cz[2].padStart(2, '0')}-${cz[1].padStart(2, '0')}`;
     }
+    const us = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (us) {
+      const year = us[3].length === 2 ? `20${us[3]}` : us[3];
+      return `${year}-${us[1].padStart(2, '0')}-${us[2].padStart(2, '0')}`;
+    }
     const parsed = new Date(text);
     return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
   }
 
   function mapFuelioRows(text) {
     const rows = parseCsv(text);
-    return rows.map((row, index) => {
-      const date = parseFuelioDate(getRowValue(row, ['date', 'datum', 'time', 'timestamp']));
-      const odometer = parseCzNumber(getRowValue(row, ['odometer', 'tachometer', 'mileage', 'kilometers', 'kilometres', 'km', 'stav tachometru']));
-      const liters = parseCzNumber(getRowValue(row, ['liters', 'litres', 'volume', 'fuel volume', 'quantity', 'mnozstvi', 'palivo']));
-      const price = parseCzNumber(getRowValue(row, ['total cost', 'total price', 'amount', 'cost', 'price', 'cena', 'castka', 'celkem']));
-      const vehicleName = normalizeText(getRowValue(row, ['vehicle', 'car', 'auto', 'vozidlo', 'vehicle name']));
-      const category = normalizeText(getRowValue(row, ['category', 'type', 'kategorie', 'typ', 'expense type']));
-      const note = normalizeText(getRowValue(row, ['note', 'notes', 'poznamka', 'description', 'comment']));
-      const station = normalizeText(getRowValue(row, ['station', 'gas station', 'cerpaci stanice', 'place', 'location']));
-      const title = category || note || station || 'Záznam z Fuelio';
-      const kind = liters && odometer ? 'fuel' : price && (category || note || station) ? 'service' : 'ignored';
+    const mapped = rows.map((row, index) => {
+      const rowType = normalizeText(getRowValue(row, ['record type', 'entry type', 'type', 'category', 'kategorie', 'typ', 'zaznam', 'druh'])).toLowerCase();
+      const date = parseFuelioDate(getRowValue(row, ['date', 'datum', 'datetime', 'date time', 'time', 'timestamp', 'created at']));
+      const odometer = parseCzNumber(getRowValue(row, ['odometer', 'tachometer', 'mileage', 'kilometers', 'kilometres', 'stav tachometru', 'km stav', 'km', 'odo']));
+      const liters = parseCzNumber(getRowValue(row, ['liters', 'litres', 'liter', 'litr', 'litru', 'volume', 'fuel volume', 'quantity', 'amount fuel', 'mnozstvi', 'natankovano', 'palivo objem']));
+      const unitPrice = parseCzNumber(getRowValue(row, ['unit price', 'price per unit', 'price liter', 'price per litre', 'price per liter', 'cena za litr', 'cena l']));
+      const explicitTotal = parseCzNumber(getRowValue(row, ['total cost', 'total price', 'total', 'amount', 'cost', 'expense', 'cena celkem', 'celkova cena', 'celkem', 'castka', 'naklad']));
+      const price = explicitTotal || (liters && unitPrice ? Number((liters * unitPrice).toFixed(2)) : '');
+      const vehicleName = normalizeText(getRowValue(row, ['vehicle', 'vehicle name', 'car', 'auto', 'vozidlo', 'car name']));
+      const category = normalizeText(getRowValue(row, ['category', 'type', 'kategorie', 'typ', 'expense type', 'service type', 'tag', 'tags']));
+      const note = normalizeText(getRowValue(row, ['note', 'notes', 'poznamka', 'description', 'comment', 'memo']));
+      const station = normalizeText(getRowValue(row, ['station', 'gas station', 'fuel station', 'cerpaci stanice', 'place', 'location', 'misto']));
+      const title = category || note || station || (rowType.includes('fuel') || liters ? 'Tankování z Fuelio' : 'Záznam z Fuelio');
+      const isServiceLike = /service|servis|expense|naklad|maintenance|oprava|pneu|insurance|pojist/.test(rowType + ' ' + category + ' ' + note);
+      const kind = liters ? 'fuel' : price && isServiceLike ? 'service' : price && !liters ? 'service' : 'ignored';
       return { index, kind, date, odometer, liters, price, vehicleName, title, note: [station, note].filter(Boolean).join(' · ') };
     }).filter((row) => row.kind !== 'ignored' && row.date);
+    return mapped;
   }
 
   async function previewFuelioImport(form) {
@@ -8925,7 +9038,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 65, appBuild: 100, mode: 'rich-demo-v100', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 65, appBuild: 101, mode: 'rich-demo-v101', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -9066,7 +9179,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 65, appBuild: 100, mode: 'calendar-home-flow-v100', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 65, appBuild: 101, mode: 'fuelio-holidays-home-v101', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -10706,8 +10819,8 @@
     addDiagnostic(checks, 'Apple touch odkazy', appleLinks.length >= 2 ? 'ok' : 'warn', `${appleLinks.length} odkazů v HTML`);
     const apple180 = appleLinks.find((link) => link.getAttribute('sizes') === '180x180') || appleLinks[0];
     if (apple180) await verifyIcon(checks, 'Apple touch ikona', new URL(apple180.getAttribute('href'), location.href).href, 120);
-    await verifyIcon(checks, 'Root apple-touch-icon.png', new URL('./apple-touch-icon.png', location.href).href, 120);
-    await verifyIcon(checks, 'Root favicon.ico', new URL('./favicon.ico', location.href).href, 16);
+    await verifyIcon(checks, 'Apple touch ikona v assets/icons', new URL('./assets/icons/apple-touch-icon.png', location.href).href, 120);
+    await verifyIcon(checks, 'Favicon v assets/icons', new URL('./assets/icons/favicon.ico', location.href).href, 16);
 
     state.pwa = {
       ...(state.pwa || {}),
@@ -11295,7 +11408,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 100
+        appBuild: 101
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -11877,7 +11990,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-100-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-101-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -12014,7 +12127,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_100</span>
+          <span class="badge">Domácnost+ v.0.1_101</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
