@@ -6260,3 +6260,90 @@ textarea {
     display: none;
   }
 }
+
+/* Domácnost+ v.0.1_107 – Home: vyšší čas/počasí bez zvětšení celé karty + rychlé akce Garáže */
+.home-hero-count-1 .station-hero-main,
+.home-hero-count-2 .station-hero-main,
+.home-hero-count-3 .station-hero-main,
+.home-hero-count-4 .station-hero-main {
+  grid-template-rows: minmax(122px, .86fr) minmax(0, 1.04fr);
+}
+
+.home-hero-count-1 .hero-clock-button,
+.home-hero-count-1 .hero-weather-pill,
+.home-hero-count-2 .hero-clock-button,
+.home-hero-count-2 .hero-weather-pill,
+.home-hero-count-3 .hero-clock-button,
+.home-hero-count-3 .hero-weather-pill,
+.home-hero-count-4 .hero-clock-button,
+.home-hero-count-4 .hero-weather-pill {
+  min-height: 116px;
+  padding-block: 16px;
+}
+
+.vehicle-detail-head {
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.vehicle-detail-head-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.icon-action-btn {
+  min-width: 42px;
+  min-height: 38px;
+  padding-inline: 10px;
+  white-space: nowrap;
+}
+
+.vehicle-quick-actions {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.fuel-cost-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 560px) {
+  .home-hero-count-1 .station-hero-main,
+  .home-hero-count-2 .station-hero-main,
+  .home-hero-count-3 .station-hero-main,
+  .home-hero-count-4 .station-hero-main {
+    grid-template-rows: minmax(106px, .82fr) minmax(0, 1.08fr);
+  }
+
+  .home-hero-count-1 .hero-clock-button,
+  .home-hero-count-1 .hero-weather-pill,
+  .home-hero-count-2 .hero-clock-button,
+  .home-hero-count-2 .hero-weather-pill,
+  .home-hero-count-3 .hero-clock-button,
+  .home-hero-count-3 .hero-weather-pill,
+  .home-hero-count-4 .hero-clock-button,
+  .home-hero-count-4 .hero-weather-pill {
+    min-height: 102px;
+    padding-block: 14px;
+  }
+
+  .vehicle-detail-head-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .vehicle-detail-head-actions .badge {
+    margin-left: auto;
+  }
+
+  .fuel-cost-row {
+    gap: 8px;
+  }
+}

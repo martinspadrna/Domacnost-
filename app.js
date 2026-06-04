@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_106';
+  const APP_VERSION = 'Domácnost+ v.0.1_107';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -125,7 +125,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180-v0-1-106.png';
+  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180-v0-1-107.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -174,9 +174,9 @@
   const WEATHER_CHMI_FUNCTION = 'weather-chmi-forecast';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 67,
-      appBuild: 106,
-      mode: 'calendar-month-grid-v106',
+      schemaVersion: 68,
+      appBuild: 107,
+      mode: 'home-garage-fuel-v107',
       createdAt: '',
       updatedAt: ''
     },
@@ -717,9 +717,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 67,
-      appBuild: 106,
-      mode: 'calendar-month-grid-v106',
+      schemaVersion: 68,
+      appBuild: 107,
+      mode: 'home-garage-fuel-v107',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1942,7 +1942,7 @@
       const next = running || events[0];
       return {
         ...base,
-        metric: running ? 'Teď běží' : next ? shortDateText(next.date) : 'Volno',
+        metric: running ? 'Nyní' : next ? 'Další' : 'Volno',
         text: next ? firstTitle(next, 'Událost') : 'Žádná nadcházející událost',
         detail: next ? calendarEventTimeLabel(next, now) : 'Kliknutím otevřeš kalendář',
         chips: [],
@@ -1987,7 +1987,7 @@
     if (id === 'garage') {
       const alert = (ctx.vehicleAlerts || [])[0];
       const vehicleCount = state.vehicles.length;
-      return { ...base, metric: vehicleCount, text: garageCountLabel(vehicleCount), detail: alert ? `${firstTitle(alert, 'Upozornění')} · ${alert.meta || 'zkontroluj detail auta'}` : (vehicleCount ? 'Garáž bez akutního varování' : 'Přidej první auto'), tone: alert ? 'warn' : vehicleCount ? 'good' : 'neutral' };
+      return { ...base, metric: vehicleCount, text: garageCountLabel(vehicleCount), detail: alert ? `${firstTitle(alert, 'Upozornění')} · ${alert.meta || 'zkontroluj detail auta'}` : (vehicleCount ? '' : 'Přidej první auto'), tone: alert ? 'warn' : vehicleCount ? 'good' : 'neutral' };
     }
     if (id === 'contracts') {
       const urgent = (ctx.urgentContracts || [])[0];
@@ -2012,7 +2012,7 @@
     const allEnabled = getSafeHdoWindows().filter((entry) => entry.enabled && timeToMinutes(entry.start) !== null && timeToMinutes(entry.end) !== null);
     const enabledToday = allEnabled.filter((entry) => hdoWindowMatchesDate(entry, safeDate));
     const enabled = enabledToday.length ? enabledToday : allEnabled;
-    const extraRows = extraLimit ? sortHdoWindowsForOverview(enabled).slice(0, extraLimit).map((entry) => `${hdoWindowTimeLabel(entry)} · ${entry.label || 'Nízký tarif'}`) : [];
+    const extraRows = extraLimit ? sortHdoWindowsForOverview(enabled).slice(0, extraLimit).map((entry) => hdoWindowTimeLabel(entry)) : [];
     const active = enabledToday.find((entry) => isTimeInWindow(minuteNow, entry.start, entry.end));
     if (active) {
       const endMinutes = timeToMinutes(active.end);
@@ -2021,8 +2021,8 @@
       return {
         metric: 'Běží',
         text: `do ${active.end}`,
-        detail: `${active.label || 'Nízký tarif'} · ještě ${humanDuration(diff)}`,
-        chips: [hdoWindowTimeLabel(active), daysLabel(active.days)],
+        detail: `ještě ${humanDuration(diff)}`,
+        chips: [daysLabel(active.days)],
         extraRows,
         tone: 'good'
       };
@@ -2031,8 +2031,8 @@
     if (next) {
       return {
         metric: `za ${humanDuration(next.diffMinutes)}`,
-        text: next.item.label || 'Nízký tarif',
-        detail: hdoWindowTimeLabel(next.item),
+        text: hdoWindowTimeLabel(next.item),
+        detail: '',
         chips: [daysLabel(next.item.days)],
         extraRows,
         tone: 'warn'
@@ -2823,6 +2823,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_107', note: 'Hotovo: Home má vyšší část čas/počasí bez zvětšení celé karty, Kalendář na Home vrací stav Nyní/Další, HDO a Garáž mají čistší texty a Garáž má rychlé akce + chytrý dopočet tankování.' },
       { title: 'Domácnost+ v.0.1_106', note: 'Hotovo: přehled Kalendáře je nově skutečný měsíční kalendář s týdny v řádcích, dny ve sloupcích a tlačítky předchozí měsíc / dnes / další měsíc.' },
       { title: 'Domácnost+ v.0.1_105', note: 'Hotovo: oprava kliknutí na auto z rychlého přehledu Garáže a nový modul Záruky v Domácnosti se základní dvouletou zárukou, možností prodloužení a poznámkami k reklamaci.' },
       { title: 'Domácnost+ v.0.1_104', note: 'Hotovo: vyšší panel času a počasí na Home, Kalendář bez popisku „Další“, HDO bez duplicitního „sepne v…“ a Garáž má klikací auta z rychlého přehledu plus volbu barvy ikonky auta.' },
@@ -4050,7 +4051,12 @@
           <span class="badge ${stk.className}">STK: ${escapeHtml(stk.shortText)}</span>
           <span class="badge ${insurance.className}">pojistka: ${escapeHtml(insurance.shortText)}</span>
         </div>
-        <div class="item-actions"><button class="ghost-btn" type="button" data-action="select-vehicle" data-id="${vehicle.id}">Detail</button><button class="danger-btn" type="button" data-action="delete-vehicle" data-id="${vehicle.id}">Smazat</button></div>
+        <div class="item-actions vehicle-quick-actions">
+          <button class="ghost-btn" type="button" data-action="select-vehicle" data-id="${vehicle.id}">Detail</button>
+          <button class="ghost-btn icon-action-btn" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="vehicle-settings" title="Nastavení auta" aria-label="Nastavení auta ${escapeHtml(vehicle.name)}">⚙️</button>
+          <button class="primary-btn icon-action-btn" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name)}">⛽+</button>
+          <button class="danger-btn" type="button" data-action="delete-vehicle" data-id="${vehicle.id}">Smazat</button>
+        </div>
       </div>
     `;
   }
@@ -4215,7 +4221,7 @@
           <div class="item-title">${formatDate(item.date)}</div>
           <span class="badge ${item.cloudId ? 'good' : ''}">${item.cloudId ? 'cloud' : 'lokálně'} · ${escapeHtml(item.odometer || '—')} km</span>
         </div>
-        <div class="item-meta">${escapeHtml(item.liters || 0)} l · ${formatCurrency(item.price)}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div>
+        <div class="item-meta">${escapeHtml(item.liters || 0)} l · ${formatCurrency(item.price)}${fuelPricePerLiter(item) ? ` · ${escapeHtml(formatFuelPricePerLiter(fuelPricePerLiter(item)))}` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div>
         ${isEditing ? renderGarageRecordEditForm('fuel', item) : ''}
         <div class="item-actions">
           <button class="ghost-btn" type="button" data-action="edit-garage-record" data-collection="fuel" data-id="${item.id}">${isEditing ? 'Zavřít úpravu' : 'Upravit'}</button>
@@ -4250,8 +4256,11 @@
           <div class="form-grid two">
             ${field('Datum', 'date', 'date', '', true, item.date || todayISO())}
             ${field('Stav km', 'odometer', 'number', 'např. 125000', true, item.odometer || '')}
-            ${field('Litry', 'liters', 'number', 'např. 42,5', false, item.liters || '')}
-            ${field('Cena celkem', 'price', 'number', 'např. 1600', false, item.price || '')}
+            <div class="fuel-cost-row">
+              ${fuelNumberField('Litry', 'liters', 'např. 42,5', item.liters || '')}
+              ${fuelNumberField('Cena za litr', 'pricePerLiter', 'např. 38,90', item.pricePerLiter || fuelPricePerLiter(item))}
+            </div>
+            ${fuelNumberField('Cena celkem', 'price', 'např. 1600', item.price || '')}
             ${field('Poznámka', 'note', 'text', 'volitelné', false, item.note || '')}
           </div>
           <div class="form-actions"><button class="primary-btn" type="submit">Uložit tankování</button><button class="ghost-btn" type="button" data-action="cancel-garage-edit">Zrušit</button></div>
@@ -4284,9 +4293,14 @@
     const totalCost = stats.fuelCost + stats.serviceCost;
     const costPerKm = stats.totalKm > 0 ? totalCost / stats.totalKm : null;
     return `
-      <div class="card-header compact-detail-head">
+      <div class="card-header compact-detail-head vehicle-detail-head">
         <div class="vehicle-detail-title"><span class="vehicle-icon-bubble vehicle-icon-bubble-large ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span><div><h2>${escapeHtml(vehicle.name)}</h2><p>${escapeHtml(vehicle.plate || 'Bez SPZ')} · ${escapeHtml(vehicle.fuelType || 'palivo neuvedeno')}</p></div></div>
-        <span class="badge ${vehicle.cloudId ? 'good' : ''}">${vehicle.cloudId ? 'cloud' : 'lokálně'} · ${escapeHtml(vehicle.odometer || latestFuel?.odometer || 0)} km</span>
+        <div class="vehicle-detail-head-actions">
+          <button class="ghost-btn icon-action-btn" type="button" data-action="open-garage-detail" data-garage-target="vehicle-settings" title="Nastavení auta" aria-label="Nastavení auta">⚙️</button>
+          <button class="primary-btn icon-action-btn" type="button" data-action="open-garage-detail" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování">⛽+</button>
+          <button class="ghost-btn icon-action-btn" type="button" data-action="open-garage-detail" data-garage-target="add-service" title="Přidat servis / náklad" aria-label="Přidat servis nebo náklad">🧾+</button>
+          <span class="badge ${vehicle.cloudId ? 'good' : ''}">${vehicle.cloudId ? 'cloud' : 'lokálně'} · ${escapeHtml(vehicle.odometer || latestFuel?.odometer || 0)} km</span>
+        </div>
       </div>
       <div class="kpi-row compact">
         <div class="kpi"><strong>${stats.averageConsumption ? `${stats.averageConsumption.toFixed(2).replace('.', ',')}` : '—'}</strong><span>l/100 km</span></div>
@@ -4309,7 +4323,7 @@
         <div class="compact-chart-box">${renderMiniChart(fuelRows)}</div>
       </div>
       ${renderGarageHistory(vehicle, fuelRows, serviceRows)}
-      <details class="action-details compact-edit-details">
+      <details class="action-details compact-edit-details" data-garage-detail="vehicle-settings">
         <summary><span>Upravit údaje auta</span><em>termíny, km, servisní intervaly</em></summary>
         <form data-form="update-vehicle" data-vehicle-id="${vehicle.id}" class="compact-form">
           <div class="form-grid two">
@@ -4327,20 +4341,23 @@
           <div class="form-actions"><button class="ghost-btn" type="submit">Uložit údaje auta</button><button class="ghost-btn" type="button" data-action="cloud-sync-vehicle" data-id="${vehicle.id}">Odeslat auto do cloudu</button></div>
         </form>
       </details>
-      <details class="action-details compact-edit-details">
+      <details class="action-details compact-edit-details" data-garage-detail="add-records">
         <summary><span>Přidat tankování / servis</span><em>formuláře jsou schované, ať je detail krátký</em></summary>
         <div class="grid two compact-add-records">
-          <form data-form="add-fuel" data-vehicle-id="${vehicle.id}" class="compact-form">
-            <div class="card-header small"><div><h3>Tankování</h3><p>Nový záznam spotřeby.</p></div></div>
+          <form data-form="add-fuel" data-vehicle-id="${vehicle.id}" class="compact-form" data-garage-detail="add-fuel">
+            <div class="card-header small"><div><h3>Tankování</h3><p>Stačí vyplnit 2 ze 3: litry, cena za litr, cena celkem.</p></div></div>
             <div class="form-grid">
               ${field('Datum tankování', 'date', 'date', '', true, todayISO())}
               ${field('Stav km', 'odometer', 'number', 'např. 125000', true)}
-              ${field('Litry', 'liters', 'number', 'např. 42,5')}
-              ${field('Cena celkem', 'price', 'number', 'např. 1600')}
+              <div class="fuel-cost-row">
+                ${fuelNumberField('Litry', 'liters', 'např. 42,5')}
+                ${fuelNumberField('Cena za litr', 'pricePerLiter', 'např. 38,90')}
+              </div>
+              ${fuelNumberField('Cena celkem', 'price', 'např. 1600')}
             </div>
             <div class="form-actions"><button class="primary-btn" type="submit">Přidat tankování</button></div>
           </form>
-          <form data-form="add-service" data-vehicle-id="${vehicle.id}" class="compact-form">
+          <form data-form="add-service" data-vehicle-id="${vehicle.id}" class="compact-form" data-garage-detail="add-service">
             <div class="card-header small"><div><h3>Servis / náklad</h3><p>Oprava, pneu, STK nebo jiný náklad.</p></div></div>
             <div class="form-grid">
               ${field('Datum servisu', 'date', 'date', '', true, todayISO())}
@@ -5499,6 +5516,16 @@
     `;
   }
 
+  function fuelNumberField(label, name, placeholder = '', value = '') {
+    const inputId = `field-${name}-${Math.random().toString(36).slice(2, 7)}`;
+    return `
+      <div class="field">
+        <label for="${inputId}">${escapeHtml(label)}</label>
+        <input class="input" id="${inputId}" name="${name}" type="number" step="any" inputmode="decimal" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(value)}" data-fuel-calc>
+      </div>
+    `;
+  }
+
   function hdoTimeField(label, name, placeholder = '06:00', required = false, value = '') {
     const inputId = `field-${name}-${Math.random().toString(36).slice(2, 7)}`;
     return `
@@ -6459,7 +6486,7 @@
         const isServiceLike = isCostSection || /service|servis|expense|naklad|maintenance|udrzba|oprava|pneu|insurance|pojist|registrace|myti|parkovani/.test(rowType + ' ' + category + ' ' + title + ' ' + note);
         const kind = liters ? 'fuel' : price && isServiceLike ? 'service' : price && !liters ? 'service' : 'ignored';
         sequence += 1;
-        return { index: sequence, kind, date, odometer, liters, price, vehicleName, title, note: [station, note].filter(Boolean).join(' · ') };
+        return { index: sequence, kind, date, odometer, liters, price, pricePerLiter: unitPrice || (liters && price ? Number((price / liters).toFixed(2)) : ''), vehicleName, title, note: [station, note].filter(Boolean).join(' · ') };
       });
     }).filter((row) => row.kind !== 'ignored' && row.date);
     return mapped;
@@ -6527,7 +6554,7 @@
           skipped += 1;
           return;
         }
-        const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), source: 'fuelio', vehicleId, date: row.date, odometer: row.odometer, liters: row.liters, price: row.price, note: row.note };
+        const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), source: 'fuelio', vehicleId, date: row.date, odometer: row.odometer, liters: row.liters, price: row.price, pricePerLiter: row.pricePerLiter || '', note: row.note };
         state.fuel.push(item);
         importedIds.fuel.push(item.id);
         if (row.odometer && Number(row.odometer) > Number(vehicle.odometer || 0)) vehicle.odometer = String(row.odometer);
@@ -6594,8 +6621,10 @@
     if (!item) return showToast('Tankování nenalezeno');
     item.date = normalizeText(data.date) || item.date;
     item.odometer = normalizeText(data.odometer);
-    item.liters = decimalValue(data.liters);
-    item.price = decimalValue(data.price);
+    const fuelParts = normalizeFuelCostParts(data);
+    item.liters = fuelParts.liters;
+    item.price = fuelParts.price;
+    item.pricePerLiter = fuelParts.pricePerLiter;
     item.note = normalizeText(data.note);
     item.updatedAt = new Date().toISOString();
     const ok = await cloudUpdateFuelLog(item);
@@ -7159,6 +7188,7 @@
         odometer: item.odometer === null || item.odometer === undefined ? '' : String(item.odometer),
         liters: item.liters === null || item.liters === undefined ? '' : Number(item.liters),
         price: item.total_price === null || item.total_price === undefined ? '' : Number(item.total_price),
+        pricePerLiter: item.price_per_liter === null || item.price_per_liter === undefined ? '' : Number(item.price_per_liter),
         note: item.note || ''
       })).filter((item) => item.vehicleId)
     ];
@@ -9102,7 +9132,8 @@
       },
       'update-vehicle': () => updateVehicle(form.dataset.vehicleId, data),
       'add-fuel': async () => {
-        const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), vehicleId: form.dataset.vehicleId, date: data.date, odometer: data.odometer, liters: decimalValue(data.liters), price: decimalValue(data.price), note: data.note };
+        const fuelParts = normalizeFuelCostParts(data);
+        const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), vehicleId: form.dataset.vehicleId, date: data.date, odometer: data.odometer, liters: fuelParts.liters, price: fuelParts.price, pricePerLiter: fuelParts.pricePerLiter, note: data.note };
         const saved = await cloudAddFuelLog(item);
         if (saved?.id) item.cloudId = saved.id;
         state.fuel.push(item);
@@ -9612,7 +9643,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 67, appBuild: 106, mode: 'rich-demo-v106', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 68, appBuild: 107, mode: 'rich-demo-v107', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -9754,7 +9785,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 67, appBuild: 106, mode: 'calendar-month-grid-v106', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 68, appBuild: 107, mode: 'home-garage-fuel-v107', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -9801,6 +9832,77 @@
     if (value === undefined || value === null || value === '') return '';
     const parsed = Number(String(value).replace(',', '.'));
     return Number.isFinite(parsed) ? parsed : '';
+  }
+
+  function roundFuelNumber(value, decimals = 2) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return '';
+    return Number(parsed.toFixed(decimals));
+  }
+
+  function normalizeFuelCostParts(data = {}) {
+    let liters = decimalValue(data.liters);
+    let price = decimalValue(data.price);
+    let pricePerLiter = decimalValue(data.pricePerLiter);
+    if ((liters === '' || liters === 0) && price !== '' && pricePerLiter) liters = roundFuelNumber(Number(price) / Number(pricePerLiter), 2);
+    if ((price === '' || price === 0) && liters !== '' && pricePerLiter !== '') price = roundFuelNumber(Number(liters) * Number(pricePerLiter), 2);
+    if ((pricePerLiter === '' || pricePerLiter === 0) && liters && price !== '') pricePerLiter = roundFuelNumber(Number(price) / Number(liters), 2);
+    return { liters, price, pricePerLiter };
+  }
+
+  function fuelPricePerLiter(item = {}) {
+    if (item.pricePerLiter !== '' && item.pricePerLiter !== undefined && item.pricePerLiter !== null) return decimalValue(item.pricePerLiter);
+    const liters = decimalValue(item.liters);
+    const price = decimalValue(item.price);
+    if (!liters || price === '') return '';
+    return roundFuelNumber(Number(price) / Number(liters), 2);
+  }
+
+  function formatFuelPricePerLiter(value) {
+    const parsed = decimalValue(value);
+    if (parsed === '') return '';
+    return `${Number(parsed).toFixed(2).replace('.', ',')} Kč/l`;
+  }
+
+  function fillFuelFormCalculation(form, changedInput = null) {
+    if (!form || !form.matches('form[data-form="add-fuel"], form[data-form="update-fuel"]')) return;
+    const fields = {
+      liters: form.querySelector('[name="liters"]'),
+      price: form.querySelector('[name="price"]'),
+      pricePerLiter: form.querySelector('[name="pricePerLiter"]')
+    };
+    if (!fields.liters || !fields.price || !fields.pricePerLiter) return;
+    if (changedInput) changedInput.dataset.autoFuelValue = 'false';
+    const valueOf = (input) => decimalValue(input?.value);
+    const setAuto = (input, value, decimals = 2) => {
+      if (!input || value === '' || !Number.isFinite(Number(value))) return;
+      if (input.value && input.dataset.autoFuelValue !== 'true') return;
+      input.value = Number(value).toFixed(decimals).replace(/\.?0+$/, '');
+      input.dataset.autoFuelValue = 'true';
+    };
+    const liters = valueOf(fields.liters);
+    const price = valueOf(fields.price);
+    const pricePerLiter = valueOf(fields.pricePerLiter);
+    if (liters && price !== '') setAuto(fields.pricePerLiter, Number(price) / Number(liters), 2);
+    if (liters && pricePerLiter !== '') setAuto(fields.price, Number(liters) * Number(pricePerLiter), 2);
+    if (price !== '' && pricePerLiter) setAuto(fields.liters, Number(price) / Number(pricePerLiter), 2);
+  }
+
+  function openGarageDetailPanel(target = '') {
+    const normalized = target === 'vehicle-settings' ? 'vehicle-settings' : target === 'add-service' ? 'add-service' : target === 'add-fuel' ? 'add-fuel' : '';
+    if (!normalized) return;
+    const addRecords = document.querySelector('[data-garage-detail="add-records"]');
+    const settings = document.querySelector('[data-garage-detail="vehicle-settings"]');
+    if (normalized === 'vehicle-settings') {
+      if (settings) settings.open = true;
+      settings?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      settings?.querySelector('input, select, textarea')?.focus({ preventScroll: true });
+      return;
+    }
+    if (addRecords) addRecords.open = true;
+    const form = document.querySelector(`[data-garage-detail="${normalized}"]`);
+    form?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    form?.querySelector('input[name="date"], input, select, textarea')?.focus({ preventScroll: true });
   }
 
   function daysModeToArray(mode) {
@@ -11020,6 +11122,10 @@
       deleteWarranty(button.dataset.id);
       return;
     }
+    if (action === 'open-garage-detail') {
+      openGarageDetailPanel(button.dataset.garageTarget || '');
+      return;
+    }
     if (action === 'select-vehicle') {
       garageVehicleId = button.dataset.id;
       garageEditRecord = null;
@@ -11028,8 +11134,10 @@
       if (!isDemoOnlyState()) localStorage.setItem('homeWeb.activeModule', activeModule);
       moduleTabs = { ...(moduleTabs || {}), garage: 'detail' };
       if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      const garageTarget = button.dataset.garageTarget || '';
       render();
       keepActiveSectionTabsCentered('smooth');
+      if (garageTarget) window.setTimeout(() => openGarageDetailPanel(garageTarget), 60);
       return;
     }
     if (action === 'select-contract') {
@@ -12010,7 +12118,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 106
+        appBuild: 107
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -12131,7 +12239,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 106, schema_version: 67, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 107, schema_version: 67, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -12344,7 +12452,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 106,
+          app_build: 107,
           schema_version: 67,
           created_by: user.id,
           ...householdUiPayload()
@@ -12592,7 +12700,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-106-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-107-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -12702,6 +12810,8 @@
   app.addEventListener('input', (event) => {
     const hdoTimeInput = event.target.closest('[data-hdo-time-input]');
     if (hdoTimeInput) formatHdoTimeInputLive(hdoTimeInput, event);
+    const fuelCalcInput = event.target.closest('[data-fuel-calc]');
+    if (fuelCalcInput) fillFuelFormCalculation(fuelCalcInput.form, fuelCalcInput);
     const warrantyPurchase = event.target.closest('form[data-form="add-warranty"] input[name="purchaseDate"]');
     if (warrantyPurchase) {
       const form = warrantyPurchase.form;
@@ -12751,7 +12861,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_106</span>
+          <span class="badge">Domácnost+ v.0.1_107</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
