@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_103';
+  const APP_VERSION = 'Domácnost+ v.0.1_104';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -125,7 +125,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180-v0-1-103.png';
+  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180-v0-1-104.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -155,12 +155,21 @@
     ['chmi', 'ČHMÚ – preferovaný zdroj'],
     ['open-meteo', 'Open-Meteo fallback']
   ];
+  const VEHICLE_ICON_COLORS = [
+    ['blue', 'Modrá'],
+    ['green', 'Zelená'],
+    ['teal', 'Tyrkysová'],
+    ['amber', 'Žlutá'],
+    ['red', 'Červená'],
+    ['purple', 'Fialová'],
+    ['graphite', 'Šedá']
+  ];
   const WEATHER_CHMI_FUNCTION = 'weather-chmi-forecast';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 65,
-      appBuild: 103,
-      mode: 'garage-history-home-v103',
+      schemaVersion: 66,
+      appBuild: 104,
+      mode: 'garage-home-polish-v104',
       createdAt: '',
       updatedAt: ''
     },
@@ -170,7 +179,8 @@
       cloudEnabled: false,
       bottomNavIds: [...DEFAULT_BOTTOM_NAV_IDS],
       dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGET_IDS],
-      homeHeroItems: [...DEFAULT_HOME_HERO_IDS]
+      homeHeroItems: [...DEFAULT_HOME_HERO_IDS],
+      vehicleIconColors: {}
     },
     household: {
       id: '',
@@ -690,9 +700,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 65,
-      appBuild: 103,
-      mode: 'garage-history-home-v103',
+      schemaVersion: 66,
+      appBuild: 104,
+      mode: 'garage-home-polish-v104',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -703,7 +713,8 @@
       dashboardNote: migrated.settings?.dashboardNote || DEFAULT_STATE.settings.dashboardNote,
       bottomNavIds: Array.isArray(migrated.settings?.bottomNavIds) ? migrated.settings.bottomNavIds : [...DEFAULT_BOTTOM_NAV_IDS],
       dashboardWidgets: [],
-      homeHeroItems: previousAppBuild && previousAppBuild < 74 ? [] : normalizeHomeHeroIds(migrated.settings?.homeHeroItems)
+      homeHeroItems: previousAppBuild && previousAppBuild < 74 ? [] : normalizeHomeHeroIds(migrated.settings?.homeHeroItems),
+      vehicleIconColors: normalizeVehicleIconColorMap(migrated.settings?.vehicleIconColors)
     };
 
     migrated.household = {
@@ -775,15 +786,23 @@
       }));
     });
 
-    migrated.vehicles = migrated.vehicles.map((vehicle) => ({
-      technicalInspectionUntil: '',
-      insuranceUntil: '',
-      serviceIntervalKm: '',
-      nextServiceKm: '',
-      nextServiceDate: '',
-      note: '',
-      ...vehicle
-    }));
+    const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
+    migrated.vehicles = migrated.vehicles.map((vehicle) => {
+      const baseVehicle = {
+        technicalInspectionUntil: '',
+        insuranceUntil: '',
+        serviceIntervalKm: '',
+        nextServiceKm: '',
+        nextServiceDate: '',
+        note: '',
+        ...vehicle
+      };
+      const keys = [baseVehicle.cloudId, baseVehicle.id, normalizeKey(baseVehicle.name)].filter(Boolean);
+      baseVehicle.iconColor = normalizeVehicleIconColor(baseVehicle.iconColor || keys.map((key) => migratedVehicleIconColors[key]).find(Boolean) || 'blue');
+      keys.forEach((key) => { migratedVehicleIconColors[key] = baseVehicle.iconColor; });
+      return baseVehicle;
+    });
+    migrated.settings.vehicleIconColors = migratedVehicleIconColors;
 
     return migrated;
   }
@@ -1262,15 +1281,29 @@
   }
 
   function renderGarageOverviewItem(vehicle) {
-    return renderOverviewItem({
-      title: vehicle.name,
-      badge: vehicle.odometer ? `${vehicle.odometer} km` : '',
-      meta: [vehicle.brand, vehicle.model, vehicle.year, vehicle.plate].filter(Boolean).join(' · '),
-      icon: '🚗'
-    });
+    return `
+      <button class="item compact-item overview-list-item overview-action-item vehicle-overview-action" type="button" data-action="select-vehicle" data-id="${vehicle.id}">
+        <div class="item-top">
+          <div class="item-title"><span class="vehicle-icon-bubble ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span>${escapeHtml(vehicle.name || 'Auto')}</div>
+          ${vehicle.odometer ? `<span class="badge">${escapeHtml(vehicle.odometer)} km</span>` : ''}
+        </div>
+        <div class="item-meta">${escapeHtml([vehicle.brand, vehicle.model, vehicle.year, vehicle.plate].filter(Boolean).join(' · ') || 'Otevřít přehled auta')}</div>
+      </button>
+    `;
   }
 
   function renderVehicleAlertOverviewItem(item) {
+    if (item.vehicleId) {
+      return `
+        <button class="item compact-item overview-list-item overview-action-item vehicle-overview-action" type="button" data-action="select-vehicle" data-id="${item.vehicleId}">
+          <div class="item-top">
+            <div class="item-title"><span class="vehicle-icon-bubble ${vehicleIconColorClass(item.iconColor)}" aria-hidden="true">🚗</span>${escapeHtml(item.title || 'Upozornění')}</div>
+            <span class="badge ${item.days !== null && item.days <= 7 ? 'warn' : ''}">${escapeHtml(dueBadge(item.days))}</span>
+          </div>
+          <div class="item-meta">${escapeHtml(item.meta || 'Otevřít detail auta')}</div>
+        </button>
+      `;
+    }
     return renderOverviewItem({
       title: item.title,
       badge: dueBadge(item.days),
@@ -1892,7 +1925,7 @@
       const next = running || events[0];
       return {
         ...base,
-        metric: running ? 'Teď běží' : next ? 'Další' : 'Volno',
+        metric: running ? 'Teď běží' : next ? shortDateText(next.date) : 'Volno',
         text: next ? firstTitle(next, 'Událost') : 'Žádná nadcházející událost',
         detail: next ? calendarEventTimeLabel(next, now) : 'Kliknutím otevřeš kalendář',
         chips: [],
@@ -1981,8 +2014,8 @@
     if (next) {
       return {
         metric: `za ${humanDuration(next.diffMinutes)}`,
-        text: `sepne v ${next.item.start}`,
-        detail: `${next.item.label || 'Nízký tarif'} · ${hdoWindowTimeLabel(next.item)}`,
+        text: next.item.label || 'Nízký tarif',
+        detail: hdoWindowTimeLabel(next.item),
         chips: [daysLabel(next.item.days)],
         extraRows,
         tone: 'warn'
@@ -2651,6 +2684,8 @@
         if (days !== null && days <= 45) {
           alerts.push({
             days,
+            vehicleId: vehicle.id,
+            iconColor: vehicle.iconColor,
             title: `${item.label}: ${vehicle.name}`,
             meta: `${item.label} do ${formatDate(vehicle[item.key])}`
           });
@@ -2661,6 +2696,8 @@
       if (currentKm && nextKm && nextKm - currentKm <= 1500) {
         alerts.push({
           days: nextKm < currentKm ? -1 : 30,
+          vehicleId: vehicle.id,
+          iconColor: vehicle.iconColor,
           title: `Servis podle km: ${vehicle.name}`,
           meta: `Aktuálně ${currentKm} km · další servis při ${nextKm} km`
         });
@@ -2768,6 +2805,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_104', note: 'Hotovo: vyšší panel času a počasí na Home, Kalendář bez popisku „Další“, HDO bez duplicitního „sepne v…“ a Garáž má klikací auta z rychlého přehledu plus volbu barvy ikonky auta.' },
       { title: 'Domácnost+ v.0.1_103', note: 'Hotovo: Garáž na Home ukazuje počet aut místo nuly bez upozornění a detail auta má plnou historii s filtrem podle roku a typu záznamu.' },
       { title: 'Domácnost+ v.0.1_102', note: 'Hotovo: vyšší Home mini panely pod časem a počasím, čitelnější karta Kalendář, HDO přehled řadí Po–Pá před víkend a Fuelio import čte vícesekční exporty včetně Data/Odo/Costs.' },
       { title: 'Domácnost+ v.0.1_101', note: 'Hotovo: uklizené ikony do assets/icons, Home panel Kalendář ukazuje jen jednu aktuální nebo nejbližší událost, HDO víkend platí i pro české svátky a Fuelio import je tolerantnější na CSV exporty.' },
@@ -3611,6 +3649,50 @@
     `;
   }
 
+  function normalizeVehicleIconColor(value, fallback = 'blue') {
+    const key = normalizeKey(value || '');
+    return VEHICLE_ICON_COLORS.some(([id]) => id === key) ? key : fallback;
+  }
+
+  function normalizeVehicleIconColorMap(map = {}) {
+    if (!map || typeof map !== 'object' || Array.isArray(map)) return {};
+    return Object.fromEntries(Object.entries(map)
+      .map(([key, value]) => [String(key || '').trim(), normalizeVehicleIconColor(value, '')])
+      .filter(([key, value]) => key && value));
+  }
+
+  function vehicleIconColorOptions() {
+    return VEHICLE_ICON_COLORS.map(([id, label]) => [id, label]);
+  }
+
+  function vehicleIconColorClass(value) {
+    return `vehicle-icon-color-${normalizeVehicleIconColor(value)}`;
+  }
+
+  function vehicleIconColorFromSettings(vehicle = {}) {
+    const map = normalizeVehicleIconColorMap(state.settings?.vehicleIconColors);
+    const keys = [vehicle.cloudId, vehicle.id, normalizeKey(vehicle.name)].filter(Boolean);
+    for (const key of keys) {
+      if (map[key]) return map[key];
+    }
+    return 'blue';
+  }
+
+  function rememberVehicleIconColor(vehicle) {
+    if (!vehicle) return;
+    const color = normalizeVehicleIconColor(vehicle.iconColor);
+    vehicle.iconColor = color;
+    state.settings.vehicleIconColors = normalizeVehicleIconColorMap(state.settings?.vehicleIconColors);
+    [vehicle.cloudId, vehicle.id, normalizeKey(vehicle.name)].filter(Boolean).forEach((key) => {
+      state.settings.vehicleIconColors[key] = color;
+    });
+  }
+
+  function refreshVehicleIconColorSettings() {
+    state.settings.vehicleIconColors = normalizeVehicleIconColorMap(state.settings?.vehicleIconColors);
+    (state.vehicles || []).forEach((vehicle) => rememberVehicleIconColor(vehicle));
+  }
+
   function renderGarage() {
     const vehicles = state.vehicles;
     if (!garageVehicleId && vehicles.length) garageVehicleId = vehicles[0].id;
@@ -3644,7 +3726,7 @@
           </div>
           ${vehicles.length ? `
             <div class="tabs-inline compact-vehicle-tabs">
-              ${vehicles.map((vehicle) => `<button class="tab-pill ${vehicle.id === garageVehicleId ? 'active' : ''}" type="button" data-action="select-vehicle" data-id="${vehicle.id}">${escapeHtml(vehicle.name)}</button>`).join('')}
+              ${vehicles.map((vehicle) => `<button class="tab-pill vehicle-tab-pill ${vehicle.id === garageVehicleId ? 'active' : ''}" type="button" data-action="select-vehicle" data-id="${vehicle.id}"><span class="vehicle-color-dot ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true"></span>${escapeHtml(vehicle.name)}</button>`).join('')}
             </div>
             <div class="list compact-list">${vehicles.map((vehicle) => renderVehicleListItem(vehicle)).join('')}</div>
           ` : renderEmptyCta({ icon: '🚗', title: 'Garáž je prázdná', text: 'Přidej první auto, potom půjdou řešit tankování, servis, STK a pojistka.', nav: 'garage', tab: 'add', label: 'Přidat auto' })}
@@ -3664,6 +3746,7 @@
               ${field('Aktuální km', 'odometer', 'number', '0')}
               ${field('STK do', 'technicalInspectionUntil', 'date', '')}
               ${field('Pojistka do', 'insuranceUntil', 'date', '')}
+              ${selectField('Barva ikonky auta', 'iconColor', vehicleIconColorOptions(), 'blue')}
             </div>
             <div class="form-actions"><button class="primary-btn" type="submit">Přidat auto</button></div>
           </form>
@@ -3684,9 +3767,9 @@
     const insurance = dateStatus(vehicle.insuranceUntil, 45);
     const warningCount = [stk, insurance].filter((item) => item.className === 'warn' || item.className === 'bad').length;
     return `
-      <div class="item ${vehicle.id === garageVehicleId ? 'selected' : ''}">
+      <div class="item vehicle-list-item ${vehicle.id === garageVehicleId ? 'selected' : ''}">
         <div class="item-top">
-          <div class="item-title">${escapeHtml(vehicle.name)} ${vehicle.cloudId ? '<span class="soft-mark">cloud</span>' : '<span class="soft-mark">lokálně</span>'}</div>
+          <div class="item-title"><span class="vehicle-icon-bubble ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span>${escapeHtml(vehicle.name)} ${vehicle.cloudId ? '<span class="soft-mark">cloud</span>' : '<span class="soft-mark">lokálně</span>'}</div>
           <span class="badge ${warningCount ? 'warn' : ''}">${warningCount ? `${warningCount} upozornění` : escapeHtml(vehicle.plate || 'bez SPZ')}</span>
         </div>
         <div class="item-meta">
@@ -3932,7 +4015,7 @@
     const costPerKm = stats.totalKm > 0 ? totalCost / stats.totalKm : null;
     return `
       <div class="card-header compact-detail-head">
-        <div><h2>${escapeHtml(vehicle.name)}</h2><p>${escapeHtml(vehicle.plate || 'Bez SPZ')} · ${escapeHtml(vehicle.fuelType || 'palivo neuvedeno')}</p></div>
+        <div class="vehicle-detail-title"><span class="vehicle-icon-bubble vehicle-icon-bubble-large ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span><div><h2>${escapeHtml(vehicle.name)}</h2><p>${escapeHtml(vehicle.plate || 'Bez SPZ')} · ${escapeHtml(vehicle.fuelType || 'palivo neuvedeno')}</p></div></div>
         <span class="badge ${vehicle.cloudId ? 'good' : ''}">${vehicle.cloudId ? 'cloud' : 'lokálně'} · ${escapeHtml(vehicle.odometer || latestFuel?.odometer || 0)} km</span>
       </div>
       <div class="kpi-row compact">
@@ -3968,6 +4051,7 @@
             ${field('Pojistka do', 'insuranceUntil', 'date', '', false, vehicle.insuranceUntil || '')}
             ${field('Další servis při km', 'nextServiceKm', 'number', 'např. 150000', false, vehicle.nextServiceKm || '')}
             ${field('Další servis do data', 'nextServiceDate', 'date', '', false, vehicle.nextServiceDate || '')}
+            ${selectField('Barva ikonky auta', 'iconColor', vehicleIconColorOptions(), normalizeVehicleIconColor(vehicle.iconColor))}
             ${field('Poznámka', 'note', 'text', 'pneu, rozměr, VIN...', false, vehicle.note || '')}
           </div>
           <div class="form-actions"><button class="ghost-btn" type="submit">Uložit údaje auta</button><button class="ghost-btn" type="button" data-action="cloud-sync-vehicle" data-id="${vehicle.id}">Odeslat auto do cloudu</button></div>
@@ -6147,8 +6231,9 @@
     const vehicleByName = new Map(state.vehicles.map((vehicle) => [normalizeKey(vehicle.name), vehicle]));
     let fallbackVehicle = state.vehicles.find((vehicle) => vehicle.id === garageVehicleId) || state.vehicles[0] || null;
     if (!fallbackVehicle) {
-      fallbackVehicle = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name: 'Fuelio import', plate: '', fuelType: '', odometer: '', technicalInspectionUntil: '', insuranceUntil: '', nextServiceKm: '', nextServiceDate: '', note: '' };
+      fallbackVehicle = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name: 'Fuelio import', plate: '', fuelType: '', odometer: '', technicalInspectionUntil: '', insuranceUntil: '', nextServiceKm: '', nextServiceDate: '', iconColor: 'blue', note: '' };
       state.vehicles.push(fallbackVehicle);
+      rememberVehicleIconColor(fallbackVehicle);
       vehicleByName.set(normalizeKey(fallbackVehicle.name), fallbackVehicle);
     }
 
@@ -6160,8 +6245,9 @@
     fuelioPreview.rows.forEach((row) => {
       let vehicle = row.vehicleName ? vehicleByName.get(normalizeKey(row.vehicleName)) : fallbackVehicle;
       if (!vehicle && row.vehicleName) {
-        vehicle = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name: row.vehicleName, plate: '', fuelType: '', odometer: row.odometer || '', technicalInspectionUntil: '', insuranceUntil: '', nextServiceKm: '', nextServiceDate: '', note: '' };
+        vehicle = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name: row.vehicleName, plate: '', fuelType: '', odometer: row.odometer || '', technicalInspectionUntil: '', insuranceUntil: '', nextServiceKm: '', nextServiceDate: '', iconColor: 'blue', note: '' };
         state.vehicles.push(vehicle);
+        rememberVehicleIconColor(vehicle);
         vehicleByName.set(normalizeKey(row.vehicleName), vehicle);
         importedIds.vehicles.push(vehicle.id);
       }
@@ -6220,11 +6306,14 @@
     vehicle.insuranceUntil = normalizeText(data.insuranceUntil);
     vehicle.nextServiceKm = normalizeText(data.nextServiceKm);
     vehicle.nextServiceDate = normalizeText(data.nextServiceDate);
+    vehicle.iconColor = normalizeVehicleIconColor(data.iconColor || vehicle.iconColor);
     vehicle.note = normalizeText(data.note);
+    rememberVehicleIconColor(vehicle);
     const ok = await cloudUpdateVehicle(vehicle);
     if (!ok) return;
     touchState();
     saveState();
+    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
     render();
     showToast(vehicle.cloudId ? 'Údaje auta uloženy v cloudu' : 'Údaje auta uloženy lokálně');
   }
@@ -6776,12 +6865,14 @@
         insuranceUntil: vehicle.insurance_until || '',
         nextServiceKm: vehicle.next_service_odometer === null || vehicle.next_service_odometer === undefined ? '' : String(vehicle.next_service_odometer),
         nextServiceDate: vehicle.next_service_date || '',
+        iconColor: normalizeVehicleIconColor(existing?.iconColor || vehicleIconColorFromSettings({ cloudId: vehicle.id, name: vehicle.name })),
         note: vehicle.note || ''
       };
     });
     const vehicleIdByCloud = new Map(cloudVehicles.map((vehicle) => [vehicle.cloudId, vehicle.id]));
     const localVehicles = state.vehicles.filter((vehicle) => !vehicle.cloudId);
     state.vehicles = [...localVehicles, ...cloudVehicles];
+    refreshVehicleIconColorSettings();
 
     const localFuel = state.fuel.filter((item) => !item.cloudId);
     state.fuel = [
@@ -6855,6 +6946,7 @@
         const cloudVehicle = await cloudAddVehicle(vehicle);
         if (cloudVehicle?.id) {
           vehicle.cloudId = cloudVehicle.id;
+          rememberVehicleIconColor(vehicle);
           vehicles += 1;
         }
       }
@@ -6871,8 +6963,10 @@
         if (saved?.id) services += 1;
       }
     }
+    refreshVehicleIconColorSettings();
     touchState();
     saveState();
+    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
     return { vehicles, fuel, services };
   }
 
@@ -6886,6 +6980,7 @@
         const cloudVehicle = await cloudAddVehicle(vehicle);
         if (cloudVehicle?.id) {
           vehicle.cloudId = cloudVehicle.id;
+          rememberVehicleIconColor(vehicle);
           vehicles += 1;
         }
       }
@@ -6902,8 +6997,10 @@
         if (saved?.id) services += 1;
       }
     }
+    refreshVehicleIconColorSettings();
     touchState();
     saveState();
+    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
     render();
     showToast(`Garáž odeslána: ${vehicles} aut, ${fuel} tankování, ${services} servisů`);
   }
@@ -8675,6 +8772,7 @@
           odometer: normalizeText(data.odometer),
           technicalInspectionUntil: normalizeText(data.technicalInspectionUntil),
           insuranceUntil: normalizeText(data.insuranceUntil),
+          iconColor: normalizeVehicleIconColor(data.iconColor),
           nextServiceKm: '',
           nextServiceDate: '',
           note: ''
@@ -8682,9 +8780,11 @@
         const cloudVehicle = await cloudAddVehicle(vehicle);
         if (cloudVehicle?.id) vehicle.cloudId = cloudVehicle.id;
         state.vehicles.push(vehicle);
+        rememberVehicleIconColor(vehicle);
         garageVehicleId = vehicle.id;
         touchState();
         saveState();
+        if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
         form.reset();
         render();
         showToast(vehicle.cloudId ? 'Auto uloženo do cloudu' : 'Auto uloženo lokálně');
@@ -9195,7 +9295,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 65, appBuild: 103, mode: 'rich-demo-v103', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 66, appBuild: 104, mode: 'rich-demo-v104', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -9336,7 +9436,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 65, appBuild: 103, mode: 'garage-history-home-v103', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 66, appBuild: 104, mode: 'garage-home-polish-v104', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -10593,6 +10693,7 @@
     if (action === 'select-vehicle') {
       garageVehicleId = button.dataset.id;
       garageEditRecord = null;
+      activeOverview = null;
       moduleTabs = { ...(moduleTabs || {}), garage: 'detail' };
       if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
@@ -11551,6 +11652,12 @@
     else if (Array.isArray(layout.dashboardWidgets)) state.settings.dashboardWidgets = normalizeDashboardWidgetIds(layout.dashboardWidgets);
     if (Array.isArray(layout.heroItems)) state.settings.homeHeroItems = normalizeHomeHeroIds(layout.heroItems);
     else if (Array.isArray(layout.homeHeroItems)) state.settings.homeHeroItems = normalizeHomeHeroIds(layout.homeHeroItems);
+    if (layout.vehicleIconColors && typeof layout.vehicleIconColors === 'object') {
+      state.settings.vehicleIconColors = normalizeVehicleIconColorMap(layout.vehicleIconColors);
+      (state.vehicles || []).forEach((vehicle) => {
+        vehicle.iconColor = normalizeVehicleIconColor(vehicle.iconColor || vehicleIconColorFromSettings(vehicle));
+      });
+    }
     if (weatherLocation && typeof weatherLocation === 'object' && Object.keys(weatherLocation).length) {
       state.weather = {
         ...normalizeWeatherState(state.weather),
@@ -11565,8 +11672,9 @@
       dashboard_layout: {
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
+        vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         updatedAt: new Date().toISOString(),
-        appBuild: 103
+        appBuild: 104
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -11687,7 +11795,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 95, schema_version: 64, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 104, schema_version: 66, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -11900,8 +12008,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 95,
-          schema_version: 64,
+          app_build: 104,
+          schema_version: 66,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -12148,7 +12256,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-103-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-104-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -12295,7 +12403,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_103</span>
+          <span class="badge">Domácnost+ v.0.1_104</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
