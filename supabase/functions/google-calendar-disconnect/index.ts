@@ -24,7 +24,6 @@ Deno.serve(async (req) => {
       updated_by: user.id,
     }).eq('household_id', householdId).eq('provider', 'google').eq('provider_connection_id', connection.id);
 
-    await supabase.schema('app_private').from('calendar_provider_connection_secrets').delete().eq('connection_id', connection.id);
     return jsonResponse({ connection: publicConnection({ ...connection, status: 'disconnected', updated_at: nowIso }) });
   } catch (error) {
     return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 400);
