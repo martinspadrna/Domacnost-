@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_96';
+  const APP_VERSION = 'Domácnost+ v.0.1_97';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -124,7 +124,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-96.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-97.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -163,19 +163,21 @@
     ['other', 'Jiný / zatím ručně']
   ];
   const HDO_CEZ_AREA_OPTIONS = [
-    ['', 'Vyber oblast ČEZ'],
+    ['', 'Vyber oblast / region'],
     ['zapad', 'Západní Čechy'],
     ['sever', 'Severní Čechy'],
     ['stred', 'Střední Čechy'],
     ['vychod', 'Východní Čechy'],
-    ['morava', 'Severní Morava']
+    ['morava', 'Severní Morava'],
+    ['egd', 'Distribuční území EG.D'],
+    ['pre', 'Praha / PREdistribuce']
   ];
 
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 65,
-      appBuild: 96,
-      mode: 'variable-home-panels-hdo-code-v96',
+      appBuild: 97,
+      mode: 'hdo-distributors-calendar-delete-nav-v97',
       createdAt: '',
       updatedAt: ''
     },
@@ -631,8 +633,8 @@
 
     migrated.meta = {
       schemaVersion: 65,
-      appBuild: 96,
-      mode: 'variable-home-panels-hdo-code-v96',
+      appBuild: 97,
+      mode: 'hdo-distributors-calendar-delete-nav-v97',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1088,13 +1090,15 @@
       const navScroll = document.querySelector('.nav-scroll');
       const activeItem = navScroll?.querySelector('.nav-item.active');
       if (!navScroll || !activeItem) return;
-
-      const maxLeft = navScroll.scrollWidth - navScroll.clientWidth;
-      const targetLeft = activeItem.offsetLeft - ((navScroll.clientWidth - activeItem.clientWidth) / 2);
-      navScroll.scrollTo({
-        left: Math.max(0, Math.min(maxLeft, targetLeft)),
-        behavior
-      });
+      const maxLeft = Math.max(0, navScroll.scrollWidth - navScroll.clientWidth);
+      if (!maxLeft) return;
+      const itemLeft = activeItem.offsetLeft;
+      const itemRight = itemLeft + activeItem.clientWidth;
+      const visibleLeft = navScroll.scrollLeft;
+      const visibleRight = visibleLeft + navScroll.clientWidth;
+      if (itemLeft >= visibleLeft && itemRight <= visibleRight) return;
+      const targetLeft = itemLeft - ((navScroll.clientWidth - activeItem.clientWidth) / 2);
+      navScroll.scrollTo({ left: Math.max(0, Math.min(maxLeft, targetLeft)), behavior });
     });
   }
 
@@ -1888,6 +1892,14 @@
     return HDO_CEZ_AREA_OPTIONS.find(([key]) => key === id)?.[1] || '';
   }
 
+  function hdoAreaFieldLabel(distributor = state.hdoCloud?.distributor) {
+    const id = normalizeHdoDistributor(distributor);
+    if (id === 'cez') return 'Oblast ČEZ';
+    if (id === 'egd') return 'Oblast EG.D';
+    if (id === 'pre') return 'Oblast PRE';
+    return 'Oblast / poznámka';
+  }
+
   function normalizeHdoLookupSettings(raw = {}) {
     return {
       distributor: normalizeHdoDistributor(raw.distributor || raw.hdoDistributor || state.hdoCloud?.distributor || 'cez'),
@@ -1915,7 +1927,7 @@
     if (settings.lookupStatus === 'ready') return { tone: 'good', title: 'Časy z kódu připravené', text: message || 'Dohledané časy můžeš porovnat s realitou.' };
     if (settings.lookupStatus === 'manual') return { tone: 'warn', title: 'Kód uložený, ověření ručně', text: message || 'Automatické načtení časů se nepovedlo. Otevři oficiální kalkulačku distributora a časy porovnej.' };
     if (settings.lookupStatus === 'error') return { tone: 'danger', title: 'Dohledání se nepovedlo', text: message || 'Zkontroluj distributora, oblast a kód.' };
-    return { tone: '', title: 'HDO podle kódu', text: 'Vyber distributora, zadej oblast a povel/kód z přijímače HDO. Ruční zadání časů zůstává pořád pod tím.' };
+    return { tone: '', title: 'HDO podle kódu', text: 'Vyber distributora, případně oblast, a zadej povel/kód z přijímače HDO. Dohledaná okna se rovnou přidají do HDO.' };
   }
 
   function renderHdoCodeLookupPanel() {
@@ -1928,14 +1940,10 @@
         <form data-form="hdo-code-lookup" class="compact-form hdo-code-form">
           <div class="form-grid two">
             ${selectField('Distributor', 'hdoDistributor', HDO_DISTRIBUTOR_OPTIONS, settings.distributor)}
-            ${selectField('Oblast ČEZ', 'hdoArea', HDO_CEZ_AREA_OPTIONS, settings.area)}
+            ${selectField(hdoAreaFieldLabel(settings.distributor), 'hdoArea', HDO_CEZ_AREA_OPTIONS, settings.area)}
             <div class="field">
               <label for="field-hdo-code">Povel / kód HDO</label>
               <input class="input" id="field-hdo-code" name="hdoCode" type="text" placeholder="181 / P64 / A1B6DP1" value="${escapeHtml(settings.code)}" autocomplete="off" autocapitalize="characters" spellcheck="false">
-            </div>
-            <div class="field hdo-official-field">
-              <label>Oficiální ověření</label>
-              <button class="ghost-btn full-width" type="button" data-action="hdo-open-official">Otevřít kalkulačku distributora</button>
             </div>
           </div>
           <div class="inline-note hdo-code-note ${note.tone ? `is-${note.tone}` : ''}">
@@ -1944,7 +1952,10 @@
             ${settings.code ? `<small>${escapeHtml(hdoDistributorLabel(settings.distributor))}${settings.area ? ` · ${escapeHtml(hdoAreaLabel(settings.area))}` : ''} · ${escapeHtml(settings.code)}</small>` : ''}
             ${officialUrl ? `<a href="${escapeHtml(officialUrl)}" target="_blank" rel="noopener">Otevřít oficiální stránku</a>` : ''}
           </div>
-          <div class="form-actions"><button class="primary-btn" type="submit">Dohledat podle kódu</button></div>
+          <div class="form-actions hdo-lookup-actions">
+            <button class="primary-btn" type="submit">Dohledat podle kódu</button>
+            <button class="ghost-btn small-action-btn" type="button" data-action="hdo-open-official">Neznám kód</button>
+          </div>
         </form>
       </details>
     `;
@@ -2726,7 +2737,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_96', note: 'Hotovo: Home panely jsou variabilní podle počtu vybraných karet, velký panel ukazuje víc položek. HDO má rychlé ruční zadávání času s automatickou dvojtečkou a nový blok pro uložení distributora, oblasti a povelu/kódu HDO s backendovým ověřením/fallbackem na oficiální kalkulačku.' },
+      { title: 'Domácnost+ v.0.1_97', note: 'Hotovo: HDO dohledání je připravené pro ČEZ Distribuci, EG.D, PREdistribuci i ruční fallback. Dohledaná časová okna se rovnou přidávají do HDO. U kalendářů přibylo odebrání zdroje včetně jeho událostí a spodní lišta má stabilnější pozici po startu.' },
       { title: 'Domácnost+ v.0.1_94', note: 'Hotovo: Google Calendar ukládá a čte serverové tokeny přes bezpečné RPC funkce do app_private, bez vystavení privátního schématu do API. Google login zůstává jen přihlášení.' },
       { title: 'Domácnost+ v.0.1_10', note: 'Hotovo: tabletový domácí dashboard a první cloudový základ.' },
       { title: 'Domácnost+ v.0.1_11', note: 'Hotovo: Supabase Auth, domácnost, členové, profily a cloudový základ Nákupů.' },
@@ -3001,6 +3012,7 @@
           <div class="item-actions">
             <button class="ghost-btn" type="button" data-action="calendar-toggle-source" data-source-id="${escapeHtml(source.id || source.cloudId || '')}" data-enabled="${source.isEnabled === false ? 'true' : 'false'}">${source.isEnabled === false ? 'Zobrazit' : 'Skrýt'}</button>
             ${google && state.cloud?.householdId ? `<button class="ghost-btn" type="button" data-action="google-calendar-sync" data-source-id="${escapeHtml(source.cloudId || source.id || '')}">Sync</button>` : ''}
+            <button class="danger-btn" type="button" data-action="calendar-delete-source" data-source-id="${escapeHtml(source.id || source.cloudId || '')}">Odebrat</button>
             ${google && !state.cloud?.householdId ? '<span class="badge">čeká na online účet</span>' : ''}
           </div>
         </div>
@@ -7311,6 +7323,52 @@
     showToast(source.isEnabled ? 'Kalendář zobrazen' : 'Kalendář skrytý');
   }
 
+  async function deleteCalendarSource(sourceId) {
+    const source = getCalendarSource(sourceId);
+    if (!source) return showToast('Zdroj kalendáře nenalezen');
+    const label = source.name || 'kalendář';
+    const ok = window.confirm(`Odebrat kalendář „${label}“ a jeho události z Domácnost+?`);
+    if (!ok) return;
+
+    const sourceKeys = [source.id, source.cloudId].filter(Boolean).map(String);
+    const client = getSupabaseClient();
+    if (client && state.cloud?.householdId && source.cloudId) {
+      const { error: eventsError } = await client
+        .from('calendar_events')
+        .delete()
+        .eq('source_id', source.cloudId)
+        .eq('household_id', state.cloud.householdId);
+      if (eventsError) {
+        showToast(eventsError.message || 'Události kalendáře se nepovedlo odebrat');
+        return;
+      }
+      const { error } = await client
+        .from('calendar_sources')
+        .delete()
+        .eq('id', source.cloudId)
+        .eq('household_id', state.cloud.householdId);
+      if (error) {
+        showToast(error.message || 'Kalendář se nepovedlo odebrat');
+        return;
+      }
+    }
+
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      sources: getCalendarSources().filter((item) => !sourceKeys.includes(String(item.id || '')) && !sourceKeys.includes(String(item.cloudId || ''))),
+      sourcesLoadedAt: new Date().toISOString()
+    };
+    state.calendar = (state.calendar || []).filter((event) => !sourceKeys.includes(String(event.sourceId || '')));
+    if (state.calendarCloud?.googleCalendars?.length && source.providerCalendarId) {
+      state.calendarCloud.googleCalendars = state.calendarCloud.googleCalendars.map((calendar) => String(calendar.id || '') === String(source.providerCalendarId) ? { ...calendar, selected: false } : calendar);
+    }
+    if (state.cloud) state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    showToast('Kalendář odebraný');
+  }
+
   async function cloudAddCalendarEvent(event) {
     const client = getSupabaseClient();
     if (!client || !state.cloud?.householdId) return null;
@@ -7935,7 +7993,8 @@
       const start = normalizeHdoTimeInput(row.start || row.startTime || row.from);
       const end = normalizeHdoTimeInput(row.end || row.endTime || row.to);
       if (!start || !end) continue;
-      const days = Array.isArray(row.days) && row.days.length ? row.days : daysModeToArray(row.daysMode || 'all');
+      const daysRaw = Array.isArray(row.days) && row.days.length ? row.days : daysModeToArray(row.daysMode || 'all');
+      const days = [...new Set(daysRaw.map((day) => Number(day) === 7 ? 0 : Number(day)).filter((day) => day >= 0 && day <= 6))].sort((a, b) => a - b);
       const duplicate = state.hdoWindows.some((item) => item.start === start && item.end === end && JSON.stringify(item.days || []) === JSON.stringify(days || []));
       if (duplicate) continue;
       const item = {
@@ -7967,8 +8026,6 @@
       code: data.hdoCode
     });
     if (!settings.code) return showToast('Zadej povel nebo kód HDO');
-    if (settings.distributor === 'cez' && !settings.area) return showToast('U ČEZ vyber distribuční oblast');
-
     state.hdoCloud = { ...(state.hdoCloud || {}), ...settings, lookupStatus: 'loading', lookupMessage: 'Dohledávám HDO podle kódu…', lookupUpdatedAt: new Date().toISOString() };
     touchState();
     saveState();
@@ -8983,7 +9040,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 65, appBuild: 96, mode: 'rich-demo-v96', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 65, appBuild: 97, mode: 'rich-demo-v97', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -9124,7 +9181,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 65, appBuild: 96, mode: 'variable-home-panels-hdo-code-v96', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 65, appBuild: 97, mode: 'hdo-distributors-calendar-delete-nav-v97', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -10307,6 +10364,10 @@
       toggleCalendarSource(button.dataset.sourceId, button.dataset.enabled === 'true');
       return;
     }
+    if (action === 'calendar-delete-source') {
+      deleteCalendarSource(button.dataset.sourceId);
+      return;
+    }
     if (action === 'cloud-sync-local-calendar') {
       cloudSyncLocalCalendar();
       return;
@@ -11355,7 +11416,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 96
+        appBuild: 97
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -11937,7 +11998,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-96-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-97-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -12074,7 +12135,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_96</span>
+          <span class="badge">Domácnost+ v.0.1_97</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

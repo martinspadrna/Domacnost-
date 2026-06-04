@@ -5681,3 +5681,60 @@ textarea {
     display: none !important;
   }
 }
+
+/* Domácnost+ v.0.1_97 – stabilnější spodní lišta a menší HDO ověření */
+.nav-shell {
+  bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + 4px);
+  transform: translate3d(0, 0, 0);
+  will-change: auto;
+  contain: layout paint;
+}
+
+.nav-scroll {
+  overscroll-behavior-x: contain;
+  scroll-behavior: auto;
+  transform: translate3d(0, 0, 0);
+  -webkit-overflow-scrolling: touch;
+}
+
+.nav-item {
+  touch-action: manipulation;
+  backface-visibility: hidden;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+.nav-item:active {
+  transform: none;
+}
+
+.hdo-lookup-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.hdo-lookup-actions .primary-btn {
+  flex: 1 1 auto;
+}
+
+.hdo-lookup-actions .small-action-btn {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 14px;
+  font-size: .78rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 420px) {
+  .nav-shell {
+    bottom: calc(max(6px, env(safe-area-inset-bottom, 0px)) + 3px);
+  }
+
+  .hdo-lookup-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
