@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_88';
+  const APP_VERSION = 'Domácnost+ v.0.1_89';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
   const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_85';
   const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_82', 'domacnostPlus.v0.1_81', 'domacnostPlus.v0.1_80', 'domacnostPlus.v0.1_79', 'domacnostPlus.v0.1_78', 'domacnostPlus.v0.1_77', 'domacnostPlus.v0.1_72', 'domacnostPlus.v0.1_71', 'domacnostPlus.v0.1_70', 'domacnostPlus.v0.1_69', 'domacnostPlus.v0.1_68', 'domacnostPlus.v0.1_67', 'domacnostPlus.v0.1_66', 'domacnostPlus.v0.1_65', 'domacnostPlus.v0.1_64', 'domacnostPlus.v0.1_63', 'domacnostPlus.v0.1_62', 'domacnostPlus.v0.1_61', 'domacnostPlus.v0.1_60', 'domacnostPlus.v0.1_59', 'domacnostPlus.v0.1_58', 'domacnostPlus.v0.1_57', 'domacnostPlus.v0.1_56', 'domacnostPlus.v0.1_55', 'domacnostPlus.v0.1_54', 'domacnostPlus.v0.1_53', 'domacnostPlus.v0.1_52', 'domacnostPlus.v0.1_51', 'domacnostPlus.v0.1_50', 'domacnostPlus.v0.1_49', 'domacnostPlus.v0.1_48', 'domacnostPlus.v0.1_47', 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
@@ -122,7 +122,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-88.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-89.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -156,9 +156,9 @@
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 58,
-      appBuild: 88,
-      mode: 'google-auth-household-v88',
+      schemaVersion: 59,
+      appBuild: 89,
+      mode: 'google-auth-household-v89',
       createdAt: '',
       updatedAt: ''
     },
@@ -612,9 +612,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 58,
-      appBuild: 88,
-      mode: 'google-auth-household-v88',
+      schemaVersion: 59,
+      appBuild: 89,
+      mode: 'google-auth-household-v89',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -6855,6 +6855,36 @@
     };
   }
 
+
+  function rememberGoogleCalendarError(payload = {}) {
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      googleLastError: {
+        code: payload.code || payload.errorCode || '',
+        message: payload.error || payload.message || '',
+        at: new Date().toISOString(),
+        needsOAuthReconnect: Boolean(payload.needsOAuthReconnect || payload.needsGoogleLogin || payload.fallbackAvailable)
+      }
+    };
+    touchState();
+    saveState();
+  }
+
+  function googleCalendarNeedsOAuthReconnect(payload = {}) {
+    const code = String(payload.code || payload.errorCode || '').toLowerCase();
+    const message = String(payload.error || payload.message || '').toLowerCase();
+    return Boolean(payload.needsOAuthReconnect || payload.needsGoogleLogin || payload.fallbackAvailable)
+      || ['missing_provider_token', 'missing_google_token', 'google_token_missing', 'token_not_available', 'missing_calendar_scope'].includes(code)
+      || message.includes('google token is not available')
+      || message.includes('chybí google token')
+      || message.includes('nepředalo kalendářový token');
+  }
+
+  async function startGoogleCalendarOAuthReconnect(reason = '') {
+    showToast(reason || 'Google token chybí. Spouštím bezpečné znovupřipojení kalendáře.');
+    await googleCalendarStart();
+  }
+
   async function readFunctionErrorMessage(error, fallback = 'Google backend zatím není připravený') {
     if (!error) return fallback;
     const context = error.context;
@@ -6913,8 +6943,10 @@
     try {
       const { data, error } = await client.functions.invoke(functionName, { body: payload });
       if (error || data?.error || data?.ok === false) {
-        const message = data?.error || data?.message || await readFunctionErrorMessage(error, 'Google backend zatím není připravený');
-        console.warn(`${functionName} failed`, error || data?.error || data);
+        const payloadError = data || {};
+        const message = payloadError?.error || payloadError?.message || await readFunctionErrorMessage(error, 'Google backend zatím není připravený');
+        console.warn(`${functionName} failed`, error || payloadError?.error || payloadError);
+        rememberGoogleCalendarError({ ...payloadError, error: message });
         if (showMessage) showToast(message);
         return null;
       }
@@ -6938,7 +6970,13 @@
 
   async function googleCalendarListCalendars(showMessage = true) {
     const data = await invokeGoogleCalendarFunction('google-calendar-list-calendars', {}, showMessage);
-    if (!data) return [];
+    if (!data) {
+      const lastError = state.calendarCloud?.googleLastError || {};
+      if (googleCalendarNeedsOAuthReconnect(lastError)) {
+        await startGoogleCalendarOAuthReconnect('Google účet je vidět, ale kalendářový token chybí. Spouštím nové bezpečné připojení kalendáře.');
+      }
+      return [];
+    }
     const calendars = (data.calendars || data.items || []).map(normalizeGoogleCalendarItem).filter((calendar) => calendar.id);
     state.calendarCloud = {
       ...(state.calendarCloud || {}),
@@ -8464,7 +8502,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 58, appBuild: 88, mode: 'rich-demo-v88', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 59, appBuild: 89, mode: 'rich-demo-v89', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -8605,7 +8643,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 58, appBuild: 88, mode: 'google-auth-household-v88', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 59, appBuild: 89, mode: 'google-auth-household-v89', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -10634,7 +10672,9 @@
     const providerAccessToken = session?.provider_token || session?.provider_access_token || '';
     const providerRefreshToken = session?.provider_refresh_token || '';
     if (!providerAccessToken) {
-      if (showMessage) showToast('Google přihlášení nepředalo kalendářový token. V Supabase Google provideru zkontroluj scopes, nebo použij fallback OAuth kalendáře.');
+      if (showMessage) {
+        await startGoogleCalendarOAuthReconnect('Google přihlášení už nemá dostupný kalendářový token. Spouštím bezpečné OAuth připojení kalendáře.');
+      }
       return false;
     }
     const data = await invokeGoogleCalendarFunction('google-calendar-link-auth-session', {
@@ -10643,7 +10683,13 @@
       googleAccountEmail: session?.user?.email || state.cloud?.email || '',
       expiresIn: 3600
     }, showMessage);
-    if (!data) return false;
+    if (!data) {
+      const lastError = state.calendarCloud?.googleLastError || {};
+      if (googleCalendarNeedsOAuthReconnect(lastError) && showMessage) {
+        await startGoogleCalendarOAuthReconnect('Google přihlášení nepředalo použitelný kalendářový token. Spouštím fallback OAuth kalendáře.');
+      }
+      return false;
+    }
     const calendars = (data.calendars || []).map(normalizeGoogleCalendarItem).filter((calendar) => calendar.id);
     state.calendarCloud = {
       ...(state.calendarCloud || {}),
@@ -10843,7 +10889,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 88
+        appBuild: 89
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -11424,7 +11470,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-88-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-89-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
