@@ -4886,7 +4886,7 @@ textarea {
     width: 100%;
   }
 }
-/* Domácnost+ v.0.1_91 – stavové hlášky Google Calendar bez redirect smyčky */
+/* Domácnost+ v.0.1_92 – stavové hlášky Google Calendar bez redirect smyčky */
 .google-calendar-state-note {
   display: grid;
   gap: 4px;
@@ -4916,7 +4916,7 @@ textarea {
 }
 
 
-/* Domácnost+ v.0.1_91 – stabilní Home panel a chytřejší mini karty */
+/* Domácnost+ v.0.1_92 – stabilní Home panel a chytřejší mini karty */
 .home-minimal-hero {
   display: flex;
   min-height: 0;
@@ -5367,7 +5367,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_91 — Google přihlášení + kalendář */
+/* Domácnost+ v.0.1_92 — Google přihlášení + kalendář */
 .oauth-actions.single {
   grid-template-columns: 1fr;
 }
@@ -5399,7 +5399,7 @@ textarea {
   border-color: rgba(148, 163, 184, .24);
 }
 
-/* Domácnost+ v.0.1_91 – čistý login/registrace bez krokových bodů */
+/* Domácnost+ v.0.1_92 – čistý login/registrace bez krokových bodů */
 .compact-auth-card {
   max-width: 980px;
 }
@@ -5427,4 +5427,80 @@ textarea {
   .compact-login-grid {
     grid-template-columns: 1fr;
   }
+}
+
+
+/* Domácnost+ v.0.1_92 – Google Calendar theme/glass kontrast */
+.google-calendar-connector,
+.google-calendar-picker,
+.google-calendar-option,
+.google-calendar-state-note,
+.calendar-source-list .item {
+  color: var(--text);
+}
+
+.google-calendar-connector {
+  border-color: color-mix(in srgb, var(--line), transparent 10%);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--panel), transparent 8%), color-mix(in srgb, var(--panel-strong), transparent 20%));
+  box-shadow: var(--shadow-soft);
+}
+
+.google-calendar-connector .item-meta,
+.google-calendar-connector .mini-stat span,
+.google-calendar-option em {
+  color: var(--muted);
+}
+
+.google-calendar-connector .mini-stat,
+.google-calendar-option {
+  border-color: color-mix(in srgb, var(--line), transparent 14%);
+  background: color-mix(in srgb, var(--panel-strong), transparent 20%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
+}
+
+.google-calendar-option:hover,
+.google-calendar-option.active {
+  border-color: color-mix(in srgb, var(--accent), transparent 48%);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-soft), transparent 24%), color-mix(in srgb, var(--panel), transparent 12%));
+}
+
+.google-calendar-state-note {
+  border: 1px solid color-mix(in srgb, var(--line), transparent 8%);
+  background: color-mix(in srgb, var(--panel-strong), transparent 14%);
+}
+
+.google-calendar-state-note strong,
+.google-calendar-option strong,
+.google-calendar-connector .mini-stat strong,
+.google-calendar-connector .item-title {
+  color: var(--text);
+}
+
+.google-calendar-state-note.is-good {
+  border-color: rgba(34, 197, 94, .34);
+  background: color-mix(in srgb, rgba(34,197,94,.16), var(--panel) 72%);
+}
+
+.google-calendar-state-note.is-warn {
+  border-color: rgba(245, 158, 11, .42);
+  background: color-mix(in srgb, rgba(245,158,11,.18), var(--panel) 74%);
+}
+
+.google-calendar-state-note.is-danger {
+  border-color: rgba(239, 68, 68, .42);
+  background: color-mix(in srgb, rgba(239,68,68,.18), var(--panel) 74%);
+}
+
+[data-theme="dark"] .google-calendar-connector {
+  background:
+    linear-gradient(135deg, rgba(15,23,42,.74), rgba(15,23,42,.44));
+  border-color: rgba(148,163,184,.18);
+}
+
+[data-theme="dark"] .google-calendar-option,
+[data-theme="dark"] .google-calendar-connector .mini-stat,
+[data-theme="dark"] .google-calendar-state-note {
+  background: rgba(15,23,42,.46);
+  border-color: rgba(148,163,184,.18);
 }
