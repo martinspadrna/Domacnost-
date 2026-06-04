@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_87';
+  const APP_VERSION = 'Domácnost+ v.0.1_88';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
   const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_85';
   const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_82', 'domacnostPlus.v0.1_81', 'domacnostPlus.v0.1_80', 'domacnostPlus.v0.1_79', 'domacnostPlus.v0.1_78', 'domacnostPlus.v0.1_77', 'domacnostPlus.v0.1_72', 'domacnostPlus.v0.1_71', 'domacnostPlus.v0.1_70', 'domacnostPlus.v0.1_69', 'domacnostPlus.v0.1_68', 'domacnostPlus.v0.1_67', 'domacnostPlus.v0.1_66', 'domacnostPlus.v0.1_65', 'domacnostPlus.v0.1_64', 'domacnostPlus.v0.1_63', 'domacnostPlus.v0.1_62', 'domacnostPlus.v0.1_61', 'domacnostPlus.v0.1_60', 'domacnostPlus.v0.1_59', 'domacnostPlus.v0.1_58', 'domacnostPlus.v0.1_57', 'domacnostPlus.v0.1_56', 'domacnostPlus.v0.1_55', 'domacnostPlus.v0.1_54', 'domacnostPlus.v0.1_53', 'domacnostPlus.v0.1_52', 'domacnostPlus.v0.1_51', 'domacnostPlus.v0.1_50', 'domacnostPlus.v0.1_49', 'domacnostPlus.v0.1_48', 'domacnostPlus.v0.1_47', 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
@@ -122,7 +122,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-87.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-88.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -156,9 +156,9 @@
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 57,
-      appBuild: 87,
-      mode: 'google-auth-calendar-v87',
+      schemaVersion: 58,
+      appBuild: 88,
+      mode: 'google-auth-household-v88',
       createdAt: '',
       updatedAt: ''
     },
@@ -612,9 +612,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 57,
-      appBuild: 87,
-      mode: 'google-auth-calendar-v87',
+      schemaVersion: 58,
+      appBuild: 88,
+      mode: 'google-auth-household-v88',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -6881,10 +6881,6 @@
   }
 
   async function invokeGoogleCalendarFunction(functionName, body = {}, showMessage = true) {
-    if (!cloudReady()) {
-      if (showMessage) showToast('Google kalendář jde připojit jen v online domácnosti');
-      return null;
-    }
     const client = getSupabaseClient();
     if (!client?.functions?.invoke) {
       if (showMessage) showToast('Supabase funkce nejsou dostupné');
@@ -6893,6 +6889,20 @@
     const user = await refreshCloudSession(false);
     if (!user) {
       if (showMessage) showToast('Nejdřív se přihlas');
+      return null;
+    }
+    let households = await cloudLoadHouseholds(false);
+    if (!households.length) {
+      resetLocalWorkspaceForCloudUser(user, { force: true });
+      const createdHouseholdId = await bootstrapCloudHousehold(false);
+      if (!createdHouseholdId) {
+        if (showMessage) showToast('Nejdřív vytvoř domácnost pro tento Google účet');
+        return null;
+      }
+      households = await cloudLoadHouseholds(false);
+    }
+    if (!cloudReady()) {
+      if (showMessage) showToast('Google účet zatím nemá aktivní domácnost');
       return null;
     }
     const payload = {
@@ -8454,7 +8464,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 57, appBuild: 87, mode: 'rich-demo-v87', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 58, appBuild: 88, mode: 'rich-demo-v88', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -8595,7 +8605,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 57, appBuild: 87, mode: 'google-auth-calendar-v87', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 58, appBuild: 88, mode: 'google-auth-household-v88', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -10369,11 +10379,15 @@
       console.warn('Realtime auth refresh failed', sessionError);
     }
     if (error || !data?.user) {
-      state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, status: 'offline', userId: '', email: '' };
+      state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, status: 'offline', userId: '', email: '', householdId: '', households: [] };
       saveState();
       if (showMessage) showToast('Nejsi přihlášený');
       render();
       return null;
+    }
+    const previousUserId = state.cloud?.userId || '';
+    if (previousUserId && previousUserId !== data.user.id) {
+      resetLocalWorkspaceForCloudUser(data.user, { previousUserId, force: true });
     }
     state.cloud = {
       ...(state.cloud || {}),
@@ -10483,6 +10497,96 @@
     return normalizeText(meta.full_name || meta.name || user?.email?.split('@')?.[0] || 'Já') || 'Já';
   }
 
+  function captureCurrentHouseholdWorkspace() {
+    const snapshot = {
+      savedAt: new Date().toISOString(),
+      household: structuredCloneSafe(state.household || {}),
+      profiles: structuredCloneSafe(state.profiles || []),
+      activeProfileId: state.activeProfileId || '',
+      enabledModules: structuredCloneSafe(state.enabledModules || []),
+      settings: {
+        bottomNavIds: structuredCloneSafe(state.settings?.bottomNavIds || []),
+        homeHeroItems: structuredCloneSafe(state.settings?.homeHeroItems || []),
+        dashboardWidgets: structuredCloneSafe(state.settings?.dashboardWidgets || []),
+        theme: state.settings?.theme || 'light'
+      },
+      collections: {}
+    };
+    getCollectionNames().forEach((collection) => {
+      snapshot.collections[collection] = structuredCloneSafe(state[collection] || []);
+    });
+    return snapshot;
+  }
+
+  function resetCloudModuleCachesForUserSwitch() {
+    state.shoppingCloud = structuredCloneSafe(DEFAULT_STATE.shoppingCloud);
+    state.hdoCloud = structuredCloneSafe(DEFAULT_STATE.hdoCloud);
+    state.wasteCloud = structuredCloneSafe(DEFAULT_STATE.wasteCloud);
+    state.parcelsCloud = structuredCloneSafe(DEFAULT_STATE.parcelsCloud);
+    state.tasksCloud = structuredCloneSafe(DEFAULT_STATE.tasksCloud);
+    state.calendarCloud = structuredCloneSafe(DEFAULT_STATE.calendarCloud);
+    state.financeCloud = structuredCloneSafe(DEFAULT_STATE.financeCloud);
+    state.householdExtrasCloud = structuredCloneSafe(DEFAULT_STATE.householdExtrasCloud);
+  }
+
+  function resetLocalWorkspaceForCloudUser(user, options = {}) {
+    const force = options.force === true;
+    const previousUserId = options.previousUserId || state.cloud?.userId || '';
+    const nextUserId = user?.id || '';
+    if (!force && (!nextUserId || previousUserId === nextUserId)) return false;
+
+    if (previousUserId && previousUserId !== nextUserId && !isDemoOnlyState()) {
+      state.householdWorkspaces = {
+        ...(state.householdWorkspaces || {}),
+        [previousUserId]: captureCurrentHouseholdWorkspace()
+      };
+    }
+
+    const now = new Date().toISOString();
+    const localHouseholdId = `household-${uid()}`;
+    const profile = createProfile(googleDisplayNameFromUser(user), 'owner', localHouseholdId);
+    state.household = {
+      id: localHouseholdId,
+      name: 'Moje domácnost',
+      isConfigured: true,
+      createdAt: now
+    };
+    state.profiles = [profile];
+    state.activeProfileId = profile.id;
+    getCollectionNames().forEach((collection) => {
+      state[collection] = [];
+    });
+    resetCloudModuleCachesForUserSwitch();
+    state.settings = {
+      ...(state.settings || {}),
+      demoMode: false,
+      cloudEnabled: true,
+      dashboardWidgets: [],
+      homeHeroItems: [],
+      bottomNavIds: normalizeBottomNavIds(state.settings?.bottomNavIds || DEFAULT_BOTTOM_NAV_IDS, state.enabledModules)
+    };
+    state.enabledModules = normalizeModuleList(state.enabledModules?.length ? state.enabledModules : MANAGED_MODULE_IDS);
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      status: 'signed-in',
+      userId: nextUserId,
+      email: user?.email || '',
+      householdId: '',
+      households: [],
+      invitations: [],
+      profilesLoadedAt: '',
+      lastSyncAt: '',
+      lastRealtimeAt: '',
+      lastAutosyncAt: '',
+      localPendingCount: 0,
+      autosyncStatus: 'idle',
+      realtimeStatus: 'offline'
+    };
+    return true;
+  }
+
   function ensureLocalHouseholdForGoogleAuth(user) {
     if (!state.household?.isConfigured) {
       state.household = {
@@ -10504,9 +10608,27 @@
   }
 
   async function linkGoogleCalendarFromAuthSession(showMessage = true) {
-    if (!cloudReady()) return false;
     const client = getSupabaseClient();
     if (!client?.auth?.getSession) return false;
+    const user = await refreshCloudSession(false);
+    if (!user) {
+      if (showMessage) showToast('Nejdřív se přihlas přes Google');
+      return false;
+    }
+    let households = await cloudLoadHouseholds(false);
+    if (!households.length) {
+      resetLocalWorkspaceForCloudUser(user, { force: true });
+      const createdHouseholdId = await bootstrapCloudHousehold(false);
+      if (!createdHouseholdId) {
+        if (showMessage) showToast('Google účet zatím nemá domácnost a novou se nepovedlo vytvořit');
+        return false;
+      }
+      households = await cloudLoadHouseholds(false);
+    }
+    if (!cloudReady()) {
+      if (showMessage) showToast('Nejdřív vytvoř nebo vyber domácnost pro tento Google účet');
+      return false;
+    }
     const sessionResult = await client.auth.getSession();
     const session = sessionResult?.data?.session;
     const providerAccessToken = session?.provider_token || session?.provider_access_token || '';
@@ -10545,9 +10667,10 @@
     ensureLocalHouseholdForGoogleAuth(user);
     saveState();
     const households = await cloudLoadHouseholds(false);
-    if (!households.length && !state.cloud?.householdId) {
+    if (!households.length) {
+      resetLocalWorkspaceForCloudUser(user, { force: true });
       await bootstrapCloudHousehold(false);
-    } else if (households.length && !state.cloud?.householdId) {
+    } else if (!state.cloud?.householdId) {
       const preferredHousehold = pickBestCloudHousehold(households);
       state.cloud.householdId = preferredHousehold.id;
       state.household = { ...(state.household || {}), id: preferredHousehold.id, name: preferredHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
@@ -10665,15 +10788,29 @@
       createdAt: row.households?.created_at || ''
     })).filter((item) => item.id);
     state.cloud = { ...(state.cloud || {}), households, lastSyncAt: new Date().toISOString() };
-    if (!state.cloud.householdId && households.length) {
+    const currentCloudHouseholdValid = households.some((item) => item.id === state.cloud.householdId);
+    if (state.cloud.householdId && !currentCloudHouseholdValid) {
+      state.cloud.householdId = '';
+      state.cloud.profilesLoadedAt = '';
+      resetCloudModuleCachesForUserSwitch();
+    }
+    if (!households.length) {
+      state.cloud.householdId = '';
+      state.household = { ...(state.household || {}), isConfigured: Boolean(state.household?.isConfigured) };
+      touchState();
+      saveState();
+      render();
+      if (showMessage) showToast('Tenhle účet zatím nemá žádnou domácnost');
+      return [];
+    }
+    if (!state.cloud.householdId) {
       const preferredHousehold = pickBestCloudHousehold(households);
       state.cloud.householdId = preferredHousehold.id;
-      state.household.name = preferredHousehold.name;
-      state.household.isConfigured = true;
+      state.household = { ...(state.household || {}), id: preferredHousehold.id, name: preferredHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
     }
     const activeHousehold = households.find((item) => item.id === state.cloud.householdId);
     if (activeHousehold) {
-      state.household = { ...(state.household || {}), name: activeHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
+      state.household = { ...(state.household || {}), id: activeHousehold.id, name: activeHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
       applyCloudHouseholdUiSettings(activeHousehold);
     }
     touchState();
@@ -10706,7 +10843,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 87
+        appBuild: 88
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -10827,7 +10964,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 86, schema_version: 56, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 88, schema_version: 58, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -11019,8 +11156,12 @@
     const existingHouseholdId = state.cloud?.householdId;
     let cloudHouseholdId = existingHouseholdId || '';
 
+    const households = await cloudLoadHouseholds(false);
+    if (cloudHouseholdId && !households.some((item) => item.id === cloudHouseholdId)) {
+      cloudHouseholdId = '';
+      state.cloud.householdId = '';
+    }
     if (!cloudHouseholdId) {
-      const households = await cloudLoadHouseholds(false);
       const preferredHousehold = pickBestCloudHousehold(households);
       if (preferredHousehold?.id) {
         cloudHouseholdId = preferredHousehold.id;
@@ -11035,8 +11176,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 86,
-          schema_version: 56,
+          app_build: 88,
+          schema_version: 58,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -11283,7 +11424,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-87-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-88-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
