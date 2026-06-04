@@ -4259,7 +4259,7 @@ body.overview-open {
   grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
 }
 
-/* Domácnost+ v.0.1_84 – první globální iOS / liquid glass polish */
+/* Domácnost+ v.0.1_95 – první globální iOS / liquid glass polish */
 :root {
   --ios-glass: rgba(255, 255, 255, 0.46);
   --ios-glass-strong: rgba(255, 255, 255, 0.72);
@@ -4412,7 +4412,7 @@ textarea {
 }
 
 
-/* Domácnost+ v.0.1_84 – více zdrojů kalendáře */
+/* Domácnost+ v.0.1_95 – více zdrojů kalendáře */
 .calendar-source-list .item {
   gap: 8px;
 }
@@ -4438,7 +4438,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_84 – oprava variabilního Home panelu */
+/* Domácnost+ v.0.1_95 – oprava variabilního Home panelu */
 .home-clean-frame .footer-note,
 .dashboard-empty-home .footer-note {
   display: none !important;
@@ -4768,7 +4768,7 @@ textarea {
     border-radius: 14px;
   }
 }
-/* Domácnost+ v.0.1_84 – Google Calendar bezpečný konektor */
+/* Domácnost+ v.0.1_95 – Google Calendar bezpečný konektor */
 .google-calendar-connector {
   display: grid;
   gap: 14px;
@@ -4886,7 +4886,7 @@ textarea {
     width: 100%;
   }
 }
-/* Domácnost+ v.0.1_94 – stavové hlášky Google Calendar bez redirect smyčky */
+/* Domácnost+ v.0.1_95 – stavové hlášky Google Calendar bez redirect smyčky */
 .google-calendar-state-note {
   display: grid;
   gap: 4px;
@@ -4916,7 +4916,7 @@ textarea {
 }
 
 
-/* Domácnost+ v.0.1_94 – stabilní Home panel a chytřejší mini karty */
+/* Domácnost+ v.0.1_95 – stabilní Home panel a chytřejší mini karty */
 .home-minimal-hero {
   display: flex;
   min-height: 0;
@@ -5148,7 +5148,7 @@ textarea {
 }
 
 
-/* Domácnost+ v.0.1_84 – čas a počasí pod sebou při prázdném Home panelu + nastavení nahoře ve Více */
+/* Domácnost+ v.0.1_95 – čas a počasí pod sebou při prázdném Home panelu + nastavení nahoře ve Více */
 .home-hero-count-0 .station-hero-main {
   grid-template-rows: 1fr;
 }
@@ -5234,7 +5234,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_84 – pevně ukotvený spodní panel */
+/* Domácnost+ v.0.1_95 – pevně ukotvený spodní panel */
 :root {
   --nav-fixed-gap: max(8px, env(safe-area-inset-bottom, 0px));
 }
@@ -5268,7 +5268,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_84 – nižší spodní panel a oprava detailů z Home */
+/* Domácnost+ v.0.1_95 – nižší spodní panel a oprava detailů z Home */
 :root {
   --nav-fixed-gap: max(2px, calc(env(safe-area-inset-bottom, 0px) - 8px));
 }
@@ -5317,7 +5317,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_84 – spodní panel níž + bezpečné rychlé detaily z Home */
+/* Domácnost+ v.0.1_95 – spodní panel níž + bezpečné rychlé detaily z Home */
 :root {
   --nav-fixed-gap: max(-6px, calc(env(safe-area-inset-bottom, 0px) - 22px));
 }
@@ -5367,7 +5367,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_94 — Google přihlášení + kalendář */
+/* Domácnost+ v.0.1_95 — Google přihlášení + kalendář */
 .oauth-actions.single {
   grid-template-columns: 1fr;
 }
@@ -5399,7 +5399,7 @@ textarea {
   border-color: rgba(148, 163, 184, .24);
 }
 
-/* Domácnost+ v.0.1_94 – čistý login/registrace bez krokových bodů */
+/* Domácnost+ v.0.1_95 – čistý login/registrace bez krokových bodů */
 .compact-auth-card {
   max-width: 980px;
 }
@@ -5430,7 +5430,7 @@ textarea {
 }
 
 
-/* Domácnost+ v.0.1_94 – Google Calendar theme/glass kontrast */
+/* Domácnost+ v.0.1_95 – Google Calendar theme/glass kontrast */
 .google-calendar-connector,
 .google-calendar-picker,
 .google-calendar-option,
@@ -5503,4 +5503,82 @@ textarea {
 [data-theme="dark"] .google-calendar-state-note {
   background: rgba(15,23,42,.46);
   border-color: rgba(148,163,184,.18);
+}
+
+/* Domácnost+ v.0.1_95 – bezpečné zalamování uložených Google kalendářů */
+.calendar-source-list,
+.calendar-source-item,
+.google-calendar-connector,
+.google-calendar-picker,
+.google-calendar-grid,
+.google-calendar-option {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.calendar-source-item .item-top,
+.calendar-source-item .item-title,
+.calendar-source-item .item-meta,
+.google-calendar-connector .item-top,
+.google-calendar-connector .item-title,
+.google-calendar-connector .item-meta,
+.google-calendar-option span,
+.google-calendar-option strong,
+.google-calendar-option em,
+.source-mini-stats,
+.source-mini-stats .mini-stat,
+.source-mini-stats .mini-stat strong {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.calendar-source-item .item-title,
+.calendar-source-item .item-meta,
+.google-calendar-connector .item-meta,
+.google-calendar-option em {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.calendar-source-item .item-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.calendar-source-item .item-title .calendar-source-icon {
+  flex: 0 0 auto;
+}
+
+.calendar-source-item .item-actions {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.calendar-source-item .item-actions .ghost-btn,
+.calendar-source-item .item-actions .danger-btn {
+  flex: 1 1 auto;
+  min-width: min(140px, 100%);
+}
+
+@media (max-width: 560px) {
+  .calendar-source-item .item-top {
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .calendar-source-item .item-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-source-item .item-actions .ghost-btn,
+  .calendar-source-item .item-actions .danger-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .source-mini-stats {
+    grid-template-columns: 1fr;
+  }
 }

@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_94';
+  const APP_VERSION = 'Domácnost+ v.0.1_95';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -124,7 +124,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-94.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-95.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -159,8 +159,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 64,
-      appBuild: 94,
-      mode: 'clean-login-calendar-oauth-v93',
+      appBuild: 95,
+      mode: 'auth-gate-calendar-sync-v95',
       createdAt: '',
       updatedAt: ''
     },
@@ -616,8 +616,8 @@
 
     migrated.meta = {
       schemaVersion: 64,
-      appBuild: 94,
-      mode: 'clean-login-calendar-oauth-v93',
+      appBuild: 95,
+      mode: 'auth-gate-calendar-sync-v95',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -960,12 +960,14 @@
   }
 
   function shouldShowStartChoice() {
-    if (!state.household?.isConfigured) return true;
-    if (state.cloud?.status === 'email-confirmation') {
-      onboardingMode = 'account';
+    if (isDemoOnlyState()) return !demoRuntimeActive;
+    if (!hasUsableAppSession()) {
+      if (state.cloud?.status === 'email-confirmation') onboardingMode = 'account';
+      else if (onboardingMode !== 'google-setup') onboardingMode = sessionStorage.getItem('domacnostPlus.onboardingMode') || 'choice';
       return true;
     }
-    return isDemoOnlyState() && !demoRuntimeActive;
+    if (!state.household?.isConfigured) return true;
+    return false;
   }
 
   function render() {
@@ -2612,6 +2614,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_95', note: 'Hotovo: auth gate už nepustí starou lokální domácnost bez Supabase session, sync Google kalendářů posílá sourceId/calendarIds podle uložených zdrojů a dlouhé názvy kalendářů se bezpečně zalamují v kartách.' },
       { title: 'Domácnost+ v.0.1_94', note: 'Hotovo: Google Calendar ukládá a čte serverové tokeny přes bezpečné RPC funkce do app_private, bez vystavení privátního schématu do API. Google login zůstává jen přihlášení.' },
       { title: 'Domácnost+ v.0.1_10', note: 'Hotovo: tabletový domácí dashboard a první cloudový základ.' },
       { title: 'Domácnost+ v.0.1_11', note: 'Hotovo: Supabase Auth, domácnost, členové, profily a cloudový základ Nákupů.' },
@@ -2727,7 +2730,8 @@
       profileId: row.profile_id || row.profileId || '',
       name: row.name || 'Kalendář',
       provider: normalizeCalendarSourceProvider(row.provider),
-      providerCalendarId: row.provider_calendar_id || row.providerCalendarId || '',
+      providerCalendarId: row.provider_calendar_id || row.providerCalendarId || row.calendar_id || row.external_calendar_id || row.google_calendar_id || '',
+      providerConnectionId: row.provider_connection_id || row.providerConnectionId || '',
       color: row.color || '',
       isEnabled: row.is_enabled !== undefined ? Boolean(row.is_enabled) : row.isEnabled !== false,
       syncEnabled: row.sync_enabled !== undefined ? Boolean(row.sync_enabled) : Boolean(row.syncEnabled),
@@ -4493,6 +4497,42 @@
       }
     });
     return supabaseClientInstance;
+  }
+
+  function hasStoredSupabaseSession() {
+    const raw = localStorage.getItem(SUPABASE_STORAGE_KEY);
+    const session = safeParse(raw, null);
+    if (!session || typeof session !== 'object') return false;
+    const accessToken = normalizeText(session.access_token || session.currentSession?.access_token);
+    const refreshToken = normalizeText(session.refresh_token || session.currentSession?.refresh_token);
+    const expiresAt = Number(session.expires_at || session.currentSession?.expires_at || 0);
+    if (refreshToken) return true;
+    if (accessToken && (!expiresAt || expiresAt * 1000 > Date.now() - 60000)) return true;
+    return false;
+  }
+
+  function hasUsableAppSession() {
+    return Boolean(state.cloud?.status === 'signed-in' && state.cloud?.userId && hasStoredSupabaseSession());
+  }
+
+  function resetSignedOutAppState() {
+    const theme = state.settings?.theme === 'dark' ? 'dark' : 'light';
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('homeWeb.activeModule');
+    localStorage.removeItem('domacnostPlus.moduleTabs');
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
+    sessionStorage.removeItem(ONBOARDING_GOOGLE_INTENT_KEY);
+    sessionStorage.setItem('domacnostPlus.onboardingMode', 'choice');
+    state = migrateState(mergeState(DEFAULT_STATE, {}));
+    state.settings.theme = theme;
+    state.household = { ...(state.household || {}), name: '', isConfigured: false };
+    state.profiles = [];
+    state.activeProfileId = '';
+    state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, provider: 'supabase', status: 'offline', userId: '', email: '', householdId: '', households: [], invitations: [] };
+    onboardingMode = 'choice';
+    demoRuntimeActive = false;
+    activeModule = 'home';
+    moduleTabs = {};
   }
 
 
@@ -6712,7 +6752,7 @@
     }
     const { data, error } = await client
       .from('calendar_sources')
-      .select('id,household_id,profile_id,name,provider,provider_calendar_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at')
+      .select('id,household_id,profile_id,name,provider,provider_calendar_id,provider_connection_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at')
       .eq('household_id', state.cloud.householdId)
       .order('created_at', { ascending: true });
     if (error) {
@@ -6747,7 +6787,7 @@
     if (!user) return null;
     const { data: existing, error: existingError } = await client
       .from('calendar_sources')
-      .select('id,household_id,profile_id,name,provider,provider_calendar_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at')
+      .select('id,household_id,profile_id,name,provider,provider_calendar_id,provider_connection_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at')
       .eq('household_id', state.cloud.householdId)
       .eq('provider', 'manual')
       .limit(1);
@@ -6768,7 +6808,7 @@
       sync_enabled: false,
       created_by: user.id,
       updated_by: user.id
-    }).select('id,household_id,profile_id,name,provider,provider_calendar_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at').single();
+    }).select('id,household_id,profile_id,name,provider,provider_calendar_id,provider_connection_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at').single();
     if (error) {
       showToast(error.message || 'Zdroj kalendáře se nepovedlo vytvořit');
       return null;
@@ -6798,7 +6838,7 @@
       providerCalendarId: normalizeText(data.providerCalendarId),
       color: normalizeText(data.color),
       isEnabled: true,
-      syncEnabled: normalizeCalendarSourceProvider(data.provider) === 'manual' ? false : false,
+      syncEnabled: normalizeCalendarSourceProvider(data.provider) === 'google',
       note: normalizeText(data.note),
       createdAt: new Date().toISOString()
     });
@@ -6830,7 +6870,7 @@
       provider_calendar_id: source.providerCalendarId || null,
       color: source.color || null,
       is_enabled: source.isEnabled !== false,
-      sync_enabled: Boolean(source.syncEnabled),
+      sync_enabled: normalizeCalendarSourceProvider(source.provider) === 'google' ? source.syncEnabled !== false : Boolean(source.syncEnabled),
       note: source.note || null,
       created_by: user.id,
       updated_by: user.id
@@ -6838,7 +6878,7 @@
     const { data, error } = await client
       .from('calendar_sources')
       .insert(payload)
-      .select('id,household_id,profile_id,name,provider,provider_calendar_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at')
+      .select('id,household_id,profile_id,name,provider,provider_calendar_id,provider_connection_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at')
       .single();
     if (error) {
       showToast(error.message || 'Zdroj kalendáře se nepovedlo uložit do cloudu');
@@ -7077,7 +7117,23 @@
 
   async function googleCalendarSync(sourceId = '') {
     const cleanSourceId = normalizeText(sourceId);
-    const data = await invokeGoogleCalendarFunction('google-calendar-sync', cleanSourceId ? { sourceId: cleanSourceId } : {}, true);
+    let sources = getCalendarSources();
+    if (!sources.length && state.cloud?.householdId) sources = await cloudLoadCalendarSources(false);
+    const googleSources = sources.filter((source) => normalizeCalendarSourceProvider(source.provider) === 'google' && source.isEnabled !== false);
+    const body = {};
+
+    if (cleanSourceId) {
+      const source = getCalendarSource(cleanSourceId) || googleSources.find((item) => [item.id, item.cloudId].filter(Boolean).map(String).includes(cleanSourceId));
+      if (!source || normalizeCalendarSourceProvider(source.provider) !== 'google') return showToast('Google kalendář nenalezen');
+      body.sourceId = source.cloudId || source.id;
+      body.sourceIds = [source.cloudId || source.id].filter(Boolean);
+      body.calendarIds = [source.providerCalendarId].filter(Boolean);
+    } else if (googleSources.length) {
+      body.sourceIds = googleSources.map((source) => source.cloudId || source.id).filter(Boolean);
+      body.calendarIds = googleSources.map((source) => source.providerCalendarId).filter(Boolean);
+    }
+
+    const data = await invokeGoogleCalendarFunction('google-calendar-sync', body, true);
     if (!data) return;
     const syncedSources = (data.sources || []).map(mapCalendarSource);
     state.calendarCloud = {
@@ -8435,7 +8491,7 @@
     onboardingMode = 'choice';
     demoRuntimeActive = true;
     sessionStorage.removeItem('domacnostPlus.onboardingMode');
-    sessionStorage.removeItem(DEMO_SESSION_KEY);
+    sessionStorage.setItem(DEMO_SESSION_KEY, '1');
     activeModule = 'home';
     moduleTabs = {};
     touchState();
@@ -8623,7 +8679,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 64, appBuild: 94, mode: 'rich-demo-v93', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 64, appBuild: 95, mode: 'rich-demo-v95', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -8764,7 +8820,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 64, appBuild: 94, mode: 'clean-login-calendar-oauth-v93', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 64, appBuild: 95, mode: 'auth-gate-calendar-sync-v95', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -10539,7 +10595,7 @@
       console.warn('Realtime auth refresh failed', sessionError);
     }
     if (error || !data?.user) {
-      state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, status: 'offline', userId: '', email: '', householdId: '', households: [] };
+      resetSignedOutAppState();
       saveState();
       if (showMessage) showToast('Nejsi přihlášený');
       render();
@@ -10989,7 +11045,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 94
+        appBuild: 95
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -11110,7 +11166,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 91, schema_version: 61, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 95, schema_version: 64, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -11286,9 +11342,10 @@
   async function cloudLogout() {
     disposeCloudRealtime();
     const client = getSupabaseClient();
-    if (client) await client.auth.signOut();
-    state.cloud = { ...(state.cloud || {}), status: 'offline', userId: '', email: '' };
+    if (client) await client.auth.signOut().catch(() => {});
+    resetSignedOutAppState();
     saveState();
+    document.documentElement.dataset.theme = state.settings.theme || 'light';
     render();
     showToast('Odhlášeno');
   }
@@ -11322,8 +11379,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 91,
-          schema_version: 61,
+          app_build: 95,
+          schema_version: 64,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -11570,7 +11627,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-94-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-95-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -11697,7 +11754,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_84</span>
+          <span class="badge">Domácnost+ v.0.1_95</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

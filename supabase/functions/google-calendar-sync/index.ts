@@ -75,6 +75,23 @@ async function encryptStored(value: string) {
   return `${bytesToB64(iv)}:${bytesToB64(encrypted)}`;
 }
 
+function publicConnection(row: any) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    householdId: row.household_id,
+    profileId: row.profile_id || null,
+    provider: row.provider,
+    googleAccountEmail: row.google_account_email || "",
+    scopes: row.scopes || [],
+    status: row.status,
+    lastSyncAt: row.last_sync_at || null,
+    lastError: row.last_error || "",
+    updatedAt: row.updated_at || null,
+    tokenState: "ready"
+  };
+}
+
 async function markMissingToken(supabase: ReturnType<typeof serviceClient>, connectionId: string) {
   await supabase.from("calendar_provider_connections").update({ status: "error", last_error: "missing_google_token", oauth_state: null, updated_at: new Date().toISOString() }).eq("id", connectionId);
 }
@@ -86,7 +103,7 @@ async function secretForConnection(supabase: ReturnType<typeof serviceClient>, c
 }
 
 async function activeConnectionWithSecret(supabase: ReturnType<typeof serviceClient>, householdId: string, userId: string) {
-  const { data, error } = await supabase.from("calendar_provider_connections").select("id,household_id,user_id,provider,google_account_email,scopes,status,last_sync_at,last_error,updated_at").eq("household_id", householdId).eq("user_id", userId).eq("provider", "google").eq("status", "connected").order("updated_at", { ascending: false }).limit(8);
+  const { data, error } = await supabase.from("calendar_provider_connections").select("id,household_id,profile_id,user_id,provider,google_account_email,scopes,status,last_sync_at,last_error,updated_at").eq("household_id", householdId).eq("user_id", userId).eq("provider", "google").eq("status", "connected").order("updated_at", { ascending: false }).limit(8);
   if (error) throw error;
   for (const connection of data || []) {
     const secret = await secretForConnection(supabase, connection.id);
@@ -124,18 +141,51 @@ async function googleCalendarGet(path: string, accessToken: string) {
   return data;
 }
 
+function uniqueClean(values: unknown[]) {
+  return [...new Set(values.map((item) => String(item || "").trim()).filter(Boolean))];
+}
+
+function bodyArray(value: unknown) {
+  if (Array.isArray(value)) return value;
+  return value ? [value] : [];
+}
+
+function sourceIds(body: Record<string, unknown>) {
+  return uniqueClean([...bodyArray(body.sourceIds), ...bodyArray(body.sourceId)]);
+}
+
 function sourceCalendarIds(body: Record<string, unknown>) {
-  const raw = body.calendarIds || body.sourceCalendarIds || body.googleCalendarIds || body.sources || [];
-  if (!Array.isArray(raw)) return [] as string[];
-  return raw.map((item: any) => typeof item === "string" ? item : String(item?.calendarId || item?.calendar_id || item?.id || "")).filter(Boolean);
+  const raw = body.calendarIds || body.sourceCalendarIds || body.googleCalendarIds || [];
+  const list = bodyArray(raw).map((item: any) => typeof item === "string" ? item : (item?.providerCalendarId || item?.calendarId || item?.calendar_id || item?.provider_calendar_id || item?.external_calendar_id || item?.google_calendar_id || item?.id || ""));
+  return uniqueClean(list);
 }
 
 async function selectedCalendarSources(supabase: ReturnType<typeof serviceClient>, householdId: string, body: Record<string, unknown>) {
-  const fromBody = sourceCalendarIds(body);
-  if (fromBody.length) return fromBody.map((id) => ({ provider_calendar_id: id, name: id }));
-  const { data, error } = await supabase.from("calendar_sources").select("id,name,provider_calendar_id,is_enabled,sync_enabled").eq("household_id", householdId).eq("provider", "google").eq("sync_enabled", true);
+  const explicitSourceIds = sourceIds(body);
+  const explicitCalendarIds = sourceCalendarIds(body);
+  let query = supabase
+    .from("calendar_sources")
+    .select("id,household_id,profile_id,name,provider,provider_calendar_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at,provider_connection_id,sync_status")
+    .eq("household_id", householdId)
+    .eq("provider", "google");
+
+  if (explicitSourceIds.length) query = query.in("id", explicitSourceIds);
+  else if (explicitCalendarIds.length) query = query.in("provider_calendar_id", explicitCalendarIds);
+  else query = query.eq("sync_enabled", true);
+
+  const { data, error } = await query;
   if (error) throw error;
-  return (data || []).filter((row: any) => row.is_enabled !== false).map((row: any) => ({ id: row.id, name: row.name, provider_calendar_id: row.provider_calendar_id }));
+
+  const rows = (data || [])
+    .filter((row: any) => row.is_enabled !== false)
+    .filter((row: any) => explicitSourceIds.length || explicitCalendarIds.length || row.sync_enabled !== false)
+    .filter((row: any) => row.provider_calendar_id);
+
+  if ((explicitSourceIds.length || explicitCalendarIds.length) && !rows.length) {
+    throw new Error("Vybraný Google kalendář není uložený ve zdrojích. Ulož výběr kalendářů znovu.");
+  }
+
+  return rows;
 }
 
 function normalizeEvent(item: any, source: any, householdId: string, userId: string) {
@@ -198,19 +248,24 @@ Deno.serve(async (req: Request) => {
 
     for (const source of sources) {
       const calendarId = source.provider_calendar_id;
+      const syncStartedAt = new Date().toISOString();
       if (!calendarId) continue;
+      await supabase.from("calendar_sources").update({ sync_status: "syncing", sync_error: null, updated_by: user.id }).eq("id", source.id);
       const path = `/calendars/${encodeURIComponent(calendarId)}/events?singleEvents=true&showDeleted=true&orderBy=startTime&timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&maxResults=2500`;
       const data = await googleCalendarGet(path, accessToken);
       for (const item of data.items || []) {
         if (await upsertEvent(supabase, source, item, householdId, user.id)) eventsUpserted += 1;
         if (item.status === "cancelled") eventsCancelled += 1;
       }
-      if (source.id) await supabase.from("calendar_sources").update({ last_synced_at: new Date().toISOString(), sync_status: "idle", sync_error: null, updated_by: user.id }).eq("id", source.id);
+      source.last_synced_at = new Date().toISOString();
+      source.sync_status = "idle";
+      await supabase.from("calendar_sources").update({ last_synced_at: source.last_synced_at, sync_status: "idle", sync_error: null, updated_by: user.id }).eq("id", source.id);
+      source.sync_started_at = syncStartedAt;
     }
 
     const finishedAt = new Date().toISOString();
     await supabase.from("calendar_provider_connections").update({ last_sync_at: finishedAt, last_error: null, updated_at: finishedAt }).eq("id", connection.id);
-    return jsonResponse({ ok: true, connectionId: connection.id, eventsUpserted, eventsCancelled });
+    return jsonResponse({ ok: true, connectionId: connection.id, connection: publicConnection({ ...connection, last_sync_at: finishedAt, updated_at: finishedAt }), sources, eventsUpserted, eventsCancelled });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return jsonResponse({ ok: false, code: message === "missing_google_token" ? "missing_google_token" : "google_calendar_sync_failed", error: message, needsOAuthReconnect: message === "missing_google_token" }, 400);
