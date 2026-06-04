@@ -4886,9 +4886,37 @@ textarea {
     width: 100%;
   }
 }
+/* Domácnost+ v.0.1_91 – stavové hlášky Google Calendar bez redirect smyčky */
+.google-calendar-state-note {
+  display: grid;
+  gap: 4px;
+}
+
+.google-calendar-state-note strong {
+  font-size: .9rem;
+}
+
+.google-calendar-state-note span {
+  color: var(--muted);
+}
+
+.google-calendar-state-note.is-good {
+  border-color: rgba(34, 197, 94, .24);
+  background: rgba(34, 197, 94, .10);
+}
+
+.google-calendar-state-note.is-warn {
+  border-color: rgba(245, 158, 11, .30);
+  background: rgba(245, 158, 11, .12);
+}
+
+.google-calendar-state-note.is-danger {
+  border-color: rgba(239, 68, 68, .28);
+  background: rgba(239, 68, 68, .10);
+}
 
 
-/* Domácnost+ v.0.1_84 – stabilní Home panel a chytřejší mini karty */
+/* Domácnost+ v.0.1_91 – stabilní Home panel a chytřejší mini karty */
 .home-minimal-hero {
   display: flex;
   min-height: 0;
@@ -5339,7 +5367,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_89 — Google přihlášení + kalendář */
+/* Domácnost+ v.0.1_91 — Google přihlášení + kalendář */
 .oauth-actions.single {
   grid-template-columns: 1fr;
 }
@@ -5369,4 +5397,34 @@ textarea {
 [data-theme="dark"] .google-oauth-btn {
   background: linear-gradient(135deg, rgba(15,23,42,.92), rgba(30,41,59,.82));
   border-color: rgba(148, 163, 184, .24);
+}
+
+/* Domácnost+ v.0.1_91 – čistý login/registrace bez krokových bodů */
+.compact-auth-card {
+  max-width: 980px;
+}
+
+.compact-auth-hero {
+  margin-bottom: 18px;
+}
+
+.compact-login-grid .choice-tile,
+.compact-auth-grid .card.flat {
+  min-height: 0;
+}
+
+.full-width {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 720px) {
+  .compact-auth-card {
+    width: min(100%, calc(100vw - 20px));
+  }
+
+  .compact-auth-grid,
+  .compact-login-grid {
+    grid-template-columns: 1fr;
+  }
 }

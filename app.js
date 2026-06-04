@@ -9,7 +9,9 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_89';
+  const APP_VERSION = 'Domácnost+ v.0.1_91';
+  const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
+  const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
   const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_85';
   const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_82', 'domacnostPlus.v0.1_81', 'domacnostPlus.v0.1_80', 'domacnostPlus.v0.1_79', 'domacnostPlus.v0.1_78', 'domacnostPlus.v0.1_77', 'domacnostPlus.v0.1_72', 'domacnostPlus.v0.1_71', 'domacnostPlus.v0.1_70', 'domacnostPlus.v0.1_69', 'domacnostPlus.v0.1_68', 'domacnostPlus.v0.1_67', 'domacnostPlus.v0.1_66', 'domacnostPlus.v0.1_65', 'domacnostPlus.v0.1_64', 'domacnostPlus.v0.1_63', 'domacnostPlus.v0.1_62', 'domacnostPlus.v0.1_61', 'domacnostPlus.v0.1_60', 'domacnostPlus.v0.1_59', 'domacnostPlus.v0.1_58', 'domacnostPlus.v0.1_57', 'domacnostPlus.v0.1_56', 'domacnostPlus.v0.1_55', 'domacnostPlus.v0.1_54', 'domacnostPlus.v0.1_53', 'domacnostPlus.v0.1_52', 'domacnostPlus.v0.1_51', 'domacnostPlus.v0.1_50', 'domacnostPlus.v0.1_49', 'domacnostPlus.v0.1_48', 'domacnostPlus.v0.1_47', 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
@@ -122,7 +124,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-89.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-91.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -156,9 +158,9 @@
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 59,
-      appBuild: 89,
-      mode: 'google-auth-household-v89',
+      schemaVersion: 61,
+      appBuild: 91,
+      mode: 'clean-login-onboarding-v91',
       createdAt: '',
       updatedAt: ''
     },
@@ -418,6 +420,7 @@
   let pendingServiceWorker = null;
   let pwaUpdateAvailable = false;
   let onboardingMode = sessionStorage.getItem('domacnostPlus.onboardingMode') || 'choice';
+  const ONBOARDING_GOOGLE_INTENT_KEY = 'domacnostPlus.googleAuthIntent';
   let cloudWarmStartDone = false;
   let cloudRealtimeChannel = null;
   let cloudRealtimeHouseholdId = '';
@@ -612,9 +615,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 59,
-      appBuild: 89,
-      mode: 'google-auth-household-v89',
+      schemaVersion: 61,
+      appBuild: 91,
+      mode: 'clean-login-onboarding-v91',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1374,67 +1377,85 @@
     `;
   }
 
-  function renderOnboardingFlowHint(mode = 'choice') {
-    const isChoice = mode === 'choice';
-    const items = isChoice
-      ? [
-        ['1', 'Online účet', 'Ostrá domácnost se zakládá přes e-mail a heslo.'],
-        ['2', 'Vlastní domácnost', 'Data se ukládají pod samostatné household_id.'],
-        ['3', 'Demo bokem', 'Ukázka se neukládá a po návratu začíná znovu.']
-      ]
-      : [
-        ['1', 'E-mail + heslo', 'Nejdřív přihlášení nebo registrace vlastníka.'],
-        ['2', 'Ověření e-mailu', 'Po potvrzení se účet napojí zpět na Domácnost+.'],
-        ['3', 'Profily a moduly', 'Pak se založí domácnost, profily a zapnuté části aplikace.']
-      ];
-    return `
-      <div class="onboarding-trust-strip" aria-label="Jak funguje založení domácnosti">
-        ${items.map(([step, title, text]) => `
-          <div class="onboarding-step-card">
-            <span>${escapeHtml(step)}</span>
-            <strong>${escapeHtml(title)}</strong>
-            <em>${escapeHtml(text)}</em>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  }
-
   function renderOnboarding() {
     document.documentElement.dataset.theme = state.settings.theme || 'light';
-    const authRedirect = getAuthRedirectUrl();
 
     if (onboardingMode === 'choice') {
       app.innerHTML = `
         <div class="onboarding-screen">
-          <section class="onboarding-card onboarding-choice-card">
-            <div class="onboarding-hero">
+          <section class="onboarding-card onboarding-choice-card compact-auth-card">
+            <div class="onboarding-hero compact-auth-hero">
               <div class="brand-mark big logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
               <div>
                 <span class="badge">${escapeHtml(APP_VERSION)}</span>
                 <h1>Domácnost+</h1>
-                <p>Rodinná aplikace pro domácnost, nákupy, smlouvy, finance, auta, HDO, odpad, balíky a další věci kolem domu.</p>
               </div>
             </div>
 
-            ${renderOnboardingFlowHint('choice')}
-
-            <div class="grid two onboarding-choice-grid">
+            <div class="grid two onboarding-choice-grid compact-login-grid">
               <article class="card flat choice-tile">
                 <div class="choice-icon">🔐</div>
-                <h2>Založit / přihlásit domácnost</h2>
-                <p>Vytvoříš vlastní domácnost, účet, profily členů a data se budou držet odděleně od ostatních rodin přes Supabase.</p>
-                <button class="primary-btn" type="button" data-action="onboarding-mode" data-mode="account">Pokračovat k účtu</button>
+                <h2>Přihlášení</h2>
+                <button class="primary-btn" type="button" data-action="onboarding-mode" data-mode="account">Přihlásit se</button>
               </article>
               <article class="card flat choice-tile">
                 <div class="choice-icon">🏡</div>
-                <h2>Demo verze</h2>
-                <p>Ukázková dlouho používaná domácnost s hotovými daty, historií financí, nákupy, smlouvami, garáží, odpadem a balíky.</p>
+                <h2>Demo</h2>
                 <button class="ghost-btn" type="button" data-action="start-demo">Spustit demo</button>
               </article>
             </div>
+          </section>
+        </div>
+        <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
+      `;
+      return;
+    }
 
-            <div class="inline-note">Demo je jen lokální ukázka v tomhle zařízení. Skutečná domácnost se zakládá přes účet a má vlastní cloudové ID.</div>
+    if (onboardingMode === 'register' || onboardingMode === 'google-setup') {
+      const isGoogleSetup = onboardingMode === 'google-setup';
+      const email = state.cloud?.email || '';
+      const profileName = currentProfile()?.name || (email ? email.split('@')[0] : 'Já');
+      app.innerHTML = `
+        <div class="onboarding-screen">
+          <section class="onboarding-card compact-auth-card">
+            <div class="onboarding-hero compact-auth-hero">
+              <div class="brand-mark big logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
+              <div>
+                <span class="badge">${escapeHtml(APP_VERSION)}</span>
+                <h1>Nastavení domácnosti</h1>
+              </div>
+            </div>
+
+            ${renderEmailConfirmationCard()}
+
+            <section class="card flat">
+              <form data-form="${isGoogleSetup ? 'onboarding-google-setup' : 'onboarding'}" class="stack-form">
+                ${field('Název domácnosti', 'householdName', 'text', 'Špadrnovi / Doma / Byt', true)}
+                ${isGoogleSetup ? `<input type="hidden" name="email" value="${escapeHtml(email)}">` : field('E-mail vlastníka', 'email', 'email', 'email@domena.cz', true)}
+                ${isGoogleSetup ? '' : `
+                  <div class="form-grid two">
+                    ${field('Heslo', 'password', 'password', 'min. 6 znaků', true)}
+                    ${field('Heslo znovu', 'passwordConfirm', 'password', 'pro kontrolu', true)}
+                  </div>
+                `}
+                <div class="form-grid two">
+                  ${field('Hlavní profil', 'profilePrimary', 'text', profileName, true)}
+                  ${field('Druhý profil', 'profileSecondary', 'text', 'Manželka')}
+                </div>
+                ${field('Další profily', 'profilesExtra', 'text', 'děti, babička… odděl čárkou')}
+                <details class="soft-details" open>
+                  <summary>Vybrat moduly</summary>
+                  <div class="module-check-grid">
+                    ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => moduleCheckbox(module, true)).join('')}
+                  </div>
+                </details>
+                <div class="form-actions"><button class="primary-btn" type="submit">Dokončit nastavení domácnosti</button></div>
+              </form>
+            </section>
+
+            <div class="form-actions onboarding-actions">
+              <button class="ghost-btn" type="button" data-action="onboarding-mode" data-mode="account">Zpět</button>
+            </div>
           </section>
         </div>
         <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
@@ -1444,61 +1465,51 @@
 
     app.innerHTML = `
       <div class="onboarding-screen">
-        <section class="onboarding-card">
-          <div class="onboarding-hero">
+        <section class="onboarding-card compact-auth-card">
+          <div class="onboarding-hero compact-auth-hero">
             <div class="brand-mark big logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
             <div>
               <span class="badge">${escapeHtml(APP_VERSION)}</span>
-              <h1>Založení nebo přihlášení domácnosti</h1>
-              <p>Každá domácnost má vlastní účet a cloudové ID. Data jedné rodiny se nebudou míchat s jinou.</p>
+              <h1>Přihlášení</h1>
             </div>
           </div>
 
           ${renderEmailConfirmationCard()}
-          ${renderOnboardingFlowHint('account')}
 
-          <div class="grid two">
+          <div class="grid two compact-auth-grid">
             <section class="card flat">
-              <div class="card-header"><div><h2>Přihlásit existující domácnost</h2><p>Pro členy, kteří už mají účet nebo přijali pozvánku.</p></div></div>
+              <div class="card-header"><div><h2>Přihlášení přes e-mail</h2></div></div>
               <form data-form="onboarding-login" class="stack-form">
                 ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
                 ${field('Heslo', 'password', 'password', 'heslo', true)}
-                <div class="form-actions"><button class="primary-btn" type="submit">Přihlásit domácnost</button></div>
-                ${renderOAuthButtons()}
+                <div class="form-actions"><button class="primary-btn" type="submit">Přihlásit e-mailem</button></div>
               </form>
             </section>
 
             <section class="card flat">
-              <div class="card-header"><div><h2>Založit novou domácnost</h2><p>Název domácnosti, vlastník a první profily.</p></div></div>
-              <form data-form="onboarding" class="stack-form">
-                ${field('Název domácnosti', 'householdName', 'text', 'Špadrnovi / Doma / Byt', true)}
-                ${field('E-mail vlastníka', 'email', 'email', 'email@domena.cz', true)}
-                <div class="form-grid two">
-                  ${field('Heslo', 'password', 'password', 'min. 6 znaků', true)}
-                  ${field('Heslo znovu', 'passwordConfirm', 'password', 'pro kontrolu', true)}
-                </div>
-                <div class="form-grid two">
-                  ${field('Hlavní profil', 'profilePrimary', 'text', 'Martin', true)}
-                  ${field('Druhý profil', 'profileSecondary', 'text', 'Manželka')}
-                </div>
-                ${field('Další profily', 'profilesExtra', 'text', 'děti, babička… odděl čárkou')}
-                <details class="soft-details">
-                  <summary>Vybrat moduly</summary>
-                  <div class="module-check-grid">
-                    ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => moduleCheckbox(module, true)).join('')}
-                  </div>
-                </details>
-                <div class="form-actions"><button class="primary-btn" type="submit">Založit účet a domácnost</button></div>
-                <div class="inline-note">Pokud účet s tímto e-mailem už existuje, aplikace tě přepne na přihlášení místo další registrace.</div>
-                ${renderOAuthButtons()}
-              </form>
+              <div class="card-header"><div><h2>Přihlášení přes Google</h2></div></div>
+              <button class="oauth-btn google-oauth-btn full-width" type="button" data-action="cloud-oauth-google" data-intent="login">
+                <span aria-hidden="true">G</span>
+                <strong>Přihlásit přes Google</strong>
+              </button>
+            </section>
+
+            <section class="card flat">
+              <div class="card-header"><div><h2>Registrace e-mailem</h2></div></div>
+              <button class="primary-btn full-width" type="button" data-action="onboarding-mode" data-mode="register">Registrovat e-mailem</button>
+            </section>
+
+            <section class="card flat">
+              <div class="card-header"><div><h2>Registrace přes Google</h2></div></div>
+              <button class="oauth-btn google-oauth-btn full-width" type="button" data-action="cloud-oauth-google" data-intent="register">
+                <span aria-hidden="true">G</span>
+                <strong>Registrovat přes Google</strong>
+              </button>
             </section>
           </div>
 
-          <div class="inline-note">Ověřovací e-mail se teď posílá s návratem na: <strong>${escapeHtml(authRedirect)}</strong>. V Supabase musí být tahle adresa povolená v Auth Redirect URLs.</div>
           <div class="form-actions onboarding-actions">
-            <button class="ghost-btn" type="button" data-action="onboarding-mode" data-mode="choice">Zpět na výběr</button>
-            <button class="ghost-btn" type="button" data-action="toggle-theme">Přepnout vzhled</button>
+            <button class="ghost-btn" type="button" data-action="onboarding-mode" data-mode="choice">Zpět</button>
           </div>
         </section>
       </div>
@@ -2601,6 +2612,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_91', note: 'Hotovo: čistá přihlašovací obrazovka bez bodů, oddělené přihlášení/registrace přes e-mail nebo Google a registrace vede rovnou do nastavení domácnosti.' },
       { title: 'Domácnost+ v.0.1_10', note: 'Hotovo: tabletový domácí dashboard a první cloudový základ.' },
       { title: 'Domácnost+ v.0.1_11', note: 'Hotovo: Supabase Auth, domácnost, členové, profily a cloudový základ Nákupů.' },
       { title: 'Domácnost+ v.0.1_12', note: 'Hotovo: instalovatelná PWA, update flow po deployi, katalog nákupů a cloudové Hotovo/Vrátit/Smazat.' },
@@ -2762,11 +2774,32 @@
 
   function googleCalendarStatusLabel(connection = googleCalendarConnection()) {
     const status = String(connection?.status || '').toLowerCase();
+    const tokenState = String(connection?.tokenState || '').toLowerCase();
+    if (status === 'connected' && tokenState === 'missing') return 'účet přihlášený, token chybí';
+    if (status === 'connected' && tokenState === 'ready') return 'token uložený';
     if (status === 'connected') return 'připojeno';
-    if (status === 'oauth_pending') return 'čeká na dokončení';
-    if (status === 'error') return 'chyba';
+    if (status === 'oauth_pending') return 'čeká na dokončení OAuth';
+    if (status === 'error') return 'chyba připojení';
     if (status === 'disconnected') return 'odpojeno';
     return 'nepřipojeno';
+  }
+
+  function googleCalendarLastError() {
+    return state.calendarCloud?.googleLastError || googleCalendarConnection()?.lastError || null;
+  }
+
+  function googleCalendarStatusNote(connection = googleCalendarConnection()) {
+    const lastError = googleCalendarLastError();
+    const status = String(connection?.status || '').toLowerCase();
+    const tokenState = String(connection?.tokenState || '').toLowerCase();
+    const reason = String(lastError?.code || lastError?.reason || connection?.lastError || '').toLowerCase();
+    const message = lastError?.message || lastError?.error || connection?.lastError || '';
+    if (status === 'connected' && tokenState === 'ready') return { tone: 'good', title: 'Token uložený', text: 'Kalendáře je možné načíst. Token zůstává pouze na backendu v app_private.' };
+    if (status === 'oauth_pending') return { tone: 'warn', title: 'Připojení čeká na dokončení OAuth', text: 'Dokonči přihlášení u Googlu. Když ses vrátil zpět a stav se nezměnil, použij znovupřipojení.' };
+    if (status === 'connected' && tokenState === 'missing') return { tone: 'warn', title: 'Google účet je přihlášený, ale kalendářový token chybí', text: 'Aplikace už nebude sama dokola přesměrovávat. Spusť čisté znovupřipojení Google kalendáře.' };
+    if (['missing_google_token', 'token_store_failed', 'missing_encryption_key', 'redirect_uri_mismatch', 'missing_calendar_scope'].includes(reason)) return { tone: 'danger', title: 'Kalendářové připojení selhalo', text: message || 'Zkontroluj redirect_uri, scopes, Edge Function secrets a šifrovací klíč.' };
+    if (status === 'error' || message) return { tone: 'danger', title: 'Kalendářové připojení má chybu', text: message || 'Zkus znovu připojit Google kalendář.' };
+    return { tone: '', title: 'Google kalendář není dokončený', text: 'Pro sync kalendáře použij bezpečné OAuth připojení přes Supabase backend.' };
   }
 
   function isGoogleCalendarSelected(calendarId, sourceList = getCalendarSources()) {
@@ -2778,13 +2811,15 @@
     const connection = googleCalendarConnection();
     const calendars = googleCalendarItems();
     const connected = String(connection?.status || '').toLowerCase() === 'connected';
+    const tokenReady = String(connection?.tokenState || '').toLowerCase() === 'ready' || (connected && !connection?.tokenState);
+    const statusNote = googleCalendarStatusNote(connection);
     const googleSources = sourceList.filter((source) => normalizeCalendarSourceProvider(source.provider) === 'google');
     return `
       <section class="google-calendar-connector">
         <div class="item-top connector-head">
           <div>
             <div class="item-title"><span class="calendar-source-icon google-icon">G</span> Google kalendáře</div>
-            <div class="item-meta">Google účet můžeš napojit rovnou přes přihlášení. Dlouhodobý sync dál běží přes Supabase backend, ne přes lokální úložiště.</div>
+            <div class="item-meta">Google login zůstává pro přihlášení. Kalendářový sync se dokončuje přes bezpečný OAuth backend, aby token nikdy nebyl ve frontendu.</div>
           </div>
           <span class="badge ${connected ? 'good' : ''}">${escapeHtml(googleCalendarStatusLabel(connection))}</span>
         </div>
@@ -2792,16 +2827,16 @@
           <div class="mini-stat"><span>Účet</span><strong>${escapeHtml(connection?.googleAccountEmail || connection?.email || '—')}</strong></div>
           <div class="mini-stat"><span>Vybrané</span><strong>${googleSources.length}</strong></div>
           <div class="mini-stat"><span>Dostupné</span><strong>${calendars.length || '—'}</strong></div>
-          <div class="mini-stat"><span>Poslední sync</span><strong>${connection?.lastSyncAt ? escapeHtml(formatDateTime(connection.lastSyncAt)) : '—'}</strong></div>
+          <div class="mini-stat"><span>Token</span><strong>${escapeHtml(connection?.tokenState === 'ready' ? 'uložený' : connection?.tokenState === 'missing' ? 'chybí' : '—')}</strong></div>
         </div>
         <div class="form-actions connector-actions">
-          ${cloudReady ? `<button class="primary-btn" type="button" data-action="google-calendar-link-auth">${connected ? 'Použít Google účet z přihlášení' : 'Napojit z Google přihlášení'}</button>` : '<span class="badge">nejdřív online účet</span>'}
-          ${cloudReady ? `<button class="ghost-btn" type="button" data-action="google-calendar-start">${connected ? 'Znovu OAuth kalendář' : 'Fallback OAuth kalendář'}</button>` : ''}
-          ${cloudReady ? '<button class="ghost-btn" type="button" data-action="google-calendar-list-calendars">Načíst kalendáře</button>' : ''}
+          ${cloudReady ? `<button class="primary-btn" type="button" data-action="google-calendar-reconnect">Znovu připojit Google kalendář</button>` : '<span class="badge">nejdřív online účet</span>'}
+          ${cloudReady ? `<button class="ghost-btn" type="button" data-action="google-calendar-link-auth">Použít token z Google přihlášení</button>` : ''}
+          ${cloudReady ? `<button class="ghost-btn" type="button" data-action="google-calendar-list-calendars" ${tokenReady ? '' : 'aria-describedby="google-calendar-state-note"'}>Načíst kalendáře</button>` : ''}
           ${cloudReady && googleSources.length ? '<button class="ghost-btn" type="button" data-action="google-calendar-sync">Spustit sync</button>' : ''}
           ${cloudReady && connected ? '<button class="danger-btn" type="button" data-action="google-calendar-disconnect">Odpojit Google</button>' : ''}
         </div>
-        ${!cloudReady ? '<div class="inline-note">Google napojení funguje jen v ostrém online účtu domácnosti. Demo zůstává read-only sandbox.</div>' : ''}
+        ${cloudReady ? `<div id="google-calendar-state-note" class="inline-note google-calendar-state-note ${statusNote.tone ? `is-${statusNote.tone}` : ''}"><strong>${escapeHtml(statusNote.title)}</strong><span>${escapeHtml(statusNote.text)}</span></div>` : '<div class="inline-note">Google napojení funguje jen v ostrém online účtu domácnosti. Demo zůstává read-only sandbox.</div>'}
         ${calendars.length ? `
           <form data-form="google-calendar-save-sources" class="google-calendar-picker">
             <div class="item-meta">Vyber kalendáře, které chceš zobrazovat v Domácnost+. Každý vybraný kalendář se uloží jako samostatný zdroj.</div>
@@ -2823,7 +2858,7 @@
               <button class="primary-btn" type="submit">Uložit vybrané kalendáře</button>
             </div>
           </form>
-        ` : '<div class="inline-note">Po přihlášení přes Google klikni na „Napojit z Google přihlášení“. Když Google token nepřijde nebo chybí calendar scope, použij fallback OAuth kalendáře.</div>'}
+        ` : '<div class="inline-note">Po připojení Google kalendáře se tady zobrazí dostupné kalendáře. Když token chybí, použij „Znovu připojit Google kalendář“.</div>'}
       </section>
     `;
   }
@@ -4516,10 +4551,11 @@
     showToast('Účet byl smazán');
   }
 
-  async function cloudOAuthSignIn(provider = 'google') {
+  async function cloudOAuthSignIn(provider = 'google', intent = 'login') {
     const client = getSupabaseClient();
     if (!client?.auth?.signInWithOAuth) return showToast('Supabase OAuth není dostupný');
     if (provider !== 'google') return showToast('Teď je připravené jen Google přihlášení');
+    sessionStorage.setItem(ONBOARDING_GOOGLE_INTENT_KEY, intent === 'register' ? 'register' : 'login');
     try {
       const { data, error } = await client.auth.signInWithOAuth({
         provider: 'google',
@@ -6871,18 +6907,39 @@
   }
 
   function googleCalendarNeedsOAuthReconnect(payload = {}) {
-    const code = String(payload.code || payload.errorCode || '').toLowerCase();
+    const code = String(payload.code || payload.errorCode || payload.reason || '').toLowerCase();
     const message = String(payload.error || payload.message || '').toLowerCase();
     return Boolean(payload.needsOAuthReconnect || payload.needsGoogleLogin || payload.fallbackAvailable)
-      || ['missing_provider_token', 'missing_google_token', 'google_token_missing', 'token_not_available', 'missing_calendar_scope'].includes(code)
+      || ['missing_provider_token', 'missing_google_token', 'google_token_missing', 'token_not_available', 'missing_calendar_scope', 'token_store_failed'].includes(code)
       || message.includes('google token is not available')
       || message.includes('chybí google token')
       || message.includes('nepředalo kalendářový token');
   }
 
-  async function startGoogleCalendarOAuthReconnect(reason = '') {
-    showToast(reason || 'Google token chybí. Spouštím bezpečné znovupřipojení kalendáře.');
-    await googleCalendarStart();
+  function markGoogleCalendarMissingToken(message = 'Google účet je přihlášený, ale kalendářový token chybí.') {
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      googleConnection: {
+        ...(state.calendarCloud?.googleConnection || {}),
+        status: 'connected',
+        tokenState: 'missing',
+        lastError: message
+      }
+    };
+    touchState();
+    saveState();
+  }
+
+  async function startGoogleCalendarOAuthReconnect(reason = '', { force = false } = {}) {
+    const attempted = sessionStorage.getItem(GOOGLE_CALENDAR_RECONNECT_FLAG) === '1';
+    if (attempted && !force) {
+      showToast('Automatické znovupřipojení už proběhlo. Další pokus spusť ručně tlačítkem Znovu připojit Google kalendář.');
+      return false;
+    }
+    sessionStorage.setItem(GOOGLE_CALENDAR_RECONNECT_FLAG, '1');
+    showToast(reason || 'Spouštím čisté znovupřipojení Google kalendáře.');
+    await googleCalendarStart({ cleanup: true });
+    return true;
   }
 
   async function readFunctionErrorMessage(error, fallback = 'Google backend zatím není připravený') {
@@ -6959,8 +7016,13 @@
     }
   }
 
-  async function googleCalendarStart() {
-    const data = await invokeGoogleCalendarFunction('google-calendar-start', { returnTo: APP_PUBLIC_URL }, true);
+  async function googleCalendarStart(options = {}) {
+    const data = await invokeGoogleCalendarFunction('google-calendar-start', { returnTo: APP_PUBLIC_URL, cleanup: options.cleanup !== false }, true);
+    if (data?.connection) {
+      state.calendarCloud = { ...(state.calendarCloud || {}), googleConnection: data.connection };
+      touchState();
+      saveState();
+    }
     if (data?.authUrl) {
       window.location.href = data.authUrl;
       return;
@@ -6973,19 +7035,22 @@
     if (!data) {
       const lastError = state.calendarCloud?.googleLastError || {};
       if (googleCalendarNeedsOAuthReconnect(lastError)) {
-        await startGoogleCalendarOAuthReconnect('Google účet je vidět, ale kalendářový token chybí. Spouštím nové bezpečné připojení kalendáře.');
+        markGoogleCalendarMissingToken(lastError.message || lastError.error || 'Google účet je vidět, ale kalendářový token chybí.');
+        render();
+        if (showMessage) showToast('Kalendářový token chybí. Použij tlačítko Znovu připojit Google kalendář.');
       }
       return [];
     }
     const calendars = (data.calendars || data.items || []).map(normalizeGoogleCalendarItem).filter((calendar) => calendar.id);
     state.calendarCloud = {
       ...(state.calendarCloud || {}),
-      googleConnection: data.connection || state.calendarCloud?.googleConnection || null,
+      googleConnection: data.connection ? { ...data.connection, tokenState: data.connection.tokenState || 'ready' } : state.calendarCloud?.googleConnection || null,
       googleCalendars: calendars,
       googleCalendarsLoadedAt: new Date().toISOString()
     };
     touchState();
     saveState();
+    sessionStorage.removeItem(GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG);
     render();
     if (showMessage) showToast(calendars.length ? `Načteno Google kalendářů: ${calendars.length}` : 'Google účet nemá dostupné kalendáře');
     return calendars;
@@ -8108,6 +8173,7 @@
       'fuelio-preview': () => previewFuelioImport(form),
       'add-camera': () => addItem('cameras', { name: data.name, location: data.location, snapshotUrl: data.snapshotUrl, status: data.status, note: data.note }),
       onboarding: () => completeOnboarding(data),
+      'onboarding-google-setup': () => completeGoogleOnboardingSetup(data),
       'onboarding-login': () => loginExistingHouseholdFromOnboarding(data),
       'household-settings': async () => {
         state.household.name = normalizeText(data.householdName) || 'Domácnost';
@@ -8200,6 +8266,61 @@
     if (cloudResult === 'bootstrapped') showToast('Rodinný účet a cloudová domácnost vytvořeny');
     else if (cloudResult === 'email-confirmation') showToast('Potvrď e-mail. Po potvrzení se domácnost automaticky napojí na cloud');
     else showToast('Domácnost vytvořena, cloud se zkusí znovu po přihlášení');
+  }
+
+
+  async function completeGoogleOnboardingSetup(data) {
+    const user = await refreshCloudSession(false);
+    if (!user) return showToast('Google účet není přihlášený. Spusť registraci přes Google znovu.');
+
+    const householdId = `household-${uid()}`;
+    const extraNames = normalizeText(data.profilesExtra)
+      .split(',')
+      .map((name) => normalizeText(name))
+      .filter(Boolean);
+    const names = [data.profilePrimary, data.profileSecondary]
+      .map(normalizeText)
+      .filter(Boolean)
+      .concat(extraNames);
+    const uniqueNames = [...new Set(names.length ? names : [googleDisplayNameFromUser(user)])];
+
+    state.household = {
+      id: householdId,
+      name: normalizeText(data.householdName) || 'Moje domácnost',
+      isConfigured: true,
+      createdAt: new Date().toISOString()
+    };
+    state.profiles = uniqueNames.map((name, index) => createProfile(name, index === 0 ? 'owner' : 'member', householdId));
+    state.activeProfileId = state.profiles[0]?.id || '';
+    state.enabledModules = normalizeModuleList(data.modules);
+    state.settings.dashboardNote = DEFAULT_STATE.settings.dashboardNote;
+    state.settings.demoMode = false;
+    state.settings.bottomNavIds = normalizeBottomNavIds(DEFAULT_BOTTOM_NAV_IDS, state.enabledModules);
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      status: 'signed-in',
+      userId: user.id,
+      email: user.email || state.cloud?.email || ''
+    };
+    activeModule = 'home';
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
+    sessionStorage.removeItem(ONBOARDING_GOOGLE_INTENT_KEY);
+    touchState();
+    saveState();
+
+    const createdHouseholdId = await bootstrapCloudHousehold(false);
+    if (createdHouseholdId) {
+      await cloudLoadAllModules(false, { skipRealtimeSetup: true, silentWhenOffline: true });
+      onboardingMode = 'choice';
+      sessionStorage.removeItem('domacnostPlus.onboardingMode');
+      render();
+      showToast('Google účet a domácnost jsou připravené');
+      return;
+    }
+    render();
+    showToast('Domácnost je nastavená lokálně, cloud napojení půjde opravit v nastavení');
   }
 
   async function registerCloudHouseholdFromOnboarding(email, password) {
@@ -8502,7 +8623,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 59, appBuild: 89, mode: 'rich-demo-v89', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 61, appBuild: 91, mode: 'rich-demo-v91', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -8643,7 +8764,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 59, appBuild: 89, mode: 'google-auth-household-v89', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 61, appBuild: 91, mode: 'clean-login-onboarding-v91', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -9786,7 +9907,7 @@
       return;
     }
     if (action === 'cloud-oauth-google') {
-      cloudOAuthSignIn('google');
+      cloudOAuthSignIn('google', button.dataset.intent || 'login');
       return;
     }
     if (action === 'google-calendar-link-auth') {
@@ -9794,7 +9915,12 @@
       return;
     }
     if (action === 'google-calendar-start') {
-      googleCalendarStart();
+      googleCalendarStart({ cleanup: true });
+      return;
+    }
+    if (action === 'google-calendar-reconnect') {
+      sessionStorage.removeItem(GOOGLE_CALENDAR_RECONNECT_FLAG);
+      startGoogleCalendarOAuthReconnect('Čistím staré pokusy a spouštím nové připojení Google kalendáře.', { force: true });
       return;
     }
     if (action === 'google-calendar-list-calendars') {
@@ -10157,7 +10283,7 @@
       return;
     }
     if (action === 'cloud-oauth-signin') {
-      cloudOAuthSignIn(button.dataset.provider || 'google');
+      cloudOAuthSignIn(button.dataset.provider || 'google', button.dataset.intent || 'login');
       return;
     }
     if (action === 'cloud-logout') {
@@ -10672,9 +10798,8 @@
     const providerAccessToken = session?.provider_token || session?.provider_access_token || '';
     const providerRefreshToken = session?.provider_refresh_token || '';
     if (!providerAccessToken) {
-      if (showMessage) {
-        await startGoogleCalendarOAuthReconnect('Google přihlášení už nemá dostupný kalendářový token. Spouštím bezpečné OAuth připojení kalendáře.');
-      }
+      rememberGoogleCalendarError({ code: 'missing_provider_token', error: 'Google přihlášení už nemá dostupný kalendářový token. Použij tlačítko Znovu připojit Google kalendář.' });
+      if (showMessage) showToast('Google login nemá kalendářový token. Použij Znovu připojit Google kalendář.');
       return false;
     }
     const data = await invokeGoogleCalendarFunction('google-calendar-link-auth-session', {
@@ -10685,15 +10810,16 @@
     }, showMessage);
     if (!data) {
       const lastError = state.calendarCloud?.googleLastError || {};
-      if (googleCalendarNeedsOAuthReconnect(lastError) && showMessage) {
-        await startGoogleCalendarOAuthReconnect('Google přihlášení nepředalo použitelný kalendářový token. Spouštím fallback OAuth kalendáře.');
+      if (googleCalendarNeedsOAuthReconnect(lastError)) {
+        markGoogleCalendarMissingToken(lastError.message || lastError.error || 'Google přihlášení nepředalo použitelný kalendářový token.');
+        if (showMessage) showToast('Kalendářový token se neuložil. Použij Znovu připojit Google kalendář.');
       }
       return false;
     }
     const calendars = (data.calendars || []).map(normalizeGoogleCalendarItem).filter((calendar) => calendar.id);
     state.calendarCloud = {
       ...(state.calendarCloud || {}),
-      googleConnection: data.connection || state.calendarCloud?.googleConnection || null,
+      googleConnection: data.connection ? { ...data.connection, tokenState: data.connection.tokenState || 'ready' } : state.calendarCloud?.googleConnection || null,
       googleCalendars: calendars,
       googleCalendarsLoadedAt: new Date().toISOString()
     };
@@ -10710,12 +10836,42 @@
       showToast('Google přihlášení se nevrátilo do aplikace. Zkontroluj Supabase Auth Google provider.');
       return;
     }
+
+    const intent = sessionStorage.getItem(ONBOARDING_GOOGLE_INTENT_KEY) || 'login';
+    if (intent === 'register') {
+      resetLocalWorkspaceForCloudUser(user, { force: true });
+      state.household = {
+        ...(state.household || {}),
+        id: state.household?.id || `household-${uid()}`,
+        name: '',
+        isConfigured: false,
+        createdAt: state.household?.createdAt || new Date().toISOString()
+      };
+      state.profiles = [createProfile(googleDisplayNameFromUser(user), 'owner', state.household.id)];
+      state.activeProfileId = state.profiles[0]?.id || '';
+      state.settings.demoMode = false;
+      onboardingMode = 'google-setup';
+      sessionStorage.setItem('domacnostPlus.onboardingMode', 'google-setup');
+      sessionStorage.removeItem(DEMO_SESSION_KEY);
+      touchState();
+      saveState();
+      clearAuthReturnUrl(true);
+      render();
+      showToast('Google účet je přihlášený. Dokonči nastavení domácnosti.');
+      return;
+    }
+
     ensureLocalHouseholdForGoogleAuth(user);
     saveState();
     const households = await cloudLoadHouseholds(false);
     if (!households.length) {
-      resetLocalWorkspaceForCloudUser(user, { force: true });
-      await bootstrapCloudHousehold(false);
+      onboardingMode = 'google-setup';
+      sessionStorage.setItem('domacnostPlus.onboardingMode', 'google-setup');
+      sessionStorage.removeItem(DEMO_SESSION_KEY);
+      clearAuthReturnUrl(true);
+      render();
+      showToast('Google účet zatím nemá domácnost. Dokonči nastavení domácnosti.');
+      return;
     } else if (!state.cloud?.householdId) {
       const preferredHousehold = pickBestCloudHousehold(households);
       state.cloud.householdId = preferredHousehold.id;
@@ -10725,17 +10881,16 @@
       await cloudLoadProfilesForCurrentHousehold();
       await cloudLoadAllModules(false, { skipRealtimeSetup: true, silentWhenOffline: true });
       await linkGoogleCalendarFromAuthSession(false);
-      activeModule = 'calendar';
-      moduleTabs = { ...(moduleTabs || {}), calendar: 'sources' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      activeModule = 'home';
     }
     onboardingMode = 'choice';
     sessionStorage.removeItem('domacnostPlus.onboardingMode');
+    sessionStorage.removeItem(ONBOARDING_GOOGLE_INTENT_KEY);
     sessionStorage.removeItem(DEMO_SESSION_KEY);
     touchState();
     saveState();
     render();
-    showToast('Přihlášeno přes Google. Teď můžeš vybrat kalendáře.');
+    showToast('Přihlášeno přes Google');
   }
 
   function isAuthReturnUrl() {
@@ -10767,11 +10922,19 @@
       moduleTabs = { ...(moduleTabs || {}), calendar: 'sources' };
       if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
+      const reason = params.get('reason') || '';
       if (result === 'connected') {
-        showToast('Google účet připojený. Načítám kalendáře.');
-        await googleCalendarListCalendars(false);
+        const alreadyAutoLoaded = sessionStorage.getItem(GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG) === '1';
+        if (!alreadyAutoLoaded) {
+          sessionStorage.setItem(GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG, '1');
+          showToast('Google účet připojený. Jednou zkusím načíst kalendáře.');
+          await googleCalendarListCalendars(false);
+        } else {
+          showToast('Google callback už byl zpracovaný. Další načtení spusť ručně.');
+        }
       } else if (result === 'error') {
-        showToast('Google připojení se nepovedlo. Zkontroluj callback a credentials.');
+        rememberGoogleCalendarError({ code: reason || 'google_calendar_callback_error', error: reason === 'token_store_failed' ? 'Token exchange proběhl, ale uložení tokenu do app_private selhalo. Zkontroluj GOOGLE_TOKEN_ENCRYPTION_KEY_BASE64 a service role práva.' : 'Google připojení se nepovedlo. Zkontroluj redirect_uri, scopes a Edge Function secrets.' });
+        showToast(reason === 'token_store_failed' ? 'Google token se nepovedlo uložit. Zkontroluj Supabase secrets.' : 'Google připojení se nepovedlo.');
       }
       clearAuthReturnUrl(true);
       return;
@@ -10889,7 +11052,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 89
+        appBuild: 91
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -11010,7 +11173,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 88, schema_version: 58, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 91, schema_version: 61, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -11222,8 +11385,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 88,
-          schema_version: 58,
+          app_build: 91,
+          schema_version: 61,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -11470,7 +11633,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-89-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-91-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
