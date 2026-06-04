@@ -5656,7 +5656,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_101 – Home Kalendář: probíhající a nadcházející události */
+/* Domácnost+ v.0.1_102 – Home Kalendář: probíhající a nadcházející události */
 .nav-shell {
   bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + 4px);
   transform: translate3d(0, 0, 0);
@@ -5682,3 +5682,71 @@ textarea {
   transform: none;
 }
 
+
+
+/* Domácnost+ v.0.1_102 – vyšší Home mini panely + čitelnější Kalendář */
+.home-hero-count-1.home-minimal-hero,
+.home-hero-count-2.home-minimal-hero,
+.home-hero-count-3.home-minimal-hero,
+.home-hero-count-4.home-minimal-hero {
+  height: clamp(318px, 46svh, 418px);
+  max-height: 418px;
+}
+
+.home-hero-count-1 .station-hero-main,
+.home-hero-count-2 .station-hero-main,
+.home-hero-count-3 .station-hero-main,
+.home-hero-count-4 .station-hero-main {
+  grid-template-rows: minmax(82px, .58fr) minmax(0, 1.22fr);
+}
+
+.station-summary-item-calendar .station-summary-metric {
+  color: var(--muted);
+  font-size: clamp(.72rem, 2vw, .9rem);
+  letter-spacing: -.02em;
+}
+
+.station-summary-item-calendar .station-summary-primary {
+  color: var(--text);
+  font-size: clamp(1rem, 3.8vw, 1.5rem);
+  font-weight: 920;
+  line-height: 1.08;
+}
+
+.station-summary-item-calendar .station-summary-detail {
+  margin-top: 2px;
+}
+
+@media (min-width: 720px) {
+  .home-hero-count-1.home-minimal-hero,
+  .home-hero-count-2.home-minimal-hero,
+  .home-hero-count-3.home-minimal-hero,
+  .home-hero-count-4.home-minimal-hero {
+    height: clamp(326px, 38svh, 430px);
+  }
+}
+
+@media (max-width: 560px) {
+  .home-hero-count-1.home-minimal-hero,
+  .home-hero-count-2.home-minimal-hero,
+  .home-hero-count-3.home-minimal-hero,
+  .home-hero-count-4.home-minimal-hero {
+    height: clamp(306px, 43svh, 374px);
+    max-height: 374px;
+  }
+
+  .home-hero-count-1 .station-hero-main,
+  .home-hero-count-2 .station-hero-main,
+  .home-hero-count-3 .station-hero-main,
+  .home-hero-count-4 .station-hero-main {
+    grid-template-rows: minmax(70px, .52fr) minmax(0, 1.28fr);
+  }
+
+  .station-summary-item-calendar .station-summary-metric {
+    font-size: .68rem;
+  }
+
+  .station-summary-item-calendar .station-summary-primary {
+    font-size: clamp(.98rem, 4.4vw, 1.28rem);
+  }
+}

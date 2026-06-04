@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_101';
+  const APP_VERSION = 'Domácnost+ v.0.1_102';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -125,7 +125,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180-v0-1-101.png';
+  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180-v0-1-102.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -159,8 +159,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 65,
-      appBuild: 101,
-      mode: 'fuelio-holidays-home-v101',
+      appBuild: 102,
+      mode: 'fuelio-home-hdo-v102',
       createdAt: '',
       updatedAt: ''
     },
@@ -689,8 +689,8 @@
 
     migrated.meta = {
       schemaVersion: 65,
-      appBuild: 101,
-      mode: 'fuelio-holidays-home-v101',
+      appBuild: 102,
+      mode: 'fuelio-home-hdo-v102',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1381,7 +1381,7 @@
     const tabTarget = target.tab;
 
     if (type === 'hdo') {
-      const rows = getSafeHdoWindows().sort((a, b) => String(a.start || '').localeCompare(String(b.start || '')));
+      const rows = sortHdoWindowsForOverview(getSafeHdoWindows());
       const enabledRows = rows.filter((item) => item.enabled && timeToMinutes(item.start) !== null && timeToMinutes(item.end) !== null);
       const nextHdo = findNextHdoWindow(now);
       body = `
@@ -1858,13 +1858,13 @@
         ? `<span class="station-summary-extra" aria-label="Další položky">${presentation.extraRows.slice(0, density === 'large' ? 5 : density === 'medium' ? 2 : 0).map((row) => `<b>${escapeHtml(row)}</b>`).join('')}</span>`
         : '';
       return `
-        <button class="station-summary-item station-summary-size-${density} station-summary-tone-${escapeHtml(presentation.tone || 'neutral')}" type="button" ${attrs}>
+        <button class="station-summary-item station-summary-item-${escapeHtml(id)} station-summary-size-${density} station-summary-tone-${escapeHtml(presentation.tone || 'neutral')}" type="button" ${attrs}>
           <span class="station-summary-icon" aria-hidden="true">${escapeHtml(item.icon || '')}</span>
           <span class="station-summary-copy">
             <em>${escapeHtml(item.label)}</em>
-            <strong>${escapeHtml(presentation.metric)}</strong>
-            <span>${escapeHtml(presentation.text)}</span>
-            ${presentation.detail ? `<small>${escapeHtml(presentation.detail)}</small>` : ''}
+            <strong class="station-summary-metric">${escapeHtml(presentation.metric)}</strong>
+            <span class="station-summary-primary">${escapeHtml(presentation.text)}</span>
+            ${presentation.detail ? `<small class="station-summary-detail">${escapeHtml(presentation.detail)}</small>` : ''}
             ${chips}
             ${extraRows}
           </span>
@@ -1959,7 +1959,7 @@
     const allEnabled = getSafeHdoWindows().filter((entry) => entry.enabled && timeToMinutes(entry.start) !== null && timeToMinutes(entry.end) !== null);
     const enabledToday = allEnabled.filter((entry) => hdoWindowMatchesDate(entry, safeDate));
     const enabled = enabledToday.length ? enabledToday : allEnabled;
-    const extraRows = extraLimit ? enabled.slice().sort((a, b) => String(a.start || '').localeCompare(String(b.start || ''))).slice(0, extraLimit).map((entry) => `${hdoWindowTimeLabel(entry)} · ${entry.label || 'Nízký tarif'}`) : [];
+    const extraRows = extraLimit ? sortHdoWindowsForOverview(enabled).slice(0, extraLimit).map((entry) => `${hdoWindowTimeLabel(entry)} · ${entry.label || 'Nízký tarif'}`) : [];
     const active = enabledToday.find((entry) => isTimeInWindow(minuteNow, entry.start, entry.end));
     if (active) {
       const endMinutes = timeToMinutes(active.end);
@@ -2765,6 +2765,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_102', note: 'Hotovo: vyšší Home mini panely pod časem a počasím, čitelnější karta Kalendář, HDO přehled řadí Po–Pá před víkend a Fuelio import čte vícesekční exporty včetně Data/Odo/Costs.' },
       { title: 'Domácnost+ v.0.1_101', note: 'Hotovo: uklizené ikony do assets/icons, Home panel Kalendář ukazuje jen jednu aktuální nebo nejbližší událost, HDO víkend platí i pro české svátky a Fuelio import je tolerantnější na CSV exporty.' },
       { title: 'Domácnost+ v.0.1_100', note: 'Hotovo: Home panel Kalendář ukazuje jen probíhající a nadcházející události. Skončené události z hlavní plochy mizí, probíhající ukazují čas konce.' },
       { title: 'Domácnost+ v.0.1_99', note: 'Hotovo: automatické HDO podle distributora/kódu/importu bylo odstraněné. HDO se zadává jen ručně, zůstává rychlé číselné zadávání časů a cloudové uložení ručních oken.' },
@@ -3514,7 +3515,7 @@
             </form>
           </details>
           <div style="height:14px"></div>
-          ${state.hdoWindows.length ? `<div class="list">${state.hdoWindows.map((item) => `
+          ${state.hdoWindows.length ? `<div class="list">${sortHdoWindowsForOverview(getSafeHdoWindows()).map((item) => `
             <div class="item">
               <div class="item-top"><div class="item-title">${escapeHtml(item.label)}</div><span class="badge ${item.enabled ? 'good' : ''}">${item.enabled ? 'aktivní' : 'vypnuto'}</span></div>
               <div class="item-meta">${escapeHtml(item.start)}–${escapeHtml(item.end)} · ${escapeHtml(daysLabel(item.days))}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
@@ -5389,6 +5390,26 @@
       .filter(Boolean);
   }
 
+  function hdoWindowSortWeight(item) {
+    const days = sanitizeHdoDays(item?.days);
+    const hasWorkday = days.some((day) => day >= 1 && day <= 5);
+    const hasWeekend = days.some((day) => day === 0 || day === 6);
+    if (hasWorkday && !hasWeekend) return 0;
+    if (hasWorkday && hasWeekend) return 1;
+    if (hasWeekend) return 2;
+    return 3;
+  }
+
+  function sortHdoWindowsForOverview(rows = []) {
+    return [...rows].sort((a, b) => {
+      const groupDiff = hdoWindowSortWeight(a) - hdoWindowSortWeight(b);
+      if (groupDiff) return groupDiff;
+      const timeDiff = (timeToMinutes(a?.start) ?? 9999) - (timeToMinutes(b?.start) ?? 9999);
+      if (timeDiff) return timeDiff;
+      return String(a?.label || '').localeCompare(String(b?.label || ''), 'cs');
+    });
+  }
+
   function hdoWindowTimeLabel(item) {
     const start = item?.start || '—';
     const end = item?.end || '—';
@@ -5871,27 +5892,66 @@
     return rows;
   }
 
-  function parseCsv(text) {
-    const raw = String(text || '').replace(/^\uFEFF/, '').replace(/^sep=(.)\s*\r?\n/i, '');
-    const firstLine = raw.split(/\r?\n/).find((line) => line.trim() && !/^sep=/i.test(line.trim())) || '';
-    const delimiter = detectCsvDelimiter(firstLine);
-    const rows = splitCsvRows(raw, delimiter);
-    if (!rows.length) return [];
-    const headerScore = (cells) => cells.map(normalizeKey).reduce((score, header) => {
-      if (/date|datum|time|cas|odometer|tachometer|mileage|km|volume|lit|fuel|palivo|cost|price|cena|vehicle|vozidlo|service|servis|expense|naklad/.test(header)) return score + 1;
+  function csvHeaderScore(cells) {
+    return cells.map(normalizeKey).reduce((score, header) => {
+      if (/date|datum|data|time|cas|odometer|tachometer|mileage|km|volume|lit|fuel|palivo|cost|price|cena|vehicle|vozidlo|service|servis|expense|naklad|odo/.test(header)) return score + 1;
       return score;
     }, 0);
-    let headerIndex = 0;
+  }
+
+  function detectCsvDelimiterFromText(text) {
+    const rawLines = String(text || '').split(/\r?\n/).filter((line) => line.trim() && !/^sep=/i.test(line.trim()));
+    const candidates = [';', ',', '\t'];
+    let best = ';';
     let bestScore = -1;
-    rows.slice(0, 12).forEach((cells, index) => {
-      const score = headerScore(cells);
-      if (score > bestScore) {
-        bestScore = score;
-        headerIndex = index;
-      }
+    rawLines.slice(0, 30).forEach((line) => {
+      candidates.forEach((candidate) => {
+        const delimiter = candidate === '\t' ? '\t' : candidate;
+        const count = (String(line || '').match(new RegExp(delimiter === '\t' ? '\\t' : `\\${delimiter}`, 'g')) || []).length;
+        const score = count + (csvHeaderScore(splitCsvRows(`${line}\n`, delimiter)[0] || []) * 4);
+        if (score > bestScore) {
+          best = candidate;
+          bestScore = score;
+        }
+      });
     });
-    const headers = (rows[headerIndex] || []).map((header, index) => normalizeKey(header) || `col ${index}`);
-    return rows.slice(headerIndex + 1).map((values) => Object.fromEntries(headers.map((header, index) => [header, normalizeText(values[index])])));
+    return best === '\t' ? '\t' : best;
+  }
+
+  function parseCsvTables(text) {
+    const raw = String(text || '').replace(/^\uFEFF/, '').replace(/^sep=(.)\s*\r?\n/i, '');
+    if (!raw.trim()) return [];
+    const delimiter = detectCsvDelimiterFromText(raw);
+    const sourceRows = splitCsvRows(raw, delimiter);
+    const tables = [];
+    let currentSection = 'default';
+    let headers = null;
+    let currentRows = [];
+    const flush = () => {
+      if (headers && currentRows.length) tables.push({ section: currentSection, rows: currentRows });
+      headers = null;
+      currentRows = [];
+    };
+    sourceRows.forEach((cells) => {
+      const first = normalizeText(cells[0]);
+      const marker = cells.length === 1 && /^##\s*/.test(first);
+      if (marker) {
+        flush();
+        currentSection = normalizeText(first.replace(/^##\s*/, '')) || 'default';
+        return;
+      }
+      if (!headers) {
+        if (csvHeaderScore(cells) > 0) headers = cells.map((header, index) => normalizeKey(header) || `col ${index}`);
+        return;
+      }
+      currentRows.push(Object.fromEntries(headers.map((header, index) => [header, normalizeText(cells[index])])));
+    });
+    flush();
+    return tables;
+  }
+
+  function parseCsv(text) {
+    return parseCsvTables(text).flatMap((table) => table.rows.map((row) => ({ ...row, __fuelioSection: table.section })));
   }
 
   function getRowValue(row, keys) {
@@ -5933,23 +5993,38 @@
   }
 
   function mapFuelioRows(text) {
-    const rows = parseCsv(text);
-    const mapped = rows.map((row, index) => {
-      const rowType = normalizeText(getRowValue(row, ['record type', 'entry type', 'type', 'category', 'kategorie', 'typ', 'zaznam', 'druh'])).toLowerCase();
-      const date = parseFuelioDate(getRowValue(row, ['date', 'datum', 'datetime', 'date time', 'time', 'timestamp', 'created at']));
-      const odometer = parseCzNumber(getRowValue(row, ['odometer', 'tachometer', 'mileage', 'kilometers', 'kilometres', 'stav tachometru', 'km stav', 'km', 'odo']));
-      const liters = parseCzNumber(getRowValue(row, ['liters', 'litres', 'liter', 'litr', 'litru', 'volume', 'fuel volume', 'quantity', 'amount fuel', 'mnozstvi', 'natankovano', 'palivo objem']));
-      const unitPrice = parseCzNumber(getRowValue(row, ['unit price', 'price per unit', 'price liter', 'price per litre', 'price per liter', 'cena za litr', 'cena l']));
-      const explicitTotal = parseCzNumber(getRowValue(row, ['total cost', 'total price', 'total', 'amount', 'cost', 'expense', 'cena celkem', 'celkova cena', 'celkem', 'castka', 'naklad']));
-      const price = explicitTotal || (liters && unitPrice ? Number((liters * unitPrice).toFixed(2)) : '');
-      const vehicleName = normalizeText(getRowValue(row, ['vehicle', 'vehicle name', 'car', 'auto', 'vozidlo', 'car name']));
-      const category = normalizeText(getRowValue(row, ['category', 'type', 'kategorie', 'typ', 'expense type', 'service type', 'tag', 'tags']));
-      const note = normalizeText(getRowValue(row, ['note', 'notes', 'poznamka', 'description', 'comment', 'memo']));
-      const station = normalizeText(getRowValue(row, ['station', 'gas station', 'fuel station', 'cerpaci stanice', 'place', 'location', 'misto']));
-      const title = category || note || station || (rowType.includes('fuel') || liters ? 'Tankování z Fuelio' : 'Záznam z Fuelio');
-      const isServiceLike = /service|servis|expense|naklad|maintenance|oprava|pneu|insurance|pojist/.test(rowType + ' ' + category + ' ' + note);
-      const kind = liters ? 'fuel' : price && isServiceLike ? 'service' : price && !liters ? 'service' : 'ignored';
-      return { index, kind, date, odometer, liters, price, vehicleName, title, note: [station, note].filter(Boolean).join(' · ') };
+    const tables = parseCsvTables(text);
+    const vehicle = tables.find((table) => normalizeKey(table.section) === 'vehicle')?.rows?.[0] || null;
+    const defaultVehicleName = normalizeText(getRowValue(vehicle || {}, ['name', 'vehicle name', 'car', 'auto', 'vozidlo']));
+    const costCategoryTable = tables.find((table) => normalizeKey(table.section) === 'costcategories');
+    const costCategoryMap = new Map((costCategoryTable?.rows || []).map((row) => [String(getRowValue(row, ['costtypeid', 'cost type id', 'id'])), normalizeText(getRowValue(row, ['name', 'nazev']))]).filter(([id, name]) => id && name));
+    let sequence = 0;
+    const mapped = tables.flatMap((table) => {
+      const section = normalizeKey(table.section);
+      return table.rows.map((row) => {
+        let rowType = normalizeText(getRowValue(row, ['record type', 'entry type', 'type', 'category', 'kategorie', 'typ', 'zaznam', 'druh'])).toLowerCase();
+        if (/^\d+(\.\d+)?$/.test(rowType)) rowType = '';
+        const date = parseFuelioDate(getRowValue(row, ['date', 'data', 'datum', 'datetime', 'date time', 'time', 'timestamp', 'created at']));
+        const odometer = parseCzNumber(getRowValue(row, ['odometer', 'tachometer', 'mileage', 'kilometers', 'kilometres', 'stav tachometru', 'km stav', 'km', 'odo', 'odo km']));
+        const liters = parseCzNumber(getRowValue(row, ['liters', 'litres', 'fuel litres', 'fuel liters', 'liter', 'litr', 'litru', 'volume', 'fuel volume', 'quantity', 'amount fuel', 'mnozstvi', 'natankovano', 'palivo objem']));
+        const unitPrice = parseCzNumber(getRowValue(row, ['unit price', 'price per unit', 'price liter', 'price per litre', 'price per liter', 'cena za litr', 'cena l', 'volumeprice', 'volume price']));
+        const explicitTotal = parseCzNumber(getRowValue(row, ['total cost', 'total price', 'total', 'amount', 'cost', 'price', 'price optional', 'expense', 'cena celkem', 'celkova cena', 'celkem', 'castka', 'naklad']));
+        const price = explicitTotal || (liters && unitPrice ? Number((liters * unitPrice).toFixed(2)) : '');
+        const vehicleName = normalizeText(getRowValue(row, ['vehicle', 'vehicle name', 'car', 'auto', 'vozidlo', 'car name'])) || defaultVehicleName;
+        const costTypeId = String(getRowValue(row, ['costtypeid', 'cost type id', 'cost category', 'category id']));
+        const costCategory = costCategoryMap.get(costTypeId) || '';
+        let category = normalizeText(getRowValue(row, ['category', 'type', 'kategorie', 'typ', 'expense type', 'service type', 'tag', 'tags'])) || costCategory;
+        if (!/cost|expense|service|maintenance/.test(section) && /^\d+(\.\d+)?$/.test(category)) category = '';
+        const titleSource = normalizeText(getRowValue(row, ['costtitle', 'cost title', 'title', 'nazev', 'name']));
+        const note = normalizeText(getRowValue(row, ['note', 'notes', 'poznamka', 'description', 'comment', 'memo']));
+        const station = normalizeText(getRowValue(row, ['station', 'gas station', 'fuel station', 'cerpaci stanice', 'city', 'city optional', 'place', 'location', 'misto']));
+        const isCostSection = /cost|expense|service|maintenance/.test(section);
+        const title = titleSource || category || note || station || (rowType.includes('fuel') || liters ? 'Tankování z Fuelio' : 'Záznam z Fuelio');
+        const isServiceLike = isCostSection || /service|servis|expense|naklad|maintenance|udrzba|oprava|pneu|insurance|pojist|registrace|myti|parkovani/.test(rowType + ' ' + category + ' ' + title + ' ' + note);
+        const kind = liters ? 'fuel' : price && isServiceLike ? 'service' : price && !liters ? 'service' : 'ignored';
+        sequence += 1;
+        return { index: sequence, kind, date, odometer, liters, price, vehicleName, title, note: [station, note].filter(Boolean).join(' · ') };
+      });
     }).filter((row) => row.kind !== 'ignored' && row.date);
     return mapped;
   }
@@ -9038,7 +9113,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 65, appBuild: 101, mode: 'rich-demo-v101', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 65, appBuild: 102, mode: 'rich-demo-v102', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -9179,7 +9254,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 65, appBuild: 101, mode: 'fuelio-holidays-home-v101', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 65, appBuild: 102, mode: 'fuelio-home-hdo-v102', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -11408,7 +11483,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 101
+        appBuild: 102
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -11990,7 +12065,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-101-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-102-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -12127,7 +12202,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_101</span>
+          <span class="badge">Domácnost+ v.0.1_102</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
