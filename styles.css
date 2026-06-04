@@ -5750,3 +5750,85 @@ textarea {
     font-size: clamp(.98rem, 4.4vw, 1.28rem);
   }
 }
+
+/* Domácnost+ v.0.1_103 – Garáž: plná historie a filtry */
+.garage-history-panel {
+  margin-top: 12px;
+}
+
+.garage-history-toolbar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, 1fr)) auto;
+  align-items: end;
+  gap: 8px;
+  margin: 8px 0 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.34);
+}
+
+[data-theme="dark"] .garage-history-toolbar {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.compact-select-field {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.compact-select-field span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.garage-history-count {
+  min-width: 92px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: rgba(53, 116, 240, 0.10);
+  text-align: center;
+}
+
+.garage-history-count strong,
+.garage-history-count span {
+  display: block;
+}
+
+.garage-history-count strong {
+  font-size: 1.08rem;
+  line-height: 1;
+}
+
+.garage-history-count span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.garage-history-list {
+  margin-top: 10px;
+  overflow: visible;
+}
+
+.garage-history-list .item {
+  scroll-margin-top: 96px;
+}
+
+@media (max-width: 560px) {
+  .garage-history-toolbar {
+    grid-template-columns: 1fr;
+    padding: 9px;
+  }
+
+  .garage-history-count {
+    min-width: 0;
+    text-align: left;
+  }
+}

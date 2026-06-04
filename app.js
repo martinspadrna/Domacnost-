@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_102';
+  const APP_VERSION = 'Domácnost+ v.0.1_103';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -125,7 +125,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180-v0-1-102.png';
+  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180-v0-1-103.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -143,7 +143,7 @@
     { id: 'tasks', label: 'Úkoly', icon: '✅', overview: 'tasks', metric: (ctx) => ctx.openTasks.length, text: () => 'otevřené úkoly' },
     { id: 'notes', label: 'Poznámky', icon: '📝', nav: 'homecare', tab: 'tasks', metric: () => state.notes.length, text: () => 'poznámky' },
     { id: 'devices', label: 'Zařízení', icon: '🔌', nav: 'homecare', tab: 'devices', metric: () => state.devices.length, text: () => 'zařízení' },
-    { id: 'garage', label: 'Garáž', icon: '🚗', overview: 'garage', metric: (ctx) => ctx.vehicleAlerts.length, text: () => 'upozornění' },
+    { id: 'garage', label: 'Garáž', icon: '🚗', overview: 'garage', metric: () => state.vehicles.length, text: () => garageCountLabel(state.vehicles.length) },
     { id: 'contracts', label: 'Smlouvy', icon: '📄', overview: 'contracts', metric: () => state.contracts.length, text: () => 'smlouvy' },
     { id: 'finance', label: 'Finance', icon: '💰', overview: 'finance', metric: () => formatCurrency(financeMonthSummary().balance), text: () => 'měsíční rozdíl' },
     { id: 'cameras', label: 'Kamery', icon: '📹', nav: 'cameras', tab: 'overview', metric: () => state.cameras.length, text: () => 'kamery' }
@@ -159,8 +159,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 65,
-      appBuild: 102,
-      mode: 'fuelio-home-hdo-v102',
+      appBuild: 103,
+      mode: 'garage-history-home-v103',
       createdAt: '',
       updatedAt: ''
     },
@@ -409,6 +409,8 @@
   let activeOverview = null;
   let moduleTabs = isStoredDemoState(state) ? {} : (safeParse(localStorage.getItem('domacnostPlus.moduleTabs'), {}) || {});
   let garageVehicleId = null;
+  let garageHistoryYearFilter = 'all';
+  let garageHistoryTypeFilter = 'all';
   let activeContractId = null;
   let fuelioPreview = null;
   let garageEditRecord = null;
@@ -689,8 +691,8 @@
 
     migrated.meta = {
       schemaVersion: 65,
-      appBuild: 102,
-      mode: 'fuelio-home-hdo-v102',
+      appBuild: 103,
+      mode: 'garage-history-home-v103',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1934,7 +1936,8 @@
     }
     if (id === 'garage') {
       const alert = (ctx.vehicleAlerts || [])[0];
-      return { ...base, metric: ctx.vehicleAlerts?.length || 0, text: alert ? firstTitle(alert, 'Upozornění') : `${state.vehicles.length} aut`, detail: alert?.meta || (state.vehicles.length ? 'Garáž bez akutního varování' : 'Přidej první auto'), tone: alert ? 'warn' : state.vehicles.length ? 'good' : 'neutral' };
+      const vehicleCount = state.vehicles.length;
+      return { ...base, metric: vehicleCount, text: garageCountLabel(vehicleCount), detail: alert ? `${firstTitle(alert, 'Upozornění')} · ${alert.meta || 'zkontroluj detail auta'}` : (vehicleCount ? 'Garáž bez akutního varování' : 'Přidej první auto'), tone: alert ? 'warn' : vehicleCount ? 'good' : 'neutral' };
     }
     if (id === 'contracts') {
       const urgent = (ctx.urgentContracts || [])[0];
@@ -2765,6 +2768,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_103', note: 'Hotovo: Garáž na Home ukazuje počet aut místo nuly bez upozornění a detail auta má plnou historii s filtrem podle roku a typu záznamu.' },
       { title: 'Domácnost+ v.0.1_102', note: 'Hotovo: vyšší Home mini panely pod časem a počasím, čitelnější karta Kalendář, HDO přehled řadí Po–Pá před víkend a Fuelio import čte vícesekční exporty včetně Data/Odo/Costs.' },
       { title: 'Domácnost+ v.0.1_101', note: 'Hotovo: uklizené ikony do assets/icons, Home panel Kalendář ukazuje jen jednu aktuální nebo nejbližší událost, HDO víkend platí i pro české svátky a Fuelio import je tolerantnější na CSV exporty.' },
       { title: 'Domácnost+ v.0.1_100', note: 'Hotovo: Home panel Kalendář ukazuje jen probíhající a nadcházející události. Skončené události z hlavní plochy mizí, probíhající ukazují čas konce.' },
@@ -3763,6 +3767,93 @@
   }
 
 
+
+  function garageCountLabel(count) {
+    const value = Number(count || 0);
+    if (value === 1) return 'auto v garáži';
+    if (value >= 2 && value <= 4) return 'auta v garáži';
+    return 'aut v garáži';
+  }
+
+  function garageHistoryYear(item) {
+    const year = Number(String(item?.date || '').slice(0, 4));
+    return Number.isFinite(year) && year > 1900 ? String(year) : '';
+  }
+
+  function garageHistoryTypeLabel(type) {
+    if (type === 'fuel') return 'tankování';
+    if (type === 'service') return 'servis / náklad';
+    return 'vše';
+  }
+
+  function garageHistoryRecords(fuelRows, serviceRows) {
+    const fuel = fuelRows.map((item) => ({ kind: 'fuel', date: item.date || '', odometer: Number(item.odometer || 0), item }));
+    const services = serviceRows.map((item) => ({ kind: 'service', date: item.date || '', odometer: Number(item.odometer || 0), item }));
+    return [...fuel, ...services].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || Number(b.odometer || 0) - Number(a.odometer || 0));
+  }
+
+  function garageHistoryYears(records) {
+    return [...new Set(records.map((record) => garageHistoryYear(record.item)).filter(Boolean))].sort((a, b) => Number(b) - Number(a));
+  }
+
+  function renderGarageHistoryFilters(records, visibleRecords) {
+    const years = garageHistoryYears(records);
+    const selectedYear = years.includes(String(garageHistoryYearFilter)) ? String(garageHistoryYearFilter) : 'all';
+    const selectedType = ['all', 'fuel', 'service'].includes(garageHistoryTypeFilter) ? garageHistoryTypeFilter : 'all';
+    const fuelCount = records.filter((record) => record.kind === 'fuel').length;
+    const serviceCount = records.filter((record) => record.kind === 'service').length;
+    return `
+      <div class="garage-history-toolbar">
+        <label class="compact-select-field">
+          <span>Rok</span>
+          <select class="select" data-garage-history-filter="year" aria-label="Filtrovat historii auta podle roku">
+            <option value="all" ${selectedYear === 'all' ? 'selected' : ''}>Všechny roky</option>
+            ${years.map((year) => `<option value="${escapeHtml(year)}" ${selectedYear === year ? 'selected' : ''}>${escapeHtml(year)}</option>`).join('')}
+          </select>
+        </label>
+        <label class="compact-select-field">
+          <span>Typ</span>
+          <select class="select" data-garage-history-filter="type" aria-label="Filtrovat historii auta podle typu záznamu">
+            <option value="all" ${selectedType === 'all' ? 'selected' : ''}>Vše</option>
+            <option value="fuel" ${selectedType === 'fuel' ? 'selected' : ''}>Tankování (${fuelCount})</option>
+            <option value="service" ${selectedType === 'service' ? 'selected' : ''}>Servis / náklady (${serviceCount})</option>
+          </select>
+        </label>
+        <div class="garage-history-count"><strong>${visibleRecords.length}</strong><span>z ${records.length} záznamů</span></div>
+      </div>
+    `;
+  }
+
+  function filterGarageHistoryRecords(records) {
+    const years = garageHistoryYears(records);
+    const selectedYear = years.includes(String(garageHistoryYearFilter)) ? String(garageHistoryYearFilter) : 'all';
+    const selectedType = ['all', 'fuel', 'service'].includes(garageHistoryTypeFilter) ? garageHistoryTypeFilter : 'all';
+    return records.filter((record) => {
+      const yearOk = selectedYear === 'all' || garageHistoryYear(record.item) === selectedYear;
+      const typeOk = selectedType === 'all' || record.kind === selectedType;
+      return yearOk && typeOk;
+    });
+  }
+
+  function renderGarageHistoryItem(record) {
+    return record.kind === 'fuel' ? renderFuelListItem(record.item) : renderServiceListItem(record.item);
+  }
+
+  function renderGarageHistory(vehicle, fuelRows, serviceRows) {
+    const records = garageHistoryRecords(fuelRows, serviceRows);
+    const visibleRecords = filterGarageHistoryRecords(records);
+    const selectedYear = garageHistoryYears(records).includes(String(garageHistoryYearFilter)) ? String(garageHistoryYearFilter) : 'all';
+    const selectedType = ['all', 'fuel', 'service'].includes(garageHistoryTypeFilter) ? garageHistoryTypeFilter : 'all';
+    const filterText = `${selectedYear === 'all' ? 'všechny roky' : selectedYear} · ${garageHistoryTypeLabel(selectedType)}`;
+    return `
+      <section class="garage-history-panel">
+        <div class="card-header small"><div><h3>Historie auta</h3><p>${records.length} záznamů celkem · ${escapeHtml(filterText)}</p></div></div>
+        ${renderGarageHistoryFilters(records, visibleRecords)}
+        ${visibleRecords.length ? `<div class="list compact-list garage-history-list">${visibleRecords.map(renderGarageHistoryItem).join('')}</div>` : renderEmpty(`Pro filtr ${filterText} tu není žádný záznam.`)}
+      </section>
+    `;
+  }
+
   function renderFuelListItem(item) {
     const isEditing = garageEditRecord?.collection === 'fuel' && garageEditRecord?.id === item.id;
     return `
@@ -3864,16 +3955,7 @@
         </div>
         <div class="compact-chart-box">${renderMiniChart(fuelRows)}</div>
       </div>
-      <div class="grid two compact-record-grid">
-        <div>
-          <div class="card-header small"><div><h3>Tankování</h3><p>${fuelRows.length} záznamů · posledních 6</p></div></div>
-          ${fuelRows.length ? `<div class="list compact-list">${[...fuelRows].reverse().slice(0, 6).map((item) => renderFuelListItem(item)).join('')}</div>` : renderEmpty('Zatím žádné tankování.')}
-        </div>
-        <div>
-          <div class="card-header small"><div><h3>Servisy</h3><p>${serviceRows.length} záznamů · posledních 6</p></div></div>
-          ${serviceRows.length ? `<div class="list compact-list">${serviceRows.slice(0, 6).map((item) => renderServiceListItem(item)).join('')}</div>` : renderEmpty('Zatím žádný servis.')}
-        </div>
-      </div>
+      ${renderGarageHistory(vehicle, fuelRows, serviceRows)}
       <details class="action-details compact-edit-details">
         <summary><span>Upravit údaje auta</span><em>termíny, km, servisní intervaly</em></summary>
         <form data-form="update-vehicle" data-vehicle-id="${vehicle.id}" class="compact-form">
@@ -9113,7 +9195,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 65, appBuild: 102, mode: 'rich-demo-v102', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 65, appBuild: 103, mode: 'rich-demo-v103', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -9254,7 +9336,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 65, appBuild: 102, mode: 'fuelio-home-hdo-v102', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 65, appBuild: 103, mode: 'garage-history-home-v103', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -10510,6 +10592,7 @@
     }
     if (action === 'select-vehicle') {
       garageVehicleId = button.dataset.id;
+      garageEditRecord = null;
       moduleTabs = { ...(moduleTabs || {}), garage: 'detail' };
       if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
@@ -11483,7 +11566,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 102
+        appBuild: 103
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -12065,7 +12148,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-102-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-103-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -12159,7 +12242,17 @@
 
   app.addEventListener('change', (event) => {
     const profileSwitch = event.target.closest('[data-profile-switch]');
-    if (profileSwitch) setActiveProfile(profileSwitch.value);
+    if (profileSwitch) {
+      setActiveProfile(profileSwitch.value);
+      return;
+    }
+    const garageHistoryFilter = event.target.closest('[data-garage-history-filter]');
+    if (garageHistoryFilter) {
+      if (garageHistoryFilter.dataset.garageHistoryFilter === 'year') garageHistoryYearFilter = garageHistoryFilter.value || 'all';
+      if (garageHistoryFilter.dataset.garageHistoryFilter === 'type') garageHistoryTypeFilter = garageHistoryFilter.value || 'all';
+      garageEditRecord = null;
+      render();
+    }
   });
 
   app.addEventListener('input', (event) => {
@@ -12202,7 +12295,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_102</span>
+          <span class="badge">Domácnost+ v.0.1_103</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
