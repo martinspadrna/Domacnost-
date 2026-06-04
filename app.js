@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_104';
+  const APP_VERSION = 'Domácnost+ v.0.1_106';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -125,7 +125,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180-v0-1-104.png';
+  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180-v0-1-106.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -143,6 +143,7 @@
     { id: 'tasks', label: 'Úkoly', icon: '✅', overview: 'tasks', metric: (ctx) => ctx.openTasks.length, text: () => 'otevřené úkoly' },
     { id: 'notes', label: 'Poznámky', icon: '📝', nav: 'homecare', tab: 'tasks', metric: () => state.notes.length, text: () => 'poznámky' },
     { id: 'devices', label: 'Zařízení', icon: '🔌', nav: 'homecare', tab: 'devices', metric: () => state.devices.length, text: () => 'zařízení' },
+    { id: 'warranties', label: 'Záruky', icon: '🧾', nav: 'homecare', tab: 'warranties', metric: () => state.warranties.filter((item) => item.status !== 'archived').length, text: () => 'záruky' },
     { id: 'garage', label: 'Garáž', icon: '🚗', overview: 'garage', metric: () => state.vehicles.length, text: () => garageCountLabel(state.vehicles.length) },
     { id: 'contracts', label: 'Smlouvy', icon: '📄', overview: 'contracts', metric: () => state.contracts.length, text: () => 'smlouvy' },
     { id: 'finance', label: 'Finance', icon: '💰', overview: 'finance', metric: () => formatCurrency(financeMonthSummary().balance), text: () => 'měsíční rozdíl' },
@@ -164,12 +165,18 @@
     ['purple', 'Fialová'],
     ['graphite', 'Šedá']
   ];
+  const WARRANTY_STATUS_OPTIONS = [
+    ['active', 'Aktivní'],
+    ['claim', 'Reklamace'],
+    ['done', 'Vyřešeno'],
+    ['archived', 'Archiv']
+  ];
   const WEATHER_CHMI_FUNCTION = 'weather-chmi-forecast';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 66,
-      appBuild: 104,
-      mode: 'garage-home-polish-v104',
+      schemaVersion: 67,
+      appBuild: 106,
+      mode: 'calendar-month-grid-v106',
       createdAt: '',
       updatedAt: ''
     },
@@ -209,6 +216,7 @@
     waste: [],
     notes: [],
     devices: [],
+    warranties: [],
     vehicles: [],
     fuel: [],
     services: [],
@@ -421,6 +429,7 @@
   let garageVehicleId = null;
   let garageHistoryYearFilter = 'all';
   let garageHistoryTypeFilter = 'all';
+  let calendarViewMonth = localStorage.getItem('domacnostPlus.calendarViewMonth') || todayISO().slice(0, 7);
   let activeContractId = null;
   let fuelioPreview = null;
   let garageEditRecord = null;
@@ -568,6 +577,14 @@
     return date.toISOString().slice(0, 10);
   }
 
+  function addYearsIso(isoDate, years = 2) {
+    const [year, month, day] = String(isoDate || '').slice(0, 10).split('-').map(Number);
+    if (!year || !month || !day) return '';
+    const date = new Date(Date.UTC(year, month - 1, day));
+    date.setUTCFullYear(date.getUTCFullYear() + Number(years || 0));
+    return date.toISOString().slice(0, 10);
+  }
+
   function czechPublicHolidayName(isoDate) {
     const value = String(isoDate || '').slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
@@ -700,9 +717,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 66,
-      appBuild: 104,
-      mode: 'garage-home-polish-v104',
+      schemaVersion: 67,
+      appBuild: 106,
+      mode: 'calendar-month-grid-v106',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -824,7 +841,7 @@
   }
 
   function getCollectionNames() {
-    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'notes', 'devices', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'cameras', 'finance', 'financeAccounts'];
+    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'notes', 'devices', 'warranties', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'cameras', 'finance', 'financeAccounts'];
   }
 
   function normalizeModuleList(value) {
@@ -2564,6 +2581,7 @@
       { nav: 'finance', tab: 'summary', icon: '💰', label: 'Finance', items: state.finance || [], loadedAt: state.financeCloud?.loadedAt },
       { nav: 'homecare', tab: 'tasks', icon: '📝', label: 'Poznámky', items: state.notes || [], loadedAt: state.householdExtrasCloud?.loadedAt },
       { nav: 'homecare', tab: 'devices', icon: '🔌', label: 'Zařízení', items: state.devices || [], loadedAt: state.householdExtrasCloud?.loadedAt },
+      { nav: 'homecare', tab: 'warranties', icon: '🧾', label: 'Záruky', items: state.warranties || [], loadedAt: state.householdExtrasCloud?.loadedAt },
       { nav: 'cameras', tab: 'overview', icon: '📹', label: 'Kamery', items: state.cameras || [], loadedAt: state.householdExtrasCloud?.loadedAt },
       { nav: 'shopping', tab: 'coupons', icon: '🏷️', label: 'Slevové kódy', items: state.coupons || [], loadedAt: state.householdExtrasCloud?.loadedAt }
     ];
@@ -2756,7 +2774,7 @@
       calendar: { count: countBy('calendar'), label: 'událostí', note: 'Google napojení později přes backend.' },
       packages: { count: countBy('packages', (item) => item.status !== 'delivered'), label: 'aktivních', note: `${countBy('packages')} balíků celkem.` },
       shopping: { count: countBy('shopping', (item) => !item.done), label: 'koupit', note: `${countBy('coupons', (item) => !item.used)} nepoužitých kódů.` },
-      homecare: { count: countBy('homeTasks', (item) => !item.done) + countBy('hdoWindows') + countBy('waste'), label: 'položek', note: `${countBy('hdoWindows')} HDO oken, ${countBy('waste')} svozů, ${countBy('homeTasks', (item) => !item.done)} úkolů.` },
+      homecare: { count: countBy('homeTasks', (item) => !item.done) + countBy('hdoWindows') + countBy('waste') + countBy('warranties'), label: 'položek', note: `${countBy('hdoWindows')} HDO oken, ${countBy('waste')} svozů, ${countBy('homeTasks', (item) => !item.done)} úkolů, ${countBy('warranties')} záruk.` },
       garage: { count: countBy('vehicles'), label: 'aut', note: `${countBy('fuel')} tankování, ${countBy('services')} servisů.` },
       contracts: { count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh, cloudově přes Storage / lokálně jen fallback.` },
       cameras: { count: countBy('cameras'), label: 'kamer', note: 'Snapshot/stream zatím jen lokálně.' },
@@ -2805,6 +2823,8 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_106', note: 'Hotovo: přehled Kalendáře je nově skutečný měsíční kalendář s týdny v řádcích, dny ve sloupcích a tlačítky předchozí měsíc / dnes / další měsíc.' },
+      { title: 'Domácnost+ v.0.1_105', note: 'Hotovo: oprava kliknutí na auto z rychlého přehledu Garáže a nový modul Záruky v Domácnosti se základní dvouletou zárukou, možností prodloužení a poznámkami k reklamaci.' },
       { title: 'Domácnost+ v.0.1_104', note: 'Hotovo: vyšší panel času a počasí na Home, Kalendář bez popisku „Další“, HDO bez duplicitního „sepne v…“ a Garáž má klikací auta z rychlého přehledu plus volbu barvy ikonky auta.' },
       { title: 'Domácnost+ v.0.1_103', note: 'Hotovo: Garáž na Home ukazuje počet aut místo nuly bez upozornění a detail auta má plnou historii s filtrem podle roku a typu záznamu.' },
       { title: 'Domácnost+ v.0.1_102', note: 'Hotovo: vyšší Home mini panely pod časem a počasím, čitelnější karta Kalendář, HDO přehled řadí Po–Pá před víkend a Fuelio import čte vícesekční exporty včetně Data/Odo/Costs.' },
@@ -3064,6 +3084,122 @@
     `;
   }
 
+  function normalizeCalendarMonth(value) {
+    const clean = String(value || '').slice(0, 7);
+    return /^\d{4}-\d{2}$/.test(clean) ? clean : todayISO().slice(0, 7);
+  }
+
+  function shiftCalendarMonth(monthKey, delta = 0) {
+    const clean = normalizeCalendarMonth(monthKey);
+    const [year, month] = clean.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1 + Number(delta || 0), 1));
+    return date.toISOString().slice(0, 7);
+  }
+
+  function calendarMonthTitle(monthKey) {
+    const clean = normalizeCalendarMonth(monthKey);
+    const [year, month] = clean.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, 1));
+    return new Intl.DateTimeFormat('cs-CZ', { month: 'long', year: 'numeric' }).format(date);
+  }
+
+  function calendarDayNumber(isoDate) {
+    const day = Number(String(isoDate || '').slice(8, 10));
+    return Number.isFinite(day) ? day : '';
+  }
+
+  function calendarDayHeaderText(isoDate) {
+    const date = new Date(`${String(isoDate || '').slice(0, 10)}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat('cs-CZ', { weekday: 'short', day: 'numeric', month: 'numeric' }).format(date);
+  }
+
+  function calendarCellEventTime(event) {
+    if (!event?.time) return 'celý den';
+    return event.endTime ? `${event.time}–${event.endTime}` : event.time;
+  }
+
+  function renderCalendarMonthGrid(events = [], monthKey = calendarViewMonth) {
+    const month = normalizeCalendarMonth(monthKey);
+    const [year, rawMonth] = month.split('-').map(Number);
+    const firstDay = new Date(Date.UTC(year, rawMonth - 1, 1));
+    const lastDay = new Date(Date.UTC(year, rawMonth, 0));
+    const leadingDays = (firstDay.getUTCDay() + 6) % 7;
+    const trailingDays = 6 - ((lastDay.getUTCDay() + 6) % 7);
+    const gridStart = addDaysIso(`${month}-01`, -leadingDays);
+    const gridEnd = addDaysIso(lastDay.toISOString().slice(0, 10), trailingDays);
+    const monthEvents = sortCalendarEventsByStart(events).filter((event) => event.date && event.date >= gridStart && event.date <= gridEnd);
+    const eventsByDate = monthEvents.reduce((acc, event) => {
+      const key = String(event.date || '').slice(0, 10);
+      if (!key) return acc;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(event);
+      return acc;
+    }, {});
+    const days = [];
+    let cursor = gridStart;
+    while (cursor <= gridEnd) {
+      days.push(cursor);
+      cursor = addDaysIso(cursor, 1);
+    }
+    while (days.length < 35) days.push(addDaysIso(days[days.length - 1], 1));
+    const weeks = [];
+    for (let index = 0; index < days.length; index += 7) weeks.push(days.slice(index, index + 7));
+    const monthEventCount = monthEvents.filter((event) => String(event.date || '').startsWith(month)).length;
+    const today = todayISO();
+    const dayNames = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
+    return `
+      <div class="calendar-month-view">
+        <div class="calendar-month-toolbar">
+          <div>
+            <span class="badge">Měsíční přehled</span>
+            <h3>${escapeHtml(calendarMonthTitle(month))}</h3>
+            <p>${monthEventCount ? `${monthEventCount} událostí v měsíci` : 'Žádné události v tomto měsíci'}</p>
+          </div>
+          <div class="calendar-month-actions">
+            <button class="ghost-btn" type="button" data-action="calendar-month-prev">‹</button>
+            <button class="ghost-btn" type="button" data-action="calendar-month-today">Dnes</button>
+            <button class="ghost-btn" type="button" data-action="calendar-month-next">›</button>
+          </div>
+        </div>
+        <div class="calendar-grid" role="table" aria-label="Kalendář ${escapeHtml(calendarMonthTitle(month))}">
+          <div class="calendar-weekdays" role="row">
+            ${dayNames.map((day) => `<div class="calendar-weekday" role="columnheader">${day}</div>`).join('')}
+          </div>
+          ${weeks.map((week, weekIndex) => `
+            <div class="calendar-week-row" role="row" aria-label="Týden ${weekIndex + 1}">
+              ${week.map((dayIso) => {
+                const dayEvents = eventsByDate[dayIso] || [];
+                const visible = dayEvents.slice(0, 3);
+                const hidden = dayEvents.length - visible.length;
+                const outside = !dayIso.startsWith(month);
+                const weekend = [0, 6].includes((new Date(`${dayIso}T00:00:00Z`)).getUTCDay());
+                const holiday = czechPublicHolidayName(dayIso);
+                return `
+                  <div class="calendar-day ${outside ? 'outside-month' : ''} ${dayIso === today ? 'today' : ''} ${weekend ? 'weekend' : ''} ${holiday ? 'holiday' : ''}" role="cell">
+                    <div class="calendar-day-head">
+                      <span class="calendar-day-number">${calendarDayNumber(dayIso)}</span>
+                      <span class="calendar-day-name">${escapeHtml(calendarDayHeaderText(dayIso))}</span>
+                    </div>
+                    <div class="calendar-day-events">
+                      ${visible.map((event) => `
+                        <div class="calendar-day-event ${event.cloudId ? 'cloud-event' : ''}" title="${escapeHtml(event.title)}">
+                          <strong>${escapeHtml(event.title)}</strong>
+                          <span>${escapeHtml(calendarCellEventTime(event))}${event.location ? ` · ${escapeHtml(event.location)}` : ''}</span>
+                        </div>
+                      `).join('')}
+                      ${hidden > 0 ? `<div class="calendar-more-events">+${hidden} další</div>` : ''}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
   function renderCalendarSourceList(sources = getCalendarSources()) {
     if (!sources.length) {
       return renderEmptyCta({ icon: '📅', title: 'Zatím žádné zdroje', text: 'Začni ručním rodinným kalendářem. Google Calendar bude připravený přes bezpečný backend.', action: 'cloud-load-calendar-sources', label: 'Načíst zdroje' });
@@ -3127,7 +3263,8 @@
             <div class="mini-stat"><span>Lokálně</span><strong>${localOnly}</strong></div>
           </div>
           ${hiddenEvents ? `<div class="inline-note">${hiddenEvents} událostí je schovaných, protože jejich kalendář je vypnutý.</div>` : ''}
-          ${upcoming.length ? renderEventList(upcoming, true) : renderEmptyCta({ icon: '📅', title: 'Kalendář je prázdný', text: 'Přidej první událost nebo zdroj kalendáře. Později se sem budou propisovat i Google kalendáře.', nav: 'calendar', tab: 'add', label: 'Přidat událost' })}
+          ${renderCalendarMonthGrid(events, calendarViewMonth)}
+          ${events.length ? '' : renderEmptyCta({ icon: '📅', title: 'Kalendář je prázdný', text: 'Přidej první událost nebo zdroj kalendáře. Měsíční přehled zůstává připravený.', nav: 'calendar', tab: 'add', label: 'Přidat událost' })}
         </section>
 
         <section class="card desktop-span-2 calendar-panel panel-sources">
@@ -3523,12 +3660,142 @@
     `;
   }
 
+  function normalizeWarrantyStatus(value) {
+    const key = normalizeKey(value || 'active');
+    return WARRANTY_STATUS_OPTIONS.some(([id]) => id === key) ? key : 'active';
+  }
+
+  function warrantyStatusLabel(value) {
+    return WARRANTY_STATUS_OPTIONS.find(([id]) => id === normalizeWarrantyStatus(value))?.[1] || 'Aktivní';
+  }
+
+  function normalizeWarrantyItem(item = {}) {
+    const purchaseDate = normalizeText(item.purchaseDate || item.purchase_date || item.date || todayISO());
+    const warrantyUntil = normalizeText(item.warrantyUntil || item.warranty_until || item.until || addYearsIso(purchaseDate, 2));
+    return {
+      id: item.id || `warranty-${uid()}`,
+      householdId: item.householdId || '',
+      profileId: item.profileId || '',
+      createdAt: item.createdAt || item.created_at || new Date().toISOString(),
+      name: normalizeText(item.name || item.title) || 'Věc v záruce',
+      store: normalizeText(item.store || item.seller || ''),
+      category: normalizeText(item.category || ''),
+      price: normalizeText(item.price || ''),
+      purchaseDate,
+      warrantyUntil,
+      status: normalizeWarrantyStatus(item.status),
+      note: normalizeText(item.note || item.notes || '')
+    };
+  }
+
+  function normalizeWarranties(items = []) {
+    return Array.isArray(items) ? items.map(normalizeWarrantyItem).filter((item) => item.name) : [];
+  }
+
+  function warrantyTone(item) {
+    if (item.status === 'archived' || item.status === 'done') return 'good';
+    if (item.status === 'claim') return 'warn';
+    const days = daysUntil(item.warrantyUntil);
+    if (days === null) return '';
+    if (days < 0) return 'bad';
+    if (days <= 30) return 'warn';
+    return 'good';
+  }
+
+  function warrantyBadge(item) {
+    if (item.status === 'claim') return 'reklamace';
+    if (item.status === 'done') return 'vyřešeno';
+    if (item.status === 'archived') return 'archiv';
+    const days = daysUntil(item.warrantyUntil);
+    if (days === null) return 'bez data';
+    if (days < 0) return 'po záruce';
+    if (days === 0) return 'končí dnes';
+    if (days <= 30) return `končí za ${days} d`;
+    return `zbývá ${days} d`;
+  }
+
+  function sortedWarranties() {
+    return normalizeWarranties(state.warranties)
+      .sort((a, b) => {
+        const aArchived = ['archived', 'done'].includes(a.status) ? 1 : 0;
+        const bArchived = ['archived', 'done'].includes(b.status) ? 1 : 0;
+        if (aArchived !== bArchived) return aArchived - bArchived;
+        return String(a.warrantyUntil || '9999').localeCompare(String(b.warrantyUntil || '9999'));
+      });
+  }
+
+  function renderWarrantyItem(item) {
+    const meta = [
+      item.store,
+      item.category,
+      item.price ? formatCurrency(item.price) : '',
+      `koupeno ${formatDate(item.purchaseDate)}`,
+      `záruka do ${formatDate(item.warrantyUntil)}`,
+      warrantyStatusLabel(item.status)
+    ].filter(Boolean).join(' · ');
+    return `
+      <div class="item warranty-item">
+        <div class="item-top">
+          <div class="item-title">🧾 ${escapeHtml(item.name)}</div>
+          <span class="badge ${warrantyTone(item)}">${escapeHtml(warrantyBadge(item))}</span>
+        </div>
+        <div class="item-meta">${escapeHtml(meta)}</div>
+        ${item.note ? `<div class="inline-note compact-note">${escapeHtml(item.note)}</div>` : ''}
+        <div class="item-actions"><button class="danger-btn" type="button" data-action="delete-warranty" data-id="${item.id}">Smazat</button></div>
+      </div>
+    `;
+  }
+
+  function renderWarrantiesPanel(warranties) {
+    const activeItems = warranties.filter((item) => !['archived', 'done'].includes(item.status));
+    const claimCount = warranties.filter((item) => item.status === 'claim').length;
+    const endingSoon = warranties.filter((item) => {
+      const days = daysUntil(item.warrantyUntil);
+      return item.status === 'active' && days !== null && days >= 0 && days <= 30;
+    }).length;
+    const expired = warranties.filter((item) => {
+      const days = daysUntil(item.warrantyUntil);
+      return item.status === 'active' && days !== null && days < 0;
+    }).length;
+    return `
+      <section class="card homecare-panel panel-warranties">
+        <div class="card-header">
+          <div><h2>Záruky</h2><p>Koupené věci, konec záruky a poznámky třeba k reklamaci.</p></div>
+          <span class="badge ${state.cloud?.householdId ? 'good' : ''}">${state.cloud?.householdId ? 'sdílené v domácnosti' : 'lokálně'}</span>
+        </div>
+        ${renderOverviewSummary([
+          { label: 'Aktivní', value: activeItems.length },
+          { label: 'Do 30 dnů', value: endingSoon, tone: endingSoon ? 'warn' : '' },
+          { label: 'Reklamace', value: claimCount, tone: claimCount ? 'warn' : '' },
+          { label: 'Po záruce', value: expired, tone: expired ? 'bad' : '' }
+        ])}
+        <form data-form="add-warranty" class="compact-form warranty-form">
+          <div class="form-grid two">
+            ${field('Věc', 'name', 'text', 'televize / pračka / telefon', true)}
+            ${field('Obchod', 'store', 'text', 'Alza / Datart / Kaufland')}
+            ${field('Kategorie', 'category', 'text', 'elektronika / spotřebič')}
+            ${field('Cena', 'price', 'number', 'volitelné')}
+            ${field('Datum koupě', 'purchaseDate', 'date', '', true, todayISO())}
+            ${field('Záruka do', 'warrantyUntil', 'date', 'automaticky 2 roky', false, addYearsIso(todayISO(), 2))}
+            ${selectField('Stav', 'status', WARRANTY_STATUS_OPTIONS, 'active')}
+            ${field('Poznámka / reklamace', 'note', 'text', 'např. reklamováno, číslo reklamace, domluva')}
+          </div>
+          <div class="inline-note compact-note">Když konec záruky necháš podle návrhu, počítá se automaticky 2 roky od data koupě. U prodloužené záruky ho jen ručně přepíšeš.</div>
+          <div class="form-actions"><button class="primary-btn" type="submit">Přidat záruku</button></div>
+        </form>
+        <div style="height:14px"></div>
+        ${warranties.length ? `<div class="list warranty-list">${warranties.map(renderWarrantyItem).join('')}</div>` : renderEmptyCta({ icon: '🧾', title: 'Záruky jsou prázdné', text: 'Přidej první koupenou věc. Konec záruky se předvyplní na 2 roky od nákupu.', nav: 'homecare', tab: 'warranties', label: 'Přidat záruku' })}
+      </section>
+    `;
+  }
+
   function renderHomecare() {
     const hdo = getHdoStatus(now);
     const tasks = [...state.homeTasks].sort((a, b) => Number(a.done) - Number(b.done));
     const waste = [...state.waste].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
     const notes = [...state.notes].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     const devices = [...state.devices].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    const warranties = sortedWarranties();
     const activeHomecareTab = getModuleTab('homecare', 'hdo');
 
     return `
@@ -3536,6 +3803,7 @@
         { id: 'hdo', label: 'HDO', icon: '💡', count: state.hdoWindows.length },
         { id: 'waste', label: 'Odpad', icon: '♻️', count: waste.length },
         { id: 'tasks', label: 'Úkoly', icon: '✅', count: tasks.filter((task) => !task.done).length },
+        { id: 'warranties', label: 'Záruky', icon: '🧾', count: warranties.length },
         { id: 'devices', label: 'Zařízení', icon: '📡', count: devices.length }
       ], 'hdo')}
       <div class="grid two module-tabbed homecare-tab-${activeHomecareTab}">
@@ -3624,6 +3892,8 @@
             <div class="item"><div class="item-top"><div class="item-title">${escapeHtml(note.text)}</div><span class="badge ${note.cloudId ? 'good' : ''}">${note.cloudId ? 'cloud' : 'lokálně'}</span></div><div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="notes" data-id="${note.id}">Smazat</button></div></div>
           `).join('')}</div>` : ''}
         </section>
+
+        ${renderWarrantiesPanel(warranties)}
 
         <section class="card homecare-panel panel-devices">
           <div class="card-header"><div><h2>Domácí zařízení / síť</h2><p>Routery, NAS, kamery, tablety a další věci doma. V online domácnosti jsou sdílené.</p></div><span class="badge ${devices.some((item) => item.cloudId) ? 'good' : ''}">${devices.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span></div>
@@ -8307,6 +8577,46 @@
   }
 
 
+  async function addWarrantyFromForm(data, form) {
+    const purchaseDate = normalizeText(data.purchaseDate) || todayISO();
+    const item = normalizeWarrantyItem({
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      name: data.name,
+      store: data.store,
+      category: data.category,
+      price: decimalValue(data.price) || '',
+      purchaseDate,
+      warrantyUntil: normalizeText(data.warrantyUntil) || addYearsIso(purchaseDate, 2),
+      status: data.status || 'active',
+      note: data.note
+    });
+    state.warranties = normalizeWarranties([...(state.warranties || []), item]);
+    touchState();
+    saveState();
+    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
+    form?.reset();
+    const purchase = form?.querySelector?.('[name="purchaseDate"]');
+    const until = form?.querySelector?.('[name="warrantyUntil"]');
+    if (purchase) purchase.value = todayISO();
+    if (until) until.value = addYearsIso(todayISO(), 2);
+    render();
+    showToast('Záruka uložena');
+  }
+
+  async function deleteWarranty(id) {
+    const before = (state.warranties || []).length;
+    state.warranties = normalizeWarranties(state.warranties).filter((item) => item.id !== id);
+    if (state.warranties.length === before) return;
+    touchState();
+    saveState();
+    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
+    render();
+    showToast('Záruka smazána');
+  }
+
   async function addHdoWindowFromForm(data, form) {
     const start = normalizeHdoTimeInput(data.start);
     const end = normalizeHdoTimeInput(data.end);
@@ -8760,6 +9070,7 @@
       'add-task': () => addTaskFromForm(data, form),
       'add-note': () => addItem('notes', { text: data.text, createdAt: new Date().toISOString() }),
       'add-device': () => addItem('devices', { name: data.name, type: data.type, address: data.address, note: data.note }),
+      'add-warranty': () => addWarrantyFromForm(data, form),
       'add-vehicle': async () => {
         const vehicle = {
           id: uid(),
@@ -9231,6 +9542,12 @@
       make({ profileId: petrId, name: 'Tiskárna', type: 'Tisk', address: '192.168.1.45', note: 'Toner objednat při 15 %' })
     ];
 
+    const warranties = [
+      make({ profileId: petrId, name: 'Pračka se sušičkou', store: 'Datart', category: 'Spotřebič', price: 14990, purchaseDate: daysAgo(220), warrantyUntil: addYearsIso(daysAgo(220), 2), status: 'active', note: 'Účtenka v e-mailu, řešit čištění filtru.' }),
+      make({ profileId: janaId, name: 'Telefon Jana', store: 'Alza', category: 'Elektronika', price: 11990, purchaseDate: daysAgo(540), warrantyUntil: addYearsIso(daysAgo(540), 3), status: 'active', note: 'Prodloužená záruka na 3 roky.' }),
+      make({ profileId: petrId, name: 'Robotický vysavač', store: 'Mall', category: 'Domácnost', price: 7990, purchaseDate: daysAgo(690), warrantyUntil: addYearsIso(daysAgo(690), 2), status: 'claim', note: 'Reklamace: hlučnější kartáč, číslo RMA-2026-042.' })
+    ];
+
     const vehicles = [
       make({ id: carOctaviaId, profileId: petrId, name: 'Škoda Octavia', brand: 'Škoda', model: 'Octavia', plate: '1AB 2345', fuelType: 'diesel', odometer: '184500', technicalInspectionUntil: daysFromNow(90), insuranceUntil: daysFromNow(45), nextServiceKm: '190000', nextServiceDate: daysFromNow(30), note: 'Rodinné auto' }),
       make({ id: carCityId, profileId: janaId, name: 'Hyundai i20', brand: 'Hyundai', model: 'i20', plate: '2CD 9876', fuelType: 'gasoline', odometer: '76200', technicalInspectionUntil: daysFromNow(210), insuranceUntil: daysFromNow(160), nextServiceKm: '80000', nextServiceDate: daysFromNow(80), note: 'Městské auto' })
@@ -9295,7 +9612,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 66, appBuild: 104, mode: 'rich-demo-v104', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 67, appBuild: 106, mode: 'rich-demo-v106', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -9333,6 +9650,7 @@
         make({ profileId: janaId, text: 'Koupit nové filtry do konvice, poslední je nasazený.' })
       ],
       devices,
+      warranties,
       vehicles,
       fuel,
       services,
@@ -9436,7 +9754,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 66, appBuild: 104, mode: 'garage-home-polish-v104', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 67, appBuild: 106, mode: 'calendar-month-grid-v106', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -10635,6 +10953,14 @@
       deleteCalendarEvent(button.dataset.id);
       return;
     }
+    if (action === 'calendar-month-prev' || action === 'calendar-month-next' || action === 'calendar-month-today') {
+      if (action === 'calendar-month-prev') calendarViewMonth = shiftCalendarMonth(calendarViewMonth, -1);
+      if (action === 'calendar-month-next') calendarViewMonth = shiftCalendarMonth(calendarViewMonth, 1);
+      if (action === 'calendar-month-today') calendarViewMonth = todayISO().slice(0, 7);
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.calendarViewMonth', calendarViewMonth);
+      render();
+      return;
+    }
     if (action === 'cloud-load-parcels') {
       cloudLoadParcels(true);
       return;
@@ -10690,10 +11016,16 @@
       });
       return;
     }
+    if (action === 'delete-warranty') {
+      deleteWarranty(button.dataset.id);
+      return;
+    }
     if (action === 'select-vehicle') {
       garageVehicleId = button.dataset.id;
       garageEditRecord = null;
       activeOverview = null;
+      activeModule = 'garage';
+      if (!isDemoOnlyState()) localStorage.setItem('homeWeb.activeModule', activeModule);
       moduleTabs = { ...(moduleTabs || {}), garage: 'detail' };
       if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
@@ -11658,6 +11990,9 @@
         vehicle.iconColor = normalizeVehicleIconColor(vehicle.iconColor || vehicleIconColorFromSettings(vehicle));
       });
     }
+    if (Array.isArray(layout.warranties)) {
+      state.warranties = normalizeWarranties(layout.warranties);
+    }
     if (weatherLocation && typeof weatherLocation === 'object' && Object.keys(weatherLocation).length) {
       state.weather = {
         ...normalizeWeatherState(state.weather),
@@ -11673,8 +12008,9 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
+        warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 104
+        appBuild: 106
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -11795,7 +12131,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 104, schema_version: 66, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 106, schema_version: 67, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -12008,8 +12344,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 104,
-          schema_version: 66,
+          app_build: 106,
+          schema_version: 67,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -12256,7 +12592,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-104-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-106-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -12366,6 +12702,18 @@
   app.addEventListener('input', (event) => {
     const hdoTimeInput = event.target.closest('[data-hdo-time-input]');
     if (hdoTimeInput) formatHdoTimeInputLive(hdoTimeInput, event);
+    const warrantyPurchase = event.target.closest('form[data-form="add-warranty"] input[name="purchaseDate"]');
+    if (warrantyPurchase) {
+      const form = warrantyPurchase.form;
+      const until = form?.querySelector('[name="warrantyUntil"]');
+      const expectedToday = addYearsIso(todayISO(), 2);
+      if (until && (!until.value || until.value === expectedToday || until.dataset.autoWarranty === 'true')) {
+        until.value = addYearsIso(warrantyPurchase.value || todayISO(), 2);
+        until.dataset.autoWarranty = 'true';
+      }
+    }
+    const warrantyUntil = event.target.closest('form[data-form="add-warranty"] input[name="warrantyUntil"]');
+    if (warrantyUntil) warrantyUntil.dataset.autoWarranty = 'false';
   });
 
   app.addEventListener('focusout', (event) => {
@@ -12403,7 +12751,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_104</span>
+          <span class="badge">Domácnost+ v.0.1_106</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
