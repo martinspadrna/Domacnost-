@@ -1,81 +1,105 @@
-# Domácnost+ v.0.1_84 – Google Calendar backend setup
+# Domácnost+ v.0.1_86 — Google Calendar napojení
 
-Tahle verze už má frontend UI, SQL migraci a Edge Function soubory pro bezpečné napojení Google Kalendáře. Reálné přihlášení začne fungovat až po doplnění Google Cloud credentials a nasazení funkcí.
+Tahle verze přidává ostrý backendový základ pro Google Calendar přes Supabase Edge Functions.
 
-## 1) Spusť SQL migraci
+## Co už je připravené
 
-V Supabase SQL editoru spusť:
+- `calendar_provider_connections` — veřejná metadata připojení Google účtu.
+- `app_private.calendar_provider_connection_secrets` — šifrované OAuth tokeny jen pro backend/service role.
+- `calendar_sources.provider_connection_id` — vazba samostatných Google kalendářů na připojený účet.
+- `calendar_events.provider_event_id` — deduplikace Google událostí přes `source_id + provider_event_id`.
+- Edge Functions:
+  - `google-calendar-start`
+  - `google-calendar-callback`
+  - `google-calendar-list-calendars`
+  - `google-calendar-save-sources`
+  - `google-calendar-sync`
+  - `google-calendar-disconnect`
 
-```sql
--- soubor: supabase/schema-v52-google-calendar.sql
-```
+## Google Cloud Console
 
-Migrace přidá:
-
-- `public.calendar_provider_connections` – metadata Google připojení bez tokenů,
-- `app_private.calendar_provider_connection_secrets` – šifrované tokeny jen pro backend/service role,
-- doplnění `calendar_sources` o vazbu na provider connection,
-- doplnění `calendar_events` o `provider_event_id`, status a raw payload,
-- `calendar_sync_runs` pro logování synchronizací.
-
-## 2) Google Cloud Console
-
-V Google Cloud Console vytvoř OAuth Client typu **Web application**.
-
-Redirect URI nastav podle Supabase projektu:
-
-```txt
-https://cgshssdjgzzuprlwnabl.supabase.co/functions/v1/google-calendar-callback
-```
-
-Použité scopes:
+1. Otevři Google Cloud Console.
+2. Vytvoř projekt pro Domácnost+ nebo použij existující.
+3. Zapni API:
+   - Google Calendar API
+4. Nastav OAuth consent screen.
+5. Vytvoř OAuth client:
+   - Application type: Web application
+6. Přidej Authorized redirect URI:
 
 ```txt
-openid
-email
-https://www.googleapis.com/auth/calendar.readonly
+https://cgshssdjgzzuprlwnabl.functions.supabase.co/google-calendar-callback
 ```
 
-## 3) Supabase secrets
+7. Zkopíruj:
+   - `GOOGLE_CLIENT_ID`
+   - `GOOGLE_CLIENT_SECRET`
 
-Vygeneruj 32bytový klíč pro šifrování tokenů:
+## Supabase secrets
+
+V Supabase nastav secrets:
+
+```bash
+supabase secrets set GOOGLE_CLIENT_ID="..." --project-ref cgshssdjgzzuprlwnabl
+supabase secrets set GOOGLE_CLIENT_SECRET="..." --project-ref cgshssdjgzzuprlwnabl
+supabase secrets set GOOGLE_CALENDAR_REDIRECT_URI="https://cgshssdjgzzuprlwnabl.functions.supabase.co/google-calendar-callback" --project-ref cgshssdjgzzuprlwnabl
+supabase secrets set APP_PUBLIC_URL="https://domacnost-plus.vercel.app/" --project-ref cgshssdjgzzuprlwnabl
+```
+
+Vygeneruj 32 bajtový šifrovací klíč pro AES-GCM:
 
 ```bash
 openssl rand -base64 32
 ```
 
-Potom nastav secrets:
+A ulož ho:
 
 ```bash
-supabase secrets set GOOGLE_CLIENT_ID="..."
-supabase secrets set GOOGLE_CLIENT_SECRET="..."
-supabase secrets set GOOGLE_CALENDAR_REDIRECT_URI="https://cgshssdjgzzuprlwnabl.supabase.co/functions/v1/google-calendar-callback"
-supabase secrets set GOOGLE_TOKEN_ENCRYPTION_KEY_BASE64="výstup_z_openssl_rand_base64_32"
-supabase secrets set APP_PUBLIC_URL="https://domacnost-plus.vercel.app/"
+supabase secrets set GOOGLE_TOKEN_ENCRYPTION_KEY_BASE64="VYSTUP_Z_OPENSSL" --project-ref cgshssdjgzzuprlwnabl
 ```
 
-`SUPABASE_URL` a `SUPABASE_SERVICE_ROLE_KEY` musí být pro Edge Functions dostupné taky. Service role klíč nikdy nedávat do frontendu.
+`SUPABASE_SERVICE_ROLE_KEY` a `SUPABASE_URL` jsou dostupné Edge Functions automaticky podle prostředí Supabase.
 
-## 4) Deploy Edge Functions
+## Jak to bude fungovat v aplikaci
 
-```bash
-supabase functions deploy google-calendar-start
-supabase functions deploy google-calendar-list-calendars
-supabase functions deploy google-calendar-save-sources
-supabase functions deploy google-calendar-sync
-supabase functions deploy google-calendar-disconnect
-supabase functions deploy google-calendar-callback --no-verify-jwt
+1. Kalendář → Zdroje.
+2. Kliknout na Připojit Google kalendář.
+3. Google OAuth souhlas.
+4. Návrat do aplikace.
+5. Načíst dostupné kalendáře.
+6. Zaškrtnout vybrané kalendáře.
+7. Uložit zdroje.
+8. Spustit sync.
+
+Každý Google kalendář se ukládá jako samostatný `calendar_source`.
+Události se ukládají do `calendar_events`.
+Tokeny se nikdy neukládají do frontendu.
+
+## Poznámky
+
+- Callback funkce má `verify_jwt=false`, protože ji volá Google. Bezpečnost hlídá OAuth `state` uložený v DB.
+- Ostatní Google funkce mají `verify_jwt=true`.
+- První sync bere události od 30 dnů zpět do 365 dnů dopředu.
+- Smazané Google události se ukládají jako `status='cancelled'`, nemažou se bezhlavě.
+
+## Domácnost+ v.0.1_86 — jednodušší cesta přes Google login
+
+Od v0.1_86 je preferovaný postup přihlášení přes Supabase Auth Google provider. Uživatel klikne v aplikaci na `Pokračovat přes Google`, Supabase vytvoří relaci a aplikace se pokusí stejný Google token použít pro napojení kalendáře přes Edge Function `google-calendar-link-auth-session`.
+
+V Google OAuth clientovi proto musí být nově také Supabase Auth callback:
+
+```txt
+https://cgshssdjgzzuprlwnabl.supabase.co/auth/v1/callback
 ```
 
-Callback musí být bez JWT ověření, protože na něj přesměrovává Google OAuth. Ostatní funkce mají běžet s přihlášeným Supabase uživatelem.
+A JavaScript origin:
 
-## 5) Flow v aplikaci
+```txt
+https://domacnost-plus.vercel.app
+```
 
-1. Přihlásit se do Domácnost+ online účtem.
-2. Otevřít **Kalendář → Zdroje**.
-3. Kliknout **Připojit Google kalendář**.
-4. Po návratu kliknout / nechat načíst dostupné kalendáře.
-5. Zaškrtnout kalendáře a uložit výběr.
-6. Kliknout **Spustit sync**.
+Původní callback pro fallback kalendářového OAuth nech ponechaný:
 
-Každý vybraný Google kalendář vznikne jako samostatný `calendar_source`. Události se ukládají do `calendar_events` a deduplikují přes `source_id + provider_event_id`.
+```txt
+https://cgshssdjgzzuprlwnabl.functions.supabase.co/google-calendar-callback
+```

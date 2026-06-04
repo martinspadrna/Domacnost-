@@ -5338,3 +5338,35 @@ textarea {
     padding: 12px 0 max(14px, env(safe-area-inset-bottom, 0px)) !important;
   }
 }
+
+/* Domácnost+ v.0.1_86 — Google přihlášení + kalendář */
+.oauth-actions.single {
+  grid-template-columns: 1fr;
+}
+
+.google-oauth-btn {
+  min-height: 50px;
+  background: linear-gradient(135deg, rgba(255,255,255,.92), rgba(248,250,252,.82));
+  border-color: rgba(148, 163, 184, .34);
+}
+
+.google-oauth-btn span {
+  background: #fff;
+  color: #4285f4;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, .08);
+}
+
+.google-oauth-btn strong {
+  font: inherit;
+  font-weight: 850;
+}
+
+.oauth-note {
+  text-align: center;
+  line-height: 1.35;
+}
+
+[data-theme="dark"] .google-oauth-btn {
+  background: linear-gradient(135deg, rgba(15,23,42,.92), rgba(30,41,59,.82));
+  border-color: rgba(148, 163, 184, .24);
+}

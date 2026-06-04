@@ -9,10 +9,10 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_84';
-  const STORAGE_KEY = 'domacnostPlus.v0.1_84';
-  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_82';
-  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_81', 'domacnostPlus.v0.1_80', 'domacnostPlus.v0.1_79', 'domacnostPlus.v0.1_78', 'domacnostPlus.v0.1_77', 'domacnostPlus.v0.1_72', 'domacnostPlus.v0.1_71', 'domacnostPlus.v0.1_70', 'domacnostPlus.v0.1_69', 'domacnostPlus.v0.1_68', 'domacnostPlus.v0.1_67', 'domacnostPlus.v0.1_66', 'domacnostPlus.v0.1_65', 'domacnostPlus.v0.1_64', 'domacnostPlus.v0.1_63', 'domacnostPlus.v0.1_62', 'domacnostPlus.v0.1_61', 'domacnostPlus.v0.1_60', 'domacnostPlus.v0.1_59', 'domacnostPlus.v0.1_58', 'domacnostPlus.v0.1_57', 'domacnostPlus.v0.1_56', 'domacnostPlus.v0.1_55', 'domacnostPlus.v0.1_54', 'domacnostPlus.v0.1_53', 'domacnostPlus.v0.1_52', 'domacnostPlus.v0.1_51', 'domacnostPlus.v0.1_50', 'domacnostPlus.v0.1_49', 'domacnostPlus.v0.1_48', 'domacnostPlus.v0.1_47', 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
+  const APP_VERSION = 'Domácnost+ v.0.1_86';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_86';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_85';
+  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_82', 'domacnostPlus.v0.1_81', 'domacnostPlus.v0.1_80', 'domacnostPlus.v0.1_79', 'domacnostPlus.v0.1_78', 'domacnostPlus.v0.1_77', 'domacnostPlus.v0.1_72', 'domacnostPlus.v0.1_71', 'domacnostPlus.v0.1_70', 'domacnostPlus.v0.1_69', 'domacnostPlus.v0.1_68', 'domacnostPlus.v0.1_67', 'domacnostPlus.v0.1_66', 'domacnostPlus.v0.1_65', 'domacnostPlus.v0.1_64', 'domacnostPlus.v0.1_63', 'domacnostPlus.v0.1_62', 'domacnostPlus.v0.1_61', 'domacnostPlus.v0.1_60', 'domacnostPlus.v0.1_59', 'domacnostPlus.v0.1_58', 'domacnostPlus.v0.1_57', 'domacnostPlus.v0.1_56', 'domacnostPlus.v0.1_55', 'domacnostPlus.v0.1_54', 'domacnostPlus.v0.1_53', 'domacnostPlus.v0.1_52', 'domacnostPlus.v0.1_51', 'domacnostPlus.v0.1_50', 'domacnostPlus.v0.1_49', 'domacnostPlus.v0.1_48', 'domacnostPlus.v0.1_47', 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
     { id: 'home', label: 'Domů', icon: '🏠' },
@@ -122,7 +122,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-84.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-86.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -156,9 +156,9 @@
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 54,
-      appBuild: 84,
-      mode: 'weather-chmi-modal-safe-v84',
+      schemaVersion: 56,
+      appBuild: 86,
+      mode: 'google-auth-calendar-v86',
       createdAt: '',
       updatedAt: ''
     },
@@ -612,9 +612,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 54,
-      appBuild: 84,
-      mode: 'weather-chmi-modal-safe-v84',
+      schemaVersion: 56,
+      appBuild: 86,
+      mode: 'google-auth-calendar-v86',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1509,7 +1509,18 @@
 
 
   function renderOAuthButtons() {
-    return '';
+    return `
+      <div class="oauth-block">
+        <div class="oauth-divider"><span>nebo rychleji</span></div>
+        <div class="oauth-actions single">
+          <button class="oauth-btn google-oauth-btn" type="button" data-action="cloud-oauth-google">
+            <span aria-hidden="true">G</span>
+            <strong>Pokračovat přes Google</strong>
+          </button>
+        </div>
+        <div class="small-muted oauth-note">Google přihlášení může rovnou nabídnout napojení Google kalendáře. Heslo zůstává jako fallback.</div>
+      </div>
+    `;
   }
 
 
@@ -2773,7 +2784,7 @@
         <div class="item-top connector-head">
           <div>
             <div class="item-title"><span class="calendar-source-icon google-icon">G</span> Google kalendáře</div>
-            <div class="item-meta">Bezpečné napojení přes Supabase Edge Functions. Dlouhodobý Google refresh token nikdy nepatří do frontendu.</div>
+            <div class="item-meta">Google účet můžeš napojit rovnou přes přihlášení. Dlouhodobý sync dál běží přes Supabase backend, ne přes lokální úložiště.</div>
           </div>
           <span class="badge ${connected ? 'good' : ''}">${escapeHtml(googleCalendarStatusLabel(connection))}</span>
         </div>
@@ -2784,7 +2795,8 @@
           <div class="mini-stat"><span>Poslední sync</span><strong>${connection?.lastSyncAt ? escapeHtml(formatDateTime(connection.lastSyncAt)) : '—'}</strong></div>
         </div>
         <div class="form-actions connector-actions">
-          ${cloudReady ? `<button class="primary-btn" type="button" data-action="google-calendar-start">${connected ? 'Znovu připojit Google' : 'Připojit Google kalendář'}</button>` : '<span class="badge">nejdřív online účet</span>'}
+          ${cloudReady ? `<button class="primary-btn" type="button" data-action="google-calendar-link-auth">${connected ? 'Použít Google účet z přihlášení' : 'Napojit z Google přihlášení'}</button>` : '<span class="badge">nejdřív online účet</span>'}
+          ${cloudReady ? `<button class="ghost-btn" type="button" data-action="google-calendar-start">${connected ? 'Znovu OAuth kalendář' : 'Fallback OAuth kalendář'}</button>` : ''}
           ${cloudReady ? '<button class="ghost-btn" type="button" data-action="google-calendar-list-calendars">Načíst kalendáře</button>' : ''}
           ${cloudReady && googleSources.length ? '<button class="ghost-btn" type="button" data-action="google-calendar-sync">Spustit sync</button>' : ''}
           ${cloudReady && connected ? '<button class="danger-btn" type="button" data-action="google-calendar-disconnect">Odpojit Google</button>' : ''}
@@ -2811,7 +2823,7 @@
               <button class="primary-btn" type="submit">Uložit vybrané kalendáře</button>
             </div>
           </form>
-        ` : '<div class="inline-note">Po nasazení Google OAuth klikni na Připojit Google kalendář a potom načti seznam kalendářů.</div>'}
+        ` : '<div class="inline-note">Po přihlášení přes Google klikni na „Napojit z Google přihlášení“. Když to nepůjde, použij fallback OAuth kalendáře.</div>'}
       </section>
     `;
   }
@@ -4504,8 +4516,28 @@
     showToast('Účet byl smazán');
   }
 
-  async function cloudOAuthSignIn() {
-    showToast('Přihlášení přes Google/Apple je vypnuté. Použij e-mail a heslo.');
+  async function cloudOAuthSignIn(provider = 'google') {
+    const client = getSupabaseClient();
+    if (!client?.auth?.signInWithOAuth) return showToast('Supabase OAuth není dostupný');
+    if (provider !== 'google') return showToast('Teď je připravené jen Google přihlášení');
+    try {
+      const { data, error } = await client.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${APP_PUBLIC_URL}?auth=google`,
+          scopes: 'openid email profile https://www.googleapis.com/auth/calendar.readonly',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
+        }
+      });
+      if (error) return showToast(error.message || 'Google přihlášení se nepovedlo');
+      if (data?.url) window.location.href = data.url;
+    } catch (error) {
+      console.warn('Google OAuth sign-in failed', error);
+      showToast('Google přihlášení se nepovedlo spustit');
+    }
   }
 
   function renderCloudHouseholdManager() {
@@ -8395,7 +8427,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 54, appBuild: 84, mode: 'rich-demo-v84', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 56, appBuild: 86, mode: 'rich-demo-v86', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -8536,7 +8568,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 54, appBuild: 84, mode: 'weather-chmi-modal-safe-v84', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 56, appBuild: 86, mode: 'google-auth-calendar-v86', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -9678,6 +9710,14 @@
       setCloudAutosyncEnabled(state.cloud?.autoSyncEnabled === false);
       return;
     }
+    if (action === 'cloud-oauth-google') {
+      cloudOAuthSignIn('google');
+      return;
+    }
+    if (action === 'google-calendar-link-auth') {
+      linkGoogleCalendarFromAuthSession(true).then((ok) => { if (ok) googleCalendarListCalendars(false); });
+      return;
+    }
     if (action === 'google-calendar-start') {
       googleCalendarStart();
       return;
@@ -10411,9 +10451,102 @@
     showToast('E-mail je ověřený a účet je přihlášený');
   }
 
+  function googleDisplayNameFromUser(user) {
+    const meta = user?.user_metadata || {};
+    return normalizeText(meta.full_name || meta.name || user?.email?.split('@')?.[0] || 'Já') || 'Já';
+  }
+
+  function ensureLocalHouseholdForGoogleAuth(user) {
+    if (!state.household?.isConfigured) {
+      state.household = {
+        ...(state.household || {}),
+        id: state.household?.id || `household-${uid()}`,
+        name: state.household?.name || 'Moje domácnost',
+        isConfigured: true,
+        createdAt: state.household?.createdAt || new Date().toISOString()
+      };
+    }
+    if (!Array.isArray(state.profiles) || !state.profiles.length) {
+      const profile = createProfile(googleDisplayNameFromUser(user), 'owner', state.household.id);
+      state.profiles = [profile];
+      state.activeProfileId = profile.id;
+    }
+    state.settings.demoMode = false;
+    state.enabledModules = normalizeModuleList(state.enabledModules?.length ? state.enabledModules : MANAGED_MODULE_IDS);
+    state.settings.bottomNavIds = normalizeBottomNavIds(state.settings.bottomNavIds || DEFAULT_BOTTOM_NAV_IDS, state.enabledModules);
+  }
+
+  async function linkGoogleCalendarFromAuthSession(showMessage = true) {
+    if (!cloudReady()) return false;
+    const client = getSupabaseClient();
+    if (!client?.auth?.getSession) return false;
+    const sessionResult = await client.auth.getSession();
+    const session = sessionResult?.data?.session;
+    const providerAccessToken = session?.provider_token || session?.provider_access_token || '';
+    const providerRefreshToken = session?.provider_refresh_token || '';
+    if (!providerAccessToken) {
+      if (showMessage) showToast('Google přihlášení proběhlo, ale nepřišel token pro kalendář. Zkontroluj Supabase Google provider scopes.');
+      return false;
+    }
+    const data = await invokeGoogleCalendarFunction('google-calendar-link-auth-session', {
+      providerAccessToken,
+      providerRefreshToken,
+      googleAccountEmail: session?.user?.email || state.cloud?.email || '',
+      expiresIn: 3600
+    }, showMessage);
+    if (!data) return false;
+    const calendars = (data.calendars || []).map(normalizeGoogleCalendarItem).filter((calendar) => calendar.id);
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      googleConnection: data.connection || state.calendarCloud?.googleConnection || null,
+      googleCalendars: calendars,
+      googleCalendarsLoadedAt: new Date().toISOString()
+    };
+    touchState();
+    saveState();
+    if (showMessage) showToast(calendars.length ? `Google kalendář připraven · ${calendars.length} kalendářů` : 'Google účet připojený, kalendáře zatím nenačtené');
+    return true;
+  }
+
+  async function handleGoogleAuthReturn() {
+    await new Promise((resolve) => window.setTimeout(resolve, 650));
+    const user = await refreshCloudSession(false);
+    if (!user) {
+      showToast('Google přihlášení se nevrátilo do aplikace. Zkontroluj Supabase Auth Google provider.');
+      return;
+    }
+    ensureLocalHouseholdForGoogleAuth(user);
+    saveState();
+    const households = await cloudLoadHouseholds(false);
+    if (!households.length && !state.cloud?.householdId) {
+      await bootstrapCloudHousehold(false);
+    } else if (households.length && !state.cloud?.householdId) {
+      const preferredHousehold = pickBestCloudHousehold(households);
+      state.cloud.householdId = preferredHousehold.id;
+      state.household = { ...(state.household || {}), id: preferredHousehold.id, name: preferredHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
+    }
+    if (state.cloud?.householdId) {
+      await cloudLoadProfilesForCurrentHousehold();
+      await cloudLoadAllModules(false, { skipRealtimeSetup: true, silentWhenOffline: true });
+      await linkGoogleCalendarFromAuthSession(false);
+      activeModule = 'calendar';
+      moduleTabs = { ...(moduleTabs || {}), calendar: 'sources' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    }
+    onboardingMode = 'choice';
+    sessionStorage.removeItem('domacnostPlus.onboardingMode');
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
+    touchState();
+    saveState();
+    render();
+    showToast('Přihlášeno přes Google. Teď můžeš vybrat kalendáře.');
+  }
+
   function isAuthReturnUrl() {
     const search = new URLSearchParams(window.location.search || '');
     if (search.get('auth') === 'confirmed') return true;
+    if (search.get('auth') === 'google') return true;
+    if (search.has('code') && search.has('state')) return true;
     if (search.get('type') === 'signup') return true;
     const hash = window.location.hash || '';
     return hash.includes('access_token=') || hash.includes('refresh_token=') || hash.includes('type=signup');
@@ -10448,6 +10581,12 @@
       return;
     }
     if (!isAuthReturnUrl()) return;
+    const search = new URLSearchParams(window.location.search || '');
+    if (search.get('auth') === 'google' || (search.has('code') && search.has('state'))) {
+      await handleGoogleAuthReturn();
+      clearAuthReturnUrl(true);
+      return;
+    }
     await new Promise((resolve) => window.setTimeout(resolve, 450));
     await cloudCheckEmailConfirmation();
     clearAuthReturnUrl();
@@ -10540,7 +10679,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 84
+        appBuild: 86
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -10661,7 +10800,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 78, schema_version: 52, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 86, schema_version: 56, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -10869,8 +11008,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 78,
-          schema_version: 52,
+          app_build: 86,
+          schema_version: 56,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -11117,7 +11256,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-84-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-86-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
