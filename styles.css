@@ -4886,7 +4886,7 @@ textarea {
     width: 100%;
   }
 }
-/* Domácnost+ v.0.1_92 – stavové hlášky Google Calendar bez redirect smyčky */
+/* Domácnost+ v.0.1_93 – stavové hlášky Google Calendar bez redirect smyčky */
 .google-calendar-state-note {
   display: grid;
   gap: 4px;
@@ -4916,7 +4916,7 @@ textarea {
 }
 
 
-/* Domácnost+ v.0.1_92 – stabilní Home panel a chytřejší mini karty */
+/* Domácnost+ v.0.1_93 – stabilní Home panel a chytřejší mini karty */
 .home-minimal-hero {
   display: flex;
   min-height: 0;
@@ -5367,7 +5367,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_92 — Google přihlášení + kalendář */
+/* Domácnost+ v.0.1_93 — Google přihlášení + kalendář */
 .oauth-actions.single {
   grid-template-columns: 1fr;
 }
@@ -5399,7 +5399,7 @@ textarea {
   border-color: rgba(148, 163, 184, .24);
 }
 
-/* Domácnost+ v.0.1_92 – čistý login/registrace bez krokových bodů */
+/* Domácnost+ v.0.1_93 – čistý login/registrace bez krokových bodů */
 .compact-auth-card {
   max-width: 980px;
 }
@@ -5430,7 +5430,7 @@ textarea {
 }
 
 
-/* Domácnost+ v.0.1_92 – Google Calendar theme/glass kontrast */
+/* Domácnost+ v.0.1_93 – Google Calendar theme/glass kontrast */
 .google-calendar-connector,
 .google-calendar-picker,
 .google-calendar-option,

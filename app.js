@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_92';
+  const APP_VERSION = 'Domácnost+ v.0.1_93';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -124,7 +124,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-92.png';
+  const BRAND_ICON_SRC = './assets/domacnost-plus-icon-180-v0-1-93.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -158,9 +158,9 @@
 
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 62,
-      appBuild: 92,
-      mode: 'clean-login-calendar-oauth-v92',
+      schemaVersion: 63,
+      appBuild: 93,
+      mode: 'clean-login-calendar-oauth-v93',
       createdAt: '',
       updatedAt: ''
     },
@@ -615,9 +615,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 62,
-      appBuild: 92,
-      mode: 'clean-login-calendar-oauth-v92',
+      schemaVersion: 63,
+      appBuild: 93,
+      mode: 'clean-login-calendar-oauth-v93',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2612,7 +2612,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_92', note: 'Hotovo: Google login je oddělený od Google Kalendáře, kalendář běží jen přes vlastní OAuth, login/registrace mají opravenou ikonu a nastavení kalendáře má správný theme/glass kontrast.' },
+      { title: 'Domácnost+ v.0.1_93', note: 'Hotovo: Google Calendar ukládá a čte serverové tokeny přes bezpečné RPC funkce do app_private, bez vystavení privátního schématu do API. Google login zůstává jen přihlášení.' },
       { title: 'Domácnost+ v.0.1_10', note: 'Hotovo: tabletový domácí dashboard a první cloudový základ.' },
       { title: 'Domácnost+ v.0.1_11', note: 'Hotovo: Supabase Auth, domácnost, členové, profily a cloudový základ Nákupů.' },
       { title: 'Domácnost+ v.0.1_12', note: 'Hotovo: instalovatelná PWA, update flow po deployi, katalog nákupů a cloudové Hotovo/Vrátit/Smazat.' },
@@ -8623,7 +8623,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 62, appBuild: 92, mode: 'rich-demo-v92', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 63, appBuild: 93, mode: 'rich-demo-v93', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -8764,7 +8764,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 62, appBuild: 92, mode: 'clean-login-calendar-oauth-v92', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 63, appBuild: 93, mode: 'clean-login-calendar-oauth-v93', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -10870,7 +10870,7 @@
           showToast('Google callback už byl zpracovaný. Další načtení spusť ručně.');
         }
       } else if (result === 'error') {
-        rememberGoogleCalendarError({ code: reason || 'google_calendar_callback_error', error: reason === 'token_store_failed' ? 'Token exchange proběhl, ale uložení tokenu do app_private selhalo. Zkontroluj GOOGLE_TOKEN_ENCRYPTION_KEY_BASE64 a service role práva.' : 'Google připojení se nepovedlo. Zkontroluj redirect_uri, scopes a Edge Function secrets.' });
+        rememberGoogleCalendarError({ code: reason || 'google_calendar_callback_error', error: reason === 'token_store_failed' ? 'Token exchange proběhl, ale uložení tokenu přes serverové RPC selhalo. Zkontroluj SQL RPC migraci, GOOGLE_TOKEN_ENCRYPTION_KEY_BASE64 a service role práva.' : 'Google připojení se nepovedlo. Zkontroluj redirect_uri, scopes a Edge Function secrets.' });
         showToast(reason === 'token_store_failed' ? 'Google token se nepovedlo uložit. Zkontroluj Supabase secrets.' : 'Google připojení se nepovedlo.');
       }
       clearAuthReturnUrl(true);
@@ -10989,7 +10989,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         updatedAt: new Date().toISOString(),
-        appBuild: 92
+        appBuild: 93
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -11570,7 +11570,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-92-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-93-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
