@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_123';
+  const APP_VERSION = 'Domácnost+ v.0.1_124';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -180,8 +180,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 69,
-      appBuild: 123,
-      mode: 'polish-shop-holidays-v123',
+      appBuild: 124,
+      mode: 'home-dashboard-live-v124',
       createdAt: '',
       updatedAt: ''
     },
@@ -953,8 +953,8 @@
 
     migrated.meta = {
       schemaVersion: 69,
-      appBuild: 123,
-      mode: 'polish-shop-holidays-v123',
+      appBuild: 124,
+      mode: 'home-dashboard-live-v124',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2264,41 +2264,41 @@
     return Math.abs(slot) % count;
   }
 
+  function homeCycleItem(rows, seconds = 45) {
+    const list = Array.isArray(rows) ? rows.filter(Boolean) : [];
+    if (!list.length) return null;
+    return list[homeCycleIndex(list.length, seconds)] || list[0];
+  }
+
   function renderHeroWeatherPill(ctx, options = {}) {
     const weather = normalizeWeatherState(ctx?.weather || state.weather);
     const current = weather.current || {};
     const [condition, currentIcon] = weatherCodeLabel(current.weatherCode);
     const hasCurrent = Boolean(weather.current);
     const daily = Array.isArray(weather.daily) ? weather.daily.slice(0, 4) : [];
-    const compactSlides = [];
-    compactSlides.push({
-      icon: currentIcon,
-      value: hasCurrent ? roundWeather(current.temperature, '°') : '—',
-      label: weather.loading ? 'Načítám' : (weather.error && !hasCurrent) ? 'Chyba' : hasCurrent ? condition : 'Počasí'
-    });
-    if (!options.expanded && daily.length) {
-      daily.slice(1, 4).forEach((day) => {
-        const [dayLabel, dayIcon] = weatherCodeLabel(day.weatherCode);
-        compactSlides.push({
-          icon: dayIcon,
-          value: roundWeather(day.max, '°'),
-          label: `${shortWeekday(day.date)} · ${dayLabel}`
-        });
-      });
-    }
-    const activeSlide = compactSlides[homeCycleIndex(compactSlides.length, 45)] || compactSlides[0];
+    const today = daily[0] || {};
+    const nextDay = daily[1] || null;
+    const currentValue = hasCurrent ? roundWeather(current.temperature, '°') : '—';
+    const currentLabel = weather.loading ? 'Načítám počasí' : (weather.error && !hasCurrent) ? 'Počasí nejde načíst' : hasCurrent ? condition : 'Počasí není načtené';
+    const secondaryLabel = hasCurrent
+      ? `${currentLabel}${current.feelsLike !== undefined && current.feelsLike !== null ? ` · pocitově ${roundWeather(current.feelsLike, '°')}` : ''}`
+      : currentLabel;
+    const tomorrowHint = nextDay ? (() => {
+      const [dayLabel] = weatherCodeLabel(nextDay.weatherCode);
+      return `Zítra ${roundWeather(nextDay.max, '°')} · ${dayLabel}`;
+    })() : '';
     const forecast = options.expanded && daily.length ? `
           <span class="hero-weather-forecast" aria-label="Výhled počasí na další dny">
             ${daily.map((day, index) => {
               const [, dayIcon] = weatherCodeLabel(day.weatherCode);
               const label = index === 0 ? 'Dnes' : shortWeekday(day.date);
-              return `<span class="hero-weather-day"><em>${escapeHtml(label)}</em><strong>${escapeHtml(dayIcon)} ${roundWeather(day.max, '°')}</strong><small>${roundWeather(day.min, '°')}</small></span>`;
+              return `<span class="hero-weather-day"><em>${escapeHtml(label)}</em><strong>${renderGlassIcon(dayIcon, { size: 'weather-xs', extraClass: 'weather-inline-icon' })} ${roundWeather(day.max, '°')}</strong><small>${roundWeather(day.min, '°')}</small></span>`;
             }).join('')}
           </span>` : '';
     return `
-      <button class="hero-weather-pill ${options.expanded ? 'hero-weather-pill-expanded' : ''} ${compactSlides.length > 1 ? 'hero-weather-pill-live' : ''}" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
-        ${renderGlassIcon(activeSlide.icon, { size: options.expanded ? 'hero-lg' : 'hero-md', extraClass: 'hero-weather-icon' })}
-        <span class="hero-weather-copy"><strong>${escapeHtml(activeSlide.value)}</strong><em>${escapeHtml(activeSlide.label)}</em></span>
+      <button class="hero-weather-pill ${options.expanded ? 'hero-weather-pill-expanded' : ''} ${daily.length > 1 ? 'hero-weather-pill-live' : ''}" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
+        ${renderGlassIcon(currentIcon, { size: options.expanded ? 'hero-lg' : 'hero-md', extraClass: 'hero-weather-icon' })}
+        <span class="hero-weather-copy"><strong>${escapeHtml(currentValue)}</strong><em>${escapeHtml(secondaryLabel)}</em>${!options.expanded && tomorrowHint ? `<small>${escapeHtml(tomorrowHint)}</small>` : ''}</span>
         ${forecast}
       </button>
     `;
@@ -2358,11 +2358,19 @@
       const nextLimited = nextPolishShopEntry('limited');
       const isClosed = todayEntry?.status === 'closed';
       const isLimited = todayEntry?.status === 'limited';
+      const slides = [
+        todayEntry ? { metric: todayEntry.status === 'closed' ? 'Zavřeno' : todayEntry.status === 'limited' ? 'Pozor' : 'Dnes OK', text: todayEntry.name || 'Dnes', detail: 'dnešní stav v Polsku' } : null,
+        tomorrowEntry ? { metric: 'Zítra', text: tomorrowEntry.name, detail: tomorrowEntry.status === 'closed' ? 'obchody můžou být zavřené' : 'omezený režim obchodů' } : null,
+        nextClosed ? { metric: dueBadge(daysUntil(nextClosed.date)), text: `${formatDate(nextClosed.date)} · ${nextClosed.name}`, detail: 'nejbližší zavřeno' } : null,
+        nextLimited ? { metric: 'Pozor', text: `${formatDate(nextLimited.date)} · ${nextLimited.name}`, detail: 'nejbližší omezení' } : null
+      ].filter(Boolean);
+      const slide = homeCycleItem(slides, 45);
       return {
         ...base,
-        metric: isClosed ? 'Zavřeno' : isLimited ? 'Pozor' : nextClosed ? dueBadge(daysUntil(nextClosed.date)) : 'OK',
-        text: isClosed || isLimited ? todayEntry.name : nextClosed ? `${formatDate(nextClosed.date)} · ${nextClosed.name}` : 'Bez známého zavření',
-        detail: tomorrowEntry ? `Zítra: ${tomorrowEntry.name}` : nextLimited ? `Pozor: ${formatDate(nextLimited.date)} · ${nextLimited.name}` : 'Kliknutím otevřeš polské svátky',
+        metric: isClosed ? 'Zavřeno' : isLimited ? 'Pozor' : slide?.metric || 'OK',
+        text: isClosed || isLimited ? todayEntry.name : slide?.text || 'Bez známého zavření',
+        detail: isClosed || isLimited ? (tomorrowEntry ? `Zítra: ${tomorrowEntry.name}` : 'Kliknutím otevřeš polské svátky') : slide?.detail || 'Kliknutím otevřeš polské svátky',
+        live: slides.length > 1,
         tone: isClosed ? 'bad' : isLimited || nextClosed && daysUntil(nextClosed.date) <= 3 ? 'warn' : 'good'
       };
     }
@@ -2385,37 +2393,47 @@
     }
     if (id === 'packages') {
       const active = ctx.activePackages || [];
-      const first = active[0];
-      return { ...base, metric: active.length, text: first ? firstTitle(first, 'Balík') : 'Žádný aktivní balík', detail: first ? normalizeText(first.statusLabel || first.status || first.carrier || first.trackingNumber || 'sledovat zásilku') : 'Nový balík přidáš ručně', extraRows: detailRows(active, (entry) => `${carrierLabel(entry.carrier) || 'Balík'} · ${firstTitle(entry, entry.tracking || 'zásilka')}`), tone: active.length ? 'warn' : 'good' };
+      const currentPackage = homeCycleItem(active, 45);
+      return { ...base, metric: active.length, text: currentPackage ? firstTitle(currentPackage, 'Balík') : 'Žádný aktivní balík', detail: currentPackage ? normalizeText(currentPackage.statusLabel || packageStatus(currentPackage.status).label || currentPackage.carrier || currentPackage.trackingNumber || currentPackage.tracking || 'sledovat zásilku') : 'Nový balík přidáš ručně', extraRows: detailRows(active, (entry) => `${carrierLabel(entry.carrier) || 'Balík'} · ${firstTitle(entry, entry.tracking || 'zásilka')}`), live: active.length > 1, tone: active.length ? 'warn' : 'good' };
     }
     if (id === 'shopping') {
       const open = ctx.openShopping || [];
-      return { ...base, metric: open.length, text: open[0] ? firstTitle(open[0], 'Položka') : 'Nákup je prázdný', detail: open.length > 1 ? `+${open.length - 1} další položky` : 'Kliknutím otevřeš seznam', chips: open.slice(0, density === 'large' ? 4 : 2).map((entry) => firstTitle(entry, '')).filter(Boolean), extraRows: detailRows(open, (entry) => `${firstTitle(entry, 'Položka')}${entry.quantity ? ` · ${entry.quantity}` : ''}`), tone: open.length ? 'warn' : 'good' };
+      const currentShopping = homeCycleItem(open, 45);
+      return { ...base, metric: open.length, text: currentShopping ? firstTitle(currentShopping, 'Položka') : 'Nákup je prázdný', detail: currentShopping?.quantity ? `množství ${currentShopping.quantity}` : open.length > 1 ? `+${open.length - 1} další položky` : 'Kliknutím otevřeš seznam', chips: open.slice(0, density === 'large' ? 4 : 2).map((entry) => firstTitle(entry, '')).filter(Boolean), extraRows: detailRows(open, (entry) => `${firstTitle(entry, 'Položka')}${entry.quantity ? ` · ${entry.quantity}` : ''}`), live: open.length > 1, tone: open.length ? 'warn' : 'good' };
     }
     if (id === 'coupons') {
-      const unused = (state.coupons || []).filter((entry) => !entry.used);
-      const expiring = unused.map((entry) => ({ ...entry, days: daysUntil(entry.expiry) })).filter((entry) => entry.days !== null).sort((a, b) => a.days - b.days)[0];
-      return { ...base, metric: unused.length, text: expiring ? firstTitle(expiring, 'Kupón') : 'Žádný nepoužitý kód', detail: expiring ? `platí ${dueBadge(expiring.days)}` : 'Ulož si slevový kód', tone: expiring && expiring.days <= 7 ? 'warn' : unused.length ? 'good' : 'neutral' };
+      const unused = (state.coupons || []).filter((entry) => !entry.used).map((entry) => ({ ...entry, days: daysUntil(entry.expiry) })).sort((a, b) => (a.days ?? 9999) - (b.days ?? 9999));
+      const currentCoupon = homeCycleItem(unused, 45);
+      return { ...base, metric: unused.length, text: currentCoupon ? firstTitle(currentCoupon, 'Kupón') : 'Žádný nepoužitý kód', detail: currentCoupon?.days !== null && currentCoupon?.days !== undefined ? `platí ${dueBadge(currentCoupon.days)}` : 'Ulož si slevový kód', live: unused.length > 1, tone: currentCoupon && currentCoupon.days !== null && currentCoupon.days <= 7 ? 'warn' : unused.length ? 'good' : 'neutral' };
     }
     if (id === 'waste') {
       const upcoming = (state.waste || []).map((entry) => ({ ...entry, days: daysUntil(entry.date) })).filter((entry) => entry.days !== null && entry.days >= 0).sort((a, b) => a.days - b.days);
-      const next = upcoming[0];
-      return { ...base, metric: next ? dueBadge(next.days) : '—', text: next ? firstTitle(next, 'Svoz') : 'Svoz není nastavený', detail: next ? shortDateText(next.date) : 'Přidej termín odpadu', extraRows: detailRows(upcoming, (entry) => `${shortDateText(entry.date)} · ${firstTitle(entry, 'Svoz')}`), tone: next?.days <= 1 ? 'warn' : next ? 'good' : 'neutral' };
+      const next = homeCycleItem(upcoming, 45);
+      return { ...base, metric: next ? dueBadge(next.days) : '—', text: next ? firstTitle(next, 'Svoz') : 'Svoz není nastavený', detail: next ? shortDateText(next.date) : 'Přidej termín odpadu', extraRows: detailRows(upcoming, (entry) => `${shortDateText(entry.date)} · ${firstTitle(entry, 'Svoz')}`), live: upcoming.length > 1, tone: next?.days <= 1 ? 'warn' : next ? 'good' : 'neutral' };
     }
     if (id === 'tasks') {
       const open = ctx.openTasks || [];
-      const first = open[0];
-      return { ...base, metric: open.length, text: first ? firstTitle(first, 'Úkol') : 'Nic nečeká', detail: first?.due ? `termín ${dueBadge(daysUntil(first.due))}` : 'Domácí úkoly jsou čisté', extraRows: detailRows(open, (entry) => `${entry.due ? `${shortDateText(entry.due)} · ` : ''}${firstTitle(entry, 'Úkol')}`), tone: open.length ? 'warn' : 'good' };
+      const currentTask = homeCycleItem(open, 45);
+      return { ...base, metric: open.length, text: currentTask ? firstTitle(currentTask, 'Úkol') : 'Nic nečeká', detail: currentTask?.due ? `termín ${dueBadge(daysUntil(currentTask.due))}` : open.length ? 'bez termínu' : 'Domácí úkoly jsou čisté', extraRows: detailRows(open, (entry) => `${entry.due ? `${shortDateText(entry.due)} · ` : ''}${firstTitle(entry, 'Úkol')}`), live: open.length > 1, tone: open.length ? 'warn' : 'good' };
     }
     if (id === 'notes') {
       const notes = state.notes || [];
-      const last = notes[0];
-      return { ...base, metric: notes.length, text: last ? firstTitle(last, 'Poznámka') : 'Žádné poznámky', detail: last?.text ? normalizeText(last.text).slice(0, 48) : 'Rychlé domácí poznámky', tone: notes.length ? 'good' : 'neutral' };
+      const currentNote = homeCycleItem(notes, 45);
+      return { ...base, metric: notes.length, text: currentNote ? firstTitle(currentNote, 'Poznámka') : 'Žádné poznámky', detail: currentNote?.text ? normalizeText(currentNote.text).slice(0, 48) : 'Rychlé domácí poznámky', live: notes.length > 1, tone: notes.length ? 'good' : 'neutral' };
     }
     if (id === 'devices') {
       const devices = state.devices || [];
       const active = devices.filter((device) => device.status !== 'offline' && device.status !== 'archived').length;
-      return { ...base, metric: devices.length, text: devices[0] ? firstTitle(devices[0], 'Zařízení') : 'Žádné zařízení', detail: devices.length ? `${active} aktivní / ${devices.length} celkem` : 'Přidej domácí zařízení', tone: devices.length ? 'good' : 'neutral' };
+      const currentDevice = homeCycleItem(devices, 45);
+      return { ...base, metric: devices.length, text: currentDevice ? firstTitle(currentDevice, 'Zařízení') : 'Žádné zařízení', detail: devices.length ? `${active} aktivní / ${devices.length} celkem` : 'Přidej domácí zařízení', live: devices.length > 1, tone: devices.length ? 'good' : 'neutral' };
+    }
+    if (id === 'warranties') {
+      const warranties = (state.warranties || [])
+        .filter((entry) => entry.status !== 'archived')
+        .map((entry) => ({ ...entry, days: daysUntil(entry.warrantyUntil) }))
+        .sort((a, b) => (a.days ?? 9999) - (b.days ?? 9999));
+      const currentWarranty = homeCycleItem(warranties, 45);
+      return { ...base, metric: warranties.length, text: currentWarranty ? firstTitle(currentWarranty, 'Věc') : 'Žádná záruka', detail: currentWarranty?.days !== null && currentWarranty?.days !== undefined ? `do ${dueBadge(currentWarranty.days)}` : 'Přidej koupenou věc', live: warranties.length > 1, tone: currentWarranty?.days !== null && currentWarranty.days <= 30 ? 'warn' : warranties.length ? 'good' : 'neutral' };
     }
     if (id === 'garage') {
       const alert = (ctx.vehicleAlerts || [])[0];
@@ -2427,23 +2445,32 @@
         const stats = getVehicleStats(fuelRows, []);
         const fuelCostPerKm = stats.totalKm > 0 ? stats.fuelCost / stats.totalKm : null;
         const consumption = stats.averageConsumption ? `${stats.averageConsumption.toFixed(1).replace('.', ',')} l/100` : 'spotřeba bez dat';
-        const fuelKm = fuelCostPerKm ? `${fuelCostPerKm.toFixed(2).replace('.', ',')} Kč/km palivo` : 'Kč/km bez dat';
+        const fuelKm = fuelCostPerKm ? `${fuelCostPerKm.toFixed(2).replace('.', ',')} Kč/km` : 'Kč/km bez dat';
         return { ...base, metric: firstTitle(selectedVehicle, 'Auto'), text: consumption, detail: fuelKm, live: vehicleCount > 1, tone: alert ? 'warn' : 'good' };
       }
       return { ...base, metric: 0, text: garageCountLabel(0), detail: 'Přidej první auto', tone: 'neutral' };
     }
     if (id === 'contracts') {
-      const urgent = (ctx.urgentContracts || [])[0];
-      return { ...base, metric: state.contracts.length, text: urgent ? firstTitle(urgent, 'Smlouva') : 'Žádná akutní smlouva', detail: urgent ? `končí ${dueBadge(urgent.days)}` : 'Hlídání platností je klidné', tone: urgent ? 'warn' : state.contracts.length ? 'good' : 'neutral' };
+      const urgentList = ctx.urgentContracts || [];
+      const contractSlides = urgentList.length ? urgentList : (state.contracts || []).map((contract) => ({ ...contract, days: daysUntil(contract.validTo) })).sort((a, b) => (a.days ?? 9999) - (b.days ?? 9999)).slice(0, 5);
+      const contract = homeCycleItem(contractSlides, 45);
+      return { ...base, metric: state.contracts.length, text: contract ? firstTitle(contract, 'Smlouva') : 'Žádná akutní smlouva', detail: contract?.days !== null && contract?.days !== undefined ? `končí ${dueBadge(contract.days)}` : 'Hlídání platností je klidné', live: contractSlides.length > 1, tone: urgentList.length ? 'warn' : state.contracts.length ? 'good' : 'neutral' };
     }
     if (id === 'finance') {
       const summary = financeMonthSummary();
-      return { ...base, metric: formatCurrency(summary.balance), text: summary.balance >= 0 ? 'měsíc v plusu' : 'měsíc v mínusu', detail: `Příjmy ${formatCurrency(summary.income)} · výdaje ${formatCurrency(summary.expense)}`, tone: summary.balance >= 0 ? 'good' : 'warn' };
+      const financeSlides = [
+        { metric: formatCurrency(summary.balance), text: summary.balance >= 0 ? 'měsíc v plusu' : 'měsíc v mínusu', detail: `Příjmy ${formatCurrency(summary.income)} · výdaje ${formatCurrency(summary.expense)}` },
+        { metric: formatCurrency(summary.income), text: 'příjmy tento měsíc', detail: financeMonthLabel() },
+        { metric: formatCurrency(summary.expense), text: 'výdaje tento měsíc', detail: financeMonthLabel() }
+      ];
+      const slide = homeCycleItem(financeSlides, 45) || financeSlides[0];
+      return { ...base, metric: slide.metric, text: slide.text, detail: slide.detail, live: true, tone: summary.balance >= 0 ? 'good' : 'warn' };
     }
     if (id === 'cameras') {
       const cameras = state.cameras || [];
       const online = cameras.filter((camera) => camera.status === 'online' || camera.status === 'active').length;
-      return { ...base, metric: cameras.length, text: cameras[0] ? firstTitle(cameras[0], 'Kamera') : 'Žádná kamera', detail: cameras.length ? `${online} online / ${cameras.length} celkem` : 'Přidej kameru do přehledu', tone: cameras.length ? 'good' : 'neutral' };
+      const currentCamera = homeCycleItem(cameras, 45);
+      return { ...base, metric: cameras.length, text: currentCamera ? firstTitle(currentCamera, 'Kamera') : 'Žádná kamera', detail: cameras.length ? `${online} online / ${cameras.length} celkem` : 'Přidej kameru do přehledu', live: cameras.length > 1, tone: cameras.length ? 'good' : 'neutral' };
     }
     return base;
   }
@@ -3329,6 +3356,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_124', note: 'Hotovo: Home panely mají větší barevné ikonky bez bílého přebití, počasí vedle času ukazuje aktuální teplotu a stav počasí a vybrané Home panely živě střídají konkrétní položky.' },
       { title: 'Domácnost+ v.0.1_123', note: 'Hotovo: Home ikonky jsou bez viditelného pozadí, barevně výraznější podle modulu, opravena čárka u počasí a obrazovka Více je zjednodušená na Nastavení aplikace + univerzální seznam Moduly.' },
       { title: 'Domácnost+ v.0.1_115', note: 'Hotovo: nový modul Svátky Polsko s přehledem zavřených obchodů a online aktualizací svátků, mazání auta je přesunuté do detailu s potvrzením a Home má větší čas/počasí s modernějšími ikonami.' },
       { title: 'Domácnost+ v.0.1_113', note: 'Hotovo: hlavní Home panel je roztažený téměř přes celou šířku obrazovky a až ke spodní liště, vnitřní panely vyplňují dostupnou výšku.' },
@@ -10682,7 +10710,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 123, mode: 'rich-demo-v123', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 124, mode: 'rich-demo-v124', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -10824,7 +10852,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 123, mode: 'polish-shop-holidays-v123', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 124, mode: 'home-dashboard-live-v124', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -13218,7 +13246,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 123
+        appBuild: 124
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -13806,7 +13834,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-123-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-124-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -13993,7 +14021,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_123</span>
+          <span class="badge">Domácnost+ v.0.1_124</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

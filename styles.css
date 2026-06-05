@@ -8388,7 +8388,7 @@ textarea {
   }
 }
 
-/* v0.1_123 — Home icons without visible tile background + clean More hub */
+/* v0.1_124 — Home icons without visible tile background + clean More hub */
 .home-minimal-hero .station-summary-icon,
 .glass-icon.station-summary-icon,
 .station-summary-item .glass-icon.station-summary-icon {
@@ -8555,5 +8555,117 @@ textarea {
   .more-clean-hub .more-settings-card,
   .more-clean-hub .more-module-card {
     min-height: 72px;
+  }
+}
+
+
+/* v0.1_124 — Home dashboard live panels + larger colored bare icons */
+.hero-weather-copy small {
+  display: block;
+  max-width: 128px;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: .68rem;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-minimal-hero .hero-weather-pill {
+  gap: 12px;
+}
+
+.home-minimal-hero .hero-weather-copy em,
+.home-minimal-hero .hero-weather-copy small {
+  max-width: clamp(112px, 23vw, 190px);
+}
+
+.home-minimal-hero .station-summary-icon,
+.glass-icon.station-summary-icon,
+.station-summary-item .glass-icon.station-summary-icon {
+  width: 68px !important;
+  height: 68px !important;
+  min-width: 68px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.station-summary-count-5 .glass-icon.station-summary-icon,
+.station-summary-count-6 .glass-icon.station-summary-icon,
+.station-summary-count-7 .glass-icon.station-summary-icon,
+.station-summary-count-8 .glass-icon.station-summary-icon {
+  width: 60px !important;
+  height: 60px !important;
+  min-width: 60px !important;
+}
+
+.glass-icon.station-summary-icon svg,
+.home-minimal-hero .glass-icon.station-summary-icon svg,
+.station-summary-item .glass-icon.station-summary-icon svg {
+  width: 100% !important;
+  height: 100% !important;
+  color: inherit !important;
+  stroke: currentColor !important;
+  filter: drop-shadow(0 7px 15px rgba(15, 23, 42, .22)) !important;
+}
+
+.glass-icon-calendar.station-summary-icon { color: #2f7dff !important; }
+.glass-icon-package.station-summary-icon { color: #ff8a1f !important; }
+.glass-icon-cart.station-summary-icon { color: #00a8c8 !important; }
+.glass-icon-tag.station-summary-icon { color: #a855f7 !important; }
+.glass-icon-bulb.station-summary-icon { color: #f5b301 !important; }
+.glass-icon-recycle.station-summary-icon { color: #18a957 !important; }
+.glass-icon-check.station-summary-icon { color: #22b45e !important; }
+.glass-icon-note.station-summary-icon { color: #3678ff !important; }
+.glass-icon-plug.station-summary-icon { color: #14b8a6 !important; }
+.glass-icon-receipt.station-summary-icon { color: #d99a00 !important; }
+.glass-icon-flag-pl.station-summary-icon { color: #dc2626 !important; }
+.glass-icon-car.station-summary-icon { color: #ef4444 !important; }
+.glass-icon-doc.station-summary-icon { color: #2563eb !important; }
+.glass-icon-coins.station-summary-icon { color: #e0a800 !important; }
+.glass-icon-camera.station-summary-icon { color: #8b5cf6 !important; }
+
+.hero-weather-pill .glass-icon.hero-weather-icon,
+.home-minimal-hero .glass-icon.hero-weather-icon {
+  width: clamp(58px, 13vw, 76px) !important;
+  height: clamp(58px, 13vw, 76px) !important;
+  min-width: clamp(58px, 13vw, 76px) !important;
+}
+
+.hero-weather-pill .glass-icon.hero-weather-icon svg,
+.home-minimal-hero .glass-icon.hero-weather-icon svg {
+  width: 100% !important;
+  height: 100% !important;
+  filter: drop-shadow(0 7px 15px rgba(15, 23, 42, .18)) !important;
+}
+
+@media (max-width: 560px) {
+  .home-minimal-hero .station-summary-icon,
+  .glass-icon.station-summary-icon,
+  .station-summary-item .glass-icon.station-summary-icon {
+    width: 60px !important;
+    height: 60px !important;
+    min-width: 60px !important;
+  }
+
+  .station-summary-count-5 .glass-icon.station-summary-icon,
+  .station-summary-count-6 .glass-icon.station-summary-icon,
+  .station-summary-count-7 .glass-icon.station-summary-icon,
+  .station-summary-count-8 .glass-icon.station-summary-icon {
+    width: 54px !important;
+    height: 54px !important;
+    min-width: 54px !important;
+  }
+
+  .hero-weather-pill .glass-icon.hero-weather-icon,
+  .home-minimal-hero .glass-icon.hero-weather-icon {
+    width: 54px !important;
+    height: 54px !important;
+    min-width: 54px !important;
   }
 }
