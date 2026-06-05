@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_125';
+  const APP_VERSION = 'Domácnost+ v.0.1_126';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -180,8 +180,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 69,
-      appBuild: 125,
-      mode: 'home-dashboard-icons-v125',
+      appBuild: 126,
+      mode: 'anime-icons-v126',
       createdAt: '',
       updatedAt: ''
     },
@@ -953,8 +953,8 @@
 
     migrated.meta = {
       schemaVersion: 69,
-      appBuild: 125,
-      mode: 'home-dashboard-icons-v125',
+      appBuild: 126,
+      mode: 'anime-icons-v126',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2303,9 +2303,7 @@
     const nextDay = daily[1] || null;
     const currentValue = hasCurrent ? roundWeather(current.temperature, '°') : '—';
     const currentLabel = weather.loading ? 'Načítám počasí' : (weather.error && !hasCurrent) ? 'Počasí nejde načíst' : hasCurrent ? condition : 'Počasí není načtené';
-    const secondaryLabel = hasCurrent
-      ? `${currentLabel}${current.feelsLike !== undefined && current.feelsLike !== null ? ` · pocitově ${roundWeather(current.feelsLike, '°')}` : ''}`
-      : currentLabel;
+    const secondaryLabel = currentLabel;
     const tomorrowHint = nextDay ? (() => {
       const [dayLabel] = weatherCodeLabel(nextDay.weatherCode);
       return `Zítra ${roundWeather(nextDay.max, '°')} · ${dayLabel}`;
@@ -2321,7 +2319,7 @@
     return `
       <button class="hero-weather-pill ${options.expanded ? 'hero-weather-pill-expanded' : ''} ${daily.length > 1 ? 'hero-weather-pill-live' : ''}" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
         ${renderGlassIcon(currentIcon, { size: options.expanded ? 'hero-lg' : 'hero-md', extraClass: 'hero-weather-icon' })}
-        <span class="hero-weather-copy"><strong>${escapeHtml(currentValue)}</strong><em>${escapeHtml(secondaryLabel)}</em>${!options.expanded && tomorrowHint ? `<small>${escapeHtml(tomorrowHint)}</small>` : ''}</span>
+        <span class="hero-weather-copy"><strong>${escapeHtml(currentValue)}</strong><em>${escapeHtml(secondaryLabel)}</em>${options.expanded && tomorrowHint ? `<small>${escapeHtml(tomorrowHint)}</small>` : ''}</span>
         ${forecast}
       </button>
     `;
@@ -2702,7 +2700,27 @@
       settings: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icSet" x1="12" x2="52" y1="10" y2="55"><stop stop-color="#E2E8F0"/><stop offset="1" stop-color="#64748B"/></linearGradient></defs><circle cx="32" cy="32" r="10" fill="#FFFFFF"/><path d="M36 9 38 18c2 1 4 2 6 4l9-3 5 9-7 6v6l7 6-5 9-9-3c-2 2-4 3-6 4l-2 9h-8l-2-9c-2-1-4-2-6-4l-9 3-5-9 7-6v-6l-7-6 5-9 9 3c2-2 4-3 6-4l2-9Z" fill="url(#icSet)"/><circle cx="32" cy="32" r="8" fill="#F8FAFC"/><circle cx="32" cy="32" r="4" fill="#334155"/></svg>`,
       generic: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icGen" x1="12" x2="52" y1="12" y2="52"><stop stop-color="#CBD5E1"/><stop offset="1" stop-color="#64748B"/></linearGradient></defs><circle cx="32" cy="32" r="24" fill="url(#icGen)"/><circle cx="32" cy="32" r="10" fill="#F8FAFC"/></svg>`
     };
-    return illustratedIcons[String(kind || 'generic')] || icons[String(kind || 'generic')] || icons.generic;
+    const standaloneIcons = {
+      calendar: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M13 18h38c3 0 5 2 5 5v29c0 3-2 5-5 5H13c-3 0-5-2-5-5V23c0-3 2-5 5-5Z" fill="#F8FAFC"/><path d="M13 18h38c3 0 5 2 5 5v9H8v-9c0-3 2-5 5-5Z" fill="#EF4444"/><path d="M16 9v14" fill="none" class="anime-icon-line" stroke="#334155" stroke-width="4" stroke-linecap="round"/><path d="M28 9v14" fill="none" class="anime-icon-line" stroke="#334155" stroke-width="4" stroke-linecap="round"/><path d="M40 9v14" fill="none" class="anime-icon-line" stroke="#334155" stroke-width="4" stroke-linecap="round"/><path d="M17 38h6v5h-6zM29 38h6v5h-6zM41 38h6v5h-6zM17 48h6v5h-6zM29 48h6v5h-6z" fill="#DBEAFE"/><circle cx="44" cy="50" r="6" fill="#F97316"/><path d="M42 50h4M44 48v4" fill="none" class="anime-icon-line" stroke="#FFF7ED" stroke-width="2.6" stroke-linecap="round"/><path d="M10 31h46" fill="none" class="anime-icon-line" stroke="#CBD5E1" stroke-width="2"/><path d="M18 14c6-4 20-5 31 1" fill="none" class="anime-icon-line" stroke="#FFFFFF" stroke-opacity=".58" stroke-width="3" stroke-linecap="round"/><path d="M53 13c4-1 7 1 8 4-4 2-8 1-8-4Z" fill="#F9A8D4"/><path d="M48 9c3-3 7-3 10-1-2 4-6 5-10 1Z" fill="#FBCFE8"/></svg>`,
+      package: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M12 22 32 12l20 10v26L32 59 12 48Z" fill="#D97706"/><path d="M12 22 32 32v27L12 48Z" fill="#B7791F"/><path d="M52 22 32 32v27l20-11Z" fill="#92400E"/><path d="M12 22 32 12l20 10-20 10Z" fill="#F59E0B"/><path d="m22 17 20 10M32 32l10-5v10l-4 2-2-6-4 2Z" fill="none" class="anime-icon-line" stroke="#FDE68A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="33" width="13" height="9" rx="2" fill="#FEF3C7"/><path d="M18 36h7M18 39h5" fill="none" class="anime-icon-line" stroke="#92400E" stroke-width="1.8" stroke-linecap="round"/><path d="M37 47h8M41 43v8" fill="none" class="anime-icon-line" stroke="#FED7AA" stroke-width="2.6" stroke-linecap="round"/></svg>`,
+      cart: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M12 27h42l-5 24H17Z" fill="#0284C7"/><path d="M16 31h34l-3 16H19Z" fill="#38BDF8"/><path d="M16 28c1-8 8-13 16-13s15 5 16 13" fill="none" class="anime-icon-line" stroke="#075985" stroke-width="4" stroke-linecap="round"/><path d="M23 31v17M32 31v17M41 31v17" fill="none" class="anime-icon-line" stroke="#075985" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/><circle cx="22" cy="53" r="4" fill="#0F172A"/><circle cx="45" cy="53" r="4" fill="#0F172A"/><path d="M23 20c0-5 4-9 8-9 2 4 1 9-3 12" fill="#22C55E"/><path d="M35 20c2-6 8-8 13-6-1 6-6 9-12 9" fill="#84CC16"/><circle cx="32" cy="25" r="5" fill="#EF4444"/><path d="M42 16h9l-4 19h-9Z" fill="#F59E0B"/><path d="M44 17h9" fill="none" class="anime-icon-line" stroke="#FEF3C7" stroke-width="3" stroke-linecap="round"/></svg>`,
+      tag: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M8 22c0-4 3-7 7-7h34c4 0 7 3 7 7v6c-4 1-6 4-6 8s2 7 6 8v6c0 4-3 7-7 7H15c-4 0-7-3-7-7v-6c4-1 6-4 6-8s-2-7-6-8Z" fill="#A855F7"/><path d="M12 23c0-2 2-4 4-4h34c2 0 3 1 4 3-9 3-20 5-42 5Z" fill="#C084FC"/><path d="M39 18v37" fill="none" class="anime-icon-line" stroke="#F5D0FE" stroke-width="2.4" stroke-dasharray="3 4" stroke-linecap="round"/><text x="18" y="39" font-size="12" font-family="Arial, sans-serif" font-weight="900" fill="#FFFFFF">%</text><path d="M18 46h14" fill="none" class="anime-icon-line" stroke="#F5D0FE" stroke-width="3" stroke-linecap="round"/><path d="M46 27h5M46 34h5M46 41h5" fill="none" class="anime-icon-line" stroke="#E9D5FF" stroke-width="2" stroke-linecap="round"/><path d="M58 12l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" fill="#C084FC"/></svg>`,
+      bulb: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6c-12 0-21 9-21 21 0 8 4 14 11 18v3h20v-3c7-4 11-10 11-18C53 15 44 6 32 6Z" fill="#FDE68A"/><path d="M19 26c0-8 6-14 14-15 7 1 12 7 12 15 0 7-4 12-10 16H25c-4-4-6-9-6-16Z" fill="#FACC15"/><path d="M27 25h10l-5 9h7L28 48l3-11h-6Z" fill="#FFFFFF" fill-opacity=".9"/><path d="M24 49h16v5H24Z" fill="#475569"/><path d="M27 56h10" fill="none" class="anime-icon-line" stroke="#1E293B" stroke-width="5" stroke-linecap="round"/><path d="M23 16c3-4 7-6 12-6" fill="none" class="anime-icon-line" stroke="#FFF7AD" stroke-width="4" stroke-linecap="round"/><path d="M11 9l5 5M52 9l-5 5M6 29h7M51 29h7M13 51l5-5M51 51l-5-5" fill="none" class="anime-icon-line" stroke="#FBBF24" stroke-width="3.5" stroke-linecap="round"/></svg>`,
+      recycle: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M19 18h29l-3 38H22Z" fill="#16A34A"/><path d="M17 14h33v7H17Z" fill="#15803D"/><path d="M24 18h19l-1-5H25Z" fill="#22C55E"/><path d="M28 30c4-5 10-4 13 1" fill="none" class="anime-icon-line" stroke="#DCFCE7" stroke-width="3" stroke-linecap="round"/><path d="M40 27v6h-6" fill="none" class="anime-icon-line" stroke="#DCFCE7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M37 42c-4 5-10 4-13-1" fill="none" class="anime-icon-line" stroke="#DCFCE7" stroke-width="3" stroke-linecap="round"/><path d="M25 45v-6h6" fill="none" class="anime-icon-line" stroke="#DCFCE7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M46 40c6 1 10 6 9 14H43c-1-7 0-12 3-14Z" fill="#111827"/><path d="M49 42c2 3 3 7 2 11" fill="none" class="anime-icon-line" stroke="#334155" stroke-width="2" stroke-linecap="round"/><circle cx="25" cy="58" r="3" fill="#0F172A"/><circle cx="42" cy="58" r="3" fill="#0F172A"/></svg>`,
+      check: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M18 10h29c3 0 5 2 5 5v39c0 3-2 5-5 5H18c-3 0-5-2-5-5V15c0-3 2-5 5-5Z" fill="#2563EB"/><path d="M20 16h25v36H20Z" fill="#F8FAFC"/><path d="M26 8h14c2 0 4 2 4 4v4H22v-4c0-2 2-4 4-4Z" fill="#1E293B"/><path d="M25 27l3 3 6-7" fill="none" class="anime-icon-line" stroke="#22C55E" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 39l3 3 6-7" fill="none" class="anime-icon-line" stroke="#22C55E" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M38 27h8M38 39h8" fill="none" class="anime-icon-line" stroke="#CBD5E1" stroke-width="3" stroke-linecap="round"/><path d="M50 37l7 7-12 12-7-7Z" fill="#F59E0B"/><path d="M42 53l3-1-2-2Z" fill="#92400E"/></svg>`,
+      note: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M15 13h36c3 0 5 2 5 5v34c0 3-2 5-5 5H15c-3 0-5-2-5-5V18c0-3 2-5 5-5Z" fill="#FDE68A"/><path d="M47 13c6 10 7 22 3 38" fill="#FCD34D" opacity=".5"/><circle cx="49" cy="14" r="6" fill="#EF4444"/><path d="M44 19 31 32" fill="none" class="anime-icon-line" stroke="#991B1B" stroke-width="2" stroke-linecap="round"/><path d="M20 27h22M20 37h26M20 47h17" fill="none" class="anime-icon-line" stroke="#78350F" stroke-width="3" stroke-linecap="round"/><path d="M43 46c2 4 7 4 9 0" fill="none" class="anime-icon-line" stroke="#78350F" stroke-width="2.5" stroke-linecap="round"/><circle cx="43" cy="41" r="1.8" fill="#78350F"/><circle cx="52" cy="41" r="1.8" fill="#78350F"/></svg>`,
+      plug: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M28 22c8-7 20-3 23 8 4 14-8 25-20 22-8-2-13-8-14-15" fill="#FDE68A"/><path d="M12 38c5-11 17-17 27-14" fill="none" class="anime-icon-line" stroke="#0EA5E9" stroke-width="5" stroke-linecap="round"/><path d="M12 38h16v10H12Z" fill="#334155"/><path d="M8 35v16" fill="none" class="anime-icon-line" stroke="#334155" stroke-width="5" stroke-linecap="round"/><path d="M30 14 16 31h13l-7 19 19-25H29Z" fill="#22C55E"/><path d="M42 23c3 3 5 7 4 13" fill="none" class="anime-icon-line" stroke="#FFF7AD" stroke-width="4" stroke-linecap="round"/><path d="M50 9l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" fill="#38BDF8"/></svg>`,
+      receipt: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M24 8h27v43l-6-3-5 3-5-3-5 3-6-3Z" fill="#F8FAFC"/><path d="M29 20h16M29 29h16M29 38h12" fill="none" class="anime-icon-line" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/><path d="M9 26c9-2 17-6 24-12 7 6 15 10 24 12-1 18-10 27-24 33-14-6-23-15-24-33Z" fill="#2563EB"/><path d="m24 37 6 6 13-15" fill="none" class="anime-icon-line" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 29c9-3 14-6 18-10" fill="none" class="anime-icon-line" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/></svg>`,
+      'flag-pl': `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M21 28h20v27H21Z" fill="#D97706"/><path d="M18 25h26l-13-13Z" fill="#F59E0B"/><path d="M30 11h4v44h-4Z" fill="#92400E"/><path d="M10 38h18v17H10Z" fill="#FBBF24"/><path d="M36 35h18v20H36Z" fill="#FDE68A"/><path d="M24 34h5v7h-5ZM34 34h5v7h-5ZM16 44h5v6h-5ZM42 42h5v7h-5Z" fill="#DBEAFE"/><path d="M43 9h14v9H43Z" fill="#FFFFFF"/><path d="M43 18h14v9H43Z" fill="#DC2626"/><path d="M43 9v22" fill="none" class="anime-icon-line" stroke="#475569" stroke-width="3" stroke-linecap="round"/><path d="M12 57h44" fill="none" class="anime-icon-line" stroke="#A7F3D0" stroke-width="4" stroke-linecap="round"/><path d="M9 26c5-6 11-7 16-4" fill="none" class="anime-icon-line" stroke="#F9A8D4" stroke-width="3" stroke-linecap="round"/></svg>`,
+      car: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 27h44v24H10Z" fill="#334155"/><path d="M15 22h34l5 8H10Z" fill="#475569"/><path d="M18 30h28v13H18Z" fill="#BFDBFE"/><path d="M22 36h20" fill="none" class="anime-icon-line" stroke="#60A5FA" stroke-width="3" stroke-linecap="round"/><path d="M20 45h24v9H20Z" fill="#2563EB"/><path d="M24 39c2-6 5-8 9-8h5c4 0 7 2 9 8l3 8H21Z" fill="#1D4ED8"/><path d="M29 35h14l2 6H26Z" fill="#DBEAFE"/><circle cx="29" cy="51" r="5" fill="#0F172A"/><circle cx="45" cy="51" r="5" fill="#0F172A"/><path d="M14 20h36" fill="none" class="anime-icon-line" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/><path d="M52 43h7M54 38h5" fill="none" class="anime-icon-line" stroke="#64748B" stroke-width="4" stroke-linecap="round"/></svg>`,
+      doc: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M9 21h18l5 6h23v25c0 3-2 5-5 5H14c-3 0-5-2-5-5Z" fill="#2563EB"/><path d="M16 13h28c3 0 5 2 5 5v30H16Z" fill="#F8FAFC"/><path d="M21 25h22M21 34h18M21 43h13" fill="none" class="anime-icon-line" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/><path d="M9 29h46v23c0 3-2 5-5 5H14c-3 0-5-2-5-5Z" fill="#1D4ED8"/><path d="M35 49c6 4 10 3 15-2" fill="none" class="anime-icon-line" stroke="#BFDBFE" stroke-width="3" stroke-linecap="round"/><circle cx="51" cy="52" r="7" fill="#22C55E"/><path d="m48 52 2 2 4-5" fill="none" class="anime-icon-line" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      coins: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M12 52h8V35h-8Zm13 0h8V27h-8Zm13 0h8V20h-8Zm13 0h8V13h-8Z" fill="#3B82F6"/><path d="M12 52h47" fill="none" class="anime-icon-line" stroke="#64748B" stroke-width="3" stroke-linecap="round"/><path d="M10 31c10 2 23-3 38-18" fill="none" class="anime-icon-line" stroke="#22C55E" stroke-width="4" stroke-linecap="round"/><path d="M45 13h8v8" fill="none" class="anime-icon-line" stroke="#22C55E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="22" cy="47" rx="10" ry="5" fill="#FBBF24"/><path d="M12 47v6c0 3 4 5 10 5s10-2 10-5v-6" fill="#D97706"/><ellipse cx="22" cy="47" rx="10" ry="5" fill="#FDE68A"/><text x="17" y="51" font-size="9" font-family="Arial, sans-serif" font-weight="900" fill="#92400E">Kč</text></svg>`,
+      camera: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M13 22h28c8 0 14 6 14 14v3c0 8-6 14-14 14H13Z" fill="#CBD5E1"/><path d="M13 22h28c5 0 9 4 9 9H13Z" fill="#F8FAFC"/><circle cx="31" cy="39" r="13" fill="#1E293B"/><circle cx="31" cy="39" r="8" fill="#0F172A"/><circle cx="35" cy="35" r="4" fill="#60A5FA"/><path d="M53 25h7v19h-7Z" fill="#94A3B8"/><path d="M54 30h6" fill="none" class="anime-icon-line" stroke="#64748B" stroke-width="3" stroke-linecap="round"/><path d="M12 57c2-8 7-12 15-13" fill="none" class="anime-icon-line" stroke="#86EFAC" stroke-width="4" stroke-linecap="round"/><path d="M8 49c7 0 12 3 15 9" fill="none" class="anime-icon-line" stroke="#22C55E" stroke-width="4" stroke-linecap="round"/></svg>`,
+      settings: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M37 8 39 17c2 1 5 2 7 4l9-3 5 9-7 6v6l7 6-5 9-9-3c-2 2-5 3-7 4l-2 9H27l-2-9c-2-1-5-2-7-4l-9 3-5-9 7-6v-6l-7-6 5-9 9 3c2-2 5-3 7-4l2-9Z" fill="#94A3B8"/><path d="M37 8 39 17c2 1 5 2 7 4l9-3 5 9-7 6v6l7 6-5 9-9-3c-2 2-5 3-7 4l-2 9H32V8Z" fill="#64748B" opacity=".7"/><circle cx="32" cy="36" r="13" fill="#F8FAFC"/><circle cx="32" cy="36" r="6" fill="#334155"/><path d="M18 21c5-5 12-8 20-7" fill="none" class="anime-icon-line" stroke="#E2E8F0" stroke-width="4" stroke-linecap="round"/></svg>`,
+      home: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M8 32 32 12l24 20" fill="none" class="anime-icon-line" stroke="#0369A1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 30v25h34V30L32 16Z" fill="#38BDF8"/><path d="M26 55V41h12v14" fill="#FEF3C7"/><path d="M20 35h9v8h-9ZM36 35h9v8h-9Z" fill="#DBEAFE"/><path d="M43 17l3 6 6 3-6 3-3 6-3-6-6-3 6-3Z" fill="#FACC15"/></svg>`,
+      generic: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M16 14h32c3 0 5 2 5 5v32c0 3-2 5-5 5H16c-3 0-5-2-5-5V19c0-3 2-5 5-5Z" fill="#94A3B8"/><circle cx="32" cy="32" r="11" fill="#F8FAFC"/></svg>`
+    };
+    return standaloneIcons[String(kind || 'generic')] || illustratedIcons[String(kind || 'generic')] || icons[String(kind || 'generic')] || icons.generic;
   }
 
   function weatherCodeLabel(code) {
@@ -3399,6 +3417,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_126', note: 'Hotovo: anime ikonky bez pozadí pro Home/Moduly, HDO jako žárovka s bleskem a vycentrované panely času a počasí bez přetékání textu.' },
       { title: 'Domácnost+ v.0.1_125', note: 'Hotovo: oprava Garáže po chybě parseDateValue a nové kreslené barevné ikonky v Home/Moduly panelech.' },
       { title: 'Domácnost+ v.0.1_124', note: 'Hotovo: Home panely mají větší barevné ikonky bez bílého přebití, počasí vedle času ukazuje aktuální teplotu a stav počasí a vybrané Home panely živě střídají konkrétní položky.' },
       { title: 'Domácnost+ v.0.1_123', note: 'Hotovo: Home ikonky jsou bez viditelného pozadí, barevně výraznější podle modulu, opravena čárka u počasí a obrazovka Více je zjednodušená na Nastavení aplikace + univerzální seznam Moduly.' },
@@ -3492,7 +3511,7 @@
     const stats = getModuleStats(module.id);
     return `
       <button class="item module-hub-item module-status-card" type="button" data-nav="${module.id}">
-        <div class="module-status-icon">${module.icon}</div>
+        ${renderGlassIcon(getHomeIconKind(module.id), { size: 'home-sm', extraClass: 'module-status-icon modern-module-icon dashboard-module-icon' })}
         <div class="item-top"><div class="item-title">${escapeHtml(module.label)}</div><span class="badge">${stats.count} ${escapeHtml(stats.label)}</span></div>
         <div class="item-meta">${escapeHtml(stats.note)}</div>
       </button>
@@ -10754,7 +10773,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 125, mode: 'rich-demo-v125', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 126, mode: 'rich-demo-v126', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -10896,7 +10915,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 125, mode: 'home-dashboard-icons-v125', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 126, mode: 'anime-icons-v126', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -13290,7 +13309,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 125
+        appBuild: 126
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -13878,7 +13897,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-125-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-126-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -14065,7 +14084,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_125</span>
+          <span class="badge">Domácnost+ v.0.1_126</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

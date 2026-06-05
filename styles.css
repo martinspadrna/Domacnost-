@@ -8670,7 +8670,7 @@ textarea {
   }
 }
 
-/* v0.1_125 — skutečně kreslené barevné Home/Moduly ikony */
+/* v0.1_126 — skutečně kreslené barevné Home/Moduly ikony */
 .home-minimal-hero .glass-icon.station-summary-icon svg,
 .station-summary-item .glass-icon.station-summary-icon svg,
 .more-clean-hub .modern-module-icon svg {
@@ -8717,5 +8717,164 @@ textarea {
     width: 60px !important;
     height: 60px !important;
     min-width: 60px !important;
+  }
+}
+
+/* Domácnost+ v.0.1_126 – anime ikonky bez pozadí + centrovaný čas/počasí */
+.home-minimal-hero .glass-icon.station-summary-icon,
+.station-summary-item .glass-icon.station-summary-icon,
+.more-clean-hub .modern-module-icon,
+.tablet-modules-card .modern-module-icon,
+.module-status-card .dashboard-module-icon {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.home-minimal-hero .glass-icon.station-summary-icon::before,
+.home-minimal-hero .glass-icon.station-summary-icon::after,
+.more-clean-hub .modern-module-icon::before,
+.more-clean-hub .modern-module-icon::after,
+.tablet-modules-card .modern-module-icon::before,
+.tablet-modules-card .modern-module-icon::after {
+  display: none !important;
+  content: none !important;
+}
+
+.home-minimal-hero .glass-icon.station-summary-icon svg.anime-module-svg,
+.station-summary-item .glass-icon.station-summary-icon svg.anime-module-svg,
+.more-clean-hub .modern-module-icon svg.anime-module-svg,
+.tablet-modules-card .modern-module-icon svg.anime-module-svg,
+.module-status-card .dashboard-module-icon svg.anime-module-svg {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
+  color: initial !important;
+  filter: drop-shadow(0 10px 16px rgba(15, 23, 42, .22)) !important;
+}
+
+svg.anime-module-svg *:not(.anime-icon-line) {
+  stroke: none !important;
+}
+
+svg.anime-module-svg .anime-icon-line {
+  fill: none !important;
+  vector-effect: non-scaling-stroke;
+}
+
+.tablet-modules-card .module-status-card,
+.more-clean-hub .module-status-card {
+  align-items: center;
+}
+
+.tablet-modules-card .dashboard-module-icon,
+.module-status-card .dashboard-module-icon {
+  width: 62px !important;
+  height: 62px !important;
+  min-width: 62px !important;
+}
+
+.home-minimal-hero .hero-clock-button {
+  display: grid !important;
+  place-items: center !important;
+  align-content: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  overflow: hidden !important;
+}
+
+.home-minimal-hero .hero-clock-button .hero-time,
+.home-minimal-hero .hero-clock-button .hero-date {
+  width: 100%;
+  text-align: center !important;
+}
+
+.home-minimal-hero .hero-weather-pill {
+  justify-content: center !important;
+  text-align: center !important;
+  overflow: hidden !important;
+}
+
+.home-minimal-hero .hero-weather-copy {
+  display: grid;
+  min-width: 0;
+  max-width: 100%;
+  justify-items: center;
+  align-content: center;
+  text-align: center;
+}
+
+.home-minimal-hero .hero-weather-copy strong,
+.home-minimal-hero .hero-weather-copy em,
+.home-minimal-hero .hero-weather-copy small {
+  max-width: 100% !important;
+  min-width: 0;
+  text-align: center !important;
+}
+
+.home-minimal-hero .hero-weather-copy em {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  white-space: normal !important;
+  text-overflow: clip !important;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.08 !important;
+}
+
+.home-minimal-hero .hero-weather-copy small {
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+.home-hero-count-1 .hero-weather-pill:not(.hero-weather-pill-expanded),
+.home-hero-count-2 .hero-weather-pill:not(.hero-weather-pill-expanded),
+.home-hero-count-3 .hero-weather-pill:not(.hero-weather-pill-expanded),
+.home-hero-count-4 .hero-weather-pill:not(.hero-weather-pill-expanded),
+.home-hero-count-5 .hero-weather-pill:not(.hero-weather-pill-expanded),
+.home-hero-count-6 .hero-weather-pill:not(.hero-weather-pill-expanded),
+.home-hero-count-7 .hero-weather-pill:not(.hero-weather-pill-expanded),
+.home-hero-count-8 .hero-weather-pill:not(.hero-weather-pill-expanded) {
+  flex-direction: column;
+  gap: 5px !important;
+}
+
+.home-hero-count-1 .hero-weather-pill:not(.hero-weather-pill-expanded) .hero-weather-icon,
+.home-hero-count-2 .hero-weather-pill:not(.hero-weather-pill-expanded) .hero-weather-icon,
+.home-hero-count-3 .hero-weather-pill:not(.hero-weather-pill-expanded) .hero-weather-icon,
+.home-hero-count-4 .hero-weather-pill:not(.hero-weather-pill-expanded) .hero-weather-icon,
+.home-hero-count-5 .hero-weather-pill:not(.hero-weather-pill-expanded) .hero-weather-icon,
+.home-hero-count-6 .hero-weather-pill:not(.hero-weather-pill-expanded) .hero-weather-icon,
+.home-hero-count-7 .hero-weather-pill:not(.hero-weather-pill-expanded) .hero-weather-icon,
+.home-hero-count-8 .hero-weather-pill:not(.hero-weather-pill-expanded) .hero-weather-icon {
+  width: clamp(38px, 8vw, 50px) !important;
+  height: clamp(38px, 8vw, 50px) !important;
+  min-width: clamp(38px, 8vw, 50px) !important;
+}
+
+@media (max-width: 560px) {
+  .tablet-modules-card .dashboard-module-icon,
+  .module-status-card .dashboard-module-icon {
+    width: 56px !important;
+    height: 56px !important;
+    min-width: 56px !important;
+  }
+
+  .home-minimal-hero .hero-clock-button,
+  .home-minimal-hero .hero-weather-pill {
+    padding-inline: 10px !important;
+  }
+
+  .home-minimal-hero .hero-weather-copy strong {
+    font-size: clamp(1.12rem, 5vw, 1.55rem) !important;
+  }
+
+  .home-minimal-hero .hero-weather-copy em {
+    font-size: .66rem !important;
   }
 }
