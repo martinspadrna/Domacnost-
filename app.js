@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_120';
+  const APP_VERSION = 'Domácnost+ v.0.1_122';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -180,8 +180,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 69,
-      appBuild: 120,
-      mode: 'polish-shop-holidays-v120',
+      appBuild: 122,
+      mode: 'polish-shop-holidays-v122',
       createdAt: '',
       updatedAt: ''
     },
@@ -953,8 +953,8 @@
 
     migrated.meta = {
       schemaVersion: 69,
-      appBuild: 120,
-      mode: 'polish-shop-holidays-v120',
+      appBuild: 122,
+      mode: 'polish-shop-holidays-v122',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2614,7 +2614,7 @@
       note: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20V3.5Z"/><path d="M14 3.5V8h4M9 12h6M9 15.5h6"/></svg>`,
       plug: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9h8v4a4 4 0 0 1-4 4 4 4 0 0 1-4-4V9Z"/><path d="M10 5v4M14 5v4M12 17v4"/></svg>`,
       receipt: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h10v17l-2.2-1.4-2.8 1.4-2.8-1.4L7 20.5v-17Z"/><path d="M9.2 8.5h5.6M9.2 12h5.6M9.2 15.5h4.2"/></svg>`,
-      'flag-pl': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16"/><path d="M7 5.2h10.4a1 1 0 0 1 .9 1.4l-1.1 2.4 1.1 2.4a1 1 0 0 1-.9 1.4H7Z"/><path d="M7 10.2h10.1" stroke-width="4.2" opacity=".32"/></svg>`,
+      'flag-pl': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><path d="M6 4v16" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/><path d="M7.2 5.2h10.1c.7 0 1.2.6 1 1.3l-1 2.6 1 2.5c.2.7-.3 1.3-1 1.3H7.2z" fill="#FFFFFF" stroke="rgba(148,163,184,.5)" stroke-width=".8"/><path d="M7.2 10.2h10.1v3.7H7.2z" fill="#EF4444"/></g></svg>`,
       car: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15.5V12l1.8-4.2A2 2 0 0 1 8.6 6.5h6.8a2 2 0 0 1 1.8 1.3L19 12v3.5"/><path d="M5 15.5h14"/><circle cx="8" cy="16.5" r="1.8"/><circle cx="16" cy="16.5" r="1.8"/><path d="M7.4 9.5h9.2"/></svg>`,
       doc: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20V3.5Z"/><path d="M14 3.5V8h4M9.2 12h5.6M9.2 15.5h5.6"/></svg>`,
       coins: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="7" rx="5.8" ry="2.7"/><path d="M6.2 7v4c0 1.5 2.6 2.7 5.8 2.7s5.8-1.2 5.8-2.7V7"/><path d="M8.2 14.2v2.2c0 1.2 1.7 2.2 3.8 2.2 2.1 0 3.8-1 3.8-2.2v-2.2"/></svg>`,
@@ -3326,7 +3326,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_120', note: 'Hotovo: oprava pádu Garáže parseDateValue, Google vícedenní události se v měsíčním kalendáři zobrazují přes všechny dny, Home má větší barevné malované ikony bez blokového pozadí a Garáž má novou záložku Statistiky.' },
+      { title: 'Domácnost+ v.0.1_122', note: 'Hotovo: Home ikonky jsou větší, barevné a v iOS glass stylu. Garáž i ostatní hlavní panelové ikony dostaly vlastní barevné akcenty. oprava pádu Garáže parseDateValue, Google vícedenní události se v měsíčním kalendáři zobrazují přes všechny dny, Home má větší barevné malované ikony bez blokového pozadí a Garáž má novou záložku Statistiky.' },
       { title: 'Domácnost+ v.0.1_115', note: 'Hotovo: nový modul Svátky Polsko s přehledem zavřených obchodů a online aktualizací svátků, mazání auta je přesunuté do detailu s potvrzením a Home má větší čas/počasí s modernějšími ikonami.' },
       { title: 'Domácnost+ v.0.1_113', note: 'Hotovo: hlavní Home panel je roztažený téměř přes celou šířku obrazovky a až ke spodní liště, vnitřní panely vyplňují dostupnou výšku.' },
       { title: 'Domácnost+ v.0.1_112', note: 'Hotovo: Home panel je výškově roztáhnutý níž ke spodní liště a lépe využívá prostor pod rychlými panely.' },
@@ -10672,7 +10672,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 120, mode: 'rich-demo-v120', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 122, mode: 'rich-demo-v122', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -10814,7 +10814,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 120, mode: 'polish-shop-holidays-v120', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 122, mode: 'polish-shop-holidays-v122', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -13208,7 +13208,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 120
+        appBuild: 122
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -13796,7 +13796,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-120-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-122-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -13983,7 +13983,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_120</span>
+          <span class="badge">Domácnost+ v.0.1_122</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

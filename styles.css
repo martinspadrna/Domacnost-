@@ -8014,3 +8014,376 @@ textarea {
     min-width: 36px !important;
   }
 }
+
+/* v0.1_121 — larger colorful iOS glass home icons */
+.home-minimal-hero .station-summary-icon,
+.glass-icon.station-summary-icon,
+.station-summary-item .glass-icon.station-summary-icon {
+  display: inline-grid !important;
+  place-items: center !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255,255,255,.20) !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.88), rgba(255,255,255,.20) 32%, transparent 46%),
+    linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.07)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    0 10px 24px rgba(15,23,42,.14) !important;
+  backdrop-filter: blur(14px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(120%) !important;
+  overflow: hidden !important;
+}
+
+.station-summary-count-5 .glass-icon.station-summary-icon,
+.station-summary-count-6 .glass-icon.station-summary-icon,
+.station-summary-count-7 .glass-icon.station-summary-icon,
+.station-summary-count-8 .glass-icon.station-summary-icon {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  border-radius: 15px !important;
+}
+
+.glass-icon.station-summary-icon::after {
+  display: none !important;
+}
+
+.glass-icon.station-summary-icon svg,
+.home-minimal-hero .glass-icon.station-summary-icon svg {
+  width: 76% !important;
+  height: 76% !important;
+  stroke-width: 1.9 !important;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,.10)) !important;
+}
+
+/* category colors */
+.glass-icon-calendar.station-summary-icon,
+.glass-icon-doc.station-summary-icon,
+.glass-icon-note.station-summary-icon {
+  color: #4f86ff !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.92), rgba(255,255,255,.24) 32%, transparent 46%),
+    linear-gradient(180deg, rgba(79,134,255,.20), rgba(79,134,255,.08)) !important;
+}
+
+.glass-icon-car.station-summary-icon {
+  color: #ef4444 !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.92), rgba(255,255,255,.22) 32%, transparent 46%),
+    linear-gradient(180deg, rgba(239,68,68,.22), rgba(239,68,68,.08)) !important;
+}
+
+.glass-icon-recycle.station-summary-icon,
+.glass-icon-check.station-summary-icon {
+  color: #22c55e !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.92), rgba(255,255,255,.22) 32%, transparent 46%),
+    linear-gradient(180deg, rgba(34,197,94,.22), rgba(34,197,94,.08)) !important;
+}
+
+.glass-icon-bulb.station-summary-icon,
+.glass-icon-receipt.station-summary-icon,
+.glass-icon-coins.station-summary-icon {
+  color: #f7b500 !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.92), rgba(255,255,255,.22) 32%, transparent 46%),
+    linear-gradient(180deg, rgba(247,181,0,.22), rgba(247,181,0,.08)) !important;
+}
+
+.glass-icon-flag-pl.station-summary-icon {
+  color: #ef4444 !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.76) 0 48%, rgba(239,68,68,.18) 48% 100%),
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.78), rgba(255,255,255,.16) 34%, transparent 46%) !important;
+}
+
+.glass-icon-camera.station-summary-icon,
+.glass-icon-tag.station-summary-icon {
+  color: #a855f7 !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.92), rgba(255,255,255,.22) 32%, transparent 46%),
+    linear-gradient(180deg, rgba(168,85,247,.20), rgba(168,85,247,.08)) !important;
+}
+
+.glass-icon-package.station-summary-icon {
+  color: #f97316 !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.92), rgba(255,255,255,.22) 32%, transparent 46%),
+    linear-gradient(180deg, rgba(249,115,22,.20), rgba(249,115,22,.08)) !important;
+}
+
+.glass-icon-cart.station-summary-icon {
+  color: #06b6d4 !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.92), rgba(255,255,255,.22) 32%, transparent 46%),
+    linear-gradient(180deg, rgba(6,182,212,.20), rgba(6,182,212,.08)) !important;
+}
+
+.glass-icon-plug.station-summary-icon,
+.glass-icon-home.station-summary-icon,
+.glass-icon-generic.station-summary-icon {
+  color: #64748b !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.92), rgba(255,255,255,.22) 32%, transparent 46%),
+    linear-gradient(180deg, rgba(100,116,139,.18), rgba(100,116,139,.07)) !important;
+}
+
+/* keep weather painted + slightly bigger */
+.glass-icon.hero-weather-icon,
+.home-minimal-hero .glass-icon.hero-weather-icon {
+  width: clamp(50px, 12vw, 68px) !important;
+  height: clamp(50px, 12vw, 68px) !important;
+}
+
+.glass-icon.weather-icon {
+  width: 46px !important;
+  height: 46px !important;
+}
+
+.weather-current-large .glass-icon.weather-icon {
+  width: 58px !important;
+  height: 58px !important;
+}
+
+@media (max-width: 560px) {
+  .home-minimal-hero .station-summary-icon,
+  .glass-icon.station-summary-icon,
+  .station-summary-item .glass-icon.station-summary-icon {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+  }
+
+  .station-summary-count-5 .glass-icon.station-summary-icon,
+  .station-summary-count-6 .glass-icon.station-summary-icon,
+  .station-summary-count-7 .glass-icon.station-summary-icon,
+  .station-summary-count-8 .glass-icon.station-summary-icon {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+  }
+}
+
+/* v0.1_122 — stronger colorful iOS glass home icons + mobile calendar readability */
+
+/* Home panel icons — really larger and more colorful */
+.home-minimal-hero .station-summary-item {
+  align-items: center;
+}
+
+.home-minimal-hero .station-summary-icon,
+.glass-icon.station-summary-icon,
+.station-summary-item .glass-icon.station-summary-icon {
+  display: inline-grid !important;
+  place-items: center !important;
+  width: 52px !important;
+  height: 52px !important;
+  min-width: 52px !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(255,255,255,.24) !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.95), rgba(255,255,255,.30) 30%, transparent 46%),
+    linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.08)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.36),
+    inset 0 -10px 18px rgba(15,23,42,.06),
+    0 12px 28px rgba(15,23,42,.16) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  overflow: hidden !important;
+}
+
+.station-summary-count-5 .glass-icon.station-summary-icon,
+.station-summary-count-6 .glass-icon.station-summary-icon,
+.station-summary-count-7 .glass-icon.station-summary-icon,
+.station-summary-count-8 .glass-icon.station-summary-icon {
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  border-radius: 17px !important;
+}
+
+.glass-icon.station-summary-icon svg,
+.home-minimal-hero .glass-icon.station-summary-icon svg {
+  width: 78% !important;
+  height: 78% !important;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,.12)) !important;
+}
+
+.home-minimal-hero .station-summary-copy strong {
+  font-size: clamp(1.05rem, 3.5vw, 1.45rem) !important;
+}
+
+.home-minimal-hero .station-summary-copy span,
+.home-minimal-hero .station-summary-copy small,
+.home-minimal-hero .station-summary-copy em {
+  font-size: clamp(.74rem, 2.3vw, .90rem) !important;
+}
+
+/* vivid category colors */
+.glass-icon-car.station-summary-icon {
+  color: #ef4444 !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.96), rgba(255,255,255,.30) 30%, transparent 46%),
+    linear-gradient(180deg, rgba(254,202,202,.86), rgba(239,68,68,.16)) !important;
+}
+.glass-icon-recycle.station-summary-icon,
+.glass-icon-check.station-summary-icon {
+  color: #22c55e !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.96), rgba(255,255,255,.30) 30%, transparent 46%),
+    linear-gradient(180deg, rgba(220,252,231,.88), rgba(34,197,94,.16)) !important;
+}
+.glass-icon-bulb.station-summary-icon,
+.glass-icon-coins.station-summary-icon,
+.glass-icon-receipt.station-summary-icon {
+  color: #eab308 !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.96), rgba(255,255,255,.30) 30%, transparent 46%),
+    linear-gradient(180deg, rgba(254,249,195,.90), rgba(234,179,8,.16)) !important;
+}
+.glass-icon-flag-pl.station-summary-icon {
+  color: #dc2626 !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.9), rgba(255,255,255,.18) 30%, transparent 46%),
+    linear-gradient(180deg, rgba(255,255,255,.92) 0 50%, rgba(252,165,165,.84) 50% 100%) !important;
+}
+.glass-icon-calendar.station-summary-icon,
+.glass-icon-note.station-summary-icon,
+.glass-icon-doc.station-summary-icon {
+  color: #3b82f6 !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.96), rgba(255,255,255,.30) 30%, transparent 46%),
+    linear-gradient(180deg, rgba(219,234,254,.90), rgba(59,130,246,.16)) !important;
+}
+.glass-icon-package.station-summary-icon {
+  color: #f97316 !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.96), rgba(255,255,255,.30) 30%, transparent 46%),
+    linear-gradient(180deg, rgba(255,237,213,.90), rgba(249,115,22,.16)) !important;
+}
+.glass-icon-cart.station-summary-icon {
+  color: #06b6d4 !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.96), rgba(255,255,255,.30) 30%, transparent 46%),
+    linear-gradient(180deg, rgba(207,250,254,.90), rgba(6,182,212,.16)) !important;
+}
+.glass-icon-tag.station-summary-icon,
+.glass-icon-camera.station-summary-icon {
+  color: #a855f7 !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.96), rgba(255,255,255,.30) 30%, transparent 46%),
+    linear-gradient(180deg, rgba(243,232,255,.90), rgba(168,85,247,.16)) !important;
+}
+.glass-icon-plug.station-summary-icon,
+.glass-icon-home.station-summary-icon,
+.glass-icon-generic.station-summary-icon {
+  color: #64748b !important;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.96), rgba(255,255,255,.30) 30%, transparent 46%),
+    linear-gradient(180deg, rgba(241,245,249,.90), rgba(100,116,139,.14)) !important;
+}
+
+/* Mobile month calendar readability: horizontal scroll + wider day cells + 2-line event names */
+@media (max-width: 760px) {
+  .calendar-grid {
+    display: block;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .calendar-weekdays,
+  .calendar-week-row {
+    width: max-content;
+    min-width: 100%;
+    grid-template-columns: repeat(7, minmax(104px, 104px));
+    gap: 6px;
+  }
+
+  .calendar-weekday {
+    padding: 6px 4px;
+    font-size: .68rem;
+  }
+
+  .calendar-day {
+    min-height: 126px;
+    padding: 6px;
+    border-radius: 14px;
+    gap: 6px;
+  }
+
+  .calendar-day-name {
+    display: block;
+    font-size: .66rem;
+  }
+
+  .calendar-day-event {
+    padding: 6px 6px;
+    border-radius: 10px;
+    gap: 2px;
+  }
+
+  .calendar-day-event strong,
+  .calendar-day-event span {
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: initial;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+  }
+
+  .calendar-day-event strong {
+    font-size: .68rem;
+    line-height: 1.18;
+    -webkit-line-clamp: 2;
+  }
+
+  .calendar-day-event span {
+    font-size: .60rem;
+    line-height: 1.18;
+    -webkit-line-clamp: 2;
+  }
+}
+
+@media (max-width: 560px) {
+  .home-minimal-hero .station-summary-icon,
+  .glass-icon.station-summary-icon,
+  .station-summary-item .glass-icon.station-summary-icon {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+  }
+
+  .station-summary-count-5 .glass-icon.station-summary-icon,
+  .station-summary-count-6 .glass-icon.station-summary-icon,
+  .station-summary-count-7 .glass-icon.station-summary-icon,
+  .station-summary-count-8 .glass-icon.station-summary-icon {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+  }
+
+  .calendar-weekdays,
+  .calendar-week-row {
+    grid-template-columns: repeat(7, minmax(92px, 92px));
+  }
+
+  .calendar-day {
+    min-height: 118px;
+  }
+}
+
+@media (max-width: 390px) {
+  .calendar-weekdays,
+  .calendar-week-row {
+    grid-template-columns: repeat(7, minmax(86px, 86px));
+  }
+
+  .calendar-day-event span {
+    display: -webkit-box;
+  }
+}
