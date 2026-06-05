@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_111';
+  const APP_VERSION = 'Domácnost+ v.0.1_112';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -176,8 +176,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 68,
-      appBuild: 111,
-      mode: 'home-wide-panels-v111',
+      appBuild: 112,
+      mode: 'home-bottom-fill-v112',
       createdAt: '',
       updatedAt: ''
     },
@@ -721,8 +721,8 @@
 
     migrated.meta = {
       schemaVersion: 68,
-      appBuild: 111,
-      mode: 'home-wide-panels-v111',
+      appBuild: 112,
+      mode: 'home-bottom-fill-v112',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1904,7 +1904,7 @@
           <div class="mini-stat"><span>Auta</span><strong>${vehicles.length}</strong></div>
           <div class="mini-stat"><span>Tankování</span><strong>${Array.isArray(state.fuel) ? state.fuel.length : 0}</strong></div>
           <div class="mini-stat"><span>Servisy</span><strong>${Array.isArray(state.services) ? state.services.length : 0}</strong></div>
-          <div class="mini-stat"><span>Build</span><strong>111</strong></div>
+          <div class="mini-stat"><span>Build</span><strong>112</strong></div>
         </div>
         <div class="form-actions"><button class="ghost-btn" type="button" data-action="garage-ui-repair">Opravit stav Garáže</button><button class="ghost-btn" type="button" data-nav="home">Zpět domů</button></div>
       </section>
@@ -3012,6 +3012,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_112', note: 'Hotovo: Home panel je výškově roztáhnutý níž ke spodní liště a lépe využívá prostor pod rychlými panely.' },
       { title: 'Domácnost+ v.0.1_111', note: 'Hotovo: oprava pádu Garáže v detailu auta, živé Home karty mají jemný flip efekt a PWA ikony přešly na stabilní názvy bez verzování při každém buildu.' },
       { title: 'Domácnost+ v.0.1_109', note: 'Hotovo: Home má menší mezeru mezi časem/počasím a mini panely, vybrané Home karty umí živě střídat další info a základní Garáž počítá Kč/km jen z paliva.' },
       { title: 'Domácnost+ v.0.1_108', note: 'Hotovo: Home Kalendář otevírá rovnou měsíční mřížku, klik na událost ukáže detail, Garáž má modální tankování/servis, cena/km počítá i servisní náklady a Nákupy dostaly čistší Listonic styl.' },
@@ -9834,7 +9835,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 68, appBuild: 111, mode: 'rich-demo-v110', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 68, appBuild: 112, mode: 'rich-demo-v110', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -9976,7 +9977,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 68, appBuild: 111, mode: 'home-wide-panels-v111', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 68, appBuild: 112, mode: 'home-bottom-fill-v112', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -12361,7 +12362,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 111
+        appBuild: 112
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -12943,7 +12944,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-111-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-112-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -13119,7 +13120,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_111</span>
+          <span class="badge">Domácnost+ v.0.1_112</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
