@@ -6261,7 +6261,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_107 – Home: vyšší čas/počasí bez zvětšení celé karty + rychlé akce Garáže */
+/* Domácnost+ legacy – Home: vyšší čas/počasí bez zvětšení celé karty + rychlé akce Garáže */
 .home-hero-count-1 .station-hero-main,
 .home-hero-count-2 .station-hero-main,
 .home-hero-count-3 .station-hero-main,
@@ -6346,4 +6346,270 @@ textarea {
   .fuel-cost-row {
     gap: 8px;
   }
+}
+
+/* v0.1_108 · Calendar detail modal, Fuelio-like garage, Listonic-like shopping */
+.app-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) 14px max(16px, env(safe-area-inset-bottom));
+  background: rgba(15, 23, 42, .34);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+}
+.app-modal {
+  width: min(720px, 100%);
+  max-height: min(82vh, 760px);
+  overflow: auto;
+  border: 1px solid rgba(148, 163, 184, .22);
+  border-radius: 28px;
+  padding: 16px;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 30px 90px rgba(15, 23, 42, .22);
+}
+[data-theme="dark"] .app-modal {
+  background: rgba(15, 23, 42, .92);
+  border-color: rgba(255,255,255,.12);
+}
+.app-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.app-modal-head h2 {
+  margin: 8px 0 4px;
+  font-size: clamp(1.25rem, 4vw, 1.75rem);
+  letter-spacing: -.05em;
+}
+.app-modal-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: .9rem;
+}
+.modal-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+.modal-detail-card {
+  border: 1px solid rgba(148, 163, 184, .16);
+  border-radius: 18px;
+  padding: 12px;
+  background: rgba(248, 250, 252, .72);
+}
+[data-theme="dark"] .modal-detail-card { background: rgba(255,255,255,.06); }
+.modal-detail-card span {
+  display: block;
+  font-size: .74rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.modal-detail-card strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 1rem;
+}
+.modal-actions { margin-top: 14px; }
+.calendar-day-event {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  cursor: pointer;
+}
+.calendar-day-event:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, .28);
+  outline-offset: 2px;
+}
+
+.garage-fuelio-panel .card-header h2,
+.listonic-panel .card-header h2 { letter-spacing: -.05em; }
+.fuelio-vehicle-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) auto;
+  gap: 12px;
+  align-items: center;
+  border-radius: 24px;
+  padding: 13px;
+}
+.vehicle-main-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.vehicle-main-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+.vehicle-main-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+}
+.vehicle-main-copy em {
+  color: var(--muted);
+  font-size: .82rem;
+  font-style: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fuelio-vehicle-stats {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.fuelio-vehicle-stats span {
+  border-radius: 16px;
+  padding: 8px;
+  background: rgba(15, 23, 42, .045);
+  text-align: center;
+}
+[data-theme="dark"] .fuelio-vehicle-stats span { background: rgba(255,255,255,.06); }
+.fuelio-vehicle-stats strong,
+.fuelio-vehicle-stats em {
+  display: block;
+}
+.fuelio-vehicle-stats strong { font-size: .98rem; }
+.fuelio-vehicle-stats em {
+  margin-top: 1px;
+  font-size: .72rem;
+  color: var(--muted);
+  font-style: normal;
+}
+.vehicle-card-actions {
+  align-self: start;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.icon-action-btn.fuel-add-shortcut {
+  min-width: 54px;
+  font-weight: 900;
+}
+.fuelio-record-row .item-title { letter-spacing: -.02em; }
+.garage-record-modal .fuel-cost-row.wide-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.shopping-progress-card {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+  border-radius: 22px;
+  padding: 13px;
+  background: linear-gradient(135deg, rgba(34,197,94,.16), rgba(59,130,246,.12));
+  border: 1px solid rgba(34,197,94,.18);
+}
+.shopping-progress-card strong,
+.shopping-progress-card span { display: block; }
+.shopping-progress-card strong { font-size: 1.05rem; letter-spacing: -.04em; }
+.shopping-progress-card span { color: var(--muted); font-size: .84rem; }
+.shopping-progress {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(15,23,42,.08);
+}
+.shopping-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #22c55e, #3b82f6);
+}
+.listonic-quick-add {
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  background: rgba(255,255,255,.56);
+}
+[data-theme="dark"] .listonic-quick-add { background: rgba(255,255,255,.05); }
+.listonic-add-form {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 22px;
+  background: rgba(248,250,252,.72);
+  border: 1px solid rgba(148,163,184,.15);
+}
+[data-theme="dark"] .listonic-add-form { background: rgba(255,255,255,.04); }
+.shopping-listonic-list { gap: 8px; }
+.shopping-listonic-item {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  border-radius: 20px;
+  padding: 10px;
+}
+.shopping-listonic-item.done {
+  opacity: .64;
+}
+.shopping-listonic-item.done .item-title {
+  text-decoration: line-through;
+}
+.shopping-check-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 2px solid #2563eb;
+  background: transparent;
+  color: #16a34a;
+  font-weight: 900;
+  cursor: pointer;
+}
+.shopping-check-btn.checked {
+  border-color: #22c55e;
+  background: #22c55e;
+  color: white;
+}
+.shopping-listonic-copy { min-width: 0; }
+.shopping-listonic-copy .item-title,
+.shopping-listonic-copy .item-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shopping-amount-pill { white-space: nowrap; }
+.mini-danger-btn {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+@media (min-width: 760px) {
+  .app-modal-backdrop { align-items: center; }
+  .fuelio-vehicle-card { grid-template-columns: minmax(0, 1fr) 280px auto; }
+  .fuelio-vehicle-stats { grid-column: auto; }
+}
+@media (max-width: 520px) {
+  .app-modal {
+    max-height: 88vh;
+    border-radius: 26px 26px 0 0;
+    padding: 14px;
+  }
+  .modal-detail-grid { grid-template-columns: 1fr; }
+  .fuelio-vehicle-card { grid-template-columns: 1fr; }
+  .vehicle-card-actions { justify-content: flex-start; }
+  .shopping-listonic-item {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+  }
+  .shopping-listonic-item .mini-danger-btn { grid-column: 3; }
 }
