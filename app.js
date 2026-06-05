@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_109';
+  const APP_VERSION = 'Domácnost+ v.0.1_111';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -125,7 +125,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180-v0-1-109.png';
+  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -150,6 +150,7 @@
     { id: 'cameras', label: 'Kamery', icon: '📹', nav: 'cameras', tab: 'overview', metric: () => state.cameras.length, text: () => 'kamery' }
   ];
   const DEFAULT_HOME_HERO_IDS = [];
+  const HOME_HERO_MAX = 8;
   const WEATHER_DEFAULT_LOCATION = { name: 'Hostinné', country: 'CZ', latitude: 50.5407, longitude: 15.7233 };
   const WEATHER_CACHE_MS = 30 * 60 * 1000;
   const WEATHER_PROVIDER_OPTIONS = [
@@ -175,8 +176,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 68,
-      appBuild: 109,
-      mode: 'home-active-cards-v109',
+      appBuild: 111,
+      mode: 'home-wide-panels-v111',
       createdAt: '',
       updatedAt: ''
     },
@@ -720,8 +721,8 @@
 
     migrated.meta = {
       schemaVersion: 68,
-      appBuild: 109,
-      mode: 'home-active-cards-v109',
+      appBuild: 111,
+      mode: 'home-wide-panels-v111',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -798,11 +799,13 @@
 
     getCollectionNames().forEach((collection) => {
       migrated[collection] = Array.isArray(migrated[collection]) ? migrated[collection] : [];
-      migrated[collection] = migrated[collection].map((item) => ({
-        householdId: item.householdId || migrated.household.id,
-        profileId: item.profileId || migrated.activeProfileId || migrated.profiles[0]?.id || '',
-        ...item
-      }));
+      migrated[collection] = migrated[collection]
+        .filter((item) => item && typeof item === 'object')
+        .map((item) => ({
+          householdId: item.householdId || migrated.household.id,
+          profileId: item.profileId || migrated.activeProfileId || migrated.profiles[0]?.id || '',
+          ...item
+        }));
     });
 
     const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
@@ -891,7 +894,7 @@
     requested.forEach((id) => {
       if (allowed.has(id) && !result.includes(id)) result.push(id);
     });
-    return result.slice(0, 4);
+    return result.slice(0, HOME_HERO_MAX);
   }
 
   function homeHeroItemById(id) {
@@ -1870,7 +1873,42 @@
       settings: renderSettings,
       more: renderMore
     };
-    return (renderers[moduleId] || renderDashboard)();
+    const renderer = renderers[moduleId] || renderDashboard;
+    try {
+      return renderer();
+    } catch (error) {
+      console.error(`Domácnost+ render modulu ${moduleId} spadl`, error);
+      if (moduleId === 'garage') return renderGarageRecovery(error);
+      return renderModuleRecovery(moduleId, error);
+    }
+  }
+
+  function renderModuleRecovery(moduleId, error) {
+    const module = MODULES.find((item) => item.id === moduleId) || { label: moduleId || 'Modul', icon: '⚠️' };
+    return `
+      <section class="card desktop-span-2 module-error-card">
+        <div class="card-header"><div><h2>${escapeHtml(module.icon)} ${escapeHtml(module.label)}</h2><p>Modul se nenačetl čistě, ale aplikace zůstala běžet.</p></div><span class="badge warn">chyba renderu</span></div>
+        <div class="inline-note"><strong>Technicky:</strong> ${escapeHtml(error?.message || String(error || 'neznámá chyba'))}</div>
+        <div class="form-actions"><button class="ghost-btn" type="button" data-nav="home">Zpět domů</button><button class="ghost-btn" type="button" data-action="soft-ui-reset">Vyčistit UI stav</button></div>
+      </section>
+    `;
+  }
+
+  function renderGarageRecovery(error) {
+    const vehicles = Array.isArray(state.vehicles) ? state.vehicles.filter(Boolean) : [];
+    return `
+      <section class="card desktop-span-2 module-error-card">
+        <div class="card-header"><div><h2>🚗 Garáž</h2><p>Garáž se zachytila v bezpečném režimu. Data nejsou smazaná.</p></div><span class="badge warn">oprava UI</span></div>
+        <div class="inline-note"><strong>Technicky:</strong> ${escapeHtml(error?.message || String(error || 'neznámá chyba'))}</div>
+        <div class="cloud-status-grid compact-cloud-stats">
+          <div class="mini-stat"><span>Auta</span><strong>${vehicles.length}</strong></div>
+          <div class="mini-stat"><span>Tankování</span><strong>${Array.isArray(state.fuel) ? state.fuel.length : 0}</strong></div>
+          <div class="mini-stat"><span>Servisy</span><strong>${Array.isArray(state.services) ? state.services.length : 0}</strong></div>
+          <div class="mini-stat"><span>Build</span><strong>111</strong></div>
+        </div>
+        <div class="form-actions"><button class="ghost-btn" type="button" data-action="garage-ui-repair">Opravit stav Garáže</button><button class="ghost-btn" type="button" data-nav="home">Zpět domů</button></div>
+      </section>
+    `;
   }
 
   const DEFAULT_CALENDAR_EVENT_MINUTES = 60;
@@ -2029,7 +2067,7 @@
   function renderHomeHeroSummaryItems(ctx) {
     const selected = normalizeHomeHeroIds(state.settings?.homeHeroItems);
     const heroCount = selected.length;
-    const density = heroCount <= 1 ? 'large' : heroCount === 2 ? 'medium' : 'small';
+    const density = heroCount <= 4 ? 'large' : 'small';
     return selected.map((id) => {
       const item = homeHeroItemById(id);
       const metric = typeof item.metric === 'function' ? item.metric(ctx) : '—';
@@ -2974,6 +3012,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_111', note: 'Hotovo: oprava pádu Garáže v detailu auta, živé Home karty mají jemný flip efekt a PWA ikony přešly na stabilní názvy bez verzování při každém buildu.' },
       { title: 'Domácnost+ v.0.1_109', note: 'Hotovo: Home má menší mezeru mezi časem/počasím a mini panely, vybrané Home karty umí živě střídat další info a základní Garáž počítá Kč/km jen z paliva.' },
       { title: 'Domácnost+ v.0.1_108', note: 'Hotovo: Home Kalendář otevírá rovnou měsíční mřížku, klik na událost ukáže detail, Garáž má modální tankování/servis, cena/km počítá i servisní náklady a Nákupy dostaly čistší Listonic styl.' },
       { title: 'Domácnost+ v.0.1_107', note: 'Hotovo: Home má vyšší část čas/počasí bez zvětšení celé karty, Kalendář na Home vrací stav Nyní/Další, HDO a Garáž mají čistší texty a Garáž má rychlé akce + chytrý dopočet tankování.' },
@@ -4112,10 +4151,44 @@
     (state.vehicles || []).forEach((vehicle) => rememberVehicleIconColor(vehicle));
   }
 
+  function normalizeGarageRuntimeState() {
+    state.vehicles = Array.isArray(state.vehicles) ? state.vehicles.filter((item) => item && typeof item === 'object') : [];
+    state.fuel = Array.isArray(state.fuel) ? state.fuel.filter((item) => item && typeof item === 'object') : [];
+    state.services = Array.isArray(state.services) ? state.services.filter((item) => item && typeof item === 'object') : [];
+    state.settings = state.settings && typeof state.settings === 'object' ? state.settings : { ...DEFAULT_STATE.settings };
+    state.settings.vehicleIconColors = normalizeVehicleIconColorMap(state.settings.vehicleIconColors);
+    state.vehicles = state.vehicles.map((vehicle, index) => {
+      const id = normalizeText(vehicle.id) || `vehicle-${index + 1}-${uid()}`;
+      const normalized = {
+        technicalInspectionUntil: '',
+        insuranceUntil: '',
+        nextServiceKm: '',
+        nextServiceDate: '',
+        note: '',
+        ...vehicle,
+        id,
+        name: normalizeText(vehicle.name || vehicle.title || vehicle.model || `Auto ${index + 1}`),
+        iconColor: normalizeVehicleIconColor(vehicle.iconColor || vehicle.color || state.settings.vehicleIconColors[id] || state.settings.vehicleIconColors[normalizeKey(vehicle.name)] || 'blue')
+      };
+      rememberVehicleIconColor(normalized);
+      return normalized;
+    });
+    const validVehicleIds = new Set(state.vehicles.map((vehicle) => vehicle.id));
+    const fallbackVehicleId = state.vehicles[0]?.id || '';
+    state.fuel = state.fuel.map((item, index) => ({ ...item, id: normalizeText(item.id) || `fuel-${index + 1}-${uid()}`, vehicleId: validVehicleIds.has(item.vehicleId) ? item.vehicleId : fallbackVehicleId })).filter((item) => item.vehicleId);
+    state.services = state.services.map((item, index) => ({ ...item, id: normalizeText(item.id) || `service-${index + 1}-${uid()}`, vehicleId: validVehicleIds.has(item.vehicleId) ? item.vehicleId : fallbackVehicleId, title: normalizeText(item.title || item.category || item.note || 'Servis / náklad') })).filter((item) => item.vehicleId);
+    if (!validVehicleIds.has(garageVehicleId)) garageVehicleId = fallbackVehicleId;
+  }
+
   function renderGarage() {
+    normalizeGarageRuntimeState();
     const vehicles = state.vehicles;
     if (!garageVehicleId && vehicles.length) garageVehicleId = vehicles[0].id;
-    const activeVehicle = vehicles.find((vehicle) => vehicle.id === garageVehicleId) || null;
+    let activeVehicle = vehicles.find((vehicle) => vehicle.id === garageVehicleId) || null;
+    if (!activeVehicle && vehicles.length) {
+      garageVehicleId = vehicles[0].id;
+      activeVehicle = vehicles[0];
+    }
     const fuelRowsAll = state.fuel || [];
     const serviceRowsAll = state.services || [];
     const alerts = getVehicleAlerts();
@@ -4433,6 +4506,7 @@
     const stk = dateStatus(vehicle.technicalInspectionUntil, 60);
     const insurance = dateStatus(vehicle.insuranceUntil, 45);
     const costPerKm = stats.totalKm > 0 ? stats.fuelCost / stats.totalKm : null;
+    const totalCost = stats.fuelCost + stats.serviceCost;
     return `
       <div class="card-header compact-detail-head vehicle-detail-head">
         <div class="vehicle-detail-title"><span class="vehicle-icon-bubble vehicle-icon-bubble-large ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span><div><h2>${escapeHtml(vehicle.name)}</h2><p>${escapeHtml(vehicle.plate || 'Bez SPZ')} · ${escapeHtml(vehicle.fuelType || 'palivo neuvedeno')}</p></div></div>
@@ -5117,7 +5191,7 @@
     };
     return `
       <section class="card desktop-span-2 compact-settings-card dashboard-settings-card">
-        <div class="card-header"><div><h2>Panely v horním bloku Home</h2><p>Čas a počasí jsou na Home pevně. Vyber 0–4 další panely pod ně.</p></div><span class="badge">${normalizeHomeHeroIds(state.settings?.homeHeroItems).length}/4</span></div>
+        <div class="card-header"><div><h2>Panely v horním bloku Home</h2><p>Čas a počasí jsou na Home pevně. Vyber 0–8 dalších panelů pod ně.</p></div><span class="badge">${normalizeHomeHeroIds(state.settings?.homeHeroItems).length}/8</span></div>
         <div class="switch-list dashboard-widget-picker">
           ${HOME_HERO_ITEMS.map((item) => {
             const active = normalizeHomeHeroIds(state.settings?.homeHeroItems).includes(item.id);
@@ -9760,7 +9834,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 68, appBuild: 109, mode: 'rich-demo-v109', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 68, appBuild: 111, mode: 'rich-demo-v110', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -9902,7 +9976,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 68, appBuild: 109, mode: 'home-active-cards-v109', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 68, appBuild: 111, mode: 'home-wide-panels-v111', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -11261,6 +11335,27 @@
       });
       return;
     }
+    if (action === 'soft-ui-reset') {
+      localStorage.removeItem('homeWeb.activeModule');
+      localStorage.removeItem('domacnostPlus.moduleTabs');
+      activeModule = 'home';
+      moduleTabs = {};
+      render();
+      showToast('UI stav vyčištěný');
+      return;
+    }
+    if (action === 'garage-ui-repair') {
+      normalizeGarageRuntimeState();
+      garageEditRecord = null;
+      garageModal = null;
+      moduleTabs = { ...(moduleTabs || {}), garage: 'overview' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      touchState();
+      saveState();
+      render();
+      showToast('Stav Garáže opravený');
+      return;
+    }
     if (action === 'delete-warranty') {
       deleteWarranty(button.dataset.id);
       return;
@@ -12266,7 +12361,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 109
+        appBuild: 111
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -12753,7 +12848,7 @@
     if (selected.has(itemId)) {
       selected.delete(itemId);
     } else {
-      if (selected.size >= 4) return showToast('V horním panelu nech nejvýš čtyři položky');
+      if (selected.size >= HOME_HERO_MAX) return showToast(`V horním panelu nech nejvýš ${HOME_HERO_MAX} položek`);
       selected.add(itemId);
     }
     state.settings.homeHeroItems = normalizeHomeHeroIds([...selected]);
@@ -12848,7 +12943,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-109-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-111-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -13024,7 +13119,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_109</span>
+          <span class="badge">Domácnost+ v.0.1_111</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

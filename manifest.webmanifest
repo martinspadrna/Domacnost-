@@ -22,31 +22,31 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "./assets/icons/domacnost-plus-icon-192-v0-1-109.png",
+      "src": "./assets/icons/domacnost-plus-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./assets/icons/domacnost-plus-icon-384-v0-1-109.png",
+      "src": "./assets/icons/domacnost-plus-icon-384.png",
       "sizes": "384x384",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./assets/icons/domacnost-plus-icon-512-v0-1-109.png",
+      "src": "./assets/icons/domacnost-plus-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./assets/icons/domacnost-plus-maskable-192-v0-1-109.png",
+      "src": "./assets/icons/domacnost-plus-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "./assets/icons/domacnost-plus-maskable-512-v0-1-109.png",
+      "src": "./assets/icons/domacnost-plus-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
