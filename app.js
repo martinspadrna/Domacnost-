@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_113';
+  const APP_VERSION = 'Domácnost+ v.0.1_116';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -144,6 +144,7 @@
     { id: 'notes', label: 'Poznámky', icon: '📝', nav: 'homecare', tab: 'tasks', metric: () => state.notes.length, text: () => 'poznámky' },
     { id: 'devices', label: 'Zařízení', icon: '🔌', nav: 'homecare', tab: 'devices', metric: () => state.devices.length, text: () => 'zařízení' },
     { id: 'warranties', label: 'Záruky', icon: '🧾', nav: 'homecare', tab: 'warranties', metric: () => state.warranties.filter((item) => item.status !== 'archived').length, text: () => 'záruky' },
+    { id: 'polishHolidays', label: 'PL svátky', icon: '🇵🇱', nav: 'homecare', tab: 'polish-holidays', metric: () => polishShopHeroMetric(), text: () => polishShopHeroText() },
     { id: 'garage', label: 'Garáž', icon: '🚗', overview: 'garage', metric: () => state.vehicles.length, text: () => garageCountLabel(state.vehicles.length) },
     { id: 'contracts', label: 'Smlouvy', icon: '📄', overview: 'contracts', metric: () => state.contracts.length, text: () => 'smlouvy' },
     { id: 'finance', label: 'Finance', icon: '💰', overview: 'finance', metric: () => formatCurrency(financeMonthSummary().balance), text: () => 'měsíční rozdíl' },
@@ -151,6 +152,9 @@
   ];
   const DEFAULT_HOME_HERO_IDS = [];
   const HOME_HERO_MAX = 8;
+  const POLISH_SHOP_HOLIDAY_API = 'https://date.nager.at/api/v3/PublicHolidays';
+  const POLISH_SHOP_YEAR_MIN = 2025;
+  const POLISH_SHOP_YEAR_MAX = 2032;
   const WEATHER_DEFAULT_LOCATION = { name: 'Hostinné', country: 'CZ', latitude: 50.5407, longitude: 15.7233 };
   const WEATHER_CACHE_MS = 30 * 60 * 1000;
   const WEATHER_PROVIDER_OPTIONS = [
@@ -175,9 +179,9 @@
   const WEATHER_CHMI_FUNCTION = 'weather-chmi-forecast';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 68,
-      appBuild: 113,
-      mode: 'home-fullscreen-home-v113',
+      schemaVersion: 69,
+      appBuild: 116,
+      mode: 'polish-shop-holidays-v116',
       createdAt: '',
       updatedAt: ''
     },
@@ -238,6 +242,13 @@
       loading: false,
       source: 'chmi',
       meta: {}
+    },
+    polishShopClosures: {
+      year: new Date().getFullYear(),
+      updatedAt: '',
+      source: 'built-in',
+      onlineHolidays: {},
+      error: ''
     },
     cloud: {
       supabaseUrl: SUPABASE_URL,
@@ -619,6 +630,224 @@
     return Boolean(czechPublicHolidayName(localISODate(date, APP_TIME_ZONE)));
   }
 
+  function normalizePolishShopState(value = {}) {
+    const raw = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    const year = clampPolishShopYear(raw.year || new Date().getFullYear());
+    const onlineHolidays = raw.onlineHolidays && typeof raw.onlineHolidays === 'object' && !Array.isArray(raw.onlineHolidays) ? raw.onlineHolidays : {};
+    const cleanOnline = {};
+    Object.entries(onlineHolidays).forEach(([rawYear, list]) => {
+      const safeYear = clampPolishShopYear(rawYear);
+      if (!Array.isArray(list)) return;
+      cleanOnline[safeYear] = list
+        .filter((item) => item && typeof item === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(String(item.date || '').slice(0, 10)))
+        .map((item) => ({ date: String(item.date).slice(0, 10), name: normalizeText(item.name || item.localName || item.englishName || 'Svátek') }));
+    });
+    return {
+      year,
+      updatedAt: normalizeText(raw.updatedAt),
+      source: normalizeText(raw.source) || 'built-in',
+      onlineHolidays: cleanOnline,
+      error: normalizeText(raw.error)
+    };
+  }
+
+  function clampPolishShopYear(value) {
+    const year = Number(value || new Date().getFullYear());
+    if (!Number.isFinite(year)) return new Date().getFullYear();
+    return Math.min(POLISH_SHOP_YEAR_MAX, Math.max(POLISH_SHOP_YEAR_MIN, Math.round(year)));
+  }
+
+  function polishShopSelectedYear() {
+    state.polishShopClosures = normalizePolishShopState(state.polishShopClosures);
+    return clampPolishShopYear(state.polishShopClosures.year || new Date().getFullYear());
+  }
+
+  function polishPublicHolidayBuiltins(year) {
+    const y = clampPolishShopYear(year);
+    const easter = easterSundayDate(y);
+    const easterIso = easter ? easter.toISOString().slice(0, 10) : '';
+    const items = [
+      [`${y}-01-01`, 'Nowy Rok'],
+      [`${y}-01-06`, 'Święto Trzech Króli'],
+      [`${y}-05-01`, 'Święto Pracy'],
+      [`${y}-05-03`, 'Święto Konstytucji 3 Maja'],
+      [`${y}-08-15`, 'Wniebowzięcie NMP / Święto Wojska Polskiego'],
+      [`${y}-11-01`, 'Wszystkich Świętych'],
+      [`${y}-11-11`, 'Narodowe Święto Niepodległości'],
+      [`${y}-12-24`, 'Wigilia Bożego Narodzenia'],
+      [`${y}-12-25`, 'Boże Narodzenie'],
+      [`${y}-12-26`, 'Drugi dzień Bożego Narodzenia']
+    ];
+    if (easterIso) {
+      items.push([easterIso, 'Wielkanoc']);
+      items.push([addDaysIso(easterIso, 1), 'Poniedziałek Wielkanocny']);
+      items.push([addDaysIso(easterIso, 49), 'Zielone Świątki']);
+      items.push([addDaysIso(easterIso, 60), 'Boże Ciało']);
+    }
+    return items.map(([date, name]) => ({ date, name }));
+  }
+
+  function polishPublicHolidays(year) {
+    const y = clampPolishShopYear(year);
+    const built = polishPublicHolidayBuiltins(y);
+    const online = normalizePolishShopState(state.polishShopClosures).onlineHolidays?.[y] || [];
+    const map = new Map(built.map((item) => [item.date, { ...item }]));
+    online.forEach((item) => {
+      if (!item.date) return;
+      const existing = map.get(item.date);
+      map.set(item.date, { date: item.date, name: normalizeText(item.name) || existing?.name || 'Svátek' });
+    });
+    return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  function utcDateFromIso(isoDate) {
+    const [year, month, day] = String(isoDate || '').slice(0, 10).split('-').map(Number);
+    if (!year || !month || !day) return null;
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+
+  function isoWeekday(isoDate) {
+    const date = utcDateFromIso(isoDate);
+    return date ? date.getUTCDay() : -1;
+  }
+
+  function polishLastSundayIso(year, month) {
+    const y = clampPolishShopYear(year);
+    const date = new Date(Date.UTC(y, Number(month), 0));
+    while (date.getUTCDay() !== 0) date.setUTCDate(date.getUTCDate() - 1);
+    return date.toISOString().slice(0, 10);
+  }
+
+  function previousSundayBeforeIso(isoDate) {
+    const date = utcDateFromIso(isoDate);
+    if (!date) return '';
+    date.setUTCDate(date.getUTCDate() - 1);
+    while (date.getUTCDay() !== 0) date.setUTCDate(date.getUTCDate() - 1);
+    return date.toISOString().slice(0, 10);
+  }
+
+  function allSundaysIso(year) {
+    const y = clampPolishShopYear(year);
+    const date = new Date(Date.UTC(y, 0, 1));
+    while (date.getUTCDay() !== 0) date.setUTCDate(date.getUTCDate() + 1);
+    const result = [];
+    while (date.getUTCFullYear() === y) {
+      result.push(date.toISOString().slice(0, 10));
+      date.setUTCDate(date.getUTCDate() + 7);
+    }
+    return result;
+  }
+
+  function polishTradingSundays(year) {
+    const y = clampPolishShopYear(year);
+    const easter = easterSundayDate(y);
+    const dates = new Set([
+      polishLastSundayIso(y, 1),
+      polishLastSundayIso(y, 4),
+      polishLastSundayIso(y, 6),
+      polishLastSundayIso(y, 8)
+    ]);
+    if (easter) dates.add(addDaysIso(easter.toISOString().slice(0, 10), -7));
+    let christmasSunday = previousSundayBeforeIso(`${y}-12-24`);
+    for (let index = 0; index < 3 && christmasSunday; index += 1) {
+      dates.add(christmasSunday);
+      christmasSunday = addDaysIso(christmasSunday, -7);
+    }
+    return [...dates].filter((date) => date.startsWith(String(y))).sort();
+  }
+
+  function addPolishShopEntry(map, entry) {
+    if (!entry?.date) return;
+    const existing = map.get(entry.date);
+    if (!existing) {
+      map.set(entry.date, { ...entry, labels: [entry.name].filter(Boolean) });
+      return;
+    }
+    const status = existing.status === 'closed' || entry.status === 'closed' ? 'closed' : entry.status || existing.status;
+    const labels = [...new Set([...(existing.labels || []), entry.name].filter(Boolean))];
+    map.set(entry.date, {
+      ...existing,
+      ...entry,
+      status,
+      name: labels.join(' + '),
+      labels,
+      reason: [...new Set([existing.reason, entry.reason].filter(Boolean))].join(' · ')
+    });
+  }
+
+  function buildPolishShopCalendarYear(year) {
+    const y = clampPolishShopYear(year);
+    const map = new Map();
+    polishPublicHolidays(y).forEach((holiday) => addPolishShopEntry(map, {
+      date: holiday.date,
+      name: holiday.name,
+      type: 'holiday',
+      status: 'closed',
+      reason: 'svátek / obchody zavřené'
+    }));
+    const trading = new Set(polishTradingSundays(y));
+    allSundaysIso(y).forEach((date) => {
+      if (!trading.has(date)) {
+        addPolishShopEntry(map, {
+          date,
+          name: 'Neděle nehandlová',
+          type: 'sunday',
+          status: 'closed',
+          reason: 'větší obchody zavřené'
+        });
+      }
+    });
+    const easter = easterSundayDate(y);
+    if (easter) {
+      const easterSaturday = addDaysIso(easter.toISOString().slice(0, 10), -1);
+      if (!map.has(easterSaturday)) {
+        addPolishShopEntry(map, {
+          date: easterSaturday,
+          name: 'Wielka Sobota',
+          type: 'limited',
+          status: 'limited',
+          reason: 'obvykle zkráceno do 14:00'
+        });
+      }
+    }
+    return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  function polishShopCalendarAround(year = polishShopSelectedYear()) {
+    const y = clampPolishShopYear(year);
+    return [y - 1, y, y + 1]
+      .filter((item) => item >= POLISH_SHOP_YEAR_MIN && item <= POLISH_SHOP_YEAR_MAX)
+      .flatMap((item) => buildPolishShopCalendarYear(item));
+  }
+
+  function nextPolishShopEntry(status = '') {
+    const today = todayISO();
+    return polishShopCalendarAround(new Date().getFullYear())
+      .filter((entry) => entry.date >= today && (!status || entry.status === status))
+      .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+  }
+
+  function polishShopTodayEntry(offset = 0) {
+    const iso = addDaysIso(todayISO(), offset);
+    return polishShopCalendarAround(Number(iso.slice(0, 4))).find((entry) => entry.date === iso) || null;
+  }
+
+  function polishShopHeroMetric() {
+    const todayEntry = polishShopTodayEntry(0);
+    if (todayEntry?.status === 'closed') return 'Zavřeno';
+    if (todayEntry?.status === 'limited') return 'Pozor';
+    const next = nextPolishShopEntry('closed');
+    return next ? dueBadge(daysUntil(next.date)) : 'OK';
+  }
+
+  function polishShopHeroText() {
+    const todayEntry = polishShopTodayEntry(0);
+    if (todayEntry?.status === 'closed') return todayEntry.name;
+    if (todayEntry?.status === 'limited') return `${todayEntry.name} · zkráceno`;
+    const next = nextPolishShopEntry('closed');
+    return next ? `${formatDate(next.date)} · ${next.name}` : 'Žádné známé zavření';
+  }
+
   function dateOffsetISO(days) {
     const date = new Date();
     date.setDate(date.getDate() + Number(days || 0));
@@ -720,9 +949,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 68,
-      appBuild: 113,
-      mode: 'home-fullscreen-home-v113',
+      schemaVersion: 69,
+      appBuild: 116,
+      mode: 'polish-shop-holidays-v116',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -781,6 +1010,7 @@
     migrated.cloud.profilesLoadedAt = migrated.cloud?.profilesLoadedAt || '';
     migrated.cloud.localPendingCount = Number(migrated.cloud?.localPendingCount || 0);
     migrated.weather = normalizeWeatherState(migrated.weather);
+    migrated.polishShopClosures = normalizePolishShopState(migrated.polishShopClosures);
     if (previousAppBuild < 82 && migrated.weather.source === 'open-meteo') {
       migrated.weather.source = 'chmi';
       migrated.weather.updatedAt = '';
@@ -2057,7 +2287,7 @@
           </span>` : '';
     return `
       <button class="hero-weather-pill ${options.expanded ? 'hero-weather-pill-expanded' : ''} ${compactSlides.length > 1 ? 'hero-weather-pill-live' : ''}" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
-        <span class="hero-weather-icon" aria-hidden="true">${escapeHtml(activeSlide.icon)}</span>
+        ${renderGlassIcon(activeSlide.icon, { size: options.expanded ? 'hero-lg' : 'hero-md', extraClass: 'hero-weather-icon' })}
         <span class="hero-weather-copy"><strong>${escapeHtml(activeSlide.value)}</strong><em>${escapeHtml(activeSlide.label)}</em></span>
         ${forecast}
       </button>
@@ -2086,7 +2316,7 @@
         : '';
       return `
         <button class="station-summary-item station-summary-item-${escapeHtml(id)} station-summary-size-${density} station-summary-tone-${escapeHtml(presentation.tone || 'neutral')} ${presentation.live ? 'station-summary-live' : ''}" type="button" ${attrs}>
-          <span class="station-summary-icon" aria-hidden="true">${escapeHtml(item.icon || '')}</span>
+          ${renderGlassIcon(getHomeIconKind(id), { size: density === 'large' ? 'home-lg' : 'home-sm', extraClass: 'station-summary-icon' })}
           <span class="station-summary-copy">
             <em>${escapeHtml(item.label)}</em>
             <strong class="station-summary-metric">${escapeHtml(presentation.metric)}</strong>
@@ -2111,6 +2341,21 @@
       return `${prefix}${dueBadge(days)}`.trim();
     };
     if (id === 'hdo') return getHdoHeroPresentation(ctx, options);
+    if (id === 'polishHolidays') {
+      const todayEntry = polishShopTodayEntry(0);
+      const tomorrowEntry = polishShopTodayEntry(1);
+      const nextClosed = nextPolishShopEntry('closed');
+      const nextLimited = nextPolishShopEntry('limited');
+      const isClosed = todayEntry?.status === 'closed';
+      const isLimited = todayEntry?.status === 'limited';
+      return {
+        ...base,
+        metric: isClosed ? 'Zavřeno' : isLimited ? 'Pozor' : nextClosed ? dueBadge(daysUntil(nextClosed.date)) : 'OK',
+        text: isClosed || isLimited ? todayEntry.name : nextClosed ? `${formatDate(nextClosed.date)} · ${nextClosed.name}` : 'Bez známého zavření',
+        detail: tomorrowEntry ? `Zítra: ${tomorrowEntry.name}` : nextLimited ? `Pozor: ${formatDate(nextLimited.date)} · ${nextLimited.name}` : 'Kliknutím otevřeš polské svátky',
+        tone: isClosed ? 'bad' : isLimited || nextClosed && daysUntil(nextClosed.date) <= 3 ? 'warn' : 'good'
+      };
+    }
     if (id === 'calendar') {
       const events = (ctx.calendarPanelEvents || ctx.upcomingEvents || []);
       const runningEvents = events.filter((event) => calendarEventIsRunning(event, now));
@@ -2318,31 +2563,90 @@
     return 'Open-Meteo';
   }
 
+  function renderGlassIcon(kind, options = {}) {
+    const size = options.size || 'md';
+    const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
+    const svg = getGlassIconSvg(kind);
+    return `<span class="glass-icon glass-icon-${escapeHtml(String(kind || 'generic'))} glass-icon-size-${escapeHtml(String(size))}${extraClass}" aria-hidden="true">${svg}</span>`;
+  }
+
+  function getHomeIconKind(id) {
+    return {
+      calendar: 'calendar',
+      packages: 'package',
+      shopping: 'cart',
+      coupons: 'tag',
+      hdo: 'bulb',
+      waste: 'recycle',
+      tasks: 'check',
+      notes: 'note',
+      devices: 'plug',
+      warranties: 'receipt',
+      polishHolidays: 'flag-pl',
+      garage: 'car',
+      contracts: 'doc',
+      finance: 'coins',
+      cameras: 'camera',
+      weather: 'weather-partly-cloud',
+      homecare: 'home'
+    }[String(id || '')] || 'generic';
+  }
+
+  function getGlassIconSvg(kind) {
+    const icons = {
+      calendar: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3.2"/><path d="M7.5 3.8v3.4M16.5 3.8v3.4M3.5 9.5h17M8 13h3M13 13h3M8 17h3"/></svg>`,
+      package: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="M12 21V12m8-4.5-8 4.5-8-4.5M8 5l8 4.5"/></svg>`,
+      cart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="19" r="1.8"/><circle cx="17" cy="19" r="1.8"/><path d="M4 5h2l2.1 8.2a1 1 0 0 0 1 .8h7.9a1 1 0 0 0 1-.8L20 8H7"/></svg>`,
+      tag: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11V5.7A2.2 2.2 0 0 1 5.7 3.5H11l8.5 8.5a2.2 2.2 0 0 1 0 3.1l-4.4 4.4a2.2 2.2 0 0 1-3.1 0L3.5 11Z"/><circle cx="8" cy="8" r="1.4"/></svg>`,
+      bulb: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M8.5 14.5c-1.4-1-2.5-2.8-2.5-5A6 6 0 0 1 12 3.5a6 6 0 0 1 6 6c0 2.2-1 4-2.5 5-.9.7-1.5 1.6-1.5 2.5h-4c0-.9-.6-1.8-1.5-2.5Z"/></svg>`,
+      recycle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10 3 2 3-2 3M12 6H8.8A2.8 2.8 0 0 0 6.4 7.5L5 10"/><path d="m19 14-3 .2-1.8-2.6M16 14.2l1.6 2.5A2.8 2.8 0 0 1 15.2 21H12"/><path d="m5 13 1-2.8 3 .2M6 10.2 4.4 12.7A2.8 2.8 0 0 0 6.8 17H10"/></svg>`,
+      check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.2 2.4 2.5 4.7-5"/></svg>`,
+      note: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20V3.5Z"/><path d="M14 3.5V8h4M9 12h6M9 15.5h6"/></svg>`,
+      plug: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9h8v4a4 4 0 0 1-4 4 4 4 0 0 1-4-4V9Z"/><path d="M10 5v4M14 5v4M12 17v4"/></svg>`,
+      receipt: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h10v17l-2.2-1.4-2.8 1.4-2.8-1.4L7 20.5v-17Z"/><path d="M9.2 8.5h5.6M9.2 12h5.6M9.2 15.5h4.2"/></svg>`,
+      'flag-pl': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16"/><path d="M7 5.2h10.4a1 1 0 0 1 .9 1.4l-1.1 2.4 1.1 2.4a1 1 0 0 1-.9 1.4H7Z"/><path d="M7 10.2h10.1" stroke-width="4.2" opacity=".32"/></svg>`,
+      car: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15.5V12l1.8-4.2A2 2 0 0 1 8.6 6.5h6.8a2 2 0 0 1 1.8 1.3L19 12v3.5"/><path d="M5 15.5h14"/><circle cx="8" cy="16.5" r="1.8"/><circle cx="16" cy="16.5" r="1.8"/><path d="M7.4 9.5h9.2"/></svg>`,
+      doc: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20V3.5Z"/><path d="M14 3.5V8h4M9.2 12h5.6M9.2 15.5h5.6"/></svg>`,
+      coins: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="7" rx="5.8" ry="2.7"/><path d="M6.2 7v4c0 1.5 2.6 2.7 5.8 2.7s5.8-1.2 5.8-2.7V7"/><path d="M8.2 14.2v2.2c0 1.2 1.7 2.2 3.8 2.2 2.1 0 3.8-1 3.8-2.2v-2.2"/></svg>`,
+      camera: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8.5h2.5l1.3-2h6.4l1.3 2H19a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17v-7A1.5 1.5 0 0 1 5 8.5Z"/><circle cx="12" cy="13" r="3.5"/></svg>`,
+      home: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 11 8-6 8 6"/><path d="M6.5 10.5V19a.5.5 0 0 0 .5.5h3.5V15h3v4.5H17a.5.5 0 0 0 .5-.5v-8.5"/></svg>`,
+      generic: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7.5"/></svg>`,
+      'weather-sun': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.1"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2 5.5 5.5"/></svg>`,
+      'weather-partly-cloud': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3.2"/><path d="M9 3.8v1.6M4.8 9H3.2M14.8 9h-1.6M12.8 5.2l-1.1 1.1M5.2 5.2l1.1 1.1"/><path d="M8.5 17.5h8a3 3 0 1 0-.4-5.97A4.8 4.8 0 0 0 7 13a2.7 2.7 0 0 0 1.5 4.5Z"/></svg>`,
+      'weather-cloud': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 18h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 12.4 3 3 0 0 0 7.5 18Z"/></svg>`,
+      'weather-fog': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 12.8h8.4a3 3 0 0 0 .2-6A4.5 4.5 0 0 0 8 8.2a2.4 2.4 0 0 0-.2 4.6Z"/><path d="M5 16.5h14M7.5 19.2h9"/></svg>`,
+      'weather-rain': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 13.2h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 7.6a3 3 0 0 0 .7 5.6Z"/><path d="M9 16.3 8.2 19M13 16.3 12.2 19M17 16.3 16.2 19"/></svg>`,
+      'weather-snow': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 13.2h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 7.6a3 3 0 0 0 .7 5.6Z"/><path d="M9 17.2h0M12 18.5h0M15 17.2h0" stroke-width="3.2"/></svg>`,
+      'weather-storm': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 12.8h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 7.2a3 3 0 0 0 .7 5.6Z"/><path d="m11 14 3-1.2-1.6 3.3 2.1-.3-3.4 4 .9-3.3-2.2.1Z"/></svg>`
+    };
+    return icons[String(kind || 'generic')] || icons.generic;
+  }
+
   function weatherCodeLabel(code) {
     const labels = {
-      0: ['Jasno', '☀️'],
-      1: ['Skoro jasno', '🌤️'],
-      2: ['Polojasno', '⛅'],
-      3: ['Zataženo', '☁️'],
-      45: ['Mlha', '🌫️'],
-      48: ['Namrzající mlha', '🌫️'],
-      51: ['Slabé mrholení', '🌦️'],
-      53: ['Mrholení', '🌦️'],
-      55: ['Silné mrholení', '🌧️'],
-      61: ['Slabý déšť', '🌧️'],
-      63: ['Déšť', '🌧️'],
-      65: ['Silný déšť', '🌧️'],
-      71: ['Slabé sněžení', '🌨️'],
-      73: ['Sněžení', '🌨️'],
-      75: ['Silné sněžení', '❄️'],
-      80: ['Přeháňky', '🌦️'],
-      81: ['Silné přeháňky', '🌧️'],
-      82: ['Prudké přeháňky', '⛈️'],
-      95: ['Bouřka', '⛈️'],
-      96: ['Bouřka s kroupami', '⛈️'],
-      99: ['Silná bouřka', '⛈️']
+      0: ['Jasno', 'weather-sun'],
+      1: ['Skoro jasno', 'weather-partly-cloud'],
+      2: ['Polojasno', 'weather-partly-cloud'],
+      3: ['Zataženo', 'weather-cloud'],
+      45: ['Mlha', 'weather-fog'],
+      48: ['Namrzající mlha', 'weather-fog'],
+      51: ['Slabé mrholení', 'weather-rain'],
+      53: ['Mrholení', 'weather-rain'],
+      55: ['Silné mrholení', 'weather-rain'],
+      61: ['Slabý déšť', 'weather-rain'],
+      63: ['Déšť', 'weather-rain'],
+      65: ['Silný déšť', 'weather-rain'],
+      71: ['Slabé sněžení', 'weather-snow'],
+      73: ['Sněžení', 'weather-snow'],
+      75: ['Silné sněžení', 'weather-snow'],
+      80: ['Přeháňky', 'weather-rain'],
+      81: ['Silné přeháňky', 'weather-rain'],
+      82: ['Prudké přeháňky', 'weather-storm'],
+      95: ['Bouřka', 'weather-storm'],
+      96: ['Bouřka s kroupami', 'weather-storm'],
+      99: ['Silná bouřka', 'weather-storm']
     };
-    return labels[Number(code)] || ['Počasí', '🌤️'];
+    return labels[Number(code)] || ['Počasí', 'weather-partly-cloud'];
   }
 
   function roundWeather(value, suffix = '') {
@@ -2393,7 +2697,7 @@
         </div>
         <button class="weather-main-row weather-current-button" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
           <div class="weather-current">
-            <span class="weather-icon" aria-hidden="true">${escapeHtml(icon)}</span>
+            ${renderGlassIcon(icon, { size: 'weather-md', extraClass: 'weather-icon' })}
             <div><strong>${hasCurrent ? roundWeather(current.temperature, '°') : '—'}</strong><em>${escapeHtml(condition)}</em></div>
           </div>
           <div class="weather-metrics weather-metrics-compact">
@@ -2421,7 +2725,7 @@
     if (!hours.length) return '<div class="empty">Hodinový výhled zatím není načtený.</div>';
     return `<div class="weather-hourly-strip">${hours.map((hour) => {
       const [label, hourIcon] = weatherCodeLabel(hour.weatherCode);
-      return `<div class="weather-hour"><span>${escapeHtml(shortTime(hour.time))}</span><strong>${escapeHtml(hourIcon)} ${roundWeather(hour.temperature, '°')}</strong><em>${roundWeather(hour.precipitation, ' mm')} · ${escapeHtml(label)}</em></div>`;
+      return `<div class="weather-hour"><span>${escapeHtml(shortTime(hour.time))}</span><strong>${renderGlassIcon(hourIcon, { size: 'weather-xs', extraClass: 'weather-inline-icon' })}<span>${roundWeather(hour.temperature, '°')}</span></strong><em>${roundWeather(hour.precipitation, ' mm')} · ${escapeHtml(label)}</em></div>`;
     }).join('')}</div>`;
   }
 
@@ -2443,7 +2747,7 @@
         sunLine,
         textLine || label
       ].filter((part) => part && part !== '—').join(' · ');
-      return `<div class="weather-day"><span>${escapeHtml(shortWeekday(day.date))}</span><strong>${escapeHtml(dayIcon)} ${roundWeather(day.max, '°')}</strong><em>${escapeHtml(detail)}</em></div>`;
+      return `<div class="weather-day"><span>${escapeHtml(shortWeekday(day.date))}</span><strong>${renderGlassIcon(dayIcon, { size: 'weather-xs', extraClass: 'weather-inline-icon' })}<span>${roundWeather(day.max, '°')}</span></strong><em>${escapeHtml(detail)}</em></div>`;
     }).join('')}</div>`;
   }
 
@@ -2472,7 +2776,7 @@
           </div>
           <div class="weather-main-row">
             <div class="weather-current weather-current-large">
-              <span class="weather-icon" aria-hidden="true">${escapeHtml(icon)}</span>
+              ${renderGlassIcon(icon, { size: 'weather-md', extraClass: 'weather-icon' })}
               <div><strong>${roundWeather(current.temperature, '°')}</strong><em>${escapeHtml(condition)} · pocitově ${roundWeather(current.feelsLike, '°')}</em></div>
             </div>
             <div class="weather-metrics">
@@ -3012,6 +3316,8 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_116', note: 'Hotovo: Garáž sjednocuje duplicitní lokální/cloud auta, tankování a servisní záznamy podle obsahu a preferuje cloudovou verzi místo dvojitého výpisu.' },
+      { title: 'Domácnost+ v.0.1_115', note: 'Hotovo: nový modul Svátky Polsko s přehledem zavřených obchodů a online aktualizací svátků, mazání auta je přesunuté do detailu s potvrzením a Home má větší čas/počasí s modernějšími ikonami.' },
       { title: 'Domácnost+ v.0.1_113', note: 'Hotovo: hlavní Home panel je roztažený téměř přes celou šířku obrazovky a až ke spodní liště, vnitřní panely vyplňují dostupnou výšku.' },
       { title: 'Domácnost+ v.0.1_112', note: 'Hotovo: Home panel je výškově roztáhnutý níž ke spodní liště a lépe využívá prostor pod rychlými panely.' },
       { title: 'Domácnost+ v.0.1_111', note: 'Hotovo: oprava pádu Garáže v detailu auta, živé Home karty mají jemný flip efekt a PWA ikony přešly na stabilní názvy bez verzování při každém buildu.' },
@@ -3979,6 +4285,123 @@
     `;
   }
 
+  function polishShopEntryBadge(entry) {
+    if (!entry) return '—';
+    if (entry.status === 'closed') return 'zavřeno';
+    if (entry.status === 'limited') return 'omezeno';
+    return 'info';
+  }
+
+  function polishShopEntryTone(entry) {
+    if (!entry) return '';
+    if (entry.status === 'closed') return 'bad';
+    if (entry.status === 'limited') return 'warn';
+    return 'good';
+  }
+
+  function renderPolishShopEntry(entry) {
+    const days = daysUntil(entry.date);
+    const dayText = days === 0 ? 'dnes' : days === 1 ? 'zítra' : days !== null && days > 1 ? `za ${days} dní` : shortWeekday(entry.date);
+    return `
+      <div class="item polish-shop-row polish-shop-row-${escapeHtml(entry.status || 'info')}">
+        <div class="item-top">
+          <div class="item-title">${entry.status === 'limited' ? '⚠️' : '🇵🇱'} ${escapeHtml(entry.name)}</div>
+          <span class="badge ${polishShopEntryTone(entry)}">${escapeHtml(polishShopEntryBadge(entry))}</span>
+        </div>
+        <div class="item-meta">${escapeHtml(formatDate(entry.date))} · ${escapeHtml(dayText)} · ${escapeHtml(entry.reason || '')}</div>
+      </div>
+    `;
+  }
+
+  function renderPolishTradingSundayItem(date) {
+    const days = daysUntil(date);
+    const dayText = days === 0 ? 'dnes' : days === 1 ? 'zítra' : days !== null && days > 1 ? `za ${days} dní` : shortWeekday(date);
+    return `<div class="chip-card"><strong>${escapeHtml(formatDate(date))}</strong><span>${escapeHtml(dayText)}</span></div>`;
+  }
+
+  function renderPolishHolidaysPanel() {
+    state.polishShopClosures = normalizePolishShopState(state.polishShopClosures);
+    const year = polishShopSelectedYear();
+    const entries = buildPolishShopCalendarYear(year);
+    const todayEntry = polishShopTodayEntry(0);
+    const tomorrowEntry = polishShopTodayEntry(1);
+    const upcoming = polishShopCalendarAround(year).filter((entry) => entry.date >= todayISO()).slice(0, 8);
+    const closedCount = entries.filter((entry) => entry.status === 'closed').length;
+    const trading = polishTradingSundays(year);
+    const nextTrading = trading.filter((date) => date >= todayISO()).slice(0, 4);
+    const years = [];
+    for (let y = Math.max(POLISH_SHOP_YEAR_MIN, new Date().getFullYear() - 1); y <= Math.min(POLISH_SHOP_YEAR_MAX, new Date().getFullYear() + 3); y += 1) years.push([String(y), String(y)]);
+    const statusTitle = todayEntry?.status === 'closed' ? 'Dnes v Polsku zavřeno' : todayEntry?.status === 'limited' ? 'Dnes pozor na zkrácený provoz' : 'Dnes bez známého zákazu';
+    const statusText = todayEntry ? `${todayEntry.name} · ${todayEntry.reason}` : 'Velké obchody by dnes podle vestavěného kalendáře neměly být plošně zavřené.';
+    const source = state.polishShopClosures.updatedAt ? `online aktualizováno ${formatDateTime(new Date(state.polishShopClosures.updatedAt))}` : 'vestavěný kalendář + online aktualizace na tlačítko';
+    return `
+      <section class="card homecare-panel panel-polish-holidays polish-shop-panel">
+        <div class="card-header">
+          <div><h2>Svátky Polsko</h2><p>Hlídá dny, kdy bývají v Polsku zavřené velké obchody a galerie.</p></div>
+          <span class="badge ${todayEntry?.status === 'closed' ? 'bad' : todayEntry?.status === 'limited' ? 'warn' : 'good'}">${todayEntry?.status === 'closed' ? 'dnes zavřeno' : todayEntry?.status === 'limited' ? 'pozor dnes' : 'dnes OK'}</span>
+        </div>
+        <div class="polish-shop-hero">
+          <div class="polish-shop-status ${polishShopEntryTone(todayEntry)}"><span>🇵🇱</span><div><strong>${escapeHtml(statusTitle)}</strong><em>${escapeHtml(statusText)}</em></div></div>
+          <div class="polish-shop-mini">
+            <div class="mini-stat"><span>Zítra</span><strong>${escapeHtml(tomorrowEntry ? polishShopEntryBadge(tomorrowEntry) : 'OK')}</strong></div>
+            <div class="mini-stat"><span>${escapeHtml(year)}</span><strong>${closedCount}</strong></div>
+            <div class="mini-stat"><span>Neděle handl.</span><strong>${trading.length}</strong></div>
+          </div>
+        </div>
+        <form data-form="polish-holidays-year" class="compact-form polish-shop-toolbar">
+          <div class="form-grid two">
+            ${selectField('Rok', 'year', years, String(year))}
+            <div class="field"><label>Zdroj</label><input class="input" value="${escapeHtml(source)}" readonly></div>
+          </div>
+          <div class="form-actions compact-actions"><button class="ghost-btn" type="submit">Zobrazit rok</button><button class="primary-btn" type="button" data-action="polish-holidays-refresh">Online aktualizace</button></div>
+          ${state.polishShopClosures.error ? `<div class="inline-note warn-note">${escapeHtml(state.polishShopClosures.error)}</div>` : ''}
+        </form>
+        <div class="grid two polish-shop-grid">
+          <div>
+            <div class="card-header small"><div><h3>Nejbližší zavření / omezení</h3><p>Praktické pro cestu do Polska.</p></div></div>
+            ${upcoming.length ? `<div class="list compact-list">${upcoming.map(renderPolishShopEntry).join('')}</div>` : renderEmpty('V nejbližší době není známé zavření.')}
+          </div>
+          <div>
+            <div class="card-header small"><div><h3>Neděle handlowe ${escapeHtml(year)}</h3><p>V tyhle neděle bývají velké obchody otevřené.</p></div></div>
+            <div class="chip-grid polish-trading-grid">${(nextTrading.length ? nextTrading : trading.slice(0, 4)).map(renderPolishTradingSundayItem).join('')}</div>
+          </div>
+        </div>
+        <details class="compact-edit-details polish-shop-all">
+          <summary><span>Celý přehled roku ${escapeHtml(year)}</span><em>${entries.length} položek</em></summary>
+          <div class="list compact-list">${entries.map(renderPolishShopEntry).join('')}</div>
+        </details>
+        <div class="inline-note compact-note">Poznámka: výjimky můžou mít malé obchody, čerpací stanice, lékárny nebo provozy, kde obsluhuje majitel. Modul je dělaný hlavně pro velké obchody a galerie.</div>
+      </section>
+    `;
+  }
+
+  async function refreshPolishShopHolidaysOnline() {
+    state.polishShopClosures = normalizePolishShopState(state.polishShopClosures);
+    const year = polishShopSelectedYear();
+    const years = [...new Set([year, year + 1].filter((item) => item >= POLISH_SHOP_YEAR_MIN && item <= POLISH_SHOP_YEAR_MAX))];
+    try {
+      const nextOnline = { ...(state.polishShopClosures.onlineHolidays || {}) };
+      for (const y of years) {
+        const response = await fetch(`${POLISH_SHOP_HOLIDAY_API}/${y}/PL`, { headers: { accept: 'application/json' } });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        if (!Array.isArray(payload)) throw new Error('Nečekaná odpověď');
+        nextOnline[y] = payload.map((item) => ({ date: String(item.date || '').slice(0, 10), name: normalizeText(item.localName || item.name || item.englishName || 'Svátek') })).filter((item) => item.date);
+      }
+      state.polishShopClosures = normalizePolishShopState({ ...state.polishShopClosures, onlineHolidays: nextOnline, updatedAt: new Date().toISOString(), source: 'date.nager.at + lokální pravidla nedělí', error: '' });
+      touchState();
+      saveState();
+      render();
+      showToast('Polské svátky aktualizované online');
+    } catch (error) {
+      state.polishShopClosures.error = 'Online aktualizace se nepovedla, zůstává vestavěný kalendář.';
+      touchState();
+      saveState();
+      render();
+      showToast('Online aktualizace se nepovedla');
+    }
+  }
+
   function renderHomecare() {
     const hdo = getHdoStatus(now);
     const tasks = [...state.homeTasks].sort((a, b) => Number(a.done) - Number(b.done));
@@ -3986,6 +4409,7 @@
     const notes = [...state.notes].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     const devices = [...state.devices].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
     const warranties = sortedWarranties();
+    const polishShopCount = buildPolishShopCalendarYear(polishShopSelectedYear()).filter((entry) => entry.status === 'closed').length;
     const activeHomecareTab = getModuleTab('homecare', 'hdo');
 
     return `
@@ -3994,6 +4418,7 @@
         { id: 'waste', label: 'Odpad', icon: '♻️', count: waste.length },
         { id: 'tasks', label: 'Úkoly', icon: '✅', count: tasks.filter((task) => !task.done).length },
         { id: 'warranties', label: 'Záruky', icon: '🧾', count: warranties.length },
+        { id: 'polish-holidays', label: 'Svátky PL', icon: '🇵🇱', count: polishShopCount },
         { id: 'devices', label: 'Zařízení', icon: '📡', count: devices.length }
       ], 'hdo')}
       <div class="grid two module-tabbed homecare-tab-${activeHomecareTab}">
@@ -4085,6 +4510,8 @@
 
         ${renderWarrantiesPanel(warranties)}
 
+        ${renderPolishHolidaysPanel()}
+
         <section class="card homecare-panel panel-devices">
           <div class="card-header"><div><h2>Domácí zařízení / síť</h2><p>Routery, NAS, kamery, tablety a další věci doma. V online domácnosti jsou sdílené.</p></div><span class="badge ${devices.some((item) => item.cloudId) ? 'good' : ''}">${devices.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span></div>
           <form data-form="add-device">
@@ -4153,7 +4580,107 @@
     (state.vehicles || []).forEach((vehicle) => rememberVehicleIconColor(vehicle));
   }
 
+  function garageNumberKey(value, decimals = 2) {
+    const normalized = parseCzNumber(value);
+    if (!Number.isFinite(normalized)) return '';
+    return Number(normalized).toFixed(decimals);
+  }
+
+  function garageVehicleDedupeKey(vehicle = {}) {
+    const plate = normalizeKey(vehicle.plate || vehicle.plateNumber || '');
+    if (plate) return `plate:${plate}`;
+    const name = normalizeKey(vehicle.name || vehicle.title || vehicle.model || '');
+    const fuelType = normalizeKey(vehicle.fuelType || '');
+    return name ? `name:${name}|fuel:${fuelType}` : '';
+  }
+
+  function garageRecordVehicleKey(vehicleId, vehicleMap = new Map()) {
+    const vehicle = vehicleMap.get(vehicleId) || null;
+    return vehicle ? (vehicle.cloudId ? `cloud:${vehicle.cloudId}` : garageVehicleDedupeKey(vehicle) || `local:${vehicle.id}`) : `vehicle:${normalizeKey(vehicleId)}`;
+  }
+
+  function garageFuelDedupeKey(item = {}, vehicleMap = new Map()) {
+    return [
+      'fuel',
+      garageRecordVehicleKey(item.vehicleId, vehicleMap),
+      normalizeText(item.date),
+      garageNumberKey(item.odometer, 0),
+      garageNumberKey(item.liters, 3),
+      garageNumberKey(item.price, 2)
+    ].join('|');
+  }
+
+  function garageServiceDedupeKey(item = {}, vehicleMap = new Map()) {
+    return [
+      'service',
+      garageRecordVehicleKey(item.vehicleId, vehicleMap),
+      normalizeText(item.date),
+      garageNumberKey(item.odometer, 0),
+      normalizeKey(item.title || item.category || 'Servis'),
+      garageNumberKey(item.price, 2),
+      normalizeKey(item.note || '')
+    ].join('|');
+  }
+
+  function preferGarageCloudRecord(current = {}, candidate = {}) {
+    if (candidate.cloudId && !current.cloudId) return candidate;
+    if (!candidate.cloudId && current.cloudId) return current;
+    const candidateUpdated = Date.parse(candidate.updatedAt || candidate.createdAt || '') || 0;
+    const currentUpdated = Date.parse(current.updatedAt || current.createdAt || '') || 0;
+    return candidateUpdated >= currentUpdated ? { ...current, ...candidate, id: current.id || candidate.id } : current;
+  }
+
+  function dedupeGarageVehicles(vehicles = []) {
+    const map = new Map();
+    const idRemap = new Map();
+    const unique = [];
+    for (const vehicle of vehicles) {
+      const key = garageVehicleDedupeKey(vehicle) || `id:${vehicle.id}`;
+      if (!map.has(key)) {
+        map.set(key, vehicle);
+        unique.push(vehicle);
+        continue;
+      }
+      const existing = map.get(key);
+      const preferred = preferGarageCloudRecord(existing, vehicle);
+      const dropped = preferred === existing ? vehicle : existing;
+      if (dropped?.id && preferred?.id && dropped.id !== preferred.id) idRemap.set(dropped.id, preferred.id);
+      if (preferred !== existing) {
+        const index = unique.indexOf(existing);
+        if (index >= 0) unique[index] = preferred;
+        map.set(key, preferred);
+      }
+    }
+    return { items: unique, idRemap };
+  }
+
+  function dedupeGarageRecords(records = [], keyFn, vehicleMap = new Map()) {
+    const map = new Map();
+    const unique = [];
+    for (const record of records) {
+      const key = keyFn(record, vehicleMap);
+      if (!key || key.includes('|||')) {
+        unique.push(record);
+        continue;
+      }
+      if (!map.has(key)) {
+        map.set(key, record);
+        unique.push(record);
+        continue;
+      }
+      const existing = map.get(key);
+      const preferred = preferGarageCloudRecord(existing, record);
+      if (preferred !== existing) {
+        const index = unique.indexOf(existing);
+        if (index >= 0) unique[index] = preferred;
+        map.set(key, preferred);
+      }
+    }
+    return unique;
+  }
+
   function normalizeGarageRuntimeState() {
+    const beforeSignature = JSON.stringify({ vehicles: state.vehicles, fuel: state.fuel, services: state.services, active: garageVehicleId });
     state.vehicles = Array.isArray(state.vehicles) ? state.vehicles.filter((item) => item && typeof item === 'object') : [];
     state.fuel = Array.isArray(state.fuel) ? state.fuel.filter((item) => item && typeof item === 'object') : [];
     state.services = Array.isArray(state.services) ? state.services.filter((item) => item && typeof item === 'object') : [];
@@ -4175,11 +4702,28 @@
       rememberVehicleIconColor(normalized);
       return normalized;
     });
+    const dedupedVehicles = dedupeGarageVehicles(state.vehicles);
+    state.vehicles = dedupedVehicles.items;
+    if (dedupedVehicles.idRemap.has(garageVehicleId)) garageVehicleId = dedupedVehicles.idRemap.get(garageVehicleId);
     const validVehicleIds = new Set(state.vehicles.map((vehicle) => vehicle.id));
     const fallbackVehicleId = state.vehicles[0]?.id || '';
-    state.fuel = state.fuel.map((item, index) => ({ ...item, id: normalizeText(item.id) || `fuel-${index + 1}-${uid()}`, vehicleId: validVehicleIds.has(item.vehicleId) ? item.vehicleId : fallbackVehicleId })).filter((item) => item.vehicleId);
-    state.services = state.services.map((item, index) => ({ ...item, id: normalizeText(item.id) || `service-${index + 1}-${uid()}`, vehicleId: validVehicleIds.has(item.vehicleId) ? item.vehicleId : fallbackVehicleId, title: normalizeText(item.title || item.category || item.note || 'Servis / náklad') })).filter((item) => item.vehicleId);
+    state.fuel = state.fuel.map((item, index) => {
+      const remappedVehicleId = dedupedVehicles.idRemap.get(item.vehicleId) || item.vehicleId;
+      return { ...item, id: normalizeText(item.id) || `fuel-${index + 1}-${uid()}`, vehicleId: validVehicleIds.has(remappedVehicleId) ? remappedVehicleId : fallbackVehicleId };
+    }).filter((item) => item.vehicleId);
+    state.services = state.services.map((item, index) => {
+      const remappedVehicleId = dedupedVehicles.idRemap.get(item.vehicleId) || item.vehicleId;
+      return { ...item, id: normalizeText(item.id) || `service-${index + 1}-${uid()}`, vehicleId: validVehicleIds.has(remappedVehicleId) ? remappedVehicleId : fallbackVehicleId, title: normalizeText(item.title || item.category || item.note || 'Servis / náklad') };
+    }).filter((item) => item.vehicleId);
+    const vehicleMap = new Map(state.vehicles.map((vehicle) => [vehicle.id, vehicle]));
+    state.fuel = dedupeGarageRecords(state.fuel, garageFuelDedupeKey, vehicleMap);
+    state.services = dedupeGarageRecords(state.services, garageServiceDedupeKey, vehicleMap);
     if (!validVehicleIds.has(garageVehicleId)) garageVehicleId = fallbackVehicleId;
+    const afterSignature = JSON.stringify({ vehicles: state.vehicles, fuel: state.fuel, services: state.services, active: garageVehicleId });
+    if (beforeSignature !== afterSignature && !isDemoMode()) {
+      state.meta = { ...(state.meta || {}), updatedAt: new Date().toISOString() };
+      saveState();
+    }
   }
 
   function renderGarage() {
@@ -4276,7 +4820,6 @@
           <button class="ghost-btn icon-action-btn" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="vehicle-settings" title="Nastavení auta" aria-label="Nastavení auta ${escapeHtml(vehicle.name)}">⚙️</button>
           <button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name)}">⛽+</button>
           <button class="ghost-btn icon-action-btn" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="add-service" title="Přidat servis" aria-label="Přidat servis ${escapeHtml(vehicle.name)}">🧾+</button>
-          <button class="danger-btn icon-action-btn" type="button" data-action="delete-vehicle" data-id="${vehicle.id}" aria-label="Smazat ${escapeHtml(vehicle.name)}">×</button>
         </div>
       </div>
     `;
@@ -4557,6 +5100,11 @@
           </div>
           <div class="form-actions"><button class="ghost-btn" type="submit">Uložit údaje auta</button><button class="ghost-btn" type="button" data-action="cloud-sync-vehicle" data-id="${vehicle.id}">Odeslat auto do cloudu</button></div>
         </form>
+      </details>
+      <details class="action-details compact-edit-details danger-zone-details">
+        <summary><span>Smazat auto</span><em>a všechny jeho záznamy</em></summary>
+        <div class="inline-note warn-note">Smaže se auto, tankování i servisní náklady. Akce bude ještě vyžadovat potvrzení.</div>
+        <div class="form-actions"><button class="danger-btn" type="button" data-action="delete-vehicle" data-id="${vehicle.id}">Smazat auto</button></div>
       </details>
     `;
   }
@@ -9292,6 +9840,12 @@
       'add-note': () => addItem('notes', { text: data.text, createdAt: new Date().toISOString() }),
       'add-device': () => addItem('devices', { name: data.name, type: data.type, address: data.address, note: data.note }),
       'add-warranty': () => addWarrantyFromForm(data, form),
+      'polish-holidays-year': () => {
+        state.polishShopClosures = normalizePolishShopState({ ...state.polishShopClosures, year: data.year });
+        touchState();
+        saveState();
+        render();
+      },
       'add-vehicle': async () => {
         const vehicle = {
           id: uid(),
@@ -9836,7 +10390,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 68, appBuild: 113, mode: 'rich-demo-v110', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 116, mode: 'rich-demo-v116', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -9978,7 +10532,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 68, appBuild: 113, mode: 'home-fullscreen-home-v113', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 116, mode: 'polish-shop-holidays-v116', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -11443,6 +11997,10 @@
       deleteVehicle(button.dataset.id);
       return;
     }
+    if (action === 'polish-holidays-refresh') {
+      refreshPolishShopHolidaysOnline();
+      return;
+    }
     if (action === 'cloud-bootstrap') {
       bootstrapCloudHousehold();
       return;
@@ -12363,7 +12921,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 113
+        appBuild: 116
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -12913,12 +13471,18 @@
 
   async function deleteVehicle(id) {
     const vehicle = state.vehicles.find((item) => item.id === id);
+    if (!vehicle) return showToast('Auto nenalezeno');
+    const fuelCount = state.fuel.filter((item) => item.vehicleId === id).length;
+    const serviceCount = state.services.filter((item) => item.vehicleId === id).length;
+    const message = `Opravdu smazat auto "${vehicle.name || 'Auto'}"?\n\nSmaže se i ${fuelCount} tankování a ${serviceCount} servisních/nákladových záznamů.`;
+    if (typeof window !== 'undefined' && typeof window.confirm === 'function' && !window.confirm(message)) return;
     const ok = await cloudDeleteVehicle(vehicle);
     if (!ok) return;
     state.vehicles = state.vehicles.filter((entry) => entry.id !== id);
     state.fuel = state.fuel.filter((item) => item.vehicleId !== id);
     state.services = state.services.filter((item) => item.vehicleId !== id);
     if (garageVehicleId === id) garageVehicleId = state.vehicles[0]?.id || null;
+    touchState();
     saveState();
     render();
     showToast('Auto smazáno');
@@ -12945,7 +13509,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-113-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-116-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -13121,7 +13685,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_113</span>
+          <span class="badge">Domácnost+ v.0.1_116</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
