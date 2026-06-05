@@ -2430,6 +2430,7 @@ button {
 .homecare-tab-waste .homecare-panel:not(.panel-waste),
 .homecare-tab-tasks .homecare-panel:not(.panel-tasks),
 .homecare-tab-warranties .homecare-panel:not(.panel-warranties),
+.homecare-tab-polish-holidays .homecare-panel:not(.panel-polish-holidays),
 .homecare-tab-devices .homecare-panel:not(.panel-devices),
 .shopping-tab-list .shopping-panel:not(.panel-list),
 .shopping-tab-catalog .shopping-panel:not(.panel-catalog),
@@ -7224,5 +7225,179 @@ textarea {
   .home-minimal-hero .hero-clock-button,
   .home-minimal-hero .hero-weather-pill {
     min-height: 108px;
+  }
+}
+
+
+/* Domácnost+ v.0.1_114 – Svátky Polsko, bezpečnější mazání auta a výraznější Home počasí */
+.station-summary-tone-bad .station-summary-icon {
+  color: #dc2626;
+}
+
+.polish-shop-panel .polish-shop-hero {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 14px;
+}
+
+.polish-shop-status {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--card) 78%, transparent);
+}
+
+.polish-shop-status span {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--accent-soft) 54%, transparent);
+  font-size: 1.45rem;
+}
+
+.polish-shop-status strong,
+.polish-shop-status em {
+  display: block;
+}
+
+.polish-shop-status strong {
+  font-size: 1.05rem;
+  line-height: 1.12;
+}
+
+.polish-shop-status em {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: .8rem;
+  font-style: normal;
+  font-weight: 720;
+  line-height: 1.25;
+}
+
+.polish-shop-status.bad {
+  border-color: rgba(239, 68, 68, .30);
+  background: color-mix(in srgb, rgba(239, 68, 68, .14) 70%, var(--card));
+}
+
+.polish-shop-status.warn {
+  border-color: rgba(245, 158, 11, .34);
+  background: color-mix(in srgb, rgba(245, 158, 11, .16) 70%, var(--card));
+}
+
+.polish-shop-status.good {
+  border-color: rgba(34, 197, 94, .26);
+  background: color-mix(in srgb, rgba(34, 197, 94, .12) 70%, var(--card));
+}
+
+.polish-shop-mini {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.polish-shop-grid {
+  margin-top: 12px;
+}
+
+.polish-shop-row-closed {
+  border-color: rgba(239, 68, 68, .18);
+}
+
+.polish-shop-row-limited {
+  border-color: rgba(245, 158, 11, .24);
+}
+
+.polish-trading-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.chip-card {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--card) 74%, transparent);
+}
+
+.chip-card strong {
+  font-size: .88rem;
+}
+
+.chip-card span {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 760;
+}
+
+.danger-zone-details {
+  margin-top: 14px;
+  border-color: rgba(239, 68, 68, .22);
+}
+
+.home-minimal-hero .hero-time {
+  font-size: clamp(3.35rem, 13.5vw, 6.4rem) !important;
+  letter-spacing: -0.1em;
+}
+
+.home-minimal-hero .hero-date {
+  font-size: clamp(1rem, 3.4vw, 1.25rem) !important;
+}
+
+.home-minimal-hero .hero-weather-copy strong {
+  font-size: clamp(1.55rem, 6vw, 2.35rem) !important;
+  line-height: 1;
+}
+
+.home-minimal-hero .hero-weather-copy em {
+  font-size: clamp(.82rem, 2.7vw, 1rem) !important;
+}
+
+.hero-weather-icon,
+.weather-icon {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255,255,255,.72), transparent 38%),
+    linear-gradient(145deg, rgba(125, 180, 255, .38), rgba(255,255,255,.13)),
+    color-mix(in srgb, var(--card) 72%, transparent) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.45),
+    0 10px 24px rgba(15, 23, 42, .18);
+  text-shadow: 0 2px 10px rgba(255,255,255,.42);
+}
+
+.hero-weather-icon::after,
+.weather-icon::after {
+  position: absolute;
+  inset: 9px;
+  border-radius: inherit;
+  border: 1px solid rgba(255,255,255,.22);
+  content: "";
+  pointer-events: none;
+}
+
+.home-minimal-hero .hero-weather-icon {
+  width: clamp(52px, 13vw, 72px);
+  height: clamp(52px, 13vw, 72px);
+  border-radius: clamp(20px, 5vw, 28px);
+  font-size: clamp(1.72rem, 5.8vw, 2.35rem);
+}
+
+@media (max-width: 390px) {
+  .home-minimal-hero .hero-time {
+    font-size: clamp(3rem, 14vw, 5.4rem) !important;
+  }
+
+  .home-minimal-hero .hero-weather-copy strong {
+    font-size: clamp(1.35rem, 5.6vw, 1.95rem) !important;
   }
 }
