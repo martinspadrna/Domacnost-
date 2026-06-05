@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_124';
+  const APP_VERSION = 'Domácnost+ v.0.1_125';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -180,8 +180,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 69,
-      appBuild: 124,
-      mode: 'home-dashboard-live-v124',
+      appBuild: 125,
+      mode: 'home-dashboard-icons-v125',
       createdAt: '',
       updatedAt: ''
     },
@@ -953,8 +953,8 @@
 
     migrated.meta = {
       schemaVersion: 69,
-      appBuild: 124,
-      mode: 'home-dashboard-live-v124',
+      appBuild: 125,
+      mode: 'home-dashboard-icons-v125',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1243,6 +1243,29 @@
     const date = new Date(`${value}T00:00:00`);
     if (Number.isNaN(date.getTime())) return '—';
     return new Intl.DateTimeFormat('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric', ...options }).format(date);
+  }
+
+  function parseDateValue(value) {
+    if (value instanceof Date) return Number.isFinite(value.getTime()) ? value : null;
+    if (typeof value === 'number') {
+      const date = new Date(value);
+      return Number.isFinite(date.getTime()) ? date : null;
+    }
+    const text = normalizeText(value);
+    if (!text) return null;
+    const iso = text.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+    if (iso) {
+      const date = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+      return Number.isFinite(date.getTime()) ? date : null;
+    }
+    const cz = text.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})/);
+    if (cz) {
+      const year = Number(cz[3].length === 2 ? `20${cz[3]}` : cz[3]);
+      const date = new Date(year, Number(cz[2]) - 1, Number(cz[1]));
+      return Number.isFinite(date.getTime()) ? date : null;
+    }
+    const parsed = new Date(text);
+    return Number.isFinite(parsed.getTime()) ? parsed : null;
   }
 
   function toSafeDate(value, fallback = null) {
@@ -2659,7 +2682,27 @@
       'weather-snow': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><path d="M7.5 13.2h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 7.6a3 3 0 0 0 .7 5.6Z" fill="#E5F4FF" stroke="#7FB0DA" stroke-width="1.2"/><g stroke="#63B3ED" stroke-linecap="round" stroke-width="1.4"><path d="M8.8 16.8h1.7M9.65 16v1.7"/><path d="M11.9 18.2h1.7M12.75 17.35v1.7"/><path d="M15 16.8h1.7M15.85 16v1.7"/></g></g></svg>`,
       'weather-storm': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><path d="M7.4 12.8h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 7.2a3 3 0 0 0 .6 5.6Z" fill="#CBD5E1" stroke="#7C8EA6" stroke-width="1.2"/><path d="m11 14 2.8-1.1-1.5 3 1.8-.2-3 3.6.8-3-1.8.1Z" fill="#FACC15" stroke="#EAB308" stroke-width=".8"/></g></svg>`
     };
-    return icons[String(kind || 'generic')] || icons.generic;
+    const illustratedIcons = {
+      calendar: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCalBody" x1="10" x2="54" y1="12" y2="56"><stop stop-color="#7DD3FC"/><stop offset="1" stop-color="#2563EB"/></linearGradient></defs><rect x="10" y="14" width="44" height="40" rx="13" fill="url(#icCalBody)"/><rect x="14" y="23" width="36" height="27" rx="8" fill="#FFFFFF" fill-opacity=".95"/><rect x="10" y="14" width="44" height="15" rx="13" fill="#60A5FA"/><path d="M22 10v9M42 10v9" stroke="#EFF6FF" stroke-width="4" stroke-linecap="round"/><circle cx="23" cy="36" r="4" fill="#22C55E"/><circle cx="33" cy="36" r="4" fill="#F59E0B"/><circle cx="43" cy="36" r="4" fill="#EF4444"/><path d="M18 51c8-5 18-5 28 0" stroke="#1D4ED8" stroke-opacity=".32" stroke-width="3" stroke-linecap="round"/></svg>`,
+      package: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icPkg" x1="12" x2="52" y1="9" y2="55"><stop stop-color="#FDBA74"/><stop offset="1" stop-color="#EA580C"/></linearGradient></defs><path d="M13 21 32 10l19 11v22L32 54 13 43Z" fill="url(#icPkg)"/><path d="m13 21 19 11 19-11M32 32v22" stroke="#FFF7ED" stroke-opacity=".9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 16 41 27" stroke="#7C2D12" stroke-opacity=".35" stroke-width="4" stroke-linecap="round"/><path d="M16 43c7 5 15 8 24 7" stroke="#FED7AA" stroke-opacity=".7" stroke-width="3" stroke-linecap="round"/></svg>`,
+      cart: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCart" x1="13" x2="50" y1="14" y2="49"><stop stop-color="#67E8F9"/><stop offset="1" stop-color="#0891B2"/></linearGradient></defs><path d="M12 17h8l5 23h22l6-17H24" fill="none" stroke="#0E7490" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 23h28l-5 17H28Z" fill="url(#icCart)"/><circle cx="30" cy="50" r="5" fill="#22C55E"/><circle cx="47" cy="50" r="5" fill="#F59E0B"/><path d="M31 28h15" stroke="#ECFEFF" stroke-width="3" stroke-linecap="round"/></svg>`,
+      tag: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icTag" x1="12" x2="52" y1="12" y2="52"><stop stop-color="#F0ABFC"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs><path d="M13 32V17a4 4 0 0 1 4-4h15l19 19a5 5 0 0 1 0 7L39 51a5 5 0 0 1-7 0Z" fill="url(#icTag)"/><circle cx="24" cy="24" r="5" fill="#FFFFFF" fill-opacity=".95"/><path d="M33 25h10M25 35h18" stroke="#FDF4FF" stroke-width="4" stroke-linecap="round"/><path d="M16 35 31 50" stroke="#581C87" stroke-opacity=".22" stroke-width="5" stroke-linecap="round"/></svg>`,
+      bulb: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><radialGradient id="icBulbGlow" cx="50%" cy="33%" r="60%"><stop stop-color="#FEF3C7"/><stop offset=".55" stop-color="#FACC15"/><stop offset="1" stop-color="#F97316"/></radialGradient></defs><path d="M32 8c-12 0-20 9-20 20 0 8 4 13 10 17v3h20v-3c6-4 10-9 10-17C52 17 44 8 32 8Z" fill="url(#icBulbGlow)"/><path d="M24 52h16M27 58h10" stroke="#92400E" stroke-width="5" stroke-linecap="round"/><path d="M24 29c2-7 7-10 14-10" stroke="#FFF7AD" stroke-width="4" stroke-linecap="round"/><path d="M18 9 13 4M46 9l5-5M55 28h6M3 28h6" stroke="#FBBF24" stroke-width="4" stroke-linecap="round"/></svg>`,
+      recycle: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icRec" x1="12" x2="52" y1="10" y2="55"><stop stop-color="#86EFAC"/><stop offset="1" stop-color="#16A34A"/></linearGradient></defs><circle cx="32" cy="32" r="24" fill="#DCFCE7"/><path d="M28 11 38 22H31c-6 0-9 3-12 8" fill="none" stroke="url(#icRec)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M53 33 45 47l-4-7c-3 5-7 8-14 8" fill="none" stroke="#22C55E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 50 12 36l8 1c-1-6 0-11 5-16" fill="none" stroke="#15803D" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      check: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCheck" x1="13" x2="52" y1="10" y2="55"><stop stop-color="#BBF7D0"/><stop offset="1" stop-color="#16A34A"/></linearGradient></defs><circle cx="32" cy="32" r="24" fill="url(#icCheck)"/><path d="m20 33 8 8 17-20" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 18c6-5 15-7 24-3" stroke="#DCFCE7" stroke-width="3" stroke-linecap="round" opacity=".9"/></svg>`,
+      note: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icNote" x1="15" x2="49" y1="9" y2="55"><stop stop-color="#BFDBFE"/><stop offset="1" stop-color="#3B82F6"/></linearGradient></defs><path d="M18 8h23l9 9v36a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V12a4 4 0 0 1 4-4Z" fill="url(#icNote)"/><path d="M40 8v12h11" fill="#DBEAFE"/><path d="M22 28h20M22 38h17M22 48h12" stroke="#EFF6FF" stroke-width="4" stroke-linecap="round"/><circle cx="45" cy="46" r="7" fill="#FACC15"/></svg>`,
+      plug: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icPlug" x1="13" x2="51" y1="10" y2="55"><stop stop-color="#5EEAD4"/><stop offset="1" stop-color="#0F766E"/></linearGradient></defs><path d="M22 25h20v10c0 8-4 14-10 14S22 43 22 35Z" fill="url(#icPlug)"/><path d="M26 10v15M38 10v15M32 49v8" stroke="#134E4A" stroke-width="5" stroke-linecap="round"/><path d="M25 32h14" stroke="#CCFBF1" stroke-width="4" stroke-linecap="round"/><circle cx="47" cy="18" r="8" fill="#FDE68A"/></svg>`,
+      receipt: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icReceipt" x1="16" x2="48" y1="7" y2="56"><stop stop-color="#FEF3C7"/><stop offset="1" stop-color="#F59E0B"/></linearGradient></defs><path d="M18 7h28v50l-7-4-7 4-7-4-7 4Z" fill="url(#icReceipt)"/><path d="M25 20h14M25 30h14M25 40h10" stroke="#92400E" stroke-width="4" stroke-linecap="round"/><circle cx="43" cy="42" r="7" fill="#22C55E"/><path d="m40 42 2 2 4-5" stroke="#FFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      'flag-pl': `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 9v47" stroke="#64748B" stroke-width="5" stroke-linecap="round"/><path d="M21 12h31a4 4 0 0 1 3.6 5.8L52 25l3.6 7.2A4 4 0 0 1 52 38H21Z" fill="#FFFFFF"/><path d="M21 25h33l1.6 7.2A4 4 0 0 1 52 38H21Z" fill="#DC2626"/><path d="M21 12h31a4 4 0 0 1 3.6 5.8L52 25l3.6 7.2A4 4 0 0 1 52 38H21Z" fill="none" stroke="#CBD5E1" stroke-width="2"/><circle cx="43" cy="49" r="8" fill="#FACC15"/><path d="M40 49h6" stroke="#92400E" stroke-width="3" stroke-linecap="round"/></svg>`,
+      car: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCar" x1="10" x2="55" y1="20" y2="48"><stop stop-color="#FB7185"/><stop offset="1" stop-color="#DC2626"/></linearGradient></defs><path d="M13 38 18 24c1-4 4-6 8-6h12c4 0 7 2 8 6l5 14v9H13Z" fill="url(#icCar)"/><path d="M22 27h20l3 9H19Z" fill="#DBEAFE"/><circle cx="22" cy="48" r="6" fill="#111827"/><circle cx="42" cy="48" r="6" fill="#111827"/><circle cx="22" cy="48" r="2.5" fill="#CBD5E1"/><circle cx="42" cy="48" r="2.5" fill="#CBD5E1"/><path d="M16 39h32" stroke="#FEE2E2" stroke-width="3" stroke-linecap="round"/></svg>`,
+      doc: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icDoc" x1="16" x2="49" y1="8" y2="56"><stop stop-color="#C7D2FE"/><stop offset="1" stop-color="#2563EB"/></linearGradient></defs><path d="M18 8h23l9 9v36a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V12a4 4 0 0 1 4-4Z" fill="url(#icDoc)"/><path d="M40 8v12h11" fill="#EEF2FF"/><path d="M23 29h19M23 38h19M23 47h13" stroke="#EFF6FF" stroke-width="4" stroke-linecap="round"/><path d="M15 12c7 2 14 2 20 0" stroke="#FFFFFF" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/></svg>`,
+      coins: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCoins" x1="14" x2="50" y1="9" y2="55"><stop stop-color="#FDE68A"/><stop offset="1" stop-color="#D97706"/></linearGradient></defs><ellipse cx="32" cy="18" rx="18" ry="8" fill="url(#icCoins)"/><path d="M14 18v16c0 5 8 9 18 9s18-4 18-9V18" fill="#FBBF24"/><ellipse cx="32" cy="34" rx="18" ry="9" fill="#F59E0B"/><ellipse cx="32" cy="45" rx="15" ry="8" fill="#FDE68A"/><path d="M23 18c5 3 14 3 19 0M22 34c6 3 15 3 21 0" stroke="#92400E" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/></svg>`,
+      camera: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCam" x1="12" x2="52" y1="15" y2="51"><stop stop-color="#DDD6FE"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs><path d="M15 23h9l4-6h8l4 6h9a5 5 0 0 1 5 5v20a5 5 0 0 1-5 5H15a5 5 0 0 1-5-5V28a5 5 0 0 1 5-5Z" fill="url(#icCam)"/><circle cx="32" cy="38" r="11" fill="#EEF2FF"/><circle cx="32" cy="38" r="7" fill="#4C1D95"/><circle cx="36" cy="34" r="3" fill="#A78BFA"/><path d="M17 30h8" stroke="#F5F3FF" stroke-width="4" stroke-linecap="round"/></svg>`,
+      home: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icHome" x1="12" x2="52" y1="13" y2="55"><stop stop-color="#BAE6FD"/><stop offset="1" stop-color="#0EA5E9"/></linearGradient></defs><path d="M10 31 32 13l22 18" fill="none" stroke="#0369A1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 29v25h30V29L32 17Z" fill="url(#icHome)"/><path d="M27 54V40h10v14" fill="#FEF3C7"/><circle cx="43" cy="25" r="7" fill="#FACC15"/></svg>`,
+      settings: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icSet" x1="12" x2="52" y1="10" y2="55"><stop stop-color="#E2E8F0"/><stop offset="1" stop-color="#64748B"/></linearGradient></defs><circle cx="32" cy="32" r="10" fill="#FFFFFF"/><path d="M36 9 38 18c2 1 4 2 6 4l9-3 5 9-7 6v6l7 6-5 9-9-3c-2 2-4 3-6 4l-2 9h-8l-2-9c-2-1-4-2-6-4l-9 3-5-9 7-6v-6l-7-6 5-9 9 3c2-2 4-3 6-4l2-9Z" fill="url(#icSet)"/><circle cx="32" cy="32" r="8" fill="#F8FAFC"/><circle cx="32" cy="32" r="4" fill="#334155"/></svg>`,
+      generic: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icGen" x1="12" x2="52" y1="12" y2="52"><stop stop-color="#CBD5E1"/><stop offset="1" stop-color="#64748B"/></linearGradient></defs><circle cx="32" cy="32" r="24" fill="url(#icGen)"/><circle cx="32" cy="32" r="10" fill="#F8FAFC"/></svg>`
+    };
+    return illustratedIcons[String(kind || 'generic')] || icons[String(kind || 'generic')] || icons.generic;
   }
 
   function weatherCodeLabel(code) {
@@ -3356,6 +3399,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_125', note: 'Hotovo: oprava Garáže po chybě parseDateValue a nové kreslené barevné ikonky v Home/Moduly panelech.' },
       { title: 'Domácnost+ v.0.1_124', note: 'Hotovo: Home panely mají větší barevné ikonky bez bílého přebití, počasí vedle času ukazuje aktuální teplotu a stav počasí a vybrané Home panely živě střídají konkrétní položky.' },
       { title: 'Domácnost+ v.0.1_123', note: 'Hotovo: Home ikonky jsou bez viditelného pozadí, barevně výraznější podle modulu, opravena čárka u počasí a obrazovka Více je zjednodušená na Nastavení aplikace + univerzální seznam Moduly.' },
       { title: 'Domácnost+ v.0.1_115', note: 'Hotovo: nový modul Svátky Polsko s přehledem zavřených obchodů a online aktualizací svátků, mazání auta je přesunuté do detailu s potvrzením a Home má větší čas/počasí s modernějšími ikonami.' },
@@ -10710,7 +10754,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 124, mode: 'rich-demo-v124', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 125, mode: 'rich-demo-v125', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -10852,7 +10896,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 124, mode: 'home-dashboard-live-v124', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 125, mode: 'home-dashboard-icons-v125', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -13246,7 +13290,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 124
+        appBuild: 125
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -13834,7 +13878,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-124-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-125-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -14021,7 +14065,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_124</span>
+          <span class="badge">Domácnost+ v.0.1_125</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

@@ -8669,3 +8669,53 @@ textarea {
     min-width: 54px !important;
   }
 }
+
+/* v0.1_125 — skutečně kreslené barevné Home/Moduly ikony */
+.home-minimal-hero .glass-icon.station-summary-icon svg,
+.station-summary-item .glass-icon.station-summary-icon svg,
+.more-clean-hub .modern-module-icon svg {
+  width: 100% !important;
+  height: 100% !important;
+  color: initial !important;
+  overflow: visible !important;
+  filter: drop-shadow(0 8px 16px rgba(15, 23, 42, .20)) !important;
+}
+
+.home-minimal-hero .glass-icon.station-summary-icon svg *,
+.station-summary-item .glass-icon.station-summary-icon svg *,
+.more-clean-hub .modern-module-icon svg * {
+  vector-effect: non-scaling-stroke;
+}
+
+.more-clean-hub .modern-module-icon,
+.more-clean-hub .module-status-card .modern-module-icon {
+  width: 58px !important;
+  height: 58px !important;
+  min-width: 58px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.more-clean-hub .settings-module-icon {
+  width: 66px !important;
+  height: 66px !important;
+  min-width: 66px !important;
+}
+
+@media (max-width: 560px) {
+  .more-clean-hub .modern-module-icon,
+  .more-clean-hub .module-status-card .modern-module-icon {
+    width: 54px !important;
+    height: 54px !important;
+    min-width: 54px !important;
+  }
+
+  .more-clean-hub .settings-module-icon {
+    width: 60px !important;
+    height: 60px !important;
+    min-width: 60px !important;
+  }
+}
