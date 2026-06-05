@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_108';
+  const APP_VERSION = 'Domácnost+ v.0.1_109';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -125,7 +125,7 @@
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
   const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
-  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180-v0-1-108.png';
+  const BRAND_ICON_SRC = './assets/icons/domacnost-plus-icon-180-v0-1-109.png';
 
   const MANAGED_MODULE_IDS = MODULES
     .filter((module) => !['home', 'settings'].includes(module.id))
@@ -175,8 +175,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 68,
-      appBuild: 108,
-      mode: 'calendar-garage-shopping-v108',
+      appBuild: 109,
+      mode: 'home-active-cards-v109',
       createdAt: '',
       updatedAt: ''
     },
@@ -720,8 +720,8 @@
 
     migrated.meta = {
       schemaVersion: 68,
-      appBuild: 108,
-      mode: 'calendar-garage-shopping-v108',
+      appBuild: 109,
+      mode: 'home-active-cards-v109',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1979,14 +1979,36 @@
     `;
   }
 
+  function homeCycleIndex(length, seconds = 45) {
+    const count = Number(length || 0);
+    if (count <= 1) return 0;
+    const slot = Math.floor(now.getTime() / Math.max(1000, Number(seconds || 45) * 1000));
+    return Math.abs(slot) % count;
+  }
+
   function renderHeroWeatherPill(ctx, options = {}) {
     const weather = normalizeWeatherState(ctx?.weather || state.weather);
     const current = weather.current || {};
-    const [condition, icon] = weatherCodeLabel(current.weatherCode);
+    const [condition, currentIcon] = weatherCodeLabel(current.weatherCode);
     const hasCurrent = Boolean(weather.current);
-    const label = weather.loading ? 'Načítám' : (weather.error && !hasCurrent) ? 'Chyba' : hasCurrent ? condition : 'Počasí';
-    const value = hasCurrent ? roundWeather(current.temperature, '°') : '—';
     const daily = Array.isArray(weather.daily) ? weather.daily.slice(0, 4) : [];
+    const compactSlides = [];
+    compactSlides.push({
+      icon: currentIcon,
+      value: hasCurrent ? roundWeather(current.temperature, '°') : '—',
+      label: weather.loading ? 'Načítám' : (weather.error && !hasCurrent) ? 'Chyba' : hasCurrent ? condition : 'Počasí'
+    });
+    if (!options.expanded && daily.length) {
+      daily.slice(1, 4).forEach((day) => {
+        const [dayLabel, dayIcon] = weatherCodeLabel(day.weatherCode);
+        compactSlides.push({
+          icon: dayIcon,
+          value: roundWeather(day.max, '°'),
+          label: `${shortWeekday(day.date)} · ${dayLabel}`
+        });
+      });
+    }
+    const activeSlide = compactSlides[homeCycleIndex(compactSlides.length, 45)] || compactSlides[0];
     const forecast = options.expanded && daily.length ? `
           <span class="hero-weather-forecast" aria-label="Výhled počasí na další dny">
             ${daily.map((day, index) => {
@@ -1996,9 +2018,9 @@
             }).join('')}
           </span>` : '';
     return `
-      <button class="hero-weather-pill ${options.expanded ? 'hero-weather-pill-expanded' : ''}" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
-        <span class="hero-weather-icon" aria-hidden="true">${escapeHtml(icon)}</span>
-        <span class="hero-weather-copy"><strong>${escapeHtml(value)}</strong><em>${escapeHtml(label)}</em></span>
+      <button class="hero-weather-pill ${options.expanded ? 'hero-weather-pill-expanded' : ''} ${compactSlides.length > 1 ? 'hero-weather-pill-live' : ''}" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
+        <span class="hero-weather-icon" aria-hidden="true">${escapeHtml(activeSlide.icon)}</span>
+        <span class="hero-weather-copy"><strong>${escapeHtml(activeSlide.value)}</strong><em>${escapeHtml(activeSlide.label)}</em></span>
         ${forecast}
       </button>
     `;
@@ -2025,7 +2047,7 @@
         ? `<span class="station-summary-extra" aria-label="Další položky">${presentation.extraRows.slice(0, density === 'large' ? 5 : density === 'medium' ? 2 : 0).map((row) => `<b>${escapeHtml(row)}</b>`).join('')}</span>`
         : '';
       return `
-        <button class="station-summary-item station-summary-item-${escapeHtml(id)} station-summary-size-${density} station-summary-tone-${escapeHtml(presentation.tone || 'neutral')}" type="button" ${attrs}>
+        <button class="station-summary-item station-summary-item-${escapeHtml(id)} station-summary-size-${density} station-summary-tone-${escapeHtml(presentation.tone || 'neutral')} ${presentation.live ? 'station-summary-live' : ''}" type="button" ${attrs}>
           <span class="station-summary-icon" aria-hidden="true">${escapeHtml(item.icon || '')}</span>
           <span class="station-summary-copy">
             <em>${escapeHtml(item.label)}</em>
@@ -2053,16 +2075,19 @@
     if (id === 'hdo') return getHdoHeroPresentation(ctx, options);
     if (id === 'calendar') {
       const events = (ctx.calendarPanelEvents || ctx.upcomingEvents || []);
-      const running = events.find((event) => calendarEventIsRunning(event, now));
-      const next = running || events[0];
+      const runningEvents = events.filter((event) => calendarEventIsRunning(event, now));
+      const slideEvents = runningEvents.length ? runningEvents : events.slice(0, 5);
+      const next = slideEvents[homeCycleIndex(slideEvents.length, 45)] || events[0];
+      const isRunning = next ? calendarEventIsRunning(next, now) : false;
       return {
         ...base,
-        metric: running ? 'Nyní' : next ? 'Další' : 'Volno',
+        metric: isRunning ? 'Nyní' : next ? 'Další' : 'Volno',
         text: next ? firstTitle(next, 'Událost') : 'Žádná nadcházející událost',
         detail: next ? calendarEventTimeLabel(next, now) : 'Kliknutím otevřeš kalendář',
         chips: [],
         extraRows: [],
-        tone: running || next ? 'good' : 'neutral'
+        live: slideEvents.length > 1,
+        tone: isRunning || next ? 'good' : 'neutral'
       };
     }
     if (id === 'packages') {
@@ -2101,8 +2126,18 @@
     }
     if (id === 'garage') {
       const alert = (ctx.vehicleAlerts || [])[0];
-      const vehicleCount = state.vehicles.length;
-      return { ...base, metric: vehicleCount, text: garageCountLabel(vehicleCount), detail: alert ? `${firstTitle(alert, 'Upozornění')} · ${alert.meta || 'zkontroluj detail auta'}` : (vehicleCount ? '' : 'Přidej první auto'), tone: alert ? 'warn' : vehicleCount ? 'good' : 'neutral' };
+      const vehicles = state.vehicles || [];
+      const vehicleCount = vehicles.length;
+      if (vehicleCount) {
+        const selectedVehicle = vehicles[homeCycleIndex(vehicleCount, 45)] || vehicles[0];
+        const fuelRows = sortFuelRows((state.fuel || []).filter((entry) => entry.vehicleId === selectedVehicle.id));
+        const stats = getVehicleStats(fuelRows, []);
+        const fuelCostPerKm = stats.totalKm > 0 ? stats.fuelCost / stats.totalKm : null;
+        const consumption = stats.averageConsumption ? `${stats.averageConsumption.toFixed(1).replace('.', ',')} l/100` : 'spotřeba bez dat';
+        const fuelKm = fuelCostPerKm ? `${fuelCostPerKm.toFixed(2).replace('.', ',')} Kč/km palivo` : 'Kč/km bez dat';
+        return { ...base, metric: firstTitle(selectedVehicle, 'Auto'), text: consumption, detail: fuelKm, live: vehicleCount > 1, tone: alert ? 'warn' : 'good' };
+      }
+      return { ...base, metric: 0, text: garageCountLabel(0), detail: 'Přidej první auto', tone: 'neutral' };
     }
     if (id === 'contracts') {
       const urgent = (ctx.urgentContracts || [])[0];
@@ -2939,6 +2974,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_109', note: 'Hotovo: Home má menší mezeru mezi časem/počasím a mini panely, vybrané Home karty umí živě střídat další info a základní Garáž počítá Kč/km jen z paliva.' },
       { title: 'Domácnost+ v.0.1_108', note: 'Hotovo: Home Kalendář otevírá rovnou měsíční mřížku, klik na událost ukáže detail, Garáž má modální tankování/servis, cena/km počítá i servisní náklady a Nákupy dostaly čistší Listonic styl.' },
       { title: 'Domácnost+ v.0.1_107', note: 'Hotovo: Home má vyšší část čas/počasí bez zvětšení celé karty, Kalendář na Home vrací stav Nyní/Další, HDO a Garáž mají čistší texty a Garáž má rychlé akce + chytrý dopočet tankování.' },
       { title: 'Domácnost+ v.0.1_106', note: 'Hotovo: přehled Kalendáře je nově skutečný měsíční kalendář s týdny v řádcích, dny ve sloupcích a tlačítky předchozí měsíc / dnes / další měsíc.' },
@@ -4146,8 +4182,7 @@
     const fuelRows = state.fuel.filter((item) => item.vehicleId === vehicle.id);
     const serviceRows = state.services.filter((item) => item.vehicleId === vehicle.id);
     const stats = getVehicleStats(sortFuelRows(fuelRows), serviceRows);
-    const totalCost = stats.fuelCost + stats.serviceCost;
-    const costPerKm = stats.totalKm > 0 ? totalCost / stats.totalKm : null;
+    const costPerKm = stats.totalKm > 0 ? stats.fuelCost / stats.totalKm : null;
     return `
       <div class="item vehicle-list-item fuelio-vehicle-card ${vehicle.id === garageVehicleId ? 'selected' : ''}">
         <button class="vehicle-main-action" type="button" data-action="select-vehicle" data-id="${vehicle.id}">
@@ -4159,7 +4194,7 @@
         </button>
         <div class="fuelio-vehicle-stats">
           <span><strong>${stats.averageConsumption ? `${stats.averageConsumption.toFixed(1).replace('.', ',')}` : '—'}</strong><em>l/100</em></span>
-          <span><strong>${costPerKm ? `${costPerKm.toFixed(2).replace('.', ',')}` : '—'}</strong><em>Kč/km</em></span>
+          <span><strong>${costPerKm ? `${costPerKm.toFixed(2).replace('.', ',')}` : '—'}</strong><em>Kč/km palivo</em></span>
           <span><strong>${fuelRows.length + serviceRows.length}</strong><em>záznamů</em></span>
         </div>
         <div class="item-actions vehicle-card-actions">
@@ -4397,8 +4432,7 @@
     const serviceStatus = getServiceStatus(vehicle, latestService, latestFuel);
     const stk = dateStatus(vehicle.technicalInspectionUntil, 60);
     const insurance = dateStatus(vehicle.insuranceUntil, 45);
-    const totalCost = stats.fuelCost + stats.serviceCost;
-    const costPerKm = stats.totalKm > 0 ? totalCost / stats.totalKm : null;
+    const costPerKm = stats.totalKm > 0 ? stats.fuelCost / stats.totalKm : null;
     return `
       <div class="card-header compact-detail-head vehicle-detail-head">
         <div class="vehicle-detail-title"><span class="vehicle-icon-bubble vehicle-icon-bubble-large ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span><div><h2>${escapeHtml(vehicle.name)}</h2><p>${escapeHtml(vehicle.plate || 'Bez SPZ')} · ${escapeHtml(vehicle.fuelType || 'palivo neuvedeno')}</p></div></div>
@@ -4413,7 +4447,7 @@
         <div class="kpi"><strong>${stats.averageConsumption ? `${stats.averageConsumption.toFixed(2).replace('.', ',')}` : '—'}</strong><span>l/100 km</span></div>
         <div class="kpi"><strong>${formatCurrency(stats.thisYearCost)}</strong><span>náklady letos</span></div>
         <div class="kpi"><strong>${formatCurrency(totalCost)}</strong><span>celkem</span></div>
-        <div class="kpi"><strong>${costPerKm ? `${costPerKm.toFixed(2).replace('.', ',')} Kč` : '—'}</strong><span>cena / km</span></div>
+        <div class="kpi"><strong>${costPerKm ? `${costPerKm.toFixed(2).replace('.', ',')} Kč` : '—'}</strong><span>palivo / km</span></div>
       </div>
       <div class="garage-status-grid compact-status-grid">
         ${renderDueCard('STK', stk, 'Datum STK zatím není nastavené.')}
@@ -9726,7 +9760,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 68, appBuild: 108, mode: 'rich-demo-v108', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 68, appBuild: 109, mode: 'rich-demo-v109', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -9868,7 +9902,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 68, appBuild: 108, mode: 'calendar-garage-shopping-v108', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 68, appBuild: 109, mode: 'home-active-cards-v109', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -12232,7 +12266,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 108
+        appBuild: 109
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -12814,7 +12848,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-108-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-109-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -12990,7 +13024,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_108</span>
+          <span class="badge">Domácnost+ v.0.1_109</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

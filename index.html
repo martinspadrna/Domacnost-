@@ -11,25 +11,25 @@
     <meta name="apple-mobile-web-app-title" content="Domácnost+" />
     <meta name="application-name" content="Domácnost+" />
     <meta name="msapplication-TileColor" content="#12305f" />
-    <meta name="msapplication-TileImage" content="./assets/icons/domacnost-plus-icon-180-v0-1-108.png" />
-    <title>Domácnost+ v.0.1_108</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=0-1-108" />
-    <link rel="shortcut icon" href="./assets/icons/favicon.ico?v=0-1-108" />
-    <link rel="icon" href="./assets/icons/favicon.ico?v=0-1-108" sizes="any" />
-    <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/domacnost-plus-icon-32-v0-1-108.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="./assets/icons/domacnost-plus-icon-16-v0-1-108.png" />
-    <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png?v=0-1-108" />
-    <link rel="apple-touch-icon-precomposed" href="./assets/icons/apple-touch-icon-precomposed.png?v=0-1-108" />
-    <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/domacnost-plus-icon-180-v0-1-108.png" />
-    <link rel="apple-touch-icon" sizes="167x167" href="./assets/icons/domacnost-plus-icon-167-v0-1-108.png" />
-    <link rel="apple-touch-icon" sizes="152x152" href="./assets/icons/domacnost-plus-icon-152-v0-1-108.png" />
-    <link rel="apple-touch-icon" sizes="120x120" href="./assets/icons/domacnost-plus-icon-120-v0-1-108.png" />
-    <link rel="stylesheet" href="./styles.css?v=0-1-108" />
+    <meta name="msapplication-TileImage" content="./assets/icons/domacnost-plus-icon-180-v0-1-109.png" />
+    <title>Domácnost+ v.0.1_109</title>
+    <link rel="manifest" href="./manifest.webmanifest?v=0-1-109" />
+    <link rel="shortcut icon" href="./assets/icons/favicon.ico?v=0-1-109" />
+    <link rel="icon" href="./assets/icons/favicon.ico?v=0-1-109" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/domacnost-plus-icon-32-v0-1-109.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/icons/domacnost-plus-icon-16-v0-1-109.png" />
+    <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png?v=0-1-109" />
+    <link rel="apple-touch-icon-precomposed" href="./assets/icons/apple-touch-icon-precomposed.png?v=0-1-109" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/domacnost-plus-icon-180-v0-1-109.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="./assets/icons/domacnost-plus-icon-167-v0-1-109.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="./assets/icons/domacnost-plus-icon-152-v0-1-109.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="./assets/icons/domacnost-plus-icon-120-v0-1-109.png" />
+    <link rel="stylesheet" href="./styles.css?v=0-1-109" />
   </head>
   <body>
     <div id="app" class="app-shell">
       <div class="boot-loading-card">
-        <div class="brand-mark big logo-mark"><img src="./assets/icons/domacnost-plus-icon-180-v0-1-108.png" alt="Domácnost+" loading="eager"></div>
+        <div class="brand-mark big logo-mark"><img src="./assets/icons/domacnost-plus-icon-180-v0-1-109.png" alt="Domácnost+" loading="eager"></div>
         <strong>Spouštím Domácnost+</strong>
         <span>Když se aplikace po aktualizaci zasekne, v dalším kroku se ukáže obnova místo bílé stránky.</span>
       </div>
@@ -40,7 +40,7 @@
       window.__DOMACNOST_BOOT_TIMEOUT__ = window.setTimeout(function () {
         var root = document.getElementById('app');
         if (window.__DOMACNOST_APP_STARTED__ || !root || !root.querySelector('.boot-loading-card')) return;
-        root.innerHTML = '<div class="boot-fallback-screen"><section class="boot-fallback-card"><div class="brand-mark big logo-mark"><img src="./assets/icons/domacnost-plus-icon-180-v0-1-108.png" alt="Domácnost+" loading="eager"></div><span class="badge">Domácnost+ v.0.1_108</span><h1>Aplikace se nenačetla</h1><p>Vypadá to, že se po aktualizaci nespustil hlavní soubor aplikace. Nejčastěji za to může stará PWA cache v prohlížeči.</p><div class="form-actions"><button class="primary-btn" type="button" data-boot-reload>Obnovit aplikaci</button><button class="ghost-btn" type="button" data-boot-clear>Vyčistit cache a obnovit</button></div><p class="small-muted">Tahle obnova nemaže data domácnosti, čistí jen cache aplikace v prohlížeči.</p></section></div>';
+        root.innerHTML = '<div class="boot-fallback-screen"><section class="boot-fallback-card"><div class="brand-mark big logo-mark"><img src="./assets/icons/domacnost-plus-icon-180-v0-1-109.png" alt="Domácnost+" loading="eager"></div><span class="badge">Domácnost+ v.0.1_109</span><h1>Aplikace se nenačetla</h1><p>Vypadá to, že se po aktualizaci nespustil hlavní soubor aplikace. Nejčastěji za to může stará PWA cache v prohlížeči.</p><div class="form-actions"><button class="primary-btn" type="button" data-boot-reload>Obnovit aplikaci</button><button class="ghost-btn" type="button" data-boot-clear>Vyčistit cache a obnovit</button></div><p class="small-muted">Tahle obnova nemaže data domácnosti, čistí jen cache aplikace v prohlížeči.</p></section></div>';
         root.querySelector('[data-boot-reload]')?.addEventListener('click', function () { window.location.reload(); });
         root.querySelector('[data-boot-clear]')?.addEventListener('click', async function () {
           try {
@@ -54,6 +54,6 @@
       }, 9000);
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-    <script src="app.js?v=0-1-108" defer></script>
+    <script src="app.js?v=0-1-109" defer></script>
   </body>
 </html>
