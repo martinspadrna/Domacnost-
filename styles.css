@@ -8387,3 +8387,173 @@ textarea {
     display: -webkit-box;
   }
 }
+
+/* v0.1_123 — Home icons without visible tile background + clean More hub */
+.home-minimal-hero .station-summary-icon,
+.glass-icon.station-summary-icon,
+.station-summary-item .glass-icon.station-summary-icon {
+  width: 56px !important;
+  height: 56px !important;
+  min-width: 56px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: visible !important;
+}
+
+.glass-icon.station-summary-icon::before,
+.glass-icon.station-summary-icon::after,
+.station-summary-item .glass-icon.station-summary-icon::before,
+.station-summary-item .glass-icon.station-summary-icon::after {
+  display: none !important;
+  content: none !important;
+}
+
+.glass-icon.station-summary-icon svg,
+.home-minimal-hero .glass-icon.station-summary-icon svg {
+  width: 100% !important;
+  height: 100% !important;
+  stroke-width: 1.95 !important;
+  filter: drop-shadow(0 5px 12px rgba(15, 23, 42, .20)) !important;
+}
+
+.station-summary-count-5 .glass-icon.station-summary-icon,
+.station-summary-count-6 .glass-icon.station-summary-icon,
+.station-summary-count-7 .glass-icon.station-summary-icon,
+.station-summary-count-8 .glass-icon.station-summary-icon {
+  width: 50px !important;
+  height: 50px !important;
+  min-width: 50px !important;
+}
+
+.glass-icon-car.station-summary-icon { color: #ef4444 !important; }
+.glass-icon-recycle.station-summary-icon,
+.glass-icon-check.station-summary-icon { color: #16a34a !important; }
+.glass-icon-bulb.station-summary-icon,
+.glass-icon-coins.station-summary-icon,
+.glass-icon-receipt.station-summary-icon { color: #eab308 !important; }
+.glass-icon-flag-pl.station-summary-icon { color: #dc2626 !important; }
+.glass-icon-calendar.station-summary-icon,
+.glass-icon-note.station-summary-icon,
+.glass-icon-doc.station-summary-icon { color: #2563eb !important; }
+.glass-icon-package.station-summary-icon { color: #f97316 !important; }
+.glass-icon-cart.station-summary-icon { color: #06b6d4 !important; }
+.glass-icon-tag.station-summary-icon,
+.glass-icon-camera.station-summary-icon { color: #a855f7 !important; }
+.glass-icon-plug.station-summary-icon,
+.glass-icon-home.station-summary-icon,
+.glass-icon-generic.station-summary-icon,
+.glass-icon-settings.station-summary-icon { color: #64748b !important; }
+
+/* Weather icon: no leftover line/border above current weather */
+.glass-icon.hero-weather-icon,
+.home-minimal-hero .glass-icon.hero-weather-icon,
+.glass-icon.weather-icon,
+.glass-icon.weather-inline-icon {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.glass-icon.hero-weather-icon::before,
+.glass-icon.hero-weather-icon::after,
+.home-minimal-hero .glass-icon.hero-weather-icon::before,
+.home-minimal-hero .glass-icon.hero-weather-icon::after,
+.glass-icon.weather-icon::before,
+.glass-icon.weather-icon::after,
+.glass-icon.weather-inline-icon::before,
+.glass-icon.weather-inline-icon::after,
+.hero-weather-icon::before,
+.hero-weather-icon::after,
+.weather-icon::before,
+.weather-icon::after {
+  display: none !important;
+  content: none !important;
+  border: 0 !important;
+}
+
+.glass-icon.hero-weather-icon svg,
+.home-minimal-hero .glass-icon.hero-weather-icon svg,
+.glass-icon.weather-icon svg,
+.glass-icon.weather-inline-icon svg {
+  width: 100% !important;
+  height: 100% !important;
+  filter: drop-shadow(0 5px 12px rgba(15, 23, 42, .16)) !important;
+}
+
+.glass-icon.hero-weather-icon,
+.home-minimal-hero .glass-icon.hero-weather-icon {
+  width: clamp(54px, 13vw, 72px) !important;
+  height: clamp(54px, 13vw, 72px) !important;
+}
+
+.more-clean-hub .more-settings-card,
+.more-clean-hub .more-module-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 78px;
+  text-align: left;
+}
+
+.more-clean-hub .module-status-icon {
+  flex: 0 0 auto;
+}
+
+.more-clean-hub .more-module-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.more-clean-hub .more-module-copy strong {
+  font-size: .98rem;
+  line-height: 1.1;
+}
+
+.more-clean-hub .more-module-copy span {
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 760;
+}
+
+.more-module-grid .module-status-card .item-meta,
+.more-module-grid .module-status-card .item-top,
+.more-module-grid .module-status-card .badge {
+  display: none !important;
+}
+
+.more-clean-hub .settings-module-icon {
+  color: #64748b !important;
+}
+
+@media (max-width: 560px) {
+  .home-minimal-hero .station-summary-icon,
+  .glass-icon.station-summary-icon,
+  .station-summary-item .glass-icon.station-summary-icon {
+    width: 50px !important;
+    height: 50px !important;
+    min-width: 50px !important;
+  }
+
+  .station-summary-count-5 .glass-icon.station-summary-icon,
+  .station-summary-count-6 .glass-icon.station-summary-icon,
+  .station-summary-count-7 .glass-icon.station-summary-icon,
+  .station-summary-count-8 .glass-icon.station-summary-icon {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+  }
+
+  .more-clean-hub .more-settings-card,
+  .more-clean-hub .more-module-card {
+    min-height: 72px;
+  }
+}

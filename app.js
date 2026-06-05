@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_122';
+  const APP_VERSION = 'Domácnost+ v.0.1_123';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -115,7 +115,7 @@
   const DEFAULT_BOTTOM_NAV_IDS = ['home', 'calendar', 'shopping', 'homecare'];
   const BOTTOM_NAV_MIN = 3;
   const BOTTOM_NAV_MAX = 5;
-  const MORE_MODULE = { id: 'more', label: 'Více', icon: '•••' };
+  const MORE_MODULE = { id: 'more', label: 'Více', icon: '⚙️' };
   const FILE_DB_NAME = 'homeWebOfflineFiles.v1';
   const FILE_STORE_CONTRACTS = 'contractFiles';
   const CONTRACT_FILE_MAX_BYTES = 15 * 1024 * 1024;
@@ -180,8 +180,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 69,
-      appBuild: 122,
-      mode: 'polish-shop-holidays-v122',
+      appBuild: 123,
+      mode: 'polish-shop-holidays-v123',
       createdAt: '',
       updatedAt: ''
     },
@@ -953,8 +953,8 @@
 
     migrated.meta = {
       schemaVersion: 69,
-      appBuild: 122,
-      mode: 'polish-shop-holidays-v122',
+      appBuild: 123,
+      mode: 'polish-shop-holidays-v123',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2598,6 +2598,8 @@
       finance: 'coins',
       cameras: 'camera',
       weather: 'weather-partly-cloud',
+      settings: 'settings',
+      more: 'settings',
       homecare: 'home'
     }[String(id || '')] || 'generic';
   }
@@ -2620,6 +2622,7 @@
       coins: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="7" rx="5.8" ry="2.7"/><path d="M6.2 7v4c0 1.5 2.6 2.7 5.8 2.7s5.8-1.2 5.8-2.7V7"/><path d="M8.2 14.2v2.2c0 1.2 1.7 2.2 3.8 2.2 2.1 0 3.8-1 3.8-2.2v-2.2"/></svg>`,
       camera: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8.5h2.5l1.3-2h6.4l1.3 2H19a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17v-7A1.5 1.5 0 0 1 5 8.5Z"/><circle cx="12" cy="13" r="3.5"/></svg>`,
       home: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 11 8-6 8 6"/><path d="M6.5 10.5V19a.5.5 0 0 0 .5.5h3.5V15h3v4.5H17a.5.5 0 0 0 .5-.5v-8.5"/></svg>`,
+      settings: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.1"/><path d="M19.4 13.5a7.8 7.8 0 0 0 0-3l2-1.5-2-3.4-2.4 1a8 8 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.6A8 8 0 0 0 7 6.6l-2.4-1-2 3.4 2 1.5a7.8 7.8 0 0 0 0 3l-2 1.5 2 3.4 2.4-1a8 8 0 0 0 2.6 1.5l.4 2.6h4l.4-2.6a8 8 0 0 0 2.6-1.5l2.4 1 2-3.4-2-1.5Z"/></svg>`,
       generic: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7.5"/></svg>`,
       'weather-sun': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><circle cx="12" cy="12" r="5.1" fill="#FFC83D" stroke="#F59E0B" stroke-width="1.2"/><g stroke="#FDBA24" stroke-linecap="round" stroke-width="1.7"><path d="M12 2.9v3.1M12 18v3.1M21.1 12H18M6 12H2.9M18.45 5.55l-2.2 2.2M7.75 16.25l-2.2 2.2M18.45 18.45l-2.2-2.2M7.75 7.75l-2.2-2.2"/></g></g></svg>`,
       'weather-partly-cloud': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><circle cx="8.5" cy="8.7" r="3.6" fill="#FFC83D" stroke="#F59E0B" stroke-width="1.1"/><path d="M8.5 4.2v1.5M5.3 8.7H3.8M13.2 8.7h-1.5M11.2 5.9l-1 1M5.8 5.9l1 1" stroke="#FDBA24" stroke-linecap="round" stroke-width="1.4"/><path d="M8.2 17.8h8.1a3.2 3.2 0 0 0 .2-6.39A4.8 4.8 0 0 0 7.6 13a2.8 2.8 0 0 0 .6 4.8Z" fill="#D8EEFF" stroke="#6BA8E5" stroke-width="1.2"/></g></svg>`,
@@ -3326,7 +3329,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_122', note: 'Hotovo: Home ikonky jsou větší, barevné a v iOS glass stylu. Garáž i ostatní hlavní panelové ikony dostaly vlastní barevné akcenty. oprava pádu Garáže parseDateValue, Google vícedenní události se v měsíčním kalendáři zobrazují přes všechny dny, Home má větší barevné malované ikony bez blokového pozadí a Garáž má novou záložku Statistiky.' },
+      { title: 'Domácnost+ v.0.1_123', note: 'Hotovo: Home ikonky jsou bez viditelného pozadí, barevně výraznější podle modulu, opravena čárka u počasí a obrazovka Více je zjednodušená na Nastavení aplikace + univerzální seznam Moduly.' },
       { title: 'Domácnost+ v.0.1_115', note: 'Hotovo: nový modul Svátky Polsko s přehledem zavřených obchodů a online aktualizací svátků, mazání auta je přesunuté do detailu s potvrzením a Home má větší čas/počasí s modernějšími ikonami.' },
       { title: 'Domácnost+ v.0.1_113', note: 'Hotovo: hlavní Home panel je roztažený téměř přes celou šířku obrazovky a až ke spodní liště, vnitřní panely vyplňují dostupnou výšku.' },
       { title: 'Domácnost+ v.0.1_112', note: 'Hotovo: Home panel je výškově roztáhnutý níž ke spodní liště a lépe využívá prostor pod rychlými panely.' },
@@ -5856,36 +5859,43 @@
     `;
   }
 
+  function renderMoreModuleCard(module) {
+    const stats = getModuleStats(module.id);
+    return `
+      <button class="item module-hub-item module-status-card more-module-card" type="button" data-nav="${module.id}">
+        ${renderGlassIcon(getHomeIconKind(module.id), { size: 'home-sm', extraClass: 'module-status-icon modern-module-icon' })}
+        <div class="more-module-copy">
+          <strong>${escapeHtml(module.label)}</strong>
+          <span>${stats.count} ${escapeHtml(stats.label)}</span>
+        </div>
+      </button>
+    `;
+  }
+
   function renderMore() {
-    const visibleModules = getVisibleModules().filter((module) => !['home', 'settings'].includes(module.id));
-    const primaryIds = new Set(normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules));
-    const secondaryModules = visibleModules.filter((module) => !primaryIds.has(module.id));
-    const primaryModules = visibleModules.filter((module) => primaryIds.has(module.id));
+    const modules = getVisibleModules().filter((module) => !['home', 'settings'].includes(module.id));
 
     return `
-      <div class="grid two more-hub-grid">
+      <div class="grid two more-hub-grid more-clean-hub">
         <section class="card desktop-span-2 more-settings-priority">
-          <div class="card-header"><div><h2>Nastavení</h2><p>Domácnost, profily, zapnuté moduly, Home panel, cloud a export/import.</p></div><span class="badge">nahoře</span></div>
-          <button class="item module-hub-item" type="button" data-nav="settings">
-            <div class="item-top"><div class="item-title">⚙️ Nastavení aplikace</div><span class="badge">otevřít</span></div>
-            <div class="item-meta">Tady upravíš domácnost, profily, zapnuté moduly i rozložení Home bez scrollování dolů.</div>
+          <div class="card-header"><div><h2>Nastavení aplikace</h2><p>Domácnost, profily, zapnuté moduly, Home panel, cloud, PWA a export/import.</p></div></div>
+          <button class="item module-hub-item more-settings-card" type="button" data-nav="settings">
+            ${renderGlassIcon('settings', { size: 'home-lg', extraClass: 'module-status-icon modern-module-icon settings-module-icon' })}
+            <div class="more-module-copy">
+              <strong>Nastavení aplikace</strong>
+              <span>Správa domácnosti, modulů a vzhledu</span>
+            </div>
+            <span class="badge">otevřít</span>
           </button>
         </section>
 
-        <section class="card desktop-span-2">
+        <section class="card desktop-span-2 more-modules-panel">
           <div class="card-header">
-            <div><h2>Další moduly</h2><p>Spodní lišta drží jen věci, které si zvolíš v Nastavení. Všechno ostatní je tady.</p></div>
-            <span class="badge">Více je napevno</span>
+            <div><h2>Moduly</h2><p>Univerzální vstup do všech zapnutých částí aplikace.</p></div>
+            <span class="badge">${modules.length}</span>
           </div>
-          <div class="grid four">
-            ${secondaryModules.length ? secondaryModules.map(renderModuleStatusCard).join('') : '<div class="empty">Všechny zapnuté moduly už máš připnuté dole.</div>'}
-          </div>
-        </section>
-
-        <section class="card desktop-span-2">
-          <div class="card-header"><div><h2>Rychlý přístup</h2><p>Moduly, které máš aktuálně připnuté ve spodní liště.</p></div></div>
-          <div class="grid four">
-            ${primaryModules.map(renderModuleStatusCard).join('')}
+          <div class="grid four more-module-grid">
+            ${modules.length ? modules.map(renderMoreModuleCard).join('') : '<div class="empty">Zatím nejsou zapnuté žádné další moduly.</div>'}
           </div>
         </section>
       </div>
@@ -10672,7 +10682,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 122, mode: 'rich-demo-v122', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 123, mode: 'rich-demo-v123', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -10814,7 +10824,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 122, mode: 'polish-shop-holidays-v122', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 123, mode: 'polish-shop-holidays-v123', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -13208,7 +13218,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 122
+        appBuild: 123
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -13796,7 +13806,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-122-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-123-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -13983,7 +13993,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_122</span>
+          <span class="badge">Domácnost+ v.0.1_123</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
