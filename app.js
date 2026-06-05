@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_118';
+  const APP_VERSION = 'Domácnost+ v.0.1_120';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -180,8 +180,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 69,
-      appBuild: 118,
-      mode: 'polish-shop-holidays-v118',
+      appBuild: 120,
+      mode: 'polish-shop-holidays-v120',
       createdAt: '',
       updatedAt: ''
     },
@@ -441,6 +441,9 @@
   let garageVehicleId = null;
   let garageHistoryYearFilter = 'all';
   let garageHistoryTypeFilter = 'all';
+  let garageStatsVehicleId = '';
+  let garageStatsPeriodFilter = 'last12';
+  let garageStatsTypeFilter = 'all';
   let calendarViewMonth = localStorage.getItem('domacnostPlus.calendarViewMonth') || todayISO().slice(0, 7);
   let activeContractId = null;
   let fuelioPreview = null;
@@ -950,8 +953,8 @@
 
     migrated.meta = {
       schemaVersion: 69,
-      appBuild: 118,
-      mode: 'polish-shop-holidays-v118',
+      appBuild: 120,
+      mode: 'polish-shop-holidays-v120',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1639,7 +1642,7 @@
             <button class="icon-btn" type="button" data-action="close-modal" aria-label="Zavřít detail události">×</button>
           </div>
           <div class="modal-detail-grid">
-            <div class="modal-detail-card"><span>Datum</span><strong>${event.date ? formatDate(event.date) : '—'}</strong></div>
+            <div class="modal-detail-card"><span>Datum</span><strong>${escapeHtml(calendarEventDateLabel(event))}</strong></div>
             <div class="modal-detail-card"><span>Čas</span><strong>${escapeHtml(calendarEventTimeLabel(event, now) || '—')}</strong></div>
             <div class="modal-detail-card"><span>Typ</span><strong>${escapeHtml(event.type || 'událost')}</strong></div>
             <div class="modal-detail-card"><span>Zdroj</span><strong>${escapeHtml(source)}</strong></div>
@@ -2153,9 +2156,13 @@
     if (!event?.date) return Number.MAX_SAFE_INTEGER;
     const startMs = calendarEventStartMs(event);
     if (!Number.isFinite(startMs)) return Number.MAX_SAFE_INTEGER;
-    if (!event.time) return new Date(buildCalendarDateTime(event.date, '23:59')).getTime() + 59999;
-    if (event.endTime) {
-      let endMs = new Date(buildCalendarDateTime(event.date, event.endTime, event.time)).getTime();
+    const endDate = normalizeText(event.endDate) || event.date;
+    if (!event.time) {
+      const allDayEndDate = event.endDate && event.endDate > event.date ? addDaysIso(event.endDate, -1) : event.date;
+      return new Date(buildCalendarDateTime(allDayEndDate, '23:59')).getTime() + 59999;
+    }
+    if (event.endTime || event.endDate) {
+      let endMs = new Date(buildCalendarDateTime(endDate, event.endTime || event.time, event.time)).getTime();
       if (Number.isFinite(endMs) && endMs <= startMs) endMs += 24 * 60 * 60 * 1000;
       return endMs;
     }
@@ -2184,7 +2191,9 @@
   function calendarEventTimeLabel(event, referenceDate = now) {
     if (!event) return '';
     const running = calendarEventIsRunning(event, referenceDate);
-    if (!event.time) return event.date === todayISO() ? 'dnes · celý den' : `${shortDateText(event.date)} · celý den`;
+    const endDate = calendarEventDisplayEndDate(event);
+    const dateRange = endDate && endDate !== event.date ? `${shortDateText(event.date)}–${shortDateText(endDate)}` : shortDateText(event.date);
+    if (!event.time) return event.date === todayISO() && endDate === event.date ? 'dnes · celý den' : `${dateRange} · celý den`;
     const range = event.endTime ? `${event.time}–${event.endTime}` : event.time;
     if (running) return event.endTime ? `probíhá do ${event.endTime}` : `probíhá od ${event.time}`;
     if (event.date === todayISO()) return `dnes ${range}`;
@@ -3317,7 +3326,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_118', note: 'Hotovo: Home a počasí mají menší barevnější malované ikonky, graf spotřeby v Garáži je nově reálný měsíční graf za poslední rok a deduplikace záznamů v Garáži je znovu zpřísněná.' },
+      { title: 'Domácnost+ v.0.1_120', note: 'Hotovo: oprava pádu Garáže parseDateValue, Google vícedenní události se v měsíčním kalendáři zobrazují přes všechny dny, Home má větší barevné malované ikony bez blokového pozadí a Garáž má novou záložku Statistiky.' },
       { title: 'Domácnost+ v.0.1_115', note: 'Hotovo: nový modul Svátky Polsko s přehledem zavřených obchodů a online aktualizací svátků, mazání auta je přesunuté do detailu s potvrzením a Home má větší čas/počasí s modernějšími ikonami.' },
       { title: 'Domácnost+ v.0.1_113', note: 'Hotovo: hlavní Home panel je roztažený téměř přes celou šířku obrazovky a až ke spodní liště, vnitřní panely vyplňují dostupnou výšku.' },
       { title: 'Domácnost+ v.0.1_112', note: 'Hotovo: Home panel je výškově roztáhnutý níž ke spodní liště a lépe využívá prostor pod rychlými panely.' },
@@ -3621,6 +3630,47 @@
     return event.endTime ? `${event.time}–${event.endTime}` : event.time;
   }
 
+  function calendarEventDisplayEndDate(event = {}) {
+    const startDate = String(event.date || '').slice(0, 10);
+    let endDate = String(event.endDate || '').slice(0, 10);
+    if (!startDate) return '';
+    if (!endDate) {
+      const endMs = calendarEventEndMs(event);
+      if (Number.isFinite(endMs) && endMs !== Number.MAX_SAFE_INTEGER) {
+        endDate = localISODate(new Date(endMs));
+      }
+    }
+    if (!endDate || endDate < startDate) return startDate;
+    if (!event.time && event.endDate && endDate > startDate) {
+      // Google all-day events store the end date as exclusive. Display through the previous day.
+      endDate = addDaysIso(endDate, -1);
+    }
+    return endDate < startDate ? startDate : endDate;
+  }
+
+  function calendarEventDateRange(event = {}, gridStart = '', gridEnd = '') {
+    const startDate = String(event.date || '').slice(0, 10);
+    if (!startDate) return [];
+    let endDate = calendarEventDisplayEndDate(event);
+    if (!endDate) endDate = startDate;
+    let cursor = startDate < gridStart ? gridStart : startDate;
+    const last = endDate > gridEnd ? gridEnd : endDate;
+    const days = [];
+    while (cursor && last && cursor <= last && days.length < 366) {
+      days.push(cursor);
+      cursor = addDaysIso(cursor, 1);
+    }
+    return days;
+  }
+
+  function calendarEventDateLabel(event = {}) {
+    const startDate = String(event.date || '').slice(0, 10);
+    const endDate = calendarEventDisplayEndDate(event);
+    if (!startDate) return '—';
+    if (!endDate || endDate === startDate) return formatDate(startDate);
+    return `${formatDate(startDate)} – ${formatDate(endDate)}`;
+  }
+
   function renderCalendarMonthGrid(events = [], monthKey = calendarViewMonth) {
     const month = normalizeCalendarMonth(monthKey);
     const [year, rawMonth] = month.split('-').map(Number);
@@ -3630,12 +3680,16 @@
     const trailingDays = 6 - ((lastDay.getUTCDay() + 6) % 7);
     const gridStart = addDaysIso(`${month}-01`, -leadingDays);
     const gridEnd = addDaysIso(lastDay.toISOString().slice(0, 10), trailingDays);
-    const monthEvents = sortCalendarEventsByStart(events).filter((event) => event.date && event.date >= gridStart && event.date <= gridEnd);
+    const monthEvents = sortCalendarEventsByStart(events).filter((event) => {
+      const startDate = String(event.date || '').slice(0, 10);
+      const endDate = calendarEventDisplayEndDate(event) || startDate;
+      return startDate && startDate <= gridEnd && endDate >= gridStart;
+    });
     const eventsByDate = monthEvents.reduce((acc, event) => {
-      const key = String(event.date || '').slice(0, 10);
-      if (!key) return acc;
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(event);
+      calendarEventDateRange(event, gridStart, gridEnd).forEach((key) => {
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(event);
+      });
       return acc;
     }, {});
     const days = [];
@@ -3647,7 +3701,13 @@
     while (days.length < 35) days.push(addDaysIso(days[days.length - 1], 1));
     const weeks = [];
     for (let index = 0; index < days.length; index += 7) weeks.push(days.slice(index, index + 7));
-    const monthEventCount = monthEvents.filter((event) => String(event.date || '').startsWith(month)).length;
+    const monthStart = `${month}-01`;
+    const monthEnd = lastDay.toISOString().slice(0, 10);
+    const monthEventCount = monthEvents.filter((event) => {
+      const startDate = String(event.date || '').slice(0, 10);
+      const endDate = calendarEventDisplayEndDate(event) || startDate;
+      return startDate && startDate <= monthEnd && endDate >= monthStart;
+    }).length;
     const today = todayISO();
     const dayNames = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
     return `
@@ -3685,9 +3745,9 @@
                     </div>
                     <div class="calendar-day-events">
                       ${visible.map((event) => `
-                        <button class="calendar-day-event ${event.cloudId ? 'cloud-event' : ''}" type="button" data-action="calendar-event-detail" data-id="${escapeHtml(event.id || event.cloudId || '')}" title="${escapeHtml(event.title)}">
-                          <strong>${escapeHtml(event.title)}</strong>
-                          <span>${escapeHtml(calendarCellEventTime(event))}${event.location ? ` · ${escapeHtml(event.location)}` : ''}</span>
+                        <button class="calendar-day-event ${event.cloudId ? 'cloud-event' : ''} ${dayIso !== String(event.date || '').slice(0, 10) ? 'continued-event' : ''}" type="button" data-action="calendar-event-detail" data-id="${escapeHtml(event.id || event.cloudId || '')}" title="${escapeHtml(event.title)}">
+                          <strong>${dayIso !== String(event.date || '').slice(0, 10) ? '↳ ' : ''}${escapeHtml(event.title)}</strong>
+                          <span>${escapeHtml(dayIso !== String(event.date || '').slice(0, 10) ? 'pokračuje' : calendarCellEventTime(event))}${event.location ? ` · ${escapeHtml(event.location)}` : ''}</span>
                         </button>
                       `).join('')}
                       ${hidden > 0 ? `<div class="calendar-more-events">+${hidden} další</div>` : ''}
@@ -3806,6 +3866,7 @@
               ${field('Název', 'title', 'text', 'Doktor / návštěva / výlet', true)}
               ${calendarSourceOptions()}
               ${field('Datum', 'date', 'date', '', true, todayISO())}
+              ${field('Konec vícedenní události', 'endDate', 'date', '')}
               ${field('Začátek', 'time', 'time', '')}
               ${field('Konec', 'endTime', 'time', '')}
               ${selectField('Typ', 'type', [['event', 'Událost'], ['family', 'Rodina'], ['shift', 'Směna'], ['reminder', 'Připomínka'], ['holiday', 'Volno/svátek'], ['other', 'Ostatní']])}
@@ -4755,6 +4816,7 @@
       ${renderSectionTabs('garage', [
         { id: 'overview', label: 'Přehled', icon: '🚗', count: vehicles.length },
         { id: 'detail', label: 'Detail', icon: '🔧', count: activeVehicle ? 1 : 0 },
+        { id: 'stats', label: 'Statistiky', icon: '📊' },
         { id: 'add', label: 'Přidat auto', icon: '➕' },
         { id: 'import', label: 'Fuelio', icon: '📥' }
       ], 'overview')}
@@ -4784,6 +4846,10 @@
 
         <section class="card desktop-span-2 garage-panel panel-detail garage-fuelio-panel">
           ${activeVehicle ? renderVehicleDetail(activeVehicle) : renderEmptyCta({ icon: '🚗', title: 'Nejdřív přidej auto', text: 'Detail se naplní tankováním, servisy, termíny STK a pojištěním.', nav: 'garage', tab: 'add', label: 'Přidat auto' })}
+        </section>
+
+        <section class="card desktop-span-2 garage-panel panel-stats garage-fuelio-panel">
+          ${renderGarageStatsPanel(vehicles, activeVehicle)}
         </section>
 
         <section class="card garage-panel panel-add">
@@ -4825,13 +4891,132 @@
         </button>
         <div class="fuelio-vehicle-stats">
           <span><strong>${stats.averageConsumption ? `${stats.averageConsumption.toFixed(1).replace('.', ',')}` : '—'}</strong><em>l/100</em></span>
-          <span><strong>${costPerKm ? `${costPerKm.toFixed(2).replace('.', ',')}` : '—'}</strong><em>Kč/km palivo</em></span>
+          <span><strong>${costPerKm ? `${costPerKm.toFixed(2).replace('.', ',')}` : '—'}</strong><em>Kč/km</em></span>
           <span><strong>${fuelRows.length + serviceRows.length}</strong><em>záznamů</em></span>
         </div>
         <div class="item-actions vehicle-card-actions">
           <button class="ghost-btn icon-action-btn" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="vehicle-settings" title="Nastavení auta" aria-label="Nastavení auta ${escapeHtml(vehicle.name)}">⚙️</button>
           <button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name)}">⛽+</button>
           <button class="ghost-btn icon-action-btn" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="add-service" title="Přidat servis" aria-label="Přidat servis ${escapeHtml(vehicle.name)}">🧾+</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function garagePeriodRange(period = 'last12') {
+    const today = parseDateValue(todayISO()) || new Date();
+    const year = today.getFullYear();
+    if (period === 'thisYear') return { start: `${year}-01-01`, end: `${year}-12-31`, label: 'tento rok' };
+    if (period === 'lastYear') return { start: `${year - 1}-01-01`, end: `${year - 1}-12-31`, label: 'minulý rok' };
+    if (period === 'all') return { start: '', end: '', label: 'vše' };
+    const start = new Date(today.getFullYear(), today.getMonth() - 11, 1);
+    return { start: localISODate(start), end: todayISO(), label: 'posledních 12 měsíců' };
+  }
+
+  function garageDateInRange(dateValue, range = {}) {
+    const iso = String(dateValue || '').slice(0, 10);
+    if (!iso) return false;
+    if (range.start && iso < range.start) return false;
+    if (range.end && iso > range.end) return false;
+    return true;
+  }
+
+  function filteredGarageRowsForStats(vehicleId, period = 'last12', type = 'all') {
+    const range = garagePeriodRange(period);
+    const fuelRows = (state.fuel || []).filter((item) => item.vehicleId === vehicleId && garageDateInRange(item.date, range));
+    const serviceRows = (state.services || []).filter((item) => item.vehicleId === vehicleId && garageDateInRange(item.date, range));
+    return {
+      range,
+      fuelRows: type === 'service' ? [] : fuelRows,
+      serviceRows: type === 'fuel' ? [] : serviceRows,
+      rawFuelRows: fuelRows,
+      rawServiceRows: serviceRows
+    };
+  }
+
+  function garageStatsMetrics(vehicle, fuelRows = [], serviceRows = []) {
+    const sortedFuel = sortFuelRows(fuelRows);
+    const stats = getVehicleStats(sortedFuel, serviceRows);
+    const fuelCost = stats.fuelCost || 0;
+    const serviceCost = stats.serviceCost || 0;
+    const totalCost = fuelCost + serviceCost;
+    const km = stats.totalKm || 0;
+    const dates = [...fuelRows, ...serviceRows].map((item) => parseDateValue(item.date)).filter(Boolean).sort((a, b) => a - b);
+    const monthSpan = dates.length >= 2 ? Math.max(1, ((dates[dates.length - 1].getFullYear() - dates[0].getFullYear()) * 12) + (dates[dates.length - 1].getMonth() - dates[0].getMonth()) + 1) : 1;
+    return {
+      averageConsumption: stats.averageConsumption,
+      fuelCostPerKm: km > 0 ? fuelCost / km : null,
+      totalCostPerKm: km > 0 ? totalCost / km : null,
+      km,
+      monthlyKm: km / monthSpan,
+      yearlyKm: (km / monthSpan) * 12,
+      fuelCost,
+      serviceCost,
+      totalCost,
+      fuelCount: fuelRows.length,
+      serviceCount: serviceRows.length,
+      monthSpan
+    };
+  }
+
+  function formatKm(value) {
+    const number = Number(value || 0);
+    if (!Number.isFinite(number) || number <= 0) return '—';
+    return `${Math.round(number).toLocaleString('cs-CZ')} km`;
+  }
+
+  function formatLitreValue(value) {
+    const number = Number(value || 0);
+    if (!Number.isFinite(number) || number <= 0) return '—';
+    return `${number.toFixed(2).replace('.', ',')} l/100`;
+  }
+
+  function formatCostPerKm(value) {
+    const number = Number(value || 0);
+    if (!Number.isFinite(number) || number <= 0) return '—';
+    return `${number.toFixed(2).replace('.', ',')} Kč/km`;
+  }
+
+  function renderGarageStatsPanel(vehicles = [], activeVehicle = null) {
+    if (!vehicles.length) return renderEmptyCta({ icon: '📊', title: 'Statistiky zatím nejsou', text: 'Nejdřív přidej auto a pár tankování.', nav: 'garage', tab: 'add', label: 'Přidat auto' });
+    if (!garageStatsVehicleId || !vehicles.some((vehicle) => vehicle.id === garageStatsVehicleId)) garageStatsVehicleId = activeVehicle?.id || garageVehicleId || vehicles[0].id;
+    const selectedVehicle = vehicles.find((vehicle) => vehicle.id === garageStatsVehicleId) || vehicles[0];
+    const period = ['last12', 'thisYear', 'lastYear', 'all'].includes(garageStatsPeriodFilter) ? garageStatsPeriodFilter : 'last12';
+    const type = ['all', 'fuel', 'service'].includes(garageStatsTypeFilter) ? garageStatsTypeFilter : 'all';
+    const { range, fuelRows, serviceRows, rawFuelRows, rawServiceRows } = filteredGarageRowsForStats(selectedVehicle.id, period, type);
+    const metrics = garageStatsMetrics(selectedVehicle, rawFuelRows, rawServiceRows);
+    return `
+      <div class="card-header">
+        <div><h2>Statistiky Garáže</h2><p>Vyber auto a období. Základní Kč/km je palivo, celkové Kč/km počítá i servis a ostatní náklady.</p></div>
+        <span class="badge">${escapeHtml(range.label)}</span>
+      </div>
+      <div class="garage-stats-filters">
+        <label class="compact-select-field"><span>Auto</span><select class="select" data-garage-stats-filter="vehicle">${vehicles.map((vehicle) => `<option value="${escapeHtml(vehicle.id)}" ${vehicle.id === selectedVehicle.id ? 'selected' : ''}>${escapeHtml(vehicle.name)}</option>`).join('')}</select></label>
+        <label class="compact-select-field"><span>Období</span><select class="select" data-garage-stats-filter="period"><option value="last12" ${period === 'last12' ? 'selected' : ''}>Posledních 12 měsíců</option><option value="thisYear" ${period === 'thisYear' ? 'selected' : ''}>Tento rok</option><option value="lastYear" ${period === 'lastYear' ? 'selected' : ''}>Minulý rok</option><option value="all" ${period === 'all' ? 'selected' : ''}>Vše</option></select></label>
+        <label class="compact-select-field"><span>Typ</span><select class="select" data-garage-stats-filter="type"><option value="all" ${type === 'all' ? 'selected' : ''}>Vše</option><option value="fuel" ${type === 'fuel' ? 'selected' : ''}>Palivo</option><option value="service" ${type === 'service' ? 'selected' : ''}>Servis / náklady</option></select></label>
+      </div>
+      <div class="kpi-row compact garage-stats-kpis">
+        <div class="kpi"><strong>${formatLitreValue(metrics.averageConsumption)}</strong><span>průměrná spotřeba</span></div>
+        <div class="kpi"><strong>${formatCostPerKm(metrics.fuelCostPerKm)}</strong><span>Kč/km</span></div>
+        <div class="kpi"><strong>${formatCostPerKm(metrics.totalCostPerKm)}</strong><span>Kč/km celkem</span></div>
+        <div class="kpi"><strong>${formatKm(metrics.km)}</strong><span>najeto v období</span></div>
+        <div class="kpi"><strong>${formatKm(metrics.monthlyKm)}</strong><span>průměr / měsíc</span></div>
+        <div class="kpi"><strong>${formatKm(metrics.yearlyKm)}</strong><span>odhad / rok</span></div>
+        <div class="kpi"><strong>${formatCurrency(metrics.fuelCost)}</strong><span>palivo</span></div>
+        <div class="kpi"><strong>${formatCurrency(metrics.serviceCost)}</strong><span>servis / náklady</span></div>
+        <div class="kpi"><strong>${formatCurrency(metrics.totalCost)}</strong><span>celkem</span></div>
+        <div class="kpi"><strong>${metrics.fuelCount}</strong><span>tankování</span></div>
+        <div class="kpi"><strong>${metrics.serviceCount}</strong><span>servisní záznamy</span></div>
+        <div class="kpi"><strong>${metrics.monthSpan}</strong><span>měsíců s daty</span></div>
+      </div>
+      <div class="grid two detail-summary-grid garage-stats-detail-grid">
+        <div class="compact-chart-box">${renderMiniChart(rawFuelRows)}</div>
+        <div class="detail-stack compact-detail-stack">
+          <div class="stat-line"><span>Auto</span><strong>${escapeHtml(selectedVehicle.name)}</strong></div>
+          <div class="stat-line"><span>Období</span><strong>${escapeHtml(range.label)}</strong></div>
+          <div class="stat-line"><span>Filtr typu</span><strong>${escapeHtml(garageHistoryTypeLabel(type))}</strong></div>
+          <div class="stat-line"><span>Záznamy v období</span><strong>${fuelRows.length} tankování · ${serviceRows.length} servisů</strong></div>
+          <div class="inline-note compact-note">Kč/km v základním přehledu je jen palivo. Kč/km celkem ve statistikách počítá i servis, pneu a ostatní náklady.</div>
         </div>
       </div>
     `;
@@ -8387,7 +8572,8 @@
 
   function cloudCalendarPayload(event, userId, sourceId = null) {
     const start = buildCalendarDateTime(event.date, event.time, '00:00');
-    const end = event.endTime ? buildCalendarDateTime(event.date, event.endTime, event.time || '00:00') : null;
+    const endDate = normalizeText(event.endDate) || event.date;
+    const end = event.endTime || event.endDate ? buildCalendarDateTime(endDate, event.endTime || event.time || '23:59', event.time || '00:00') : null;
     return {
       household_id: state.cloud.householdId,
       source_id: sourceId || event.sourceId || null,
@@ -8968,7 +9154,8 @@
         title: item.title || 'Událost',
         date: start.date,
         time: item.all_day ? '' : start.time,
-        endTime: end.time || '',
+        endDate: end.date && end.date !== start.date ? end.date : '',
+        endTime: item.all_day ? '' : end.time || '',
         type: normalizeCalendarType(item.event_type),
         location: item.location || '',
         note: item.description || ''
@@ -9015,6 +9202,7 @@
       createdAt: new Date().toISOString(),
       title: normalizeText(data.title),
       date: normalizeText(data.date),
+      endDate: normalizeText(data.endDate),
       time: normalizeText(data.time),
       endTime: normalizeText(data.endTime),
       type: normalizeCalendarType(data.type),
@@ -10484,7 +10672,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 118, mode: 'rich-demo-v118', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 120, mode: 'rich-demo-v120', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -10626,7 +10814,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 118, mode: 'polish-shop-holidays-v118', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 120, mode: 'polish-shop-holidays-v120', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -12020,6 +12208,7 @@
     }
     if (action === 'select-vehicle') {
       garageVehicleId = button.dataset.id;
+      garageStatsVehicleId = garageVehicleId;
       garageEditRecord = null;
       activeOverview = null;
       activeModule = 'garage';
@@ -13019,7 +13208,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 118
+        appBuild: 120
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -13607,7 +13796,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-118-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-120-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -13726,6 +13915,17 @@
       if (garageHistoryFilter.dataset.garageHistoryFilter === 'type') garageHistoryTypeFilter = garageHistoryFilter.value || 'all';
       garageEditRecord = null;
       render();
+      return;
+    }
+    const garageStatsFilter = event.target.closest('[data-garage-stats-filter]');
+    if (garageStatsFilter) {
+      if (garageStatsFilter.dataset.garageStatsFilter === 'vehicle') garageStatsVehicleId = garageStatsFilter.value || '';
+      if (garageStatsFilter.dataset.garageStatsFilter === 'period') garageStatsPeriodFilter = garageStatsFilter.value || 'last12';
+      if (garageStatsFilter.dataset.garageStatsFilter === 'type') garageStatsTypeFilter = garageStatsFilter.value || 'all';
+      moduleTabs = { ...(moduleTabs || {}), garage: 'stats' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      render();
+      return;
     }
   });
 
@@ -13783,7 +13983,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_118</span>
+          <span class="badge">Domácnost+ v.0.1_120</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
