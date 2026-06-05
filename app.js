@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_116';
+  const APP_VERSION = 'Domácnost+ v.0.1_118';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -180,8 +180,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 69,
-      appBuild: 116,
-      mode: 'polish-shop-holidays-v116',
+      appBuild: 118,
+      mode: 'polish-shop-holidays-v118',
       createdAt: '',
       updatedAt: ''
     },
@@ -950,8 +950,8 @@
 
     migrated.meta = {
       schemaVersion: 69,
-      appBuild: 116,
-      mode: 'polish-shop-holidays-v116',
+      appBuild: 118,
+      mode: 'polish-shop-holidays-v118',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2222,6 +2222,7 @@
     const vehicleAlerts = getVehicleAlerts().slice(0, 4);
     const visibleModules = getVisibleModules();
     ensureWeatherFresh(false);
+    normalizeGarageRuntimeState({ persist: false });
     const weather = normalizeWeatherState(state.weather);
     const dashboardContext = { hdo, todayEvents, upcomingEvents, calendarPanelEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, weather, notes: state.notes, devices: state.devices, cameras: state.cameras, coupons: state.coupons, contracts: state.contracts };
     const selectedHeroItems = normalizeHomeHeroIds(state.settings?.homeHeroItems);
@@ -2611,13 +2612,13 @@
       camera: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8.5h2.5l1.3-2h6.4l1.3 2H19a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17v-7A1.5 1.5 0 0 1 5 8.5Z"/><circle cx="12" cy="13" r="3.5"/></svg>`,
       home: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 11 8-6 8 6"/><path d="M6.5 10.5V19a.5.5 0 0 0 .5.5h3.5V15h3v4.5H17a.5.5 0 0 0 .5-.5v-8.5"/></svg>`,
       generic: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7.5"/></svg>`,
-      'weather-sun': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.1"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2 5.5 5.5"/></svg>`,
-      'weather-partly-cloud': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3.2"/><path d="M9 3.8v1.6M4.8 9H3.2M14.8 9h-1.6M12.8 5.2l-1.1 1.1M5.2 5.2l1.1 1.1"/><path d="M8.5 17.5h8a3 3 0 1 0-.4-5.97A4.8 4.8 0 0 0 7 13a2.7 2.7 0 0 0 1.5 4.5Z"/></svg>`,
-      'weather-cloud': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 18h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 12.4 3 3 0 0 0 7.5 18Z"/></svg>`,
-      'weather-fog': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 12.8h8.4a3 3 0 0 0 .2-6A4.5 4.5 0 0 0 8 8.2a2.4 2.4 0 0 0-.2 4.6Z"/><path d="M5 16.5h14M7.5 19.2h9"/></svg>`,
-      'weather-rain': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 13.2h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 7.6a3 3 0 0 0 .7 5.6Z"/><path d="M9 16.3 8.2 19M13 16.3 12.2 19M17 16.3 16.2 19"/></svg>`,
-      'weather-snow': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 13.2h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 7.6a3 3 0 0 0 .7 5.6Z"/><path d="M9 17.2h0M12 18.5h0M15 17.2h0" stroke-width="3.2"/></svg>`,
-      'weather-storm': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 12.8h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 7.2a3 3 0 0 0 .7 5.6Z"/><path d="m11 14 3-1.2-1.6 3.3 2.1-.3-3.4 4 .9-3.3-2.2.1Z"/></svg>`
+      'weather-sun': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><circle cx="12" cy="12" r="5.1" fill="#FFC83D" stroke="#F59E0B" stroke-width="1.2"/><g stroke="#FDBA24" stroke-linecap="round" stroke-width="1.7"><path d="M12 2.9v3.1M12 18v3.1M21.1 12H18M6 12H2.9M18.45 5.55l-2.2 2.2M7.75 16.25l-2.2 2.2M18.45 18.45l-2.2-2.2M7.75 7.75l-2.2-2.2"/></g></g></svg>`,
+      'weather-partly-cloud': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><circle cx="8.5" cy="8.7" r="3.6" fill="#FFC83D" stroke="#F59E0B" stroke-width="1.1"/><path d="M8.5 4.2v1.5M5.3 8.7H3.8M13.2 8.7h-1.5M11.2 5.9l-1 1M5.8 5.9l1 1" stroke="#FDBA24" stroke-linecap="round" stroke-width="1.4"/><path d="M8.2 17.8h8.1a3.2 3.2 0 0 0 .2-6.39A4.8 4.8 0 0 0 7.6 13a2.8 2.8 0 0 0 .6 4.8Z" fill="#D8EEFF" stroke="#6BA8E5" stroke-width="1.2"/></g></svg>`,
+      'weather-cloud': `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.4 18h9.2a3.7 3.7 0 0 0 .2-7.39A5.4 5.4 0 0 0 6.7 12.2a3.2 3.2 0 0 0 .7 5.8Z" fill="#D8EEFF" stroke="#79A9D6" stroke-width="1.2"/></svg>`,
+      'weather-fog': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><path d="M7.9 12.6h8.2a3 3 0 0 0 .2-5.99A4.5 4.5 0 0 0 8.2 8a2.4 2.4 0 0 0-.3 4.6Z" fill="#E3EDF6" stroke="#93A7B9" stroke-width="1.1"/><path d="M4.8 16.3h14.4M7.2 19h9.6" stroke="#AAB8C5" stroke-linecap="round" stroke-width="1.5"/></g></svg>`,
+      'weather-rain': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><path d="M7.5 13.2h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 7.6a3 3 0 0 0 .7 5.6Z" fill="#D8EEFF" stroke="#6BA8E5" stroke-width="1.2"/><path d="M8.9 16.2c-.5.7-.8 1.5-.8 2.1M12.7 16.2c-.5.7-.8 1.5-.8 2.1M16.5 16.2c-.5.7-.8 1.5-.8 2.1" stroke="#3B82F6" stroke-linecap="round" stroke-width="1.7"/></g></svg>`,
+      'weather-snow': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><path d="M7.5 13.2h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 7.6a3 3 0 0 0 .7 5.6Z" fill="#E5F4FF" stroke="#7FB0DA" stroke-width="1.2"/><g stroke="#63B3ED" stroke-linecap="round" stroke-width="1.4"><path d="M8.8 16.8h1.7M9.65 16v1.7"/><path d="M11.9 18.2h1.7M12.75 17.35v1.7"/><path d="M15 16.8h1.7M15.85 16v1.7"/></g></g></svg>`,
+      'weather-storm': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><path d="M7.4 12.8h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 7.2a3 3 0 0 0 .6 5.6Z" fill="#CBD5E1" stroke="#7C8EA6" stroke-width="1.2"/><path d="m11 14 2.8-1.1-1.5 3 1.8-.2-3 3.6.8-3-1.8.1Z" fill="#FACC15" stroke="#EAB308" stroke-width=".8"/></g></svg>`
     };
     return icons[String(kind || 'generic')] || icons.generic;
   }
@@ -3316,7 +3317,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_116', note: 'Hotovo: Garáž sjednocuje duplicitní lokální/cloud auta, tankování a servisní záznamy podle obsahu a preferuje cloudovou verzi místo dvojitého výpisu.' },
+      { title: 'Domácnost+ v.0.1_118', note: 'Hotovo: Home a počasí mají menší barevnější malované ikonky, graf spotřeby v Garáži je nově reálný měsíční graf za poslední rok a deduplikace záznamů v Garáži je znovu zpřísněná.' },
       { title: 'Domácnost+ v.0.1_115', note: 'Hotovo: nový modul Svátky Polsko s přehledem zavřených obchodů a online aktualizací svátků, mazání auta je přesunuté do detailu s potvrzením a Home má větší čas/počasí s modernějšími ikonami.' },
       { title: 'Domácnost+ v.0.1_113', note: 'Hotovo: hlavní Home panel je roztažený téměř přes celou šířku obrazovky a až ke spodní liště, vnitřní panely vyplňují dostupnou výšku.' },
       { title: 'Domácnost+ v.0.1_112', note: 'Hotovo: Home panel je výškově roztáhnutý níž ke spodní liště a lépe využívá prostor pod rychlými panely.' },
@@ -4589,37 +4590,46 @@
   function garageVehicleDedupeKey(vehicle = {}) {
     const plate = normalizeKey(vehicle.plate || vehicle.plateNumber || '');
     if (plate) return `plate:${plate}`;
-    const name = normalizeKey(vehicle.name || vehicle.title || vehicle.model || '');
-    const fuelType = normalizeKey(vehicle.fuelType || '');
-    return name ? `name:${name}|fuel:${fuelType}` : '';
+    const name = normalizeKey(vehicle.name || vehicle.title || '');
+    if (name) return `name:${name}`;
+    const brandModel = normalizeKey([vehicle.brand, vehicle.model, vehicle.year].filter(Boolean).join(' '));
+    return brandModel ? `model:${brandModel}` : '';
+  }
+
+  function garageDateKey(value) {
+    const text = normalizeText(value);
+    if (!text) return '';
+    return parseFuelioDate(text) || text.slice(0, 10);
   }
 
   function garageRecordVehicleKey(vehicleId, vehicleMap = new Map()) {
     const vehicle = vehicleMap.get(vehicleId) || null;
-    return vehicle ? (vehicle.cloudId ? `cloud:${vehicle.cloudId}` : garageVehicleDedupeKey(vehicle) || `local:${vehicle.id}`) : `vehicle:${normalizeKey(vehicleId)}`;
+    if (vehicle) return garageVehicleDedupeKey(vehicle) || (vehicle.cloudId ? `cloud:${vehicle.cloudId}` : `local:${vehicle.id || ''}`);
+    return `vehicle:${normalizeKey(vehicleId)}`;
   }
 
   function garageFuelDedupeKey(item = {}, vehicleMap = new Map()) {
-    return [
-      'fuel',
-      garageRecordVehicleKey(item.vehicleId, vehicleMap),
-      normalizeText(item.date),
-      garageNumberKey(item.odometer, 0),
-      garageNumberKey(item.liters, 3),
-      garageNumberKey(item.price, 2)
-    ].join('|');
+    const vehicleKey = garageRecordVehicleKey(item.vehicleId, vehicleMap);
+    const dateKey = garageDateKey(item.date);
+    const odometerKey = garageNumberKey(item.odometer, 0);
+    const litersKey = garageNumberKey(item.liters, 1);
+    const priceKey = garageNumberKey(item.price, 0);
+    if (vehicleKey && dateKey && odometerKey) {
+      return ['fuel', vehicleKey, dateKey, odometerKey, litersKey || priceKey || 'x'].join('|');
+    }
+    return ['fuel', vehicleKey, dateKey, odometerKey, litersKey || priceKey || 'x'].join('|');
   }
 
   function garageServiceDedupeKey(item = {}, vehicleMap = new Map()) {
-    return [
-      'service',
-      garageRecordVehicleKey(item.vehicleId, vehicleMap),
-      normalizeText(item.date),
-      garageNumberKey(item.odometer, 0),
-      normalizeKey(item.title || item.category || 'Servis'),
-      garageNumberKey(item.price, 2),
-      normalizeKey(item.note || '')
-    ].join('|');
+    const vehicleKey = garageRecordVehicleKey(item.vehicleId, vehicleMap);
+    const dateKey = garageDateKey(item.date);
+    const odometerKey = garageNumberKey(item.odometer, 0);
+    const priceKey = garageNumberKey(item.price, 0);
+    const titleKey = normalizeKey(item.title || item.category || 'servis');
+    if (vehicleKey && dateKey && titleKey) {
+      return ['service', vehicleKey, dateKey, titleKey, odometerKey || 'x', priceKey || 'x'].join('|');
+    }
+    return ['service', vehicleKey, dateKey, titleKey || 'servis', odometerKey || 'x', priceKey || 'x'].join('|');
   }
 
   function preferGarageCloudRecord(current = {}, candidate = {}) {
@@ -4679,7 +4689,8 @@
     return unique;
   }
 
-  function normalizeGarageRuntimeState() {
+  function normalizeGarageRuntimeState(options = {}) {
+    const persist = options.persist !== false;
     const beforeSignature = JSON.stringify({ vehicles: state.vehicles, fuel: state.fuel, services: state.services, active: garageVehicleId });
     state.vehicles = Array.isArray(state.vehicles) ? state.vehicles.filter((item) => item && typeof item === 'object') : [];
     state.fuel = Array.isArray(state.fuel) ? state.fuel.filter((item) => item && typeof item === 'object') : [];
@@ -4720,7 +4731,7 @@
     state.services = dedupeGarageRecords(state.services, garageServiceDedupeKey, vehicleMap);
     if (!validVehicleIds.has(garageVehicleId)) garageVehicleId = fallbackVehicleId;
     const afterSignature = JSON.stringify({ vehicles: state.vehicles, fuel: state.fuel, services: state.services, active: garageVehicleId });
-    if (beforeSignature !== afterSignature && !isDemoMode()) {
+    if (beforeSignature !== afterSignature && persist && !isDemoMode()) {
       state.meta = { ...(state.meta || {}), updatedAt: new Date().toISOString() };
       saveState();
     }
@@ -4754,6 +4765,7 @@
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="cloud-load-garage">Načíst cloud Garáž</button>
               <button class="ghost-btn" type="button" data-action="cloud-sync-local-garage">Odeslat lokální Garáž</button>
+              <button class="ghost-btn" type="button" data-action="garage-dedupe-now">Opravit duplicity</button>
             </div>
           ` : '<div class="inline-note compact-note">Po přihlášení se Garáž ukládá podle domácnosti. Offline data zůstávají jen jako pracovní záloha.</div>'}
           <div class="cloud-status-grid compact-cloud-stats">
@@ -4982,7 +4994,7 @@
       <div class="item garage-history-row fuelio-record-row">
         <div class="item-top">
           <div class="item-title">⛽ ${formatDate(item.date)}</div>
-          <span class="badge ${item.cloudId ? 'good' : ''}">${item.cloudId ? 'cloud' : 'lokálně'} · ${escapeHtml(item.odometer || '—')} km</span>
+          <span class="badge">${escapeHtml(item.odometer || '—')} km</span>
         </div>
         <div class="item-meta">${escapeHtml(item.liters || 0)} l · ${formatCurrency(item.price)}${fuelPricePerLiter(item) ? ` · ${escapeHtml(formatFuelPricePerLiter(fuelPricePerLiter(item)))}` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div>
         <div class="item-actions">
@@ -4998,7 +5010,7 @@
       <div class="item garage-history-row fuelio-record-row">
         <div class="item-top">
           <div class="item-title">🧾 ${escapeHtml(item.title)}</div>
-          <span class="badge ${item.cloudId ? 'good' : ''}">${item.cloudId ? 'cloud' : 'lokálně'} · ${formatDate(item.date)}</span>
+          <span class="badge">${formatDate(item.date)}</span>
         </div>
         <div class="item-meta">${formatCurrency(item.price)}${item.odometer ? ` · ${escapeHtml(item.odometer)} km` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div>
         <div class="item-actions">
@@ -5193,31 +5205,109 @@
   }
 
 
-  function renderMiniChart(fuelRows) {
-    const points = [];
-    const rows = fuelRows.filter((item) => Number(item.odometer) > 0 && Number(item.liters) > 0);
+  function monthBucketKey(dateValue) {
+    const date = parseDateValue(dateValue);
+    if (!date) return '';
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  function previousMonthDate(offset = 0) {
+    const date = new Date();
+    date.setDate(1);
+    date.setMonth(date.getMonth() - offset);
+    return date;
+  }
+
+  function monthShortLabel(key) {
+    const [yearText, monthText] = String(key || '').split('-');
+    const year = Number(yearText);
+    const month = Number(monthText);
+    if (!year || !month) return '—';
+    return new Date(year, month - 1, 1).toLocaleDateString('cs-CZ', { month: 'short' }).replace('.', '');
+  }
+
+  function buildFuelConsumptionSeries(fuelRows, months = 12) {
+    const rows = sortFuelRows(fuelRows).filter((item) => Number(item.odometer) > 0 && Number(item.liters) > 0 && parseDateValue(item.date));
+    const keys = [];
+    const buckets = new Map();
+    for (let index = months - 1; index >= 0; index -= 1) {
+      const date = previousMonthDate(index);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      keys.push(key);
+      buckets.set(key, { km: 0, liters: 0 });
+    }
+    const keySet = new Set(keys);
     for (let index = 1; index < rows.length; index += 1) {
-      const prev = Number(rows[index - 1].odometer || 0);
+      const previous = Number(rows[index - 1].odometer || 0);
       const current = Number(rows[index].odometer || 0);
       const liters = Number(rows[index].liters || 0);
-      if (current > prev && liters > 0) points.push(Number(((liters / (current - prev)) * 100).toFixed(2)));
+      if (!(current > previous && liters > 0)) continue;
+      const key = monthBucketKey(rows[index].date);
+      if (!keySet.has(key)) continue;
+      const bucket = buckets.get(key);
+      bucket.km += current - previous;
+      bucket.liters += liters;
     }
-    if (points.length < 2) return '<div class="inline-note" style="margin-top:12px;">Graf spotřeby se zobrazí po více tankováních s km a litry.</div>';
-    const max = Math.max(...points, 12);
-    const min = Math.min(...points, 0);
-    const width = 320;
-    const height = 130;
-    const coords = points.map((point, index) => {
-      const x = points.length === 1 ? 0 : (index / (points.length - 1)) * width;
-      const y = height - ((point - min) / Math.max(max - min, 1)) * height;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(' ');
+    return keys.map((key) => {
+      const bucket = buckets.get(key) || { km: 0, liters: 0 };
+      const value = bucket.km > 0 ? Number(((bucket.liters / bucket.km) * 100).toFixed(2)) : null;
+      return { key, label: monthShortLabel(key), value, km: bucket.km, liters: bucket.liters };
+    });
+  }
+
+  function renderMiniChart(fuelRows) {
+    const series = buildFuelConsumptionSeries(fuelRows, 12);
+    const values = series.map((item) => item.value).filter((value) => Number.isFinite(value));
+    if (values.length < 2) return '<div class="inline-note" style="margin-top:12px;">Graf spotřeby za poslední rok se zobrazí po více tankováních s km a litry.</div>';
+    const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const yMin = Math.max(0, Math.floor((min - 0.4) * 2) / 2);
+    const yMax = Math.ceil((max + 0.4) * 2) / 2;
+    const chartWidth = 390;
+    const chartHeight = 206;
+    const padLeft = 38;
+    const padRight = 10;
+    const padTop = 18;
+    const padBottom = 42;
+    const innerWidth = chartWidth - padLeft - padRight;
+    const innerHeight = chartHeight - padTop - padBottom;
+    const tickCount = 4;
+    const step = Math.max((yMax - yMin) / (tickCount - 1), 0.5);
+    const ticks = Array.from({ length: tickCount }, (_, index) => Number((yMax - index * step).toFixed(1)));
+    const barGap = 6;
+    const barWidth = Math.max(10, Math.floor((innerWidth - (series.length - 1) * barGap) / series.length));
+    const valueY = (value) => padTop + ((yMax - value) / Math.max(yMax - yMin, 0.5)) * innerHeight;
+    const bars = series.map((item, index) => {
+      const x = padLeft + index * (barWidth + barGap);
+      const baseY = padTop + innerHeight;
+      if (!Number.isFinite(item.value)) {
+        return `<g class="consumption-bar empty"><text x="${x + barWidth / 2}" y="${baseY - 6}" text-anchor="middle">—</text><text x="${x + barWidth / 2}" y="${chartHeight - 18}" text-anchor="middle">${escapeHtml(item.label)}</text></g>`;
+      }
+      const y = valueY(item.value);
+      const height = Math.max(6, baseY - y);
+      return `<g class="consumption-bar"><rect x="${x}" y="${y.toFixed(1)}" width="${barWidth}" height="${height.toFixed(1)}" rx="8"></rect><text x="${x + barWidth / 2}" y="${Math.max(padTop + 10, y - 6).toFixed(1)}" text-anchor="middle">${String(item.value.toFixed(1)).replace('.', ',')}</text><text x="${x + barWidth / 2}" y="${chartHeight - 18}" text-anchor="middle">${escapeHtml(item.label)}</text></g>`;
+    }).join('');
+    const grid = ticks.map((tick) => {
+      const y = valueY(tick);
+      return `<g class="consumption-grid"><line x1="${padLeft}" y1="${y.toFixed(1)}" x2="${chartWidth - padRight}" y2="${y.toFixed(1)}"></line><text x="${padLeft - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${String(tick.toFixed(1)).replace('.', ',')}</text></g>`;
+    }).join('');
     return `
-      <svg class="mini-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Graf spotřeby">
-        <polyline points="${coords}" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.72"></polyline>
-      </svg>
+      <div class="consumption-chart-wrap">
+        <div class="consumption-chart-head"><strong>Spotřeba paliva</strong><span>posledních 12 měsíců</span></div>
+        <svg class="consumption-chart" viewBox="0 0 ${chartWidth} ${chartHeight}" role="img" aria-label="Graf spotřeby paliva za posledních 12 měsíců">
+          ${grid}
+          ${bars}
+        </svg>
+        <div class="consumption-chart-stats">
+          <span><strong>${String(avg.toFixed(2)).replace('.', ',')}</strong><em>průměr l/100</em></span>
+          <span><strong>${String(min.toFixed(2)).replace('.', ',')}</strong><em>minimum</em></span>
+          <span><strong>${String(max.toFixed(2)).replace('.', ',')}</strong><em>maximum</em></span>
+        </div>
+      </div>
     `;
   }
+
 
   function renderContracts() {
     const contracts = [...state.contracts].sort((a, b) => String(a.validTo || '9999').localeCompare(String(b.validTo || '9999')));
@@ -7661,9 +7751,11 @@
   }
 
   function garageSourceHash(prefix, item) {
-    const vehicle = state.vehicles.find((entry) => entry.id === item.vehicleId);
-    const vehicleKey = vehicle?.cloudId || vehicle?.name || item.vehicleId || '';
-    return [prefix, vehicleKey, item.date || '', item.odometer || '', item.liters || '', item.price || '', item.title || '', item.note || ''].map((part) => normalizeKey(part)).join('|').slice(0, 240);
+    const vehicleMap = new Map((state.vehicles || []).map((entry) => [entry.id, entry]));
+    const vehicleKey = garageRecordVehicleKey(item.vehicleId, vehicleMap);
+    const dateKey = garageDateKey(item.date);
+    if (prefix === 'fuel') return ['fuel', vehicleKey, dateKey, garageNumberKey(item.odometer, 0), garageNumberKey(item.liters, 2)].map((part) => normalizeKey(part)).join('|').slice(0, 240);
+    return ['service', vehicleKey, dateKey, garageNumberKey(item.odometer, 0), garageNumberKey(item.price, 0), item.title || item.category || 'servis'].map((part) => normalizeKey(part)).join('|').slice(0, 240);
   }
 
   async function ensureCloudVehicle(vehicle) {
@@ -7952,6 +8044,7 @@
     ];
 
     if (!garageVehicleId && state.vehicles.length) garageVehicleId = state.vehicles[0].id;
+    normalizeGarageRuntimeState({ persist: false });
     state.cloud.lastSyncAt = new Date().toISOString();
     touchState();
     saveState();
@@ -8011,6 +8104,7 @@
 
   async function cloudSyncLocalGarage() {
     if (!state.cloud?.householdId) return showToast('Nejdřív napoj domácnost na cloud');
+    normalizeGarageRuntimeState({ persist: true });
     let vehicles = 0;
     let fuel = 0;
     let services = 0;
@@ -10390,7 +10484,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 116, mode: 'rich-demo-v116', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 118, mode: 'rich-demo-v118', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -10532,7 +10626,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 116, mode: 'polish-shop-holidays-v116', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 118, mode: 'polish-shop-holidays-v118', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -11900,8 +11994,11 @@
       showToast('UI stav vyčištěný');
       return;
     }
-    if (action === 'garage-ui-repair') {
-      normalizeGarageRuntimeState();
+    if (action === 'garage-ui-repair' || action === 'garage-dedupe-now') {
+      const beforeFuel = (state.fuel || []).length;
+      const beforeServices = (state.services || []).length;
+      const beforeVehicles = (state.vehicles || []).length;
+      normalizeGarageRuntimeState({ persist: true });
       garageEditRecord = null;
       garageModal = null;
       moduleTabs = { ...(moduleTabs || {}), garage: 'overview' };
@@ -11909,7 +12006,8 @@
       touchState();
       saveState();
       render();
-      showToast('Stav Garáže opravený');
+      const removed = Math.max(0, beforeFuel - (state.fuel || []).length) + Math.max(0, beforeServices - (state.services || []).length) + Math.max(0, beforeVehicles - (state.vehicles || []).length);
+      showToast(removed ? `Duplicity v Garáži opravené: ${removed} odstraněno ze zobrazení` : 'Garáž zkontrolovaná, duplicity se nenašly');
       return;
     }
     if (action === 'delete-warranty') {
@@ -12921,7 +13019,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 116
+        appBuild: 118
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -13509,7 +13607,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-116-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-118-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -13685,7 +13783,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_116</span>
+          <span class="badge">Domácnost+ v.0.1_118</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
