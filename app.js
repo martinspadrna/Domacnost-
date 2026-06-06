@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_126';
+  const APP_VERSION = 'Domácnost+ v.0.1_127';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -180,8 +180,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 69,
-      appBuild: 126,
-      mode: 'anime-icons-v126',
+      appBuild: 127,
+      mode: 'anime-icons-v127',
       createdAt: '',
       updatedAt: ''
     },
@@ -953,8 +953,8 @@
 
     migrated.meta = {
       schemaVersion: 69,
-      appBuild: 126,
-      mode: 'anime-icons-v126',
+      appBuild: 127,
+      mode: 'anime-icons-v127',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1388,7 +1388,7 @@
             const isActive = module.id === MORE_MODULE.id ? isMoreNavActive() : module.id === activeModule;
             return `
               <button class="nav-item ${isActive ? 'active' : ''}" type="button" data-nav="${module.id}">
-                <span class="nav-icon">${module.icon}</span>
+                ${renderModuleIllustration(module.id, { size: 'nav', slotClass: 'nav-icon', label: module.label })}
                 <span>${escapeHtml(module.label)}</span>
               </button>
             `;
@@ -1493,7 +1493,7 @@
       <div class="section-tabs compact-tabs" role="tablist" aria-label="Záložky modulu">
         ${tabs.map((tab) => `
           <button class="section-tab ${active === tab.id ? 'active' : ''}" type="button" role="tab" aria-selected="${active === tab.id ? 'true' : 'false'}" data-action="set-section-tab" data-area="${escapeHtml(area)}" data-tab="${escapeHtml(tab.id)}">
-            <span aria-hidden="true">${escapeHtml(tab.icon || '')}</span><strong>${escapeHtml(tab.label)}</strong>${tab.count !== undefined ? `<em>${escapeHtml(String(tab.count))}</em>` : ''}
+            ${tab.iconHtml || `<span aria-hidden="true">${escapeHtml(tab.icon || '')}</span>`}<strong>${escapeHtml(tab.label)}</strong>${tab.count !== undefined ? `<em>${escapeHtml(String(tab.count))}</em>` : ''}
           </button>
         `).join('')}
       </div>
@@ -2081,7 +2081,7 @@
     return `
       <label class="check-card">
         <input type="checkbox" name="modules" value="${escapeHtml(module.id)}" ${checked ? 'checked' : ''}>
-        <span class="check-icon">${module.icon}</span>
+        ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'check-icon module-toggle-icon-slot', label: module.label })}
         <span><strong>${escapeHtml(module.label)}</strong><em>${escapeHtml(getModuleSubtitle(module.id))}</em></span>
       </label>
     `;
@@ -2143,7 +2143,7 @@
     const module = MODULES.find((item) => item.id === moduleId) || { label: moduleId || 'Modul', icon: '⚠️' };
     return `
       <section class="card desktop-span-2 module-error-card">
-        <div class="card-header"><div><h2>${escapeHtml(module.icon)} ${escapeHtml(module.label)}</h2><p>Modul se nenačetl čistě, ale aplikace zůstala běžet.</p></div><span class="badge warn">chyba renderu</span></div>
+        <div class="card-header"><div><h2>${escapeHtml(module.label)}</h2><p>Modul se nenačetl čistě, ale aplikace zůstala běžet.</p></div><span class="badge warn">chyba renderu</span></div>
         <div class="inline-note"><strong>Technicky:</strong> ${escapeHtml(error?.message || String(error || 'neznámá chyba'))}</div>
         <div class="form-actions"><button class="ghost-btn" type="button" data-nav="home">Zpět domů</button><button class="ghost-btn" type="button" data-action="soft-ui-reset">Vyčistit UI stav</button></div>
       </section>
@@ -2650,6 +2650,43 @@
       more: 'settings',
       homecare: 'home'
     }[String(id || '')] || 'generic';
+  }
+
+  function getModuleIllustrationId(id) {
+    return {
+      weather: 'weather',
+      calendar: 'calendar',
+      packages: 'packages',
+      shopping: 'shopping',
+      homecare: 'homecare',
+      garage: 'garage',
+      contracts: 'contracts',
+      cameras: 'cameras',
+      finance: 'finance',
+      settings: 'settings',
+      coupons: 'coupons',
+      hdo: 'hdo',
+      waste: 'waste',
+      tasks: 'tasks',
+      notes: 'notes',
+      devices: 'devices',
+      warranties: 'warranties',
+      polishHolidays: 'polishHolidays',
+      more: 'more',
+      home: 'home'
+    }[String(id || '')] || 'settings';
+  }
+
+  function getModuleIllustrationSrc(id) {
+    return `./assets/module-icons/${getModuleIllustrationId(id)}.png`;
+  }
+
+  function renderModuleIllustration(id, options = {}) {
+    const size = options.size || 'md';
+    const slotClass = options.slotClass ? ` ${options.slotClass}` : '';
+    const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
+    const label = options.label || '';
+    return `<span class="module-illustration-slot module-illustration-slot-${escapeHtml(String(size))}${slotClass}" aria-hidden="true"><img class="module-illustration module-illustration-${escapeHtml(String(size))}${extraClass}" src="${escapeHtml(getModuleIllustrationSrc(id))}" alt="" loading="lazy" decoding="async"></span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
   }
 
   function getGlassIconSvg(kind) {
@@ -3417,6 +3454,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_127', note: 'Hotovo: celé modulové ikonky jsou předělané podle schváleného anime návrhu včetně spodní lišty, Home karet, Více a nastavení modulů. Počasí a čas na Home zůstaly vycentrované bez přetékání.' },
       { title: 'Domácnost+ v.0.1_126', note: 'Hotovo: anime ikonky bez pozadí pro Home/Moduly, HDO jako žárovka s bleskem a vycentrované panely času a počasí bez přetékání textu.' },
       { title: 'Domácnost+ v.0.1_125', note: 'Hotovo: oprava Garáže po chybě parseDateValue a nové kreslené barevné ikonky v Home/Moduly panelech.' },
       { title: 'Domácnost+ v.0.1_124', note: 'Hotovo: Home panely mají větší barevné ikonky bez bílého přebití, počasí vedle času ukazuje aktuální teplotu a stav počasí a vybrané Home panely živě střídají konkrétní položky.' },
@@ -3511,7 +3549,7 @@
     const stats = getModuleStats(module.id);
     return `
       <button class="item module-hub-item module-status-card" type="button" data-nav="${module.id}">
-        ${renderGlassIcon(getHomeIconKind(module.id), { size: 'home-sm', extraClass: 'module-status-icon modern-module-icon dashboard-module-icon' })}
+        ${renderModuleIllustration(module.id, { size: 'card', slotClass: 'module-status-icon module-card-illustration-slot dashboard-module-icon-slot', extraClass: 'module-card-illustration dashboard-module-icon', label: module.label })}
         <div class="item-top"><div class="item-title">${escapeHtml(module.label)}</div><span class="badge">${stats.count} ${escapeHtml(stats.label)}</span></div>
         <div class="item-meta">${escapeHtml(stats.note)}</div>
       </button>
@@ -5954,7 +5992,7 @@
     const stats = getModuleStats(module.id);
     return `
       <button class="item module-hub-item module-status-card more-module-card" type="button" data-nav="${module.id}">
-        ${renderGlassIcon(getHomeIconKind(module.id), { size: 'home-sm', extraClass: 'module-status-icon modern-module-icon' })}
+        ${renderModuleIllustration(module.id, { size: 'card', slotClass: 'module-status-icon module-card-illustration-slot', extraClass: 'module-card-illustration', label: module.label })}
         <div class="more-module-copy">
           <strong>${escapeHtml(module.label)}</strong>
           <span>${stats.count} ${escapeHtml(stats.label)}</span>
@@ -5971,7 +6009,7 @@
         <section class="card desktop-span-2 more-settings-priority">
           <div class="card-header"><div><h2>Nastavení aplikace</h2><p>Domácnost, profily, zapnuté moduly, Home panel, cloud, PWA a export/import.</p></div></div>
           <button class="item module-hub-item more-settings-card" type="button" data-nav="settings">
-            ${renderGlassIcon('settings', { size: 'home-lg', extraClass: 'module-status-icon modern-module-icon settings-module-icon' })}
+            ${renderModuleIllustration('settings', { size: 'card', slotClass: 'module-status-icon module-card-illustration-slot settings-module-icon-slot', extraClass: 'module-card-illustration settings-module-icon', label: 'Nastavení aplikace' })}
             <div class="more-module-copy">
               <strong>Nastavení aplikace</strong>
               <span>Správa domácnosti, modulů a vzhledu</span>
@@ -5999,9 +6037,9 @@
     const activeSettingsTab = settingsTabIds.includes(getModuleTab('settings', 'household')) ? getModuleTab('settings', 'household') : 'household';
     return `
       ${renderSectionTabs('settings', [
-        { id: 'household', label: 'Domácnost', icon: '🏠', count: state.profiles.length },
-        { id: 'modules', label: 'Moduly', icon: '🧩', count: normalizeModuleList(state.enabledModules).length },
-        { id: 'dashboard', label: 'Home', icon: '🧱', count: normalizeHomeHeroIds(state.settings?.homeHeroItems).length },
+        { id: 'household', label: 'Domácnost', iconHtml: renderModuleIllustration('home', { size: 'tab', slotClass: 'section-tab-icon-slot', label: 'Domácnost' }), count: state.profiles.length },
+        { id: 'modules', label: 'Moduly', iconHtml: renderModuleIllustration('more', { size: 'tab', slotClass: 'section-tab-icon-slot', label: 'Moduly' }), count: normalizeModuleList(state.enabledModules).length },
+        { id: 'dashboard', label: 'Home', iconHtml: renderModuleIllustration('weather', { size: 'tab', slotClass: 'section-tab-icon-slot', label: 'Home' }), count: normalizeHomeHeroIds(state.settings?.homeHeroItems).length },
         { id: 'cloud', label: 'Cloud / PWA', icon: '☁️', count: state.cloud?.userId ? 1 : 0 },
         { id: 'data', label: 'Data', icon: '🛟' }
       ], 'household')}
@@ -6051,7 +6089,7 @@
             <div class="module-toggle-grid compact-module-toggle-grid">
               ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => `
                 <button class="module-toggle ${enabled.has(module.id) ? 'active' : ''}" type="button" data-action="toggle-module" data-id="${module.id}">
-                  <span>${module.icon}</span>
+                  ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'module-toggle-icon-slot', label: module.label })}
                   <strong>${escapeHtml(module.label)}</strong>
                   <em>${enabled.has(module.id) ? 'zapnuto' : 'vypnuto'}</em>
                 </button>
@@ -6123,7 +6161,7 @@
             const active = normalizeHomeHeroIds(state.settings?.homeHeroItems).includes(item.id);
             return `
               <button class="switch-row dashboard-widget-switch ${active ? 'active' : ''}" type="button" role="switch" aria-checked="${active ? 'true' : 'false'}" data-action="toggle-home-hero-item" data-id="${escapeHtml(item.id)}">
-                <span class="switch-row-icon">${escapeHtml(item.icon)}</span>
+                ${renderModuleIllustration(item.id, { size: 'picker', slotClass: 'switch-row-icon', label: item.label })}
                 <span class="switch-row-copy"><strong>${escapeHtml(item.label)}</strong><em>${escapeHtml(item.text(previewCtx))}</em></span>
                 <span class="ios-switch" aria-hidden="true"><span></span></span>
               </button>
@@ -6193,7 +6231,7 @@
           const isSelected = selected.has(module.id);
           return `
             <button class="switch-row nav-picker-switch ${isSelected ? 'active' : ''}" type="button" role="switch" aria-checked="${isSelected ? 'true' : 'false'}" data-action="toggle-bottom-nav" data-id="${module.id}">
-              <span class="switch-row-icon">${module.icon}</span>
+              ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'switch-row-icon', label: module.label })}
               <span class="switch-row-copy">
                 <strong>${escapeHtml(module.label)}</strong>
                 <em>${isSelected ? 'zobrazuje se dole' : 'nezobrazuje se dole'}</em>
@@ -10773,7 +10811,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 126, mode: 'rich-demo-v126', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 127, mode: 'rich-demo-v127', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -10915,7 +10953,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 126, mode: 'anime-icons-v126', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 127, mode: 'anime-icons-v127', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -13309,7 +13347,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 126
+        appBuild: 127
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -13897,7 +13935,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-126-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-127-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -14084,7 +14122,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_126</span>
+          <span class="badge">Domácnost+ v.0.1_127</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'domacnost-plus-v0-1-126';
+const CACHE_NAME = 'domacnost-plus-v0-1-127';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -22,7 +22,27 @@ const APP_ASSETS = [
   './assets/icons/domacnost-plus-icon-512.png',
   './assets/icons/domacnost-plus-icon-1024.png',
   './assets/icons/domacnost-plus-maskable-192.png',
-  './assets/icons/domacnost-plus-maskable-512.png'
+  './assets/icons/domacnost-plus-maskable-512.png',
+  './assets/module-icons/calendar.png',
+  './assets/module-icons/packages.png',
+  './assets/module-icons/shopping.png',
+  './assets/module-icons/coupons.png',
+  './assets/module-icons/hdo.png',
+  './assets/module-icons/waste.png',
+  './assets/module-icons/tasks.png',
+  './assets/module-icons/notes.png',
+  './assets/module-icons/devices.png',
+  './assets/module-icons/warranties.png',
+  './assets/module-icons/polishHolidays.png',
+  './assets/module-icons/garage.png',
+  './assets/module-icons/contracts.png',
+  './assets/module-icons/finance.png',
+  './assets/module-icons/cameras.png',
+  './assets/module-icons/settings.png',
+  './assets/module-icons/homecare.png',
+  './assets/module-icons/home.png',
+  './assets/module-icons/weather.png',
+  './assets/module-icons/more.png'
 ];
 
 const CORE_FALLBACKS = {

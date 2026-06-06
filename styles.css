@@ -8878,3 +8878,117 @@ svg.anime-module-svg .anime-icon-line {
     font-size: .66rem !important;
   }
 }
+
+/* Domácnost+ v.0.1_127 – schválené anime ikonky z návrhu pro moduly, Home a spodní lištu */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.module-illustration-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 0;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible;
+}
+
+.module-illustration {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(28, 57, 110, 0.12));
+}
+
+.module-illustration-slot-nav,
+.nav-item .nav-icon.module-illustration-slot {
+  width: 30px;
+  height: 30px;
+}
+
+.module-illustration-slot-card,
+.module-card-illustration-slot,
+.module-status-icon.module-illustration-slot {
+  width: 52px;
+  height: 52px;
+}
+
+.module-illustration-slot-picker,
+.module-toggle-icon-slot,
+.switch-row-icon.module-illustration-slot,
+.check-icon.module-illustration-slot {
+  width: 42px;
+  height: 42px;
+}
+
+.module-illustration-slot-tab,
+.section-tab-icon-slot {
+  width: 24px;
+  height: 24px;
+}
+
+.nav-item .nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 2px;
+  font-size: 0;
+  line-height: 0;
+}
+
+.module-toggle span.module-toggle-icon-slot,
+.switch-row .switch-row-icon.module-illustration-slot,
+.check-card .check-icon.module-illustration-slot {
+  background: transparent !important;
+}
+
+.section-tab > .section-tab-icon-slot {
+  margin-right: 2px;
+}
+
+.section-tab > .section-tab-icon-slot + strong {
+  margin-left: 2px;
+}
+
+.more-module-card .module-card-illustration-slot,
+.more-settings-card .module-card-illustration-slot,
+.module-status-card .module-card-illustration-slot {
+  align-self: center;
+}
+
+@media (max-width: 640px) {
+  .module-illustration-slot-card,
+  .module-card-illustration-slot,
+  .module-status-icon.module-illustration-slot {
+    width: 48px;
+    height: 48px;
+  }
+
+  .module-illustration-slot-picker,
+  .module-toggle-icon-slot,
+  .switch-row-icon.module-illustration-slot,
+  .check-icon.module-illustration-slot {
+    width: 40px;
+    height: 40px;
+  }
+
+  .nav-item .nav-icon.module-illustration-slot,
+  .module-illustration-slot-nav {
+    width: 28px;
+    height: 28px;
+  }
+}
