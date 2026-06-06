@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_133';
+  const APP_VERSION = 'Domácnost+ v.0.1_135';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -109,6 +109,7 @@
     ['canal', 'Canal+', 189, 4],
     ['o2-tv', 'O2 TV', 399, 4],
     ['telly', 'Telly', 250, 4],
+    ['t-mobile', 'T-Mobile', 0, 6],
     ['other', 'Vlastní služba', 0, 0]
   ];
 
@@ -198,8 +199,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 69,
-      appBuild: 133,
-      mode: 'anime-icons-v133',
+      appBuild: 135,
+      mode: 'anime-icons-v135',
       createdAt: '',
       updatedAt: ''
     },
@@ -974,8 +975,8 @@
 
     migrated.meta = {
       schemaVersion: 69,
-      appBuild: 133,
-      mode: 'anime-icons-v133',
+      appBuild: 135,
+      mode: 'anime-icons-v135',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -3573,6 +3574,8 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_135', note: 'Hotovo: v Předplatném mají služby skutečnější logo-like značky místo pouhých iniciál a přidaná je i služba T-Mobile.' },
+      { title: 'Domácnost+ v.0.1_134', note: 'Hotovo: v Předplatném jde kliknout na člověka a přímo v jeho detailu mu přiřadit službu s částkou. Volná místa u služeb se automaticky odečítají a po odebrání sdílení zase uvolní.' },
       { title: 'Domácnost+ v.0.1_133', note: 'Hotovo: Předplatné má logo-like badge ikonky, filtr Vše/Nezaplacené/Dlužníci a Home panel ukazuje rychlý souhrn dluhů.' },
       { title: 'Domácnost+ v.0.1_132', note: 'Hotovo: modul Předplatné má barevné ikonky služeb v kartách, přehledu plateb i detailech, aby byly služby rychle poznat na mobilu.' },
       { title: 'Domácnost+ v.0.1_131', note: 'Hotovo: Předplatné má Oneplay místo Voyo, limit míst/členů, volná místa v přehledech a aplikace se při novém spuštění otevírá na Home.' },
@@ -6241,21 +6244,47 @@
     const key = normalizeSubscriptionServiceKey(rawKey || 'other');
     const name = typeof serviceOrKey === 'object' && serviceOrKey ? serviceOrKey.name : subscriptionServiceName(key, customName);
     const meta = {
-      netflix: { short: 'N', className: 'brand-netflix', mark: 'slash' },
-      disney: { short: 'D+', className: 'brand-disney', mark: 'arc' },
-      hbo: { short: 'MAX', className: 'brand-hbo', mark: 'orb' },
-      skyshowtime: { short: 'S+', className: 'brand-skyshowtime', mark: 'split' },
-      prime: { short: 'prime', className: 'brand-prime', mark: 'smile' },
-      'apple-tv': { short: 'tv+', className: 'brand-apple-tv', mark: 'dot' },
-      spotify: { short: 'S', className: 'brand-spotify', mark: 'waves' },
-      youtube: { short: 'YT', className: 'brand-youtube', mark: 'play' },
-      oneplay: { short: '1P', className: 'brand-oneplay', mark: 'play' },
-      canal: { short: 'C+', className: 'brand-canal', mark: 'bar' },
-      'o2-tv': { short: 'O₂', className: 'brand-o2-tv', mark: 'bubble' },
-      telly: { short: 'T', className: 'brand-telly', mark: 'spark' },
-      other: { short: '★', className: 'brand-other', mark: 'star' }
-    }[key] || { short: '★', className: 'brand-other', mark: 'star' };
+      netflix: { className: 'brand-netflix' },
+      disney: { className: 'brand-disney' },
+      hbo: { className: 'brand-hbo' },
+      skyshowtime: { className: 'brand-skyshowtime' },
+      prime: { className: 'brand-prime' },
+      'apple-tv': { className: 'brand-apple-tv' },
+      spotify: { className: 'brand-spotify' },
+      youtube: { className: 'brand-youtube' },
+      oneplay: { className: 'brand-oneplay' },
+      canal: { className: 'brand-canal' },
+      'o2-tv': { className: 'brand-o2-tv' },
+      telly: { className: 'brand-telly' },
+      't-mobile': { className: 'brand-t-mobile' },
+      other: { className: 'brand-other' }
+    }[key] || { className: 'brand-other' };
     return { key, name, ...meta };
+  }
+
+  function renderSubscriptionBrandSvg(meta, size = 'md') {
+    const variant = String(size || 'md') === 'xs' ? 'xs' : String(size || 'md') === 'sm' ? 'sm' : 'md';
+    const wordSize = variant === 'xs' ? 5.2 : variant === 'sm' ? 6.2 : 7.2;
+    const smallSize = variant === 'xs' ? 5.1 : variant === 'sm' ? 5.8 : 6.6;
+    const mediumSize = variant === 'xs' ? 6.1 : variant === 'sm' ? 7.0 : 8.0;
+    const key = meta?.key || 'other';
+    const logos = {
+      netflix: `<svg viewBox="0 0 44 24" role="img" aria-label="Netflix"><path d="M12 4v16h4.3V12l5.4 8H26V4h-4.3v8L16.3 4z" fill="#fff"/><path d="M14.8 4h2.8l8.3 16h-2.8z" fill="rgba(255,255,255,.18)"/></svg>`,
+      disney: `<svg viewBox="0 0 44 24" role="img" aria-label="Disney Plus"><path d="M10 9.5c0-2.6 2.1-4.2 4.6-4.2 1.9 0 3.5.7 4.8 1.8" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/><text x="8" y="16.6" font-size="${wordSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif">Disney+</text></svg>`,
+      hbo: `<svg viewBox="0 0 44 24" role="img" aria-label="Max"><text x="7" y="15.5" font-size="${mediumSize}" font-weight="800" fill="#fff" font-family="Arial, sans-serif">max</text></svg>`,
+      skyshowtime: `<svg viewBox="0 0 44 24" role="img" aria-label="SkyShowtime"><path d="M8 7h10" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M26 17H16" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M12 6c5 1 8 4 9 9" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M32 8 34 12l4 .4-3 2.5 1 4-3-2-3 2 1-4-3-2.5 4-.4z" fill="#fff"/></svg>`,
+      prime: `<svg viewBox="0 0 44 24" role="img" aria-label="Prime Video"><text x="7.5" y="13.3" font-size="${smallSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif">prime</text><path d="M12 16.2c5 2.2 10.5 2 17-.3" fill="none" stroke="#9be7ff" stroke-width="1.6" stroke-linecap="round"/><path d="m28.5 14.9 1.8 1.4-2.1.9" fill="#9be7ff"/></svg>`,
+      'apple-tv': `<svg viewBox="0 0 44 24" role="img" aria-label="Apple TV Plus"><path d="M13.5 7.3c.7-.8 1.1-1.7 1-2.7-.9.1-1.9.7-2.5 1.5-.5.6-1 1.6-.9 2.5.9.1 1.8-.4 2.4-1.3Zm1.5 5.7c0-2.1 1.7-3.1 1.8-3.2-1-1.5-2.6-1.7-3.1-1.7-1.3-.1-2.6.8-3.2.8-.6 0-1.6-.8-2.6-.8-1.4 0-2.6.8-3.3 2-.7 1.2-.2 3 1.2 5 .5.7 1.2 1.6 2 1.6.8 0 1.1-.5 2.1-.5 1 0 1.3.5 2.1.5.9 0 1.4-.8 1.9-1.5.6-.8.9-1.6 1-1.7-.1 0-1.9-.7-1.9-2.5Z" fill="#fff" transform="translate(7,2) scale(.58)"/><text x="18" y="15.4" font-size="${smallSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif">tv+</text></svg>`,
+      spotify: `<svg viewBox="0 0 44 24" role="img" aria-label="Spotify"><circle cx="12" cy="12" r="7" fill="#fff" opacity=".14"/><path d="M8.5 10.2c4.1-1 8.2-.4 11.5 1" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><path d="M9.4 13c3.3-.7 6.4-.2 9 1" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><path d="M10.5 15.6c2.2-.4 4.2-.1 5.9.8" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+      youtube: `<svg viewBox="0 0 44 24" role="img" aria-label="YouTube Premium"><rect x="8" y="6.8" width="13" height="10.4" rx="3.3" fill="#fff"/><path d="m14 9.4 4.4 2.6-4.4 2.6z" fill="#d00"/><text x="23" y="15.4" font-size="${smallSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif">Premium</text></svg>`,
+      oneplay: `<svg viewBox="0 0 44 24" role="img" aria-label="Oneplay"><path d="m10 7 8 5-8 5z" fill="#fff"/><text x="19.5" y="15.3" font-size="${smallSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif">oneplay</text></svg>`,
+      canal: `<svg viewBox="0 0 44 24" role="img" aria-label="Canal Plus"><rect x="8" y="7" width="18" height="10" rx="2.2" fill="#fff" opacity=".17"/><text x="10.5" y="14.8" font-size="${smallSize}" font-weight="800" fill="#fff" font-family="Arial, sans-serif">CANAL+</text></svg>`,
+      'o2-tv': `<svg viewBox="0 0 44 24" role="img" aria-label="O2 TV"><text x="8" y="15.3" font-size="${mediumSize}" font-weight="800" fill="#fff" font-family="Arial, sans-serif">O2</text><text x="22" y="15.3" font-size="${smallSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif">TV</text></svg>`,
+      telly: `<svg viewBox="0 0 44 24" role="img" aria-label="Telly"><text x="10" y="15.3" font-size="${mediumSize}" font-weight="800" fill="#fff" font-family="Arial, sans-serif">telly</text></svg>`,
+      't-mobile': `<svg viewBox="0 0 44 24" role="img" aria-label="T-Mobile"><text x="11" y="14.6" font-size="${mediumSize}" font-weight="800" fill="#fff" font-family="Arial, sans-serif">T</text><circle cx="23" cy="11.5" r="1.6" fill="#fff"/><circle cx="28.5" cy="11.5" r="1.6" fill="#fff"/></svg>`,
+      other: `<svg viewBox="0 0 44 24" role="img" aria-label="Vlastní služba"><text x="11" y="15.2" font-size="${smallSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif">služba</text></svg>`
+    };
+    return logos[key] || logos.other;
   }
 
   function renderSubscriptionServiceIcon(serviceOrKey = '', options = {}) {
@@ -6263,7 +6292,7 @@
     const size = options.size || 'md';
     const showName = options.showName !== false;
     const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
-    return `<span class="subscription-service-brand subscription-service-brand-${escapeHtml(String(size))} ${escapeHtml(meta.className)} subscription-brand-mark-${escapeHtml(meta.mark)}${extraClass}" aria-hidden="true"><i></i><b>${escapeHtml(meta.short)}</b></span>${showName ? `<span class="subscription-service-brand-name">${escapeHtml(meta.name)}</span>` : ''}`;
+    return `<span class="subscription-service-brand subscription-service-brand-${escapeHtml(String(size))} ${escapeHtml(meta.className)}${extraClass}" aria-hidden="true">${renderSubscriptionBrandSvg(meta, size)}</span>${showName ? `<span class="subscription-service-brand-name">${escapeHtml(meta.name)}</span>` : ''}`;
   }
 
   function subscriptionPaymentFilter() {
@@ -6310,6 +6339,38 @@
   function subscriptionServiceOptions(includeEmpty = false) {
     const rows = getSubscriptionServices().map((item) => [item.id, `${item.name} · ${formatCurrency(item.price)} · ${subscriptionCapacityLabel(item)}`]);
     return includeEmpty ? [['', 'Vyber službu'], ...rows] : rows;
+  }
+
+  function subscriptionServiceOptionsForPerson(personId, includeEmpty = false) {
+    const rows = getSubscriptionServices()
+      .filter((service) => service.enabled !== false)
+      .map((service) => {
+        const share = (service.shares || []).find((entry) => entry.personId === personId);
+        const capacity = subscriptionCapacity(service);
+        if (!share && capacity.isFull) return null;
+        const status = share
+          ? `už přiřazeno · ${formatCurrency(share.amount)}`
+          : capacity.maxMembers
+            ? `volno ${capacity.free}/${capacity.maxMembers}`
+            : 'bez limitu';
+        return [service.id, `${service.name} · ${formatCurrency(service.price)} · ${status}`];
+      })
+      .filter(Boolean);
+    return includeEmpty ? [['', rows.length ? 'Vyber službu' : 'Žádná služba nemá volné místo'], ...rows] : rows;
+  }
+
+  function subscriptionShareAmountForPerson(personId, subscriptionId) {
+    const service = subscriptionById(subscriptionId);
+    const share = service?.shares?.find((entry) => entry.personId === personId);
+    return share ? decimalValue(share.amount) : 0;
+  }
+
+  function subscriptionPersonAssignedServices(personId) {
+    return getSubscriptionServices().filter((service) => (service.shares || []).some((share) => share.personId === personId));
+  }
+
+  function subscriptionPersonAvailableServiceCount(personId) {
+    return subscriptionServiceOptionsForPerson(personId, false).length;
   }
 
   function subscriptionPersonOptions(includeEmpty = false) {
@@ -6451,7 +6512,7 @@
         </section>
 
         <section class="card desktop-span-2 subscription-panel panel-people">
-          <div class="card-header"><div><h2>Lidé</h2><p>Seznam lidí, co s nimi sdílíš služby, a jejich souhrn.</p></div><span class="badge">${people.length}</span></div>
+          <div class="card-header"><div><h2>Lidé</h2><p>Klikni na člověka a přiřaď mu službu včetně částky. Volná místa u služeb se přepočítají sama.</p></div><span class="badge">${people.length}</span></div>
           <details class="action-details compact-edit-details subscription-form-drawer" open>
             <summary><span>Přidat člověka</span><em>kamarád, rodina, kolega</em></summary>
             <form data-form="add-subscription-person" class="compact-form">
@@ -6499,16 +6560,40 @@
   }
 
   function renderSubscriptionPersonDetail(row) {
-    const services = getSubscriptionServices().filter((service) => (service.shares || []).some((share) => share.personId === row.person.id));
+    const services = subscriptionPersonAssignedServices(row.person.id);
+    const availableCount = subscriptionPersonAvailableServiceCount(row.person.id);
+    const canAssign = availableCount > 0;
     return `
-      <div class="item compact-item">
-        <div class="item-top"><div class="item-title">${escapeHtml(row.person.name)}</div><span class="badge ${row.debt ? 'warn' : 'good'}">${formatCurrency(row.expected)} / měsíc</span></div>
-        <div class="item-meta">${services.length ? services.map((service) => {
-          const share = service.shares.find((entry) => entry.personId === row.person.id);
-          return `<span class="subscription-inline-service">${renderSubscriptionServiceIcon(service, { size: 'xs' })}</span>: ${formatCurrency(share.amount)}`;
-        }).join(' · ') : 'Zatím s ním nesdílíš žádnou službu.'}${row.person.note ? ` · ${escapeHtml(row.person.note)}` : ''}</div>
-        <div class="item-actions"><button class="danger-btn" type="button" data-action="delete-subscription-person" data-id="${escapeHtml(row.person.id)}">Smazat člověka</button></div>
-      </div>`;
+      <details class="item compact-item subscription-person-detail-card ${row.debt ? 'subscription-debt' : ''}">
+        <summary class="subscription-person-summary-toggle">
+          <span class="subscription-person-summary-main">
+            <strong>${escapeHtml(row.person.name)}</strong>
+            <em>${services.length ? `${services.length} služeb · ${formatCurrency(row.expected)} / měsíc` : 'bez přiřazené služby'}</em>
+          </span>
+          <span class="badge ${row.debt ? 'warn' : row.expected ? 'good' : ''}">${row.debt ? `dluží ${formatCurrency(row.debt)}` : row.expected ? 'OK' : 'prázdné'}</span>
+        </summary>
+        <div class="subscription-person-detail-body">
+          <div class="item-meta">${services.length ? services.map((service) => {
+            const share = service.shares.find((entry) => entry.personId === row.person.id);
+            return `<span class="subscription-person-service-chip"><span class="subscription-inline-service">${renderSubscriptionServiceIcon(service, { size: 'xs' })}</span><strong>${escapeHtml(service.name)}</strong><em>${formatCurrency(share.amount)} / měsíc</em><button type="button" data-action="delete-subscription-share" data-subscription-id="${escapeHtml(service.id)}" data-person-id="${escapeHtml(row.person.id)}" aria-label="Odebrat službu ${escapeHtml(service.name)}">×</button></span>`;
+          }).join('') : 'Zatím s ním nesdílíš žádnou službu.'}${row.person.note ? ` <span class="subscription-person-note">${escapeHtml(row.person.note)}</span>` : ''}</div>
+          <div class="subscription-person-assign-box">
+            <h3>Přiřadit službu</h3>
+            <p>Vyber jednu ze svých služeb a částku, kterou ti má ${escapeHtml(row.person.name)} měsíčně platit. Obsazenost služby se tím automaticky přepočítá.</p>
+            ${canAssign ? `
+              <form data-form="add-subscription-share" class="compact-form subscription-person-assign-form">
+                <input type="hidden" name="personId" value="${escapeHtml(row.person.id)}">
+                <div class="form-grid two">
+                  ${selectField('Služba', 'subscriptionId', subscriptionServiceOptionsForPerson(row.person.id, true), '')}
+                  ${field('Částka / měsíc', 'amount', 'number', 'např. 80', true)}
+                </div>
+                <div class="form-actions"><button class="primary-btn" type="submit">Uložit službu člověku</button></div>
+              </form>
+            ` : '<div class="inline-note compact-note">Nemáš žádnou další službu s volným místem. Uvolni místo odebráním sdílení, nebo zvyš limit míst u služby.</div>'}
+          </div>
+          <div class="item-actions"><button class="danger-btn" type="button" data-action="delete-subscription-person" data-id="${escapeHtml(row.person.id)}">Smazat člověka</button></div>
+        </div>
+      </details>`;
   }
 
   function renderSubscriptionServiceItem(service) {
@@ -11505,7 +11590,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 133, mode: 'rich-demo-v133', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 135, mode: 'rich-demo-v135', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -11647,7 +11732,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 133, mode: 'anime-icons-v133', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 135, mode: 'anime-icons-v135', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -14081,7 +14166,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 133
+        appBuild: 135
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -14669,7 +14754,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-133-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-135-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -14856,7 +14941,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_133</span>
+          <span class="badge">Domácnost+ v.0.1_135</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

@@ -9321,6 +9321,7 @@ svg.anime-module-svg .anime-icon-line {
 .brand-canal { background: linear-gradient(135deg, #111827, #374151); }
 .brand-o2-tv { background: linear-gradient(135deg, #1d4ed8, #38bdf8); }
 .brand-telly { background: linear-gradient(135deg, #f97316, #ef4444); }
+.brand-t-mobile { background: linear-gradient(135deg, #e20074, #ff4fb0); }
 .brand-other { background: linear-gradient(135deg, #64748b, #94a3b8); }
 
 .subscription-payment-head strong.subscription-service-title,
@@ -9520,4 +9521,203 @@ svg.anime-module-svg .anime-icon-line {
 [data-theme="dark"] .station-summary-item-subscriptions .station-summary-extra b {
   color: #fecaca;
   background: rgba(239, 68, 68, 0.16);
+}
+
+/* Domácnost+ v.0.1_134 – detail člověka v Předplatném a přiřazení služeb přímo z karty */
+.subscription-person-detail-card {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.subscription-person-detail-card > summary {
+  list-style: none;
+}
+
+.subscription-person-detail-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.subscription-person-summary-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  cursor: pointer;
+}
+
+.subscription-person-summary-main {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.subscription-person-summary-main strong {
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.subscription-person-summary-main em {
+  color: var(--muted);
+  font-style: normal;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.subscription-person-detail-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 14px 14px;
+}
+
+.subscription-person-service-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  margin: 3px 6px 3px 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255,255,255,.36);
+  vertical-align: middle;
+}
+
+[data-theme="dark"] .subscription-person-service-chip {
+  background: rgba(255,255,255,.07);
+}
+
+.subscription-person-service-chip strong {
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.subscription-person-service-chip em {
+  color: var(--muted);
+  font-style: normal;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.subscription-person-service-chip button {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  font-weight: 900;
+}
+
+.subscription-person-note {
+  display: inline-block;
+  margin-left: 4px;
+  color: var(--muted);
+}
+
+.subscription-person-assign-box {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255,255,255,.28);
+}
+
+[data-theme="dark"] .subscription-person-assign-box {
+  background: rgba(255,255,255,.055);
+}
+
+.subscription-person-assign-box h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+  letter-spacing: -0.03em;
+}
+
+.subscription-person-assign-box p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.subscription-person-assign-form .form-actions {
+  margin-top: 2px;
+}
+
+@media (max-width: 640px) {
+  .subscription-person-summary-toggle {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .subscription-person-summary-toggle .badge {
+    justify-self: start;
+  }
+  .subscription-person-service-chip {
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 16px;
+  }
+  .subscription-person-service-chip button {
+    margin-left: auto;
+  }
+}
+
+
+/* Domácnost+ v.0.1_135 – skutečnější loga služeb v Předplatném */
+.subscription-service-brand svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.subscription-service-brand-md {
+  min-width: 54px;
+  height: 42px;
+  padding: 0 8px;
+}
+
+.subscription-service-brand-sm {
+  min-width: 46px;
+  height: 34px;
+  padding: 0 7px;
+}
+
+.subscription-service-brand-xs {
+  min-width: 32px;
+  height: 24px;
+  padding: 0 5px;
+  border-radius: 10px;
+}
+
+.subscription-service-brand-name {
+  font-weight: 800;
+}
+
+.subscription-payment-head .subscription-service-brand-name,
+.subscription-person-service-chip .subscription-service-brand-name,
+.subscription-inline-service .subscription-service-brand-name {
+  display: none;
+}
+
+.subscription-service-title .subscription-service-brand-name,
+.subscription-service-title-sm .subscription-service-brand-name {
+  display: inline-block;
+}
+
+@media (max-width: 640px) {
+  .subscription-service-brand-md {
+    min-width: 50px;
+    height: 38px;
+    padding: 0 7px;
+  }
+
+  .subscription-service-brand-sm {
+    min-width: 42px;
+    height: 32px;
+    padding: 0 6px;
+  }
 }
