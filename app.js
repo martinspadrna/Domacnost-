@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_135';
+  const APP_VERSION = 'Domácnost+ v.0.1_137';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -199,8 +199,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 69,
-      appBuild: 135,
-      mode: 'anime-icons-v135',
+      appBuild: 137,
+      mode: 'anime-icons-v137',
       createdAt: '',
       updatedAt: ''
     },
@@ -253,6 +253,7 @@
     subscriptionPeople: [],
     subscriptionPayments: [],
     financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: '' },
+    subscriptionsCloud: { loadedAt: '' },
     householdExtrasCloud: { loadedAt: '' },
     weather: {
       location: { ...WEATHER_DEFAULT_LOCATION },
@@ -488,6 +489,9 @@
   let cloudRealtimeReloading = false;
   let cloudAutosyncTimer = null;
   let cloudAutosyncRunning = false;
+  let homeHeroEditMode = false;
+  let homeHeroLongPressTimer = null;
+  let homeHeroLongPressPointer = null;
   let cloudAutosyncLastAttempt = 0;
   let suppressToastDepth = 0;
 
@@ -975,8 +979,8 @@
 
     migrated.meta = {
       schemaVersion: 69,
-      appBuild: 135,
-      mode: 'anime-icons-v135',
+      appBuild: 137,
+      mode: 'anime-icons-v137',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2287,7 +2291,7 @@
 
     return `
       <div class="dashboard-v10 dashboard-empty-home">
-        <section class="card hero-card station-hero home-minimal-hero home-hero-count-${heroCount}">
+        <section class="card hero-card station-hero home-minimal-hero home-hero-count-${heroCount} ${homeHeroEditMode ? 'home-hero-editing' : ''}">
           <div class="station-hero-main">
             <div class="station-clock-area">
               <div class="hero-clock-row">
@@ -2298,7 +2302,8 @@
                 ${renderHeroWeatherPill(dashboardContext, { expanded: heroCount === 0 })}
               </div>
             </div>
-            ${heroCount ? `<div class="station-summary station-summary-count-${heroCount}">${renderHomeHeroSummaryItems(dashboardContext)}</div>` : ''}
+            ${heroCount && homeHeroEditMode ? `<div class="station-summary-edit-toolbar"><strong>Úprava Home panelů</strong><span>Šipkami změň pořadí. Podržením panelu se úprava zapíná.</span><button class="ghost-btn" type="button" data-action="home-hero-edit-done">Hotovo</button></div>` : ''}
+            ${heroCount ? `<div class="station-summary station-summary-count-${heroCount} ${homeHeroEditMode ? 'station-summary-editing' : ''}">${renderHomeHeroSummaryItems(dashboardContext)}</div>` : ''}
           </div>
         </section>
       </div>
@@ -2370,8 +2375,7 @@
       const extraRows = Array.isArray(presentation.extraRows) && presentation.extraRows.length
         ? `<span class="station-summary-extra" aria-label="Další položky">${presentation.extraRows.slice(0, density === 'large' ? 5 : density === 'medium' ? 2 : 0).map((row) => `<b>${escapeHtml(row)}</b>`).join('')}</span>`
         : '';
-      return `
-        <button class="station-summary-item station-summary-item-${escapeHtml(id)} station-summary-size-${density} station-summary-tone-${escapeHtml(presentation.tone || 'neutral')} ${presentation.live ? 'station-summary-live' : ''}" type="button" ${attrs}>
+      const commonInner = `
           ${renderModuleIllustration(id, { size: density === 'large' ? 'hero-card' : 'home-sm', slotClass: 'station-summary-icon station-summary-illustration-slot', extraClass: 'station-summary-illustration', label: item.label })}
           <span class="station-summary-copy">
             <em>${escapeHtml(item.label)}</em>
@@ -2380,9 +2384,50 @@
             ${presentation.detail ? `<small class="station-summary-detail">${escapeHtml(presentation.detail)}</small>` : ''}
             ${chips}
             ${extraRows}
+          </span>`;
+      if (homeHeroEditMode) {
+        return `
+        <div class="station-summary-item station-summary-item-${escapeHtml(id)} station-summary-size-${density} station-summary-tone-${escapeHtml(presentation.tone || 'neutral')} ${presentation.live ? 'station-summary-live' : ''} station-summary-sortable" data-home-hero-id="${escapeHtml(id)}">
+          ${commonInner}
+          <span class="station-summary-reorder-controls" aria-label="Přesunout panel">
+            <button class="mini-glass-btn" type="button" data-action="home-hero-move-left" data-id="${escapeHtml(id)}" aria-label="Přesunout doleva">‹</button>
+            <button class="mini-glass-btn" type="button" data-action="home-hero-move-right" data-id="${escapeHtml(id)}" aria-label="Přesunout doprava">›</button>
           </span>
+        </div>`;
+      }
+      return `
+        <button class="station-summary-item station-summary-item-${escapeHtml(id)} station-summary-size-${density} station-summary-tone-${escapeHtml(presentation.tone || 'neutral')} ${presentation.live ? 'station-summary-live' : ''}" type="button" data-home-hero-id="${escapeHtml(id)}" ${attrs}>
+          ${commonInner}
         </button>`;
     }).join('');
+  }
+
+  function setHomeHeroEditMode(enabled) {
+    homeHeroEditMode = Boolean(enabled);
+    render();
+    if (homeHeroEditMode) showToast('Úprava Home panelů zapnutá');
+  }
+
+  function moveHomeHeroItem(id, direction) {
+    const list = normalizeHomeHeroIds(state.settings?.homeHeroItems);
+    const index = list.indexOf(id);
+    const delta = Number(direction || 0);
+    if (index < 0 || !delta) return;
+    const target = Math.max(0, Math.min(list.length - 1, index + delta));
+    if (target === index) return;
+    const [item] = list.splice(index, 1);
+    list.splice(target, 0, item);
+    state.settings = { ...(state.settings || {}), homeHeroItems: normalizeHomeHeroIds(list) };
+    touchState();
+    saveState();
+    if (cloudReady()) cloudSaveHouseholdUiSettings(false).catch((error) => console.warn('Home hero order cloud save failed', error));
+    render();
+  }
+
+  function clearHomeHeroLongPress() {
+    clearTimeout(homeHeroLongPressTimer);
+    homeHeroLongPressTimer = null;
+    homeHeroLongPressPointer = null;
   }
 
   function getHomeHeroItemPresentation(id, ctx, item, metric, text, options = {}) {
@@ -3328,6 +3373,7 @@
       { nav: 'calendar', tab: 'overview', icon: '📅', label: 'Kalendář', items: state.calendar || [], loadedAt: state.calendarCloud?.loadedAt },
       { nav: 'calendar', tab: 'sources', icon: '🧩', label: 'Zdroje kalendáře', items: getCalendarSources(), loadedAt: state.calendarCloud?.sourcesLoadedAt },
       { nav: 'finance', tab: 'summary', icon: '💰', label: 'Finance', items: state.finance || [], loadedAt: state.financeCloud?.loadedAt },
+      { nav: 'subscriptions', tab: 'overview', icon: '🎬', label: 'Předplatné', items: [...(state.subscriptions || []), ...(state.subscriptionPeople || []), ...(state.subscriptionPayments || [])], loadedAt: state.subscriptionsCloud?.loadedAt, cloudSynced: Boolean(state.subscriptionsCloud?.loadedAt && cloudReady()) },
       { nav: 'homecare', tab: 'tasks', icon: '📝', label: 'Poznámky', items: state.notes || [], loadedAt: state.householdExtrasCloud?.loadedAt },
       { nav: 'homecare', tab: 'devices', icon: '🔌', label: 'Zařízení', items: state.devices || [], loadedAt: state.householdExtrasCloud?.loadedAt },
       { nav: 'homecare', tab: 'warranties', icon: '🧾', label: 'Záruky', items: state.warranties || [], loadedAt: state.householdExtrasCloud?.loadedAt },
@@ -3336,7 +3382,7 @@
     ];
     return counters.map((entry) => {
       const total = entry.items.length;
-      const cloud = entry.items.filter((item) => item.cloudId).length;
+      const cloud = entry.cloudSynced ? total : entry.items.filter((item) => item.cloudId).length;
       const local = Math.max(total - cloud, 0);
       const percent = total ? Math.round((cloud / total) * 100) : 100;
       return { ...entry, total, cloud, local, percent };
@@ -3352,7 +3398,7 @@
     const overall = total ? Math.round((totalCloud / total) * 100) : (cloudReady ? 100 : 0);
     const autosyncEnabled = state.cloud?.autoSyncEnabled !== false;
     const autosyncStatus = cloudAutosyncStatusLabel();
-    const featuredCloudLabels = ['Profily', 'Nákupy', 'Smlouvy', 'Přílohy smluv', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář', 'Finance', 'Poznámky', 'Zařízení', 'Kamery', 'Slevové kódy'];
+    const featuredCloudLabels = ['Profily', 'Nákupy', 'Smlouvy', 'Přílohy smluv', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář', 'Finance', 'Předplatné', 'Poznámky', 'Zařízení', 'Kamery', 'Slevové kódy'];
     const compactItems = mode === 'dashboard' ? items.filter((item) => item.total || featuredCloudLabels.includes(item.label)).slice(0, 14) : items;
     return `
       <section class="card desktop-span-2 cloud-sync-overview-card">
@@ -3574,6 +3620,8 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_137', note: 'Hotfix: Předplatné už nemá ruční cloud tlačítka, ukládá a načítá se automaticky přes Supabase domácnost stejně jako ostatní cloudová data.' },
+      { title: 'Domácnost+ v.0.1_136', note: 'Hotovo: Předplatné se synchronizuje online přes cloud domácnosti a Home panely lze dlouhým podržením přepnout do režimu přesunu pořadí.' },
       { title: 'Domácnost+ v.0.1_135', note: 'Hotovo: v Předplatném mají služby skutečnější logo-like značky místo pouhých iniciál a přidaná je i služba T-Mobile.' },
       { title: 'Domácnost+ v.0.1_134', note: 'Hotovo: v Předplatném jde kliknout na člověka a přímo v jeho detailu mu přiřadit službu s částkou. Volná místa u služeb se automaticky odečítají a po odebrání sdílení zase uvolní.' },
       { title: 'Domácnost+ v.0.1_133', note: 'Hotovo: Předplatné má logo-like badge ikonky, filtr Vše/Nezaplacené/Dlužníci a Home panel ukazuje rychlý souhrn dluhů.' },
@@ -6227,6 +6275,25 @@
     return [...state.subscriptionPayments].sort((a, b) => String(b.month || '').localeCompare(String(a.month || '')) || String(b.paidAt || '').localeCompare(String(a.paidAt || '')));
   }
 
+  function persistSubscriptionsState({ renderView = true, toast = '' } = {}) {
+    touchState();
+    if (cloudReady()) state.subscriptionsCloud = { ...(state.subscriptionsCloud || {}), pendingAt: new Date().toISOString() };
+    saveState();
+    if (renderView) render();
+    if (toast) showToast(toast);
+    if (cloudReady()) {
+      cloudSaveHouseholdUiSettings(false)
+        .then((ok) => {
+          if (ok && activeModule === 'subscriptions') render();
+        })
+        .catch((error) => {
+          console.warn('Subscription autosync failed', error);
+          state.subscriptionsCloud = { ...(state.subscriptionsCloud || {}), pendingAt: new Date().toISOString(), error: error?.message || 'Automatická synchronizace selhala' };
+          persistStateSnapshot();
+        });
+    }
+  }
+
   function subscriptionPersonName(personId) {
     return getSubscriptionPeople().find((person) => person.id === personId)?.name || 'Osoba';
   }
@@ -6449,6 +6516,7 @@
       <div class="grid two module-tabbed subscriptions-tab-${escapeHtml(activeTab)} subscriptions-module" data-tab-area="subscriptions">
         <section class="card desktop-span-2 subscription-panel panel-overview">
           <div class="card-header"><div><h2>Předplatné</h2><p>Streamovací služby, sdílení s lidmi a měsíční kontrola, kdo už zaplatil.</p></div><span class="badge ${summary.owed ? 'warn' : 'good'}">${summary.owed ? `${formatCurrency(summary.owed)} chybí` : 'srovnáno'}</span></div>
+          ${cloudReady() ? `<div class="inline-note compact-note subscription-cloud-status"><span class="badge ${state.subscriptionsCloud?.pendingAt ? 'warn' : state.subscriptionsCloud?.loadedAt ? 'good' : ''}">${state.subscriptionsCloud?.pendingAt ? 'automaticky ukládám' : state.subscriptionsCloud?.loadedAt ? `cloud ${escapeHtml(formatDateTime(state.subscriptionsCloud.loadedAt))}` : 'cloud aktivní'}</span><span>Předplatné se synchronizuje automaticky přes Supabase domácnost. Není potřeba nic ručně odesílat ani načítat.</span></div>` : `<div class="inline-note compact-note">Po přihlášení a napojení domácnosti na cloud se Předplatné začne synchronizovat automaticky.</div>`}
           <form data-form="subscription-month-filter" class="compact-filter-form">
             <div class="form-grid two">
               ${field('Měsíc přehledu', 'month', 'month', '', false, month)}
@@ -6636,11 +6704,8 @@
     const name = normalizeText(data.name);
     if (!name) return showToast('Vyplň jméno člověka');
     state.subscriptionPeople.push(normalizeSubscriptionPerson({ name, note: data.note }));
-    touchState();
-    saveState();
     form.reset();
-    render();
-    showToast('Člověk přidaný');
+    persistSubscriptionsState({ toast: 'Člověk přidaný' });
   }
 
   function addSubscriptionFromForm(data, form) {
@@ -6652,11 +6717,8 @@
     const rawMaxMembers = Number(data.maxMembers || 0);
     const maxMembers = Number.isFinite(rawMaxMembers) && rawMaxMembers > 0 ? Math.floor(rawMaxMembers) : subscriptionServiceDefaultMembers(serviceKey);
     state.subscriptions.push(normalizeSubscriptionService({ serviceKey, name, price, billingDay: data.billingDay, maxMembers, note: data.note, shares: [] }));
-    touchState();
-    saveState();
     form.reset();
-    render();
-    showToast('Předplatné přidané');
+    persistSubscriptionsState({ toast: 'Předplatné přidané' });
   }
 
   function addSubscriptionShareFromForm(data, form) {
@@ -6671,11 +6733,8 @@
     if (!existing && capacity.maxMembers && capacity.free <= 0) return showToast('U služby už nejsou volná místa');
     if (existing) existing.amount = amount;
     else service.shares.push({ personId: person.id, amount });
-    touchState();
-    saveState();
     form.reset();
-    render();
-    showToast('Sdílení uložené');
+    persistSubscriptionsState({ toast: 'Sdílení uložené' });
   }
 
   function addSubscriptionPaymentFromForm(data, form) {
@@ -6686,11 +6745,8 @@
     if (!service || !person) return showToast('Vyber službu a člověka');
     if (!(amount > 0)) return showToast('Vyplň částku');
     state.subscriptionPayments.push(normalizeSubscriptionPayment({ subscriptionId: service.id, personId: person.id, month, amount, paidAt: todayISO(), note: data.note }));
-    touchState();
-    saveState();
     form.reset();
-    render();
-    showToast(month > subscriptionSelectedMonth() ? 'Platba dopředu zapsaná' : 'Platba zapsaná');
+    persistSubscriptionsState({ toast: month > subscriptionSelectedMonth() ? 'Platba dopředu zapsaná' : 'Platba zapsaná' });
   }
 
   function toggleSubscriptionPaid(subscriptionId, personId, month = subscriptionSelectedMonth()) {
@@ -6709,17 +6765,13 @@
       state.subscriptionPayments.push(normalizeSubscriptionPayment({ subscriptionId, personId, month, amount: decimalValue(share.amount), paidAt: todayISO(), note: 'zaškrtnuto v přehledu' }));
       showToast('Platba zaškrtnutá');
     }
-    touchState();
-    saveState();
-    render();
+    persistSubscriptionsState();
   }
 
   function deleteSubscription(id) {
     state.subscriptions = (state.subscriptions || []).filter((item) => item.id !== id);
     state.subscriptionPayments = (state.subscriptionPayments || []).filter((payment) => payment.subscriptionId !== id);
-    touchState();
-    saveState();
-    render();
+    persistSubscriptionsState();
     showToast('Předplatné smazané');
   }
 
@@ -6727,9 +6779,7 @@
     state.subscriptionPeople = (state.subscriptionPeople || []).filter((item) => item.id !== id);
     state.subscriptions = (state.subscriptions || []).map((service) => ({ ...service, shares: (service.shares || []).filter((share) => share.personId !== id) }));
     state.subscriptionPayments = (state.subscriptionPayments || []).filter((payment) => payment.personId !== id);
-    touchState();
-    saveState();
-    render();
+    persistSubscriptionsState();
     showToast('Člověk odebraný');
   }
 
@@ -6738,17 +6788,13 @@
     if (!service) return;
     service.shares = (service.shares || []).filter((share) => share.personId !== personId);
     state.subscriptionPayments = (state.subscriptionPayments || []).filter((payment) => !(payment.subscriptionId === subscriptionId && payment.personId === personId));
-    touchState();
-    saveState();
-    render();
+    persistSubscriptionsState();
     showToast('Sdílení odebrané');
   }
 
   function deleteSubscriptionPayment(id) {
     state.subscriptionPayments = (state.subscriptionPayments || []).filter((payment) => payment.id !== id);
-    touchState();
-    saveState();
-    render();
+    persistSubscriptionsState();
     showToast('Platba smazaná');
   }
 
@@ -6756,9 +6802,7 @@
     const service = state.subscriptions.find((item) => item.id === id);
     if (!service) return;
     service.enabled = service.enabled === false;
-    touchState();
-    saveState();
-    render();
+    persistSubscriptionsState();
     showToast(service.enabled ? 'Služba zapnutá' : 'Služba vypnutá');
   }
 
@@ -11590,7 +11634,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 135, mode: 'rich-demo-v135', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 137, mode: 'rich-demo-v137', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -11732,7 +11776,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 135, mode: 'anime-icons-v135', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 137, mode: 'anime-icons-v137', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -12748,6 +12792,7 @@
       cloudSyncLocalCalendar,
       cloudSyncLocalFinanceAccounts,
       cloudSyncLocalFinance,
+      () => cloudSaveHouseholdUiSettings(false),
       () => cloudSyncLocalExtraCollections(false)
     ];
     await withMutedToasts(async () => {
@@ -12860,6 +12905,19 @@
     }
     if (action === 'set-section-tab') {
       setModuleTab(button.dataset.area || activeModule, button.dataset.tab || 'main');
+      return;
+    }
+    if (action === 'home-hero-edit-done') {
+      homeHeroEditMode = false;
+      render();
+      return;
+    }
+    if (action === 'home-hero-move-left') {
+      moveHomeHeroItem(button.dataset.id, -1);
+      return;
+    }
+    if (action === 'home-hero-move-right') {
+      moveHomeHeroItem(button.dataset.id, 1);
       return;
     }
     if (action === 'onboarding-mode') {
@@ -14149,6 +14207,16 @@
     if (Array.isArray(layout.warranties)) {
       state.warranties = normalizeWarranties(layout.warranties);
     }
+    if (Array.isArray(layout.subscriptions)) state.subscriptions = layout.subscriptions.map(normalizeSubscriptionService);
+    if (Array.isArray(layout.subscriptionPeople)) state.subscriptionPeople = layout.subscriptionPeople.map(normalizeSubscriptionPerson);
+    if (Array.isArray(layout.subscriptionPayments)) state.subscriptionPayments = layout.subscriptionPayments.map(normalizeSubscriptionPayment).filter((payment) => payment.subscriptionId && payment.personId && payment.amount > 0);
+    if (Array.isArray(layout.subscriptions) || Array.isArray(layout.subscriptionPeople) || Array.isArray(layout.subscriptionPayments)) {
+      state.subscriptionsCloud = { ...(state.subscriptionsCloud || {}), loadedAt: new Date().toISOString() };
+    }
+    if (layout.subscriptionSettings && typeof layout.subscriptionSettings === 'object') {
+      if (/^\d{4}-\d{2}$/.test(String(layout.subscriptionSettings.month || ''))) state.settings.subscriptionMonth = String(layout.subscriptionSettings.month);
+      if (['all', 'unpaid', 'debtors'].includes(layout.subscriptionSettings.paymentFilter)) state.settings.subscriptionPaymentFilter = layout.subscriptionSettings.paymentFilter;
+    }
     if (weatherLocation && typeof weatherLocation === 'object' && Object.keys(weatherLocation).length) {
       state.weather = {
         ...normalizeWeatherState(state.weather),
@@ -14165,8 +14233,15 @@
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
+        subscriptionPeople: getSubscriptionPeople(),
+        subscriptions: getSubscriptionServices(),
+        subscriptionPayments: getSubscriptionPayments(),
+        subscriptionSettings: {
+          month: subscriptionSelectedMonth(),
+          paymentFilter: subscriptionPaymentFilter()
+        },
         updatedAt: new Date().toISOString(),
-        appBuild: 135
+        appBuild: 137
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -14187,7 +14262,9 @@
       if (showMessage) showToast(error.message || 'Nastavení hlavní obrazovky se nepovedlo uložit do cloudu');
       return false;
     }
-    state.cloud.lastSyncAt = new Date().toISOString();
+    const syncedAt = new Date().toISOString();
+    state.cloud.lastSyncAt = syncedAt;
+    state.subscriptionsCloud = { ...(state.subscriptionsCloud || {}), loadedAt: syncedAt, pendingAt: '' };
     saveState();
     if (showMessage) showToast('Nastavení hlavní obrazovky uloženo do cloudu');
     return true;
@@ -14754,7 +14831,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-135-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-137-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -14808,6 +14885,31 @@
       return;
     }
     if (activeOverview) closeOverview();
+  });
+
+  app.addEventListener('pointerdown', (event) => {
+    const card = event.target.closest('.station-summary-item[data-home-hero-id]');
+    if (!card || event.target.closest('[data-action]')) return;
+    homeHeroLongPressPointer = { x: event.clientX, y: event.clientY, id: card.dataset.homeHeroId };
+    clearTimeout(homeHeroLongPressTimer);
+    homeHeroLongPressTimer = setTimeout(() => {
+      if (!homeHeroLongPressPointer) return;
+      setHomeHeroEditMode(true);
+      homeHeroLongPressPointer = null;
+    }, 650);
+  });
+
+  app.addEventListener('pointermove', (event) => {
+    if (!homeHeroLongPressPointer) return;
+    const dx = Math.abs(event.clientX - homeHeroLongPressPointer.x);
+    const dy = Math.abs(event.clientY - homeHeroLongPressPointer.y);
+    if (dx > 12 || dy > 12) clearHomeHeroLongPress();
+  });
+
+  app.addEventListener('pointerup', clearHomeHeroLongPress);
+  app.addEventListener('pointercancel', clearHomeHeroLongPress);
+  app.addEventListener('contextmenu', (event) => {
+    if (event.target.closest('.station-summary-item[data-home-hero-id]')) event.preventDefault();
   });
 
   app.addEventListener('click', (event) => {
@@ -14941,7 +15043,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_135</span>
+          <span class="badge">Domácnost+ v.0.1_137</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

@@ -9721,3 +9721,99 @@ svg.anime-module-svg .anime-icon-line {
     padding: 0 6px;
   }
 }
+
+/* Domácnost+ v.0.1_136 – cloud sync Předplatného + přesun Home panelů podržením */
+.subscription-cloud-actions {
+  margin: -2px 0 12px;
+}
+
+.station-summary-edit-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 4px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(53, 116, 240, 0.22);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: 0 12px 28px rgba(45, 70, 110, 0.10);
+}
+
+.station-summary-edit-toolbar strong {
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.station-summary-edit-toolbar span {
+  flex: 1 1 180px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.station-summary-editing .station-summary-item {
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: 2px dashed rgba(53, 116, 240, 0.24);
+  outline-offset: -5px;
+}
+
+.station-summary-reorder-controls {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  gap: 6px;
+  z-index: 2;
+}
+
+.mini-glass-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255,255,255,.45);
+  border-radius: 999px;
+  background: rgba(255,255,255,.70);
+  color: var(--text);
+  font-size: 1.45rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 10px 22px rgba(18, 48, 95, 0.14);
+  cursor: pointer;
+}
+
+.mini-glass-btn:active {
+  transform: scale(.96);
+}
+
+[data-theme="dark"] .station-summary-edit-toolbar,
+[data-theme="dark"] .mini-glass-btn {
+  background: rgba(255,255,255,.10);
+}
+
+@media (max-width: 640px) {
+  .station-summary-reorder-controls {
+    right: 8px;
+    bottom: 8px;
+  }
+
+  .mini-glass-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+
+/* Domácnost+ v.0.1_137 – Předplatné automatický Supabase sync bez ručních tlačítek */
+.subscription-cloud-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.subscription-cloud-status .badge {
+  flex: 0 0 auto;
+}
