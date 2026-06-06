@@ -1,4 +1,4 @@
-const CACHE_NAME = 'domacnost-plus-v0-1-128';
+const CACHE_NAME = 'domacnost-plus-v0-1-135';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -37,6 +37,7 @@ const APP_ASSETS = [
   './assets/module-icons/garage.png',
   './assets/module-icons/contracts.png',
   './assets/module-icons/finance.png',
+  './assets/module-icons/subscriptions.png',
   './assets/module-icons/cameras.png',
   './assets/module-icons/settings.png',
   './assets/module-icons/homecare.png',

@@ -9106,3 +9106,618 @@ svg.anime-module-svg .anime-icon-line {
     height: 62px;
   }
 }
+
+/* Domácnost+ v.0.1_130 – modul Předplatné */
+.subscriptions-tab-overview .subscription-panel:not(.panel-overview),
+.subscriptions-tab-services .subscription-panel:not(.panel-services),
+.subscriptions-tab-people .subscription-panel:not(.panel-people),
+.subscriptions-tab-payments .subscription-panel:not(.panel-payments) {
+  display: none;
+}
+
+.subscription-payment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.subscription-payment-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.34);
+}
+
+[data-theme="dark"] .subscription-payment-card {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.subscription-payment-head,
+.subscription-pay-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.subscription-payment-head strong {
+  color: var(--text);
+  font-size: 0.96rem;
+}
+
+.subscription-payment-head span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.subscription-pay-row {
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.44);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+[data-theme="dark"] .subscription-pay-row {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.subscription-pay-row span {
+  display: grid;
+  min-width: 0;
+}
+
+.subscription-pay-row strong {
+  font-size: 0.88rem;
+}
+
+.subscription-pay-row em {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-style: normal;
+}
+
+.subscription-pay-row b {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.18);
+  color: var(--muted);
+}
+
+.subscription-pay-row.paid {
+  border-color: rgba(34, 197, 94, 0.36);
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.subscription-pay-row.paid b {
+  background: rgba(34, 197, 94, 0.18);
+  color: #16a34a;
+}
+
+.subscription-share-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.static-chip {
+  cursor: default;
+}
+
+.static-chip button {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  margin-left: 4px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  cursor: pointer;
+}
+
+.subscription-kpi-grid .kpi strong {
+  font-size: clamp(1.1rem, 4vw, 1.55rem);
+}
+
+.subscription-person-summary.subscription-debt {
+  border-color: rgba(245, 158, 11, 0.32);
+}
+
+.muted-item {
+  opacity: 0.62;
+}
+
+@media (max-width: 640px) {
+  .subscription-payment-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .subscription-payment-card {
+    padding: 10px;
+  }
+}
+
+/* Domácnost+ v.0.1_132 – ikonky služeb v modulu Předplatné */
+.subscription-service-title,
+.subscription-service-title-sm,
+.subscription-inline-service {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.subscription-service-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  box-shadow: 0 10px 24px rgba(18, 48, 95, 0.16);
+  overflow: hidden;
+}
+
+.subscription-service-brand b {
+  display: block;
+  font-style: normal;
+  line-height: 1;
+}
+
+.subscription-service-brand-name {
+  min-width: 0;
+  display: inline-block;
+  color: var(--text);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.subscription-service-brand-md {
+  min-width: 42px;
+  height: 42px;
+  padding: 0 11px;
+}
+.subscription-service-brand-md b { font-size: 0.84rem; }
+
+.subscription-service-brand-sm {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 9px;
+}
+.subscription-service-brand-sm b { font-size: 0.74rem; }
+
+.subscription-service-brand-xs {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  vertical-align: middle;
+}
+.subscription-service-brand-xs b { font-size: 0.58rem; }
+.subscription-inline-service .subscription-service-brand-name { display:none; }
+
+.brand-netflix { background: linear-gradient(135deg, #e50914, #8b0000); }
+.brand-disney { background: linear-gradient(135deg, #1d4ed8, #60a5fa); }
+.brand-hbo { background: linear-gradient(135deg, #6d28d9, #a855f7); }
+.brand-skyshowtime { background: linear-gradient(135deg, #0f172a, #ef4444 52%, #2563eb); }
+.brand-prime { background: linear-gradient(135deg, #0f172a, #06b6d4); }
+.brand-apple-tv { background: linear-gradient(135deg, #111827, #4b5563); }
+.brand-spotify { background: linear-gradient(135deg, #16a34a, #22c55e); }
+.brand-youtube { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+.brand-oneplay { background: linear-gradient(135deg, #7c3aed, #ec4899); }
+.brand-canal { background: linear-gradient(135deg, #111827, #374151); }
+.brand-o2-tv { background: linear-gradient(135deg, #1d4ed8, #38bdf8); }
+.brand-telly { background: linear-gradient(135deg, #f97316, #ef4444); }
+.brand-t-mobile { background: linear-gradient(135deg, #e20074, #ff4fb0); }
+.brand-other { background: linear-gradient(135deg, #64748b, #94a3b8); }
+
+.subscription-payment-head strong.subscription-service-title,
+.subscription-payment-head strong.subscription-service-title-sm {
+  font-weight: 800;
+}
+
+.subscription-payment-item-title {
+  min-width: 0;
+}
+
+.subscription-payment-item-title .subscription-inline-service {
+  vertical-align: middle;
+}
+
+@media (max-width: 640px) {
+  .subscription-service-brand-md {
+    min-width: 38px;
+    height: 38px;
+    padding: 0 10px;
+  }
+  .subscription-service-brand-name {
+    font-size: 0.94rem;
+  }
+}
+
+/* Domácnost+ v.0.1_133 – logo-like badge, filtr plateb a lepší Home souhrn Předplatného */
+.subscription-service-brand {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.24), 0 12px 26px rgba(18, 48, 95, 0.18);
+}
+
+.subscription-service-brand::before {
+  content: "";
+  position: absolute;
+  inset: 1px 1px auto 1px;
+  height: 42%;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255,255,255,.34), rgba(255,255,255,0));
+  z-index: -1;
+}
+
+.subscription-service-brand i {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+  opacity: .85;
+}
+
+.subscription-service-brand b {
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 2px rgba(0,0,0,.18);
+}
+
+.subscription-brand-mark-slash i::after {
+  content: "";
+  position: absolute;
+  width: 24%;
+  height: 120%;
+  left: 38%;
+  top: -10%;
+  background: rgba(255,255,255,.20);
+  transform: skewX(-14deg);
+}
+
+.subscription-brand-mark-arc i::after {
+  content: "";
+  position: absolute;
+  width: 70%;
+  height: 44%;
+  left: 15%;
+  top: 13%;
+  border-top: 2px solid rgba(255,255,255,.58);
+  border-radius: 50%;
+}
+
+.subscription-brand-mark-orb i::after,
+.subscription-brand-mark-bubble i::after {
+  content: "";
+  position: absolute;
+  width: 34%;
+  height: 34%;
+  right: 9%;
+  top: 12%;
+  border-radius: 999px;
+  background: rgba(255,255,255,.22);
+}
+
+.subscription-brand-mark-split i::before,
+.subscription-brand-mark-split i::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 52%;
+  background: rgba(255,255,255,.10);
+  transform: skewX(-12deg);
+}
+.subscription-brand-mark-split i::after {
+  left: auto;
+  right: 0;
+  background: rgba(255,255,255,.07);
+}
+
+.subscription-brand-mark-smile i::after {
+  content: "";
+  position: absolute;
+  width: 46%;
+  height: 26%;
+  left: 27%;
+  bottom: 18%;
+  border-bottom: 2px solid rgba(255,255,255,.58);
+  border-radius: 50%;
+}
+
+.subscription-brand-mark-waves i::before,
+.subscription-brand-mark-waves i::after {
+  content: "";
+  position: absolute;
+  left: 23%;
+  right: 23%;
+  border-top: 2px solid rgba(255,255,255,.55);
+  border-radius: 50%;
+}
+.subscription-brand-mark-waves i::before { top: 30%; height: 18%; }
+.subscription-brand-mark-waves i::after { top: 47%; height: 18%; }
+
+.subscription-brand-mark-play i::after {
+  content: "";
+  position: absolute;
+  right: 12%;
+  bottom: 12%;
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 9px solid rgba(255,255,255,.52);
+}
+
+.subscription-brand-mark-bar i::after {
+  content: "";
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  bottom: 18%;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.44);
+}
+
+.subscription-brand-mark-dot i::after,
+.subscription-brand-mark-spark i::after,
+.subscription-brand-mark-star i::after {
+  content: "";
+  position: absolute;
+  right: 13%;
+  top: 13%;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.58);
+}
+
+.subscription-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.subscription-filter-chip {
+  border-color: rgba(99, 102, 241, 0.16);
+}
+
+.subscription-filter-chip.active {
+  color: var(--text);
+  background: linear-gradient(135deg, rgba(255,255,255,.82), rgba(255,255,255,.46));
+  border-color: rgba(53,116,240,.34);
+  box-shadow: 0 10px 24px rgba(53,116,240,.12);
+}
+
+[data-theme="dark"] .subscription-filter-chip.active {
+  background: rgba(255,255,255,.12);
+}
+
+.station-summary-item-subscriptions .station-summary-chipline b,
+.station-summary-item-subscriptions .station-summary-extra b {
+  background: rgba(239, 68, 68, 0.10);
+  color: #991b1b;
+  border-color: rgba(239, 68, 68, 0.18);
+}
+
+[data-theme="dark"] .station-summary-item-subscriptions .station-summary-chipline b,
+[data-theme="dark"] .station-summary-item-subscriptions .station-summary-extra b {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.16);
+}
+
+/* Domácnost+ v.0.1_134 – detail člověka v Předplatném a přiřazení služeb přímo z karty */
+.subscription-person-detail-card {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.subscription-person-detail-card > summary {
+  list-style: none;
+}
+
+.subscription-person-detail-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.subscription-person-summary-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  cursor: pointer;
+}
+
+.subscription-person-summary-main {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.subscription-person-summary-main strong {
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.subscription-person-summary-main em {
+  color: var(--muted);
+  font-style: normal;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.subscription-person-detail-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 14px 14px;
+}
+
+.subscription-person-service-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  margin: 3px 6px 3px 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255,255,255,.36);
+  vertical-align: middle;
+}
+
+[data-theme="dark"] .subscription-person-service-chip {
+  background: rgba(255,255,255,.07);
+}
+
+.subscription-person-service-chip strong {
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.subscription-person-service-chip em {
+  color: var(--muted);
+  font-style: normal;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.subscription-person-service-chip button {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  font-weight: 900;
+}
+
+.subscription-person-note {
+  display: inline-block;
+  margin-left: 4px;
+  color: var(--muted);
+}
+
+.subscription-person-assign-box {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255,255,255,.28);
+}
+
+[data-theme="dark"] .subscription-person-assign-box {
+  background: rgba(255,255,255,.055);
+}
+
+.subscription-person-assign-box h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+  letter-spacing: -0.03em;
+}
+
+.subscription-person-assign-box p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.subscription-person-assign-form .form-actions {
+  margin-top: 2px;
+}
+
+@media (max-width: 640px) {
+  .subscription-person-summary-toggle {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .subscription-person-summary-toggle .badge {
+    justify-self: start;
+  }
+  .subscription-person-service-chip {
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 16px;
+  }
+  .subscription-person-service-chip button {
+    margin-left: auto;
+  }
+}
+
+
+/* Domácnost+ v.0.1_135 – skutečnější loga služeb v Předplatném */
+.subscription-service-brand svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.subscription-service-brand-md {
+  min-width: 54px;
+  height: 42px;
+  padding: 0 8px;
+}
+
+.subscription-service-brand-sm {
+  min-width: 46px;
+  height: 34px;
+  padding: 0 7px;
+}
+
+.subscription-service-brand-xs {
+  min-width: 32px;
+  height: 24px;
+  padding: 0 5px;
+  border-radius: 10px;
+}
+
+.subscription-service-brand-name {
+  font-weight: 800;
+}
+
+.subscription-payment-head .subscription-service-brand-name,
+.subscription-person-service-chip .subscription-service-brand-name,
+.subscription-inline-service .subscription-service-brand-name {
+  display: none;
+}
+
+.subscription-service-title .subscription-service-brand-name,
+.subscription-service-title-sm .subscription-service-brand-name {
+  display: inline-block;
+}
+
+@media (max-width: 640px) {
+  .subscription-service-brand-md {
+    min-width: 50px;
+    height: 38px;
+    padding: 0 7px;
+  }
+
+  .subscription-service-brand-sm {
+    min-width: 42px;
+    height: 32px;
+    padding: 0 6px;
+  }
+}
