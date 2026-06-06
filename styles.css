@@ -9817,3 +9817,70 @@ svg.anime-module-svg .anime-icon-line {
 .subscription-cloud-status .badge {
   flex: 0 0 auto;
 }
+
+/* Domácnost+ v.0.1_138 – čitelnější Home panely a uklizené formuláře */
+.home-minimal-hero .station-summary {
+  align-items: stretch;
+}
+
+.home-minimal-hero .station-summary-item {
+  min-height: 86px;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.station-summary-count-1,
+.station-summary-count-2,
+.station-summary-count-3,
+.station-summary-count-4,
+.station-summary-count-5,
+.station-summary-count-6,
+.station-summary-count-7,
+.station-summary-count-8 {
+  grid-auto-rows: minmax(86px, auto) !important;
+}
+
+.home-minimal-hero .station-summary-copy,
+.home-minimal-hero .station-summary-copy em,
+.home-minimal-hero .station-summary-copy strong,
+.home-minimal-hero .station-summary-copy span,
+.home-minimal-hero .station-summary-copy small,
+.home-minimal-hero .station-summary-copy b {
+  max-width: 100%;
+  min-width: 0;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  -webkit-line-clamp: unset !important;
+  line-clamp: unset !important;
+}
+
+.home-minimal-hero .station-summary-primary,
+.home-minimal-hero .station-summary-detail {
+  display: block !important;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.home-minimal-hero .station-summary-metric {
+  line-height: 1.04;
+}
+
+.station-summary-count-5 .station-summary-copy span,
+.station-summary-count-5 .station-summary-copy small,
+.station-summary-count-6 .station-summary-copy span,
+.station-summary-count-6 .station-summary-copy small,
+.station-summary-count-7 .station-summary-copy span,
+.station-summary-count-7 .station-summary-copy small,
+.station-summary-count-8 .station-summary-copy span,
+.station-summary-count-8 .station-summary-copy small {
+  font-size: clamp(0.68rem, 2.1vw, 0.78rem) !important;
+}
+
+.clean-garage-overview {
+  padding-top: 14px;
+}
+
+.cloud-household-create-details {
+  margin-top: 12px;
+}

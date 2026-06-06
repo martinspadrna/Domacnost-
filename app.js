@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_137';
+  const APP_VERSION = 'Domácnost+ v.0.1_138';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -199,8 +199,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 69,
-      appBuild: 137,
-      mode: 'anime-icons-v137',
+      appBuild: 138,
+      mode: 'anime-icons-v138',
       createdAt: '',
       updatedAt: ''
     },
@@ -856,6 +856,17 @@
       .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
   }
 
+  function isPolishShopSundayEntry(entry) {
+    return entry?.type === 'sunday' || normalizeText(entry?.name).toLowerCase().includes('neděle nehandlová');
+  }
+
+  function nextPolishShopImportantEntry(status = '') {
+    const today = todayISO();
+    return polishShopCalendarAround(new Date().getFullYear())
+      .filter((entry) => entry.date >= today && !isPolishShopSundayEntry(entry) && (!status || entry.status === status))
+      .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+  }
+
   function polishShopTodayEntry(offset = 0) {
     const iso = addDaysIso(todayISO(), offset);
     return polishShopCalendarAround(Number(iso.slice(0, 4))).find((entry) => entry.date === iso) || null;
@@ -863,17 +874,17 @@
 
   function polishShopHeroMetric() {
     const todayEntry = polishShopTodayEntry(0);
-    if (todayEntry?.status === 'closed') return 'Zavřeno';
-    if (todayEntry?.status === 'limited') return 'Pozor';
-    const next = nextPolishShopEntry('closed');
+    if (todayEntry && !isPolishShopSundayEntry(todayEntry) && todayEntry.status === 'closed') return 'Zavřeno';
+    if (todayEntry && !isPolishShopSundayEntry(todayEntry) && todayEntry.status === 'limited') return 'Pozor';
+    const next = nextPolishShopImportantEntry('closed');
     return next ? dueBadge(daysUntil(next.date)) : 'OK';
   }
 
   function polishShopHeroText() {
     const todayEntry = polishShopTodayEntry(0);
-    if (todayEntry?.status === 'closed') return todayEntry.name;
-    if (todayEntry?.status === 'limited') return `${todayEntry.name} · zkráceno`;
-    const next = nextPolishShopEntry('closed');
+    if (todayEntry && !isPolishShopSundayEntry(todayEntry) && todayEntry.status === 'closed') return todayEntry.name;
+    if (todayEntry && !isPolishShopSundayEntry(todayEntry) && todayEntry.status === 'limited') return `${todayEntry.name} · zkráceno`;
+    const next = nextPolishShopImportantEntry('closed');
     return next ? `${formatDate(next.date)} · ${next.name}` : 'Žádné známé zavření';
   }
 
@@ -979,8 +990,8 @@
 
     migrated.meta = {
       schemaVersion: 69,
-      appBuild: 137,
-      mode: 'anime-icons-v137',
+      appBuild: 138,
+      mode: 'anime-icons-v138',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2444,23 +2455,22 @@
     if (id === 'hdo') return getHdoHeroPresentation(ctx, options);
     if (id === 'polishHolidays') {
       const todayEntry = polishShopTodayEntry(0);
-      const tomorrowEntry = polishShopTodayEntry(1);
-      const nextClosed = nextPolishShopEntry('closed');
-      const nextLimited = nextPolishShopEntry('limited');
-      const isClosed = todayEntry?.status === 'closed';
-      const isLimited = todayEntry?.status === 'limited';
+      const todayImportant = todayEntry && !isPolishShopSundayEntry(todayEntry) ? todayEntry : null;
+      const nextClosed = nextPolishShopImportantEntry('closed');
+      const nextLimited = nextPolishShopImportantEntry('limited');
+      const isClosed = todayImportant?.status === 'closed';
+      const isLimited = todayImportant?.status === 'limited';
       const slides = [
-        todayEntry ? { metric: todayEntry.status === 'closed' ? 'Zavřeno' : todayEntry.status === 'limited' ? 'Pozor' : 'Dnes OK', text: todayEntry.name || 'Dnes', detail: 'dnešní stav v Polsku' } : null,
-        tomorrowEntry ? { metric: 'Zítra', text: tomorrowEntry.name, detail: tomorrowEntry.status === 'closed' ? 'obchody můžou být zavřené' : 'omezený režim obchodů' } : null,
-        nextClosed ? { metric: dueBadge(daysUntil(nextClosed.date)), text: `${formatDate(nextClosed.date)} · ${nextClosed.name}`, detail: 'nejbližší zavřeno' } : null,
+        todayImportant ? { metric: todayImportant.status === 'closed' ? 'Zavřeno' : todayImportant.status === 'limited' ? 'Pozor' : 'Dnes OK', text: todayImportant.name || 'Dnes', detail: 'dnešní stav v Polsku' } : null,
+        nextClosed ? { metric: dueBadge(daysUntil(nextClosed.date)), text: `${formatDate(nextClosed.date)} · ${nextClosed.name}`, detail: 'nejbližší zavřené obchody' } : null,
         nextLimited ? { metric: 'Pozor', text: `${formatDate(nextLimited.date)} · ${nextLimited.name}`, detail: 'nejbližší omezení' } : null
       ].filter(Boolean);
       const slide = homeCycleItem(slides, 45);
       return {
         ...base,
         metric: isClosed ? 'Zavřeno' : isLimited ? 'Pozor' : slide?.metric || 'OK',
-        text: isClosed || isLimited ? todayEntry.name : slide?.text || 'Bez známého zavření',
-        detail: isClosed || isLimited ? (tomorrowEntry ? `Zítra: ${tomorrowEntry.name}` : 'Kliknutím otevřeš polské svátky') : slide?.detail || 'Kliknutím otevřeš polské svátky',
+        text: isClosed || isLimited ? todayImportant.name : slide?.text || 'Bez známého zavření',
+        detail: isClosed || isLimited ? 'běžné neděle jsou až v detailu' : slide?.detail || 'neděle najdeš po rozkliknutí',
         live: slides.length > 1,
         tone: isClosed ? 'bad' : isLimited || nextClosed && daysUntil(nextClosed.date) <= 3 ? 'warn' : 'good'
       };
@@ -2468,8 +2478,7 @@
     if (id === 'calendar') {
       const events = (ctx.calendarPanelEvents || ctx.upcomingEvents || []);
       const runningEvents = events.filter((event) => calendarEventIsRunning(event, now));
-      const slideEvents = runningEvents.length ? runningEvents : events.slice(0, 5);
-      const next = slideEvents[homeCycleIndex(slideEvents.length, 45)] || events[0];
+      const next = runningEvents.length ? (runningEvents[homeCycleIndex(runningEvents.length, 45)] || runningEvents[0]) : events[0];
       const isRunning = next ? calendarEventIsRunning(next, now) : false;
       return {
         ...base,
@@ -2478,8 +2487,8 @@
         detail: next ? calendarEventTimeLabel(next, now) : 'Kliknutím otevřeš kalendář',
         chips: [],
         extraRows: [],
-        live: slideEvents.length > 1,
-        tone: isRunning || next ? 'good' : 'neutral'
+        live: runningEvents.length > 1,
+        tone: isRunning ? 'good' : next ? 'warn' : 'neutral'
       };
     }
     if (id === 'packages') {
@@ -3066,6 +3075,7 @@
     const updated = weather.updatedAt ? formatDateTime(new Date(weather.updatedAt)) : 'nenačteno';
     const todayWeather = (weather.daily || [])[0] || {};
     const sourceLabel = weatherSourceLabel(weather.source);
+    const location = normalizeWeatherLocation(weather.location);
     const providerLabel = normalizeText(weather.meta?.providerLabel) || (weather.source === 'chmi' ? 'ČHMÚ + doplněné číselné detaily' : sourceLabel);
     const astronomySource = normalizeText(weather.meta?.astronomySource || weather.meta?.numericFallback) || (weather.source === 'chmi' ? 'Open-Meteo' : sourceLabel);
     ensureWeatherFresh(false);
@@ -3091,6 +3101,19 @@
             </div>
           </div>
           <div class="form-actions compact-actions"><button class="primary-btn" type="button" data-action="weather-refresh">Obnovit počasí</button><button class="ghost-btn" type="button" data-nav="settings" data-target-tab="dashboard">Nastavit místo</button></div>
+        </section>
+        <section class="card desktop-span-2 weather-settings-card">
+          <div class="card-header"><div><h2>Nastavení počasí</h2><p>Preferovaný zdroj je ČHMÚ přes Edge Function. Když data vypadnou, appka bezpečně použije Open-Meteo fallback.</p></div><span class="badge ${weather.current ? 'good' : ''}">${weather.current ? 'aktivní' : 'nastavit'}</span></div>
+          <form data-form="weather-settings" class="compact-form">
+            <div class="form-grid two">
+              ${selectField('Zdroj', 'weatherSource', WEATHER_PROVIDER_OPTIONS, normalizeWeatherSource(weather.source))}
+              ${field('Místo', 'locationName', 'text', 'Hostinné', true, location.name)}
+              ${field('Země', 'country', 'text', 'CZ', false, location.country)}
+              ${field('Šířka', 'latitude', 'number', '50,5407', false, location.latitude)}
+              ${field('Délka', 'longitude', 'number', '15,7233', false, location.longitude)}
+            </div>
+            <div class="form-actions compact-actions"><button class="primary-btn" type="submit">Uložit a načíst počasí</button><button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit počasí</button></div>
+          </form>
         </section>
         <section class="card desktop-span-2">
           <div class="card-header"><div><h2>Po hodinách</h2><p>Nejbližších 24 hodin pro rychlé plánování.</p></div></div>
@@ -3620,6 +3643,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_138', note: 'Hotovo: Home panely lépe zobrazují delší texty, kalendář ukazuje nejbližší událost, PL svátky na Home ignorují běžné neděle, Předplatné má výchozí formuláře zabalené, Garáž a Nastavení jsou výrazně uklizené.' },
       { title: 'Domácnost+ v.0.1_137', note: 'Hotfix: Předplatné už nemá ruční cloud tlačítka, ukládá a načítá se automaticky přes Supabase domácnost stejně jako ostatní cloudová data.' },
       { title: 'Domácnost+ v.0.1_136', note: 'Hotovo: Předplatné se synchronizuje online přes cloud domácnosti a Home panely lze dlouhým podržením přepnout do režimu přesunu pořadí.' },
       { title: 'Domácnost+ v.0.1_135', note: 'Hotovo: v Předplatném mají služby skutečnější logo-like značky místo pouhých iniciál a přidaná je i služba T-Mobile.' },
@@ -5129,21 +5153,7 @@
         { id: 'import', label: 'Fuelio', icon: '📥' }
       ], 'overview')}
       <div class="grid two module-tabbed garage-tab-${activeGarageTab}" data-tab-area="garage">
-        <section class="card desktop-span-2 garage-panel panel-overview garage-fuelio-panel">
-          <div class="card-header"><div><h2>Garáž</h2><p>Seznam aut, termíny a rychlý stav bez dlouhého scrollování.</p></div><span class="badge ${state.cloud?.householdId ? 'good' : ''}">${state.cloud?.householdId ? 'cloud ready' : 'lokálně'}</span></div>
-          ${state.cloud?.householdId ? `
-            <div class="form-actions compact-actions">
-              <button class="ghost-btn" type="button" data-action="cloud-load-garage">Načíst cloud Garáž</button>
-              <button class="ghost-btn" type="button" data-action="cloud-sync-local-garage">Odeslat lokální Garáž</button>
-              <button class="ghost-btn" type="button" data-action="garage-dedupe-now">Opravit duplicity</button>
-            </div>
-          ` : '<div class="inline-note compact-note">Po přihlášení se Garáž ukládá podle domácnosti. Offline data zůstávají jen jako pracovní záloha.</div>'}
-          <div class="cloud-status-grid compact-cloud-stats">
-            <div class="mini-stat"><span>Auta</span><strong>${vehicles.length}</strong></div>
-            <div class="mini-stat"><span>Tankování</span><strong>${fuelRowsAll.length}</strong></div>
-            <div class="mini-stat"><span>Servisy</span><strong>${serviceRowsAll.length}</strong></div>
-            <div class="mini-stat"><span>Upozornění</span><strong>${alerts.length}</strong></div>
-          </div>
+        <section class="card desktop-span-2 garage-panel panel-overview garage-fuelio-panel clean-garage-overview">
           ${vehicles.length ? `
             <div class="tabs-inline compact-vehicle-tabs">
               ${vehicles.map((vehicle) => `<button class="tab-pill vehicle-tab-pill ${vehicle.id === garageVehicleId ? 'active' : ''}" type="button" data-action="select-vehicle" data-id="${vehicle.id}"><span class="vehicle-color-dot ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true"></span>${escapeHtml(vehicle.name)}</button>`).join('')}
@@ -6548,7 +6558,7 @@
 
         <section class="card desktop-span-2 subscription-panel panel-services">
           <div class="card-header"><div><h2>Služby</h2><p>Vyber službu, uprav cenu a potom nastav, kdo ti za ni kolik platí.</p></div><span class="badge">${allServices.length}</span></div>
-          <details class="action-details compact-edit-details subscription-form-drawer" open>
+          <details class="action-details compact-edit-details subscription-form-drawer">
             <summary><span>Přidat službu</span><em>Netflix, Disney+, Spotify nebo vlastní</em></summary>
             <form data-form="add-subscription" class="compact-form">
               <div class="form-grid two">
@@ -6581,7 +6591,7 @@
 
         <section class="card desktop-span-2 subscription-panel panel-people">
           <div class="card-header"><div><h2>Lidé</h2><p>Klikni na člověka a přiřaď mu službu včetně částky. Volná místa u služeb se přepočítají sama.</p></div><span class="badge">${people.length}</span></div>
-          <details class="action-details compact-edit-details subscription-form-drawer" open>
+          <details class="action-details compact-edit-details subscription-form-drawer">
             <summary><span>Přidat člověka</span><em>kamarád, rodina, kolega</em></summary>
             <form data-form="add-subscription-person" class="compact-form">
               <div class="form-grid two">
@@ -6926,15 +6936,12 @@
 
         <div class="settings-panel panel-cloud grid two">
           ${renderCloudAccount()}
-          ${renderCloudSyncOverview('settings')}
-          ${renderCloudReadiness(false)}
-          ${renderPwaInstallCard()}
-          ${renderAuthSetupCard()}
         </div>
 
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
-            <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv jsou zvlášť v IndexedDB/Supabase Storage.</p></div></div>
+            <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 138))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -6956,9 +6963,6 @@
 
 
   function renderDashboardSettings() {
-    const selected = new Set(normalizeDashboardWidgetIds(state.settings?.dashboardWidgets));
-    const weather = normalizeWeatherState(state.weather);
-    const location = normalizeWeatherLocation(weather.location);
     const previewCtx = {
       hdo: getHdoStatus(now),
       todayEvents: upcomingCalendarEvents(now).filter((event) => event.date === todayISO()),
@@ -6969,11 +6973,11 @@
       openTasks: state.homeTasks.filter((task) => !task.done),
       wasteSoon: state.waste.map((item) => ({ ...item, days: daysUntil(item.date) })).filter((item) => item.days !== null && item.days >= 0 && item.days <= 7),
       vehicleAlerts: getVehicleAlerts(),
-      weather
+      weather: normalizeWeatherState(state.weather)
     };
     return `
       <section class="card desktop-span-2 compact-settings-card dashboard-settings-card">
-        <div class="card-header"><div><h2>Panely v horním bloku Home</h2><p>Čas a počasí jsou na Home pevně. Vyber 0–8 dalších panelů pod ně.</p></div><span class="badge">${normalizeHomeHeroIds(state.settings?.homeHeroItems).length}/8</span></div>
+        <div class="card-header"><div><h2>Panely v horním bloku Home</h2><p>Čas a počasí jsou na Home pevně. Vyber 0–8 dalších panelů pod ně. Pořadí můžeš měnit dlouhým podržením panelu přímo na Home.</p></div><span class="badge">${normalizeHomeHeroIds(state.settings?.homeHeroItems).length}/8</span></div>
         <div class="switch-list dashboard-widget-picker">
           ${HOME_HERO_ITEMS.map((item) => {
             const active = normalizeHomeHeroIds(state.settings?.homeHeroItems).includes(item.id);
@@ -6987,26 +6991,6 @@
           }).join('')}
         </div>
         <div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="home-hero-reset">Bez dalších panelů</button>${cloudReady() ? '<span class="badge good">ukládá se i do domácnosti</span>' : '<span class="badge">lokálně</span>'}</div>
-      </section>
-
-      <section class="card compact-settings-card weather-settings-card">
-        <div class="card-header"><div><h2>Počasí</h2><p>Preferovaný zdroj je ČHMÚ přes Edge Function. Když backend nebo data vypadnou, appka bezpečně použije Open-Meteo fallback.</p></div><span class="badge ${weather.current ? 'good' : ''}">${weather.current ? 'aktivní' : 'nastavit'}</span></div>
-        <form data-form="weather-settings" class="compact-form">
-          <div class="form-grid two">
-            ${selectField('Zdroj', 'weatherSource', WEATHER_PROVIDER_OPTIONS, normalizeWeatherSource(weather.source))}
-            ${field('Místo', 'locationName', 'text', 'Hostinné', true, location.name)}
-            ${field('Země', 'country', 'text', 'CZ', false, location.country)}
-            ${field('Šířka', 'latitude', 'number', '50,5407', false, location.latitude)}
-            ${field('Délka', 'longitude', 'number', '15,7233', false, location.longitude)}
-          </div>
-          <div class="form-actions compact-actions"><button class="primary-btn" type="submit">Uložit a načíst počasí</button><button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit počasí</button></div>
-        </form>
-        <div class="inline-note compact-note">Když vyplníš jen název místa, aplikace ho zkusí najít přes geocoding. ČHMÚ data běží přes backend mezivrstvu, aby se Home nerozbilo ani při změně datového formátu.</div>
-      </section>
-
-      <section class="card compact-settings-card">
-        <div class="card-header"><div><h2>Jak to bude fungovat dál</h2><p>Teď je hotový základ zapnout/vypnout. Později půjde doplnit ruční řazení, velikosti karet a tabletový režim.</p></div></div>
-        <div class="hint-box">Dashboard je samostatná vrstva nad moduly. Když odebereš kartu z hlavní obrazovky, data a modul zůstanou v aplikaci.</div>
       </section>
     `;
   }
@@ -7223,24 +7207,27 @@
             `).join('')}
           </div>
         ` : '<div class="inline-note">Zatím není načtený seznam domácností. Klikni na „Načíst moje domácnosti“.</div>'}
-        <div class="grid two cloud-auth-grid">
-          <form data-form="cloud-create-household">
-            <h3>Nová domácnost</h3>
-            <div class="form-grid two">
-              ${field('Název', 'name', 'text', 'Novákovi / Chata / Byt', true)}
-              ${field('Hlavní profil', 'profileName', 'text', currentProfile()?.name || 'Já', false)}
-            </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Vytvořit novou domácnost</button></div>
-          </form>
-          <form data-form="cloud-invite-member">
-            <h3>Pozvat člena</h3>
-            <div class="form-grid two">
-              ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
-              ${selectField('Role', 'role', [['member', 'Člen'], ['admin', 'Admin'], ['read_only', 'Jen čtení']], 'member')}
-            </div>
-            <div class="form-actions"><button class="ghost-btn" type="submit">Připravit pozvánku</button></div>
-          </form>
-        </div>
+        <details class="action-details compact-edit-details settings-form-drawer cloud-household-create-details">
+          <summary><span>Nová domácnost / pozvánka</span><em>otevřít jen když zakládáš nebo zveš</em></summary>
+          <div class="grid two cloud-auth-grid">
+            <form data-form="cloud-create-household">
+              <h3>Nová domácnost</h3>
+              <div class="form-grid two">
+                ${field('Název', 'name', 'text', 'Novákovi / Chata / Byt', true)}
+                ${field('Hlavní profil', 'profileName', 'text', currentProfile()?.name || 'Já', false)}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Vytvořit novou domácnost</button></div>
+            </form>
+            <form data-form="cloud-invite-member">
+              <h3>Pozvat člena</h3>
+              <div class="form-grid two">
+                ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
+                ${selectField('Role', 'role', [['member', 'Člen'], ['admin', 'Admin'], ['read_only', 'Jen čtení']], 'member')}
+              </div>
+              <div class="form-actions"><button class="ghost-btn" type="submit">Připravit pozvánku</button></div>
+            </form>
+          </div>
+        </details>
         <div class="form-actions compact-actions">
           <button class="ghost-btn" type="button" data-action="cloud-load-invitations">Načíst pozvánky</button>
         </div>
@@ -7332,30 +7319,18 @@
     return `
       <section class="card desktop-span-2 cloud-card">
         <div class="card-header">
-          <div><h2>Cloud účet</h2><p>Online domácnost v Supabase. Při vytvoření domácnosti se cloud připraví automaticky; lokál zůstává jen cache/fallback.</p></div>
+          <div><h2>Cloud účet</h2><p>Online domácnost v Supabase. Synchronizace běží automaticky, ruční kontrolní panely jsou schované pryč.</p></div>
           <span class="badge ${signedIn ? 'good' : ''}">${signedIn ? 'přihlášeno' : 'lokálně'}</span>
         </div>
-        <div class="cloud-status-grid">
-          <div class="mini-stat"><span>Supabase</span><strong>${escapeHtml(SUPABASE_URL.replace('https://', ''))}</strong></div>
-          <div class="mini-stat"><span>Účet</span><strong>${escapeHtml(cloud.email || 'nepřihlášeno')}</strong></div>
-          <div class="mini-stat"><span>Cloud domácnost</span><strong>${escapeHtml(cloud.householdId || 'zatím nevytvořena')}</strong></div>
-          <div class="mini-stat"><span>Poslední zápis</span><strong>${cloud.lastSyncAt ? escapeHtml(formatDateTime(cloud.lastSyncAt)) : 'nikdy'}</strong></div>
-          <div class="mini-stat"><span>Živé změny</span><strong data-cloud-realtime-status>${signedIn && cloud.householdId ? escapeHtml(realtimeStatusLabel(cloud.realtimeStatus)) : 'offline'}</strong></div>
-          <div class="mini-stat"><span>Autosync</span><strong>${signedIn && cloud.householdId ? escapeHtml(cloudAutosyncStatusLabel(cloud.autosyncStatus)) : 'offline'}</strong></div>
-          <div class="mini-stat"><span>Poslední autosync</span><strong>${cloud.lastAutosyncAt ? escapeHtml(formatDateTime(cloud.lastAutosyncAt)) : 'nikdy'}</strong></div>
-        </div>
-        ${signedIn ? renderCloudHouseholdManager() : ''}
         ${signedIn ? `
-          <div class="hint-box">Jsi přihlášený. Domácnost se při založení rovnou vytvoří v Supabase. Tady zůstává jen kontrola, ruční synchronizace a údržba účtu.</div>
-          <div class="form-actions">
-            <button class="ghost-btn" type="button" data-action="cloud-bootstrap">Opravit cloud napojení</button>
-            <button class="ghost-btn" type="button" data-action="cloud-load-all">Načíst data domácnosti</button>
-            <button class="ghost-btn" type="button" data-action="cloud-start-realtime">Zapnout živé změny</button>
-            <button class="ghost-btn" type="button" data-action="cloud-run-autosync-now">Synchronizovat teď</button>
-            <button class="ghost-btn" type="button" data-action="cloud-toggle-autosync">${cloud.autoSyncEnabled === false ? 'Zapnout autosync' : 'Vypnout autosync'}</button>
-            <button class="ghost-btn" type="button" data-action="cloud-refresh-session">Obnovit stav účtu</button>
-            <button class="danger-btn" type="button" data-action="cloud-logout">Odhlásit</button>
+          <div class="cloud-status-grid compact-cloud-stats">
+            <div class="mini-stat"><span>Účet</span><strong>${escapeHtml(cloud.email || 'nepřihlášeno')}</strong></div>
+            <div class="mini-stat"><span>Domácnost</span><strong>${escapeHtml(cloud.householdId ? shortId(cloud.householdId) : 'nevytvořena')}</strong></div>
+            <div class="mini-stat"><span>Autosync</span><strong>${escapeHtml(cloudAutosyncStatusLabel(cloud.autosyncStatus))}</strong></div>
+            <div class="mini-stat"><span>Poslední zápis</span><strong>${cloud.lastSyncAt ? escapeHtml(formatDateTime(cloud.lastSyncAt)) : 'nikdy'}</strong></div>
           </div>
+          ${renderCloudHouseholdManager()}
+          <div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="cloud-refresh-session">Obnovit stav účtu</button><button class="danger-btn" type="button" data-action="cloud-logout">Odhlásit</button></div>
         ` : `
           <div class="grid two cloud-auth-grid">
             <form data-form="cloud-login">
@@ -7375,12 +7350,10 @@
               <div class="form-actions"><button class="ghost-btn" type="submit">Založit účet</button></div>
             </form>
           </div>
-          <div class="inline-note">Pokud bude v Supabase zapnuté potvrzení e-mailu, po registraci bude potřeba účet potvrdit přes e-mail a pak se přihlásit.</div>
         `}
       </section>
     `;
   }
-
 
   function getPwaStatus() {
     const standalone = window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone === true;
@@ -11634,7 +11607,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 137, mode: 'rich-demo-v137', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 138, mode: 'rich-demo-v138', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -11776,7 +11749,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 137, mode: 'anime-icons-v137', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 138, mode: 'anime-icons-v138', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -14241,7 +14214,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 137
+        appBuild: 138
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -14831,7 +14804,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-137-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-138-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -15043,7 +15016,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_137</span>
+          <span class="badge">Domácnost+ v.0.1_138</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
