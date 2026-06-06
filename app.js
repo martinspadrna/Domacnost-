@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_127';
+  const APP_VERSION = 'Domácnost+ v.0.1_128';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -180,8 +180,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 69,
-      appBuild: 127,
-      mode: 'anime-icons-v127',
+      appBuild: 128,
+      mode: 'anime-icons-v128',
       createdAt: '',
       updatedAt: ''
     },
@@ -953,8 +953,8 @@
 
     migrated.meta = {
       schemaVersion: 69,
-      appBuild: 127,
-      mode: 'anime-icons-v127',
+      appBuild: 128,
+      mode: 'anime-icons-v128',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1388,7 +1388,7 @@
             const isActive = module.id === MORE_MODULE.id ? isMoreNavActive() : module.id === activeModule;
             return `
               <button class="nav-item ${isActive ? 'active' : ''}" type="button" data-nav="${module.id}">
-                ${renderModuleIllustration(module.id, { size: 'nav', slotClass: 'nav-icon', label: module.label })}
+                ${renderMiniModuleIcon(module.id, { size: 'nav', slotClass: 'nav-icon', label: module.label })}
                 <span>${escapeHtml(module.label)}</span>
               </button>
             `;
@@ -2313,12 +2313,12 @@
             ${daily.map((day, index) => {
               const [, dayIcon] = weatherCodeLabel(day.weatherCode);
               const label = index === 0 ? 'Dnes' : shortWeekday(day.date);
-              return `<span class="hero-weather-day"><em>${escapeHtml(label)}</em><strong>${renderGlassIcon(dayIcon, { size: 'weather-xs', extraClass: 'weather-inline-icon' })} ${roundWeather(day.max, '°')}</strong><small>${roundWeather(day.min, '°')}</small></span>`;
+              return `<span class="hero-weather-day"><em>${escapeHtml(label)}</em><strong>${renderWeatherAnimeIcon(day.weatherCode, { size: 'xs', extraClass: 'weather-inline-icon' })} ${roundWeather(day.max, '°')}</strong><small>${roundWeather(day.min, '°')}</small></span>`;
             }).join('')}
           </span>` : '';
     return `
       <button class="hero-weather-pill ${options.expanded ? 'hero-weather-pill-expanded' : ''} ${daily.length > 1 ? 'hero-weather-pill-live' : ''}" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
-        ${renderGlassIcon(currentIcon, { size: options.expanded ? 'hero-lg' : 'hero-md', extraClass: 'hero-weather-icon' })}
+        ${renderWeatherAnimeIcon(current.weatherCode, { size: options.expanded ? 'hero' : 'md', extraClass: 'hero-weather-icon' })}
         <span class="hero-weather-copy"><strong>${escapeHtml(currentValue)}</strong><em>${escapeHtml(secondaryLabel)}</em>${options.expanded && tomorrowHint ? `<small>${escapeHtml(tomorrowHint)}</small>` : ''}</span>
         ${forecast}
       </button>
@@ -2347,7 +2347,7 @@
         : '';
       return `
         <button class="station-summary-item station-summary-item-${escapeHtml(id)} station-summary-size-${density} station-summary-tone-${escapeHtml(presentation.tone || 'neutral')} ${presentation.live ? 'station-summary-live' : ''}" type="button" ${attrs}>
-          ${renderGlassIcon(getHomeIconKind(id), { size: density === 'large' ? 'home-lg' : 'home-sm', extraClass: 'station-summary-icon' })}
+          ${renderModuleIllustration(id, { size: density === 'large' ? 'hero-card' : 'home-sm', slotClass: 'station-summary-icon station-summary-illustration-slot', extraClass: 'station-summary-illustration', label: item.label })}
           <span class="station-summary-copy">
             <em>${escapeHtml(item.label)}</em>
             <strong class="station-summary-metric">${escapeHtml(presentation.metric)}</strong>
@@ -2689,6 +2689,73 @@
     return `<span class="module-illustration-slot module-illustration-slot-${escapeHtml(String(size))}${slotClass}" aria-hidden="true"><img class="module-illustration module-illustration-${escapeHtml(String(size))}${extraClass}" src="${escapeHtml(getModuleIllustrationSrc(id))}" alt="" loading="lazy" decoding="async"></span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
   }
 
+  function renderMiniModuleIcon(id, options = {}) {
+    const size = options.size || 'nav';
+    const slotClass = options.slotClass ? ` ${options.slotClass}` : '';
+    const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
+    const label = options.label || '';
+    const svg = getMiniModuleIconSvg(id);
+    return `<span class="mini-module-icon mini-module-icon-${escapeHtml(String(size))}${slotClass}${extraClass}" aria-hidden="true">${svg}</span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
+  }
+
+  function getMiniModuleIconSvg(id) {
+    const map = {
+      home: `<svg viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2v8.8a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z" fill="#3B82F6"/><path d="M7 12.5h10" stroke="#BFDBFE" stroke-width="1.8" stroke-linecap="round"/><path d="M16.8 5.8 18 8l2.3 1.1-2.3 1.1L16.8 12l-1.1-1.8-2.2-1.1 2.2-1.1Z" fill="#FACC15"/></svg>`,
+      weather: `<svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="4" fill="#FBBF24"/><path d="M12.8 15.5a3.7 3.7 0 0 1 1-7.2 4.3 4.3 0 0 1 8.2 1.7 3.4 3.4 0 0 1-.4 6.8z" fill="#93C5FD"/><path d="M14 18h6" stroke="#60A5FA" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      calendar: `<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="4" fill="#2563EB"/><path d="M3 9h18" stroke="#BFDBFE" stroke-width="2"/><rect x="5" y="5" width="14" height="4" rx="2" fill="#EF4444"/><circle cx="15.5" cy="15" r="2.2" fill="#FCA5A5"/><circle cx="15.5" cy="15" r="1.2" fill="#DC2626"/></svg>`,
+      packages: `<svg viewBox="0 0 24 24"><path d="m12 3 8 4v10l-8 4-8-4V7z" fill="#F59E0B"/><path d="M12 3v8l8-4M12 11 4 7" stroke="#FDE68A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 6.2 16 10.2" stroke="#92400E" stroke-width="1.5"/></svg>`,
+      shopping: `<svg viewBox="0 0 24 24"><path d="M5 9h14l-1.4 8.2a1 1 0 0 1-1 .8H8.4a1 1 0 0 1-1-.8z" fill="#2563EB"/><path d="M8 9V7a4 4 0 0 1 8 0v2" stroke="#60A5FA" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="19" r="1.5" fill="#1E3A8A"/><circle cx="16" cy="19" r="1.5" fill="#1E3A8A"/><circle cx="11" cy="13" r="1.6" fill="#EF4444"/><path d="M14.5 12h3" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      coupons: `<svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H20v4a2 2 0 0 0 0 4v4H6.5A2.5 2.5 0 0 1 4 15.5z" fill="#A855F7"/><path d="M12.2 8.5v7" stroke="#E9D5FF" stroke-width="1.8" stroke-dasharray="1.5 1.5" stroke-linecap="round"/><path d="M8 12h2.5M8 9.5h6.5" stroke="#F3E8FF" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      hdo: `<svg viewBox="0 0 24 24"><path d="M12 3.5A6.5 6.5 0 0 0 8 15c1 .7 1.6 1.6 1.7 2.8h4.6c.1-1.2.7-2.1 1.7-2.8A6.5 6.5 0 0 0 12 3.5Z" fill="#FBBF24"/><path d="m13 7.5-3 4h2.2l-1.2 5 4-6H13z" fill="#F59E0B"/><path d="M10 20h4M10.5 22h3" stroke="#1D4ED8" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      waste: `<svg viewBox="0 0 24 24"><path d="M7 7h10l-1 12a1.1 1.1 0 0 1-1.1 1H9.1A1.1 1.1 0 0 1 8 19z" fill="#16A34A"/><path d="M9 7V5h6v2M5.5 7h13" stroke="#86EFAC" stroke-width="1.8" stroke-linecap="round"/><path d="M12 10c-1 .5-1.7 1.2-2 2.2 1 .2 1.7.8 2 1.8.4-1 1-1.6 2-1.8-.3-1-.9-1.7-2-2.2Z" fill="#DCFCE7"/></svg>`,
+      tasks: `<svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="3" fill="#2563EB"/><rect x="7.5" y="6" width="9" height="12" rx="2" fill="#EFF6FF"/><path d="M9.2 9.5 10.5 11l2.2-2.7M9.2 13.3 10.5 14.8l2.2-2.7" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.8 9.7h1.8M13.8 13.5h1.8" stroke="#60A5FA" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      notes: `<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z" fill="#FDE68A"/><path d="M16.5 5H19v2.5z" fill="#F59E0B"/><path d="M8 10h8M8 13h6" stroke="#92400E" stroke-width="1.8" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="1.2" fill="#EF4444"/></svg>`,
+      devices: `<svg viewBox="0 0 24 24"><path d="M7 11a5 5 0 0 1 10 0v1.3a4.7 4.7 0 0 1-9.4 0z" fill="#38BDF8"/><path d="M5 8c1.2-1.7 2.7-2.7 4.6-3.1M19 8c-1.2-1.7-2.7-2.7-4.6-3.1" stroke="#0EA5E9" stroke-width="1.8" stroke-linecap="round"/><path d="M12 16v3" stroke="#1D4ED8" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      warranties: `<svg viewBox="0 0 24 24"><path d="M12 3.5 18 6v5.3c0 3.6-2.2 6.6-6 9.2-3.8-2.6-6-5.6-6-9.2V6z" fill="#2563EB"/><path d="m8.5 12 2.1 2.1 4.9-5" stroke="#DBEAFE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      polishHolidays: `<svg viewBox="0 0 24 24"><path d="M6 4v16" stroke="#64748B" stroke-width="1.8" stroke-linecap="round"/><path d="M7 5h10a1 1 0 0 1 1 1l-1 2 1 2a1 1 0 0 1-1 1H7z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/><path d="M7 10h10v3H7z" fill="#EF4444"/></svg>`,
+      homecare: `<svg viewBox="0 0 24 24"><path d="M12 3.5A6.5 6.5 0 0 0 8 15c1 .7 1.6 1.6 1.7 2.8h4.6c.1-1.2.7-2.1 1.7-2.8A6.5 6.5 0 0 0 12 3.5Z" fill="#FBBF24"/><path d="M10 20h4M10.5 22h3" stroke="#1D4ED8" stroke-width="1.8" stroke-linecap="round"/><path d="M12 8v3.3l2.2 1.3" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      garage: `<svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" fill="#60A5FA"/><path d="M6.5 20v-6h11v6" fill="#1E40AF"/><path d="M8 15.2h8" stroke="#93C5FD" stroke-width="1.8"/><circle cx="10" cy="18" r="1.4" fill="#0F172A"/><circle cx="14" cy="18" r="1.4" fill="#0F172A"/></svg>`,
+      contracts: `<svg viewBox="0 0 24 24"><path d="M5 4h8l4 4v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z" fill="#2563EB"/><path d="M13 4v4h4" fill="#BFDBFE"/><path d="M8 12h8M8 15h6" stroke="#DBEAFE" stroke-width="1.8" stroke-linecap="round"/><circle cx="17.5" cy="17.5" r="2.5" fill="#22C55E"/></svg>`,
+      cameras: `<svg viewBox="0 0 24 24"><rect x="4" y="7" width="13" height="10" rx="5" fill="#CBD5E1"/><circle cx="10.5" cy="12" r="4" fill="#0F172A"/><circle cx="10.5" cy="12" r="2.1" fill="#60A5FA"/><path d="M17 9h3v6h-3" fill="#94A3B8"/><path d="M5 20c1.5-2 3.5-3 6-3" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      finance: `<svg viewBox="0 0 24 24"><ellipse cx="7" cy="17" rx="4" ry="2" fill="#FBBF24"/><path d="M3 17v2c0 1.1 1.8 2 4 2s4-.9 4-2v-2" fill="#D97706"/><path d="M12 18h2v-5h-2Zm4 0h2V9h-2Zm4 0h2V5h-2Z" fill="#3B82F6"/><path d="M11 8c3 0 6-1.5 9-4" stroke="#22C55E" stroke-width="2" stroke-linecap="round"/></svg>`,
+      settings: `<svg viewBox="0 0 24 24"><path d="m13.8 3 .6 2.5a6.7 6.7 0 0 1 1.7 1l2.4-.8 1.4 2.3-1.9 1.6c.1.5.1 1 .1 1.5s0 1-.1 1.5l1.9 1.6-1.4 2.3-2.4-.8a6.7 6.7 0 0 1-1.7 1l-.6 2.5h-2.8l-.6-2.5a6.7 6.7 0 0 1-1.7-1l-2.4.8-1.4-2.3 1.9-1.6a7.5 7.5 0 0 1 0-3L4.3 8l1.4-2.3 2.4.8a6.7 6.7 0 0 1 1.7-1L10.4 3z" fill="#94A3B8"/><circle cx="12" cy="12" r="3" fill="#334155"/></svg>`,
+      more: `<svg viewBox="0 0 24 24"><path d="M5 6h6v6H5z" fill="#3B82F6"/><path d="M13 6h6v6h-6z" fill="#F59E0B"/><path d="M5 14h6v6H5z" fill="#22C55E"/><path d="M13 14h6v6h-6z" fill="#A855F7"/></svg>`
+    };
+    return map[String(id || '')] || map.settings;
+  }
+
+  function weatherAnimeKind(code) {
+    const value = Number(code);
+    if (value === 0) return 'sun';
+    if (value === 1 || value === 2) return 'partly';
+    if (value === 3) return 'cloud';
+    if (value === 45 || value === 48) return 'fog';
+    if ([71,73,75].includes(value)) return 'snow';
+    if ([95,96,99,82].includes(value)) return 'storm';
+    if ([51,53,55,61,63,65,80,81].includes(value)) return 'rain';
+    return 'partly';
+  }
+
+  function renderWeatherAnimeIcon(code, options = {}) {
+    const size = options.size || 'md';
+    const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
+    const kind = options.kind || weatherAnimeKind(code);
+    return `<span class="weather-anime-icon weather-anime-icon-${escapeHtml(String(size))}${extraClass}" aria-hidden="true">${getWeatherAnimeSvg(kind)}</span>`;
+  }
+
+  function getWeatherAnimeSvg(kind) {
+    const icons = {
+      sun: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="14" fill="#FBBF24"/><g stroke="#F59E0B" stroke-width="4" stroke-linecap="round"><path d="M32 8v8M32 48v8M8 32h8M48 32h8M15 15l6 6M43 43l6 6M49 15l-6 6M21 43l-6 6"/></g></svg>`,
+      partly: `<svg viewBox="0 0 64 64"><circle cx="23" cy="22" r="11" fill="#FBBF24"/><g stroke="#F59E0B" stroke-width="3.5" stroke-linecap="round"><path d="M23 6v5M23 33v5M7 22h5M34 22h5M12 11l4 4M34 33l4 4"/></g><path d="M23 45h24a9 9 0 0 0 .7-18A12 12 0 0 0 25.4 23 10.5 10.5 0 0 0 23 45Z" fill="#93C5FD"/><path d="M24 45h22" stroke="#60A5FA" stroke-width="3.5" stroke-linecap="round"/></svg>`,
+      cloud: `<svg viewBox="0 0 64 64"><path d="M19 46h28a10 10 0 0 0 .8-20A14 14 0 0 0 21.8 24 12 12 0 0 0 19 46Z" fill="#93C5FD"/><path d="M20 46h26" stroke="#60A5FA" stroke-width="4" stroke-linecap="round"/></svg>`,
+      fog: `<svg viewBox="0 0 64 64"><path d="M19 35h28a10 10 0 0 0 .8-20A14 14 0 0 0 21.8 13 12 12 0 0 0 19 35Z" fill="#CBD5E1"/><g stroke="#94A3B8" stroke-width="4" stroke-linecap="round"><path d="M14 43h36M18 50h28"/></g></svg>`,
+      rain: `<svg viewBox="0 0 64 64"><path d="M19 33h28a10 10 0 0 0 .8-20A14 14 0 0 0 21.8 11 12 12 0 0 0 19 33Z" fill="#93C5FD"/><g stroke="#2563EB" stroke-width="4" stroke-linecap="round"><path d="m24 40-3 7M34 40l-3 7M44 40l-3 7"/></g></svg>`,
+      snow: `<svg viewBox="0 0 64 64"><path d="M19 33h28a10 10 0 0 0 .8-20A14 14 0 0 0 21.8 11 12 12 0 0 0 19 33Z" fill="#BFDBFE"/><g stroke="#60A5FA" stroke-width="3" stroke-linecap="round"><path d="M24 42h8M28 38v8M25 39l6 6M31 39l-6 6M39 42h8M43 38v8M40 39l6 6M46 39l-6 6"/></g></svg>`,
+      storm: `<svg viewBox="0 0 64 64"><path d="M19 31h28a10 10 0 0 0 .8-20A14 14 0 0 0 21.8 9 12 12 0 0 0 19 31Z" fill="#94A3B8"/><path d="m34 34-8 12h7l-3 11 12-16h-7l3-7Z" fill="#FBBF24"/><g stroke="#2563EB" stroke-width="3.5" stroke-linecap="round"><path d="m22 38-2 5M46 38l-2 5"/></g></svg>`
+    };
+    return icons[String(kind || 'partly')] || icons.partly;
+  }
+
   function getGlassIconSvg(kind) {
     const icons = {
       calendar: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3.2"/><path d="M7.5 3.8v3.4M16.5 3.8v3.4M3.5 9.5h17M8 13h3M13 13h3M8 17h3"/></svg>`,
@@ -2835,7 +2902,7 @@
         </div>
         <button class="weather-main-row weather-current-button" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
           <div class="weather-current">
-            ${renderGlassIcon(icon, { size: 'weather-md', extraClass: 'weather-icon' })}
+            ${renderWeatherAnimeIcon(current.weatherCode, { size: 'md', extraClass: 'weather-icon' })}
             <div><strong>${hasCurrent ? roundWeather(current.temperature, '°') : '—'}</strong><em>${escapeHtml(condition)}</em></div>
           </div>
           <div class="weather-metrics weather-metrics-compact">
@@ -2863,7 +2930,7 @@
     if (!hours.length) return '<div class="empty">Hodinový výhled zatím není načtený.</div>';
     return `<div class="weather-hourly-strip">${hours.map((hour) => {
       const [label, hourIcon] = weatherCodeLabel(hour.weatherCode);
-      return `<div class="weather-hour"><span>${escapeHtml(shortTime(hour.time))}</span><strong>${renderGlassIcon(hourIcon, { size: 'weather-xs', extraClass: 'weather-inline-icon' })}<span>${roundWeather(hour.temperature, '°')}</span></strong><em>${roundWeather(hour.precipitation, ' mm')} · ${escapeHtml(label)}</em></div>`;
+      return `<div class="weather-hour"><span>${escapeHtml(shortTime(hour.time))}</span><strong>${renderWeatherAnimeIcon(hour.weatherCode, { size: 'xs', extraClass: 'weather-inline-icon' })}<span>${roundWeather(hour.temperature, '°')}</span></strong><em>${roundWeather(hour.precipitation, ' mm')} · ${escapeHtml(label)}</em></div>`;
     }).join('')}</div>`;
   }
 
@@ -2885,7 +2952,7 @@
         sunLine,
         textLine || label
       ].filter((part) => part && part !== '—').join(' · ');
-      return `<div class="weather-day"><span>${escapeHtml(shortWeekday(day.date))}</span><strong>${renderGlassIcon(dayIcon, { size: 'weather-xs', extraClass: 'weather-inline-icon' })}<span>${roundWeather(day.max, '°')}</span></strong><em>${escapeHtml(detail)}</em></div>`;
+      return `<div class="weather-day"><span>${escapeHtml(shortWeekday(day.date))}</span><strong>${renderWeatherAnimeIcon(day.weatherCode, { size: 'xs', extraClass: 'weather-inline-icon' })}<span>${roundWeather(day.max, '°')}</span></strong><em>${escapeHtml(detail)}</em></div>`;
     }).join('')}</div>`;
   }
 
@@ -2914,7 +2981,7 @@
           </div>
           <div class="weather-main-row">
             <div class="weather-current weather-current-large">
-              ${renderGlassIcon(icon, { size: 'weather-md', extraClass: 'weather-icon' })}
+              ${renderWeatherAnimeIcon(current.weatherCode, { size: 'md', extraClass: 'weather-icon' })}
               <div><strong>${roundWeather(current.temperature, '°')}</strong><em>${escapeHtml(condition)} · pocitově ${roundWeather(current.feelsLike, '°')}</em></div>
             </div>
             <div class="weather-metrics">
@@ -3454,6 +3521,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_128', note: 'Hotovo: Home panely pod hodinami už používají schválené ikonky, počasí je celé v novém barevném stylu a spodní lišta má zjednodušené čitelnější ikonky pro malé rozměry.' },
       { title: 'Domácnost+ v.0.1_127', note: 'Hotovo: celé modulové ikonky jsou předělané podle schváleného anime návrhu včetně spodní lišty, Home karet, Více a nastavení modulů. Počasí a čas na Home zůstaly vycentrované bez přetékání.' },
       { title: 'Domácnost+ v.0.1_126', note: 'Hotovo: anime ikonky bez pozadí pro Home/Moduly, HDO jako žárovka s bleskem a vycentrované panely času a počasí bez přetékání textu.' },
       { title: 'Domácnost+ v.0.1_125', note: 'Hotovo: oprava Garáže po chybě parseDateValue a nové kreslené barevné ikonky v Home/Moduly panelech.' },
@@ -10811,7 +10879,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 127, mode: 'rich-demo-v127', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 128, mode: 'rich-demo-v128', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -10953,7 +11021,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 127, mode: 'anime-icons-v127', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 128, mode: 'anime-icons-v128', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -13347,7 +13415,7 @@
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         warranties: normalizeWarranties(state.warranties),
         updatedAt: new Date().toISOString(),
-        appBuild: 127
+        appBuild: 128
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -13935,7 +14003,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-127-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-128-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -14122,7 +14190,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_127</span>
+          <span class="badge">Domácnost+ v.0.1_128</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

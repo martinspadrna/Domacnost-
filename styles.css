@@ -8992,3 +8992,117 @@ svg.anime-module-svg .anime-icon-line {
     height: 28px;
   }
 }
+
+/* Domácnost+ v.0.1_128 – Home panely schválené ikonky + počasí ve stejném stylu + jednodušší spodní lišta */
+.module-illustration-slot-hero-card,
+.station-summary-illustration-slot {
+  width: 58px;
+  height: 58px;
+}
+
+.station-summary-item .station-summary-icon.station-summary-illustration-slot,
+.station-summary-item .station-summary-icon.station-summary-illustration-slot::before,
+.station-summary-item .station-summary-icon.station-summary-illustration-slot::after {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+.station-summary-item .station-summary-icon.station-summary-illustration-slot svg,
+.station-summary-item .station-summary-icon.station-summary-illustration-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.mini-module-icon,
+.weather-anime-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  flex: 0 0 auto;
+}
+
+.mini-module-icon svg,
+.weather-anime-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.mini-module-icon-nav {
+  width: 26px;
+  height: 26px;
+}
+
+.nav-item .nav-icon.mini-module-icon {
+  width: 26px;
+  height: 26px;
+  margin-bottom: 2px;
+}
+
+.weather-anime-icon-xs {
+  width: 18px;
+  height: 18px;
+}
+
+.weather-anime-icon-md {
+  width: 54px;
+  height: 54px;
+}
+
+.weather-anime-icon-hero {
+  width: 70px;
+  height: 70px;
+}
+
+.hero-weather-pill .weather-anime-icon-md {
+  width: 52px;
+  height: 52px;
+}
+
+.hero-weather-pill .hero-weather-icon,
+.weather-current .weather-icon,
+.weather-current-large .weather-icon {
+  filter: drop-shadow(0 6px 14px rgba(29, 78, 216, 0.12));
+}
+
+.weather-hour strong,
+.weather-day strong,
+.hero-weather-day strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.weather-inline-icon {
+  margin-right: 0;
+}
+
+@media (max-width: 640px) {
+  .module-illustration-slot-hero-card,
+  .station-summary-illustration-slot {
+    width: 52px;
+    height: 52px;
+  }
+
+  .mini-module-icon-nav,
+  .nav-item .nav-icon.mini-module-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .weather-anime-icon-md {
+    width: 48px;
+    height: 48px;
+  }
+
+  .weather-anime-icon-hero {
+    width: 62px;
+    height: 62px;
+  }
+}
