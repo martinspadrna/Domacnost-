@@ -9884,3 +9884,156 @@ svg.anime-module-svg .anime-icon-line {
 .cloud-household-create-details {
   margin-top: 12px;
 }
+
+/* Domácnost+ v.0.1_139 – HDO tabulky, stabilnější ikonky a editace Home panelů nahoře */
+.home-hero-edit-toolbar-top {
+  margin: 0 0 12px;
+  position: sticky;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  z-index: 30;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.home-hero-edit-toolbar-top .primary-btn {
+  min-height: 40px;
+  padding-inline: 18px;
+}
+
+.hdo-overview-table-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.hdo-overview-table-card {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255,255,255,.34);
+}
+
+.hdo-overview-table-head {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.hdo-overview-table-head strong {
+  color: var(--text);
+  font-size: .98rem;
+}
+
+.hdo-overview-table-head span {
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.hdo-overview-table {
+  display: grid;
+  gap: 6px;
+}
+
+.hdo-overview-table-row {
+  display: grid;
+  grid-template-columns: minmax(74px, .9fr) minmax(0, 1.3fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 9px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.42);
+}
+
+.hdo-overview-table-row-head {
+  background: transparent;
+  padding-top: 0;
+  padding-bottom: 2px;
+  color: var(--muted);
+  font-size: .7rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.hdo-overview-table-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: .82rem;
+  line-height: 1.25;
+}
+
+.hdo-overview-table-row strong {
+  color: var(--text);
+  font-size: .82rem;
+}
+
+.hdo-overview-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 4px 7px;
+  border-radius: 999px;
+  font-style: normal;
+  font-size: .68rem;
+  font-weight: 850;
+  background: rgba(148,163,184,.16);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.hdo-overview-state.good {
+  background: rgba(34,197,94,.14);
+  color: #15803d;
+}
+
+.hdo-overview-state.warn {
+  background: rgba(245,158,11,.14);
+  color: #b45309;
+}
+
+.module-illustration-slot img.module-illustration {
+  content-visibility: visible;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@media (max-width: 720px) {
+  .hdo-overview-table-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hdo-overview-table-row {
+    grid-template-columns: minmax(70px, .85fr) minmax(0, 1fr) auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .home-hero-edit-toolbar-top {
+    align-items: stretch;
+  }
+
+  .home-hero-edit-toolbar-top span {
+    flex-basis: 100%;
+  }
+
+  .home-hero-edit-toolbar-top .primary-btn {
+    width: 100%;
+  }
+
+  .hdo-overview-table-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .hdo-overview-table-row span:nth-child(2) {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+
+  .hdo-overview-table-row-head {
+    display: none;
+  }
+}

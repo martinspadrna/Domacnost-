@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_138';
+  const APP_VERSION = 'Domácnost+ v.0.1_139';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -199,8 +199,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 69,
-      appBuild: 138,
-      mode: 'anime-icons-v138',
+      appBuild: 139,
+      mode: 'anime-icons-v139',
       createdAt: '',
       updatedAt: ''
     },
@@ -990,8 +990,8 @@
 
     migrated.meta = {
       schemaVersion: 69,
-      appBuild: 138,
-      mode: 'anime-icons-v138',
+      appBuild: 139,
+      mode: 'anime-icons-v139',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1821,6 +1821,55 @@
     return map[type] || { nav: type || 'homecare', tab: '' };
   }
 
+  function hdoAppliesToNormalDays(item) {
+    const days = sanitizeHdoDays(item?.days);
+    return days.some((day) => day >= 1 && day <= 5);
+  }
+
+  function hdoAppliesToWeekendHoliday(item) {
+    const days = sanitizeHdoDays(item?.days);
+    return days.includes(0) || days.includes(6);
+  }
+
+  function renderHdoOverviewTable(title, subtitle, rows = []) {
+    const cleanRows = sortHdoWindowsForOverview(rows);
+    return `
+      <div class="hdo-overview-table-card">
+        <div class="hdo-overview-table-head">
+          <strong>${escapeHtml(title)}</strong>
+          <span>${escapeHtml(subtitle)}</span>
+        </div>
+        ${cleanRows.length ? `
+          <div class="hdo-overview-table" role="table" aria-label="${escapeHtml(title)}">
+            <div class="hdo-overview-table-row hdo-overview-table-row-head" role="row">
+              <span role="columnheader">Čas</span>
+              <span role="columnheader">Název</span>
+              <span role="columnheader">Stav</span>
+            </div>
+            ${cleanRows.map((item) => {
+              const isValidTime = timeToMinutes(item.start) !== null && timeToMinutes(item.end) !== null;
+              return `
+                <div class="hdo-overview-table-row" role="row">
+                  <span role="cell"><strong>${escapeHtml(isValidTime ? hdoWindowTimeLabel(item) : 'zkontrolovat')}</strong></span>
+                  <span role="cell">${escapeHtml(item.label || 'HDO okno')}</span>
+                  <span role="cell"><em class="hdo-overview-state ${item.enabled && isValidTime ? 'good' : 'warn'}">${item.enabled && isValidTime ? 'aktivní' : item.enabled ? 'čas?' : 'vypnuto'}</em></span>
+                </div>`;
+            }).join('')}
+          </div>` : `<div class="inline-note compact-note">Pro tuhle skupinu není nastavené žádné okno.</div>`}
+      </div>`;
+  }
+
+  function renderHdoOverviewTables(rows = []) {
+    const safeRows = getSafeHdoWindows().length ? rows : [];
+    const normalRows = safeRows.filter(hdoAppliesToNormalDays);
+    const weekendRows = safeRows.filter(hdoAppliesToWeekendHoliday);
+    return `
+      <div class="hdo-overview-table-grid">
+        ${renderHdoOverviewTable('Normální dny', 'Po–Pá', normalRows)}
+        ${renderHdoOverviewTable('Víkend + svátky', 'Sobota, neděle a české svátky', weekendRows)}
+      </div>`;
+  }
+
   function renderOverviewContent(type) {
     const hdo = getHdoStatus(now);
     const titleMap = {
@@ -1853,10 +1902,7 @@
           { label: 'Aktivní', value: enabledRows.length, tone: enabledRows.length ? 'good' : '' },
           { label: 'Další změna', value: hdo.active ? 'běží' : nextHdo ? humanDuration(nextHdo.diffMinutes) : '—' }
         ])}
-        ${rows.length ? `<div class="list compact-list">${rows.map((item) => {
-          const isValidTime = timeToMinutes(item.start) !== null && timeToMinutes(item.end) !== null;
-          return `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.label || 'HDO okno')}</div><span class="badge ${item.enabled && isValidTime ? 'good' : ''}">${item.enabled && isValidTime ? 'aktivní' : item.enabled ? 'zkontrolovat čas' : 'vypnuto'}</span></div><div class="item-meta">${escapeHtml(isValidTime ? hdoWindowTimeLabel(item) : 'čas není správně')} · ${escapeHtml(daysLabel(item.days))}${item.cloudId ? ' · cloud' : ' · lokálně'}</div></div>`;
-        }).join('')}</div>` : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard ukáže aktuální stav i další přepnutí.', nav: 'homecare', tab: 'hdo', label: 'Nastavit HDO' })}
+        ${rows.length ? renderHdoOverviewTables(rows) : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard ukáže aktuální stav i další přepnutí.', nav: 'homecare', tab: 'hdo', label: 'Nastavit HDO' })}
       `;
     } else if (type === 'calendar') {
       const upcomingAll = upcomingCalendarEvents(now);
@@ -2302,6 +2348,7 @@
 
     return `
       <div class="dashboard-v10 dashboard-empty-home">
+        ${heroCount && homeHeroEditMode ? `<div class="station-summary-edit-toolbar home-hero-edit-toolbar-top"><strong>Úprava Home panelů</strong><span>Šipkami změň pořadí. Podržením panelu se úprava zapíná.</span><button class="primary-btn" type="button" data-action="home-hero-edit-done">Hotovo</button></div>` : ''}
         <section class="card hero-card station-hero home-minimal-hero home-hero-count-${heroCount} ${homeHeroEditMode ? 'home-hero-editing' : ''}">
           <div class="station-hero-main">
             <div class="station-clock-area">
@@ -2313,7 +2360,6 @@
                 ${renderHeroWeatherPill(dashboardContext, { expanded: heroCount === 0 })}
               </div>
             </div>
-            ${heroCount && homeHeroEditMode ? `<div class="station-summary-edit-toolbar"><strong>Úprava Home panelů</strong><span>Šipkami změň pořadí. Podržením panelu se úprava zapíná.</span><button class="ghost-btn" type="button" data-action="home-hero-edit-done">Hotovo</button></div>` : ''}
             ${heroCount ? `<div class="station-summary station-summary-count-${heroCount} ${homeHeroEditMode ? 'station-summary-editing' : ''}">${renderHomeHeroSummaryItems(dashboardContext)}</div>` : ''}
           </div>
         </section>
@@ -2791,7 +2837,7 @@
     const slotClass = options.slotClass ? ` ${options.slotClass}` : '';
     const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
     const label = options.label || '';
-    return `<span class="module-illustration-slot module-illustration-slot-${escapeHtml(String(size))}${slotClass}" aria-hidden="true"><img class="module-illustration module-illustration-${escapeHtml(String(size))}${extraClass}" src="${escapeHtml(getModuleIllustrationSrc(id))}" alt="" loading="lazy" decoding="async"></span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
+    return `<span class="module-illustration-slot module-illustration-slot-${escapeHtml(String(size))}${slotClass}" aria-hidden="true"><img class="module-illustration module-illustration-${escapeHtml(String(size))}${extraClass}" src="${escapeHtml(getModuleIllustrationSrc(id))}" alt="" loading="eager" decoding="sync" fetchpriority="high"></span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
   }
 
   function renderMiniModuleIcon(id, options = {}) {
@@ -3643,6 +3689,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_139', note: 'Hotovo: HDO rychlý přehled má dvě tabulky pro normální dny a víkend/svátky, formulář HDO je zabalený, ikonky se přednačítají a potvrzení řazení Home panelů je nahoře mimo dashboard.' },
       { title: 'Domácnost+ v.0.1_138', note: 'Hotovo: Home panely lépe zobrazují delší texty, kalendář ukazuje nejbližší událost, PL svátky na Home ignorují běžné neděle, Předplatné má výchozí formuláře zabalené, Garáž a Nastavení jsou výrazně uklizené.' },
       { title: 'Domácnost+ v.0.1_137', note: 'Hotfix: Předplatné už nemá ruční cloud tlačítka, ukládá a načítá se automaticky přes Supabase domácnost stejně jako ostatní cloudová data.' },
       { title: 'Domácnost+ v.0.1_136', note: 'Hotovo: Předplatné se synchronizuje online přes cloud domácnosti a Home panely lze dlouhým podržením přepnout do režimu přesunu pořadí.' },
@@ -4821,7 +4868,7 @@
             <div><h2>HDO / nízký tarif</h2><p>${escapeHtml(hdo.message)}</p></div>
             <span class="badge ${hdo.active ? 'good' : 'warn'}">${hdo.active ? 'běží' : 'neběží'} · ${state.hdoWindows.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
           </div>
-          <details class="compact-edit-details hdo-manual-details" open>
+          <details class="compact-edit-details hdo-manual-details">
             <summary><span>Ruční zadání časů</span><em>funguje pořád stejně</em></summary>
             <form data-form="add-hdo" class="compact-form hdo-manual-form">
               <div class="form-grid two">
@@ -11607,7 +11654,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 138, mode: 'rich-demo-v138', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 139, mode: 'rich-demo-v139', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -11749,7 +11796,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 138, mode: 'anime-icons-v138', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 139, mode: 'anime-icons-v139', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -14214,7 +14261,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 138
+        appBuild: 139
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -14804,7 +14851,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-138-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-139-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -15016,7 +15063,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_138</span>
+          <span class="badge">Domácnost+ v.0.1_139</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
