@@ -10181,3 +10181,217 @@ svg.anime-module-svg .anime-icon-line {
     text-align: left;
   }
 }
+
+/* Domácnost+ v.0.1_141 – Garáž grafy, km ve výběru auta a rychlé tankování */
+.vehicle-overview-action-with-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.vehicle-overview-main {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.overview-fuel-add-shortcut {
+  min-width: 42px;
+  height: 42px;
+  padding: 0 10px;
+  border-radius: 16px;
+  white-space: nowrap;
+}
+
+.garage-active-vehicle-selector-clean {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.garage-vehicle-dropdown {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.34);
+  overflow: hidden;
+}
+
+.garage-vehicle-dropdown summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 58px;
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.garage-vehicle-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.garage-vehicle-summary-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.garage-vehicle-summary-main strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 1.05rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.garage-vehicle-summary-km {
+  justify-self: end;
+  color: var(--text);
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.garage-vehicle-dropdown-list {
+  display: grid;
+  gap: 8px;
+  padding: 0 10px 10px;
+}
+
+.garage-vehicle-option-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.garage-vehicle-option-row.active {
+  outline: 1px solid rgba(53, 116, 240, 0.34);
+  background: rgba(53, 116, 240, 0.10);
+}
+
+.garage-vehicle-option-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.garage-vehicle-option-main span:not(.vehicle-icon-bubble) {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.garage-vehicle-option-main strong,
+.garage-vehicle-option-main em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.garage-vehicle-option-main strong {
+  color: var(--text);
+  font-size: .95rem;
+}
+
+.garage-vehicle-option-main em {
+  color: var(--muted);
+  font-size: .78rem;
+  font-style: normal;
+}
+
+.garage-vehicle-option-main b {
+  color: var(--text);
+  font-size: .86rem;
+  white-space: nowrap;
+}
+
+.garage-chart-body {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.36fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.garage-chart-values {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.garage-chart-values span {
+  display: grid;
+  gap: 2px;
+  padding: 7px 8px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.garage-chart-values em {
+  color: var(--muted);
+  font-size: .68rem;
+  font-style: normal;
+  line-height: 1.1;
+}
+
+.garage-chart-values strong {
+  color: var(--text);
+  font-size: .82rem;
+  line-height: 1.15;
+}
+
+.garage-line-average {
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-dasharray: 7 7;
+  opacity: .34;
+}
+
+[data-theme="dark"] .garage-vehicle-dropdown,
+[data-theme="dark"] .garage-vehicle-option-row,
+[data-theme="dark"] .garage-chart-values span {
+  background: rgba(255, 255, 255, 0.065);
+}
+
+@media (max-width: 640px) {
+  .garage-chart-body {
+    grid-template-columns: 1fr;
+  }
+
+  .garage-chart-values {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .garage-chart-values strong {
+    font-size: .78rem;
+  }
+
+  .garage-vehicle-dropdown summary,
+  .garage-vehicle-option-main {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .garage-vehicle-option-main .vehicle-icon-bubble {
+    display: none;
+  }
+}
