@@ -10395,3 +10395,144 @@ svg.anime-module-svg .anime-icon-line {
     display: none;
   }
 }
+
+/* Domácnost+ v.0.1_142 – Garáž detail, grafy a výběr auta */
+.garage-vehicle-summary-side {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.garage-vehicle-dropdown-arrow {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(53, 116, 240, .12);
+  color: var(--primary);
+  font-size: 1.15rem;
+  font-weight: 950;
+  line-height: 1;
+  transition: transform .18s ease, background .18s ease;
+}
+
+.garage-vehicle-dropdown[open] .garage-vehicle-dropdown-arrow {
+  transform: rotate(180deg);
+  background: rgba(53, 116, 240, .18);
+}
+
+.garage-chart-body {
+  grid-template-columns: minmax(116px, .42fr) minmax(0, 1fr);
+}
+
+.garage-chart-body-empty {
+  align-items: center;
+}
+
+.garage-chart-values-with-title {
+  align-content: stretch;
+}
+
+.garage-chart-title {
+  padding: 8px 8px 9px !important;
+  border-color: rgba(53, 116, 240, .18) !important;
+  background: rgba(53, 116, 240, .10) !important;
+}
+
+.garage-chart-title strong,
+.garage-chart-title em {
+  display: block;
+}
+
+.garage-chart-title strong {
+  color: var(--text);
+  font-size: .92rem;
+  letter-spacing: -.03em;
+}
+
+.garage-chart-title em {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: .68rem;
+  font-style: normal;
+  line-height: 1.25;
+}
+
+.garage-chart-plot {
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.garage-chart-axis-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 2px;
+  color: var(--muted);
+  font-size: .68rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.garage-chart-axis-labels span:last-child {
+  text-align: right;
+}
+
+.garage-detail-chart-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, .28);
+}
+
+.garage-detail-chart-carousel {
+  margin-top: 0;
+}
+
+.garage-history-panel.action-details {
+  margin-top: 14px;
+}
+
+.garage-history-panel.action-details > summary {
+  cursor: pointer;
+}
+
+[data-theme="dark"] .garage-chart-title,
+[data-theme="dark"] .garage-detail-chart-section {
+  background: rgba(255, 255, 255, .065) !important;
+}
+
+@media (max-width: 640px) {
+  .garage-vehicle-dropdown summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .garage-vehicle-summary-side {
+    gap: 7px;
+  }
+
+  .garage-vehicle-dropdown-arrow {
+    width: 28px;
+    height: 28px;
+  }
+
+  .garage-chart-body {
+    grid-template-columns: 1fr;
+  }
+
+  .garage-chart-values-with-title {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .garage-chart-title {
+    grid-column: 1 / -1;
+  }
+}

@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_141';
+  const APP_VERSION = 'Domácnost+ v.0.1_142';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -199,8 +199,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 69,
-      appBuild: 141,
-      mode: 'anime-icons-v141',
+      appBuild: 142,
+      mode: 'anime-icons-v142',
       createdAt: '',
       updatedAt: ''
     },
@@ -990,8 +990,8 @@
 
     migrated.meta = {
       schemaVersion: 69,
-      appBuild: 141,
-      mode: 'anime-icons-v141',
+      appBuild: 142,
+      mode: 'anime-icons-v142',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -3695,6 +3695,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
       { title: 'Domácnost+ v.0.1_141', note: 'Hotovo: Garáž má v grafech průměrnou čárkovanou linku a hodnoty vlevo, km přímo ve výběru auta, spotřebu u tankování a rychlé tlačítko tankování z Home přehledu.' },
       { title: 'Domácnost+ v.0.1_140', note: 'Hotovo: Garáž má nový přehled aktivního auta s aktuálním stavem km, panelem Palivo, statistikami Tankování/Náklady/Vzdálenost a posuvnými grafy ceny, spotřeby a měsíčního paliva.' },
       { title: 'Domácnost+ v.0.1_139', note: 'Hotovo: HDO rychlý přehled má dvě tabulky pro normální dny a víkend/svátky, formulář HDO je zabalený, ikonky se přednačítají a potvrzení řazení Home panelů je nahoře mimo dashboard.' },
@@ -5475,10 +5476,13 @@
     }).join(' ');
   }
 
-  function renderGarageLineChart(title, subtitle, values = [], emptyText = 'Zatím není dost dat.', metrics = []) {
-    const validValues = values.map((value) => Number(value || 0)).filter((value) => Number.isFinite(value) && value > 0);
+  function renderGarageLineChart(title, subtitle, values = [], emptyText = 'Zatím není dost dat.', metrics = [], edgeLabels = null) {
+    const pointRows = values.map((entry) => (typeof entry === 'object' && entry !== null ? entry : { value: entry, label: '' }))
+      .map((entry) => ({ ...entry, value: Number(entry.value || 0) }))
+      .filter((entry) => Number.isFinite(entry.value) && entry.value > 0);
+    const validValues = pointRows.map((entry) => entry.value);
     if (validValues.length < 2) {
-      return `<article class="garage-chart-card"><div class="garage-chart-head"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(subtitle)}</span></div><div class="empty small-empty">${escapeHtml(emptyText)}</div></article>`;
+      return `<article class="garage-chart-card"><div class="garage-chart-body garage-chart-body-empty"><div class="garage-chart-values garage-chart-values-with-title"><span class="garage-chart-title"><strong>${escapeHtml(title)}</strong><em>${escapeHtml(subtitle)}</em></span></div><div class="empty small-empty">${escapeHtml(emptyText)}</div></div></article>`;
     }
     const points = garageLinePoints(validValues);
     const average = validValues.reduce((sum, value) => sum + value, 0) / validValues.length;
@@ -5490,23 +5494,63 @@
       { label: 'Průměr', value: formatGarageChartValue(average) },
       { label: 'Poslední', value: formatGarageChartValue(validValues[validValues.length - 1]) }
     ];
+    const labels = edgeLabels || garageEdgeLabels(pointRows);
     return `
       <article class="garage-chart-card">
-        <div class="garage-chart-head"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(subtitle)}</span></div>
         <div class="garage-chart-body">
-          <div class="garage-chart-values">
+          <div class="garage-chart-values garage-chart-values-with-title">
+            <span class="garage-chart-title"><strong>${escapeHtml(title)}</strong><em>${escapeHtml(subtitle)}</em></span>
             ${metricRows.map((row) => `<span><em>${escapeHtml(row.label)}</em><strong>${escapeHtml(row.value)}</strong></span>`).join('')}
           </div>
-          <svg class="garage-line-chart" viewBox="0 0 300 90" role="img" aria-label="${escapeHtml(title)}">
-            <line class="garage-line-average" x1="12" x2="288" y1="${avgY.toFixed(1)}" y2="${avgY.toFixed(1)}"></line>
-            <polyline points="${points}" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
-            ${points.split(' ').map((point) => `<circle cx="${point.split(',')[0]}" cy="${point.split(',')[1]}" r="3.5" fill="currentColor"></circle>`).join('')}
-          </svg>
+          <div class="garage-chart-plot">
+            <svg class="garage-line-chart" viewBox="0 0 300 90" role="img" aria-label="${escapeHtml(title)}">
+              <line class="garage-line-average" x1="12" x2="288" y1="${avgY.toFixed(1)}" y2="${avgY.toFixed(1)}"></line>
+              <polyline points="${points}" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
+              ${points.split(' ').map((point) => `<circle cx="${point.split(',')[0]}" cy="${point.split(',')[1]}" r="3.5" fill="currentColor"></circle>`).join('')}
+            </svg>
+            ${labels ? `<div class="garage-chart-axis-labels"><span>${escapeHtml(labels.first)}</span><span>${escapeHtml(labels.last)}</span></div>` : ''}
+          </div>
         </div>
       </article>
     `;
   }
 
+  function garageEdgeLabels(points = []) {
+    const rows = Array.isArray(points) ? points.filter((item) => item && Number(item.value || 0) > 0) : [];
+    if (rows.length < 2) return null;
+    return { first: rows[0].label || 'začátek', last: rows[rows.length - 1].label || 'poslední' };
+  }
+
+  function garageChartPointsFromFuelPrices(fuelRows = [], limit = 14) {
+    return sortFuelRows(fuelRows)
+      .map((item) => ({ value: fuelPricePerLiter(item), label: formatDate(item.date) }))
+      .filter((item) => Number(item.value || 0) > 0)
+      .slice(-limit);
+  }
+
+  function garageChartPointsFromConsumption(entries = [], limit = 14) {
+    return [...entries]
+      .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
+      .map((item) => ({ value: Number(item.consumption || 0), label: formatDate(item.date) }))
+      .filter((item) => Number(item.value || 0) > 0)
+      .slice(-limit);
+  }
+
+  function garageMonthlyFuelCostPoints(fuelRows = []) {
+    const map = new Map();
+    fuelRows.forEach((item) => {
+      const key = garageMonthKey(item.date);
+      if (!key) return;
+      map.set(key, (map.get(key) || 0) + Number(item.price || 0));
+    });
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([key, value]) => ({ value, label: financeMonthLabel(key) }));
+  }
+
+  function garageVehicleTotalCostPerKm(analytics = {}) {
+    const distance = Number(analytics.totalDistance || analytics.stats?.totalKm || 0);
+    const totalCost = Number(analytics.stats?.fuelCost || 0) + Number(analytics.serviceCostTotal || 0);
+    return distance > 0 ? totalCost / distance : null;
+  }
 
   function garageMonthlyFuelCostRows(fuelRows = []) {
     const map = new Map();
@@ -5526,7 +5570,7 @@
         <details class="garage-vehicle-dropdown">
           <summary>
             <span class="garage-vehicle-summary-main"><span class="vehicle-icon-bubble ${vehicleIconColorClass(activeVehicle?.iconColor)}" aria-hidden="true">🚗</span><strong>${escapeHtml(activeVehicle?.name || 'Vyber auto')}</strong></span>
-            <span class="garage-vehicle-summary-km">${escapeHtml(formatKm(activeKm))}</span>
+            <span class="garage-vehicle-summary-side"><span class="garage-vehicle-summary-km">${escapeHtml(formatKm(activeKm))}</span><span class="garage-vehicle-dropdown-arrow" aria-hidden="true">⌄</span></span>
           </summary>
           <div class="garage-vehicle-dropdown-list">
             ${vehicles.map((vehicle) => {
@@ -5550,12 +5594,12 @@
 
   function renderGarageFuelPanel(vehicle) {
     const analytics = garageVehicleAnalytics(vehicle);
-    const priceValues = analytics.fuelRows.map((item) => fuelPricePerLiter(item)).filter((value) => Number(value) > 0);
-    const consumptionValues = analytics.entries.map((item) => item.consumption).filter((value) => Number(value) > 0);
-    const monthlyFuelCosts = garageMonthlyFuelCostRows(analytics.fuelRows);
-    const priceChartValues = priceValues.slice(-14);
-    const consumptionChartValues = consumptionValues.slice(-14);
-    const monthlyChartValues = monthlyFuelCosts.slice(-12);
+    const priceChartPoints = garageChartPointsFromFuelPrices(analytics.fuelRows, 14);
+    const consumptionChartPoints = garageChartPointsFromConsumption(analytics.entries, 14);
+    const monthlyFuelCostPoints = garageMonthlyFuelCostPoints(analytics.fuelRows).slice(-12);
+    const priceChartValues = priceChartPoints.map((item) => item.value);
+    const consumptionChartValues = consumptionChartPoints.map((item) => item.value);
+    const monthlyChartValues = monthlyFuelCostPoints.map((item) => item.value);
     const avgPrice = priceChartValues.length ? priceChartValues.reduce((sum, value) => sum + value, 0) / priceChartValues.length : null;
     const avgConsumption = consumptionChartValues.length ? consumptionChartValues.reduce((sum, value) => sum + value, 0) / consumptionChartValues.length : null;
     const avgMonthlyFuel = monthlyChartValues.length ? monthlyChartValues.reduce((sum, value) => sum + value, 0) / monthlyChartValues.length : null;
@@ -5568,17 +5612,17 @@
           <div class="stat-line"><span>Průměrná celková spotřeba</span><strong>${formatLitreValue(analytics.averageConsumption)}</strong></div>
         </div>
         <div class="garage-chart-carousel" aria-label="Grafy paliva">
-          ${renderGarageLineChart('Cena tankování', 'Kč/litr podle posledních tankování', priceChartValues, 'Přidej aspoň dvě tankování s cenou za litr.', [
+          ${renderGarageLineChart('Cena tankování', 'Kč/litr podle posledních tankování', priceChartPoints, 'Přidej aspoň dvě tankování s cenou za litr.', [
             { label: 'Průměr', value: avgPrice ? formatFuelPricePerLiter(avgPrice) : '—' },
             { label: 'Poslední', value: analytics.latestPricePerLiter ? formatFuelPricePerLiter(analytics.latestPricePerLiter) : '—' },
             { label: 'Nejvyšší', value: priceChartValues.length ? formatFuelPricePerLiter(Math.max(...priceChartValues)) : '—' }
           ])}
-          ${renderGarageLineChart('Spotřeba', 'l/100 km podle tankování', consumptionChartValues, 'Přidej aspoň dvě tankování s km a litry.', [
+          ${renderGarageLineChart('Spotřeba', 'l/100 km podle tankování', consumptionChartPoints, 'Přidej aspoň dvě tankování s km a litry.', [
             { label: 'Průměr', value: avgConsumption ? formatLitreValue(avgConsumption) : '—' },
             { label: 'Poslední', value: formatLitreValue(analytics.latestConsumption) },
             { label: 'Nejlepší', value: formatLitreValue(analytics.bestConsumption) }
           ])}
-          ${renderGarageLineChart('Měsíční provoz', 'měsíční náklad na palivo', monthlyChartValues, 'Zatím není dost měsíců s tankováním.', [
+          ${renderGarageLineChart('Měsíční provoz', 'měsíční náklad na palivo', monthlyFuelCostPoints, 'Zatím není dost měsíců s tankováním.', [
             { label: 'Průměr', value: avgMonthlyFuel ? formatCurrency(avgMonthlyFuel) : '—' },
             { label: 'Poslední', value: monthlyChartValues.length ? formatCurrency(monthlyChartValues[monthlyChartValues.length - 1]) : '—' },
             { label: 'Celkem', value: formatCurrency(monthlyChartValues.reduce((sum, value) => sum + value, 0)) }
@@ -5786,11 +5830,11 @@
     const selectedType = ['all', 'fuel', 'service'].includes(garageHistoryTypeFilter) ? garageHistoryTypeFilter : 'all';
     const filterText = `${selectedYear === 'all' ? 'všechny roky' : selectedYear} · ${garageHistoryTypeLabel(selectedType)}`;
     return `
-      <section class="garage-history-panel">
-        <div class="card-header small"><div><h3>Historie auta</h3><p>${records.length} záznamů celkem · ${escapeHtml(filterText)}</p></div></div>
+      <details class="action-details compact-edit-details garage-history-panel">
+        <summary><span>Historie auta</span><em>${records.length} záznamů celkem · ${escapeHtml(filterText)}</em></summary>
         ${renderGarageHistoryFilters(records, visibleRecords)}
         ${visibleRecords.length ? `<div class="list compact-list garage-history-list">${visibleRecords.map(renderGarageHistoryItem).join('')}</div>` : renderEmpty(`Pro filtr ${filterText} tu není žádný záznam.`)}
-      </section>
+      </details>
     `;
   }
 
@@ -5824,6 +5868,36 @@
         </div>
       </div>
     `;
+  }
+
+  function renderGarageDetailCharts(vehicle, fuelRows = []) {
+    const analytics = garageVehicleAnalytics(vehicle);
+    const currentYear = new Date().getFullYear();
+    const lastYearStart = new Date();
+    lastYearStart.setFullYear(lastYearStart.getFullYear() - 1);
+    const lastYearStartIso = localISODate(lastYearStart);
+    const lastYearEntries = analytics.entries.filter((item) => String(item.date || '').slice(0, 10) >= lastYearStartIso);
+    const lastYearPoints = garageChartPointsFromConsumption(lastYearEntries, 24);
+    const allTimePoints = garageChartPointsFromConsumption(analytics.entries, 999);
+    const lastYearValues = lastYearPoints.map((item) => item.value);
+    const allTimeValues = allTimePoints.map((item) => item.value);
+    const avg = (values) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+    return `
+      <div class="garage-detail-chart-section">
+        <div class="garage-stat-block-head"><h3>Graf spotřeby</h3><p>Stejný styl jako přehled. První graf je poslední rok, druhý celá doba evidence.</p></div>
+        <div class="garage-chart-carousel garage-detail-chart-carousel" aria-label="Grafy spotřeby auta">
+          ${renderGarageLineChart('Poslední rok', 'spotřeba l/100 km', lastYearPoints, 'Za poslední rok není dost tankování s km a litry.', [
+            { label: 'Průměr', value: formatLitreValue(avg(lastYearValues)) },
+            { label: 'Poslední', value: lastYearValues.length ? formatLitreValue(lastYearValues[lastYearValues.length - 1]) : '—' },
+            { label: 'Rok', value: String(currentYear) }
+          ])}
+          ${renderGarageLineChart('Celá doba', 'spotřeba l/100 km', allTimePoints, 'Zatím není dost tankování s km a litry.', [
+            { label: 'Průměr', value: formatLitreValue(avg(allTimeValues)) },
+            { label: 'Nejlepší', value: formatLitreValue(analytics.bestConsumption) },
+            { label: 'Nejhorší', value: formatLitreValue(analytics.worstConsumption) }
+          ])}
+        </div>
+      </div>`;
   }
 
   function renderGarageRecordEditForm(collection, item) {
@@ -5862,6 +5936,7 @@
     const fuelRows = sortFuelRows(state.fuel.filter((item) => item.vehicleId === vehicle.id));
     const serviceRows = state.services.filter((item) => item.vehicleId === vehicle.id).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
     const stats = getVehicleStats(fuelRows, serviceRows);
+    const analytics = garageVehicleAnalytics(vehicle);
     const latestFuel = fuelRows[fuelRows.length - 1] || null;
     const latestService = serviceRows[0] || null;
     const serviceStatus = getServiceStatus(vehicle, latestService, latestFuel);
@@ -5869,6 +5944,7 @@
     const insurance = dateStatus(vehicle.insuranceUntil, 45);
     const costPerKm = stats.totalKm > 0 ? stats.fuelCost / stats.totalKm : null;
     const totalCost = stats.fuelCost + stats.serviceCost;
+    const totalCostPerKm = garageVehicleTotalCostPerKm(analytics);
     return `
       <div class="card-header compact-detail-head vehicle-detail-head">
         <div class="vehicle-detail-title"><span class="vehicle-icon-bubble vehicle-icon-bubble-large ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span><div><h2>${escapeHtml(vehicle.name)}</h2><p>${escapeHtml(vehicle.plate || 'Bez SPZ')} · ${escapeHtml(vehicle.fuelType || 'palivo neuvedeno')}</p></div></div>
@@ -5884,6 +5960,7 @@
         <div class="kpi"><strong>${formatCurrency(stats.thisYearCost)}</strong><span>náklady letos</span></div>
         <div class="kpi"><strong>${formatCurrency(totalCost)}</strong><span>celkem</span></div>
         <div class="kpi"><strong>${costPerKm ? `${costPerKm.toFixed(2).replace('.', ',')} Kč` : '—'}</strong><span>palivo / km</span></div>
+        <div class="kpi"><strong>${formatCostPerKm(totalCostPerKm)}</strong><span>Kč/km celkem bez pořizovací ceny</span></div>
       </div>
       <div class="garage-status-grid compact-status-grid">
         ${renderDueCard('STK', stk, 'Datum STK zatím není nastavené.')}
@@ -5897,8 +5974,13 @@
           <div class="stat-line"><span>Záznamy</span><strong>${fuelRows.length} tankování · ${serviceRows.length} servisů</strong></div>
           ${vehicle.note ? `<div class="inline-note compact-note">${escapeHtml(vehicle.note)}</div>` : ''}
         </div>
-        <div class="compact-chart-box">${renderMiniChart(fuelRows)}</div>
+        <div class="detail-stack compact-detail-stack">
+          <div class="stat-line"><span>Kč/km celkem</span><strong>${formatCostPerKm(totalCostPerKm)}</strong></div>
+          <div class="stat-line"><span>Palivo / km</span><strong>${formatCostPerKm(costPerKm)}</strong></div>
+          <div class="stat-line"><span>Počítáno bez pořizovací ceny</span><strong>${formatCurrency(totalCost)}</strong></div>
+        </div>
       </div>
+      ${renderGarageDetailCharts(vehicle, fuelRows)}
       ${renderGarageHistory(vehicle, fuelRows, serviceRows)}
       <details class="action-details compact-edit-details" data-garage-detail="vehicle-settings">
         <summary><span>Upravit údaje auta</span><em>termíny, km, servisní intervaly</em></summary>
@@ -11909,7 +11991,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 141, mode: 'rich-demo-v141', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 69, appBuild: 142, mode: 'rich-demo-v142', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -12051,7 +12133,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 141, mode: 'anime-icons-v141', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 142, mode: 'anime-icons-v142', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -14524,7 +14606,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 141
+        appBuild: 142
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -15114,7 +15196,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-141-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-142-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -15335,7 +15417,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_141</span>
+          <span class="badge">Domácnost+ v.0.1_142</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
