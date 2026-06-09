@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_160';
+  const APP_VERSION = 'Domácnost+ v.0.1_161';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -348,8 +348,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 79,
-      appBuild: 160,
-      mode: 'garage-warranty-coupons-v160',
+      appBuild: 161,
+      mode: 'coupon-warranty-form-hotfix-v161',
       createdAt: '',
       updatedAt: ''
     },
@@ -670,6 +670,8 @@
   let fuelioPreview = null;
   let garageEditRecord = null;
   let garageModal = null;
+  let couponEditId = '';
+  let warrantyFormDraft = safeParse(sessionStorage.getItem('domacnostPlus.warrantyDraft'), null) || null;
   let calendarDetailEventId = null;
   let toastTimer = null;
   let now = new Date();
@@ -1188,8 +1190,8 @@
 
     migrated.meta = {
       schemaVersion: 79,
-      appBuild: 160,
-      mode: 'garage-warranty-coupons-v160',
+      appBuild: 161,
+      mode: 'coupon-warranty-form-hotfix-v161',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -4111,7 +4113,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_160', note: 'Hotfix: Garáž má opravené vlastnictví podle prodeje i výpočet cesty včetně provozních nákladů bez koupě. Záruky se ukládají do samostatné cloud tabulky a Slevové kódy mají editaci bez ručních cloud tlačítek.' },
+      { title: 'Domácnost+ v.0.1_161', note: 'Hotfix: Záruky už během vyplňování neresetuje pravidelný refresh, rozepsaná data se drží jako draft a cena nepoužívá problematické number pole. Slevové kódy mají tlačítko Upravit vlevo vedle Kopírovat.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
       { title: 'Domácnost+ v.0.1_150', note: 'Hotovo: Garáž má opravenou kalkulačku cesty s automatickým načtením hodnot podle auta, rozšířený technický list a základ katalogu značek/modelů pro předvyplnění.' },
       { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
@@ -5012,6 +5014,7 @@
     const left = daysUntil(coupon.expiry);
     const badgeClass = left === null ? '' : left < 0 ? 'bad' : left <= 7 ? 'warn' : 'good';
     const badgeText = left === null ? 'bez expirace' : left < 0 ? 'propadlý' : `${left} dní`;
+    const isEditing = couponEditId === coupon.id;
     return `
       <div class="item">
         <div class="item-top">
@@ -5019,23 +5022,25 @@
           <span class="badge ${badgeClass}">${escapeHtml(badgeText)}</span>
         </div>
         <div class="item-meta">Kód: <strong>${escapeHtml(coupon.code)}</strong>${coupon.discount ? ` · ${escapeHtml(coupon.discount)}` : ''}${coupon.expiry ? ` · do ${formatDate(coupon.expiry)}` : ''}${coupon.note ? ` · ${escapeHtml(coupon.note)}` : ''}</div>
-        <details class="action-details compact-edit-details coupon-edit-details">
-          <summary><span>Upravit kód</span><em>${escapeHtml(coupon.cloudId ? 'cloud' : 'lokálně')}</em></summary>
-          <form data-form="update-coupon" data-id="${escapeHtml(coupon.id)}" class="compact-form">
-            <div class="form-grid two">
-              ${field('Obchod / služba', 'store', 'text', 'Alza / Temu / Allegro', true, coupon.store || '')}
-              ${field('Kód', 'code', 'text', 'SLEVA10', true, coupon.code || '')}
-              ${field('Sleva', 'discount', 'text', '10 % / 200 Kč', false, coupon.discount || '')}
-              ${field('Platnost do', 'expiry', 'date', '', false, coupon.expiry || '')}
-              ${field('Poznámka', 'note', 'text', 'volitelné', false, coupon.note || '')}
-            </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button></div>
-          </form>
-        </details>
-        <div class="item-actions">
+        <div class="item-actions coupon-actions">
+          <button class="ghost-btn" type="button" data-action="toggle-coupon-edit" data-id="${escapeHtml(coupon.id)}">${isEditing ? 'Zavřít úpravu' : 'Upravit kód'}</button>
           <button class="ghost-btn" type="button" data-action="copy" data-value="${escapeHtml(coupon.code)}">Kopírovat kód</button>
-          <button class="danger-btn" type="button" data-action="delete" data-collection="coupons" data-id="${coupon.id}">Smazat</button>
+          <button class="danger-btn" type="button" data-action="delete" data-collection="coupons" data-id="${escapeHtml(coupon.id)}">Smazat</button>
         </div>
+        ${isEditing ? `
+          <div class="coupon-inline-edit">
+            <form data-form="update-coupon" data-id="${escapeHtml(coupon.id)}" class="compact-form">
+              <div class="form-grid two">
+                ${field('Obchod / služba', 'store', 'text', 'Alza / Temu / Allegro', true, coupon.store || '')}
+                ${field('Kód', 'code', 'text', 'SLEVA10', true, coupon.code || '')}
+                ${field('Sleva', 'discount', 'text', '10 % / 200 Kč', false, coupon.discount || '')}
+                ${field('Platnost do', 'expiry', 'date', '', false, coupon.expiry || '')}
+                ${field('Poznámka', 'note', 'text', 'volitelné', false, coupon.note || '')}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button></div>
+            </form>
+          </div>
+        ` : ''}
       </div>
     `;
   }
@@ -5098,6 +5103,51 @@
 
   function normalizeWarranties(items = []) {
     return Array.isArray(items) ? items.map(normalizeWarrantyItem).filter((item) => item.name) : [];
+  }
+
+  function warrantyDraftValue(name, fallback = '') {
+    if (!warrantyFormDraft || typeof warrantyFormDraft !== 'object') return fallback;
+    return Object.prototype.hasOwnProperty.call(warrantyFormDraft, name) ? (warrantyFormDraft[name] || '') : fallback;
+  }
+
+  function warrantyDraftHasUserInput() {
+    if (!warrantyFormDraft || typeof warrantyFormDraft !== 'object') return false;
+    return ['name', 'store', 'price', 'purchaseDate', 'warrantyYears', 'warrantyUntil', 'status', 'note'].some((key) => {
+      const value = normalizeText(warrantyFormDraft[key]);
+      if (!value) return false;
+      if (key === 'purchaseDate' && value === todayISO()) return false;
+      if (key === 'warrantyYears' && value === '2') return false;
+      if (key === 'warrantyUntil' && value === addYearsIso(todayISO(), 2)) return false;
+      if (key === 'status' && value === 'active') return false;
+      return true;
+    });
+  }
+
+  function saveWarrantyDraftFromForm(form) {
+    if (!form || !form.matches?.('form[data-form="add-warranty"]')) return;
+    const data = getFormData(form);
+    warrantyFormDraft = {
+      name: normalizeText(data.name),
+      store: normalizeText(data.store),
+      price: normalizeText(data.price),
+      purchaseDate: normalizeText(data.purchaseDate),
+      warrantyYears: normalizeText(data.warrantyYears),
+      warrantyUntil: normalizeText(data.warrantyUntil),
+      status: normalizeText(data.status),
+      note: normalizeText(data.note)
+    };
+    sessionStorage.setItem('domacnostPlus.warrantyDraft', JSON.stringify(warrantyFormDraft));
+  }
+
+  function clearWarrantyDraft() {
+    warrantyFormDraft = null;
+    sessionStorage.removeItem('domacnostPlus.warrantyDraft');
+  }
+
+  function isWarrantyFormActive() {
+    const form = document.querySelector?.('form[data-form="add-warranty"]');
+    if (!form) return false;
+    return form.contains(document.activeElement) || warrantyDraftHasUserInput();
   }
 
   function warrantyTone(item) {
@@ -5174,6 +5224,10 @@
   }
 
   function renderWarrantiesPanel(warranties) {
+    const draftPurchaseDate = warrantyDraftValue('purchaseDate', todayISO()) || todayISO();
+    const draftWarrantyYears = normalizeWarrantyYears(warrantyDraftValue('warrantyYears', '2'), draftPurchaseDate);
+    const draftWarrantyUntil = warrantyDraftValue('warrantyUntil', addYearsIso(draftPurchaseDate, draftWarrantyYears)) || addYearsIso(draftPurchaseDate, draftWarrantyYears);
+    const draftStatus = warrantyDraftValue('status', 'active') || 'active';
     const activeItems = warranties.filter((item) => !['archived', 'done'].includes(item.status));
     const claimCount = warranties.filter((item) => item.status === 'claim').length;
     const endingSoon = warranties.filter((item) => {
@@ -5198,14 +5252,14 @@
         ])}
         <form data-form="add-warranty" class="compact-form warranty-form">
           <div class="form-grid two">
-            ${field('Věc', 'name', 'text', 'televize / pračka / telefon', true)}
-            ${field('Obchod', 'store', 'text', 'Alza / Datart / Kaufland')}
-            ${field('Cena', 'price', 'number', 'volitelné')}
-            ${field('Datum koupě', 'purchaseDate', 'date', '', true, todayISO())}
-            ${selectField('Délka záruky', 'warrantyYears', WARRANTY_YEARS_OPTIONS, '2')}
-            ${field('Záruka do', 'warrantyUntil', 'date', 'automaticky podle délky', false, addYearsIso(todayISO(), 2))}
-            ${selectField('Stav', 'status', WARRANTY_STATUS_OPTIONS, 'active')}
-            ${field('Poznámka / reklamace', 'note', 'text', 'např. reklamováno, číslo reklamace, domluva')}
+            ${field('Věc', 'name', 'text', 'televize / pračka / telefon', true, warrantyDraftValue('name', ''))}
+            ${field('Obchod', 'store', 'text', 'Alza / Datart / Kaufland', false, warrantyDraftValue('store', ''))}
+            ${field('Cena', 'price', 'text', 'volitelné', false, warrantyDraftValue('price', ''), 'decimal')}
+            ${field('Datum koupě', 'purchaseDate', 'date', '', true, draftPurchaseDate)}
+            ${selectField('Délka záruky', 'warrantyYears', WARRANTY_YEARS_OPTIONS, String(draftWarrantyYears))}
+            ${field('Záruka do', 'warrantyUntil', 'date', 'automaticky podle délky', false, draftWarrantyUntil)}
+            ${selectField('Stav', 'status', WARRANTY_STATUS_OPTIONS, draftStatus)}
+            ${field('Poznámka / reklamace', 'note', 'text', 'např. reklamováno, číslo reklamace, domluva', false, warrantyDraftValue('note', ''))}
           </div>
           <label class="field warranty-file-add-field"><span>Fotka / PDF účtenky</span><input class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf"></label>
           <div class="inline-note compact-note">Základ je 2 roky. U prodloužené záruky vyber délku až 10 let, konec záruky se dopočítá automaticky. Fotka/PDF se při cloudové domácnosti uloží online do soukromého Storage.</div>
@@ -8390,7 +8444,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 160))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 161))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -12409,8 +12463,13 @@
     touchState();
     saveState();
     if (cloudReady()) {
-      const saved = await cloudAddExtraItem('warranties', item);
-      if (saved?.id) item.cloudId = saved.id;
+      try {
+        const saved = await cloudAddExtraItem('warranties', item);
+        if (saved?.id) item.cloudId = saved.id;
+      } catch (error) {
+        console.warn('Warranty cloud add failed', error);
+        showToast('Záruka je uložená lokálně, cloud se zkusí znovu automaticky');
+      }
     }
     const input = form?.querySelector?.('input[type="file"]');
     const files = [...(input?.files || [])];
@@ -12425,9 +12484,14 @@
     touchState();
     saveState();
     if (cloudReady()) {
-      await cloudSyncLocalExtraCollections(false);
-      await cloudSyncLocalWarrantyFiles(false);
+      try {
+        await cloudSyncLocalExtraCollections(false);
+        await cloudSyncLocalWarrantyFiles(false);
+      } catch (error) {
+        console.warn('Warranty follow-up sync failed', error);
+      }
     }
+    clearWarrantyDraft();
     form?.reset();
     const purchase = form?.querySelector?.('[name="purchaseDate"]');
     const years = form?.querySelector?.('[name="warrantyYears"]');
@@ -13492,7 +13556,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 79, appBuild: 160, mode: 'rich-demo-v160', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 79, appBuild: 161, mode: 'rich-demo-v161', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -13635,7 +13699,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 160, mode: 'garage-warranty-coupons-v160', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 161, mode: 'coupon-warranty-form-hotfix-v161', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -13668,6 +13732,7 @@
     coupon.updatedAt = new Date().toISOString();
     const ok = await cloudUpdateExtraItem('coupons', coupon);
     if (!ok) return;
+    couponEditId = '';
     touchState();
     saveState();
     render();
@@ -14935,6 +15000,11 @@
     }
     if (action === 'toggle-used') {
       toggleBoolean('coupons', button.dataset.id, 'used');
+      return;
+    }
+    if (action === 'toggle-coupon-edit') {
+      couponEditId = couponEditId === button.dataset.id ? '' : (button.dataset.id || '');
+      render();
       return;
     }
     if (action === 'copy') {
@@ -16211,7 +16281,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 160
+        appBuild: 161
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -16334,7 +16404,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 160, schema_version: 79, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 161, schema_version: 79, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -16547,7 +16617,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 160,
+          app_build: 161,
           schema_version: 79,
           created_by: user.id,
           ...householdUiPayload()
@@ -16801,7 +16871,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-160-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-161-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -16925,15 +16995,26 @@
 
   app.addEventListener('submit', (event) => {
     event.preventDefault();
-    try {
-      handleForm(event.target);
-    } catch (error) {
+    Promise.resolve(handleForm(event.target)).catch((error) => {
       console.error('Form failed', event.target?.dataset?.form, error);
       showToast('Formulář se nepovedlo uložit.');
-    }
+    });
   });
 
   app.addEventListener('change', (event) => {
+    const warrantyForm = event.target.closest('form[data-form="add-warranty"]');
+    if (warrantyForm) {
+      const warrantyYears = event.target.closest('select[name="warrantyYears"]');
+      if (warrantyYears) {
+        const until = warrantyForm.querySelector('[name="warrantyUntil"]');
+        const purchase = warrantyForm.querySelector('[name="purchaseDate"]');
+        if (until) {
+          until.value = addYearsIso(purchase?.value || todayISO(), Number(warrantyYears.value || 2));
+          until.dataset.autoWarranty = 'true';
+        }
+      }
+      saveWarrantyDraftFromForm(warrantyForm);
+    }
     const profileSwitch = event.target.closest('[data-profile-switch]');
     if (profileSwitch) {
       setActiveProfile(profileSwitch.value);
@@ -17011,6 +17092,8 @@
     }
     const warrantyUntil = event.target.closest('form[data-form="add-warranty"] input[name="warrantyUntil"]');
     if (warrantyUntil) warrantyUntil.dataset.autoWarranty = 'false';
+    const warrantyForm = event.target.closest('form[data-form="add-warranty"]');
+    if (warrantyForm) saveWarrantyDraftFromForm(warrantyForm);
   });
 
   app.addEventListener('focusout', (event) => {
@@ -17020,7 +17103,7 @@
 
   setInterval(() => {
     now = new Date();
-    if (activeModule === 'home' || activeModule === 'homecare') render();
+    if (activeModule === 'home') render();
     const clock = document.querySelector('.clock-card strong');
     const date = document.querySelector('.clock-card span');
     if (clock) clock.textContent = clockText(now);
@@ -17048,7 +17131,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_160</span>
+          <span class="badge">Domácnost+ v.0.1_161</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

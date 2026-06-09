@@ -12338,3 +12338,22 @@ html[data-theme="dark"][data-color-scheme="royal"] { --primary: #60a5fa; --prima
     grid-column: 1 / -1;
   }
 }
+
+/* Domácnost+ v.0.1_161 – Slevové kódy a stabilní formulář záruk */
+.coupon-actions {
+  align-items: center;
+  gap: 8px;
+}
+.coupon-inline-edit {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, .24);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .42);
+}
+[data-theme="dark"] .coupon-inline-edit {
+  background: rgba(255, 255, 255, .055);
+}
+.warranty-form input[name="price"] {
+  font-variant-numeric: tabular-nums;
+}
