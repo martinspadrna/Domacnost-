@@ -11526,3 +11526,26 @@ html[data-theme="dark"][data-color-scheme="royal"] { --primary: #60a5fa; --prima
 .visual-sync-note {
   display: none !important;
 }
+
+
+/* Domácnost+ v.0.1_150 – Garáž kalkulačka a technický list */
+.garage-preset-tool,
+.garage-technical-fields {
+  grid-column: 1 / -1;
+  margin: 0 0 12px;
+}
+
+.field-button-align {
+  align-self: end;
+}
+
+.field-button-align .ghost-btn {
+  width: 100%;
+  min-height: 44px;
+}
+
+.garage-trip-calc-form .field input[name="consumption"],
+.garage-trip-calc-form .field input[name="fuelPrice"] {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 28%, var(--glass));
+}

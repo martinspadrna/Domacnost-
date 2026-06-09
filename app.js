@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_149';
+  const APP_VERSION = 'Domácnost+ v.0.1_150';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -189,6 +189,14 @@
     ['purple', 'Fialová'],
     ['graphite', 'Šedá']
   ];
+
+  const GARAGE_VEHICLE_PRESETS = [
+    { id: 'skoda-octavia-3-1-6-tdi', brand: 'Škoda', model: 'Octavia', generation: 'III', productionYear: '2013–2020', bodyType: 'liftback / combi', fuelType: 'diesel', engineName: '1.6 TDI', engineCode: '', displacementCcm: '1598', powerKw: '77', powerHp: '105', torqueNm: '250', cylinders: '4', transmission: 'manuál / DSG', drive: 'přední', emissionNorm: 'Euro 5/6', officialConsumption: '3,8–4,6', fuelTankLiters: '50', seats: '5', doors: '5', tireSize: '205/55 R16', note: 'Orientační katalogová data, ověřit podle TP konkrétního auta.' },
+    { id: 'skoda-octavia-3-2-0-tdi', brand: 'Škoda', model: 'Octavia', generation: 'III', productionYear: '2013–2020', bodyType: 'liftback / combi', fuelType: 'diesel', engineName: '2.0 TDI', engineCode: '', displacementCcm: '1968', powerKw: '110', powerHp: '150', torqueNm: '320', cylinders: '4', transmission: 'manuál / DSG', drive: 'přední / 4x4', emissionNorm: 'Euro 5/6', officialConsumption: '4,1–5,0', fuelTankLiters: '50', seats: '5', doors: '5', tireSize: '205/55 R16', note: 'Orientační katalogová data, ověřit podle TP konkrétního auta.' },
+    { id: 'skoda-fabia-1-1-9-tdi', brand: 'Škoda', model: 'Fabia', generation: 'I', productionYear: '1999–2007', bodyType: 'hatchback / combi / sedan', fuelType: 'diesel', engineName: '1.9 TDI', engineCode: '', displacementCcm: '1896', powerKw: '74', powerHp: '101', torqueNm: '240', cylinders: '4', transmission: 'manuál', drive: 'přední', emissionNorm: 'Euro 3/4', officialConsumption: '4,9–5,2', fuelTankLiters: '45', seats: '5', doors: '5', tireSize: '185/60 R14', note: 'Orientační katalogová data, ověřit podle TP konkrétního auta.' },
+    { id: 'hyundai-i20-1-2', brand: 'Hyundai', model: 'i20', generation: '', productionYear: '2014–2020', bodyType: 'hatchback', fuelType: 'gasoline', engineName: '1.2', engineCode: '', displacementCcm: '1248', powerKw: '55', powerHp: '75', torqueNm: '122', cylinders: '4', transmission: 'manuál', drive: 'přední', emissionNorm: 'Euro 6', officialConsumption: '5,1–5,6', fuelTankLiters: '50', seats: '5', doors: '5', tireSize: '185/65 R15', note: 'Orientační katalogová data, ověřit podle TP konkrétního auta.' },
+    { id: 'skoda-elroq-85', brand: 'Škoda', model: 'Elroq', generation: '', productionYear: '2025–', bodyType: 'SUV', fuelType: 'electric', engineName: '85', engineCode: '', powerKw: '210', powerHp: '286', torqueNm: '', transmission: 'automat', drive: 'zadní', emissionNorm: 'EV', officialConsumption: '15,2–16,4 kWh/100 km', batteryKwh: '82', seats: '5', doors: '5', tireSize: '235/55 R19', note: 'Orientační katalogová data, ověřit podle TP konkrétního auta.' }
+  ];
   const WARRANTY_STATUS_OPTIONS = [
     ['active', 'Aktivní'],
     ['claim', 'Reklamace'],
@@ -233,9 +241,9 @@
   const VISUAL_SETTINGS_STORAGE_KEY = 'domacnostPlus.visualSettings.v1';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 76,
-      appBuild: 149,
-      mode: 'garage-hotfix-v149',
+      schemaVersion: 77,
+      appBuild: 150,
+      mode: 'garage-calculator-tech-v150',
       createdAt: '',
       updatedAt: ''
     },
@@ -1031,9 +1039,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 76,
-      appBuild: 149,
-      mode: 'garage-hotfix-v149',
+      schemaVersion: 77,
+      appBuild: 150,
+      mode: 'garage-calculator-tech-v150',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1135,6 +1143,38 @@
         purchasePrice: '',
         purchaseOdometer: '',
         ownershipStatus: 'owned',
+        brand: '',
+        model: '',
+        generation: '',
+        productionYear: '',
+        bodyType: '',
+        vin: '',
+        engineName: '',
+        engineCode: '',
+        displacementCcm: '',
+        powerKw: '',
+        powerHp: '',
+        torqueNm: '',
+        cylinders: '',
+        transmission: '',
+        drive: '',
+        emissionNorm: '',
+        co2: '',
+        curbWeightKg: '',
+        grossWeightKg: '',
+        seats: '',
+        doors: '',
+        fuelTankLiters: '',
+        batteryKwh: '',
+        officialConsumption: '',
+        tireSize: '',
+        towingBrakedKg: '',
+        towingUnbrakedKg: '',
+        lengthMm: '',
+        widthMm: '',
+        heightMm: '',
+        wheelbaseMm: '',
+        technicalSpecs: {},
         saleDate: '',
         salePrice: '',
         saleOdometer: '',
@@ -3885,7 +3925,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_149', note: 'Hotfix: opravená chyba Garáže cant find variable vehicle, ikony všech setů bez pozadí, opravené poslední barevné motivy a víc vytažený Home.' },
+      { title: 'Domácnost+ v.0.1_150', note: 'Hotovo: Garáž má opravenou kalkulačku cesty s automatickým načtením hodnot podle auta, rozšířený technický list a základ katalogu značek/modelů pro předvyplnění.' },
       { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
       { title: 'Domácnost+ v.0.1_141', note: 'Hotovo: Garáž má v grafech průměrnou čárkovanou linku a hodnoty vlevo, km přímo ve výběru auta, spotřebu u tankování a rychlé tlačítko tankování z Home přehledu.' },
       { title: 'Domácnost+ v.0.1_140', note: 'Hotovo: Garáž má nový přehled aktivního auta s aktuálním stavem km, panelem Palivo, statistikami Tankování/Náklady/Vzdálenost a posuvnými grafy ceny, spotřeby a měsíčního paliva.' },
@@ -5348,6 +5388,38 @@
         purchasePrice: '',
         purchaseOdometer: '',
         ownershipStatus: 'owned',
+        brand: '',
+        model: '',
+        generation: '',
+        productionYear: '',
+        bodyType: '',
+        vin: '',
+        engineName: '',
+        engineCode: '',
+        displacementCcm: '',
+        powerKw: '',
+        powerHp: '',
+        torqueNm: '',
+        cylinders: '',
+        transmission: '',
+        drive: '',
+        emissionNorm: '',
+        co2: '',
+        curbWeightKg: '',
+        grossWeightKg: '',
+        seats: '',
+        doors: '',
+        fuelTankLiters: '',
+        batteryKwh: '',
+        officialConsumption: '',
+        tireSize: '',
+        towingBrakedKg: '',
+        towingUnbrakedKg: '',
+        lengthMm: '',
+        widthMm: '',
+        heightMm: '',
+        wheelbaseMm: '',
+        technicalSpecs: {},
         saleDate: '',
         salePrice: '',
         saleOdometer: '',
@@ -5358,6 +5430,7 @@
         ownershipStatus: normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')),
         iconColor: normalizeVehicleIconColor(vehicle.iconColor || vehicle.color || state.settings.vehicleIconColors[id] || state.settings.vehicleIconColors[normalizeKey(vehicle.name)] || 'blue')
       };
+      applyVehicleTechnicalFields(normalized, normalized.technicalSpecs || normalized);
       rememberVehicleIconColor(normalized);
       return normalized;
     });
@@ -5428,6 +5501,7 @@
         <section class="card garage-panel panel-add">
           <div class="card-header"><div><h2>Přidat auto</h2><p>Základ vozidla, termíny STK a pojištění. Detail se pak řeší v záložce Detail.</p></div></div>
           <form data-form="add-vehicle">
+            ${renderVehiclePresetTool()}
             <div class="form-grid two">
               ${field('Název auta', 'name', 'text', 'Elroq / Octavia', true)}
               ${field('SPZ', 'plate', 'text', 'volitelné')}
@@ -5444,6 +5518,8 @@
               ${field('Pojistka do', 'insuranceUntil', 'date', '')}
               ${selectField('Barva ikonky auta', 'iconColor', vehicleIconColorOptions(), 'blue')}
             </div>
+            ${renderVehicleTechnicalFields()}
+
             <div class="form-actions"><button class="primary-btn" type="submit">Přidat auto</button></div>
           </form>
         </section>
@@ -5476,7 +5552,7 @@
         </div>
         <div class="item-actions vehicle-card-actions">
           <button class="ghost-btn icon-action-btn" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="vehicle-settings" title="Nastavení auta" aria-label="Nastavení auta ${escapeHtml(vehicle.name)}">⚙️</button>
-          <button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name)}">⛽+</button>
+          ${normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')) === 'owned' ? `<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name)}">⛽+</button>` : ''}
           <button class="ghost-btn icon-action-btn" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="add-service" title="Přidat servis" aria-label="Přidat servis ${escapeHtml(vehicle.name)}">🧾+</button>
         </div>
       </div>
@@ -5584,6 +5660,106 @@
   function vehicleMoneyValue(value) {
     const number = Number(value || 0);
     return Number.isFinite(number) && number > 0 ? number : 0;
+  }
+
+
+  const VEHICLE_TECHNICAL_FIELD_NAMES = ['brand','model','generation','productionYear','bodyType','vin','engineName','engineCode','displacementCcm','powerKw','powerHp','torqueNm','cylinders','transmission','drive','emissionNorm','co2','curbWeightKg','grossWeightKg','seats','doors','fuelTankLiters','batteryKwh','officialConsumption','tireSize','towingBrakedKg','towingUnbrakedKg','lengthMm','widthMm','heightMm','wheelbaseMm'];
+
+  function extractVehicleTechnicalFields(source = {}) {
+    const result = {};
+    VEHICLE_TECHNICAL_FIELD_NAMES.forEach((key) => { result[key] = normalizeText(source[key]); });
+    return result;
+  }
+
+  function normalizeVehicleTechnicalSpecs(source = {}) {
+    const base = source && typeof source === 'object' && !Array.isArray(source) ? source : {};
+    const specs = { ...base.technicalSpecs, ...extractVehicleTechnicalFields(base) };
+    Object.keys(specs).forEach((key) => { specs[key] = normalizeText(specs[key]); });
+    return specs;
+  }
+
+  function applyVehicleTechnicalFields(vehicle, source = {}) {
+    const technical = extractVehicleTechnicalFields(source);
+    Object.assign(vehicle, technical);
+    vehicle.technicalSpecs = normalizeVehicleTechnicalSpecs({ ...(vehicle.technicalSpecs || {}), ...technical });
+    if (!vehicle.name && (vehicle.brand || vehicle.model)) vehicle.name = [vehicle.brand, vehicle.model].filter(Boolean).join(' ');
+    return vehicle;
+  }
+
+  function vehiclePresetOptions() {
+    return [['', 'Vyber z katalogu…'], ...GARAGE_VEHICLE_PRESETS.map((item) => [item.id, `${item.brand} ${item.model}${item.engineName ? ` · ${item.engineName}` : ''}${item.productionYear ? ` · ${item.productionYear}` : ''}`])];
+  }
+
+  function renderVehiclePresetTool() {
+    return `
+      <details class="action-details compact-edit-details garage-preset-tool" open>
+        <summary><span>Předvyplnit podle značky/modelu</span><em>lokální orientační katalog, údaje pak můžeš ručně upravit</em></summary>
+        <div class="form-grid two">
+          ${selectField('Auto z katalogu', 'vehiclePresetId', vehiclePresetOptions(), '')}
+          <div class="field field-button-align"><label>&nbsp;</label><button class="ghost-btn" type="button" data-action="garage-apply-vehicle-preset">Načíst údaje</button></div>
+        </div>
+        <div class="inline-note compact-note">Nejde o online technický registr. Je to bezpečný lokální katalog bez scrapingu; přesné hodnoty je vždy lepší ověřit podle TP konkrétního auta.</div>
+      </details>
+    `;
+  }
+
+  function renderVehicleTechnicalFields(vehicle = {}) {
+    return `
+      <details class="action-details compact-edit-details garage-technical-fields">
+        <summary><span>Technický list auta</span><em>údaje z TP / technického listu</em></summary>
+        <div class="form-grid two">
+          ${field('Značka', 'brand', 'text', 'Škoda', false, vehicle.brand || '')}
+          ${field('Model', 'model', 'text', 'Octavia', false, vehicle.model || '')}
+          ${field('Generace / verze', 'generation', 'text', 'III / RS / Scout', false, vehicle.generation || '')}
+          ${field('Rok / výroba', 'productionYear', 'text', '2017 / 2013–2020', false, vehicle.productionYear || '')}
+          ${field('Karoserie', 'bodyType', 'text', 'combi / hatchback / SUV', false, vehicle.bodyType || '')}
+          ${field('VIN', 'vin', 'text', 'volitelné', false, vehicle.vin || '')}
+          ${field('Motor', 'engineName', 'text', '1.6 TDI / 2.0 TSI / EV', false, vehicle.engineName || '')}
+          ${field('Kód motoru', 'engineCode', 'text', 'např. CAYC', false, vehicle.engineCode || '')}
+          ${field('Objem ccm', 'displacementCcm', 'number', '1598', false, vehicle.displacementCcm || '')}
+          ${field('Výkon kW', 'powerKw', 'number', '77', false, vehicle.powerKw || '')}
+          ${field('Výkon hp', 'powerHp', 'number', '105', false, vehicle.powerHp || '')}
+          ${field('Točivý moment Nm', 'torqueNm', 'number', '250', false, vehicle.torqueNm || '')}
+          ${field('Válce', 'cylinders', 'number', '4', false, vehicle.cylinders || '')}
+          ${field('Převodovka', 'transmission', 'text', 'manuál / DSG / automat', false, vehicle.transmission || '')}
+          ${field('Pohon', 'drive', 'text', 'přední / zadní / 4x4', false, vehicle.drive || '')}
+          ${field('Emisní norma', 'emissionNorm', 'text', 'Euro 6 / EV', false, vehicle.emissionNorm || '')}
+          ${field('CO₂ g/km', 'co2', 'number', 'volitelné', false, vehicle.co2 || '')}
+          ${field('Pohotovostní hmotnost kg', 'curbWeightKg', 'number', 'volitelné', false, vehicle.curbWeightKg || '')}
+          ${field('Celková hmotnost kg', 'grossWeightKg', 'number', 'volitelné', false, vehicle.grossWeightKg || '')}
+          ${field('Počet míst', 'seats', 'number', '5', false, vehicle.seats || '')}
+          ${field('Počet dveří', 'doors', 'number', '5', false, vehicle.doors || '')}
+          ${field('Nádrž l', 'fuelTankLiters', 'number', '50', false, vehicle.fuelTankLiters || '')}
+          ${field('Baterie kWh', 'batteryKwh', 'number', '82', false, vehicle.batteryKwh || '')}
+          ${field('Oficiální spotřeba', 'officialConsumption', 'text', '4,8 l/100 km / 16 kWh/100 km', false, vehicle.officialConsumption || '')}
+          ${field('Pneu', 'tireSize', 'text', '205/55 R16', false, vehicle.tireSize || '')}
+          ${field('Brzděný přívěs kg', 'towingBrakedKg', 'number', 'volitelné', false, vehicle.towingBrakedKg || '')}
+          ${field('Nebrzděný přívěs kg', 'towingUnbrakedKg', 'number', 'volitelné', false, vehicle.towingUnbrakedKg || '')}
+          ${field('Délka mm', 'lengthMm', 'number', 'volitelné', false, vehicle.lengthMm || '')}
+          ${field('Šířka mm', 'widthMm', 'number', 'volitelné', false, vehicle.widthMm || '')}
+          ${field('Výška mm', 'heightMm', 'number', 'volitelné', false, vehicle.heightMm || '')}
+          ${field('Rozvor mm', 'wheelbaseMm', 'number', 'volitelné', false, vehicle.wheelbaseMm || '')}
+        </div>
+      </details>
+    `;
+  }
+
+  function fillVehicleFormFromPreset(button) {
+    const form = button.closest('form');
+    if (!form) return;
+    const presetId = form.querySelector('[name="vehiclePresetId"]')?.value || '';
+    const preset = GARAGE_VEHICLE_PRESETS.find((item) => item.id === presetId);
+    if (!preset) return showToast('Vyber auto z katalogu');
+    const values = { ...preset, name: `${preset.brand} ${preset.model}${preset.engineName ? ` ${preset.engineName}` : ''}`.trim() };
+    Object.entries(values).forEach(([key, value]) => {
+      const input = form.querySelector(`[name="${CSS.escape(key)}"]`);
+      if (input && value !== undefined && value !== null) input.value = String(value);
+    });
+    if (preset.fuelType) {
+      const fuelInput = form.querySelector('[name="fuelType"]');
+      if (fuelInput) fuelInput.value = fuelTypeFromCloud(fuelTypeToCloud(preset.fuelType)) || preset.fuelType;
+    }
+    showToast('Údaje auta předvyplněné');
   }
 
   function garageMonthlyDistancePoints(entries = []) {
@@ -5935,35 +6111,38 @@
 
   function renderGarageTripCalculator(vehicles = [], activeVehicle = null) {
     if (!vehicles.length) return renderEmptyCta({ icon: '🧮', title: 'Kalkulačka čeká na auto', text: 'Přidej první auto a kalkulačka si vezme jeho průměrnou spotřebu i poslední cenu paliva.', nav: 'garage', tab: 'add', label: 'Přidat auto' });
-    if (!garageCalcVehicleId || !vehicles.some((vehicle) => vehicle.id === garageCalcVehicleId)) garageCalcVehicleId = activeVehicle?.id || garageVehicleId || vehicles[0].id;
-    const vehicle = vehicles.find((item) => item.id === garageCalcVehicleId) || activeVehicle || vehicles[0];
-    const analytics = garageVehicleAnalytics(vehicle);
-    const consumption = garageTripCalcResult?.vehicleId === vehicle.id ? garageTripCalcResult.consumption : (analytics.averageConsumption || analytics.latestConsumption || '');
-    const fuelPrice = garageTripCalcResult?.vehicleId === vehicle.id ? garageTripCalcResult.fuelPrice : (analytics.latestPricePerLiter || '');
-    const distance = garageTripCalcResult?.vehicleId === vehicle.id ? garageTripCalcResult.distance : '';
-    const total = garageTripCalcResult?.vehicleId === vehicle.id ? garageTripCalcResult.total : null;
-    const liters = garageTripCalcResult?.vehicleId === vehicle.id ? garageTripCalcResult.liters : null;
+    if (!garageCalcVehicleId || !vehicles.some((item) => item.id === garageCalcVehicleId)) garageCalcVehicleId = activeVehicle?.id || garageVehicleId || vehicles[0].id;
+    const selectedVehicle = vehicles.find((item) => item.id === garageCalcVehicleId) || activeVehicle || vehicles[0];
+    const analytics = garageVehicleAnalytics(selectedVehicle);
+    const defaultConsumption = Number(analytics.averageConsumption || analytics.latestConsumption || 0);
+    const defaultFuelPrice = Number(analytics.latestPricePerLiter || 0);
+    const hasManualResult = garageTripCalcResult?.vehicleId === selectedVehicle.id;
+    const consumption = hasManualResult ? Number(garageTripCalcResult.consumption || 0) : defaultConsumption;
+    const fuelPrice = hasManualResult ? Number(garageTripCalcResult.fuelPrice || 0) : defaultFuelPrice;
+    const distance = hasManualResult ? Number(garageTripCalcResult.distance || 0) : 0;
+    const total = hasManualResult ? garageTripCalcResult.total : null;
+    const liters = hasManualResult ? garageTripCalcResult.liters : null;
     return `
       <div class="card-header">
-        <div><h2>Kalkulačka cesty</h2><p>Vybereš auto, upravíš spotřebu/cenu a zadáš kilometry. Výsledek je orientační cena paliva.</p></div>
-        <span class="badge">${escapeHtml(vehicle.name || 'Auto')}</span>
+        <div><h2>Kalkulačka cesty</h2><p>Vybereš auto, spotřeba a poslední cena paliva se načtou automaticky podle auta. Oboje jde ručně přepsat.</p></div>
+        <span class="badge">${escapeHtml(selectedVehicle.name || 'Auto')}</span>
       </div>
       <form data-form="garage-trip-calc" class="compact-form garage-trip-calc-form">
         <div class="form-grid two">
-          <label class="field"><span>Auto</span><select class="select" name="vehicleId" data-garage-calc-vehicle>${vehicles.map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === vehicle.id ? 'selected' : ''}>${escapeHtml(item.name || 'Auto')}</option>`).join('')}</select></label>
+          <label class="field"><span>Auto</span><select class="select" name="vehicleId" data-garage-calc-vehicle>${vehicles.map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === selectedVehicle.id ? 'selected' : ''}>${escapeHtml(item.name || 'Auto')}</option>`).join('')}</select></label>
           ${field('Kolik pojedu km', 'distance', 'number', 'např. 120', true, distance || '')}
-          ${field('Průměrná spotřeba l/100 km', 'consumption', 'number', 'editovatelné', true, consumption ? String(Number(consumption).toFixed(2)).replace('.', ',') : '')}
-          ${field('Cena paliva Kč/l', 'fuelPrice', 'number', 'editovatelné', true, fuelPrice ? String(Number(fuelPrice).toFixed(2)).replace('.', ',') : '')}
+          ${field('Průměrná spotřeba l/100 km', 'consumption', 'number', 'editovatelné', true, consumption ? String(consumption.toFixed(2)).replace('.', ',') : '')}
+          ${field('Cena paliva Kč/l', 'fuelPrice', 'number', 'editovatelné', true, fuelPrice ? String(fuelPrice.toFixed(2)).replace('.', ',') : '')}
         </div>
         <div class="form-actions"><button class="primary-btn" type="submit">Spočítat cestu</button></div>
       </form>
       <div class="kpi-row compact garage-trip-result">
         <div class="kpi"><strong>${total ? formatCurrency(total) : '—'}</strong><span>cena cesty</span></div>
         <div class="kpi"><strong>${liters ? formatLiters(liters) : '—'}</strong><span>spotřebuješ</span></div>
-        <div class="kpi"><strong>${fuelPrice ? formatFuelPricePerLiter(Number(String(fuelPrice).replace(',', '.'))) : '—'}</strong><span>cena paliva</span></div>
-        <div class="kpi"><strong>${consumption ? formatLitreValue(Number(String(consumption).replace(',', '.'))) : '—'}</strong><span>spotřeba</span></div>
+        <div class="kpi"><strong>${fuelPrice ? formatFuelPricePerLiter(fuelPrice) : '—'}</strong><span>poslední cena paliva</span></div>
+        <div class="kpi"><strong>${consumption ? formatLitreValue(consumption) : '—'}</strong><span>celková průměrná spotřeba</span></div>
       </div>
-      <div class="inline-note compact-note">Automaticky se bere průměrná spotřeba z tankování a poslední známá cena paliva. Obě hodnoty můžeš před výpočtem ručně přepsat.</div>
+      <div class="inline-note compact-note">Po změně auta se hodnoty přepíšou podle vybraného auta. Výsledek je orientační cena paliva, ne kompletní cena provozu.</div>
     `;
   }
 
@@ -6357,6 +6536,7 @@
             ${selectField('Barva ikonky auta', 'iconColor', vehicleIconColorOptions(), normalizeVehicleIconColor(vehicle.iconColor))}
             ${field('Poznámka', 'note', 'text', 'pneu, rozměr, VIN...', false, vehicle.note || '')}
           </div>
+          ${renderVehicleTechnicalFields(vehicle)}
           <div class="form-actions"><button class="primary-btn" type="submit">Uložit údaje auta</button></div>
         </form>
       </details>
@@ -7749,7 +7929,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 149))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 150))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -9362,6 +9542,7 @@
     vehicle.nextServiceDate = normalizeText(data.nextServiceDate);
     vehicle.iconColor = normalizeVehicleIconColor(data.iconColor || vehicle.iconColor);
     vehicle.note = normalizeText(data.note);
+    applyVehicleTechnicalFields(vehicle, data);
     rememberVehicleIconColor(vehicle);
     touchState();
     saveState();
@@ -9697,7 +9878,7 @@
 
   function isGarageVehicleExtendedSchemaError(error) {
     const message = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
-    return error?.code === 'PGRST204' || ((message.includes('schema cache') || message.includes('could not find')) && /(purchase_|sale_|ownership_status|ownership status|purchase date|sale date)/.test(message));
+    return error?.code === 'PGRST204' || ((message.includes('schema cache') || message.includes('could not find')) && /(purchase_|sale_|ownership_status|technical_specs|ownership status|purchase date|sale date)/.test(message));
   }
 
   function markGarageVehicleExtendedSchemaPending() {
@@ -9742,6 +9923,7 @@
       payload.sale_date = vehicle.saleDate || null;
       payload.sale_price = vehicle.salePrice === '' || vehicle.salePrice === undefined ? null : Number(vehicle.salePrice);
       payload.sale_odometer = vehicle.saleOdometer === '' || vehicle.saleOdometer === undefined ? null : Number(vehicle.saleOdometer);
+      payload.technical_specs = normalizeVehicleTechnicalSpecs(vehicle);
     }
     return payload;
   }
@@ -9973,8 +10155,11 @@
         nextServiceKm: vehicle.next_service_odometer === null || vehicle.next_service_odometer === undefined ? '' : String(vehicle.next_service_odometer),
         nextServiceDate: vehicle.next_service_date || '',
         iconColor: normalizeVehicleIconColor(existing?.iconColor || vehicleIconColorFromSettings({ cloudId: vehicle.id, name: vehicle.name })),
-        note: vehicle.note || ''
+        note: vehicle.note || '',
+        technicalSpecs: vehicle.technical_specs && typeof vehicle.technical_specs === 'object' ? vehicle.technical_specs : existing?.technicalSpecs || {}
       };
+      applyVehicleTechnicalFields(item, item.technicalSpecs);
+      return item;
     });
     const vehicleIdByCloud = new Map(cloudVehicles.map((vehicle) => [vehicle.cloudId, vehicle.id]));
     const localVehicles = state.vehicles.filter((vehicle) => !vehicle.cloudId);
@@ -11944,6 +12129,7 @@
           nextServiceDate: '',
           note: ''
         };
+        applyVehicleTechnicalFields(vehicle, data);
         const cloudVehicle = await cloudAddVehicle(vehicle);
         if (cloudVehicle?.id) vehicle.cloudId = cloudVehicle.id;
         state.vehicles.push(vehicle);
@@ -12485,7 +12671,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 76, appBuild: 149, mode: 'rich-demo-v149', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 77, appBuild: 150, mode: 'rich-demo-v150', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -12627,7 +12813,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 76, appBuild: 149, mode: 'garage-hotfix-v149', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 77, appBuild: 150, mode: 'garage-calculator-tech-v150', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -13867,6 +14053,10 @@
     }
     if (action === 'set-color-scheme') {
       setColorScheme(button.dataset.colorScheme);
+      return;
+    }
+    if (action === 'garage-apply-vehicle-preset') {
+      fillVehicleFormFromPreset(button);
       return;
     }
     if (action === 'delete') {
@@ -15167,7 +15357,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 149
+        appBuild: 150
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -15757,7 +15947,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-149-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-150-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -15987,7 +16177,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_149</span>
+          <span class="badge">Domácnost+ v.0.1_150</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
