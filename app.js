@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_148';
+  const APP_VERSION = 'Domácnost+ v.0.1_149';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -233,9 +233,9 @@
   const VISUAL_SETTINGS_STORAGE_KEY = 'domacnostPlus.visualSettings.v1';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 75,
-      appBuild: 148,
-      mode: 'garage-calculator-v148',
+      schemaVersion: 76,
+      appBuild: 149,
+      mode: 'garage-hotfix-v149',
       createdAt: '',
       updatedAt: ''
     },
@@ -1031,9 +1031,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 75,
-      appBuild: 148,
-      mode: 'garage-calculator-v148',
+      schemaVersion: 76,
+      appBuild: 149,
+      mode: 'garage-hotfix-v149',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1736,7 +1736,7 @@
           </div>
           <div class="item-meta">${escapeHtml([vehicle.brand, vehicle.model, vehicle.year, vehicle.plate].filter(Boolean).join(' · ') || 'Otevřít přehled auta')}</div>
         </button>
-        <button class="primary-btn icon-action-btn fuel-add-shortcut overview-fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${escapeHtml(vehicle.id)}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name || 'auta')}">⛽+</button>
+        ${normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')) === 'owned' ? `<button class="primary-btn icon-action-btn fuel-add-shortcut overview-fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${escapeHtml(vehicle.id)}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name || 'auta')}">⛽+</button>` : ''}
       </div>
     `;
   }
@@ -3885,7 +3885,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_148', note: 'Hotovo: opravené ukládání auta při chybějících DB sloupcích, odstraněné ruční cloud tlačítko v Garáži a přidaný jednoduchý RaK Simple styl ikon.' },
+      { title: 'Domácnost+ v.0.1_149', note: 'Hotfix: opravená chyba Garáže cant find variable vehicle, ikony všech setů bez pozadí, opravené poslední barevné motivy a víc vytažený Home.' },
       { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
       { title: 'Domácnost+ v.0.1_141', note: 'Hotovo: Garáž má v grafech průměrnou čárkovanou linku a hodnoty vlevo, km přímo ve výběru auta, spotřebu u tankování a rychlé tlačítko tankování z Home přehledu.' },
       { title: 'Domácnost+ v.0.1_140', note: 'Hotovo: Garáž má nový přehled aktivního auta s aktuálním stavem km, panelem Palivo, statistikami Tankování/Náklady/Vzdálenost a posuvnými grafy ceny, spotřeby a měsíčního paliva.' },
@@ -5837,7 +5837,7 @@
   }
 
   function garageVehicleTotalCostPerKm(analytics = {}) {
-    const distance = vehicleOwnedDistance(vehicle, analytics);
+    const distance = Number(analytics.totalDistance || analytics.stats?.totalKm || 0);
     const totalCost = Number(analytics.stats?.fuelCost || 0) + Number(analytics.serviceCostTotal || 0);
     return distance > 0 ? totalCost / distance : null;
   }
@@ -5872,7 +5872,7 @@
                   <span><strong>${escapeHtml(vehicle.name || 'Auto')}</strong><em>${escapeHtml([vehicle.brand, vehicle.model, vehicle.plate].filter(Boolean).join(' · ') || vehicle.fuelType || 'auto')}</em></span>
                   <b>${escapeHtml(formatKm(km))}</b>
                 </button>
-                <button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${escapeHtml(vehicle.id)}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name || 'auta')}">⛽+</button>
+                ${normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')) === 'owned' ? `<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${escapeHtml(vehicle.id)}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name || 'auta')}">⛽+</button>` : ''}
               </div>`;
             }).join('')}
           </div>
@@ -6298,7 +6298,7 @@
         <div class="vehicle-detail-title"><span class="vehicle-icon-bubble vehicle-icon-bubble-large ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span><div><h2>${escapeHtml(vehicle.name)}</h2><p>${escapeHtml(vehicle.plate || 'Bez SPZ')} · ${escapeHtml(vehicle.fuelType || 'palivo neuvedeno')} · ${escapeHtml(vehicleOwnershipLabel(vehicle))}</p></div></div>
         <div class="vehicle-detail-head-actions">
           <button class="ghost-btn icon-action-btn" type="button" data-action="open-garage-detail" data-garage-target="vehicle-settings" title="Nastavení auta" aria-label="Nastavení auta">⚙️</button>
-          <button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="open-garage-detail" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování">⛽+</button>
+          ${normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')) === 'owned' ? '<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="open-garage-detail" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování">⛽+</button>' : ''}
           <button class="ghost-btn icon-action-btn" type="button" data-action="open-garage-detail" data-garage-target="add-service" title="Přidat servis / náklad" aria-label="Přidat servis nebo náklad">🧾+</button>
           <span class="badge ${vehicle.cloudId ? 'good' : ''}">${vehicle.cloudId ? 'cloud' : 'lokálně'} · ${escapeHtml(vehicle.odometer || latestFuel?.odometer || 0)} km</span>
         </div>
@@ -7662,7 +7662,6 @@
             ${renderVisualChoiceGrid(COLOR_SCHEME_OPTIONS, visual.colorScheme, 'set-color-scheme', 'colorScheme', 'scheme-choice-grid')}
           </div>
         </div>
-        <div class="inline-note visual-sync-note">Při přihlášení se volba uloží do Supabase tabulky <strong>user_app_settings</strong>. Bez cloudu zůstane jako lokální nastavení zařízení.</div>
       </section>
     `;
   }
@@ -7750,7 +7749,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 148))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 149))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -12486,7 +12485,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 75, appBuild: 148, mode: 'rich-demo-v148', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 76, appBuild: 149, mode: 'rich-demo-v149', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -12628,7 +12627,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 75, appBuild: 148, mode: 'garage-calculator-v148', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 76, appBuild: 149, mode: 'garage-hotfix-v149', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -15168,7 +15167,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 148
+        appBuild: 149
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -15758,7 +15757,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-148-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-149-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -15988,7 +15987,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_148</span>
+          <span class="badge">Domácnost+ v.0.1_149</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
