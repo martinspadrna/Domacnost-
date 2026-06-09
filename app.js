@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_159';
+  const APP_VERSION = 'Domácnost+ v.0.1_160';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -265,6 +265,43 @@
     ['Volkswagen', { Polo:[enginePreset('1.0 TSI',70,{fuelType:'gasoline'}), enginePreset('1.0 MPI',59,{fuelType:'gasoline'})], Golf:[enginePreset('1.5 TSI',110,{fuelType:'gasoline'}), enginePreset('2.0 TDI',110,{fuelType:'diesel'})], Passat:[enginePreset('2.0 TDI',110,{fuelType:'diesel'}), enginePreset('1.5 TSI',110,{fuelType:'gasoline'})], Tiguan:[enginePreset('1.5 TSI',110,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('2.0 TDI 4Motion',147,{fuelType:'diesel',bodyType:'SUV',drive:'4x4'})] }],
     ['Volvo', { V60:[enginePreset('B4',145,{fuelType:'mild-hybrid'}), enginePreset('T6 Recharge',253,{fuelType:'plugin-hybrid'})], XC40:[enginePreset('B3',120,{fuelType:'mild-hybrid',bodyType:'SUV'}), enginePreset('Recharge Single Motor',170,{fuelType:'electric',bodyType:'SUV'})], XC60:[enginePreset('B4 AWD',145,{fuelType:'mild-hybrid',bodyType:'SUV',drive:'4x4'}), enginePreset('T8 Recharge',335,{fuelType:'plugin-hybrid',bodyType:'SUV',drive:'4x4'})] }]
   ].forEach(([brand, models]) => addGaragePresetBrandCatalog(brand, models));
+
+  const GARAGE_EXTRA_MODEL_CATALOG = {
+    'Audi': ['A1','A3','A4','A5','A6','A7','A8','Q2','Q3','Q5','Q7','Q8','TT','e-tron'],
+    'BMW': ['Řada 1','Řada 2','Řada 3','Řada 4','Řada 5','Řada 7','X1','X2','X3','X4','X5','X6','i3','i4','iX'],
+    'Citroën': ['C1','C2','C3','C3 Aircross','C4','C4 Picasso','C5','C5 Aircross','Berlingo','Jumpy'],
+    'Dacia': ['Spring','Sandero','Logan','Jogger','Duster','Lodgy','Dokker'],
+    'Fiat': ['500','500X','500L','Panda','Punto','Tipo','Bravo','Doblo','Ducato'],
+    'Ford': ['Fiesta','Focus','Mondeo','Puma','Kuga','S-Max','Galaxy','Tourneo','Transit','Mustang Mach-E'],
+    'Honda': ['Jazz','Civic','Accord','HR-V','CR-V','ZR-V','e:Ny1'],
+    'Hyundai': ['i10','i20','i30','ix20','Kona','Tucson','Santa Fe','Bayon','Ioniq','Ioniq 5','Ioniq 6'],
+    'Kia': ['Picanto','Rio','Ceed','XCeed','ProCeed','Stonic','Niro','Sportage','Sorento','EV6'],
+    'Mazda': ['2','3','6','CX-3','CX-30','CX-5','CX-60','MX-5','MX-30'],
+    'Mercedes-Benz': ['Třída A','Třída B','Třída C','Třída E','CLA','CLS','GLA','GLB','GLC','GLE','Vito','Viano'],
+    'Nissan': ['Micra','Juke','Qashqai','X-Trail','Leaf','Note','Pulsar','Primastar'],
+    'Opel': ['Agila','Corsa','Astra','Insignia','Meriva','Zafira','Mokka','Crossland','Grandland','Combo'],
+    'Peugeot': ['107','108','206','207','208','2008','307','308','3008','407','508','5008','Partner','Rifter'],
+    'Renault': ['Twingo','Clio','Megane','Scenic','Captur','Kadjar','Austral','Koleos','Laguna','Talisman','Kangoo','Trafic'],
+    'Seat': ['Mii','Ibiza','Cordoba','Leon','Toledo','Altea','Arona','Ateca','Tarraco','Alhambra'],
+    'Škoda': ['Citigo','Fabia','Scala','Rapid','Octavia','Superb','Roomster','Kamiq','Karoq','Kodiaq','Yeti','Enyaq','Elroq'],
+    'Toyota': ['Aygo','Yaris','Corolla','Auris','Avensis','Camry','C-HR','RAV4','Prius','Proace','Land Cruiser'],
+    'Volkswagen': ['Up','Polo','Golf','Jetta','Passat','Arteon','Touran','Sharan','T-Cross','T-Roc','Tiguan','Touareg','Caddy','Transporter','ID.3','ID.4'],
+    'Volvo': ['C30','S40','S60','S80','S90','V40','V50','V60','V70','V90','XC40','XC60','XC70','XC90']
+  };
+  function genericEngineSetForModel(model = '') {
+    const m = normalizeKey(model);
+    if (m.includes('id') || m.includes('ioniq') || m.includes('leaf') || m.includes('ev') || m.includes('e-tron') || m.includes('enyaq') || m.includes('elroq') || m.includes('spring') || m.includes('e-c4')) return [enginePreset('Elektro', 100, { fuelType:'electric', transmission:'automat', drive:'přední / zadní', batteryKwh:'50–85' })];
+    return [
+      enginePreset('benzín', 81, { fuelType:'gasoline', transmission:'manuál / automat', drive:'přední' }),
+      enginePreset('nafta', 110, { fuelType:'diesel', transmission:'manuál / automat', drive:'přední / 4x4' }),
+      enginePreset('hybrid', 103, { fuelType:'hybrid', transmission:'automat', drive:'přední' })
+    ];
+  }
+  Object.entries(GARAGE_EXTRA_MODEL_CATALOG).forEach(([brand, models]) => {
+    const expanded = {};
+    models.forEach((model) => { expanded[model] = genericEngineSetForModel(model); });
+    addGaragePresetBrandCatalog(brand, expanded);
+  });
   const WARRANTY_STATUS_OPTIONS = [
     ['active', 'Aktivní'],
     ['claim', 'Reklamace'],
@@ -310,9 +347,9 @@
   const VISUAL_SETTINGS_STORAGE_KEY = 'domacnostPlus.visualSettings.v1';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 78,
-      appBuild: 159,
-      mode: 'garage-warranty-files-v159',
+      schemaVersion: 79,
+      appBuild: 160,
+      mode: 'garage-warranty-coupons-v160',
       createdAt: '',
       updatedAt: ''
     },
@@ -441,6 +478,45 @@
         used: Boolean(item.used)
       })
     },
+    warranties: {
+      table: 'household_warranties',
+      select: 'id,name,store,price,purchase_date,warranty_years,warranty_until,status,note,source_key,created_at,updated_at',
+      order: { column: 'warranty_until', ascending: true },
+      payload: (item, userId) => ({
+        household_id: state.cloud.householdId,
+        profile_id: null,
+        name: item.name || 'Věc v záruce',
+        store: item.store || null,
+        price: decimalValue(item.price) || null,
+        purchase_date: item.purchaseDate || null,
+        warranty_years: normalizeWarrantyYears(item.warrantyYears || 2, item.purchaseDate),
+        warranty_until: item.warrantyUntil || addYearsIso(item.purchaseDate || todayISO(), normalizeWarrantyYears(item.warrantyYears || 2, item.purchaseDate)),
+        status: normalizeWarrantyStatus(item.status),
+        note: item.note || null,
+        source_key: item.id || item.sourceKey || null,
+        created_by: item.cloudId ? undefined : userId,
+        updated_by: userId
+      }),
+      map: (item) => {
+        const existing = state.warranties.find((entry) => entry.cloudId === item.id || (item.source_key && entry.id === item.source_key));
+        return normalizeWarrantyItem({
+          id: existing?.id || item.source_key || `warranty-cloud-${item.id}`,
+          cloudId: item.id,
+          householdId: currentHouseholdId(),
+          profileId: currentProfileId(),
+          createdAt: item.created_at || new Date().toISOString(),
+          updatedAt: item.updated_at || '',
+          name: item.name || 'Věc v záruce',
+          store: item.store || '',
+          price: item.price ?? '',
+          purchaseDate: item.purchase_date || '',
+          warrantyYears: item.warranty_years || 2,
+          warrantyUntil: item.warranty_until || '',
+          status: item.status || 'active',
+          note: item.note || ''
+        });
+      }
+    },
     notes: {
       table: 'household_notes',
       select: 'id,text,status,created_at',
@@ -547,6 +623,7 @@
     'household_devices',
     'camera_feeds',
     'household_coupons',
+    'household_warranties',
     'household_warranty_files'
   ];
 
@@ -1110,9 +1187,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 78,
-      appBuild: 159,
-      mode: 'garage-warranty-files-v159',
+      schemaVersion: 79,
+      appBuild: 160,
+      mode: 'garage-warranty-coupons-v160',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1849,7 +1926,7 @@
           </div>
           <div class="item-meta">${escapeHtml([vehicle.brand, vehicle.model, vehicle.year, vehicle.plate].filter(Boolean).join(' · ') || 'Otevřít přehled auta')}</div>
         </button>
-        ${normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')) === 'owned' ? `<button class="primary-btn icon-action-btn fuel-add-shortcut overview-fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${escapeHtml(vehicle.id)}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name || 'auta')}">⛽+</button>` : ''}
+        ${vehicleOwnershipStatus(vehicle) === 'owned' ? `<button class="primary-btn icon-action-btn fuel-add-shortcut overview-fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${escapeHtml(vehicle.id)}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name || 'auta')}">⛽+</button>` : ''}
       </div>
     `;
   }
@@ -4034,7 +4111,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_159', note: 'Hotovo: Garáž má tvrdší cloud zálohu archivovaných/prodaných aut. Sync už aktualizuje i auta s cloudId, ne jen nově lokální položky, a update payload nepřepisuje cloud prázdnými hodnotami.' },
+      { title: 'Domácnost+ v.0.1_160', note: 'Hotfix: Garáž má opravené vlastnictví podle prodeje i výpočet cesty včetně provozních nákladů bez koupě. Záruky se ukládají do samostatné cloud tabulky a Slevové kódy mají editaci bez ručních cloud tlačítek.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
       { title: 'Domácnost+ v.0.1_150', note: 'Hotovo: Garáž má opravenou kalkulačku cesty s automatickým načtením hodnot podle auta, rozšířený technický list a základ katalogu značek/modelů pro předvyplnění.' },
       { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
@@ -4894,16 +4971,19 @@
 
         <section class="card shopping-panel panel-coupons">
           <div class="card-header"><div><h2>Slevové kódy</h2><p>Kupóny a kódy, které nechceš zapomenout. V online domácnosti jsou sdílené pro všechny členy.</p></div><span class="badge ${coupons.some((item) => item.cloudId) ? 'good' : ''}">${coupons.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span></div>
-          <form data-form="add-coupon">
-            <div class="form-grid two">
-              ${field('Obchod / služba', 'store', 'text', 'Alza / Temu / Allegro', true)}
-              ${field('Kód', 'code', 'text', 'SLEVA10', true)}
-              ${field('Sleva', 'discount', 'text', '10 % / 200 Kč')}
-              ${field('Platnost do', 'expiry', 'date', '')}
-              ${field('Poznámka', 'note', 'text', 'volitelné')}
-            </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Uložit kód</button>${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud kódy</button>' : ''}${cloudReady && coupons.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální kódy (${coupons.filter((item) => !item.cloudId).length})</button>` : ''}</div>
-          </form>
+          <details class="action-details compact-edit-details coupon-add-details">
+            <summary><span>Přidat nový kód</span><em>obchod, kód, platnost</em></summary>
+            <form data-form="add-coupon" class="compact-form">
+              <div class="form-grid two">
+                ${field('Obchod / služba', 'store', 'text', 'Alza / Temu / Allegro', true)}
+                ${field('Kód', 'code', 'text', 'SLEVA10', true)}
+                ${field('Sleva', 'discount', 'text', '10 % / 200 Kč')}
+                ${field('Platnost do', 'expiry', 'date', '')}
+                ${field('Poznámka', 'note', 'text', 'volitelné')}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Uložit kód</button></div>
+            </form>
+          </details>
           <div style="height:14px"></div>
           ${coupons.length ? `<div class="list">${coupons.map(renderCouponItem).join('')}</div>` : renderEmpty('Zatím nemáš uložený žádný slevový kód.')}
         </section>
@@ -4939,9 +5019,21 @@
           <span class="badge ${badgeClass}">${escapeHtml(badgeText)}</span>
         </div>
         <div class="item-meta">Kód: <strong>${escapeHtml(coupon.code)}</strong>${coupon.discount ? ` · ${escapeHtml(coupon.discount)}` : ''}${coupon.expiry ? ` · do ${formatDate(coupon.expiry)}` : ''}${coupon.note ? ` · ${escapeHtml(coupon.note)}` : ''}</div>
+        <details class="action-details compact-edit-details coupon-edit-details">
+          <summary><span>Upravit kód</span><em>${escapeHtml(coupon.cloudId ? 'cloud' : 'lokálně')}</em></summary>
+          <form data-form="update-coupon" data-id="${escapeHtml(coupon.id)}" class="compact-form">
+            <div class="form-grid two">
+              ${field('Obchod / služba', 'store', 'text', 'Alza / Temu / Allegro', true, coupon.store || '')}
+              ${field('Kód', 'code', 'text', 'SLEVA10', true, coupon.code || '')}
+              ${field('Sleva', 'discount', 'text', '10 % / 200 Kč', false, coupon.discount || '')}
+              ${field('Platnost do', 'expiry', 'date', '', false, coupon.expiry || '')}
+              ${field('Poznámka', 'note', 'text', 'volitelné', false, coupon.note || '')}
+            </div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button></div>
+          </form>
+        </details>
         <div class="item-actions">
           <button class="ghost-btn" type="button" data-action="copy" data-value="${escapeHtml(coupon.code)}">Kopírovat kód</button>
-          <button class="ghost-btn" type="button" data-action="toggle-used" data-id="${coupon.id}">${coupon.used ? 'Nepoužitý' : 'Použitý'}</button>
           <button class="danger-btn" type="button" data-action="delete" data-collection="coupons" data-id="${coupon.id}">Smazat</button>
         </div>
       </div>
@@ -5578,7 +5670,7 @@
         ...vehicle,
         id,
         name: normalizeText(vehicle.name || vehicle.title || vehicle.model || `Auto ${index + 1}`),
-        ownershipStatus: normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')),
+        ownershipStatus: vehicleOwnershipStatus(vehicle),
         iconColor: normalizeVehicleIconColor(vehicle.iconColor || vehicle.color || state.settings.vehicleIconColors[id] || state.settings.vehicleIconColors[normalizeKey(vehicle.name)] || 'blue')
       };
       applyVehicleTechnicalFields(normalized, Object.keys(normalized.technicalSpecs || {}).length ? normalized.technicalSpecs : normalized);
@@ -5703,7 +5795,7 @@
         </div>
         <div class="item-actions vehicle-card-actions">
           <button class="ghost-btn icon-action-btn" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="vehicle-settings" title="Nastavení auta" aria-label="Nastavení auta ${escapeHtml(vehicle.name)}">⚙️</button>
-          ${normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')) === 'owned' ? `<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name)}">⛽+</button>` : ''}
+          ${vehicleOwnershipStatus(vehicle) === 'owned' ? `<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name)}">⛽+</button>` : ''}
           <button class="ghost-btn icon-action-btn" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="add-service" title="Přidat servis" aria-label="Přidat servis ${escapeHtml(vehicle.name)}">🧾+</button>
         </div>
       </div>
@@ -5786,11 +5878,18 @@
 
 
   function normalizeVehicleOwnershipStatus(value) {
-    return String(value || '').toLowerCase() === 'sold' ? 'sold' : 'owned';
+    const key = normalizeKey(value || '');
+    return (key === 'sold' || key === 'not-owned' || key === 'not-owned' || key === 'nevlastnim' || key === 'prodane') ? 'sold' : 'owned';
+  }
+
+  function vehicleOwnershipStatus(vehicle = {}) {
+    if (vehicle?.saleDate || vehicle?.sale_date || vehicle?.saleOdometer || vehicle?.sale_odometer || vehicle?.salePrice || vehicle?.sale_price) return 'sold';
+    if (vehicle?.is_archived === true || vehicle?.isArchived === true) return 'sold';
+    return normalizeVehicleOwnershipStatus(vehicle?.ownershipStatus || vehicle?.ownership_status || 'owned');
   }
 
   function isVehicleOwned(vehicle) {
-    return normalizeVehicleOwnershipStatus(vehicle?.ownershipStatus || (vehicle?.saleDate ? 'sold' : 'owned')) === 'owned';
+    return vehicleOwnershipStatus(vehicle) === 'owned';
   }
 
   function garageOwnedVehicles() {
@@ -5886,7 +5985,7 @@
   }
 
   function garageVehicleHasBackupData(vehicle = {}) {
-    if (normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')) === 'sold') return true;
+    if (vehicleOwnershipStatus(vehicle) === 'sold') return true;
     const keys = ['plate','fuelType','odometer','purchaseDate','purchasePrice','purchaseOdometer','saleDate','salePrice','saleOdometer','technicalInspectionUntil','insuranceUntil','nextServiceKm','nextServiceDate','note', ...VEHICLE_TECHNICAL_FIELD_NAMES];
     return keys.some((key) => garageHasMeaningfulValue(vehicle[key])) || garageHasTechnicalSpecs(vehicle);
   }
@@ -6359,7 +6458,7 @@
   }
 
   function garageVehiclePickerMeta(vehicle, rows) {
-    const status = normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned'));
+    const status = vehicleOwnershipStatus(vehicle);
     if (status === 'owned') return [vehicle.brand, vehicle.model, vehicle.plate].filter(Boolean).join(' · ') || vehicle.fuelType || 'auto';
     const analytics = garageVehicleAnalytics(vehicle);
     const costSummary = garageVehicleCostSummary(vehicle, analytics);
@@ -6376,7 +6475,7 @@
     const activeRows = activeVehicle ? garageRowsForVehicle(activeVehicle.id) : { fuelRows: [], serviceRows: [] };
     const activeKm = activeVehicle ? getVehicleCurrentOdometer(activeVehicle, activeRows.fuelRows, activeRows.serviceRows) : 0;
     const activeMeta = activeVehicle ? garageVehiclePickerMeta(activeVehicle, activeRows) : '';
-    const activeIsOwned = activeVehicle ? normalizeVehicleOwnershipStatus(activeVehicle.ownershipStatus || (activeVehicle.saleDate ? 'sold' : 'owned')) === 'owned' : true;
+    const activeIsOwned = activeVehicle ? vehicleOwnershipStatus(activeVehicle) === 'owned' : true;
     return `
       <section class="garage-active-vehicle-selector garage-active-vehicle-selector-clean">
         <details class="garage-vehicle-dropdown">
@@ -6388,7 +6487,7 @@
             ${vehicles.map((vehicle) => {
               const rows = garageRowsForVehicle(vehicle.id);
               const km = getVehicleCurrentOdometer(vehicle, rows.fuelRows, rows.serviceRows);
-              const isOwned = normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')) === 'owned';
+              const isOwned = vehicleOwnershipStatus(vehicle) === 'owned';
               const meta = garageVehiclePickerMeta(vehicle, rows);
               return `<div class="garage-vehicle-option-row ${vehicle.id === activeVehicle?.id ? 'active' : ''} ${!isOwned ? 'garage-vehicle-option-archived' : ''}">
                 <button class="garage-vehicle-option-main" type="button" data-action="garage-select-overview-vehicle" data-id="${escapeHtml(vehicle.id)}">
@@ -6480,6 +6579,9 @@
     const distance = hasManualResult ? Number(garageTripCalcResult.distance || 0) : 0;
     const total = hasManualResult ? garageTripCalcResult.total : null;
     const liters = hasManualResult ? garageTripCalcResult.liters : null;
+    const calcCostSummary = garageVehicleCostSummary(selectedVehicle, analytics);
+    const runningPerKm = Number(calcCostSummary.runningPerKm || 0);
+    const fullRunningTripTotal = hasManualResult && distance > 0 && runningPerKm > 0 ? distance * runningPerKm : null;
     return `
       <div class="card-header">
         <div><h2>Kalkulačka cesty</h2><p>Vybereš auto, spotřeba a poslední cena paliva se načtou automaticky podle auta. Oboje jde ručně přepsat.</p></div>
@@ -6495,12 +6597,13 @@
         <div class="form-actions"><button class="primary-btn" type="submit">Spočítat cestu</button></div>
       </form>
       <div class="kpi-row compact garage-trip-result">
-        <div class="kpi"><strong>${total ? formatCurrency(total) : '—'}</strong><span>cena cesty</span></div>
+        <div class="kpi"><strong>${total ? formatCurrency(total) : '—'}</strong><span>jen palivo</span></div>
+        <div class="kpi"><strong>${fullRunningTripTotal !== null ? formatCurrency(fullRunningTripTotal) : '—'}</strong><span>palivo + servis bez koupě</span></div>
         <div class="kpi"><strong>${liters ? formatLiters(liters) : '—'}</strong><span>spotřebuješ</span></div>
         <div class="kpi"><strong>${fuelPrice ? formatFuelPricePerLiter(fuelPrice) : '—'}</strong><span>poslední cena paliva</span></div>
         <div class="kpi"><strong>${consumption ? formatLitreValue(consumption) : '—'}</strong><span>celková průměrná spotřeba</span></div>
       </div>
-      <div class="inline-note compact-note">Po změně auta se hodnoty přepíšou podle vybraného auta. Výsledek je orientační cena paliva, ne kompletní cena provozu.</div>
+      <div class="inline-note compact-note">Po změně auta se hodnoty přepíšou podle vybraného auta. Cena „palivo + servis bez koupě“ používá celkový provozní průměr auta bez pořizovací ceny.</div>
     `;
   }
 
@@ -6835,7 +6938,7 @@
         <div class="vehicle-detail-title"><span class="vehicle-icon-bubble vehicle-icon-bubble-large ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span><div><h2>${escapeHtml(vehicle.name)}</h2><p>${escapeHtml(vehicle.plate || 'Bez SPZ')} · ${escapeHtml(vehicle.fuelType || 'palivo neuvedeno')} · ${escapeHtml(vehicleOwnershipLabel(vehicle))}</p></div></div>
         <div class="vehicle-detail-head-actions">
           <button class="ghost-btn icon-action-btn" type="button" data-action="open-garage-detail" data-garage-target="vehicle-settings" title="Nastavení auta" aria-label="Nastavení auta">⚙️</button>
-          ${normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')) === 'owned' ? '<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="open-garage-detail" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování">⛽+</button>' : ''}
+          ${vehicleOwnershipStatus(vehicle) === 'owned' ? '<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="open-garage-detail" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování">⛽+</button>' : ''}
           <button class="ghost-btn icon-action-btn" type="button" data-action="open-garage-detail" data-garage-target="add-service" title="Přidat servis / náklad" aria-label="Přidat servis nebo náklad">🧾+</button>
           <span class="badge ${vehicle.cloudId ? 'good' : ''}">${vehicle.cloudId ? 'cloud' : 'lokálně'} · ${escapeHtml(vehicle.odometer || latestFuel?.odometer || 0)} km</span>
         </div>
@@ -6883,7 +6986,7 @@
             ${field('Datum koupě', 'purchaseDate', 'date', '', false, vehicle.purchaseDate || '')}
             ${field('Cena při koupi', 'purchasePrice', 'number', 'volitelné', false, vehicle.purchasePrice || '')}
             ${field('Km při koupi', 'purchaseOdometer', 'number', 'volitelné', false, vehicle.purchaseOdometer || '')}
-            ${selectField('Stav auta', 'ownershipStatus', [['owned', 'Vlastním'], ['sold', 'Nevlastním / prodané']], normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')))}
+            ${selectField('Stav auta', 'ownershipStatus', [['owned', 'Vlastním'], ['sold', 'Nevlastním / prodané']], vehicleOwnershipStatus(vehicle))}
             ${field('Datum prodeje', 'saleDate', 'date', '', false, vehicle.saleDate || '')}
             ${field('Cena při prodeji', 'salePrice', 'number', 'volitelné', false, vehicle.salePrice || '')}
             ${field('Km při prodeji', 'saleOdometer', 'number', 'volitelné', false, vehicle.saleOdometer || '')}
@@ -8287,7 +8390,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 159))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 160))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -10584,7 +10687,7 @@
     assignGaragePayloadField(payload, 'note', vehicle.note, { updateMode });
 
     if (includeExtendedFields) {
-      payload.ownership_status = normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned'));
+      payload.ownership_status = vehicleOwnershipStatus(vehicle);
       assignGaragePayloadField(payload, 'purchase_date', vehicle.purchaseDate, { updateMode });
       assignGaragePayloadField(payload, 'purchase_price', vehicle.purchasePrice, { type: 'number', updateMode });
       assignGaragePayloadField(payload, 'purchase_odometer', vehicle.purchaseOdometer, { type: 'number', updateMode });
@@ -10813,7 +10916,7 @@
         odometer: keepExistingGarageValue(vehicle.current_odometer, existing.odometer),
         purchaseDate: keepExistingGarageValue(vehicle.purchase_date, existing.purchaseDate),
         purchasePrice: keepExistingGarageValue(vehicle.purchase_price, existing.purchasePrice),
-        ownershipStatus: normalizeVehicleOwnershipStatus(vehicle.ownership_status || existing.ownershipStatus || (vehicle.sale_date || existing.saleDate ? 'sold' : 'owned')),
+        ownershipStatus: vehicleOwnershipStatus({ ...existing, ownership_status: vehicle.ownership_status, is_archived: vehicle.is_archived, sale_date: vehicle.sale_date, sale_odometer: vehicle.sale_odometer, sale_price: vehicle.sale_price }),
         purchaseOdometer: keepExistingGarageValue(vehicle.purchase_odometer, existing.purchaseOdometer),
         saleDate: keepExistingGarageValue(vehicle.sale_date, existing.saleDate),
         salePrice: keepExistingGarageValue(vehicle.sale_price, existing.salePrice),
@@ -12303,13 +12406,26 @@
       note: data.note
     });
     state.warranties = normalizeWarranties([...(state.warranties || []), item]);
-    const input = form?.querySelector?.('input[type="file"]');
-    const files = [...(input?.files || [])];
-    if (files.length) await addWarrantyFilesToWarranty(item, files);
     touchState();
     saveState();
     if (cloudReady()) {
-      await cloudSaveHouseholdUiSettings(false);
+      const saved = await cloudAddExtraItem('warranties', item);
+      if (saved?.id) item.cloudId = saved.id;
+    }
+    const input = form?.querySelector?.('input[type="file"]');
+    const files = [...(input?.files || [])];
+    if (files.length) {
+      try {
+        await addWarrantyFilesToWarranty(item, files);
+      } catch (error) {
+        console.warn('Warranty file add failed', error);
+        showToast('Záruka je uložená, ale příloha se nepovedla přidat');
+      }
+    }
+    touchState();
+    saveState();
+    if (cloudReady()) {
+      await cloudSyncLocalExtraCollections(false);
       await cloudSyncLocalWarrantyFiles(false);
     }
     form?.reset();
@@ -12325,6 +12441,11 @@
 
   async function deleteWarranty(id) {
     const before = (state.warranties || []).length;
+    const warranty = state.warranties.find((item) => item.id === id);
+    if (warranty?.cloudId) {
+      const ok = await cloudDeleteExtraItem('warranties', warranty);
+      if (!ok) return;
+    }
     state.warranties = normalizeWarranties(state.warranties).filter((item) => item.id !== id);
     if (state.warranties.length === before) return;
     const files = (state.warrantyFiles || []).filter((file) => file.warrantyId === id);
@@ -12787,6 +12908,7 @@
       'add-package': () => addPackageFromForm(data, form),
       'add-shopping': () => addShoppingFromForm(data, form),
       'add-coupon': () => addItem('coupons', { store: data.store, code: data.code, discount: data.discount, expiry: data.expiry, note: data.note, used: false }),
+      'update-coupon': () => updateCoupon(form.dataset.id, data),
       'add-hdo': () => addHdoWindowFromForm(data, form),
       'add-waste': () => addWasteFromForm(data, form),
       'add-task': () => addTaskFromForm(data, form),
@@ -13370,7 +13492,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 78, appBuild: 159, mode: 'rich-demo-v159', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 79, appBuild: 160, mode: 'rich-demo-v160', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -13513,7 +13635,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 78, appBuild: 159, mode: 'garage-warranty-files-v159', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 160, mode: 'garage-warranty-coupons-v160', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -13533,6 +13655,23 @@
     saveState();
     render();
     showToast(record.cloudId ? 'Uloženo do cloudu' : 'Uloženo lokálně');
+  }
+
+  async function updateCoupon(id, data) {
+    const coupon = state.coupons.find((item) => item.id === id);
+    if (!coupon) return showToast('Slevový kód nenalezen');
+    coupon.store = normalizeText(data.store) || coupon.store || 'Obchod';
+    coupon.code = normalizeText(data.code) || coupon.code || '';
+    coupon.discount = normalizeText(data.discount);
+    coupon.expiry = normalizeText(data.expiry);
+    coupon.note = normalizeText(data.note);
+    coupon.updatedAt = new Date().toISOString();
+    const ok = await cloudUpdateExtraItem('coupons', coupon);
+    if (!ok) return;
+    touchState();
+    saveState();
+    render();
+    showToast(coupon.cloudId ? 'Kód upraven v cloudu' : 'Kód upraven lokálně');
   }
 
   async function updateContract(id, data, form) {
@@ -14493,11 +14632,16 @@
     }
     let synced = 0;
     for (const collection of Object.keys(CLOUD_EXTRA_COLLECTIONS)) {
-      const localItems = (state[collection] || []).filter((item) => !item.cloudId);
-      for (const item of localItems) {
+      const items = state[collection] || [];
+      for (const item of items) {
         try {
-          const saved = await cloudAddExtraItem(collection, item);
-          if (saved?.id) synced += 1;
+          if (item.cloudId) {
+            const ok = await cloudUpdateExtraItem(collection, item);
+            if (ok) synced += 1;
+          } else {
+            const saved = await cloudAddExtraItem(collection, item);
+            if (saved?.id) synced += 1;
+          }
         } catch (error) {
           console.warn('Cloud extra sync failed', collection, error);
         }
@@ -14636,9 +14780,9 @@
       cloudLoadCalendarSources,
       cloudLoadCalendar,
       cloudLoadContractFiles,
+      cloudLoadExtraCollections,
       cloudLoadWarrantyFiles,
-      cloudLoadFinance,
-      cloudLoadExtraCollections
+      cloudLoadFinance
     ];
     let ok = 0;
     for (const loader of loaders) {
@@ -16030,7 +16174,7 @@
         vehicle.iconColor = normalizeVehicleIconColor(vehicle.iconColor || vehicleIconColorFromSettings(vehicle));
       });
     }
-    if (Array.isArray(layout.warranties)) {
+    if (Array.isArray(layout.warranties) && !(state.warranties || []).length) {
       state.warranties = normalizeWarranties(layout.warranties);
     }
     if (Array.isArray(layout.subscriptions)) state.subscriptions = layout.subscriptions.map(normalizeSubscriptionService);
@@ -16058,7 +16202,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
-        warranties: normalizeWarranties(state.warranties),
+        warrantyBackupCount: normalizeWarranties(state.warranties).length,
         subscriptionPeople: getSubscriptionPeople(),
         subscriptions: getSubscriptionServices(),
         subscriptionPayments: getSubscriptionPayments(),
@@ -16067,7 +16211,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 159
+        appBuild: 160
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -16190,7 +16334,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 159, schema_version: 78, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 160, schema_version: 79, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -16403,8 +16547,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 159,
-          schema_version: 78,
+          app_build: 160,
+          schema_version: 79,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -16657,7 +16801,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-159-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-160-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -16904,7 +17048,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_159</span>
+          <span class="badge">Domácnost+ v.0.1_160</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
