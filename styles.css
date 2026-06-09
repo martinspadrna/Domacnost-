@@ -10537,7 +10537,7 @@ svg.anime-module-svg .anime-icon-line {
   }
 }
 
-/* Domácnost+ v.0.1_144 – ikony bez pozadí, výraznější styly a Garáž grafy */
+/* Domácnost+ v.0.1_145 – další sady ikon, grafy a km při koupi/prodeji */
 :root {
   --accent: var(--primary);
   --accent-2: var(--primary-2);
@@ -10845,7 +10845,7 @@ html[data-icon-theme="glass"] .module-theme-icon .icon-line.light,
 
 @media (max-width: 560px) {
   .visual-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .icon-choice-grid { grid-template-columns: 1fr; }
+  .icon-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .visual-choice-card { padding: 9px; border-radius: 16px; }
   .visual-icon-preview-row .module-theme-icon { width: 31px; height: 31px; }
 }
@@ -10959,5 +10959,164 @@ html[data-icon-theme="glass"] .module-theme-icon,
 
   .garage-chart-values span {
     padding: 6px 7px;
+  }
+}
+
+
+.garage-chart-header-full {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+  padding: 9px 10px 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(53, 116, 240, .16);
+  background: rgba(53, 116, 240, .09);
+}
+
+.garage-chart-header-full strong,
+.garage-chart-header-full em {
+  display: block;
+}
+
+.garage-chart-header-full strong {
+  color: var(--text);
+  font-size: .94rem;
+  letter-spacing: -.03em;
+}
+
+.garage-chart-header-full em {
+  color: var(--muted);
+  font-size: .7rem;
+  font-style: normal;
+  line-height: 1.25;
+}
+
+.garage-chart-body-empty {
+  grid-template-columns: minmax(118px, .42fr) minmax(0, 1fr);
+}
+
+html[data-icon-theme="material"] .module-theme-icon,
+.visual-choice-preview-material .module-theme-icon {
+  filter: none;
+}
+html[data-icon-theme="material"] .module-theme-icon .icon-primary,
+.visual-choice-preview-material .module-theme-icon .icon-primary {
+  fill: color-mix(in srgb, var(--icon-a) 94%, #ffffff 6%);
+}
+html[data-icon-theme="material"] .module-theme-icon .icon-secondary,
+.visual-choice-preview-material .module-theme-icon .icon-secondary {
+  fill: color-mix(in srgb, var(--icon-b) 92%, #ffffff 8%);
+}
+html[data-icon-theme="material"] .module-theme-icon .icon-accent,
+.visual-choice-preview-material .module-theme-icon .icon-accent {
+  fill: color-mix(in srgb, var(--icon-c) 94%, #ffffff 6%);
+}
+html[data-icon-theme="material"] .module-theme-icon .icon-line,
+.visual-choice-preview-material .module-theme-icon .icon-line {
+  stroke: color-mix(in srgb, var(--icon-a) 76%, #0f172a);
+  stroke-width: 2.8;
+}
+
+html[data-icon-theme="fluent"] .module-theme-icon,
+.visual-choice-preview-fluent .module-theme-icon {
+  filter: drop-shadow(0 10px 18px rgba(74, 128, 255, .16));
+}
+html[data-icon-theme="fluent"] .module-theme-icon .icon-primary,
+.visual-choice-preview-fluent .module-theme-icon .icon-primary {
+  fill: color-mix(in srgb, var(--icon-a) 70%, #ffffff 30%);
+}
+html[data-icon-theme="fluent"] .module-theme-icon .icon-secondary,
+.visual-choice-preview-fluent .module-theme-icon .icon-secondary {
+  fill: color-mix(in srgb, var(--icon-b) 64%, #ffffff 36%);
+}
+html[data-icon-theme="fluent"] .module-theme-icon .icon-accent,
+.visual-choice-preview-fluent .module-theme-icon .icon-accent {
+  fill: color-mix(in srgb, var(--icon-c) 72%, #ffffff 28%);
+}
+html[data-icon-theme="fluent"] .module-theme-icon .icon-line,
+.visual-choice-preview-fluent .module-theme-icon .icon-line {
+  stroke: rgba(255,255,255,.88);
+  stroke-width: 2.4;
+}
+
+html[data-icon-theme="neon"] .module-theme-icon,
+.visual-choice-preview-neon .module-theme-icon {
+  filter: drop-shadow(0 0 12px rgba(59, 130, 246, .26)) drop-shadow(0 0 18px rgba(168, 85, 247, .20));
+}
+html[data-icon-theme="neon"] .module-theme-icon .icon-primary,
+.visual-choice-preview-neon .module-theme-icon .icon-primary,
+html[data-icon-theme="neon"] .module-theme-icon .icon-secondary,
+.visual-choice-preview-neon .module-theme-icon .icon-secondary,
+html[data-icon-theme="neon"] .module-theme-icon .icon-accent,
+.visual-choice-preview-neon .module-theme-icon .icon-accent {
+  fill: none;
+  stroke-width: 3.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+html[data-icon-theme="neon"] .module-theme-icon .icon-primary,
+.visual-choice-preview-neon .module-theme-icon .icon-primary {
+  stroke: #22d3ee;
+}
+html[data-icon-theme="neon"] .module-theme-icon .icon-secondary,
+.visual-choice-preview-neon .module-theme-icon .icon-secondary {
+  stroke: #818cf8;
+  opacity: .86;
+}
+html[data-icon-theme="neon"] .module-theme-icon .icon-accent,
+.visual-choice-preview-neon .module-theme-icon .icon-accent {
+  stroke: #f472b6;
+  opacity: .92;
+}
+html[data-icon-theme="neon"] .module-theme-icon .icon-line,
+.visual-choice-preview-neon .module-theme-icon .icon-line {
+  stroke: #e2f3ff;
+  stroke-width: 2.7;
+}
+
+html[data-icon-theme="oneui"] .module-theme-icon,
+.visual-choice-preview-oneui .module-theme-icon {
+  filter: drop-shadow(0 5px 12px rgba(15, 23, 42, .10));
+}
+html[data-icon-theme="oneui"] .module-theme-icon .icon-primary,
+.visual-choice-preview-oneui .module-theme-icon .icon-primary {
+  fill: color-mix(in srgb, var(--icon-a) 74%, #ffffff 26%);
+}
+html[data-icon-theme="oneui"] .module-theme-icon .icon-secondary,
+.visual-choice-preview-oneui .module-theme-icon .icon-secondary {
+  fill: color-mix(in srgb, var(--icon-b) 68%, #ffffff 32%);
+}
+html[data-icon-theme="oneui"] .module-theme-icon .icon-accent,
+.visual-choice-preview-oneui .module-theme-icon .icon-accent {
+  fill: color-mix(in srgb, var(--icon-c) 70%, #ffffff 30%);
+}
+html[data-icon-theme="oneui"] .module-theme-icon .icon-line,
+.visual-choice-preview-oneui .module-theme-icon .icon-line {
+  stroke: color-mix(in srgb, var(--icon-a) 44%, #ffffff 56%);
+  stroke-width: 2.5;
+}
+
+html[data-icon-theme="material"] .module-theme-icon .icon-tile,
+.visual-choice-preview-material .module-theme-icon .icon-tile,
+html[data-icon-theme="fluent"] .module-theme-icon .icon-tile,
+.visual-choice-preview-fluent .module-theme-icon .icon-tile,
+html[data-icon-theme="neon"] .module-theme-icon .icon-tile,
+.visual-choice-preview-neon .module-theme-icon .icon-tile,
+html[data-icon-theme="oneui"] .module-theme-icon .icon-tile,
+.visual-choice-preview-oneui .module-theme-icon .icon-tile {
+  display: none;
+  fill: none !important;
+  stroke: none !important;
+}
+
+@media (max-width: 640px) {
+  .garage-chart-header-full {
+    margin-bottom: 8px;
+    padding: 8px 9px;
+  }
+
+  .garage-chart-body,
+  .garage-chart-body-empty {
+    grid-template-columns: minmax(122px, .48fr) minmax(0, 1fr);
   }
 }

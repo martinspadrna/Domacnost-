@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_144';
+  const APP_VERSION = 'Domácnost+ v.0.1_145';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -197,9 +197,13 @@
   ];
   const WEATHER_CHMI_FUNCTION = 'weather-chmi-forecast';
   const ICON_THEME_OPTIONS = [
-    ['ios', 'iOS', 'Čisté, jemné a hodně univerzální ikonky.'],
-    ['cartoon', 'Kreslené', 'Barevné animované ikonky bez anime stylu.'],
-    ['glass', 'Glass-line', 'Prémiové linkové ikonky ve skle.']
+    ['ios', 'iOS Soft', 'Jemné hladké ikonky inspirované moderním iOS stylem.'],
+    ['cartoon', 'Kreslené', 'Výrazné barevné ikonky s tlustší obrysovou kresbou.'],
+    ['glass', 'Glass-line', 'Prémiové linkové ikonky ve skle.'],
+    ['material', 'Material Bold', 'Plošší a čistší styl inspirovaný moderními Android appkami.'],
+    ['fluent', 'Fluent Glow', 'Lehce prostorový styl inspirovaný desktop / fluent vzhledem.'],
+    ['neon', 'Neon Pop', 'Sytější zářivý styl s neonovým akcentem.'],
+    ['oneui', 'One UI Soft', 'Měkčí zaoblený styl inspirovaný moderním Samsung vzhledem.']
   ];
   const COLOR_SCHEME_OPTIONS = [
     ['sky', 'Modrá', 'Výchozí svěží modrá.'],
@@ -216,9 +220,9 @@
   const VISUAL_SETTINGS_STORAGE_KEY = 'domacnostPlus.visualSettings.v1';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 71,
-      appBuild: 144,
-      mode: 'garage-visual-v144',
+      schemaVersion: 72,
+      appBuild: 145,
+      mode: 'icon-pack-v145',
       createdAt: '',
       updatedAt: ''
     },
@@ -1011,9 +1015,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 71,
-      appBuild: 144,
-      mode: 'garage-visual-v144',
+      schemaVersion: 72,
+      appBuild: 145,
+      mode: 'icon-pack-v145',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1113,8 +1117,10 @@
         nextServiceDate: '',
         purchaseDate: '',
         purchasePrice: '',
+        purchaseOdometer: '',
         saleDate: '',
         salePrice: '',
+        saleOdometer: '',
         note: '',
         ...vehicle
       };
@@ -3861,7 +3867,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_144', note: 'Hotovo: ikonky jsou výrazněji odlišené bez pozadí, počasí má větší aktuální ilustraci a Garáž má rozšířené grafy i náklady včetně koupě/prodeje.' },
+      { title: 'Domácnost+ v.0.1_145', note: 'Hotovo: přidané další výrazně odlišné sady ikon, názvy garážových grafů jsou přes celý vršek a auta nově umí i km při koupi a prodeji.' },
       { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
       { title: 'Domácnost+ v.0.1_141', note: 'Hotovo: Garáž má v grafech průměrnou čárkovanou linku a hodnoty vlevo, km přímo ve výběru auta, spotřebu u tankování a rychlé tlačítko tankování z Home přehledu.' },
       { title: 'Domácnost+ v.0.1_140', note: 'Hotovo: Garáž má nový přehled aktivního auta s aktuálním stavem km, panelem Palivo, statistikami Tankování/Náklady/Vzdálenost a posuvnými grafy ceny, spotřeby a měsíčního paliva.' },
@@ -5322,8 +5328,10 @@
         nextServiceDate: '',
         purchaseDate: '',
         purchasePrice: '',
+        purchaseOdometer: '',
         saleDate: '',
         salePrice: '',
+        saleOdometer: '',
         note: '',
         ...vehicle,
         id,
@@ -5402,8 +5410,10 @@
               ${field('Aktuální km', 'odometer', 'number', '0')}
               ${field('Datum koupě', 'purchaseDate', 'date', '')}
               ${field('Cena při koupi', 'purchasePrice', 'number', 'volitelné')}
+              ${field('Km při koupi', 'purchaseOdometer', 'number', 'volitelné')}
               ${field('Datum prodeje', 'saleDate', 'date', '')}
               ${field('Cena při prodeji', 'salePrice', 'number', 'volitelné')}
+              ${field('Km při prodeji', 'saleOdometer', 'number', 'volitelné')}
               ${field('STK do', 'technicalInspectionUntil', 'date', '')}
               ${field('Pojistka do', 'insuranceUntil', 'date', '')}
               ${selectField('Barva ikonky auta', 'iconColor', vehicleIconColorOptions(), 'blue')}
@@ -5624,7 +5634,7 @@
     const prevYearFuel = fuelRows.filter((item) => Number(String(item.date || '').slice(0, 4)) === prevYear);
     const currentKm = getVehicleCurrentOdometer(vehicle, fuelRows, serviceRows);
     const odometerValues = fuelRows.map((item) => Number(item.odometer || 0)).filter((value) => Number.isFinite(value) && value > 0);
-    const firstKnownKm = odometerValues.length ? Math.min(...odometerValues) : Number(vehicle?.odometerStart || vehicle?.startOdometer || 0);
+    const firstKnownKm = odometerValues.length ? Math.min(...odometerValues) : Number(vehicle?.purchaseOdometer || vehicle?.odometerStart || vehicle?.startOdometer || 0);
     const totalDistance = currentKm && firstKnownKm && currentKm > firstKnownKm ? currentKm - firstKnownKm : stats.totalKm || 0;
     const dates = fuelRows.map((item) => parseDateValue(item.date)).filter(Boolean).sort((a, b) => a - b);
     const monthSpan = dates.length >= 2 ? Math.max(1, ((dates[dates.length - 1].getFullYear() - dates[0].getFullYear()) * 12) + (dates[dates.length - 1].getMonth() - dates[0].getMonth()) + 1) : 1;
@@ -5706,8 +5716,9 @@
       .filter((entry) => Number.isFinite(entry.value) && entry.value > 0);
     const validValues = pointRows.map((entry) => entry.value);
     const metricRows = Array.isArray(metrics) && metrics.length ? metrics : [];
+    const header = `<div class="garage-chart-header-full"><strong>${escapeHtml(title)}</strong><em>${escapeHtml(subtitle)}</em></div>`;
     if (validValues.length < 2) {
-      return `<article class="garage-chart-card"><div class="garage-chart-body garage-chart-body-empty"><div class="garage-chart-values garage-chart-values-with-title"><span class="garage-chart-title"><strong>${escapeHtml(title)}</strong><em>${escapeHtml(subtitle)}</em></span>${metricRows.map((row) => `<span><em>${escapeHtml(row.label)}</em><strong>${escapeHtml(row.value)}</strong></span>`).join('')}</div><div class="empty small-empty">${escapeHtml(emptyText)}</div></div></article>`;
+      return `<article class="garage-chart-card">${header}<div class="garage-chart-body garage-chart-body-empty"><div class="garage-chart-values">${metricRows.map((row) => `<span><em>${escapeHtml(row.label)}</em><strong>${escapeHtml(row.value)}</strong></span>`).join('')}</div><div class="empty small-empty">${escapeHtml(emptyText)}</div></div></article>`;
     }
     const points = garageLinePoints(validValues);
     const average = validValues.reduce((sum, value) => sum + value, 0) / validValues.length;
@@ -5723,9 +5734,9 @@
     const labels = edgeLabels || garageEdgeLabels(pointRows);
     return `
       <article class="garage-chart-card">
+        ${header}
         <div class="garage-chart-body">
-          <div class="garage-chart-values garage-chart-values-with-title">
-            <span class="garage-chart-title"><strong>${escapeHtml(title)}</strong><em>${escapeHtml(subtitle)}</em></span>
+          <div class="garage-chart-values">
             ${resolvedMetrics.map((row) => `<span><em>${escapeHtml(row.label)}</em><strong>${escapeHtml(row.value)}</strong></span>`).join('')}
           </div>
           <div class="garage-chart-plot">
@@ -6220,8 +6231,8 @@
         <div class="detail-stack compact-detail-stack">
           <div class="stat-line"><span>Poslední tankování</span><strong>${latestFuel ? `${formatDate(latestFuel.date)} · ${escapeHtml(latestFuel.odometer || '—')} km` : '—'}</strong></div>
           <div class="stat-line"><span>Poslední servis</span><strong>${latestService ? `${formatDate(latestService.date)} · ${escapeHtml(latestService.title || 'servis')}` : '—'}</strong></div>
-          <div class="stat-line"><span>Koupeno</span><strong>${vehicle.purchaseDate ? `${formatDate(vehicle.purchaseDate)}${vehicle.purchasePrice ? ` · ${formatCurrency(vehicle.purchasePrice)}` : ''}` : 'nenastaveno'}</strong></div>
-          <div class="stat-line"><span>Prodáno</span><strong>${vehicle.saleDate ? `${formatDate(vehicle.saleDate)}${vehicle.salePrice ? ` · ${formatCurrency(vehicle.salePrice)}` : ''}` : 'zatím ne'}</strong></div>
+          <div class="stat-line"><span>Koupeno</span><strong>${vehicle.purchaseDate ? `${formatDate(vehicle.purchaseDate)}${vehicle.purchasePrice ? ` · ${formatCurrency(vehicle.purchasePrice)}` : ''}${vehicle.purchaseOdometer ? ` · ${escapeHtml(vehicle.purchaseOdometer)} km` : ''}` : 'nenastaveno'}</strong></div>
+          <div class="stat-line"><span>Prodáno</span><strong>${vehicle.saleDate ? `${formatDate(vehicle.saleDate)}${vehicle.salePrice ? ` · ${formatCurrency(vehicle.salePrice)}` : ''}${vehicle.saleOdometer ? ` · ${escapeHtml(vehicle.saleOdometer)} km` : ''}` : 'zatím ne'}</strong></div>
           <div class="stat-line"><span>Záznamy</span><strong>${fuelRows.length} tankování · ${serviceRows.length} servisů</strong></div>
           ${vehicle.note ? `<div class="inline-note compact-note">${escapeHtml(vehicle.note)}</div>` : ''}
         </div>
@@ -6229,7 +6240,7 @@
           <div class="stat-line"><span>Kč/km jen palivo</span><strong>${formatCostPerKm(costSummary.fuelPerKm)}</strong></div>
           <div class="stat-line"><span>Kč/km bez pořizovací ceny</span><strong>${formatCostPerKm(costSummary.runningPerKm)}</strong></div>
           <div class="stat-line"><span>Kč/km včetně koupě</span><strong>${formatCostPerKm(costSummary.totalPerKm)}</strong></div>
-          <div class="stat-line"><span>Pořízení / prodej</span><strong>${costSummary.purchasePrice ? `${formatCurrency(costSummary.purchasePrice)}${costSummary.salePrice ? ` · prodej ${formatCurrency(costSummary.salePrice)}` : ''}` : 'nenastaveno'}</strong></div>
+          <div class="stat-line"><span>Pořízení / prodej</span><strong>${costSummary.purchasePrice ? `${formatCurrency(costSummary.purchasePrice)}${vehicle.purchaseOdometer ? ` · ${escapeHtml(vehicle.purchaseOdometer)} km` : ''}${costSummary.salePrice ? ` · prodej ${formatCurrency(costSummary.salePrice)}` : ''}${vehicle.saleOdometer ? ` · ${escapeHtml(vehicle.saleOdometer)} km` : ''}` : 'nenastaveno'}</strong></div>
         </div>
       </div>
       ${renderGarageDetailCharts(vehicle, fuelRows)}
@@ -6244,8 +6255,10 @@
             ${field('Aktuální km', 'odometer', 'number', '0', false, vehicle.odometer || latestFuel?.odometer || '')}
             ${field('Datum koupě', 'purchaseDate', 'date', '', false, vehicle.purchaseDate || '')}
             ${field('Cena při koupi', 'purchasePrice', 'number', 'volitelné', false, vehicle.purchasePrice || '')}
+            ${field('Km při koupi', 'purchaseOdometer', 'number', 'volitelné', false, vehicle.purchaseOdometer || '')}
             ${field('Datum prodeje', 'saleDate', 'date', '', false, vehicle.saleDate || '')}
             ${field('Cena při prodeji', 'salePrice', 'number', 'volitelné', false, vehicle.salePrice || '')}
+            ${field('Km při prodeji', 'saleOdometer', 'number', 'volitelné', false, vehicle.saleOdometer || '')}
             ${field('STK do', 'technicalInspectionUntil', 'date', '', false, vehicle.technicalInspectionUntil || '')}
             ${field('Pojistka do', 'insuranceUntil', 'date', '', false, vehicle.insuranceUntil || '')}
             ${field('Další servis při km', 'nextServiceKm', 'number', 'např. 150000', false, vehicle.nextServiceKm || '')}
@@ -7513,7 +7526,16 @@
 
   function renderVisualPreview(id, type) {
     if (type === 'iconTheme') {
-      const iconIds = id === 'cartoon' ? ['home', 'shopping', 'weather'] : id === 'glass' ? ['calendar', 'hdo', 'warranties'] : ['home', 'packages', 'settings'];
+      const previewIconsByTheme = {
+        ios: ['home', 'packages', 'settings'],
+        cartoon: ['home', 'shopping', 'weather'],
+        glass: ['calendar', 'hdo', 'warranties'],
+        material: ['garage', 'calendar', 'shopping'],
+        fluent: ['weather', 'subscriptions', 'homecare'],
+        neon: ['packages', 'cameras', 'weather'],
+        oneui: ['home', 'garage', 'settings']
+      };
+      const iconIds = previewIconsByTheme[id] || ['home', 'packages', 'settings'];
       return `<span class="visual-icon-preview-row">${iconIds.map((iconId) => getThemedModuleIconSvg(iconId)).join('')}</span>`;
     }
     if (type === 'theme') {
@@ -7632,7 +7654,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 144))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 145))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -9161,7 +9183,7 @@
     const vehicleByName = new Map(state.vehicles.map((vehicle) => [normalizeKey(vehicle.name), vehicle]));
     let fallbackVehicle = state.vehicles.find((vehicle) => vehicle.id === garageVehicleId) || state.vehicles[0] || null;
     if (!fallbackVehicle) {
-      fallbackVehicle = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name: 'Fuelio import', plate: '', fuelType: '', odometer: '', purchaseDate: '', purchasePrice: '', saleDate: '', salePrice: '', technicalInspectionUntil: '', insuranceUntil: '', nextServiceKm: '', nextServiceDate: '', iconColor: 'blue', note: '' };
+      fallbackVehicle = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name: 'Fuelio import', plate: '', fuelType: '', odometer: '', purchaseDate: '', purchasePrice: '', purchaseOdometer: '', saleDate: '', salePrice: '', saleOdometer: '', technicalInspectionUntil: '', insuranceUntil: '', nextServiceKm: '', nextServiceDate: '', iconColor: 'blue', note: '' };
       state.vehicles.push(fallbackVehicle);
       rememberVehicleIconColor(fallbackVehicle);
       vehicleByName.set(normalizeKey(fallbackVehicle.name), fallbackVehicle);
@@ -9175,7 +9197,7 @@
     fuelioPreview.rows.forEach((row) => {
       let vehicle = row.vehicleName ? vehicleByName.get(normalizeKey(row.vehicleName)) : fallbackVehicle;
       if (!vehicle && row.vehicleName) {
-        vehicle = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name: row.vehicleName, plate: '', fuelType: '', odometer: row.odometer || '', purchaseDate: '', purchasePrice: '', saleDate: '', salePrice: '', technicalInspectionUntil: '', insuranceUntil: '', nextServiceKm: '', nextServiceDate: '', iconColor: 'blue', note: '' };
+        vehicle = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name: row.vehicleName, plate: '', fuelType: '', odometer: row.odometer || '', purchaseDate: '', purchasePrice: '', purchaseOdometer: '', saleDate: '', salePrice: '', saleOdometer: '', technicalInspectionUntil: '', insuranceUntil: '', nextServiceKm: '', nextServiceDate: '', iconColor: 'blue', note: '' };
         state.vehicles.push(vehicle);
         rememberVehicleIconColor(vehicle);
         vehicleByName.set(normalizeKey(row.vehicleName), vehicle);
@@ -9234,8 +9256,10 @@
     vehicle.odometer = normalizeText(data.odometer);
     vehicle.purchaseDate = normalizeText(data.purchaseDate);
     vehicle.purchasePrice = normalizeText(data.purchasePrice);
+    vehicle.purchaseOdometer = normalizeText(data.purchaseOdometer);
     vehicle.saleDate = normalizeText(data.saleDate);
     vehicle.salePrice = normalizeText(data.salePrice);
+    vehicle.saleOdometer = normalizeText(data.saleOdometer);
     vehicle.technicalInspectionUntil = normalizeText(data.technicalInspectionUntil);
     vehicle.insuranceUntil = normalizeText(data.insuranceUntil);
     vehicle.nextServiceKm = normalizeText(data.nextServiceKm);
@@ -9589,8 +9613,10 @@
       current_odometer: vehicle.odometer === '' || vehicle.odometer === undefined ? null : Number(vehicle.odometer),
       purchase_date: vehicle.purchaseDate || null,
       purchase_price: vehicle.purchasePrice === '' || vehicle.purchasePrice === undefined ? null : Number(vehicle.purchasePrice),
+      purchase_odometer: vehicle.purchaseOdometer === '' || vehicle.purchaseOdometer === undefined ? null : Number(vehicle.purchaseOdometer),
       sale_date: vehicle.saleDate || null,
       sale_price: vehicle.salePrice === '' || vehicle.salePrice === undefined ? null : Number(vehicle.salePrice),
+      sale_odometer: vehicle.saleOdometer === '' || vehicle.saleOdometer === undefined ? null : Number(vehicle.saleOdometer),
       stk_until: vehicle.technicalInspectionUntil || null,
       insurance_until: vehicle.insuranceUntil || null,
       next_service_odometer: vehicle.nextServiceKm === '' || vehicle.nextServiceKm === undefined ? null : Number(vehicle.nextServiceKm),
@@ -9807,8 +9833,10 @@
         odometer: vehicle.current_odometer === null || vehicle.current_odometer === undefined ? '' : String(vehicle.current_odometer),
         purchaseDate: vehicle.purchase_date || '',
         purchasePrice: vehicle.purchase_price === null || vehicle.purchase_price === undefined ? '' : String(vehicle.purchase_price),
+        purchaseOdometer: vehicle.purchase_odometer === null || vehicle.purchase_odometer === undefined ? '' : String(vehicle.purchase_odometer),
         saleDate: vehicle.sale_date || '',
         salePrice: vehicle.sale_price === null || vehicle.sale_price === undefined ? '' : String(vehicle.sale_price),
+        saleOdometer: vehicle.sale_odometer === null || vehicle.sale_odometer === undefined ? '' : String(vehicle.sale_odometer),
         technicalInspectionUntil: vehicle.stk_until || '',
         insuranceUntil: vehicle.insurance_until || '',
         nextServiceKm: vehicle.next_service_odometer === null || vehicle.next_service_odometer === undefined ? '' : String(vehicle.next_service_odometer),
@@ -11773,8 +11801,10 @@
           odometer: normalizeText(data.odometer),
           purchaseDate: normalizeText(data.purchaseDate),
           purchasePrice: normalizeText(data.purchasePrice),
+          purchaseOdometer: normalizeText(data.purchaseOdometer),
           saleDate: normalizeText(data.saleDate),
           salePrice: normalizeText(data.salePrice),
+          saleOdometer: normalizeText(data.saleOdometer),
           technicalInspectionUntil: normalizeText(data.technicalInspectionUntil),
           insuranceUntil: normalizeText(data.insuranceUntil),
           iconColor: normalizeVehicleIconColor(data.iconColor),
@@ -12312,7 +12342,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 71, appBuild: 144, mode: 'rich-demo-v144', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 72, appBuild: 145, mode: 'rich-demo-v145', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -12454,7 +12484,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 71, appBuild: 144, mode: 'garage-visual-v144', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 72, appBuild: 145, mode: 'icon-pack-v145', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -14998,7 +15028,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 144
+        appBuild: 145
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -15121,7 +15151,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 144, schema_version: 71, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 145, schema_version: 72, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -15334,8 +15364,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 144,
-          schema_version: 71,
+          app_build: 145,
+          schema_version: 72,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -15588,7 +15618,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-144-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-145-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -15809,7 +15839,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_144</span>
+          <span class="badge">Domácnost+ v.0.1_145</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
