@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_150';
+  const APP_VERSION = 'Domácnost+ v.0.1_152';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -242,8 +242,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 77,
-      appBuild: 150,
-      mode: 'garage-calculator-tech-v150',
+      appBuild: 152,
+      mode: 'garage-ownership-home-v152',
       createdAt: '',
       updatedAt: ''
     },
@@ -1040,8 +1040,8 @@
 
     migrated.meta = {
       schemaVersion: 77,
-      appBuild: 150,
-      mode: 'garage-calculator-tech-v150',
+      appBuild: 152,
+      mode: 'garage-ownership-home-v152',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2102,9 +2102,13 @@
       const rows = sortedContracts.slice(0,8);
       body = `${renderOverviewSummary([{ label: 'Celkem', value: state.contracts.length }, { label: 'Do 30 dnů', value: soonCount, tone: soonCount ? 'warn' : '' }, { label: 'Po termínu', value: overdueCount, tone: overdueCount ? 'bad' : '' }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map(renderContractOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '📄', title: 'Žádné smlouvy', text: 'Přidej první pojistku, tarif nebo smlouvu a aplikace začne hlídat platnost.', nav: 'contracts', tab: 'add', label: 'Přidat smlouvu' })}`;
     } else if (type === 'garage') {
-      const allAlerts = getVehicleAlerts();
+      const ownedVehicles = garageOwnedVehicles();
+      const ownedVehicleIds = new Set(ownedVehicles.map((vehicle) => vehicle.id));
+      const allAlerts = getVehicleAlerts().filter((alert) => ownedVehicleIds.has(alert.vehicleId));
       const alerts = allAlerts.slice(0,8);
-      body = `${renderOverviewSummary([{ label: 'Auta', value: state.vehicles.length }, { label: 'Upozornění', value: allAlerts.length, tone: allAlerts.length ? 'warn' : 'good' }, { label: 'Záznamy', value: state.fuel.length + state.services.length }])}${alerts.length ? `<div class="list compact-list overview-list">${alerts.map(renderVehicleAlertOverviewItem).join('')}</div>` : `<div class="list compact-list overview-list">${state.vehicles.slice(0,6).map(renderGarageOverviewItem).join('') || renderEmptyCta({ icon: '🚗', title: 'Garáž je prázdná', text: 'Přidej první auto a dashboard začne hlídat STK, pojistku a servis.', nav: 'garage', tab: 'add', label: 'Přidat auto' })}</div>`}`;
+      const ownedFuelCount = state.fuel.filter((item) => ownedVehicleIds.has(item.vehicleId)).length;
+      const ownedServiceCount = state.services.filter((item) => ownedVehicleIds.has(item.vehicleId)).length;
+      body = `${renderOverviewSummary([{ label: 'Auta', value: ownedVehicles.length }, { label: 'Upozornění', value: allAlerts.length, tone: allAlerts.length ? 'warn' : 'good' }, { label: 'Záznamy', value: ownedFuelCount + ownedServiceCount }])}${alerts.length ? `<div class="list compact-list overview-list">${alerts.map(renderVehicleAlertOverviewItem).join('')}</div>` : `<div class="list compact-list overview-list">${ownedVehicles.slice(0,6).map(renderGarageOverviewItem).join('') || renderEmptyCta({ icon: '🚗', title: 'Žádné aktivní auto', text: 'Prodána auta zůstávají v historii. Přidej aktivní auto a dashboard začne hlídat STK, pojistku a servis.', nav: 'garage', tab: 'add', label: 'Přidat auto' })}</div>`}`;
     } else if (type === 'finance') {
       const summary = financeMonthSummary();
       const month = financeSelectedMonth();
@@ -2763,7 +2767,7 @@
     }
     if (id === 'garage') {
       const alert = (ctx.vehicleAlerts || [])[0];
-      const vehicles = state.vehicles || [];
+      const vehicles = garageOwnedVehicles();
       const vehicleCount = vehicles.length;
       if (vehicleCount) {
         const selectedVehicle = vehicles[homeCycleIndex(vehicleCount, 45)] || vehicles[0];
@@ -3793,7 +3797,7 @@
 
   function getVehicleAlerts() {
     const alerts = [];
-    state.vehicles.forEach((vehicle) => {
+    state.vehicles.filter(isVehicleOwned).forEach((vehicle) => {
       [
         { key: 'technicalInspectionUntil', label: 'STK' },
         { key: 'insuranceUntil', label: 'Pojistka' },
@@ -3925,6 +3929,8 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_152', note: 'Hotovo: Garáž počítá km/měsíc vlastnictví i u prodaného auta bez km při prodeji, Home panely jsou o něco nižší a aktivní Home panel Garáže neukazuje nevlastněná/prodaná auta.' },
+      { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
       { title: 'Domácnost+ v.0.1_150', note: 'Hotovo: Garáž má opravenou kalkulačku cesty s automatickým načtením hodnot podle auta, rozšířený technický list a základ katalogu značek/modelů pro předvyplnění.' },
       { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
       { title: 'Domácnost+ v.0.1_141', note: 'Hotovo: Garáž má v grafech průměrnou čárkovanou linku a hodnoty vlevo, km přímo ve výběru auta, spotřebu u tankování a rychlé tlačítko tankování z Home přehledu.' },
@@ -5638,13 +5644,21 @@
     return String(value || '').toLowerCase() === 'sold' ? 'sold' : 'owned';
   }
 
+  function isVehicleOwned(vehicle) {
+    return normalizeVehicleOwnershipStatus(vehicle?.ownershipStatus || (vehicle?.saleDate ? 'sold' : 'owned')) === 'owned';
+  }
+
+  function garageOwnedVehicles() {
+    return (state.vehicles || []).filter(isVehicleOwned);
+  }
+
   function vehicleOwnershipLabel(vehicle) {
-    return normalizeVehicleOwnershipStatus(vehicle?.ownershipStatus || (vehicle?.saleDate ? 'sold' : 'owned')) === 'sold' ? 'nevlastním' : 'vlastním';
+    return isVehicleOwned(vehicle) ? 'vlastním' : 'nevlastním';
   }
 
   function vehicleOwnershipMonths(vehicle) {
     const start = parseDateValue(vehicle?.purchaseDate);
-    const end = normalizeVehicleOwnershipStatus(vehicle?.ownershipStatus || (vehicle?.saleDate ? 'sold' : 'owned')) === 'sold' ? parseDateValue(vehicle?.saleDate) : new Date();
+    const end = isVehicleOwned(vehicle) ? new Date() : parseDateValue(vehicle?.saleDate);
     if (!start || !end || end < start) return 0;
     const months = ((end.getFullYear() - start.getFullYear()) * 12) + (end.getMonth() - start.getMonth()) + 1;
     return Math.max(1, months);
@@ -5653,7 +5667,11 @@
   function vehicleOwnedDistance(vehicle, analytics = {}) {
     const purchaseKm = Number(vehicle?.purchaseOdometer || 0);
     const saleKm = Number(vehicle?.saleOdometer || 0);
-    if (saleKm > 0 && purchaseKm > 0 && saleKm > purchaseKm) return saleKm - purchaseKm;
+    const currentKm = Number(analytics.currentKm || vehicle?.odometer || 0);
+    const endKm = Math.max(saleKm, currentKm, Number(analytics.endKnownKm || 0));
+    if (endKm > 0 && purchaseKm > 0 && endKm > purchaseKm) return endKm - purchaseKm;
+    if (saleKm > 0 && purchaseKm <= 0) return saleKm;
+    if (currentKm > 0 && purchaseKm <= 0) return currentKm;
     return Number(analytics.totalDistance || analytics.stats?.totalKm || 0);
   }
 
@@ -5813,7 +5831,13 @@
   }
 
   function getVehicleCurrentOdometer(vehicle, fuelRows = [], serviceRows = []) {
-    const values = [vehicle?.odometer, ...fuelRows.map((item) => item.odometer), ...serviceRows.map((item) => item.odometer)]
+    const values = [
+      vehicle?.odometer,
+      vehicle?.purchaseOdometer,
+      vehicle?.saleOdometer,
+      ...fuelRows.map((item) => item.odometer),
+      ...serviceRows.map((item) => item.odometer)
+    ]
       .map((value) => Number(value || 0))
       .filter((value) => Number.isFinite(value) && value > 0);
     return values.length ? Math.max(...values) : 0;
@@ -5877,6 +5901,8 @@
       stats,
       entries,
       currentKm,
+      firstKnownKm,
+      endKnownKm,
       latestFuel: fuelRows[fuelRows.length - 1] || null,
       latestPricePerLiter: fuelRows.length ? fuelPricePerLiter(fuelRows[fuelRows.length - 1]) : null,
       latestConsumption: entries.length ? entries[entries.length - 1].consumption : null,
@@ -6109,6 +6135,16 @@
   }
 
 
+  function garageDecimalInputValue(value) {
+    const number = Number(value || 0);
+    if (!Number.isFinite(number) || number <= 0) return '';
+    return String(Number(number.toFixed(2))).replace('.', ',');
+  }
+
+  function garageTripDecimalField(label, name, placeholder, value, required = true) {
+    return `<label class="field"><span>${escapeHtml(label)}</span><input class="input" type="text" inputmode="decimal" autocomplete="off" name="${escapeHtml(name)}" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(garageDecimalInputValue(value))}" ${required ? 'required' : ''}></label>`;
+  }
+
   function renderGarageTripCalculator(vehicles = [], activeVehicle = null) {
     if (!vehicles.length) return renderEmptyCta({ icon: '🧮', title: 'Kalkulačka čeká na auto', text: 'Přidej první auto a kalkulačka si vezme jeho průměrnou spotřebu i poslední cenu paliva.', nav: 'garage', tab: 'add', label: 'Přidat auto' });
     if (!garageCalcVehicleId || !vehicles.some((item) => item.id === garageCalcVehicleId)) garageCalcVehicleId = activeVehicle?.id || garageVehicleId || vehicles[0].id;
@@ -6130,9 +6166,9 @@
       <form data-form="garage-trip-calc" class="compact-form garage-trip-calc-form">
         <div class="form-grid two">
           <label class="field"><span>Auto</span><select class="select" name="vehicleId" data-garage-calc-vehicle>${vehicles.map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === selectedVehicle.id ? 'selected' : ''}>${escapeHtml(item.name || 'Auto')}</option>`).join('')}</select></label>
-          ${field('Kolik pojedu km', 'distance', 'number', 'např. 120', true, distance || '')}
-          ${field('Průměrná spotřeba l/100 km', 'consumption', 'number', 'editovatelné', true, consumption ? String(consumption.toFixed(2)).replace('.', ',') : '')}
-          ${field('Cena paliva Kč/l', 'fuelPrice', 'number', 'editovatelné', true, fuelPrice ? String(fuelPrice.toFixed(2)).replace('.', ',') : '')}
+          ${garageTripDecimalField('Kolik pojedu km', 'distance', 'např. 120', distance)}
+          ${garageTripDecimalField('Průměrná spotřeba l/100 km', 'consumption', 'editovatelné', consumption)}
+          ${garageTripDecimalField('Cena paliva Kč/l', 'fuelPrice', 'editovatelné', fuelPrice)}
         </div>
         <div class="form-actions"><button class="primary-btn" type="submit">Spočítat cestu</button></div>
       </form>
@@ -6509,7 +6545,7 @@
           <div class="stat-line"><span>Kč/km bez pořizovací ceny</span><strong>${formatCostPerKm(costSummary.runningPerKm)}</strong></div>
           <div class="stat-line"><span>Kč/km včetně koupě</span><strong>${formatCostPerKm(costSummary.totalPerKm)}</strong></div>
           <div class="stat-line"><span>Pořízení / prodej</span><strong>${costSummary.purchasePrice ? `${formatCurrency(costSummary.purchasePrice)}${vehicle.purchaseOdometer ? ` · ${escapeHtml(vehicle.purchaseOdometer)} km` : ''}${costSummary.salePrice ? ` · prodej ${formatCurrency(costSummary.salePrice)}` : ''}${vehicle.saleOdometer ? ` · ${escapeHtml(vehicle.saleOdometer)} km` : ''}` : 'nenastaveno'}</strong></div>
-          ${normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')) === 'sold' ? `<div class="stat-line"><span>Náklad / měsíc vlastnictví</span><strong>${formatCurrency(costSummary.totalWithPurchase / Math.max(1, vehicleOwnershipMonths(vehicle)))}</strong></div><div class="stat-line"><span>Km / měsíc vlastnictví</span><strong>${formatKm(vehicleOwnedDistance(vehicle, analytics) / Math.max(1, vehicleOwnershipMonths(vehicle)))}</strong></div>` : ''}
+          ${!isVehicleOwned(vehicle) ? `<div class="stat-line"><span>Náklad / měsíc vlastnictví</span><strong>${formatCurrency(costSummary.totalWithPurchase / Math.max(1, vehicleOwnershipMonths(vehicle)))}</strong></div><div class="stat-line"><span>Km / měsíc vlastnictví</span><strong>${formatKm(vehicleOwnedDistance(vehicle, analytics) / Math.max(1, vehicleOwnershipMonths(vehicle)))}</strong></div>` : ''}
         </div>
       </div>
       ${renderGarageDetailCharts(vehicle, fuelRows)}
@@ -7929,7 +7965,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 150))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 152))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -12135,6 +12171,8 @@
         state.vehicles.push(vehicle);
         rememberVehicleIconColor(vehicle);
         garageVehicleId = vehicle.id;
+        garageCalcVehicleId = vehicle.id;
+        garageTripCalcResult = null;
         touchState();
         saveState();
         if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
@@ -12671,7 +12709,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 77, appBuild: 150, mode: 'rich-demo-v150', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 77, appBuild: 152, mode: 'rich-demo-v152', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -12813,7 +12851,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 77, appBuild: 150, mode: 'garage-calculator-tech-v150', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 77, appBuild: 152, mode: 'garage-ownership-home-v152', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -15357,7 +15395,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 150
+        appBuild: 152
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -15947,7 +15985,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-150-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-152-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -16177,7 +16215,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_150</span>
+          <span class="badge">Domácnost+ v.0.1_152</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
