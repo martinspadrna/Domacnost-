@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_142';
+  const APP_VERSION = 'Domácnost+ v.0.1_143';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -196,16 +196,36 @@
     ['archived', 'Archiv']
   ];
   const WEATHER_CHMI_FUNCTION = 'weather-chmi-forecast';
+  const ICON_THEME_OPTIONS = [
+    ['ios', 'iOS', 'Čisté, jemné a hodně univerzální ikonky.'],
+    ['cartoon', 'Kreslené', 'Barevné animované ikonky bez anime stylu.'],
+    ['glass', 'Glass-line', 'Prémiové linkové ikonky ve skle.']
+  ];
+  const COLOR_SCHEME_OPTIONS = [
+    ['sky', 'Modrá', 'Výchozí svěží modrá.'],
+    ['emerald', 'Zelená', 'Klidnější domácí zelená.'],
+    ['violet', 'Fialová', 'Moderní prémiový tón.'],
+    ['sunset', 'Sunset', 'Teplejší oranžovo-růžový styl.'],
+    ['rose', 'Rose', 'Jemná růžovo-malina.'],
+    ['graphite', 'Graphite', 'Tlumený šedý technický styl.']
+  ];
+  const APP_THEME_OPTIONS = [
+    ['light', 'Světlý', 'Světlé sklo pro běžné použití.'],
+    ['dark', 'Tmavý', 'Tmavší režim na večer a tablet.']
+  ];
+  const VISUAL_SETTINGS_STORAGE_KEY = 'domacnostPlus.visualSettings.v1';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 69,
-      appBuild: 142,
-      mode: 'anime-icons-v142',
+      schemaVersion: 70,
+      appBuild: 143,
+      mode: 'visual-themes-v143',
       createdAt: '',
       updatedAt: ''
     },
     settings: {
       theme: 'light',
+      iconTheme: 'cartoon',
+      colorScheme: 'sky',
       dashboardNote: 'Domácí přehled je připravený na cloud. Každý si nastaví vlastní domácnost, profily a zapnuté moduly.',
       cloudEnabled: false,
       bottomNavIds: [...DEFAULT_BOTTOM_NAV_IDS],
@@ -457,6 +477,8 @@
   };
 
   let state = loadState();
+  mergeVisualSettings({ ...readLocalVisualSettings(), ...(state.settings || {}) });
+  applyVisualSettings();
   let demoRuntimeActive = false;
   let activeModule = 'home';
   let activeOverview = null;
@@ -496,7 +518,7 @@
   let suppressToastDepth = 0;
 
   const app = document.getElementById('app');
-  document.documentElement.dataset.theme = state.settings.theme || 'light';
+  applyVisualSettings();
 
   window.addEventListener?.('error', (event) => {
     if (!app || app.getAttribute?.('data-boot-ok') === '1') return;
@@ -989,16 +1011,18 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 69,
-      appBuild: 142,
-      mode: 'anime-icons-v142',
+      schemaVersion: 70,
+      appBuild: 143,
+      mode: 'visual-themes-v143',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
 
     migrated.settings = {
       ...(migrated.settings || {}),
-      theme: migrated.settings?.theme === 'dark' ? 'dark' : 'light',
+      theme: normalizeAppTheme(migrated.settings?.theme),
+      iconTheme: normalizeIconTheme(migrated.settings?.iconTheme),
+      colorScheme: normalizeColorScheme(migrated.settings?.colorScheme),
       dashboardNote: migrated.settings?.dashboardNote || DEFAULT_STATE.settings.dashboardNote,
       bottomNavIds: Array.isArray(migrated.settings?.bottomNavIds) ? migrated.settings.bottomNavIds : [...DEFAULT_BOTTOM_NAV_IDS],
       dashboardWidgets: [],
@@ -1098,6 +1122,81 @@
     migrated.settings.vehicleIconColors = migratedVehicleIconColors;
 
     return migrated;
+  }
+
+  function normalizeOptionId(value, options, fallback) {
+    const id = normalizeText(value);
+    return options.some(([key]) => key === id) ? id : fallback;
+  }
+
+  function normalizeAppTheme(value) {
+    return value === 'dark' ? 'dark' : 'light';
+  }
+
+  function normalizeIconTheme(value) {
+    return normalizeOptionId(value, ICON_THEME_OPTIONS, 'cartoon');
+  }
+
+  function normalizeColorScheme(value) {
+    return normalizeOptionId(value, COLOR_SCHEME_OPTIONS, 'sky');
+  }
+
+  function getVisualSettingsSnapshot(source = state?.settings || {}) {
+    return {
+      theme: normalizeAppTheme(source.theme),
+      iconTheme: normalizeIconTheme(source.iconTheme),
+      colorScheme: normalizeColorScheme(source.colorScheme)
+    };
+  }
+
+  function readLocalVisualSettings() {
+    try {
+      return getVisualSettingsSnapshot(JSON.parse(localStorage.getItem(VISUAL_SETTINGS_STORAGE_KEY) || '{}'));
+    } catch (error) {
+      return getVisualSettingsSnapshot({});
+    }
+  }
+
+  function saveLocalVisualSettings() {
+    try {
+      localStorage.setItem(VISUAL_SETTINGS_STORAGE_KEY, JSON.stringify(getVisualSettingsSnapshot()));
+    } catch (error) {}
+  }
+
+  function applyVisualSettings() {
+    if (!state?.settings) return;
+    state.settings.theme = normalizeAppTheme(state.settings.theme);
+    state.settings.iconTheme = normalizeIconTheme(state.settings.iconTheme);
+    state.settings.colorScheme = normalizeColorScheme(state.settings.colorScheme);
+    document.documentElement.dataset.theme = state.settings.theme;
+    document.documentElement.dataset.iconTheme = state.settings.iconTheme;
+    document.documentElement.dataset.colorScheme = state.settings.colorScheme;
+  }
+
+  function getOptionLabel(options, id) {
+    return options.find(([key]) => key === id)?.[1] || id;
+  }
+
+  function mergeVisualSettings(settings) {
+    if (!settings || typeof settings !== 'object') return false;
+    const before = JSON.stringify(getVisualSettingsSnapshot());
+    state.settings = {
+      ...(state.settings || {}),
+      theme: normalizeAppTheme(settings.theme ?? state.settings?.theme),
+      iconTheme: normalizeIconTheme(settings.iconTheme ?? settings.icon_theme ?? state.settings?.iconTheme),
+      colorScheme: normalizeColorScheme(settings.colorScheme ?? settings.color_scheme ?? state.settings?.colorScheme)
+    };
+    applyVisualSettings();
+    return before !== JSON.stringify(getVisualSettingsSnapshot());
+  }
+
+  function persistVisualSettings(showMessage = false) {
+    applyVisualSettings();
+    saveLocalVisualSettings();
+    touchState();
+    saveState();
+    cloudSaveUserVisualSettings(false).catch((error) => console.warn('Cloud visual settings save failed', error));
+    if (showMessage) showToast(state.cloud?.userId ? 'Vzhled uložen na účet' : 'Vzhled uložen v zařízení');
   }
 
   function structuredCloneSafe(value) {
@@ -1384,7 +1483,7 @@
   }
 
   function render() {
-    document.documentElement.dataset.theme = state.settings.theme || 'light';
+    applyVisualSettings();
     const showStartChoice = shouldShowStartChoice();
     if (showStartChoice) activeOverview = null;
     document.body.classList.toggle('overview-open', Boolean(activeOverview || garageModal || calendarDetailEventId));
@@ -1972,7 +2071,7 @@
   }
 
   function renderOnboarding() {
-    document.documentElement.dataset.theme = state.settings.theme || 'light';
+    applyVisualSettings();
 
     if (onboardingMode === 'choice') {
       app.innerHTML = `
@@ -2843,7 +2942,8 @@
     const slotClass = options.slotClass ? ` ${options.slotClass}` : '';
     const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
     const label = options.label || '';
-    return `<span class="module-illustration-slot module-illustration-slot-${escapeHtml(String(size))}${slotClass}" aria-hidden="true"><img class="module-illustration module-illustration-${escapeHtml(String(size))}${extraClass}" src="${escapeHtml(getModuleIllustrationSrc(id))}" alt="" loading="eager" decoding="sync" fetchpriority="high"></span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
+    const svg = getThemedModuleIconSvg(id, { extraClass });
+    return `<span class="module-illustration-slot module-illustration-slot-${escapeHtml(String(size))}${slotClass}" data-icon-id="${escapeHtml(String(id || 'settings'))}" aria-hidden="true">${svg}</span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
   }
 
   function renderMiniModuleIcon(id, options = {}) {
@@ -2851,9 +2951,71 @@
     const slotClass = options.slotClass ? ` ${options.slotClass}` : '';
     const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
     const label = options.label || '';
-    const svg = getMiniModuleIconSvg(id);
-    return `<span class="mini-module-icon mini-module-icon-${escapeHtml(String(size))}${slotClass}${extraClass}" aria-hidden="true">${svg}</span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
+    const svg = getThemedModuleIconSvg(id, { extraClass });
+    return `<span class="mini-module-icon mini-module-icon-${escapeHtml(String(size))}${slotClass}${extraClass}" data-icon-id="${escapeHtml(String(id || 'settings'))}" aria-hidden="true">${svg}</span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
   }
+
+  function themedIconColors(id) {
+    return {
+      home: ['#2563EB', '#93C5FD', '#F59E0B'],
+      weather: ['#0EA5E9', '#FACC15', '#FFFFFF'],
+      calendar: ['#EF4444', '#FDE68A', '#2563EB'],
+      packages: ['#D97706', '#FDBA74', '#7C2D12'],
+      shopping: ['#10B981', '#A7F3D0', '#0F766E'],
+      homecare: ['#8B5CF6', '#DDD6FE', '#F59E0B'],
+      garage: ['#2563EB', '#BFDBFE', '#334155'],
+      contracts: ['#3B82F6', '#DBEAFE', '#16A34A'],
+      cameras: ['#64748B', '#E2E8F0', '#0EA5E9'],
+      settings: ['#64748B', '#CBD5E1', '#334155'],
+      more: ['#64748B', '#CBD5E1', '#334155'],
+      subscriptions: ['#7C3AED', '#DDD6FE', '#F59E0B'],
+      warranties: ['#16A34A', '#BBF7D0', '#FFFFFF'],
+      polishHolidays: ['#EF4444', '#FEE2E2', '#FFFFFF'],
+      hdo: ['#10B981', '#D1FAE5', '#F59E0B'],
+      coupons: ['#A855F7', '#F3E8FF', '#F59E0B'],
+      waste: ['#16A34A', '#DCFCE7', '#0F766E'],
+      tasks: ['#2563EB', '#DBEAFE', '#22C55E'],
+      notes: ['#F59E0B', '#FEF3C7', '#EF4444'],
+      devices: ['#0EA5E9', '#E0F2FE', '#1D4ED8'],
+      finance: ['#16A34A', '#DCFCE7', '#F59E0B']
+    }[String(id || '')] || ['#64748B', '#E2E8F0', '#334155'];
+  }
+
+  function getThemedModuleIconSvg(id, options = {}) {
+    const iconId = getModuleIllustrationId(id);
+    const [a, b, c] = themedIconColors(iconId);
+    const extraClass = options.extraClass ? ` ${escapeHtml(String(options.extraClass).trim())}` : '';
+    const body = getThemedModuleIconBody(iconId);
+    return `<svg class="module-theme-icon module-theme-icon-${escapeHtml(iconId)}${extraClass}" style="--icon-a:${a};--icon-b:${b};--icon-c:${c}" viewBox="0 0 64 64" focusable="false" aria-hidden="true"><rect class="icon-tile" x="5" y="5" width="54" height="54" rx="17"></rect><g class="icon-glyph">${body}</g></svg>`;
+  }
+
+  function getThemedModuleIconBody(id) {
+    const map = {
+      home: '<path class="icon-primary" d="M14 31 32 15l18 16v20a3 3 0 0 1-3 3H36V40h-8v14H17a3 3 0 0 1-3-3Z"/><path class="icon-line" d="M10 32 32 12l22 20M42 22v-7h7v13"/>',
+      weather: '<circle class="icon-accent" cx="25" cy="24" r="10"/><path class="icon-primary" d="M24 47h22a10 10 0 0 0 .7-20 13 13 0 0 0-24.4 4.7A8 8 0 0 0 24 47Z"/><path class="icon-line" d="M13 24h-4M18 12l-3-3M32 8V4"/>',
+      calendar: '<rect class="icon-primary" x="15" y="17" width="34" height="34" rx="8"/><path class="icon-accent" d="M15 25h34v-3a5 5 0 0 0-5-5H20a5 5 0 0 0-5 5Z"/><path class="icon-line light" d="M23 12v10M41 12v10M24 33h4M31 33h4M38 33h4M24 41h4M31 41h4M38 41h4"/>',
+      packages: '<path class="icon-primary" d="m15 22 17-10 17 10v20L32 52 15 42Z"/><path class="icon-line light" d="M15 22 32 32l17-10M32 32v20M24 17l17 10"/>',
+      shopping: '<path class="icon-primary" d="M17 25h30l-3 23H20Z"/><path class="icon-line light" d="M23 25v-4a9 9 0 0 1 18 0v4"/><path class="icon-accent" d="M30 35c5-7 11-5 15-5-1 7-6 12-15 13Z"/>',
+      homecare: '<path class="icon-primary" d="M19 49V29h26v20Z"/><path class="icon-accent" d="M25 44h14V32H25Z"/><path class="icon-line" d="M18 29 32 18l14 11M44 49H20M43 29v-8"/>',
+      garage: '<path class="icon-primary" d="M14 49V27l18-12 18 12v22Z"/><path class="icon-secondary" d="M21 34h22v15H21Z"/><path class="icon-line" d="M25 45h14M22 38h20"/><path class="icon-accent" d="M24 44c2-5 3-6 8-6s6 1 8 6Z"/>',
+      contracts: '<path class="icon-primary" d="M18 12h22l8 8v31a3 3 0 0 1-3 3H18a3 3 0 0 1-3-3V15a3 3 0 0 1 3-3Z"/><path class="icon-secondary" d="M40 12v10h9"/><path class="icon-line light" d="M23 30h16M23 38h13M23 46h8"/><path class="icon-accent" d="M42 38 51 42v6c0 4-3 7-9 10-6-3-9-6-9-10v-6Z"/>',
+      cameras: '<path class="icon-primary" d="M14 26h32a6 6 0 0 1 6 6v7a6 6 0 0 1-6 6H14Z"/><circle class="icon-secondary" cx="31" cy="35" r="9"/><circle class="icon-accent" cx="31" cy="35" r="4"/><path class="icon-line" d="M46 31l8-5v18l-8-5"/>',
+      settings: '<path class="icon-primary" d="m35 12 2 7a16 16 0 0 1 4 2l7-2 4 7-5 5a17 17 0 0 1 0 4l5 5-4 7-7-2a16 16 0 0 1-4 2l-2 7h-8l-2-7a16 16 0 0 1-4-2l-7 2-4-7 5-5a17 17 0 0 1 0-4l-5-5 4-7 7 2a16 16 0 0 1 4-2l2-7Z"/><circle class="icon-secondary" cx="31" cy="33" r="8"/>',
+      more: '<circle class="icon-primary" cx="20" cy="32" r="6"/><circle class="icon-primary" cx="32" cy="32" r="6"/><circle class="icon-primary" cx="44" cy="32" r="6"/>',
+      subscriptions: '<rect class="icon-primary" x="15" y="19" width="34" height="26" rx="8"/><path class="icon-accent" d="m31 24 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z"/><path class="icon-line light" d="M20 47h24"/>',
+      warranties: '<path class="icon-primary" d="M32 11 49 18v13c0 11-6 18-17 23-11-5-17-12-17-23V18Z"/><path class="icon-line light" d="m23 32 7 7 13-15"/>',
+      polishHolidays: '<rect class="icon-primary" x="16" y="15" width="32" height="36" rx="8"/><path class="icon-secondary" d="M16 25h32v18H16Z"/><path class="icon-accent" d="M20 35h24v8H20Z"/><path class="icon-line light" d="M24 11v10M40 11v10"/>',
+      hdo: '<circle class="icon-primary" cx="32" cy="33" r="21"/><path class="icon-accent" d="m34 17-13 20h9l-3 14 15-23h-9Z"/><path class="icon-line light" d="M20 33a12 12 0 0 1 24 0"/>',
+      coupons: '<path class="icon-primary" d="M14 23a4 4 0 0 1 4-4h31v9a5 5 0 0 0 0 10v9H18a4 4 0 0 1-4-4Z"/><path class="icon-line light" d="M30 22v24M21 29h7M21 37h7"/><path class="icon-accent" d="m39 27 2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8Z"/>',
+      waste: '<path class="icon-primary" d="M20 24h24l-2 27a4 4 0 0 1-4 3H26a4 4 0 0 1-4-3Z"/><path class="icon-line" d="M18 24h28M25 24v-6h14v6"/><path class="icon-accent" d="M32 31c-5 3-7 7-6 12 4 0 7-2 9-6 2 3 4 5 8 6 1-5-1-9-6-12-1 3-3 5-5 6-2-1-4-3-5-6Z"/>',
+      tasks: '<rect class="icon-primary" x="18" y="12" width="28" height="40" rx="8"/><path class="icon-secondary" d="M24 20h16v26H24Z"/><path class="icon-line" d="m27 29 3 3 7-8M27 40l3 3 7-8"/>',
+      notes: '<path class="icon-primary" d="M17 14h30v38H17Z"/><path class="icon-accent" d="M39 14h8v8Z"/><path class="icon-line light" d="M24 29h16M24 38h13"/>',
+      devices: '<path class="icon-primary" d="M20 28a12 12 0 0 1 24 0v7a12 12 0 0 1-24 0Z"/><path class="icon-line" d="M15 22a21 21 0 0 1 34 0M24 48h16"/><path class="icon-accent" d="M32 25v10l7-5"/>',
+      finance: '<circle class="icon-primary" cx="32" cy="32" r="20"/><path class="icon-line light" d="M38 23c-8-4-16 1-16 8s8 12 17 7M21 29h20M21 36h16"/>'
+    };
+    return map[String(id || '')] || map.settings;
+  }
+
 
   function getMiniModuleIconSvg(id) {
     const map = {
@@ -3695,6 +3857,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_143', note: 'Hotovo: přidané 3 přepínatelné sady ikon, barevná schémata celé aplikace a osobní online ukládání vzhledu na účet.' },
       { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
       { title: 'Domácnost+ v.0.1_141', note: 'Hotovo: Garáž má v grafech průměrnou čárkovanou linku a hodnoty vlevo, km přímo ve výběru auta, spotřebu u tankování a rychlé tlačítko tankování z Home přehledu.' },
       { title: 'Domácnost+ v.0.1_140', note: 'Hotovo: Garáž má nový přehled aktivního auta s aktuálním stavem km, panelem Palivo, statistikami Tankování/Náklady/Vzdálenost a posuvnými grafy ceny, spotřeby a měsíčního paliva.' },
@@ -7243,6 +7406,56 @@
     `;
   }
 
+  function renderVisualChoiceGrid(options, selected, action, datasetName, typeClass = '') {
+    return `<div class="visual-choice-grid ${typeClass}">${options.map(([id, label, note]) => {
+      const active = id === selected;
+      const dataAttr = datasetName === 'theme' ? `data-theme-value="${escapeHtml(id)}"` : datasetName === 'iconTheme' ? `data-icon-theme="${escapeHtml(id)}"` : `data-color-scheme="${escapeHtml(id)}"`;
+      return `<button class="visual-choice-card ${active ? 'active' : ''}" type="button" data-action="${escapeHtml(action)}" ${dataAttr}>
+        <span class="visual-choice-preview visual-choice-preview-${escapeHtml(id)}" aria-hidden="true">${renderVisualPreview(id, datasetName)}</span>
+        <strong>${escapeHtml(label)}</strong>
+        <em>${escapeHtml(note || '')}</em>
+      </button>`;
+    }).join('')}</div>`;
+  }
+
+  function renderVisualPreview(id, type) {
+    if (type === 'iconTheme') {
+      const iconIds = id === 'cartoon' ? ['home', 'shopping', 'weather'] : id === 'glass' ? ['calendar', 'hdo', 'warranties'] : ['home', 'packages', 'settings'];
+      return `<span class="visual-icon-preview-row">${iconIds.map((iconId) => getThemedModuleIconSvg(iconId)).join('')}</span>`;
+    }
+    if (type === 'theme') {
+      return `<span class="theme-preview-orb ${escapeHtml(id)}"></span>`;
+    }
+    return `<span class="scheme-preview-dots"><i></i><i></i><i></i></span>`;
+  }
+
+  function renderVisualSettingsCard() {
+    const visual = getVisualSettingsSnapshot();
+    return `
+      <section class="card compact-settings-card visual-settings-card desktop-span-2">
+        <div class="card-header">
+          <div><h2>Vzhled aplikace</h2><p>Styl ikon i barevné schéma jsou osobní nastavení účtu. Každý člen domácnosti může mít vlastní vzhled.</p></div>
+          <span class="badge">${escapeHtml(getOptionLabel(ICON_THEME_OPTIONS, visual.iconTheme))} · ${escapeHtml(getOptionLabel(COLOR_SCHEME_OPTIONS, visual.colorScheme))}</span>
+        </div>
+        <div class="visual-settings-stack">
+          <div class="visual-settings-group">
+            <h3>Režim</h3>
+            ${renderVisualChoiceGrid(APP_THEME_OPTIONS, visual.theme, 'set-app-theme', 'theme', 'theme-choice-grid')}
+          </div>
+          <div class="visual-settings-group">
+            <h3>Styl ikon</h3>
+            ${renderVisualChoiceGrid(ICON_THEME_OPTIONS, visual.iconTheme, 'set-icon-theme', 'iconTheme', 'icon-choice-grid')}
+          </div>
+          <div class="visual-settings-group">
+            <h3>Barevné schéma</h3>
+            ${renderVisualChoiceGrid(COLOR_SCHEME_OPTIONS, visual.colorScheme, 'set-color-scheme', 'colorScheme', 'scheme-choice-grid')}
+          </div>
+        </div>
+        <div class="inline-note visual-sync-note">Při přihlášení se volba uloží do Supabase tabulky <strong>user_app_settings</strong>. Bez cloudu zůstane jako lokální nastavení zařízení.</div>
+      </section>
+    `;
+  }
+
   function renderSettings() {
     const enabled = new Set(normalizeModuleList(state.enabledModules));
     const settingsTabIds = ['household', 'modules', 'dashboard', 'cloud', 'data'];
@@ -7262,11 +7475,12 @@
             <form data-form="household-settings" class="compact-form">
               <div class="form-grid two">
                 ${field('Název domácnosti', 'householdName', 'text', 'Domácnost', true, householdName())}
-                ${selectField('Vzhled', 'theme', [['light', 'Světlý'], ['dark', 'Tmavý']], state.settings.theme)}
               </div>
               <div class="form-actions compact-actions"><button class="primary-btn" type="submit">Uložit domácnost</button></div>
             </form>
           </section>
+
+          ${renderVisualSettingsCard()}
 
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Profily</h2><p>Členové jedné domácnosti. Každý může mít svoje položky a nastavení.</p></div><span class="badge">${state.profiles.length} profilů</span></div>
@@ -7468,7 +7682,7 @@
   }
 
   function resetSignedOutAppState() {
-    const theme = state.settings?.theme === 'dark' ? 'dark' : 'light';
+    const visualSettings = getVisualSettingsSnapshot();
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('homeWeb.activeModule');
     localStorage.removeItem('domacnostPlus.moduleTabs');
@@ -7476,7 +7690,7 @@
     sessionStorage.removeItem(ONBOARDING_GOOGLE_INTENT_KEY);
     sessionStorage.setItem('domacnostPlus.onboardingMode', 'choice');
     state = migrateState(mergeState(DEFAULT_STATE, {}));
-    state.settings.theme = theme;
+    state.settings = { ...(state.settings || {}), ...visualSettings };
     state.household = { ...(state.household || {}), name: '', isConfigured: false };
     state.profiles = [];
     state.activeProfileId = '';
@@ -11534,7 +11748,6 @@
       'onboarding-login': () => loginExistingHouseholdFromOnboarding(data),
       'household-settings': async () => {
         state.household.name = normalizeText(data.householdName) || 'Domácnost';
-        state.settings.theme = data.theme === 'dark' ? 'dark' : 'light';
         touchState();
         saveState();
         await cloudSaveHouseholdUiSettings(false, true);
@@ -11543,7 +11756,6 @@
       },
       settings: async () => {
         state.household.name = normalizeText(data.householdName) || 'Domácnost';
-        state.settings.theme = data.theme === 'dark' ? 'dark' : 'light';
         touchState();
         saveState();
         await cloudSaveHouseholdUiSettings(false, true);
@@ -11814,7 +12026,7 @@
     activeModule = 'home';
     moduleTabs = {};
     state = migrateState(mergeState(DEFAULT_STATE, {}));
-    document.documentElement.dataset.theme = state.settings.theme || 'light';
+    applyVisualSettings();
     render();
     showToast('Demo ukončeno · můžeš se přihlásit nebo znovu spustit demo');
   }
@@ -11991,7 +12203,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 69, appBuild: 142, mode: 'rich-demo-v142', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 70, appBuild: 143, mode: 'rich-demo-v143', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -12133,7 +12345,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 69, appBuild: 142, mode: 'anime-icons-v142', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 70, appBuild: 143, mode: 'visual-themes-v143', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -13130,12 +13342,56 @@
     return synced;
   }
 
+  async function cloudLoadUserVisualSettings(showMessage = false) {
+    const client = getSupabaseClient();
+    if (!client) return false;
+    const userId = state.cloud?.userId;
+    if (!userId) return false;
+    const { data, error } = await client
+      .from('user_app_settings')
+      .select('settings, updated_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) {
+      if (showMessage) showToast(error.message || 'Vzhled účtu se nepovedlo načíst');
+      return false;
+    }
+    if (data?.settings && mergeVisualSettings(data.settings)) {
+      state.cloud = { ...(state.cloud || {}), userVisualSettingsLoadedAt: data.updated_at || new Date().toISOString() };
+      saveLocalVisualSettings();
+      touchState();
+      saveState();
+      render();
+    }
+    return true;
+  }
+
+  async function cloudSaveUserVisualSettings(showMessage = false) {
+    const client = getSupabaseClient();
+    if (!client) return false;
+    const userId = state.cloud?.userId;
+    if (!userId) return false;
+    const settings = getVisualSettingsSnapshot();
+    const { error } = await client
+      .from('user_app_settings')
+      .upsert({ user_id: userId, settings, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    if (error) {
+      if (showMessage) showToast(error.message || 'Vzhled účtu se nepovedlo uložit');
+      return false;
+    }
+    state.cloud = { ...(state.cloud || {}), userVisualSettingsLoadedAt: new Date().toISOString() };
+    saveState();
+    if (showMessage) showToast('Vzhled uložen na účet');
+    return true;
+  }
+
   async function cloudSyncLocalPendingData(showMessage = true) {
     if (!cloudReady()) {
       if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
       return;
     }
     const syncers = [
+      () => cloudSaveUserVisualSettings(false),
       cloudSyncLocalProfiles,
       cloudSyncLocalShoppingItems,
       cloudSyncLocalContracts,
@@ -13175,6 +13431,7 @@
     const user = await refreshCloudSession(false);
     if (!user) return;
     cloudWarmStartDone = true;
+    await cloudLoadUserVisualSettings(false);
     const households = await cloudLoadHouseholds(false);
     if (!state.cloud?.householdId && households.length) {
       const preferredHousehold = pickBestCloudHousehold(households);
@@ -13197,6 +13454,7 @@
       return;
     }
     const loaders = [
+      cloudLoadUserVisualSettings,
       cloudLoadHouseholdUiSettings,
       cloudLoadProfilesForCurrentHousehold,
       cloudLoadShoppingData,
@@ -13227,6 +13485,27 @@
     render();
     if (!options.skipRealtimeSetup) setupCloudRealtimeSubscriptions(false);
     if (showMessage) showToast(`Cloud načten: ${ok}/${loaders.length} částí`);
+  }
+
+  function setAppTheme(value) {
+    state.settings.theme = normalizeAppTheme(value);
+    persistVisualSettings(false);
+    render();
+    showToast(state.settings.theme === 'dark' ? 'Tmavý vzhled uložen' : 'Světlý vzhled uložen');
+  }
+
+  function setIconTheme(value) {
+    state.settings.iconTheme = normalizeIconTheme(value);
+    persistVisualSettings(false);
+    render();
+    showToast(`Styl ikon: ${getOptionLabel(ICON_THEME_OPTIONS, state.settings.iconTheme)}`);
+  }
+
+  function setColorScheme(value) {
+    state.settings.colorScheme = normalizeColorScheme(value);
+    persistVisualSettings(false);
+    render();
+    showToast(`Barevné schéma: ${getOptionLabel(COLOR_SCHEME_OPTIONS, state.settings.colorScheme)}`);
   }
 
   function handleAction(button) {
@@ -13293,15 +13572,19 @@
       return;
     }
     if (action === 'toggle-theme') {
-      state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = state.settings.theme || 'light';
-      if (button.classList.contains('icon-btn')) {
-        button.textContent = state.settings.theme === 'dark' ? '☀️' : '🌙';
-      }
-      button.setAttribute('aria-label', 'Přepnout vzhled');
-      touchState();
-      saveState();
-      showToast(state.settings.theme === 'dark' ? 'Tmavý vzhled' : 'Světlý vzhled');
+      setAppTheme(state.settings.theme === 'dark' ? 'light' : 'dark');
+      return;
+    }
+    if (action === 'set-app-theme') {
+      setAppTheme(button.dataset.themeValue);
+      return;
+    }
+    if (action === 'set-icon-theme') {
+      setIconTheme(button.dataset.iconTheme);
+      return;
+    }
+    if (action === 'set-color-scheme') {
+      setColorScheme(button.dataset.colorScheme);
       return;
     }
     if (action === 'delete') {
@@ -14606,7 +14889,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 142
+        appBuild: 143
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -14729,7 +15012,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 108, schema_version: 68, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 143, schema_version: 70, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -14908,7 +15191,7 @@
     if (client) await client.auth.signOut().catch(() => {});
     resetSignedOutAppState();
     saveState();
-    document.documentElement.dataset.theme = state.settings.theme || 'light';
+    applyVisualSettings();
     render();
     showToast('Odhlášeno');
   }
@@ -14942,8 +15225,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 108,
-          schema_version: 68,
+          app_build: 143,
+          schema_version: 70,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -15196,7 +15479,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-142-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-143-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -15417,7 +15700,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_142</span>
+          <span class="badge">Domácnost+ v.0.1_143</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
