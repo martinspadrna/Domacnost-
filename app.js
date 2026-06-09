@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_145';
+  const APP_VERSION = 'Domácnost+ v.0.1_146';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -203,7 +203,8 @@
     ['material', 'Material Bold', 'Plošší a čistší styl inspirovaný moderními Android appkami.'],
     ['fluent', 'Fluent Glow', 'Lehce prostorový styl inspirovaný desktop / fluent vzhledem.'],
     ['neon', 'Neon Pop', 'Sytější zářivý styl s neonovým akcentem.'],
-    ['oneui', 'One UI Soft', 'Měkčí zaoblený styl inspirovaný moderním Samsung vzhledem.']
+    ['oneui', 'One UI Soft', 'Měkčí zaoblený styl inspirovaný moderním Samsung vzhledem.'],
+    ['rak', 'RaK Simple', 'Jednoduchý čistý set podobný RaK: minimum barev, dobrá čitelnost.']
   ];
   const COLOR_SCHEME_OPTIONS = [
     ['sky', 'Modrá', 'Výchozí svěží modrá.'],
@@ -211,7 +212,11 @@
     ['violet', 'Fialová', 'Moderní prémiový tón.'],
     ['sunset', 'Sunset', 'Teplejší oranžovo-růžový styl.'],
     ['rose', 'Rose', 'Jemná růžovo-malina.'],
-    ['graphite', 'Graphite', 'Tlumený šedý technický styl.']
+    ['graphite', 'Graphite', 'Tlumený šedý technický styl.'],
+    ['skoda', 'Škoda/RaK', 'Čistá zeleno-modrá kombinace.'],
+    ['aqua', 'Aqua', 'Svěží tyrkysový moderní styl.'],
+    ['nord', 'Nord', 'Studený decentní severský tón.'],
+    ['mono', 'Mono', 'Jednoduchý černobílý styl s minimem barev.']
   ];
   const APP_THEME_OPTIONS = [
     ['light', 'Světlý', 'Světlé sklo pro běžné použití.'],
@@ -220,9 +225,9 @@
   const VISUAL_SETTINGS_STORAGE_KEY = 'domacnostPlus.visualSettings.v1';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 72,
-      appBuild: 145,
-      mode: 'icon-pack-v145',
+      schemaVersion: 73,
+      appBuild: 146,
+      mode: 'garage-cloud-icons-v146',
       createdAt: '',
       updatedAt: ''
     },
@@ -491,6 +496,7 @@
   let garageHistoryYearFilter = 'all';
   let garageHistoryTypeFilter = 'all';
   let garageStatsVehicleId = '';
+  let garageVehicleExtendedSchemaPending = false;
   let garageStatsPeriodFilter = 'last12';
   let garageStatsTypeFilter = 'all';
   let calendarViewMonth = localStorage.getItem('domacnostPlus.calendarViewMonth') || todayISO().slice(0, 7);
@@ -1015,9 +1021,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 72,
-      appBuild: 145,
-      mode: 'icon-pack-v145',
+      schemaVersion: 73,
+      appBuild: 146,
+      mode: 'garage-cloud-icons-v146',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -3867,7 +3873,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_145', note: 'Hotovo: přidané další výrazně odlišné sady ikon, názvy garážových grafů jsou přes celý vršek a auta nově umí i km při koupi a prodeji.' },
+      { title: 'Domácnost+ v.0.1_146', note: 'Hotovo: opravené ukládání auta při chybějících DB sloupcích, odstraněné ruční cloud tlačítko v Garáži a přidaný jednoduchý RaK Simple styl ikon.' },
       { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
       { title: 'Domácnost+ v.0.1_141', note: 'Hotovo: Garáž má v grafech průměrnou čárkovanou linku a hodnoty vlevo, km přímo ve výběru auta, spotřebu u tankování a rychlé tlačítko tankování z Home přehledu.' },
       { title: 'Domácnost+ v.0.1_140', note: 'Hotovo: Garáž má nový přehled aktivního auta s aktuálním stavem km, panelem Palivo, statistikami Tankování/Náklady/Vzdálenost a posuvnými grafy ceny, spotřeby a měsíčního paliva.' },
@@ -5972,8 +5978,7 @@
           <div class="inline-note">Import půjde do existujících aut podle názvu. Pokud CSV nemá název auta, použije se aktuálně vybrané auto nebo se vytvoří „Fuelio import“.</div>
           ${renderFuelioPreviewTable(rows)}
           <div class="form-actions">
-            <button class="primary-btn" type="button" data-action="confirm-fuelio-import">Importovat lokálně</button>
-            <button class="ghost-btn" type="button" data-action="confirm-fuelio-import-cloud">Importovat + uložit do cloudu</button>
+            <button class="primary-btn" type="button" data-action="confirm-fuelio-import">Importovat</button>
             <button class="ghost-btn" type="button" data-action="clear-fuelio-preview">Zrušit náhled</button>
           </div>
           <div class="inline-note">Cloud import použije stejný náhled a potom odešle jen nové neuložené záznamy. Duplicity z Fuelia hlídá aplikace lokálně i databáze přes hash.</div>
@@ -6266,7 +6271,7 @@
             ${selectField('Barva ikonky auta', 'iconColor', vehicleIconColorOptions(), normalizeVehicleIconColor(vehicle.iconColor))}
             ${field('Poznámka', 'note', 'text', 'pneu, rozměr, VIN...', false, vehicle.note || '')}
           </div>
-          <div class="form-actions"><button class="ghost-btn" type="submit">Uložit údaje auta</button><button class="ghost-btn" type="button" data-action="cloud-sync-vehicle" data-id="${vehicle.id}">Odeslat auto do cloudu</button></div>
+          <div class="form-actions"><button class="primary-btn" type="submit">Uložit údaje auta</button></div>
         </form>
       </details>
       <details class="action-details compact-edit-details danger-zone-details">
@@ -7533,7 +7538,8 @@
         material: ['garage', 'calendar', 'shopping'],
         fluent: ['weather', 'subscriptions', 'homecare'],
         neon: ['packages', 'cameras', 'weather'],
-        oneui: ['home', 'garage', 'settings']
+        oneui: ['home', 'garage', 'settings'],
+        rak: ['home', 'calendar', 'garage']
       };
       const iconIds = previewIconsByTheme[id] || ['home', 'packages', 'settings'];
       return `<span class="visual-icon-preview-row">${iconIds.map((iconId) => getThemedModuleIconSvg(iconId)).join('')}</span>`;
@@ -7654,7 +7660,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 145))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 146))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -9267,13 +9273,20 @@
     vehicle.iconColor = normalizeVehicleIconColor(data.iconColor || vehicle.iconColor);
     vehicle.note = normalizeText(data.note);
     rememberVehicleIconColor(vehicle);
-    const ok = await cloudUpdateVehicle(vehicle);
-    if (!ok) return;
     touchState();
     saveState();
-    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
+    const cloudSaved = await cloudUpdateVehicle(vehicle);
+    if (cloudReady() && cloudSaved) await cloudSaveHouseholdUiSettings(false);
     render();
-    showToast(vehicle.cloudId ? 'Údaje auta uloženy v cloudu' : 'Údaje auta uloženy lokálně');
+    if (cloudReady()) {
+      if (cloudSaved) {
+        showToast(garageVehicleExtendedSchemaPending ? 'Údaje auta uloženy. Nová pole se pošlou do cloudu po spuštění DB migrace.' : 'Údaje auta uloženy v cloudu');
+      } else {
+        showToast('Údaje auta uloženy lokálně, cloud se teď nepovedl aktualizovat');
+      }
+    } else {
+      showToast('Údaje auta uloženy lokálně');
+    }
   }
 
 
@@ -9592,6 +9605,17 @@
     return ['service', vehicleKey, dateKey, garageNumberKey(item.odometer, 0), garageNumberKey(item.price, 0), item.title || item.category || 'servis'].map((part) => normalizeKey(part)).join('|').slice(0, 240);
   }
 
+  function isGarageVehicleExtendedSchemaError(error) {
+    const message = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+    return error?.code === 'PGRST204' || ((message.includes('schema cache') || message.includes('could not find')) && /(purchase_|sale_|purchase date|sale date)/.test(message));
+  }
+
+  function markGarageVehicleExtendedSchemaPending() {
+    garageVehicleExtendedSchemaPending = true;
+    state.cloud = state.cloud && typeof state.cloud === 'object' ? state.cloud : {};
+    state.cloud.garageVehicleExtendedColumnsPending = true;
+  }
+
   async function ensureCloudVehicle(vehicle) {
     if (!vehicle) return null;
     if (vehicle.cloudId) return vehicle.cloudId;
@@ -9603,20 +9627,15 @@
     return vehicle.cloudId;
   }
 
-  function cloudVehiclePayload(vehicle, userId) {
-    return {
+  function cloudVehiclePayload(vehicle, userId, options = {}) {
+    const includeExtendedFields = options.includeExtendedFields !== false;
+    const payload = {
       household_id: state.cloud.householdId,
       profile_id: null,
       name: vehicle.name || 'Auto',
       plate_number: vehicle.plate || null,
       fuel_type: fuelTypeToCloud(vehicle.fuelType),
       current_odometer: vehicle.odometer === '' || vehicle.odometer === undefined ? null : Number(vehicle.odometer),
-      purchase_date: vehicle.purchaseDate || null,
-      purchase_price: vehicle.purchasePrice === '' || vehicle.purchasePrice === undefined ? null : Number(vehicle.purchasePrice),
-      purchase_odometer: vehicle.purchaseOdometer === '' || vehicle.purchaseOdometer === undefined ? null : Number(vehicle.purchaseOdometer),
-      sale_date: vehicle.saleDate || null,
-      sale_price: vehicle.salePrice === '' || vehicle.salePrice === undefined ? null : Number(vehicle.salePrice),
-      sale_odometer: vehicle.saleOdometer === '' || vehicle.saleOdometer === undefined ? null : Number(vehicle.saleOdometer),
       stk_until: vehicle.technicalInspectionUntil || null,
       insurance_until: vehicle.insuranceUntil || null,
       next_service_odometer: vehicle.nextServiceKm === '' || vehicle.nextServiceKm === undefined ? null : Number(vehicle.nextServiceKm),
@@ -9625,6 +9644,15 @@
       created_by: vehicle.cloudId ? undefined : userId,
       updated_by: userId
     };
+    if (includeExtendedFields) {
+      payload.purchase_date = vehicle.purchaseDate || null;
+      payload.purchase_price = vehicle.purchasePrice === '' || vehicle.purchasePrice === undefined ? null : Number(vehicle.purchasePrice);
+      payload.purchase_odometer = vehicle.purchaseOdometer === '' || vehicle.purchaseOdometer === undefined ? null : Number(vehicle.purchaseOdometer);
+      payload.sale_date = vehicle.saleDate || null;
+      payload.sale_price = vehicle.salePrice === '' || vehicle.salePrice === undefined ? null : Number(vehicle.salePrice);
+      payload.sale_odometer = vehicle.saleOdometer === '' || vehicle.saleOdometer === undefined ? null : Number(vehicle.saleOdometer);
+    }
+    return payload;
   }
 
   async function cloudAddVehicle(vehicle) {
@@ -9633,7 +9661,12 @@
     const user = await refreshCloudSession(false);
     if (!user) return null;
     const payload = cloudVehiclePayload(vehicle, user.id);
-    const { data, error } = await client.from('vehicles').insert(payload).select('id').single();
+    let { data, error } = await client.from('vehicles').insert(payload).select('id').single();
+    if (error && isGarageVehicleExtendedSchemaError(error)) {
+      markGarageVehicleExtendedSchemaPending();
+      const fallbackPayload = cloudVehiclePayload(vehicle, user.id, { includeExtendedFields: false });
+      ({ data, error } = await client.from('vehicles').insert(fallbackPayload).select('id').single());
+    }
     if (error) {
       showToast(error.message || 'Auto se nepovedlo uložit do cloudu');
       return null;
@@ -9649,7 +9682,13 @@
     if (!user) return false;
     const payload = cloudVehiclePayload(vehicle, user.id);
     delete payload.created_by;
-    const { error } = await client.from('vehicles').update(payload).eq('id', vehicle.cloudId).eq('household_id', state.cloud.householdId);
+    let { error } = await client.from('vehicles').update(payload).eq('id', vehicle.cloudId).eq('household_id', state.cloud.householdId);
+    if (error && isGarageVehicleExtendedSchemaError(error)) {
+      markGarageVehicleExtendedSchemaPending();
+      const fallbackPayload = cloudVehiclePayload(vehicle, user.id, { includeExtendedFields: false });
+      delete fallbackPayload.created_by;
+      ({ error } = await client.from('vehicles').update(fallbackPayload).eq('id', vehicle.cloudId).eq('household_id', state.cloud.householdId));
+    }
     if (error) {
       showToast(error.message || 'Auto se nepovedlo aktualizovat v cloudu');
       return false;
@@ -12342,7 +12381,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 72, appBuild: 145, mode: 'rich-demo-v145', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 73, appBuild: 146, mode: 'rich-demo-v146', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -12484,7 +12523,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 72, appBuild: 145, mode: 'icon-pack-v145', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 73, appBuild: 146, mode: 'garage-cloud-icons-v146', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -14013,11 +14052,7 @@
       return;
     }
     if (action === 'confirm-fuelio-import') {
-      confirmFuelioImport({ syncCloud: false });
-      return;
-    }
-    if (action === 'confirm-fuelio-import-cloud') {
-      confirmFuelioImport({ syncCloud: true });
+      confirmFuelioImport({ syncCloud: cloudReady() });
       return;
     }
     if (action === 'edit-garage-record') {
@@ -15028,7 +15063,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 145
+        appBuild: 146
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -15151,7 +15186,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 145, schema_version: 72, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 146, schema_version: 73, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -15364,8 +15399,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 145,
-          schema_version: 72,
+          app_build: 146,
+          schema_version: 73,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -15618,7 +15653,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-145-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-146-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -15839,7 +15874,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_145</span>
+          <span class="badge">Domácnost+ v.0.1_146</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
