@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_156';
+  const APP_VERSION = 'Domácnost+ v.0.1_157';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -307,8 +307,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 77,
-      appBuild: 156,
-      mode: 'home-grid-fix-v156',
+      appBuild: 157,
+      mode: 'home-layout-rak-nav-hdo-v157',
       createdAt: '',
       updatedAt: ''
     },
@@ -1105,8 +1105,8 @@
 
     migrated.meta = {
       schemaVersion: 77,
-      appBuild: 156,
-      mode: 'home-grid-fix-v156',
+      appBuild: 157,
+      mode: 'home-layout-rak-nav-hdo-v157',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1622,6 +1622,7 @@
     document.body.classList.toggle('overview-open', Boolean(activeOverview || garageModal || calendarDetailEventId));
 
     if (showStartChoice) {
+      app?.classList?.remove('home-app-shell');
       renderOnboarding();
       if (app) app.setAttribute?.('data-boot-ok', '1');
       return;
@@ -1635,6 +1636,7 @@
     const active = selectableModules.find((module) => module.id === activeModule) || visibleModules[0];
     const bottomNavModules = getBottomNavModules();
     const isHomeModule = active.id === 'home';
+    app?.classList?.toggle('home-app-shell', isHomeModule);
     const pageTitle = isHomeModule ? householdName() : active.label;
     const pageSubtitle = isHomeModule ? '' : getModuleSubtitle(active.id);
 
@@ -2104,6 +2106,35 @@
       <div class="hdo-overview-table-grid">
         ${renderHdoOverviewTable('Normální dny', 'Po–Pá', normalRows)}
         ${renderHdoOverviewTable('Víkend + svátky', 'Sobota, neděle a české svátky', weekendRows)}
+      </div>`;
+  }
+
+
+  function renderHdoModuleTable(title, subtitle, rows = []) {
+    const cleanRows = sortHdoWindowsForOverview(rows);
+    return `
+      <div class="hdo-overview-table-card hdo-module-table-card">
+        <div class="hdo-overview-table-head">
+          <strong>${escapeHtml(title)}</strong>
+          <span>${escapeHtml(subtitle)}</span>
+        </div>
+        ${cleanRows.length ? `<div class="list hdo-module-list">${cleanRows.map((item) => `
+          <div class="item hdo-module-row">
+            <div class="item-top"><div class="item-title">${escapeHtml(item.label)}</div><span class="badge ${item.enabled ? 'good' : ''}">${item.enabled ? 'aktivní' : 'vypnuto'}</span></div>
+            <div class="item-meta">${escapeHtml(item.start)}–${escapeHtml(item.end)} · ${escapeHtml(daysLabel(item.days))}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
+            <div class="item-actions"><button class="ghost-btn" type="button" data-action="toggle-hdo" data-id="${item.id}">${item.enabled ? 'Vypnout' : 'Zapnout'}</button>${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-hdo" data-id="${item.id}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-hdo" data-id="${item.id}">Smazat</button></div>
+          </div>`).join('')}</div>` : `<div class="inline-note compact-note">Pro tuhle skupinu není nastavené žádné okno.</div>`}
+      </div>`;
+  }
+
+  function renderHdoModuleTables(rows = []) {
+    const safeRows = getSafeHdoWindows().length ? rows : [];
+    const normalRows = safeRows.filter(hdoAppliesToNormalDays);
+    const weekendRows = safeRows.filter(hdoAppliesToWeekendHoliday);
+    return `
+      <div class="hdo-overview-table-grid hdo-module-table-grid">
+        ${renderHdoModuleTable('Normální dny', 'Po–Pá', normalRows)}
+        ${renderHdoModuleTable('Víkend + svátky', 'Sobota, neděle a české svátky', weekendRows)}
       </div>`;
   }
 
@@ -2747,10 +2778,12 @@
       const nextLimited = nextPolishShopImportantEntry('limited');
       const isClosed = todayImportant?.status === 'closed';
       const isLimited = todayImportant?.status === 'limited';
+      const compactPolishName = (value = '') => normalizeText(value).replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+      const compactPolishLine = (entry) => `${shortDateText(entry.date)} · ${compactPolishName(entry.name)}`;
       const slides = [
-        todayImportant ? { metric: todayImportant.status === 'closed' ? 'Zavřeno' : todayImportant.status === 'limited' ? 'Pozor' : 'Dnes OK', text: todayImportant.name || 'Dnes', detail: 'dnešní stav v Polsku' } : null,
-        nextClosed ? { metric: dueBadge(daysUntil(nextClosed.date)), text: `${formatDate(nextClosed.date)} · ${nextClosed.name}`, detail: 'nejbližší zavřené obchody' } : null,
-        nextLimited ? { metric: 'Pozor', text: `${formatDate(nextLimited.date)} · ${nextLimited.name}`, detail: 'nejbližší omezení' } : null
+        todayImportant ? { metric: todayImportant.status === 'closed' ? 'Zavřeno' : todayImportant.status === 'limited' ? 'Pozor' : 'Dnes OK', text: compactPolishName(todayImportant.name) || 'Dnes', detail: 'dnešní stav v Polsku' } : null,
+        nextClosed ? { metric: dueBadge(daysUntil(nextClosed.date)), text: compactPolishLine(nextClosed), detail: 'zavřené obchody' } : null,
+        nextLimited ? { metric: 'Pozor', text: compactPolishLine(nextLimited), detail: 'omezení' } : null
       ].filter(Boolean);
       const slide = homeCycleItem(slides, 45);
       return {
@@ -3994,7 +4027,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_156', note: 'Hotovo: Home je zhuštěný pro obrazovku bez scrollu, katalog aut je rozšířený a zavřený v základu, přehled Garáže u prodaných aut ukazuje celkové km a Kč/km.' },
+      { title: 'Domácnost+ v.0.1_157', note: 'Hotovo: Home panel vyplňuje celou obrazovku bez scrollu se stejně velkými dlaždicemi, HDO je rozdělené na normální a víkendové časy i v modulu, spodní lišta je víc ve stylu RaK a Garáž má čistší popisek prodaných aut.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
       { title: 'Domácnost+ v.0.1_150', note: 'Hotovo: Garáž má opravenou kalkulačku cesty s automatickým načtením hodnot podle auta, rozšířený technický list a základ katalogu značek/modelů pro předvyplnění.' },
       { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
@@ -5192,13 +5225,7 @@
             </form>
           </details>
           <div style="height:14px"></div>
-          ${state.hdoWindows.length ? `<div class="list">${sortHdoWindowsForOverview(getSafeHdoWindows()).map((item) => `
-            <div class="item">
-              <div class="item-top"><div class="item-title">${escapeHtml(item.label)}</div><span class="badge ${item.enabled ? 'good' : ''}">${item.enabled ? 'aktivní' : 'vypnuto'}</span></div>
-              <div class="item-meta">${escapeHtml(item.start)}–${escapeHtml(item.end)} · ${escapeHtml(daysLabel(item.days))}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
-              <div class="item-actions"><button class="ghost-btn" type="button" data-action="toggle-hdo" data-id="${item.id}">${item.enabled ? 'Vypnout' : 'Zapnout'}</button>${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-hdo" data-id="${item.id}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-hdo" data-id="${item.id}">Smazat</button></div>
-            </div>
-          `).join('')}</div>` : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard začne ukazovat aktuální stav.', nav: 'homecare', tab: 'hdo', label: 'Nastavit HDO' })}
+          ${state.hdoWindows.length ? renderHdoModuleTables(sortHdoWindowsForOverview(getSafeHdoWindows())) : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard začne ukazovat aktuální stav.', nav: 'homecare', tab: 'hdo', label: 'Nastavit HDO' })}
         </section>
 
         <section class="card homecare-panel panel-waste">
@@ -6203,9 +6230,8 @@
     const months = vehicleOwnershipMonths(vehicle);
     const parts = [vehicleOwnershipLabel(vehicle)];
     if (ownedKm) parts.push(`najeto ${formatKm(ownedKm)}`);
-    if (costSummary.totalPerKm) parts.push(`${formatCostPerKm(costSummary.totalPerKm)}/km celkem`);
+    if (costSummary.totalPerKm) parts.push(`celkem ${formatCostPerKm(costSummary.totalPerKm)}`);
     if (months) parts.push(`${months} měs. vlastnictví`);
-    if (vehicle.saleDate) parts.push(`prodáno ${formatDate(vehicle.saleDate)}`);
     return parts.filter(Boolean).join(' · ') || 'archivované auto';
   }
 
@@ -6213,12 +6239,13 @@
     const activeRows = activeVehicle ? garageRowsForVehicle(activeVehicle.id) : { fuelRows: [], serviceRows: [] };
     const activeKm = activeVehicle ? getVehicleCurrentOdometer(activeVehicle, activeRows.fuelRows, activeRows.serviceRows) : 0;
     const activeMeta = activeVehicle ? garageVehiclePickerMeta(activeVehicle, activeRows) : '';
+    const activeIsOwned = activeVehicle ? normalizeVehicleOwnershipStatus(activeVehicle.ownershipStatus || (activeVehicle.saleDate ? 'sold' : 'owned')) === 'owned' : true;
     return `
       <section class="garage-active-vehicle-selector garage-active-vehicle-selector-clean">
         <details class="garage-vehicle-dropdown">
           <summary>
             <span class="garage-vehicle-summary-main"><span class="vehicle-icon-bubble ${vehicleIconColorClass(activeVehicle?.iconColor)}" aria-hidden="true">🚗</span><strong>${escapeHtml(activeVehicle?.name || 'Vyber auto')}</strong>${activeMeta ? `<em>${escapeHtml(activeMeta)}</em>` : ''}</span>
-            <span class="garage-vehicle-summary-side"><span class="garage-vehicle-summary-km">${escapeHtml(formatKm(activeKm))}</span><span class="garage-vehicle-dropdown-arrow" aria-hidden="true">⌄</span></span>
+            <span class="garage-vehicle-summary-side">${activeIsOwned ? `<span class="garage-vehicle-summary-km">${escapeHtml(formatKm(activeKm))}</span>` : ''}<span class="garage-vehicle-dropdown-arrow" aria-hidden="true">⌄</span></span>
           </summary>
           <div class="garage-vehicle-dropdown-list">
             ${vehicles.map((vehicle) => {
@@ -6230,7 +6257,7 @@
                 <button class="garage-vehicle-option-main" type="button" data-action="garage-select-overview-vehicle" data-id="${escapeHtml(vehicle.id)}">
                   <span class="vehicle-icon-bubble ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span>
                   <span class="garage-vehicle-option-copy"><strong>${escapeHtml(vehicle.name || 'Auto')}</strong><em>${escapeHtml(meta)}</em></span>
-                  <b>${escapeHtml(isOwned ? formatKm(km) : (vehicleOwnedDistance(vehicle, garageVehicleAnalytics(vehicle)) ? formatKm(vehicleOwnedDistance(vehicle, garageVehicleAnalytics(vehicle))) : formatKm(km)))}</b>
+                  ${isOwned ? `<b>${escapeHtml(formatKm(km))}</b>` : ''}
                 </button>
                 ${isOwned ? `<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${escapeHtml(vehicle.id)}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name || 'auta')}">⛽+</button>` : ''}
               </div>`;
@@ -8123,7 +8150,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 156))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 157))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -12867,7 +12894,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 77, appBuild: 156, mode: 'rich-demo-v156', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 77, appBuild: 157, mode: 'rich-demo-v157', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -13009,7 +13036,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 77, appBuild: 156, mode: 'home-grid-fix-v156', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 77, appBuild: 157, mode: 'home-layout-rak-nav-hdo-v157', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -15553,7 +15580,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 156
+        appBuild: 157
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -16380,7 +16407,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_156</span>
+          <span class="badge">Domácnost+ v.0.1_157</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

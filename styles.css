@@ -12061,3 +12061,239 @@ html[data-theme="dark"][data-color-scheme="royal"] { --primary: #60a5fa; --prima
     padding: 8px !important;
   }
 }
+
+/* Domácnost+ v.0.1_157 – Home přes celou plochu, stejné panely, RaK styl spodní lišty */
+.app-shell.home-app-shell {
+  height: 100svh !important;
+  min-height: 100svh !important;
+  overflow: hidden !important;
+  padding: max(28px, calc(env(safe-area-inset-top, 0px) + 10px)) 14px calc(var(--nav-height) + var(--safe-bottom) + 18px) !important;
+}
+
+.app-shell.home-app-shell .home-clean-frame,
+.app-shell.home-app-shell .home-clean-frame main {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: hidden !important;
+}
+
+.app-shell.home-app-shell .home-page-head {
+  flex: 0 0 auto !important;
+  min-height: 30px !important;
+  margin: 0 0 8px !important;
+  padding: 0 4px !important;
+  overflow: visible !important;
+}
+
+.app-shell.home-app-shell .home-page-head .page-title {
+  display: block !important;
+  overflow: hidden !important;
+  max-width: 100% !important;
+  line-height: 1.12 !important;
+  font-size: clamp(1.42rem, 6.2vw, 2.08rem) !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.app-shell.home-app-shell .dashboard-empty-home {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: hidden !important;
+}
+
+.app-shell.home-app-shell .home-hero-count-0.home-minimal-hero,
+.app-shell.home-app-shell .home-hero-count-1.home-minimal-hero,
+.app-shell.home-app-shell .home-hero-count-2.home-minimal-hero,
+.app-shell.home-app-shell .home-hero-count-3.home-minimal-hero,
+.app-shell.home-app-shell .home-hero-count-4.home-minimal-hero,
+.app-shell.home-app-shell .home-hero-count-5.home-minimal-hero,
+.app-shell.home-app-shell .home-hero-count-6.home-minimal-hero,
+.app-shell.home-app-shell .home-hero-count-7.home-minimal-hero,
+.app-shell.home-app-shell .home-hero-count-8.home-minimal-hero {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 10px !important;
+  overflow: hidden !important;
+}
+
+.app-shell.home-app-shell .home-minimal-hero .station-hero-main {
+  display: grid !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  gap: 8px !important;
+  align-items: stretch !important;
+}
+
+.app-shell.home-app-shell .home-hero-count-1 .station-hero-main,
+.app-shell.home-app-shell .home-hero-count-2 .station-hero-main { grid-template-rows: repeat(2, minmax(0, 1fr)) !important; }
+.app-shell.home-app-shell .home-hero-count-3 .station-hero-main,
+.app-shell.home-app-shell .home-hero-count-4 .station-hero-main { grid-template-rows: repeat(3, minmax(0, 1fr)) !important; }
+.app-shell.home-app-shell .home-hero-count-5 .station-hero-main,
+.app-shell.home-app-shell .home-hero-count-6 .station-hero-main { grid-template-rows: repeat(4, minmax(0, 1fr)) !important; }
+.app-shell.home-app-shell .home-hero-count-7 .station-hero-main,
+.app-shell.home-app-shell .home-hero-count-8 .station-hero-main { grid-template-rows: repeat(5, minmax(0, 1fr)) !important; }
+
+.app-shell.home-app-shell .home-minimal-hero .station-clock-area {
+  grid-row: 1 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+.app-shell.home-app-shell .home-minimal-hero .hero-clock-row {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: 1fr !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  gap: 8px !important;
+  align-items: stretch !important;
+}
+
+.app-shell.home-app-shell .home-minimal-hero .station-summary {
+  grid-row: 2 / -1 !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  gap: 8px !important;
+  overflow: hidden !important;
+}
+
+.app-shell.home-app-shell .station-summary-count-1,
+.app-shell.home-app-shell .station-summary-count-2 { grid-template-rows: repeat(1, minmax(0, 1fr)) !important; }
+.app-shell.home-app-shell .station-summary-count-3,
+.app-shell.home-app-shell .station-summary-count-4 { grid-template-rows: repeat(2, minmax(0, 1fr)) !important; }
+.app-shell.home-app-shell .station-summary-count-5,
+.app-shell.home-app-shell .station-summary-count-6 { grid-template-rows: repeat(3, minmax(0, 1fr)) !important; }
+.app-shell.home-app-shell .station-summary-count-7,
+.app-shell.home-app-shell .station-summary-count-8 { grid-template-rows: repeat(4, minmax(0, 1fr)) !important; }
+
+.app-shell.home-app-shell .home-minimal-hero .hero-clock-button,
+.app-shell.home-app-shell .home-minimal-hero .hero-weather-pill,
+.app-shell.home-app-shell .home-minimal-hero .station-summary-item,
+.app-shell.home-app-shell .station-summary-count-3 .station-summary-item:nth-child(3) {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: clamp(8px, 2.15vw, 12px) !important;
+  overflow: hidden !important;
+}
+
+.app-shell.home-app-shell .station-summary-count-3 .station-summary-item:nth-child(3) {
+  grid-column: auto !important;
+}
+
+.app-shell.home-app-shell .hero-time {
+  font-size: clamp(2.65rem, 11vw, 4.75rem) !important;
+}
+
+.app-shell.home-app-shell .hero-date,
+.app-shell.home-app-shell .hero-weather-copy em,
+.app-shell.home-app-shell .home-minimal-hero .station-summary-copy span,
+.app-shell.home-app-shell .home-minimal-hero .station-summary-copy small {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.app-shell.home-app-shell .hero-weather-pill {
+  justify-content: center !important;
+}
+
+.app-shell.home-app-shell .hero-weather-pill .hero-weather-icon.weather-anime-icon-md,
+.app-shell.home-app-shell .hero-weather-pill .weather-anime-icon-md {
+  width: clamp(54px, 14vw, 70px) !important;
+  height: clamp(54px, 14vw, 70px) !important;
+  min-width: clamp(54px, 14vw, 70px) !important;
+}
+
+.app-shell.home-app-shell .station-summary-copy strong {
+  font-size: clamp(.92rem, 3.3vw, 1.38rem) !important;
+}
+
+.app-shell.home-app-shell .station-summary-copy em {
+  font-size: clamp(.62rem, 2vw, .78rem) !important;
+}
+
+.app-shell.home-app-shell .station-summary-item-polishHolidays .station-summary-primary {
+  font-size: clamp(.56rem, 1.8vw, .68rem) !important;
+}
+
+.nav-shell {
+  border-radius: 30px !important;
+  padding: 8px !important;
+  overflow: hidden !important;
+}
+
+.nav-scroll {
+  position: relative !important;
+  gap: 6px !important;
+  align-items: center !important;
+}
+
+.nav-item {
+  min-height: 58px !important;
+  border-radius: 22px !important;
+  transition: flex-basis .24s ease, transform .24s ease, background .24s ease, box-shadow .24s ease, color .24s ease !important;
+}
+
+.nav-item.active {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, var(--primary, #3574f0), var(--primary-2, #64a7ff)) !important;
+  box-shadow: 0 16px 34px rgba(47, 115, 255, .34), inset 0 1px 0 rgba(255, 255, 255, .36) !important;
+  transform: translateY(-2px) !important;
+}
+
+.nav-item.active > span:last-child {
+  display: none !important;
+}
+
+.nav-item.active .nav-icon,
+.nav-item.active .nav-icon.mini-module-icon,
+.nav-item.active .nav-icon.module-illustration-slot {
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  margin-bottom: 0 !important;
+  color: #ffffff !important;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,.18));
+}
+
+.nav-item:not(.active) {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.hdo-module-table-grid {
+  align-items: start;
+}
+
+.hdo-module-list {
+  gap: 8px;
+  padding: 0;
+}
+
+.hdo-module-row {
+  margin: 0;
+}
+
+.garage-vehicle-option-archived .garage-vehicle-option-main {
+  grid-template-columns: auto minmax(0, 1fr) !important;
+}
+
+.garage-vehicle-option-archived .garage-vehicle-option-main b {
+  display: none !important;
+}
