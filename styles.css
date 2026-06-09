@@ -10613,7 +10613,7 @@ svg.anime-module-svg .anime-icon-line {
   }
 }
 
-/* Domácnost+ v.0.1_146 – RaK Simple ikony a bezpečný garage cloud sync */
+/* Domácnost+ v.0.1_147 – Home layout, větší ikonky a další icon/color sety */
 :root {
   --accent: var(--primary);
   --accent-2: var(--primary-2);
@@ -11278,4 +11278,22 @@ html[data-icon-theme="rak"] .mini-module-icon,
 html[data-icon-theme="rak"] .module-illustration-slot,
 .visual-choice-preview-rak .module-theme-icon {
   color: var(--primary);
+}
+
+/* Domácnost+ v.0.1_148 – Garáž kalkulačka a vlastnictví auta */
+.garage-tab-calculator .garage-panel:not(.panel-calculator),
+.garage-tab-overview .garage-panel.panel-calculator,
+.garage-tab-detail .garage-panel.panel-calculator,
+.garage-tab-stats .garage-panel.panel-calculator,
+.garage-tab-add .garage-panel.panel-calculator,
+.garage-tab-import .garage-panel.panel-calculator {
+  display: none;
+}
+
+.garage-trip-calc-form {
+  margin-top: 8px;
+}
+
+.garage-trip-result {
+  margin-top: 12px;
 }
