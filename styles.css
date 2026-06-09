@@ -11681,3 +11681,198 @@ html[data-theme="dark"][data-color-scheme="royal"] { --primary: #60a5fa; --prima
     padding: 10px;
   }
 }
+
+/* Domácnost+ v.0.1_155 – Home bez scrollu + čitelnější archivovaná auta v Garáži */
+.app-frame.home-clean-frame,
+.home-clean-frame main,
+.home-clean-frame .dashboard-empty-home {
+  overflow: hidden !important;
+}
+
+.home-clean-frame main {
+  height: calc(100svh - var(--nav-height) - var(--safe-bottom) - max(2px, env(safe-area-inset-top, 0px))) !important;
+  max-height: calc(100svh - var(--nav-height) - var(--safe-bottom) - max(2px, env(safe-area-inset-top, 0px))) !important;
+}
+
+.home-hero-count-0.home-minimal-hero,
+.home-hero-count-1.home-minimal-hero,
+.home-hero-count-2.home-minimal-hero,
+.home-hero-count-3.home-minimal-hero,
+.home-hero-count-4.home-minimal-hero,
+.home-hero-count-5.home-minimal-hero,
+.home-hero-count-6.home-minimal-hero,
+.home-hero-count-7.home-minimal-hero,
+.home-hero-count-8.home-minimal-hero {
+  height: calc(100svh - var(--nav-height) - var(--safe-bottom) - 38px) !important;
+  max-height: calc(100svh - var(--nav-height) - var(--safe-bottom) - 38px) !important;
+  overflow: hidden !important;
+  padding: clamp(13px, 3.2vw, 18px) !important;
+}
+
+.home-minimal-hero .station-hero-main {
+  height: 100% !important;
+  min-height: 0 !important;
+  gap: 7px !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+}
+
+.home-minimal-hero .hero-clock-row,
+.home-minimal-hero .station-summary {
+  gap: 7px !important;
+}
+
+.home-minimal-hero .hero-clock-button,
+.home-minimal-hero .hero-weather-pill,
+.home-minimal-hero .station-summary-item,
+.station-summary-count-1 .station-summary-item,
+.station-summary-count-3 .station-summary-item:nth-child(3) {
+  min-height: 72px !important;
+  height: 72px !important;
+  max-height: 72px !important;
+  padding: 10px !important;
+}
+
+.home-minimal-hero .station-summary {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.station-summary-count-1,
+.station-summary-count-2,
+.station-summary-count-3,
+.station-summary-count-4,
+.station-summary-count-5,
+.station-summary-count-6,
+.station-summary-count-7,
+.station-summary-count-8 {
+  grid-auto-rows: 72px !important;
+  align-content: start !important;
+}
+
+.home-minimal-hero .station-summary-icon,
+.glass-icon.station-summary-icon,
+.station-summary-item .glass-icon.station-summary-icon,
+.station-summary-count-5 .glass-icon.station-summary-icon,
+.station-summary-count-6 .glass-icon.station-summary-icon,
+.station-summary-count-7 .glass-icon.station-summary-icon,
+.station-summary-count-8 .glass-icon.station-summary-icon {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+}
+
+.module-illustration-slot-hero-card,
+.station-summary-illustration-slot {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.home-minimal-hero .station-summary-copy strong {
+  font-size: clamp(1rem, 3.5vw, 1.55rem) !important;
+}
+
+.home-minimal-hero .station-summary-copy span {
+  font-size: .68rem !important;
+  line-height: 1.08 !important;
+}
+
+.hero-time {
+  font-size: clamp(2rem, 8.5vw, 3.7rem) !important;
+}
+
+.hero-date,
+.hero-weather-copy em {
+  font-size: .72rem !important;
+}
+
+.hero-weather-icon {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+}
+
+@media (max-width: 420px) {
+  .home-hero-count-0.home-minimal-hero,
+  .home-hero-count-1.home-minimal-hero,
+  .home-hero-count-2.home-minimal-hero,
+  .home-hero-count-3.home-minimal-hero,
+  .home-hero-count-4.home-minimal-hero,
+  .home-hero-count-5.home-minimal-hero,
+  .home-hero-count-6.home-minimal-hero,
+  .home-hero-count-7.home-minimal-hero,
+  .home-hero-count-8.home-minimal-hero {
+    height: calc(100svh - var(--nav-height) - var(--safe-bottom) - 30px) !important;
+    max-height: calc(100svh - var(--nav-height) - var(--safe-bottom) - 30px) !important;
+    padding: 12px !important;
+  }
+
+  .home-minimal-hero .hero-clock-button,
+  .home-minimal-hero .hero-weather-pill,
+  .home-minimal-hero .station-summary-item,
+  .station-summary-count-1 .station-summary-item,
+  .station-summary-count-3 .station-summary-item:nth-child(3) {
+    min-height: 66px !important;
+    height: 66px !important;
+    max-height: 66px !important;
+    padding: 8px !important;
+  }
+
+  .station-summary-count-1,
+  .station-summary-count-2,
+  .station-summary-count-3,
+  .station-summary-count-4,
+  .station-summary-count-5,
+  .station-summary-count-6,
+  .station-summary-count-7,
+  .station-summary-count-8 {
+    grid-auto-rows: 66px !important;
+  }
+
+  .home-minimal-hero .station-summary-icon,
+  .glass-icon.station-summary-icon,
+  .station-summary-item .glass-icon.station-summary-icon,
+  .station-summary-count-5 .glass-icon.station-summary-icon,
+  .station-summary-count-6 .glass-icon.station-summary-icon,
+  .station-summary-count-7 .glass-icon.station-summary-icon,
+  .station-summary-count-8 .glass-icon.station-summary-icon {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+  }
+
+  .module-illustration-slot-hero-card,
+  .station-summary-illustration-slot {
+    width: 44px !important;
+    height: 44px !important;
+  }
+}
+
+.garage-vehicle-option-archived .garage-vehicle-option-main {
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: start;
+  min-height: 72px;
+}
+
+.garage-vehicle-option-archived .garage-vehicle-option-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.garage-vehicle-option-archived .garage-vehicle-option-main em {
+  display: -webkit-box;
+  overflow: hidden;
+  max-width: none;
+  line-height: 1.2;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.garage-vehicle-option-archived .garage-vehicle-option-main b {
+  grid-column: 2;
+  justify-self: start;
+  color: var(--muted);
+  font-size: .76rem;
+}

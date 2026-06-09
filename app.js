@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_154';
+  const APP_VERSION = 'Domácnost+ v.0.1_155';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -307,8 +307,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 77,
-      appBuild: 154,
-      mode: 'garage-home-garage-catalog-v154',
+      appBuild: 155,
+      mode: 'garage-home-garage-picker-home-v155',
       createdAt: '',
       updatedAt: ''
     },
@@ -1105,8 +1105,8 @@
 
     migrated.meta = {
       schemaVersion: 77,
-      appBuild: 154,
-      mode: 'garage-home-garage-catalog-v154',
+      appBuild: 155,
+      mode: 'garage-home-garage-picker-home-v155',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -3994,7 +3994,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_154', note: 'Hotovo: Home je zhuštěný pro obrazovku bez scrollu, katalog aut je rozšířený a zavřený v základu, přehled Garáže u prodaných aut ukazuje celkové km a Kč/km.' },
+      { title: 'Domácnost+ v.0.1_155', note: 'Hotovo: Home je zhuštěný pro obrazovku bez scrollu, katalog aut je rozšířený a zavřený v základu, přehled Garáže u prodaných aut ukazuje celkové km a Kč/km.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
       { title: 'Domácnost+ v.0.1_150', note: 'Hotovo: Garáž má opravenou kalkulačku cesty s automatickým načtením hodnot podle auta, rozšířený technický list a základ katalogu značek/modelů pro předvyplnění.' },
       { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
@@ -6200,9 +6200,12 @@
     const analytics = garageVehicleAnalytics(vehicle);
     const costSummary = garageVehicleCostSummary(vehicle, analytics);
     const ownedKm = vehicleOwnedDistance(vehicle, analytics);
+    const months = vehicleOwnershipMonths(vehicle);
     const parts = [vehicleOwnershipLabel(vehicle)];
     if (ownedKm) parts.push(`najeto ${formatKm(ownedKm)}`);
     if (costSummary.totalPerKm) parts.push(`${formatCostPerKm(costSummary.totalPerKm)}/km celkem`);
+    if (months) parts.push(`${months} měs. vlastnictví`);
+    if (vehicle.saleDate) parts.push(`prodáno ${formatDate(vehicle.saleDate)}`);
     return parts.filter(Boolean).join(' · ') || 'archivované auto';
   }
 
@@ -6226,8 +6229,8 @@
               return `<div class="garage-vehicle-option-row ${vehicle.id === activeVehicle?.id ? 'active' : ''} ${!isOwned ? 'garage-vehicle-option-archived' : ''}">
                 <button class="garage-vehicle-option-main" type="button" data-action="garage-select-overview-vehicle" data-id="${escapeHtml(vehicle.id)}">
                   <span class="vehicle-icon-bubble ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span>
-                  <span><strong>${escapeHtml(vehicle.name || 'Auto')}</strong><em>${escapeHtml(meta)}</em></span>
-                  <b>${escapeHtml(formatKm(km))}</b>
+                  <span class="garage-vehicle-option-copy"><strong>${escapeHtml(vehicle.name || 'Auto')}</strong><em>${escapeHtml(meta)}</em></span>
+                  <b>${escapeHtml(isOwned ? formatKm(km) : (vehicleOwnedDistance(vehicle, garageVehicleAnalytics(vehicle)) ? formatKm(vehicleOwnedDistance(vehicle, garageVehicleAnalytics(vehicle))) : formatKm(km)))}</b>
                 </button>
                 ${isOwned ? `<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${escapeHtml(vehicle.id)}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name || 'auta')}">⛽+</button>` : ''}
               </div>`;
@@ -8120,7 +8123,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 154))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 155))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -12864,7 +12867,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 77, appBuild: 154, mode: 'rich-demo-v154', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 77, appBuild: 155, mode: 'rich-demo-v155', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -13006,7 +13009,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 77, appBuild: 154, mode: 'garage-home-garage-catalog-v154', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 77, appBuild: 155, mode: 'garage-home-garage-picker-home-v155', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -15550,7 +15553,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 154
+        appBuild: 155
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -16377,7 +16380,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_154</span>
+          <span class="badge">Domácnost+ v.0.1_155</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
