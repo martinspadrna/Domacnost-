@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_152';
+  const APP_VERSION = 'Domácnost+ v.0.1_153';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -242,8 +242,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 77,
-      appBuild: 152,
-      mode: 'garage-ownership-home-v152',
+      appBuild: 153,
+      mode: 'garage-cloud-vehicle-fix-v153',
       createdAt: '',
       updatedAt: ''
     },
@@ -1040,8 +1040,8 @@
 
     migrated.meta = {
       schemaVersion: 77,
-      appBuild: 152,
-      mode: 'garage-ownership-home-v152',
+      appBuild: 153,
+      mode: 'garage-cloud-vehicle-fix-v153',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -3929,7 +3929,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_152', note: 'Hotovo: Garáž počítá km/měsíc vlastnictví i u prodaného auta bez km při prodeji, Home panely jsou o něco nižší a aktivní Home panel Garáže neukazuje nevlastněná/prodaná auta.' },
+      { title: 'Domácnost+ v.0.1_153', note: 'Hotovo: Oprava Garáže: údaje prodaných/nevlastněných aut se při cloud načtení nemažou, Home panely jsou zpět stejně vysoké a katalog auta má postupný výběr značka → model → motorizace.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
       { title: 'Domácnost+ v.0.1_150', note: 'Hotovo: Garáž má opravenou kalkulačku cesty s automatickým načtením hodnot podle auta, rozšířený technický list a základ katalogu značek/modelů pro předvyplnění.' },
       { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
@@ -5436,7 +5436,7 @@
         ownershipStatus: normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')),
         iconColor: normalizeVehicleIconColor(vehicle.iconColor || vehicle.color || state.settings.vehicleIconColors[id] || state.settings.vehicleIconColors[normalizeKey(vehicle.name)] || 'blue')
       };
-      applyVehicleTechnicalFields(normalized, normalized.technicalSpecs || normalized);
+      applyVehicleTechnicalFields(normalized, Object.keys(normalized.technicalSpecs || {}).length ? normalized.technicalSpecs : normalized);
       rememberVehicleIconColor(normalized);
       return normalized;
     });
@@ -5652,6 +5652,16 @@
     return (state.vehicles || []).filter(isVehicleOwned);
   }
 
+  function keepExistingGarageValue(cloudValue, existingValue = '') {
+    if (cloudValue === null || cloudValue === undefined || cloudValue === '') return existingValue ?? '';
+    return String(cloudValue);
+  }
+
+  function keepExistingGarageObject(cloudValue, existingValue = {}) {
+    if (cloudValue && typeof cloudValue === 'object' && !Array.isArray(cloudValue) && Object.keys(cloudValue).length) return cloudValue;
+    return existingValue && typeof existingValue === 'object' && !Array.isArray(existingValue) ? existingValue : {};
+  }
+
   function vehicleOwnershipLabel(vehicle) {
     return isVehicleOwned(vehicle) ? 'vlastním' : 'nevlastním';
   }
@@ -5704,18 +5714,54 @@
     return vehicle;
   }
 
-  function vehiclePresetOptions() {
-    return [['', 'Vyber z katalogu…'], ...GARAGE_VEHICLE_PRESETS.map((item) => [item.id, `${item.brand} ${item.model}${item.engineName ? ` · ${item.engineName}` : ''}${item.productionYear ? ` · ${item.productionYear}` : ''}`])];
+  function garagePresetSort(a, b) {
+    return String(a || '').localeCompare(String(b || ''), 'cs', { sensitivity: 'base', numeric: true });
+  }
+
+  function garagePresetBrands() {
+    return [...new Set(GARAGE_VEHICLE_PRESETS.map((item) => normalizeText(item.brand)).filter(Boolean))].sort(garagePresetSort);
+  }
+
+  function garagePresetModels(brand = '') {
+    const selectedBrand = normalizeText(brand);
+    return [...new Set(GARAGE_VEHICLE_PRESETS
+      .filter((item) => normalizeText(item.brand) === selectedBrand)
+      .map((item) => normalizeText(item.model))
+      .filter(Boolean))].sort(garagePresetSort);
+  }
+
+  function garagePresetEngines(brand = '', model = '') {
+    const selectedBrand = normalizeText(brand);
+    const selectedModel = normalizeText(model);
+    return GARAGE_VEHICLE_PRESETS
+      .filter((item) => normalizeText(item.brand) === selectedBrand && normalizeText(item.model) === selectedModel)
+      .slice()
+      .sort((a, b) => garagePresetSort(`${a.engineName || ''} ${a.productionYear || ''} ${a.generation || ''}`, `${b.engineName || ''} ${b.productionYear || ''} ${b.generation || ''}`));
+  }
+
+  function garagePresetSelectField(label, name, options, selected = '', disabled = false, extraAttrs = '') {
+    const selectId = `field-${name}-${Math.random().toString(36).slice(2, 7)}`;
+    return `
+      <div class="field">
+        <label for="${selectId}">${escapeHtml(label)}</label>
+        <select class="select" id="${selectId}" name="${name}" ${disabled ? 'disabled' : ''} ${extraAttrs}>
+          ${options.map(([value, text]) => `<option value="${escapeHtml(value)}" ${String(value) === String(selected) ? 'selected' : ''}>${escapeHtml(text)}</option>`).join('')}
+        </select>
+      </div>
+    `;
   }
 
   function renderVehiclePresetTool() {
+    const brandOptions = [['', 'Nejdřív vyber značku…'], ...garagePresetBrands().map((brand) => [brand, brand])];
     return `
       <details class="action-details compact-edit-details garage-preset-tool" open>
-        <summary><span>Předvyplnit podle značky/modelu</span><em>lokální orientační katalog, údaje pak můžeš ručně upravit</em></summary>
-        <div class="form-grid two">
-          ${selectField('Auto z katalogu', 'vehiclePresetId', vehiclePresetOptions(), '')}
-          <div class="field field-button-align"><label>&nbsp;</label><button class="ghost-btn" type="button" data-action="garage-apply-vehicle-preset">Načíst údaje</button></div>
+        <summary><span>Předvyplnit podle auta</span><em>značka → model → motorizace, vše abecedně</em></summary>
+        <div class="form-grid three garage-preset-grid">
+          ${garagePresetSelectField('Značka', 'vehiclePresetBrand', brandOptions, '', false, 'data-garage-preset-step="brand"')}
+          ${garagePresetSelectField('Model', 'vehiclePresetModel', [['', 'Vyber značku…']], '', true, 'data-garage-preset-step="model"')}
+          ${garagePresetSelectField('Motorizace', 'vehiclePresetId', [['', 'Vyber model…']], '', true, 'data-garage-preset-step="engine"')}
         </div>
+        <div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="garage-apply-vehicle-preset">Načíst údaje</button></div>
         <div class="inline-note compact-note">Nejde o online technický registr. Je to bezpečný lokální katalog bez scrapingu; přesné hodnoty je vždy lepší ověřit podle TP konkrétního auta.</div>
       </details>
     `;
@@ -5762,12 +5808,41 @@
     `;
   }
 
+  function fillGaragePresetModelOptions(form) {
+    const brand = form?.querySelector('[name="vehiclePresetBrand"]')?.value || '';
+    const modelSelect = form?.querySelector('[name="vehiclePresetModel"]');
+    const engineSelect = form?.querySelector('[name="vehiclePresetId"]');
+    if (!modelSelect || !engineSelect) return;
+    const models = garagePresetModels(brand);
+    modelSelect.innerHTML = models.length
+      ? '<option value="">Vyber model…</option>' + models.map((model) => `<option value="${escapeHtml(model)}">${escapeHtml(model)}</option>`).join('')
+      : '<option value="">Vyber značku…</option>';
+    modelSelect.disabled = !models.length;
+    engineSelect.innerHTML = '<option value="">Vyber model…</option>';
+    engineSelect.disabled = true;
+  }
+
+  function fillGaragePresetEngineOptions(form) {
+    const brand = form?.querySelector('[name="vehiclePresetBrand"]')?.value || '';
+    const model = form?.querySelector('[name="vehiclePresetModel"]')?.value || '';
+    const engineSelect = form?.querySelector('[name="vehiclePresetId"]');
+    if (!engineSelect) return;
+    const engines = garagePresetEngines(brand, model);
+    engineSelect.innerHTML = engines.length
+      ? '<option value="">Vyber motorizaci…</option>' + engines.map((item) => {
+          const label = [item.engineName, item.powerKw ? `${item.powerKw} kW` : '', item.productionYear, item.generation ? `gen. ${item.generation}` : ''].filter(Boolean).join(' · ');
+          return `<option value="${escapeHtml(item.id)}">${escapeHtml(label || item.id)}</option>`;
+        }).join('')
+      : '<option value="">Vyber model…</option>';
+    engineSelect.disabled = !engines.length;
+  }
+
   function fillVehicleFormFromPreset(button) {
     const form = button.closest('form');
     if (!form) return;
     const presetId = form.querySelector('[name="vehiclePresetId"]')?.value || '';
     const preset = GARAGE_VEHICLE_PRESETS.find((item) => item.id === presetId);
-    if (!preset) return showToast('Vyber auto z katalogu');
+    if (!preset) return showToast('Vyber značku, model a motorizaci');
     const values = { ...preset, name: `${preset.brand} ${preset.model}${preset.engineName ? ` ${preset.engineName}` : ''}`.trim() };
     Object.entries(values).forEach(([key, value]) => {
       const input = form.querySelector(`[name="${CSS.escape(key)}"]`);
@@ -7965,7 +8040,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 152))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 153))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -10168,33 +10243,33 @@
 
     const existingByCloud = new Map(state.vehicles.filter((vehicle) => vehicle.cloudId).map((vehicle) => [vehicle.cloudId, vehicle]));
     const cloudVehicles = (vehicles || []).map((vehicle) => {
-      const existing = existingByCloud.get(vehicle.id);
-      return {
-        id: existing?.id || uid(),
+      const existing = existingByCloud.get(vehicle.id) || {};
+      const item = {
+        id: existing.id || uid(),
         cloudId: vehicle.id,
         householdId: currentHouseholdId(),
         profileId: currentProfileId(),
-        createdAt: vehicle.created_at || new Date().toISOString(),
-        name: vehicle.name || 'Auto',
-        plate: vehicle.plate_number || '',
-        fuelType: fuelTypeFromCloud(vehicle.fuel_type),
-        odometer: vehicle.current_odometer === null || vehicle.current_odometer === undefined ? '' : String(vehicle.current_odometer),
-        purchaseDate: vehicle.purchase_date || '',
-        purchasePrice: vehicle.purchase_price === null || vehicle.purchase_price === undefined ? '' : String(vehicle.purchase_price),
-        ownershipStatus: normalizeVehicleOwnershipStatus(vehicle.ownership_status || existing?.ownershipStatus || (vehicle.sale_date ? 'sold' : 'owned')),
-        purchaseOdometer: vehicle.purchase_odometer === null || vehicle.purchase_odometer === undefined ? '' : String(vehicle.purchase_odometer),
-        saleDate: vehicle.sale_date || '',
-        salePrice: vehicle.sale_price === null || vehicle.sale_price === undefined ? '' : String(vehicle.sale_price),
-        saleOdometer: vehicle.sale_odometer === null || vehicle.sale_odometer === undefined ? '' : String(vehicle.sale_odometer),
-        technicalInspectionUntil: vehicle.stk_until || '',
-        insuranceUntil: vehicle.insurance_until || '',
-        nextServiceKm: vehicle.next_service_odometer === null || vehicle.next_service_odometer === undefined ? '' : String(vehicle.next_service_odometer),
-        nextServiceDate: vehicle.next_service_date || '',
-        iconColor: normalizeVehicleIconColor(existing?.iconColor || vehicleIconColorFromSettings({ cloudId: vehicle.id, name: vehicle.name })),
-        note: vehicle.note || '',
-        technicalSpecs: vehicle.technical_specs && typeof vehicle.technical_specs === 'object' ? vehicle.technical_specs : existing?.technicalSpecs || {}
+        createdAt: vehicle.created_at || existing.createdAt || new Date().toISOString(),
+        name: keepExistingGarageValue(vehicle.name, existing.name || 'Auto') || 'Auto',
+        plate: keepExistingGarageValue(vehicle.plate_number, existing.plate),
+        fuelType: keepExistingGarageValue(fuelTypeFromCloud(vehicle.fuel_type), existing.fuelType),
+        odometer: keepExistingGarageValue(vehicle.current_odometer, existing.odometer),
+        purchaseDate: keepExistingGarageValue(vehicle.purchase_date, existing.purchaseDate),
+        purchasePrice: keepExistingGarageValue(vehicle.purchase_price, existing.purchasePrice),
+        ownershipStatus: normalizeVehicleOwnershipStatus(vehicle.ownership_status || existing.ownershipStatus || (vehicle.sale_date || existing.saleDate ? 'sold' : 'owned')),
+        purchaseOdometer: keepExistingGarageValue(vehicle.purchase_odometer, existing.purchaseOdometer),
+        saleDate: keepExistingGarageValue(vehicle.sale_date, existing.saleDate),
+        salePrice: keepExistingGarageValue(vehicle.sale_price, existing.salePrice),
+        saleOdometer: keepExistingGarageValue(vehicle.sale_odometer, existing.saleOdometer),
+        technicalInspectionUntil: keepExistingGarageValue(vehicle.stk_until, existing.technicalInspectionUntil),
+        insuranceUntil: keepExistingGarageValue(vehicle.insurance_until, existing.insuranceUntil),
+        nextServiceKm: keepExistingGarageValue(vehicle.next_service_odometer, existing.nextServiceKm),
+        nextServiceDate: keepExistingGarageValue(vehicle.next_service_date, existing.nextServiceDate),
+        iconColor: normalizeVehicleIconColor(existing.iconColor || vehicleIconColorFromSettings({ cloudId: vehicle.id, name: vehicle.name })),
+        note: keepExistingGarageValue(vehicle.note, existing.note),
+        technicalSpecs: keepExistingGarageObject(vehicle.technical_specs, existing.technicalSpecs)
       };
-      applyVehicleTechnicalFields(item, item.technicalSpecs);
+      applyVehicleTechnicalFields(item, Object.keys(item.technicalSpecs || {}).length ? { ...existing, ...item.technicalSpecs } : item);
       return item;
     });
     const vehicleIdByCloud = new Map(cloudVehicles.map((vehicle) => [vehicle.cloudId, vehicle.id]));
@@ -12709,7 +12784,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 77, appBuild: 152, mode: 'rich-demo-v152', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 77, appBuild: 153, mode: 'rich-demo-v153', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -12851,7 +12926,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 77, appBuild: 152, mode: 'garage-ownership-home-v152', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 77, appBuild: 153, mode: 'garage-cloud-vehicle-fix-v153', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -15395,7 +15470,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 152
+        appBuild: 153
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -16132,6 +16207,13 @@
       render();
       return;
     }
+    const garagePresetStep = event.target.closest('[data-garage-preset-step]');
+    if (garagePresetStep) {
+      const form = garagePresetStep.closest('form');
+      if (garagePresetStep.dataset.garagePresetStep === 'brand') fillGaragePresetModelOptions(form);
+      if (garagePresetStep.dataset.garagePresetStep === 'model') fillGaragePresetEngineOptions(form);
+      return;
+    }
     const garageHistoryFilter = event.target.closest('[data-garage-history-filter]');
     if (garageHistoryFilter) {
       if (garageHistoryFilter.dataset.garageHistoryFilter === 'year') garageHistoryYearFilter = garageHistoryFilter.value || 'all';
@@ -16215,7 +16297,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_152</span>
+          <span class="badge">Domácnost+ v.0.1_153</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

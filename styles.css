@@ -11550,19 +11550,16 @@ html[data-theme="dark"][data-color-scheme="royal"] { --primary: #60a5fa; --prima
   background: color-mix(in srgb, var(--accent-soft) 28%, var(--glass));
 }
 
-/* Domácnost+ v.0.1_152 – nižší Home mini panely, horní čas/počasí beze změny */
-.home-minimal-hero .station-summary-item {
-  height: 95%;
-  align-self: center;
+/* Domácnost+ v.0.1_153 – Home panely zpět stejně vysoké + postupný katalog auta */
+.garage-preset-grid {
+  align-items: end;
 }
 
-.station-summary-count-1 .station-summary-item,
-.station-summary-count-2 .station-summary-item,
-.station-summary-count-3 .station-summary-item,
-.station-summary-count-4 .station-summary-item,
-.station-summary-count-5 .station-summary-item,
-.station-summary-count-6 .station-summary-item,
-.station-summary-count-7 .station-summary-item,
-.station-summary-count-8 .station-summary-item {
-  height: 95%;
+.garage-preset-tool .compact-actions {
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.garage-preset-tool .compact-actions .ghost-btn {
+  min-height: 44px;
 }
