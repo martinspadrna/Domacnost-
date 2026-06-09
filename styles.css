@@ -9051,13 +9051,13 @@ svg.anime-module-svg .anime-icon-line {
 }
 
 .weather-anime-icon-md {
-  width: 54px;
-  height: 54px;
+  width: 58px;
+  height: 58px;
 }
 
 .weather-anime-icon-hero {
-  width: 70px;
-  height: 70px;
+  width: 82px;
+  height: 82px;
 }
 
 .hero-weather-pill .weather-anime-icon-md {
@@ -10537,7 +10537,7 @@ svg.anime-module-svg .anime-icon-line {
   }
 }
 
-/* Domácnost+ v.0.1_143 – přepínatelné sady ikon + barevná schémata aplikace */
+/* Domácnost+ v.0.1_144 – ikony bez pozadí, výraznější styly a Garáž grafy */
 :root {
   --accent: var(--primary);
   --accent-2: var(--primary-2);
@@ -10848,4 +10848,116 @@ html[data-icon-theme="glass"] .module-theme-icon .icon-line.light,
   .icon-choice-grid { grid-template-columns: 1fr; }
   .visual-choice-card { padding: 9px; border-radius: 16px; }
   .visual-icon-preview-row .module-theme-icon { width: 31px; height: 31px; }
+}
+
+
+.weather-current .weather-icon.weather-anime-icon-md,
+.weather-current .weather-anime-icon-md {
+  width: 76px;
+  height: 76px;
+}
+
+.weather-current-large .weather-icon.weather-anime-icon-md,
+.weather-current-large .weather-anime-icon-md {
+  width: 92px;
+  height: 92px;
+}
+
+html[data-icon-theme="ios"] .module-theme-icon .icon-tile,
+.visual-choice-preview-ios .module-theme-icon .icon-tile,
+html[data-icon-theme="cartoon"] .module-theme-icon .icon-tile,
+.visual-choice-preview-cartoon .module-theme-icon .icon-tile,
+html[data-icon-theme="glass"] .module-theme-icon .icon-tile,
+.visual-choice-preview-glass .module-theme-icon .icon-tile {
+  display: none;
+  fill: none !important;
+  stroke: none !important;
+}
+
+html[data-icon-theme="ios"] .module-theme-icon,
+.visual-choice-preview-ios .module-theme-icon {
+  filter: drop-shadow(0 8px 18px rgba(31, 54, 88, .10));
+}
+
+html[data-icon-theme="ios"] .module-theme-icon .icon-primary,
+.visual-choice-preview-ios .module-theme-icon .icon-primary {
+  fill: color-mix(in srgb, var(--icon-a) 86%, #ffffff 14%);
+}
+
+html[data-icon-theme="ios"] .module-theme-icon .icon-secondary,
+.visual-choice-preview-ios .module-theme-icon .icon-secondary {
+  fill: color-mix(in srgb, var(--icon-b) 55%, #ffffff 45%);
+}
+
+html[data-icon-theme="ios"] .module-theme-icon .icon-accent,
+.visual-choice-preview-ios .module-theme-icon .icon-accent {
+  fill: color-mix(in srgb, var(--icon-c) 84%, #ffffff 16%);
+}
+
+html[data-icon-theme="ios"] .module-theme-icon .icon-line,
+.visual-choice-preview-ios .module-theme-icon .icon-line {
+  stroke: rgba(255,255,255,.82);
+  stroke-width: 2.2;
+}
+
+html[data-icon-theme="cartoon"] .module-theme-icon,
+.visual-choice-preview-cartoon .module-theme-icon {
+  filter: drop-shadow(0 4px 0 rgba(18, 42, 72, .18));
+}
+
+html[data-icon-theme="cartoon"] .module-theme-icon .icon-primary,
+html[data-icon-theme="cartoon"] .module-theme-icon .icon-secondary,
+html[data-icon-theme="cartoon"] .module-theme-icon .icon-accent,
+.visual-choice-preview-cartoon .module-theme-icon .icon-primary,
+.visual-choice-preview-cartoon .module-theme-icon .icon-secondary,
+.visual-choice-preview-cartoon .module-theme-icon .icon-accent {
+  stroke: #15314d;
+  stroke-width: 1.8;
+  paint-order: stroke fill;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+html[data-icon-theme="cartoon"] .module-theme-icon .icon-line,
+.visual-choice-preview-cartoon .module-theme-icon .icon-line {
+  stroke: #15314d;
+  stroke-width: 3.8;
+}
+
+html[data-icon-theme="glass"] .module-theme-icon,
+.visual-choice-preview-glass .module-theme-icon {
+  filter: drop-shadow(0 10px 20px rgba(53, 116, 240, .12));
+}
+
+.garage-chart-body {
+  grid-template-columns: minmax(128px, .46fr) minmax(0, 1fr);
+  align-items: center;
+}
+
+.garage-chart-values {
+  align-content: start;
+}
+
+.garage-chart-values span {
+  min-height: 48px;
+}
+
+@media (max-width: 640px) {
+  .garage-chart-body {
+    grid-template-columns: minmax(122px, .48fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .garage-chart-values,
+  .garage-chart-values-with-title {
+    grid-template-columns: 1fr;
+  }
+
+  .garage-chart-title {
+    grid-column: auto;
+  }
+
+  .garage-chart-values span {
+    padding: 6px 7px;
+  }
 }
