@@ -12062,7 +12062,7 @@ html[data-theme="dark"][data-color-scheme="royal"] { --primary: #60a5fa; --prima
   }
 }
 
-/* Domácnost+ v.0.1_158 – Home přes celou plochu, stejné panely, RaK styl spodní lišty */
+/* Domácnost+ v.0.1_159 – Home přes celou plochu, stejné panely, RaK styl spodní lišty */
 .app-shell.home-app-shell {
   height: 100svh !important;
   min-height: 100svh !important;
@@ -12296,4 +12296,45 @@ html[data-theme="dark"][data-color-scheme="royal"] { --primary: #60a5fa; --prima
 
 .garage-vehicle-option-archived .garage-vehicle-option-main b {
   display: none !important;
+}
+
+
+/* v.0.1_159 - záruky: přílohy PDF/fotky */
+.warranty-files-block {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--panel, #fff) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border, #dbe3ef) 72%, transparent);
+}
+.warranty-file-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.warranty-file-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+}
+.warranty-file-row .file-open-btn {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.warranty-file-form {
+  margin-top: 6px;
+}
+.warranty-file-add-field {
+  margin-top: 8px;
+}
+@media (max-width: 520px) {
+  .warranty-file-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .warranty-file-row .item-meta {
+    grid-column: 1 / -1;
+  }
 }

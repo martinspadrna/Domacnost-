@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_158';
+  const APP_VERSION = 'Domácnost+ v.0.1_159';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -136,8 +136,11 @@
   const MORE_MODULE = { id: 'more', label: 'Více', icon: '⚙️' };
   const FILE_DB_NAME = 'homeWebOfflineFiles.v1';
   const FILE_STORE_CONTRACTS = 'contractFiles';
+  const FILE_STORE_WARRANTIES = 'warrantyFiles';
   const CONTRACT_FILE_MAX_BYTES = 15 * 1024 * 1024;
   const CONTRACT_FILE_ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
+  const WARRANTY_FILE_MAX_BYTES = 15 * 1024 * 1024;
+  const WARRANTY_FILE_ALLOWED_MIME = CONTRACT_FILE_ALLOWED_MIME;
   const SUPABASE_URL = 'https://cgshssdjgzzuprlwnabl.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_v7jeuZC-MNUEO5nfE5xcUQ_Pu9pT-X_';
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
@@ -268,6 +271,7 @@
     ['done', 'Vyřešeno'],
     ['archived', 'Archiv']
   ];
+  const WARRANTY_YEARS_OPTIONS = Array.from({ length: 9 }, (_, index) => [String(index + 2), `${index + 2} roky`]);
   const WEATHER_CHMI_FUNCTION = 'weather-chmi-forecast';
   const ICON_THEME_OPTIONS = [
     ['ios', 'iOS Soft', 'Jemné hladké ikonky inspirované moderním iOS stylem.'],
@@ -306,9 +310,9 @@
   const VISUAL_SETTINGS_STORAGE_KEY = 'domacnostPlus.visualSettings.v1';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 77,
-      appBuild: 158,
-      mode: 'garage-cloud-archive-sync-v158',
+      schemaVersion: 78,
+      appBuild: 159,
+      mode: 'garage-warranty-files-v159',
       createdAt: '',
       updatedAt: ''
     },
@@ -351,6 +355,7 @@
     notes: [],
     devices: [],
     warranties: [],
+    warrantyFiles: [],
     vehicles: [],
     fuel: [],
     services: [],
@@ -541,7 +546,8 @@
     'household_notes',
     'household_devices',
     'camera_feeds',
-    'household_coupons'
+    'household_coupons',
+    'household_warranty_files'
   ];
 
   const REALTIME_STATUS_LABELS = {
@@ -1104,9 +1110,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 77,
-      appBuild: 158,
-      mode: 'garage-cloud-archive-sync-v158',
+      schemaVersion: 78,
+      appBuild: 159,
+      mode: 'garage-warranty-files-v159',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1349,7 +1355,7 @@
   }
 
   function getCollectionNames() {
-    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'notes', 'devices', 'warranties', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'cameras', 'finance', 'financeAccounts', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
+    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'notes', 'devices', 'warranties', 'warrantyFiles', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'cameras', 'finance', 'financeAccounts', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
   }
 
   function normalizeModuleList(value) {
@@ -3772,6 +3778,7 @@
       { nav: 'shopping', tab: 'list', icon: '🛒', label: 'Nákupy', items: state.shopping || [], loadedAt: state.shoppingCloud?.loadedAt },
       { nav: 'contracts', tab: 'overview', icon: '📄', label: 'Smlouvy', items: state.contracts || [] },
       { nav: 'contracts', tab: 'detail', icon: '📎', label: 'Přílohy smluv', items: state.contractFiles || [] },
+      { nav: 'homecare', tab: 'warranties', icon: '🧾', label: 'Přílohy záruk', items: state.warrantyFiles || [] },
       { nav: 'garage', tab: 'overview', icon: '🚗', label: 'Garáž', items: [...(state.vehicles || []), ...(state.fuel || []), ...(state.services || [])] },
       { nav: 'homecare', tab: 'hdo', icon: '💡', label: 'HDO', items: state.hdoWindows || [], loadedAt: state.hdoCloud?.loadedAt },
       { nav: 'homecare', tab: 'waste', icon: '♻️', label: 'Odpad', items: state.waste || [], loadedAt: state.wasteCloud?.loadedAt },
@@ -3805,7 +3812,7 @@
     const overall = total ? Math.round((totalCloud / total) * 100) : (cloudReady ? 100 : 0);
     const autosyncEnabled = state.cloud?.autoSyncEnabled !== false;
     const autosyncStatus = cloudAutosyncStatusLabel();
-    const featuredCloudLabels = ['Profily', 'Nákupy', 'Smlouvy', 'Přílohy smluv', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář', 'Finance', 'Předplatné', 'Poznámky', 'Zařízení', 'Kamery', 'Slevové kódy'];
+    const featuredCloudLabels = ['Profily', 'Nákupy', 'Smlouvy', 'Přílohy smluv', 'Přílohy záruk', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář', 'Finance', 'Předplatné', 'Poznámky', 'Zařízení', 'Kamery', 'Slevové kódy'];
     const compactItems = mode === 'dashboard' ? items.filter((item) => item.total || featuredCloudLabels.includes(item.label)).slice(0, 14) : items;
     return `
       <section class="card desktop-span-2 cloud-sync-overview-card">
@@ -3979,7 +3986,7 @@
       shopping: { count: countBy('shopping', (item) => !item.done), label: 'koupit', note: `${countBy('coupons', (item) => !item.used)} nepoužitých kódů.` },
       homecare: { count: countBy('homeTasks', (item) => !item.done) + countBy('hdoWindows') + countBy('waste') + countBy('warranties'), label: 'položek', note: `${countBy('hdoWindows')} HDO oken, ${countBy('waste')} svozů, ${countBy('homeTasks', (item) => !item.done)} úkolů, ${countBy('warranties')} záruk.` },
       garage: { count: countBy('vehicles'), label: 'aut', note: `${countBy('fuel')} tankování, ${countBy('services')} servisů.` },
-      contracts: { count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh, cloudově přes Storage / lokálně jen fallback.` },
+      contracts: { count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh smluv, ${countBy('warrantyFiles')} příloh záruk.` },
       cameras: { count: countBy('cameras'), label: 'kamer', note: 'Snapshot/stream zatím jen lokálně.' },
       finance: { count: countBy('finance'), label: 'záznamů', note: `${formatCurrency(financeMonthSummary().balance)} rozdíl tento měsíc.` },
       subscriptions: { count: countBy('subscriptions', (item) => item.enabled !== false), label: 'služeb', note: `${formatCurrency(subscriptionMonthSummary().expectedReturn)} se má vrátit tento měsíc.` }
@@ -3994,7 +4001,7 @@
       { key: 'modules', done: normalizeModuleList(state.enabledModules).length > 0, title: 'Moduly jsou volitelné', note: 'Každá rodina si vybere vlastní sestavu.' },
       { key: 'navigation', done: normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules).length >= BOTTOM_NAV_MIN, title: 'Spodní lišta je uživatelská', note: 'Dobré pro iPhone, Android i budoucí tablet.' },
       { key: 'ids', done: getCollectionNames().every((collection) => (state[collection] || []).every((item) => item.householdId && item.profileId)), title: 'Data mají householdId/profileId', note: 'Důležité pro RLS a sdílení jen uvnitř domácnosti.' },
-      { key: 'storage', done: true, title: 'Soubory jsou mimo localStorage', note: 'Přílohy smluv jedou online přes soukromý Supabase Storage, IndexedDB je jen fallback.' }
+      { key: 'storage', done: true, title: 'Soubory jsou mimo localStorage', note: 'Přílohy smluv i záruk jedou online přes soukromý Supabase Storage, IndexedDB je jen fallback.' }
     ];
     const doneCount = checks.filter((item) => item.done).length;
     return { checks, doneCount, total: checks.length, percent: Math.round((doneCount / checks.length) * 100) };
@@ -4027,7 +4034,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_158', note: 'Hotovo: Garáž má tvrdší cloud zálohu archivovaných/prodaných aut. Sync už aktualizuje i auta s cloudId, ne jen nově lokální položky, a update payload nepřepisuje cloud prázdnými hodnotami.' },
+      { title: 'Domácnost+ v.0.1_159', note: 'Hotovo: Garáž má tvrdší cloud zálohu archivovaných/prodaných aut. Sync už aktualizuje i auta s cloudId, ne jen nově lokální položky, a update payload nepřepisuje cloud prázdnými hodnotami.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
       { title: 'Domácnost+ v.0.1_150', note: 'Hotovo: Garáž má opravenou kalkulačku cesty s automatickým načtením hodnot podle auta, rozšířený technický list a základ katalogu značek/modelů pro předvyplnění.' },
       { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
@@ -4950,19 +4957,47 @@
     return WARRANTY_STATUS_OPTIONS.find(([id]) => id === normalizeWarrantyStatus(value))?.[1] || 'Aktivní';
   }
 
+  function normalizeWarrantyYears(value, purchaseDate = '') {
+    const parsed = Number.parseInt(String(value || '').replace(/\D/g, ''), 10);
+    if (Number.isFinite(parsed)) return Math.min(10, Math.max(2, parsed));
+    return warrantyYearsFromDates(purchaseDate, '') || 2;
+  }
+
+  function warrantyYearsFromDates(purchaseDate = '', warrantyUntil = '') {
+    if (!purchaseDate || !warrantyUntil) return 0;
+    const start = new Date(`${purchaseDate}T00:00:00`);
+    const end = new Date(`${warrantyUntil}T00:00:00`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return 0;
+    const approx = Math.round((end.getTime() - start.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+    return Math.min(10, Math.max(2, approx || 2));
+  }
+
+  function warrantyFileCount(warrantyId) {
+    return (state.warrantyFiles || []).filter((file) => file.warrantyId === warrantyId).length;
+  }
+
+  function warrantyFilesFor(warrantyId) {
+    return (state.warrantyFiles || []).filter((file) => file.warrantyId === warrantyId).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  }
+
   function normalizeWarrantyItem(item = {}) {
     const purchaseDate = normalizeText(item.purchaseDate || item.purchase_date || item.date || todayISO());
-    const warrantyUntil = normalizeText(item.warrantyUntil || item.warranty_until || item.until || addYearsIso(purchaseDate, 2));
+    const rawUntil = normalizeText(item.warrantyUntil || item.warranty_until || item.until || '');
+    const warrantyYears = normalizeWarrantyYears(item.warrantyYears || item.warranty_years || warrantyYearsFromDates(purchaseDate, rawUntil) || 2, purchaseDate);
+    const warrantyUntil = rawUntil || addYearsIso(purchaseDate, warrantyYears);
     return {
       id: item.id || `warranty-${uid()}`,
       householdId: item.householdId || '',
       profileId: item.profileId || '',
+      cloudId: item.cloudId || item.cloud_id || '',
       createdAt: item.createdAt || item.created_at || new Date().toISOString(),
+      updatedAt: item.updatedAt || item.updated_at || '',
       name: normalizeText(item.name || item.title) || 'Věc v záruce',
       store: normalizeText(item.store || item.seller || ''),
-      category: normalizeText(item.category || ''),
+      category: '',
       price: normalizeText(item.price || ''),
       purchaseDate,
+      warrantyYears,
       warrantyUntil,
       status: normalizeWarrantyStatus(item.status),
       note: normalizeText(item.note || item.notes || '')
@@ -5005,13 +5040,25 @@
       });
   }
 
+  function renderWarrantyFileItem(file) {
+    return `
+      <div class="warranty-file-row">
+        <button class="ghost-btn file-open-btn" type="button" data-action="open-warranty-file" data-id="${escapeHtml(file.id)}">${escapeHtml(file.fileName || 'Příloha')}</button>
+        <span class="item-meta">${escapeHtml(file.fileType || 'soubor')} · ${formatBytes(file.size)}${file.cloudId ? ' · cloud' : ' · lokálně'}</span>
+        <button class="danger-btn mini-danger-btn" type="button" data-action="delete-warranty-file" data-id="${escapeHtml(file.id)}" aria-label="Smazat přílohu">×</button>
+      </div>
+    `;
+  }
+
   function renderWarrantyItem(item) {
+    const files = warrantyFilesFor(item.id);
     const meta = [
       item.store,
-      item.category,
       item.price ? formatCurrency(item.price) : '',
       `koupeno ${formatDate(item.purchaseDate)}`,
-      `záruka do ${formatDate(item.warrantyUntil)}`,
+      `${item.warrantyYears || 2} roky`,
+      `do ${formatDate(item.warrantyUntil)}`,
+      files.length ? `${files.length} příloh` : '',
       warrantyStatusLabel(item.status)
     ].filter(Boolean).join(' · ');
     return `
@@ -5022,6 +5069,13 @@
         </div>
         <div class="item-meta">${escapeHtml(meta)}</div>
         ${item.note ? `<div class="inline-note compact-note">${escapeHtml(item.note)}</div>` : ''}
+        <div class="warranty-files-block">
+          ${files.length ? `<div class="warranty-file-list">${files.map(renderWarrantyFileItem).join('')}</div>` : '<div class="item-meta">Bez přílohy</div>'}
+          <form data-form="add-warranty-files" data-warranty-id="${escapeHtml(item.id)}" class="compact-form warranty-file-form">
+            <label class="field"><span>Fotka / PDF</span><input class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf"></label>
+            <div class="form-actions compact-actions"><button class="ghost-btn" type="submit">Přidat přílohu</button></div>
+          </form>
+        </div>
         <div class="item-actions"><button class="danger-btn" type="button" data-action="delete-warranty" data-id="${item.id}">Smazat</button></div>
       </div>
     `;
@@ -5054,14 +5108,15 @@
           <div class="form-grid two">
             ${field('Věc', 'name', 'text', 'televize / pračka / telefon', true)}
             ${field('Obchod', 'store', 'text', 'Alza / Datart / Kaufland')}
-            ${field('Kategorie', 'category', 'text', 'elektronika / spotřebič')}
             ${field('Cena', 'price', 'number', 'volitelné')}
             ${field('Datum koupě', 'purchaseDate', 'date', '', true, todayISO())}
-            ${field('Záruka do', 'warrantyUntil', 'date', 'automaticky 2 roky', false, addYearsIso(todayISO(), 2))}
+            ${selectField('Délka záruky', 'warrantyYears', WARRANTY_YEARS_OPTIONS, '2')}
+            ${field('Záruka do', 'warrantyUntil', 'date', 'automaticky podle délky', false, addYearsIso(todayISO(), 2))}
             ${selectField('Stav', 'status', WARRANTY_STATUS_OPTIONS, 'active')}
             ${field('Poznámka / reklamace', 'note', 'text', 'např. reklamováno, číslo reklamace, domluva')}
           </div>
-          <div class="inline-note compact-note">Když konec záruky necháš podle návrhu, počítá se automaticky 2 roky od data koupě. U prodloužené záruky ho jen ručně přepíšeš.</div>
+          <label class="field warranty-file-add-field"><span>Fotka / PDF účtenky</span><input class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf"></label>
+          <div class="inline-note compact-note">Základ je 2 roky. U prodloužené záruky vyber délku až 10 let, konec záruky se dopočítá automaticky. Fotka/PDF se při cloudové domácnosti uloží online do soukromého Storage.</div>
           <div class="form-actions"><button class="primary-btn" type="submit">Přidat záruku</button></div>
         </form>
         <div style="height:14px"></div>
@@ -8231,8 +8286,8 @@
 
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
-            <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 158))}</strong></div></div>
+            <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 159))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -9167,11 +9222,14 @@
         reject(new Error('IndexedDB není dostupné'));
         return;
       }
-      const request = indexedDB.open(FILE_DB_NAME, 1);
+      const request = indexedDB.open(FILE_DB_NAME, 2);
       request.onupgradeneeded = () => {
         const db = request.result;
         if (!db.objectStoreNames.contains(FILE_STORE_CONTRACTS)) {
           db.createObjectStore(FILE_STORE_CONTRACTS, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(FILE_STORE_WARRANTIES)) {
+          db.createObjectStore(FILE_STORE_WARRANTIES, { keyPath: 'id' });
         }
       };
       request.onsuccess = () => resolve(request.result);
@@ -9220,6 +9278,49 @@
 
   async function deleteStoredContractFile(id) {
     await withFileStore('readwrite', (store) => store.delete(id));
+  }
+
+  async function withNamedFileStore(storeName, mode, callback) {
+    const db = await openFilesDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, mode);
+      const store = tx.objectStore(storeName);
+      let result;
+      try {
+        result = callback(store);
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      tx.oncomplete = () => {
+        db.close();
+        resolve(result);
+      };
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error || new Error('IndexedDB transakce selhala'));
+      };
+    });
+  }
+
+  async function putStoredWarrantyFile(record) {
+    await withNamedFileStore(FILE_STORE_WARRANTIES, 'readwrite', (store) => store.put(record));
+  }
+
+  async function getStoredWarrantyFile(id) {
+    const db = await openFilesDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(FILE_STORE_WARRANTIES, 'readonly');
+      const request = tx.objectStore(FILE_STORE_WARRANTIES).get(id);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error || new Error('Soubor nejde načíst'));
+      tx.oncomplete = () => db.close();
+      tx.onerror = () => db.close();
+    });
+  }
+
+  async function deleteStoredWarrantyFile(id) {
+    await withNamedFileStore(FILE_STORE_WARRANTIES, 'readwrite', (store) => store.delete(id));
   }
 
   function sanitizeStorageFileName(name) {
@@ -9528,6 +9629,261 @@
     saveState();
     render();
     showToast('Příloha smazána');
+  }
+
+
+  async function ensureCloudWarrantySnapshot() {
+    if (!cloudReady()) return false;
+    return cloudSaveHouseholdUiSettings(false);
+  }
+
+  function isAllowedWarrantyFile(file) {
+    if (!file) return false;
+    const name = String(file.name || '').toLowerCase();
+    const type = String(file.type || '').toLowerCase();
+    if (WARRANTY_FILE_ALLOWED_MIME.has(type)) return true;
+    return ['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'].some((ext) => name.endsWith(ext));
+  }
+
+  function warrantyFileValidationMessage(file) {
+    if (!file) return 'Soubor není dostupný';
+    if (file.size > WARRANTY_FILE_MAX_BYTES) return `${file.name || 'Soubor'} je větší než 15 MB`;
+    if (!isAllowedWarrantyFile(file)) return `${file.name || 'Soubor'} není podporovaný typ. Použij PDF nebo fotku.`;
+    return '';
+  }
+
+  async function cloudUploadWarrantyFile(warranty, file) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId || !warranty?.id) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    await ensureCloudWarrantySnapshot();
+    const storagePath = `${state.cloud.householdId}/${warranty.id}/${Date.now()}-${uid()}-${sanitizeStorageFileName(file.name)}`;
+    const { error: uploadError } = await client.storage
+      .from('warranty-files')
+      .upload(storagePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type || 'application/octet-stream'
+      });
+    if (uploadError) {
+      showToast(uploadError.message || 'Přílohu záruky se nepovedlo nahrát');
+      return null;
+    }
+    const { data, error } = await client
+      .from('household_warranty_files')
+      .insert({
+        household_id: state.cloud.householdId,
+        warranty_key: warranty.id,
+        bucket_id: 'warranty-files',
+        storage_path: storagePath,
+        file_name: file.name || 'příloha',
+        mime_type: file.type || null,
+        file_size: file.size || 0,
+        source: file.type && file.type.startsWith('image/') ? 'camera' : 'upload',
+        created_by: user.id
+      })
+      .select('id,household_id,warranty_key,storage_path,file_name,mime_type,file_size,source,created_at')
+      .single();
+    if (error) {
+      await client.storage.from('warranty-files').remove([storagePath]).catch?.(() => {});
+      showToast(error.message || 'Metadata přílohy záruky se nepovedlo uložit');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return mapCloudWarrantyFile(data);
+  }
+
+  function mapCloudWarrantyFile(item) {
+    const warranty = state.warranties.find((entry) => entry.id === item.warranty_key);
+    if (!warranty) return null;
+    const existing = state.warrantyFiles.find((file) => file.cloudId === item.id);
+    return {
+      id: existing?.id || `warranty-file-cloud-${item.id}`,
+      cloudId: item.id,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      warrantyId: warranty.id,
+      storagePath: item.storage_path,
+      bucketId: 'warranty-files',
+      fileName: item.file_name || 'příloha',
+      fileType: item.mime_type || 'soubor',
+      size: item.file_size || 0,
+      source: item.source || 'upload',
+      createdAt: item.created_at || new Date().toISOString()
+    };
+  }
+
+  async function cloudLoadWarrantyFiles(showMessage = false) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return false;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const { data, error } = await client
+      .from('household_warranty_files')
+      .select('id,household_id,warranty_key,storage_path,file_name,mime_type,file_size,source,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .order('created_at', { ascending: false });
+    if (error) {
+      if (showMessage) showToast(error.message || 'Přílohy záruk se nepovedlo načíst');
+      return false;
+    }
+    const cloudFiles = (data || []).map((item) => mapCloudWarrantyFile(item)).filter(Boolean);
+    const localOnly = (state.warrantyFiles || []).filter((file) => !file.cloudId);
+    state.warrantyFiles = [...localOnly, ...cloudFiles];
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    if (showMessage) {
+      render();
+      showToast('Cloud přílohy záruk načtené');
+    }
+    return true;
+  }
+
+  async function addWarrantyFilesToWarranty(warranty, files = []) {
+    if (!warranty || !files.length) return { added: 0, failed: 0 };
+    const useCloudStorage = cloudReady();
+    let added = 0;
+    let failed = 0;
+    for (const file of files) {
+      const validationMessage = warrantyFileValidationMessage(file);
+      if (validationMessage) {
+        failed += 1;
+        showToast(validationMessage);
+        continue;
+      }
+      if (useCloudStorage) {
+        const cloudFile = await cloudUploadWarrantyFile(warranty, file);
+        if (cloudFile) {
+          state.warrantyFiles = state.warrantyFiles.filter((entry) => entry.cloudId !== cloudFile.cloudId);
+          state.warrantyFiles.push(cloudFile);
+          added += 1;
+        } else failed += 1;
+        continue;
+      }
+      if (!('indexedDB' in window)) {
+        failed += 1;
+        showToast('Prohlížeč nepodporuje IndexedDB');
+        continue;
+      }
+      const id = `warranty-file-${uid()}`;
+      const createdAt = new Date().toISOString();
+      const meta = {
+        id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        warrantyId: warranty.id,
+        fileName: file.name || 'příloha',
+        fileType: file.type || 'soubor',
+        size: file.size || 0,
+        createdAt
+      };
+      await putStoredWarrantyFile({ ...meta, blob: file });
+      state.warrantyFiles.push(meta);
+      added += 1;
+    }
+    return { added, failed };
+  }
+
+  async function addWarrantyFiles(form) {
+    const warrantyId = form.dataset.warrantyId;
+    const warranty = state.warranties.find((item) => item.id === warrantyId);
+    const input = form.querySelector('input[type="file"]');
+    const files = [...(input?.files || [])];
+    if (!warranty || !files.length) return showToast('Vyber soubor');
+    const { added, failed } = await addWarrantyFilesToWarranty(warranty, files);
+    touchState();
+    saveState();
+    if (input) input.value = '';
+    render();
+    if (added && cloudReady()) showToast(failed ? `Do cloudu nahráno ${added}, neprošlo ${failed}` : 'Příloha záruky nahraná do cloudu');
+    else if (added) showToast(added === 1 ? 'Příloha záruky uložená lokálně' : `Lokálně přidáno příloh: ${added}`);
+    else showToast('Přílohu se nepovedlo přidat');
+  }
+
+  async function cloudSyncLocalWarrantyFiles(showMessage = true) {
+    if (!cloudReady()) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return 0;
+    }
+    const localFiles = (state.warrantyFiles || []).filter((file) => !file.cloudId);
+    if (!localFiles.length) return 0;
+    let uploaded = 0;
+    let missing = 0;
+    let failed = 0;
+    for (const meta of localFiles) {
+      const warranty = state.warranties.find((item) => item.id === meta.warrantyId);
+      if (!warranty) { failed += 1; continue; }
+      let stored = null;
+      try { stored = await getStoredWarrantyFile(meta.id); } catch { stored = null; }
+      const blob = stored?.blob;
+      if (!blob) { missing += 1; continue; }
+      const fileName = meta.fileName || stored.fileName || 'priloha';
+      const fileType = meta.fileType || stored.fileType || blob.type || 'application/octet-stream';
+      const uploadFile = (typeof File !== 'undefined' && blob instanceof File) ? blob : new File([blob], fileName, { type: fileType });
+      const cloudFile = await cloudUploadWarrantyFile(warranty, uploadFile);
+      if (!cloudFile?.cloudId) { failed += 1; continue; }
+      state.warrantyFiles = state.warrantyFiles.filter((file) => file.id !== meta.id && file.cloudId !== cloudFile.cloudId);
+      state.warrantyFiles.push({ ...cloudFile, id: meta.id, createdAt: meta.createdAt || cloudFile.createdAt });
+      deleteStoredWarrantyFile(meta.id).catch(() => {});
+      uploaded += 1;
+    }
+    if (uploaded) state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    if (showMessage) {
+      render();
+      const details = [uploaded ? `${uploaded} nahráno` : '', missing ? `${missing} nemá soubor v tomto prohlížeči` : '', failed ? `${failed} chyba` : ''].filter(Boolean).join(' · ');
+      showToast(details || 'Přílohy záruk se nepodařilo dohnat');
+    }
+    return uploaded;
+  }
+
+  async function openCloudWarrantyFile(meta, download = false) {
+    const client = getSupabaseClient();
+    if (!client || !meta?.storagePath) return showToast('Cloud příloha není dostupná');
+    const { data, error } = await client.storage
+      .from('warranty-files')
+      .createSignedUrl(meta.storagePath, 60, download ? { download: meta.fileName || 'priloha' } : undefined);
+    if (error || !data?.signedUrl) return showToast(error?.message || 'Dočasný odkaz nejde vytvořit');
+    window.open(data.signedUrl, '_blank', 'noopener');
+  }
+
+  async function openWarrantyFile(id) {
+    const meta = state.warrantyFiles.find((file) => file.id === id);
+    if (meta?.cloudId) return openCloudWarrantyFile(meta, false);
+    try {
+      const record = await getStoredWarrantyFile(id);
+      if (!record?.blob) return showToast('Soubor není v tomto prohlížeči dostupný');
+      const url = URL.createObjectURL(record.blob);
+      window.open(url, '_blank', 'noopener');
+      setTimeout(() => URL.revokeObjectURL(url), 15000);
+    } catch {
+      showToast('Soubor nejde otevřít');
+    }
+  }
+
+  async function deleteWarrantyFile(id) {
+    const meta = state.warrantyFiles.find((file) => file.id === id);
+    if (!meta) return;
+    const ok = window.confirm(meta.cloudId ? 'Smazat přílohu záruky z cloudu?' : 'Smazat přílohu záruky z tohoto zařízení?');
+    if (!ok) return;
+    if (meta.cloudId) {
+      const client = getSupabaseClient();
+      if (!client || !state.cloud?.householdId) return showToast('Cloud není dostupný');
+      const { error: dbError } = await client.from('household_warranty_files').delete().eq('id', meta.cloudId).eq('household_id', state.cloud.householdId);
+      if (dbError) return showToast(dbError.message || 'Metadata přílohy se nepovedlo smazat');
+      if (meta.storagePath) await client.storage.from('warranty-files').remove([meta.storagePath]).catch?.(() => {});
+      state.cloud.lastSyncAt = new Date().toISOString();
+    } else {
+      deleteStoredWarrantyFile(id).catch(() => {});
+    }
+    state.warrantyFiles = state.warrantyFiles.filter((file) => file.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Příloha záruky smazána');
   }
 
   function normalizeKey(value) {
@@ -11931,6 +12287,7 @@
 
   async function addWarrantyFromForm(data, form) {
     const purchaseDate = normalizeText(data.purchaseDate) || todayISO();
+    const warrantyYears = normalizeWarrantyYears(data.warrantyYears || 2, purchaseDate);
     const item = normalizeWarrantyItem({
       id: uid(),
       householdId: currentHouseholdId(),
@@ -11938,30 +12295,43 @@
       createdAt: new Date().toISOString(),
       name: data.name,
       store: data.store,
-      category: data.category,
       price: decimalValue(data.price) || '',
       purchaseDate,
-      warrantyUntil: normalizeText(data.warrantyUntil) || addYearsIso(purchaseDate, 2),
+      warrantyYears,
+      warrantyUntil: normalizeText(data.warrantyUntil) || addYearsIso(purchaseDate, warrantyYears),
       status: data.status || 'active',
       note: data.note
     });
     state.warranties = normalizeWarranties([...(state.warranties || []), item]);
+    const input = form?.querySelector?.('input[type="file"]');
+    const files = [...(input?.files || [])];
+    if (files.length) await addWarrantyFilesToWarranty(item, files);
     touchState();
     saveState();
-    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
+    if (cloudReady()) {
+      await cloudSaveHouseholdUiSettings(false);
+      await cloudSyncLocalWarrantyFiles(false);
+    }
     form?.reset();
     const purchase = form?.querySelector?.('[name="purchaseDate"]');
+    const years = form?.querySelector?.('[name="warrantyYears"]');
     const until = form?.querySelector?.('[name="warrantyUntil"]');
     if (purchase) purchase.value = todayISO();
+    if (years) years.value = '2';
     if (until) until.value = addYearsIso(todayISO(), 2);
     render();
-    showToast('Záruka uložena');
+    showToast(files.length ? 'Záruka a příloha uložená' : 'Záruka uložena');
   }
 
   async function deleteWarranty(id) {
     const before = (state.warranties || []).length;
     state.warranties = normalizeWarranties(state.warranties).filter((item) => item.id !== id);
     if (state.warranties.length === before) return;
+    const files = (state.warrantyFiles || []).filter((file) => file.warrantyId === id);
+    for (const file of files) {
+      if (!file.cloudId) deleteStoredWarrantyFile(file.id).catch(() => {});
+    }
+    state.warrantyFiles = (state.warrantyFiles || []).filter((file) => file.warrantyId !== id);
     touchState();
     saveState();
     if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
@@ -12423,6 +12793,7 @@
       'add-note': () => addItem('notes', { text: data.text, createdAt: new Date().toISOString() }),
       'add-device': () => addItem('devices', { name: data.name, type: data.type, address: data.address, note: data.note }),
       'add-warranty': () => addWarrantyFromForm(data, form),
+      'add-warranty-files': () => addWarrantyFiles(form),
       'polish-holidays-year': () => {
         state.polishShopClosures = normalizePolishShopState({ ...state.polishShopClosures, year: data.year });
         touchState();
@@ -12999,7 +13370,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 77, appBuild: 158, mode: 'rich-demo-v158', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 78, appBuild: 159, mode: 'rich-demo-v159', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -13043,6 +13414,7 @@
       services,
       contracts,
       contractFiles: [],
+      warrantyFiles: [],
       cameras: [
         make({ profileId: petrId, name: 'Vchod', location: 'Před domem', snapshotUrl: '', status: 'online', note: 'Demo kamera bez streamu' }),
         make({ profileId: petrId, name: 'Garáž', location: 'Garáž', snapshotUrl: '', status: 'online', note: 'Snapshot se doplní později' }),
@@ -13141,7 +13513,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 77, appBuild: 158, mode: 'garage-cloud-archive-sync-v158', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 78, appBuild: 159, mode: 'garage-warranty-files-v159', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -14192,6 +14564,7 @@
       cloudSyncLocalShoppingItems,
       cloudSyncLocalContracts,
       cloudSyncLocalContractFiles,
+      cloudSyncLocalWarrantyFiles,
       cloudSyncLocalGarage,
       cloudSyncLocalHdo,
       cloudSyncLocalWaste,
@@ -14263,6 +14636,7 @@
       cloudLoadCalendarSources,
       cloudLoadCalendar,
       cloudLoadContractFiles,
+      cloudLoadWarrantyFiles,
       cloudLoadFinance,
       cloudLoadExtraCollections
     ];
@@ -14616,6 +14990,14 @@
     }
     if (action === 'delete-warranty') {
       deleteWarranty(button.dataset.id);
+      return;
+    }
+    if (action === 'open-warranty-file') {
+      openWarrantyFile(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-warranty-file') {
+      deleteWarrantyFile(button.dataset.id);
       return;
     }
     if (action === 'open-garage-detail') {
@@ -15685,7 +16067,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 158
+        appBuild: 159
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -15808,7 +16190,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 158, schema_version: 75, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 159, schema_version: 78, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -16021,8 +16403,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 158,
-          schema_version: 75,
+          app_build: 159,
+          schema_version: 78,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -16275,7 +16657,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-158-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-159-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -16467,9 +16849,19 @@
     if (warrantyPurchase) {
       const form = warrantyPurchase.form;
       const until = form?.querySelector('[name="warrantyUntil"]');
-      const expectedToday = addYearsIso(todayISO(), 2);
-      if (until && (!until.value || until.value === expectedToday || until.dataset.autoWarranty === 'true')) {
-        until.value = addYearsIso(warrantyPurchase.value || todayISO(), 2);
+      const years = Number(form?.querySelector('[name="warrantyYears"]')?.value || 2);
+      if (until && (!until.value || until.dataset.autoWarranty !== 'false')) {
+        until.value = addYearsIso(warrantyPurchase.value || todayISO(), years || 2);
+        until.dataset.autoWarranty = 'true';
+      }
+    }
+    const warrantyYears = event.target.closest('form[data-form="add-warranty"] select[name="warrantyYears"]');
+    if (warrantyYears) {
+      const form = warrantyYears.form;
+      const until = form?.querySelector('[name="warrantyUntil"]');
+      const purchase = form?.querySelector('[name="purchaseDate"]');
+      if (until) {
+        until.value = addYearsIso(purchase?.value || todayISO(), Number(warrantyYears.value || 2));
         until.dataset.autoWarranty = 'true';
       }
     }
@@ -16512,7 +16904,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_158</span>
+          <span class="badge">Domácnost+ v.0.1_159</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
