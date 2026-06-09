@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_153';
+  const APP_VERSION = 'Domácnost+ v.0.1_154';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -197,6 +197,71 @@
     { id: 'hyundai-i20-1-2', brand: 'Hyundai', model: 'i20', generation: '', productionYear: '2014–2020', bodyType: 'hatchback', fuelType: 'gasoline', engineName: '1.2', engineCode: '', displacementCcm: '1248', powerKw: '55', powerHp: '75', torqueNm: '122', cylinders: '4', transmission: 'manuál', drive: 'přední', emissionNorm: 'Euro 6', officialConsumption: '5,1–5,6', fuelTankLiters: '50', seats: '5', doors: '5', tireSize: '185/65 R15', note: 'Orientační katalogová data, ověřit podle TP konkrétního auta.' },
     { id: 'skoda-elroq-85', brand: 'Škoda', model: 'Elroq', generation: '', productionYear: '2025–', bodyType: 'SUV', fuelType: 'electric', engineName: '85', engineCode: '', powerKw: '210', powerHp: '286', torqueNm: '', transmission: 'automat', drive: 'zadní', emissionNorm: 'EV', officialConsumption: '15,2–16,4 kWh/100 km', batteryKwh: '82', seats: '5', doors: '5', tireSize: '235/55 R19', note: 'Orientační katalogová data, ověřit podle TP konkrétního auta.' }
   ];
+  function garagePresetId(text) {
+    return String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+  }
+  function addGaragePresetBrandCatalog(brand, models) {
+    const defaultNote = 'Orientační lokální katalog pro rychlé předvyplnění. Přesné údaje vždy ověřit podle TP konkrétního auta.';
+    Object.entries(models).forEach(([model, engines]) => {
+      engines.forEach((engine) => {
+        const item = {
+          brand,
+          model,
+          generation: engine.generation || '',
+          productionYear: engine.productionYear || '',
+          bodyType: engine.bodyType || '',
+          fuelType: engine.fuelType || '',
+          engineName: engine.engineName || '',
+          engineCode: engine.engineCode || '',
+          displacementCcm: engine.displacementCcm || '',
+          powerKw: engine.powerKw || '',
+          powerHp: engine.powerHp || '',
+          torqueNm: engine.torqueNm || '',
+          cylinders: engine.cylinders || '',
+          transmission: engine.transmission || '',
+          drive: engine.drive || '',
+          emissionNorm: engine.emissionNorm || '',
+          officialConsumption: engine.officialConsumption || '',
+          fuelTankLiters: engine.fuelTankLiters || '',
+          batteryKwh: engine.batteryKwh || '',
+          seats: engine.seats || '5',
+          doors: engine.doors || '5',
+          tireSize: engine.tireSize || '',
+          note: engine.note || defaultNote
+        };
+        item.id = `catalog-${garagePresetId([brand, model, item.engineName, item.powerKw, item.productionYear, item.generation].filter(Boolean).join('-'))}`;
+        if (!GARAGE_VEHICLE_PRESETS.some((preset) => preset.id === item.id || (preset.brand === item.brand && preset.model === item.model && preset.engineName === item.engineName && preset.powerKw === item.powerKw && preset.productionYear === item.productionYear))) {
+          GARAGE_VEHICLE_PRESETS.push(item);
+        }
+      });
+    });
+  }
+  function enginePreset(engineName, powerKw, extra = {}) {
+    const kw = Number(powerKw || 0);
+    return { engineName, powerKw: powerKw ? String(powerKw) : '', powerHp: kw ? String(Math.round(kw * 1.35962)) : '', ...extra };
+  }
+  [
+    ['Audi', { A3:[enginePreset('1.5 TFSI',110,{fuelType:'gasoline',displacementCcm:'1498',transmission:'manuál / S tronic',drive:'přední',bodyType:'hatchback / sedan'}), enginePreset('2.0 TDI',110,{fuelType:'diesel',displacementCcm:'1968',transmission:'S tronic',drive:'přední'})], A4:[enginePreset('2.0 TDI',120,{fuelType:'diesel',displacementCcm:'1968',transmission:'S tronic',drive:'přední / quattro'}), enginePreset('2.0 TFSI',150,{fuelType:'gasoline',displacementCcm:'1984',transmission:'S tronic',drive:'přední / quattro'})], Q5:[enginePreset('40 TDI quattro',150,{fuelType:'diesel',displacementCcm:'1968',transmission:'S tronic',drive:'4x4',bodyType:'SUV'}), enginePreset('45 TFSI quattro',195,{fuelType:'gasoline',displacementCcm:'1984',transmission:'S tronic',drive:'4x4',bodyType:'SUV'})] }],
+    ['BMW', { 'Řada 1':[enginePreset('118i',100,{fuelType:'gasoline',transmission:'manuál / automat',drive:'přední'}), enginePreset('120d',140,{fuelType:'diesel',transmission:'automat',drive:'přední / xDrive'})], 'Řada 3':[enginePreset('320d',140,{fuelType:'diesel',transmission:'automat',drive:'zadní / xDrive'}), enginePreset('330i',190,{fuelType:'gasoline',transmission:'automat',drive:'zadní / xDrive'})], X3:[enginePreset('20d xDrive',140,{fuelType:'diesel',transmission:'automat',drive:'4x4',bodyType:'SUV'}), enginePreset('30e xDrive',215,{fuelType:'plugin-hybrid',transmission:'automat',drive:'4x4',bodyType:'SUV'})] }],
+    ['Citroën', { C3:[enginePreset('1.2 PureTech',81,{fuelType:'gasoline',displacementCcm:'1199',transmission:'manuál / automat'}), enginePreset('1.5 BlueHDi',75,{fuelType:'diesel',displacementCcm:'1499'})], C4:[enginePreset('1.2 PureTech',96,{fuelType:'gasoline'}), enginePreset('ë-C4',100,{fuelType:'electric',batteryKwh:'50'})], Berlingo:[enginePreset('1.5 BlueHDi',96,{fuelType:'diesel',bodyType:'MPV / dodávka'}), enginePreset('1.2 PureTech',81,{fuelType:'gasoline',bodyType:'MPV / dodávka'})] }],
+    ['Dacia', { Sandero:[enginePreset('1.0 SCe',49,{fuelType:'gasoline'}), enginePreset('1.0 TCe LPG',74,{fuelType:'lpg'})], Duster:[enginePreset('1.0 TCe LPG',74,{fuelType:'lpg',bodyType:'SUV'}), enginePreset('1.3 TCe',96,{fuelType:'gasoline',bodyType:'SUV'})], Jogger:[enginePreset('1.0 TCe LPG',74,{fuelType:'lpg',bodyType:'MPV'}), enginePreset('Hybrid 140',104,{fuelType:'hybrid',bodyType:'MPV'})] }],
+    ['Fiat', { 500:[enginePreset('1.0 Hybrid',51,{fuelType:'hybrid'}), enginePreset('500e',87,{fuelType:'electric',batteryKwh:'42'})], Tipo:[enginePreset('1.0 T3',74,{fuelType:'gasoline'}), enginePreset('1.6 MultiJet',96,{fuelType:'diesel'})], Panda:[enginePreset('1.0 Hybrid',51,{fuelType:'hybrid'}), enginePreset('0.9 TwinAir 4x4',63,{fuelType:'gasoline',drive:'4x4'})] }],
+    ['Ford', { Fiesta:[enginePreset('1.0 EcoBoost',74,{fuelType:'gasoline'}), enginePreset('1.5 TDCi',63,{fuelType:'diesel'})], Focus:[enginePreset('1.0 EcoBoost',92,{fuelType:'gasoline'}), enginePreset('1.5 EcoBlue',88,{fuelType:'diesel'})], Kuga:[enginePreset('1.5 EcoBoost',110,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('2.5 PHEV',165,{fuelType:'plugin-hybrid',bodyType:'SUV'})] }],
+    ['Honda', { Civic:[enginePreset('1.5 VTEC Turbo',134,{fuelType:'gasoline'}), enginePreset('e:HEV',135,{fuelType:'hybrid'})], Jazz:[enginePreset('1.5 e:HEV',80,{fuelType:'hybrid'}), enginePreset('1.3 i-VTEC',75,{fuelType:'gasoline'})], 'CR-V':[enginePreset('2.0 e:HEV',135,{fuelType:'hybrid',bodyType:'SUV'}), enginePreset('1.5 VTEC Turbo',142,{fuelType:'gasoline',bodyType:'SUV'})] }],
+    ['Hyundai', { i20:[enginePreset('1.2',55,{fuelType:'gasoline',displacementCcm:'1248'}), enginePreset('1.0 T-GDI',74,{fuelType:'gasoline'})], i30:[enginePreset('1.0 T-GDI',88,{fuelType:'gasoline'}), enginePreset('1.5 T-GDI',118,{fuelType:'gasoline'})], Tucson:[enginePreset('1.6 T-GDI',110,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('1.6 CRDi',100,{fuelType:'diesel',bodyType:'SUV'})] }],
+    ['Kia', { Ceed:[enginePreset('1.0 T-GDI',88,{fuelType:'gasoline'}), enginePreset('1.5 T-GDI',118,{fuelType:'gasoline'})], Sportage:[enginePreset('1.6 T-GDI',110,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('1.6 CRDi',100,{fuelType:'diesel',bodyType:'SUV'})], Rio:[enginePreset('1.2 CVVT',62,{fuelType:'gasoline'}), enginePreset('1.0 T-GDI',74,{fuelType:'gasoline'})] }],
+    ['Mazda', { '3':[enginePreset('2.0 Skyactiv-G',90,{fuelType:'gasoline'}), enginePreset('2.0 e-Skyactiv X',137,{fuelType:'gasoline'})], 'CX-5':[enginePreset('2.0 Skyactiv-G',121,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('2.2 Skyactiv-D',110,{fuelType:'diesel',bodyType:'SUV'})], 'CX-30':[enginePreset('2.0 Skyactiv-G',90,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('2.0 e-Skyactiv X',137,{fuelType:'gasoline',bodyType:'SUV'})] }],
+    ['Mercedes-Benz', { 'Třída A':[enginePreset('A 180',100,{fuelType:'gasoline'}), enginePreset('A 200 d',110,{fuelType:'diesel'})], 'Třída C':[enginePreset('C 200',150,{fuelType:'gasoline'}), enginePreset('C 220 d',147,{fuelType:'diesel'})], GLC:[enginePreset('220 d 4MATIC',145,{fuelType:'diesel',bodyType:'SUV',drive:'4x4'}), enginePreset('300 e 4MATIC',230,{fuelType:'plugin-hybrid',bodyType:'SUV',drive:'4x4'})] }],
+    ['Nissan', { Micra:[enginePreset('1.0 IG-T',68,{fuelType:'gasoline'}), enginePreset('1.0',52,{fuelType:'gasoline'})], Qashqai:[enginePreset('1.3 DIG-T',103,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('e-POWER',140,{fuelType:'hybrid',bodyType:'SUV'})], XTrail:[enginePreset('e-POWER',150,{fuelType:'hybrid',bodyType:'SUV'}), enginePreset('1.5 VC-T',120,{fuelType:'gasoline',bodyType:'SUV'})] }],
+    ['Opel', { Corsa:[enginePreset('1.2',55,{fuelType:'gasoline'}), enginePreset('1.2 Turbo',74,{fuelType:'gasoline'})], Astra:[enginePreset('1.2 Turbo',96,{fuelType:'gasoline'}), enginePreset('1.5 Diesel',96,{fuelType:'diesel'})], Mokka:[enginePreset('1.2 Turbo',96,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('Mokka-e',100,{fuelType:'electric',batteryKwh:'50',bodyType:'SUV'})] }],
+    ['Peugeot', { 208:[enginePreset('1.2 PureTech',74,{fuelType:'gasoline'}), enginePreset('e-208',100,{fuelType:'electric',batteryKwh:'50'})], 308:[enginePreset('1.2 PureTech',96,{fuelType:'gasoline'}), enginePreset('1.5 BlueHDi',96,{fuelType:'diesel'})], 3008:[enginePreset('1.2 PureTech',96,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('Hybrid 225',165,{fuelType:'plugin-hybrid',bodyType:'SUV'})] }],
+    ['Renault', { Clio:[enginePreset('1.0 TCe',67,{fuelType:'gasoline'}), enginePreset('E-Tech hybrid',105,{fuelType:'hybrid'})], Megane:[enginePreset('1.3 TCe',103,{fuelType:'gasoline'}), enginePreset('E-Tech electric',160,{fuelType:'electric',batteryKwh:'60'})], Captur:[enginePreset('1.0 TCe LPG',74,{fuelType:'lpg',bodyType:'SUV'}), enginePreset('E-Tech hybrid',105,{fuelType:'hybrid',bodyType:'SUV'})] }],
+    ['Seat', { Ibiza:[enginePreset('1.0 TSI',70,{fuelType:'gasoline'}), enginePreset('1.5 TSI',110,{fuelType:'gasoline'})], Leon:[enginePreset('1.5 TSI',110,{fuelType:'gasoline'}), enginePreset('2.0 TDI',110,{fuelType:'diesel'})], Ateca:[enginePreset('1.5 TSI',110,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('2.0 TDI 4Drive',110,{fuelType:'diesel',bodyType:'SUV',drive:'4x4'})] }],
+    ['Škoda', { Fabia:[enginePreset('1.0 MPI',59,{fuelType:'gasoline'}), enginePreset('1.0 TSI',81,{fuelType:'gasoline'})], Octavia:[enginePreset('1.5 TSI',110,{fuelType:'gasoline'}), enginePreset('2.0 TDI',110,{fuelType:'diesel'})], Superb:[enginePreset('2.0 TDI',110,{fuelType:'diesel'}), enginePreset('1.5 TSI',110,{fuelType:'gasoline'})], Kodiaq:[enginePreset('2.0 TDI 4x4',147,{fuelType:'diesel',bodyType:'SUV',drive:'4x4'}), enginePreset('1.5 TSI',110,{fuelType:'gasoline',bodyType:'SUV'})], Enyaq:[enginePreset('85',210,{fuelType:'electric',batteryKwh:'82',bodyType:'SUV'}), enginePreset('60',132,{fuelType:'electric',batteryKwh:'62',bodyType:'SUV'})] }],
+    ['Toyota', { Yaris:[enginePreset('1.5 Hybrid',85,{fuelType:'hybrid'}), enginePreset('1.5 Dynamic Force',92,{fuelType:'gasoline'})], Corolla:[enginePreset('1.8 Hybrid',103,{fuelType:'hybrid'}), enginePreset('2.0 Hybrid',132,{fuelType:'hybrid'})], RAV4:[enginePreset('2.5 Hybrid',163,{fuelType:'hybrid',bodyType:'SUV'}), enginePreset('2.5 Plug-in Hybrid',225,{fuelType:'plugin-hybrid',bodyType:'SUV'})] }],
+    ['Volkswagen', { Polo:[enginePreset('1.0 TSI',70,{fuelType:'gasoline'}), enginePreset('1.0 MPI',59,{fuelType:'gasoline'})], Golf:[enginePreset('1.5 TSI',110,{fuelType:'gasoline'}), enginePreset('2.0 TDI',110,{fuelType:'diesel'})], Passat:[enginePreset('2.0 TDI',110,{fuelType:'diesel'}), enginePreset('1.5 TSI',110,{fuelType:'gasoline'})], Tiguan:[enginePreset('1.5 TSI',110,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('2.0 TDI 4Motion',147,{fuelType:'diesel',bodyType:'SUV',drive:'4x4'})] }],
+    ['Volvo', { V60:[enginePreset('B4',145,{fuelType:'mild-hybrid'}), enginePreset('T6 Recharge',253,{fuelType:'plugin-hybrid'})], XC40:[enginePreset('B3',120,{fuelType:'mild-hybrid',bodyType:'SUV'}), enginePreset('Recharge Single Motor',170,{fuelType:'electric',bodyType:'SUV'})], XC60:[enginePreset('B4 AWD',145,{fuelType:'mild-hybrid',bodyType:'SUV',drive:'4x4'}), enginePreset('T8 Recharge',335,{fuelType:'plugin-hybrid',bodyType:'SUV',drive:'4x4'})] }]
+  ].forEach(([brand, models]) => addGaragePresetBrandCatalog(brand, models));
   const WARRANTY_STATUS_OPTIONS = [
     ['active', 'Aktivní'],
     ['claim', 'Reklamace'],
@@ -242,8 +307,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 77,
-      appBuild: 153,
-      mode: 'garage-cloud-vehicle-fix-v153',
+      appBuild: 154,
+      mode: 'garage-home-garage-catalog-v154',
       createdAt: '',
       updatedAt: ''
     },
@@ -1040,8 +1105,8 @@
 
     migrated.meta = {
       schemaVersion: 77,
-      appBuild: 153,
-      mode: 'garage-cloud-vehicle-fix-v153',
+      appBuild: 154,
+      mode: 'garage-home-garage-catalog-v154',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -3929,7 +3994,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_153', note: 'Hotovo: Oprava Garáže: údaje prodaných/nevlastněných aut se při cloud načtení nemažou, Home panely jsou zpět stejně vysoké a katalog auta má postupný výběr značka → model → motorizace.' },
+      { title: 'Domácnost+ v.0.1_154', note: 'Hotovo: Home je zhuštěný pro obrazovku bez scrollu, katalog aut je rozšířený a zavřený v základu, přehled Garáže u prodaných aut ukazuje celkové km a Kč/km.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
       { title: 'Domácnost+ v.0.1_150', note: 'Hotovo: Garáž má opravenou kalkulačku cesty s automatickým načtením hodnot podle auta, rozšířený technický list a základ katalogu značek/modelů pro předvyplnění.' },
       { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
@@ -5754,7 +5819,7 @@
   function renderVehiclePresetTool() {
     const brandOptions = [['', 'Nejdřív vyber značku…'], ...garagePresetBrands().map((brand) => [brand, brand])];
     return `
-      <details class="action-details compact-edit-details garage-preset-tool" open>
+      <details class="action-details compact-edit-details garage-preset-tool">
         <summary><span>Předvyplnit podle auta</span><em>značka → model → motorizace, vše abecedně</em></summary>
         <div class="form-grid three garage-preset-grid">
           ${garagePresetSelectField('Značka', 'vehiclePresetBrand', brandOptions, '', false, 'data-garage-preset-step="brand"')}
@@ -6129,27 +6194,42 @@
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([, value]) => value);
   }
 
+  function garageVehiclePickerMeta(vehicle, rows) {
+    const status = normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned'));
+    if (status === 'owned') return [vehicle.brand, vehicle.model, vehicle.plate].filter(Boolean).join(' · ') || vehicle.fuelType || 'auto';
+    const analytics = garageVehicleAnalytics(vehicle);
+    const costSummary = garageVehicleCostSummary(vehicle, analytics);
+    const ownedKm = vehicleOwnedDistance(vehicle, analytics);
+    const parts = [vehicleOwnershipLabel(vehicle)];
+    if (ownedKm) parts.push(`najeto ${formatKm(ownedKm)}`);
+    if (costSummary.totalPerKm) parts.push(`${formatCostPerKm(costSummary.totalPerKm)}/km celkem`);
+    return parts.filter(Boolean).join(' · ') || 'archivované auto';
+  }
+
   function renderGarageVehiclePicker(vehicles = [], activeVehicle = null) {
     const activeRows = activeVehicle ? garageRowsForVehicle(activeVehicle.id) : { fuelRows: [], serviceRows: [] };
     const activeKm = activeVehicle ? getVehicleCurrentOdometer(activeVehicle, activeRows.fuelRows, activeRows.serviceRows) : 0;
+    const activeMeta = activeVehicle ? garageVehiclePickerMeta(activeVehicle, activeRows) : '';
     return `
       <section class="garage-active-vehicle-selector garage-active-vehicle-selector-clean">
         <details class="garage-vehicle-dropdown">
           <summary>
-            <span class="garage-vehicle-summary-main"><span class="vehicle-icon-bubble ${vehicleIconColorClass(activeVehicle?.iconColor)}" aria-hidden="true">🚗</span><strong>${escapeHtml(activeVehicle?.name || 'Vyber auto')}</strong></span>
+            <span class="garage-vehicle-summary-main"><span class="vehicle-icon-bubble ${vehicleIconColorClass(activeVehicle?.iconColor)}" aria-hidden="true">🚗</span><strong>${escapeHtml(activeVehicle?.name || 'Vyber auto')}</strong>${activeMeta ? `<em>${escapeHtml(activeMeta)}</em>` : ''}</span>
             <span class="garage-vehicle-summary-side"><span class="garage-vehicle-summary-km">${escapeHtml(formatKm(activeKm))}</span><span class="garage-vehicle-dropdown-arrow" aria-hidden="true">⌄</span></span>
           </summary>
           <div class="garage-vehicle-dropdown-list">
             ${vehicles.map((vehicle) => {
               const rows = garageRowsForVehicle(vehicle.id);
               const km = getVehicleCurrentOdometer(vehicle, rows.fuelRows, rows.serviceRows);
-              return `<div class="garage-vehicle-option-row ${vehicle.id === activeVehicle?.id ? 'active' : ''}">
+              const isOwned = normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')) === 'owned';
+              const meta = garageVehiclePickerMeta(vehicle, rows);
+              return `<div class="garage-vehicle-option-row ${vehicle.id === activeVehicle?.id ? 'active' : ''} ${!isOwned ? 'garage-vehicle-option-archived' : ''}">
                 <button class="garage-vehicle-option-main" type="button" data-action="garage-select-overview-vehicle" data-id="${escapeHtml(vehicle.id)}">
                   <span class="vehicle-icon-bubble ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span>
-                  <span><strong>${escapeHtml(vehicle.name || 'Auto')}</strong><em>${escapeHtml([vehicle.brand, vehicle.model, vehicle.plate].filter(Boolean).join(' · ') || vehicle.fuelType || 'auto')}</em></span>
+                  <span><strong>${escapeHtml(vehicle.name || 'Auto')}</strong><em>${escapeHtml(meta)}</em></span>
                   <b>${escapeHtml(formatKm(km))}</b>
                 </button>
-                ${normalizeVehicleOwnershipStatus(vehicle.ownershipStatus || (vehicle.saleDate ? 'sold' : 'owned')) === 'owned' ? `<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${escapeHtml(vehicle.id)}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name || 'auta')}">⛽+</button>` : ''}
+                ${isOwned ? `<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${escapeHtml(vehicle.id)}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name || 'auta')}">⛽+</button>` : ''}
               </div>`;
             }).join('')}
           </div>
@@ -8040,7 +8120,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 153))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 154))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -12784,7 +12864,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 77, appBuild: 153, mode: 'rich-demo-v153', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 77, appBuild: 154, mode: 'rich-demo-v154', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -12926,7 +13006,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 77, appBuild: 153, mode: 'garage-cloud-vehicle-fix-v153', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 77, appBuild: 154, mode: 'garage-home-garage-catalog-v154', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -15470,7 +15550,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 153
+        appBuild: 154
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -16297,7 +16377,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_153</span>
+          <span class="badge">Domácnost+ v.0.1_154</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
