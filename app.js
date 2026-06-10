@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_179';
+  const APP_VERSION = 'Domácnost+ v.0.1_180';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -31,6 +31,8 @@
     { id: 'subscriptions', label: 'Předplatné', icon: '🎬' },
     { id: 'settings', label: 'Nastavení', icon: '⚙️' }
   ];
+
+  const DEFAULT_BOTTOM_NAV_IDS = ['home', 'calendar', 'homecare', 'garage', 'finance'];
 
 
 
@@ -186,938 +188,938 @@
     "defaultUnit": "ks",
     "kind": "Děti",
     "category": "Děti",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "brambůrky v papírový krabici",
     "defaultUnit": "ks",
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "polévky",
     "defaultUnit": "ks",
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "listové těsto",
     "defaultUnit": "ks",
     "kind": "Pečivo",
     "category": "Pečivo",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "bez laktózová smetana zakysaná",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "tvaroh bez laktózy",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "jogurty",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "máslo kostka modrá",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "camembert",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "máslo flora vanička",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "toustový chléb",
     "defaultUnit": "ks",
     "kind": "Pečivo",
     "category": "Pečivo",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "kapsle do kávovaru",
     "defaultUnit": "bal",
     "kind": "Káva a čaj",
     "category": "Káva a čaj",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "pytle do koše červené 60l",
     "defaultUnit": "ks",
     "kind": "Domácnost",
     "category": "Domácnost",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "aviváž",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "vložky Always oranžové",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "kuchyňské utěrky",
     "defaultUnit": "role",
     "kind": "Domácnost",
     "category": "Domácnost",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "toaletní papír",
     "defaultUnit": "bal",
     "kind": "Domácnost",
     "category": "Domácnost",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "hořčice",
     "defaultUnit": "ks",
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "kečup",
     "defaultUnit": "ks",
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "okurka",
     "defaultUnit": "ks",
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "pórek",
     "defaultUnit": "ks",
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "mrkev",
     "defaultUnit": "ks",
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "česnek",
     "defaultUnit": "ks",
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "brambory",
     "defaultUnit": "kg",
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "cibule",
     "defaultUnit": "kg",
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "banán",
     "defaultUnit": "ks",
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "cuketa",
     "defaultUnit": "ks",
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "červená paprika",
     "defaultUnit": "ks",
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "rajčata v kbelíčku",
     "defaultUnit": "ks",
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "olej",
     "defaultUnit": "l",
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "džus",
     "defaultUnit": "ks",
     "kind": "Nápoje",
     "category": "Nápoje",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "kypřicí prášek do pečiva",
     "defaultUnit": "ks",
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "vanilkový cukr",
     "defaultUnit": "ks",
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "lupínky flakes a fruits",
     "defaultUnit": "ks",
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "lupínky polštářky vanilkové",
     "defaultUnit": "ks",
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "makrela bez hlavy",
     "defaultUnit": "ks",
     "kind": "Ryby",
     "category": "Ryby",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "párky slabé hot dog",
     "defaultUnit": "bal",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "šunka",
     "defaultUnit": "ks",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "trvanlivý salám",
     "defaultUnit": "ks",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "mléko bez laktózy",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "sádlo",
     "defaultUnit": "ks",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "česneková bageta mražená",
     "defaultUnit": "ks",
     "kind": "Mražené",
     "category": "Mražené",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "bylinková bageta mražená",
     "defaultUnit": "ks",
     "kind": "Mražené",
     "category": "Mražené",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "potravinové fólie",
     "defaultUnit": "ks",
     "kind": "Domácnost",
     "category": "Domácnost",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "pytle černé 240l",
     "defaultUnit": "ks",
     "kind": "Domácnost",
     "category": "Domácnost",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "pytle do koše bílé 25l",
     "defaultUnit": "ks",
     "kind": "Domácnost",
     "category": "Domácnost",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "žitný chléb",
     "defaultUnit": "ks",
     "kind": "Pečivo",
     "category": "Pečivo",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "paštika",
     "defaultUnit": "ks",
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "vlhčené ubrousky",
     "defaultUnit": "bal",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "citróny",
     "defaultUnit": "ks",
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "jablka - Golden",
     "defaultUnit": "ks",
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "krém na dort",
     "defaultUnit": "ks",
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "holandské kakao",
     "defaultUnit": "ks",
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "brambůrky",
     "defaultUnit": "ks",
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "žvýkačky v dóze",
     "defaultUnit": "ks",
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "marmeláda jahodová",
     "defaultUnit": "ks",
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "rajský protlak",
     "defaultUnit": "ks",
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "rybičky",
     "defaultUnit": "ks",
     "kind": "Ryby",
     "category": "Ryby",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "černý čaj",
     "defaultUnit": "ks",
     "kind": "Káva a čaj",
     "category": "Káva a čaj",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "mletá káva",
     "defaultUnit": "ks",
     "kind": "Káva a čaj",
     "category": "Káva a čaj",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "zelený čaj",
     "defaultUnit": "ks",
     "kind": "Káva a čaj",
     "category": "Káva a čaj",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "barva na vlasy",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "houbičky na nádobí",
     "defaultUnit": "bal",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "kapesníky v krabici",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "kondicionér",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "obyčejný kartáček",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "šampon",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "taft lak na vlasy",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "tekuté mýdlo",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "ústní voda Colgate citrón",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "zubní pasta Colgate",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "klobásy",
     "defaultUnit": "ks",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "krkovice",
     "defaultUnit": "ks",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "paštika plechovka",
     "defaultUnit": "ks",
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "pizza těsto",
     "defaultUnit": "ks",
     "kind": "Pečivo",
     "category": "Pečivo",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "smetana ke šlehání bez laktózy",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "šiška salámu lovečák",
     "defaultUnit": "ks",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "uzený",
     "defaultUnit": "ks",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "hranolky",
     "defaultUnit": "ks",
     "kind": "Mražené",
     "category": "Mražené",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "mražené lusky",
     "defaultUnit": "ks",
     "kind": "Mražené",
     "category": "Mražené",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "gouda sýr - plátky",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "kapsička jogurtová drak",
     "defaultUnit": "ks",
     "kind": "Děti",
     "category": "Děti",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "Monte",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "mozzarella",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "toustový sýr",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "vanilkový pudink",
     "defaultUnit": "ks",
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "kari",
     "defaultUnit": "ks",
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "kuřecí mletý",
     "defaultUnit": "ks",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "majoránka",
     "defaultUnit": "ks",
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "syrový dip",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "bake rolly tvrdý chléb česnek",
     "defaultUnit": "ks",
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "breff tekutý WC",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "dresinky",
     "defaultUnit": "ks",
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "lupínky skořicové čtverečky",
     "defaultUnit": "ks",
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "načos sýrové křupky",
     "defaultUnit": "ks",
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "uchošťour",
     "defaultUnit": "bal",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "mražená směs na polévku",
     "defaultUnit": "ks",
     "kind": "Mražené",
     "category": "Mražené",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "pečivo na dopečení",
     "defaultUnit": "ks",
     "kind": "Pečivo",
     "category": "Pečivo",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "strouhanka",
     "defaultUnit": "ks",
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "clin na okna",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "čistič pračky",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "drátěnka",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "jar",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "koule do WC",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "pečicí papír",
     "defaultUnit": "ks",
     "kind": "Domácnost",
     "category": "Domácnost",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "vůně na záchod Ambi Pur",
     "defaultUnit": "ks",
     "kind": "Drogerie",
     "category": "Drogerie",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "droždí",
     "defaultUnit": "ks",
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "duchy",
     "defaultUnit": "ks",
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "Tatarka",
     "defaultUnit": "ks",
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "majolka",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "džus Martínek",
     "defaultUnit": "ks",
     "kind": "Nápoje",
     "category": "Nápoje",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "rohlíky",
     "defaultUnit": "ks",
     "kind": "Pečivo",
     "category": "Pečivo",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "těstoviny",
     "defaultUnit": "bal",
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "čínská polévka",
     "defaultUnit": "ks",
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "drůbeží sekaná",
     "defaultUnit": "ks",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "bagely",
     "defaultUnit": "ks",
     "kind": "Pečivo",
     "category": "Pečivo",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "šiška Goudy",
     "defaultUnit": "ks",
     "kind": "Mléčné",
     "category": "Mléčné",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "závitky mražené",
     "defaultUnit": "ks",
     "kind": "Mražené",
     "category": "Mražené",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "minerálky",
     "defaultUnit": "ks",
     "kind": "Nápoje",
     "category": "Nápoje",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "krokety",
     "defaultUnit": "ks",
     "kind": "Mražené",
     "category": "Mražené",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "párky silné",
     "defaultUnit": "bal",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "párky svlíkáčky",
     "defaultUnit": "bal",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "šiška lázeňský salám",
     "defaultUnit": "ks",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "šiška šunky",
     "defaultUnit": "ks",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "junior",
     "defaultUnit": "ks",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "šiška turisty",
     "defaultUnit": "ks",
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "škrob",
     "defaultUnit": "ks",
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "hipp",
     "defaultUnit": "ks",
     "kind": "Děti",
     "category": "Děti",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "kaše na dobrou noc",
     "defaultUnit": "ks",
     "kind": "Děti",
     "category": "Děti",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "plenky",
     "defaultUnit": "bal",
     "kind": "Děti",
     "category": "Děti",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "přesnídávky",
     "defaultUnit": "ks",
     "kind": "Děti",
     "category": "Děti",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "příkrmy",
     "defaultUnit": "ks",
     "kind": "Děti",
     "category": "Děti",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "kapsička přesnídávka",
     "defaultUnit": "ks",
     "kind": "Děti",
     "category": "Děti",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "name": "sušenky medvídek Gerber",
     "defaultUnit": "ks",
     "kind": "Děti",
     "category": "Děti",
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   }
 ];
 
@@ -1126,25 +1128,25 @@
     "id": "shop-list-polsko",
     "name": "Polsko",
     "sortOrder": 0,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-penny",
     "name": "Penny",
     "sortOrder": 1,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip",
     "name": "JIP",
     "sortOrder": 2,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-martinek",
     "name": "Martínek",
     "sortOrder": 3,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   }
 ];
 
@@ -1158,7 +1160,7 @@
     "kind": "Děti",
     "category": "Děti",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-bramburky-v-papirovy-krabici-1",
@@ -1169,7 +1171,7 @@
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-polevky-2",
@@ -1180,7 +1182,7 @@
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-listove-testo-3",
@@ -1191,7 +1193,7 @@
     "kind": "Pečivo",
     "category": "Pečivo",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-bez-laktozova-smetana-zakysana-4",
@@ -1202,7 +1204,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-tvaroh-bez-laktozy-5",
@@ -1213,7 +1215,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-jogurty-6",
@@ -1224,7 +1226,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-maslo-kostka-modra-7",
@@ -1235,7 +1237,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-camembert-8",
@@ -1246,7 +1248,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-maslo-flora-vanicka-9",
@@ -1257,7 +1259,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-toustovy-chleb-10",
@@ -1268,7 +1270,7 @@
     "kind": "Pečivo",
     "category": "Pečivo",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-kapsle-do-kavovaru-11",
@@ -1279,7 +1281,7 @@
     "kind": "Káva a čaj",
     "category": "Káva a čaj",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-pytle-do-kose-cervene-60l-12",
@@ -1290,7 +1292,7 @@
     "kind": "Domácnost",
     "category": "Domácnost",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-avivaz-13",
@@ -1301,7 +1303,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-vlozky-always-oranzove-14",
@@ -1312,7 +1314,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-kuchynske-uterky-15",
@@ -1323,7 +1325,7 @@
     "kind": "Domácnost",
     "category": "Domácnost",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-toaletni-papir-16",
@@ -1334,7 +1336,7 @@
     "kind": "Domácnost",
     "category": "Domácnost",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-horcice-17",
@@ -1345,7 +1347,7 @@
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-kecup-18",
@@ -1356,7 +1358,7 @@
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-okurka-19",
@@ -1367,7 +1369,7 @@
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-porek-20",
@@ -1378,7 +1380,7 @@
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-mrkev-21",
@@ -1389,7 +1391,7 @@
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-cesnek-22",
@@ -1400,7 +1402,7 @@
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-brambory-23",
@@ -1411,7 +1413,7 @@
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-cibule-24",
@@ -1422,7 +1424,7 @@
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-banan-25",
@@ -1433,7 +1435,7 @@
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-cuketa-26",
@@ -1444,7 +1446,7 @@
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-cervena-paprika-27",
@@ -1455,7 +1457,7 @@
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-rajcata-v-kbelicku-28",
@@ -1466,7 +1468,7 @@
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-olej-29",
@@ -1477,7 +1479,7 @@
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-dzus-30",
@@ -1488,7 +1490,7 @@
     "kind": "Nápoje",
     "category": "Nápoje",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-kyprici-prasek-do-peciva-31",
@@ -1499,7 +1501,7 @@
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-vanilkovy-cukr-32",
@@ -1510,7 +1512,7 @@
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-lupinky-flakes-a-fruits-33",
@@ -1521,7 +1523,7 @@
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-lupinky-polstarky-vanilkove-34",
@@ -1532,7 +1534,7 @@
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-makrela-bez-hlavy-35",
@@ -1543,7 +1545,7 @@
     "kind": "Ryby",
     "category": "Ryby",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-parky-slabe-hot-dog-36",
@@ -1554,7 +1556,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-sunka-37",
@@ -1565,7 +1567,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-trvanlivy-salam-38",
@@ -1576,7 +1578,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-mleko-bez-laktozy-39",
@@ -1587,7 +1589,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-sadlo-40",
@@ -1598,7 +1600,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-cesnekova-bageta-mrazena-41",
@@ -1609,7 +1611,7 @@
     "kind": "Mražené",
     "category": "Mražené",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-bylinkova-bageta-mrazena-42",
@@ -1620,7 +1622,7 @@
     "kind": "Mražené",
     "category": "Mražené",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-potravinove-folie-43",
@@ -1631,7 +1633,7 @@
     "kind": "Domácnost",
     "category": "Domácnost",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-pytle-cerne-240l-44",
@@ -1642,7 +1644,7 @@
     "kind": "Domácnost",
     "category": "Domácnost",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-pytle-do-kose-bile-25l-45",
@@ -1653,7 +1655,7 @@
     "kind": "Domácnost",
     "category": "Domácnost",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-zitny-chleb-46",
@@ -1664,7 +1666,7 @@
     "kind": "Pečivo",
     "category": "Pečivo",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-pastika-47",
@@ -1675,7 +1677,7 @@
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-vlhcene-ubrousky-48",
@@ -1686,7 +1688,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-citrony-49",
@@ -1697,7 +1699,7 @@
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-jablka-golden-50",
@@ -1708,7 +1710,7 @@
     "kind": "Ovoce a zelenina",
     "category": "Ovoce a zelenina",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-krem-na-dort-51",
@@ -1719,7 +1721,7 @@
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-holandske-kakao-52",
@@ -1730,7 +1732,7 @@
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-bramburky-53",
@@ -1741,7 +1743,7 @@
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-zvykacky-v-doze-54",
@@ -1752,7 +1754,7 @@
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-marmelada-jahodova-55",
@@ -1763,7 +1765,7 @@
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-rajsky-protlak-56",
@@ -1774,7 +1776,7 @@
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-rybicky-57",
@@ -1785,7 +1787,7 @@
     "kind": "Ryby",
     "category": "Ryby",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-cerny-caj-58",
@@ -1796,7 +1798,7 @@
     "kind": "Káva a čaj",
     "category": "Káva a čaj",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-mleta-kava-59",
@@ -1807,7 +1809,7 @@
     "kind": "Káva a čaj",
     "category": "Káva a čaj",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-zeleny-caj-60",
@@ -1818,7 +1820,7 @@
     "kind": "Káva a čaj",
     "category": "Káva a čaj",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-barva-na-vlasy-61",
@@ -1829,7 +1831,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-houbicky-na-nadobi-62",
@@ -1840,7 +1842,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-kapesniky-v-krabici-63",
@@ -1851,7 +1853,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-kondicioner-64",
@@ -1862,7 +1864,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-obycejny-kartacek-65",
@@ -1873,7 +1875,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-sampon-66",
@@ -1884,7 +1886,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-taft-lak-na-vlasy-67",
@@ -1895,7 +1897,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-tekute-mydlo-68",
@@ -1906,7 +1908,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-ustni-voda-colgate-citron-69",
@@ -1917,7 +1919,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-zubni-pasta-colgate-70",
@@ -1928,7 +1930,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-klobasy-71",
@@ -1939,7 +1941,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-krkovice-72",
@@ -1950,7 +1952,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-pastika-plechovka-73",
@@ -1961,7 +1963,7 @@
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-pizza-testo-74",
@@ -1972,7 +1974,7 @@
     "kind": "Pečivo",
     "category": "Pečivo",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-smetana-ke-slehani-bez-laktozy-75",
@@ -1983,7 +1985,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-siska-salamu-lovecak-76",
@@ -1994,7 +1996,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-uzeny-77",
@@ -2005,7 +2007,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-hranolky-78",
@@ -2016,7 +2018,7 @@
     "kind": "Mražené",
     "category": "Mražené",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-mrazene-lusky-79",
@@ -2027,7 +2029,7 @@
     "kind": "Mražené",
     "category": "Mražené",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-gouda-syr-platky-80",
@@ -2038,7 +2040,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-kapsicka-jogurtova-drak-81",
@@ -2049,7 +2051,7 @@
     "kind": "Děti",
     "category": "Děti",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-monte-82",
@@ -2060,7 +2062,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-mozzarella-83",
@@ -2071,7 +2073,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-toustovy-syr-84",
@@ -2082,7 +2084,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-vanilkovy-pudink-85",
@@ -2093,7 +2095,7 @@
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-kari-86",
@@ -2104,7 +2106,7 @@
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-kureci-mlety-87",
@@ -2115,7 +2117,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-majoranka-88",
@@ -2126,7 +2128,7 @@
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-syrovy-dip-89",
@@ -2137,7 +2139,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-bake-rolly-tvrdy-chleb-cesnek-90",
@@ -2148,7 +2150,7 @@
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-breff-tekuty-wc-91",
@@ -2159,7 +2161,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-dresinky-92",
@@ -2170,7 +2172,7 @@
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-lupinky-skoricove-ctverecky-93",
@@ -2181,7 +2183,7 @@
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-nacos-syrove-krupky-94",
@@ -2192,7 +2194,7 @@
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-uchostour-95",
@@ -2203,7 +2205,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-mrazena-smes-na-polevku-96",
@@ -2214,7 +2216,7 @@
     "kind": "Mražené",
     "category": "Mražené",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-pecivo-na-dopeceni-97",
@@ -2225,7 +2227,7 @@
     "kind": "Pečivo",
     "category": "Pečivo",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-strouhanka-98",
@@ -2236,7 +2238,7 @@
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-clin-na-okna-99",
@@ -2247,7 +2249,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-cistic-pracky-100",
@@ -2258,7 +2260,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-dratenka-101",
@@ -2269,7 +2271,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-jar-102",
@@ -2280,7 +2282,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-koule-do-wc-103",
@@ -2291,7 +2293,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-pecici-papir-104",
@@ -2302,7 +2304,7 @@
     "kind": "Domácnost",
     "category": "Domácnost",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-polsko-vune-na-zachod-ambi-pur-105",
@@ -2313,7 +2315,7 @@
     "kind": "Drogerie",
     "category": "Drogerie",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-penny-drozdi-0",
@@ -2324,7 +2326,7 @@
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-penny-duchy-1",
@@ -2335,7 +2337,7 @@
     "kind": "Sladkosti a snacky",
     "category": "Sladkosti a snacky",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-penny-tatarka-2",
@@ -2346,7 +2348,7 @@
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-penny-majolka-3",
@@ -2357,7 +2359,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-penny-dzus-martinek-4",
@@ -2368,7 +2370,7 @@
     "kind": "Nápoje",
     "category": "Nápoje",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-penny-rohliky-5",
@@ -2379,7 +2381,7 @@
     "kind": "Pečivo",
     "category": "Pečivo",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-rohliky-0",
@@ -2390,7 +2392,7 @@
     "kind": "Pečivo",
     "category": "Pečivo",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-testoviny-1",
@@ -2401,7 +2403,7 @@
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-cinska-polevka-2",
@@ -2412,7 +2414,7 @@
     "kind": "Trvanlivé",
     "category": "Trvanlivé",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-rybicky-3",
@@ -2423,7 +2425,7 @@
     "kind": "Ryby",
     "category": "Ryby",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-drubezi-sekana-4",
@@ -2434,7 +2436,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-bagely-5",
@@ -2445,7 +2447,7 @@
     "kind": "Pečivo",
     "category": "Pečivo",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-siska-goudy-6",
@@ -2456,7 +2458,7 @@
     "kind": "Mléčné",
     "category": "Mléčné",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-zavitky-mrazene-7",
@@ -2467,7 +2469,7 @@
     "kind": "Mražené",
     "category": "Mražené",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-mineralky-8",
@@ -2478,7 +2480,7 @@
     "kind": "Nápoje",
     "category": "Nápoje",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-krokety-9",
@@ -2489,7 +2491,7 @@
     "kind": "Mražené",
     "category": "Mražené",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-parky-silne-10",
@@ -2500,7 +2502,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-parky-svlikacky-11",
@@ -2511,7 +2513,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-siska-lazensky-salam-12",
@@ -2522,7 +2524,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-siska-sunky-13",
@@ -2533,7 +2535,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-junior-14",
@@ -2544,7 +2546,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-siska-turisty-15",
@@ -2555,7 +2557,7 @@
     "kind": "Maso a uzeniny",
     "category": "Maso a uzeniny",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-jip-skrob-16",
@@ -2566,7 +2568,7 @@
     "kind": "Koření a pečení",
     "category": "Koření a pečení",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-martinek-hipp-0",
@@ -2577,7 +2579,7 @@
     "kind": "Děti",
     "category": "Děti",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-martinek-kase-na-dobrou-noc-1",
@@ -2588,7 +2590,7 @@
     "kind": "Děti",
     "category": "Děti",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-martinek-plenky-2",
@@ -2599,7 +2601,7 @@
     "kind": "Děti",
     "category": "Děti",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-martinek-presnidavky-3",
@@ -2610,7 +2612,7 @@
     "kind": "Děti",
     "category": "Děti",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-martinek-prikrmy-4",
@@ -2621,7 +2623,7 @@
     "kind": "Děti",
     "category": "Děti",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-martinek-vlhcene-ubrousky-5",
@@ -2632,7 +2634,7 @@
     "kind": "Děti",
     "category": "Děti",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-martinek-kapsicka-presnidavka-6",
@@ -2643,7 +2645,7 @@
     "kind": "Děti",
     "category": "Děti",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   },
   {
     "id": "shop-list-martinek-susenky-medvidek-gerber-7",
@@ -2654,7 +2656,7 @@
     "kind": "Děti",
     "category": "Děti",
     "done": false,
-    "source": "listonic-screens-v179"
+    "source": "listonic-screens-v180"
   }
 ];
 
@@ -2869,8 +2871,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 80,
-      appBuild: 179,
-      mode: 'shopping-lists-v179',
+      appBuild: 180,
+      mode: 'shopping-lists-v180',
       createdAt: '',
       updatedAt: ''
     },
@@ -3716,8 +3718,8 @@
 
     migrated.meta = {
       schemaVersion: 80,
-      appBuild: 179,
-      mode: 'shopping-lists-v179',
+      appBuild: 180,
+      mode: 'shopping-lists-v180',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -6776,7 +6778,8 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_179', note: 'Hotovo: Mono Luxe je odebraný, zbývající ikonové sady mají opravené ořezy a průhlednost, Sticker UI už nepřichází o bílé části ikon, asset ikony se načítají stabilněji bez poblikávání a editace Home panelů má jen tlačítko Hotovo přes pevný čas/počasí.' },
+      { title: 'Domácnost+ v.0.1_180', note: 'Hotfix: doplněná chybějící konstanta DEFAULT_BOTTOM_NAV_IDS a přidaná statická kontrola DEFAULT konstant, aby Nákupy ani start aplikace nepadaly na chybějící výchozí hodnotě.' },
+      { title: 'Domácnost+ v.0.1_179', note: 'Hotfix: oprava pádu Nákupů kvůli chybějící konstantě DEFAULT_SHOPPING_LISTS. Doplněné jsou výchozí seznamy Polsko, Penny, JIP a Martínek a katalog podle Listonic screenů.' },
       { title: 'Domácnost+ v.0.1_163', note: 'Vzhled aplikace: barevná schémata jsou zúžená na Modrá a Royal, sada ikon zůstává jen iOS Soft kvůli čistému a sjednocenému UI.' },
       { title: 'Domácnost+ v.0.1_162', note: 'Záruky: přidání je nahoře a v základu zabalené, formulář má ochranu proti dvojitému uložení a fotky účtenek se před uložením automaticky komprimují.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
@@ -7586,7 +7589,7 @@
           createdAt: timestamp,
           updatedAt: timestamp,
           sortOrder: index,
-          source: 'listonic-import-v179'
+          source: 'listonic-import-v180'
         });
         existingListIds.add(list.id);
       }
@@ -7604,7 +7607,7 @@
         householdId: migrated.household?.id || '',
         profileId: migrated.activeProfileId || '',
         createdAt: timestamp,
-        source: 'listonic-import-v179'
+        source: 'listonic-import-v180'
       }));
 
     migrated.shopping = [...(migrated.shopping || []), ...seededItems];
@@ -16731,7 +16734,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 80, appBuild: 179, mode: 'rich-demo-v179', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 80, appBuild: 180, mode: 'rich-demo-v180', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -16874,7 +16877,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 80, appBuild: 179, mode: 'shopping-lists-v179', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 80, appBuild: 180, mode: 'shopping-lists-v180', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -19475,7 +19478,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 179
+        appBuild: 180
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19598,7 +19601,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 179, schema_version: 80, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 180, schema_version: 80, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -19811,7 +19814,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 179,
+          app_build: 180,
           schema_version: 80,
           created_by: user.id,
           ...householdUiPayload()
@@ -20065,7 +20068,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-179-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-180-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20333,7 +20336,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_179</span>
+          <span class="badge">Domácnost+ v.0.1_180</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
