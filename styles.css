@@ -13092,3 +13092,63 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   stroke: rgba(15,23,42,.48) !important;
   stroke-width: 2 !important;
 }
+
+
+.theme-asset-icon-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.theme-asset-icon-surface,
+.theme-asset-mini-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+}
+.theme-asset-icon-surface-dark {
+  background: linear-gradient(180deg, rgba(8,22,46,0.98), rgba(5,14,31,0.98));
+  box-shadow: inset 0 1px 0 rgba(122, 184, 255, 0.12), 0 8px 20px rgba(4, 12, 26, 0.28);
+}
+.theme-asset-icon-surface-clay {
+  background: linear-gradient(180deg, #f1e4d4, #deccb8);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 8px 18px rgba(86, 58, 33, 0.18);
+}
+.theme-asset-icon-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.visual-asset-icon {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.visual-asset-icon-inner {
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+}
+.nav-item .nav-icon.theme-asset-icon-slot,
+.mini-module-icon-nav.theme-asset-icon-slot {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+}
+.module-illustration-slot-card.theme-asset-icon-slot,
+.module-status-icon.theme-asset-icon-slot,
+.module-illustration-slot-picker.theme-asset-icon-slot,
+.module-illustration-slot-tab.theme-asset-icon-slot {
+  border-radius: 18px;
+}
+.warranty-item-actions {
+  gap: 8px;
+  flex-wrap: wrap;
+}

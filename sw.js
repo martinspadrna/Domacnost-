@@ -1,4 +1,4 @@
-const CACHE_NAME = 'domacnost-plus-v0-1-170';
+const CACHE_NAME = 'domacnost-plus-v0-1-172';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -43,7 +43,37 @@ const APP_ASSETS = [
   './assets/module-icons/homecare.png',
   './assets/module-icons/home.png',
   './assets/module-icons/weather.png',
-  './assets/module-icons/more.png'
+  './assets/module-icons/more.png',
+  './assets/icon-themes/duotone-fresh/home.png',
+  './assets/icon-themes/duotone-fresh/calendar.png',
+  './assets/icon-themes/duotone-fresh/homecare.png',
+  './assets/icon-themes/duotone-fresh/garage.png',
+  './assets/icon-themes/duotone-fresh/finance.png',
+  './assets/icon-themes/duotone-fresh/more.png',
+  './assets/icon-themes/sticker-ui/home.png',
+  './assets/icon-themes/sticker-ui/calendar.png',
+  './assets/icon-themes/sticker-ui/homecare.png',
+  './assets/icon-themes/sticker-ui/garage.png',
+  './assets/icon-themes/sticker-ui/finance.png',
+  './assets/icon-themes/sticker-ui/more.png',
+  './assets/icon-themes/clay-3d/home.png',
+  './assets/icon-themes/clay-3d/calendar.png',
+  './assets/icon-themes/clay-3d/homecare.png',
+  './assets/icon-themes/clay-3d/garage.png',
+  './assets/icon-themes/clay-3d/finance.png',
+  './assets/icon-themes/clay-3d/more.png',
+  './assets/icon-themes/mono-luxe/home.png',
+  './assets/icon-themes/mono-luxe/calendar.png',
+  './assets/icon-themes/mono-luxe/homecare.png',
+  './assets/icon-themes/mono-luxe/garage.png',
+  './assets/icon-themes/mono-luxe/finance.png',
+  './assets/icon-themes/mono-luxe/more.png',
+  './assets/icon-themes/isometric-micro/home.png',
+  './assets/icon-themes/isometric-micro/calendar.png',
+  './assets/icon-themes/isometric-micro/homecare.png',
+  './assets/icon-themes/isometric-micro/garage.png',
+  './assets/icon-themes/isometric-micro/finance.png',
+  './assets/icon-themes/isometric-micro/more.png',
 ];
 
 const CORE_FALLBACKS = {

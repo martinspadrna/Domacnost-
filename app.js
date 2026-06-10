@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_170';
+  const APP_VERSION = 'Domácnost+ v.0.1_172';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -320,6 +320,66 @@
     ['mono-luxe', 'Mono Luxe', 'Čisté monochromatické premium ikonky.'],
     ['isometric-micro', 'Isometric Micro', 'Drobnější prostorové ikonky s technickým detailem.']
   ];
+
+  const ASSET_ICON_MODULE_IDS = new Set(['home', 'calendar', 'homecare', 'garage', 'finance', 'more']);
+  const ASSET_ICON_THEMES = {
+    'duotone-fresh': {
+      surface: 'dark',
+      icons: {
+        home: './assets/icon-themes/duotone-fresh/home.png',
+        calendar: './assets/icon-themes/duotone-fresh/calendar.png',
+        homecare: './assets/icon-themes/duotone-fresh/homecare.png',
+        garage: './assets/icon-themes/duotone-fresh/garage.png',
+        finance: './assets/icon-themes/duotone-fresh/finance.png',
+        more: './assets/icon-themes/duotone-fresh/more.png'
+      }
+    },
+    'sticker-ui': {
+      surface: 'dark',
+      icons: {
+        home: './assets/icon-themes/sticker-ui/home.png',
+        calendar: './assets/icon-themes/sticker-ui/calendar.png',
+        homecare: './assets/icon-themes/sticker-ui/homecare.png',
+        garage: './assets/icon-themes/sticker-ui/garage.png',
+        finance: './assets/icon-themes/sticker-ui/finance.png',
+        more: './assets/icon-themes/sticker-ui/more.png'
+      }
+    },
+    'clay-3d': {
+      surface: 'clay',
+      icons: {
+        home: './assets/icon-themes/clay-3d/home.png',
+        calendar: './assets/icon-themes/clay-3d/calendar.png',
+        homecare: './assets/icon-themes/clay-3d/homecare.png',
+        garage: './assets/icon-themes/clay-3d/garage.png',
+        finance: './assets/icon-themes/clay-3d/finance.png',
+        more: './assets/icon-themes/clay-3d/more.png'
+      }
+    },
+    'mono-luxe': {
+      surface: 'dark',
+      icons: {
+        home: './assets/icon-themes/mono-luxe/home.png',
+        calendar: './assets/icon-themes/mono-luxe/calendar.png',
+        homecare: './assets/icon-themes/mono-luxe/homecare.png',
+        garage: './assets/icon-themes/mono-luxe/garage.png',
+        finance: './assets/icon-themes/mono-luxe/finance.png',
+        more: './assets/icon-themes/mono-luxe/more.png'
+      }
+    },
+    'isometric-micro': {
+      surface: 'dark',
+      icons: {
+        home: './assets/icon-themes/isometric-micro/home.png',
+        calendar: './assets/icon-themes/isometric-micro/calendar.png',
+        homecare: './assets/icon-themes/isometric-micro/homecare.png',
+        garage: './assets/icon-themes/isometric-micro/garage.png',
+        finance: './assets/icon-themes/isometric-micro/finance.png',
+        more: './assets/icon-themes/isometric-micro/more.png'
+      }
+    }
+  };
+
   const COLOR_SCHEME_OPTIONS = [
     ['sky', 'Modrá', 'Výchozí svěží modrá.'],
     ['royal', 'Royal', 'Sytější modro-zlatý kontrastní styl.']
@@ -332,8 +392,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 79,
-      appBuild: 170,
-      mode: 'visual-icons-hotfix-v170',
+      appBuild: 172,
+      mode: 'asset-icon-themes-v172',
       createdAt: '',
       updatedAt: ''
     },
@@ -1177,8 +1237,8 @@
 
     migrated.meta = {
       schemaVersion: 79,
-      appBuild: 170,
-      mode: 'visual-icons-hotfix-v170',
+      appBuild: 172,
+      mode: 'asset-icon-themes-v172',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -3238,11 +3298,37 @@
     }[String(id || '')] || 'settings';
   }
 
+
+  function getAssetThemeIconConfig(id, themeId = state.settings?.iconTheme || 'ios') {
+    const iconId = getModuleIllustrationId(id);
+    if (!ASSET_ICON_MODULE_IDS.has(iconId)) return null;
+    const theme = ASSET_ICON_THEMES[normalizeIconTheme(themeId)];
+    if (!theme) return null;
+    const src = theme.icons?.[iconId];
+    if (!src) return null;
+    return { iconId, themeId: normalizeIconTheme(themeId), src, surface: theme.surface || 'dark' };
+  }
+
+  function renderAssetThemeIcon(id, options = {}) {
+    const themeId = normalizeIconTheme(options.themeId || state.settings?.iconTheme || 'ios');
+    const config = getAssetThemeIconConfig(id, themeId);
+    if (!config) return '';
+    const label = options.label || '';
+    const slotClass = options.slotClass ? ` ${options.slotClass}` : '';
+    const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
+    const size = options.size || 'md';
+    const baseClass = options.baseClass || 'module-illustration-slot';
+    const innerClass = options.innerClass || 'theme-asset-icon';
+    return `<span class="${baseClass} ${baseClass}-${escapeHtml(String(size))}${slotClass}${extraClass} theme-asset-icon-slot theme-asset-icon-slot-${escapeHtml(config.surface)}" data-icon-id="${escapeHtml(String(config.iconId))}" data-icon-theme-asset="${escapeHtml(String(themeId))}" aria-hidden="true"><span class="${innerClass} ${innerClass}-${escapeHtml(String(size))} theme-asset-icon-surface theme-asset-icon-surface-${escapeHtml(config.surface)}"><img class="theme-asset-icon-image" src="${escapeHtml(config.src)}" alt="" loading="lazy" decoding="async"></span></span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
+  }
+
   function getModuleIllustrationSrc(id) {
     return `./assets/module-icons/${getModuleIllustrationId(id)}.png`;
   }
 
   function renderModuleIllustration(id, options = {}) {
+    const assetHtml = renderAssetThemeIcon(id, { ...options, baseClass: 'module-illustration-slot', innerClass: 'theme-asset-icon' });
+    if (assetHtml) return assetHtml;
     const size = options.size || 'md';
     const slotClass = options.slotClass ? ` ${options.slotClass}` : '';
     const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
@@ -3252,11 +3338,13 @@
   }
 
   function renderMiniModuleIcon(id, options = {}) {
+    const assetHtml = renderAssetThemeIcon(id, { ...options, baseClass: 'mini-module-icon', innerClass: 'theme-asset-mini-icon' });
+    if (assetHtml) return assetHtml;
     const size = options.size || 'nav';
     const slotClass = options.slotClass ? ` ${options.slotClass}` : '';
     const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
     const label = options.label || '';
-    const svg = getThemedModuleIconSvg(id, { extraClass });
+    const svg = getThemedModuleIconSvg(id, { extraClass: options.extraClass || '' });
     return `<span class="mini-module-icon mini-module-icon-${escapeHtml(String(size))}${slotClass}${extraClass}" data-icon-id="${escapeHtml(String(id || 'settings'))}" aria-hidden="true">${svg}</span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
   }
 
@@ -4187,7 +4275,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_170', note: 'Hotovo: Vzhled aplikace zůstává při přepínání otevřený a nové ikonové sady mají vlastní výrazné vrstvy/efekty, aby se opravdu vizuálně lišily.' },
+      { title: 'Domácnost+ v.0.1_172', note: 'Hotovo: Duotone Fresh, Sticker UI, Soft Clay 3D, Mono Luxe a Isometric Micro jsou pro spodní lištu a hlavní ikonky modulů napojené přes skutečné PNG assety podle schválených návrhů. Opravené je i nezavírání panelu Styl ikon a schéma a u záruk přibylo rychlé otevření nahrané přílohy.' },
       { title: 'Domácnost+ v.0.1_163', note: 'Vzhled aplikace: barevná schémata jsou zúžená na Modrá a Royal, sada ikon zůstává jen iOS Soft kvůli čistému a sjednocenému UI.' },
       { title: 'Domácnost+ v.0.1_162', note: 'Záruky: přidání je nahoře a v základu zabalené, formulář má ochranu proti dvojitému uložení a fotky účtenek se před uložením automaticky komprimují.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
@@ -5149,6 +5237,10 @@
     return (state.warrantyFiles || []).filter((file) => file.warrantyId === warrantyId).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
   }
 
+  function primaryWarrantyFile(warrantyId) {
+    return warrantyFilesFor(warrantyId)[0] || null;
+  }
+
   function normalizeWarrantyItem(item = {}) {
     const purchaseDate = normalizeText(item.purchaseDate || item.purchase_date || item.date || todayISO());
     const rawUntil = normalizeText(item.warrantyUntil || item.warranty_until || item.until || '');
@@ -5267,6 +5359,7 @@
 
   function renderWarrantyItem(item) {
     const fileCount = warrantyFileCount(item.id);
+    const firstFile = primaryWarrantyFile(item.id);
     const meta = [
       item.store,
       item.price ? formatCurrency(item.price) : '',
@@ -5277,15 +5370,18 @@
       warrantyStatusLabel(item.status)
     ].filter(Boolean).join(' · ');
     return `
-      <button class="item warranty-item warranty-overview-button" type="button" data-action="open-warranty-detail" data-id="${escapeHtml(item.id)}">
+      <div class="item warranty-item">
         <div class="item-top">
           <div class="item-title">🧾 ${escapeHtml(item.name)}</div>
           <span class="badge ${warrantyTone(item)}">${escapeHtml(warrantyBadge(item))}</span>
         </div>
         <div class="item-meta">${escapeHtml(meta)}</div>
         ${item.note ? `<div class="inline-note compact-note">${escapeHtml(item.note)}</div>` : ''}
-        <div class="item-actions compact-actions"><span class="ghost-btn fake-btn">Detail</span></div>
-      </button>
+        <div class="item-actions compact-actions warranty-item-actions">
+          ${firstFile ? `<button class="ghost-btn" type="button" data-action="open-warranty-file" data-id="${escapeHtml(firstFile.id)}">Otevřít soubor</button>` : ''}
+          <button class="ghost-btn" type="button" data-action="open-warranty-detail" data-id="${escapeHtml(item.id)}">Detail</button>
+        </div>
+      </div>
     `;
   }
 
@@ -8465,7 +8561,7 @@
         pixel: ['home', 'cameras', 'shopping']
       };
       const iconIds = previewIconsByTheme[id] || ['home', 'packages', 'settings'];
-      return `<span class="visual-icon-preview-row">${iconIds.map((iconId) => getThemedModuleIconSvg(iconId, { themeId: id })).join('')}</span>`;
+      return `<span class="visual-icon-preview-row">${iconIds.map((iconId) => renderAssetThemeIcon(iconId, { themeId: id, size: 'picker', baseClass: 'visual-asset-icon', innerClass: 'visual-asset-icon-inner' }) || getThemedModuleIconSvg(iconId, { themeId: id })).join('')}</span>`;
     }
     if (type === 'theme') {
       return `<span class="theme-preview-orb ${escapeHtml(id)}"></span>`;
@@ -8588,7 +8684,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 170))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 172))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -13849,7 +13945,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 79, appBuild: 170, mode: 'rich-demo-v170', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 79, appBuild: 172, mode: 'rich-demo-v172', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -13992,7 +14088,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 170, mode: 'visual-icons-hotfix-v170', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 172, mode: 'asset-icon-themes-v172', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -16585,7 +16681,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 170
+        appBuild: 172
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -16708,7 +16804,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 170, schema_version: 79, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 172, schema_version: 79, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -16921,7 +17017,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 170,
+          app_build: 172,
           schema_version: 79,
           created_by: user.id,
           ...householdUiPayload()
@@ -17175,7 +17271,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-170-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-172-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -17257,6 +17353,13 @@
   app.addEventListener('contextmenu', (event) => {
     if (event.target.closest('.station-summary-item[data-home-hero-id]')) event.preventDefault();
   });
+
+
+  document.addEventListener('toggle', (event) => {
+    const details = event.target;
+    if (!(details instanceof HTMLDetailsElement)) return;
+    if (details.matches('.settings-visual-details')) visualSettingsDrawerOpen = details.open;
+  }, true);
 
   app.addEventListener('click', (event) => {
     const backdrop = event.target.closest('[data-overview-backdrop]');
@@ -17436,7 +17539,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_170</span>
+          <span class="badge">Domácnost+ v.0.1_172</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
