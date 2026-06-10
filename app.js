@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_162';
+  const APP_VERSION = 'Domácnost+ v.0.1_164';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -314,32 +314,14 @@
   const WEATHER_CHMI_FUNCTION = 'weather-chmi-forecast';
   const ICON_THEME_OPTIONS = [
     ['ios', 'iOS Soft', 'Jemné hladké ikonky inspirované moderním iOS stylem.'],
-    ['cartoon', 'Kreslené', 'Výrazné barevné ikonky s tlustší obrysovou kresbou.'],
-    ['glass', 'Glass-line', 'Prémiové linkové ikonky ve skle.'],
-    ['material', 'Material Bold', 'Plošší a čistší styl inspirovaný moderními Android appkami.'],
-    ['fluent', 'Fluent Glow', 'Lehce prostorový styl inspirovaný desktop / fluent vzhledem.'],
-    ['neon', 'Neon Pop', 'Sytější zářivý styl s neonovým akcentem.'],
-    ['oneui', 'One UI Soft', 'Měkčí zaoblený styl inspirovaný moderním Samsung vzhledem.'],
-    ['rak', 'RaK Simple', 'Jednoduchý čistý set podobný RaK: minimum barev, dobrá čitelnost.'],
-    ['outline', 'Outline Mono', 'Jednoduchý linkový styl skoro bez výplní.'],
-    ['sticker', 'Sticker Pop', 'Silný obrys a výrazné barevné samolepkové ikonky.'],
-    ['duotone', 'Duotone Soft', 'Dvoubarený čistý styl s jemným kontrastem.'],
-    ['pixel', 'Pixel Mini', 'Retro hranatější styl inspirovaný pixel app ikonami.']
+    ['duotone-fresh', 'Duotone Fresh', 'Dvoutónové barevné ikonky se svěžím kontrastem.'],
+    ['sticker-ui', 'Sticker UI', 'Výraznější barevné samolepkové ikonky bez pozadí.'],
+    ['clay-3d', 'Soft Clay 3D', 'Měkké 3D ikonky s jemným plastickým stínem.'],
+    ['mono-luxe', 'Mono Luxe', 'Čisté monochromatické premium ikonky.'],
+    ['isometric-micro', 'Isometric Micro', 'Drobnější prostorové ikonky s technickým detailem.']
   ];
   const COLOR_SCHEME_OPTIONS = [
     ['sky', 'Modrá', 'Výchozí svěží modrá.'],
-    ['emerald', 'Zelená', 'Klidnější domácí zelená.'],
-    ['violet', 'Fialová', 'Moderní prémiový tón.'],
-    ['sunset', 'Sunset', 'Teplejší oranžovo-růžový styl.'],
-    ['rose', 'Rose', 'Jemná růžovo-malina.'],
-    ['graphite', 'Graphite', 'Tlumený šedý technický styl.'],
-    ['skoda', 'Škoda/RaK', 'Čistá zeleno-modrá kombinace.'],
-    ['aqua', 'Aqua', 'Svěží tyrkysový moderní styl.'],
-    ['nord', 'Nord', 'Studený decentní severský tón.'],
-    ['mono', 'Mono', 'Jednoduchý černobílý styl s minimem barev.'],
-    ['candy', 'Candy Pop', 'Výrazně růžovo-modrý hravý styl.'],
-    ['forest', 'Forest', 'Tmavší lesní zelená s tlumeným akcentem.'],
-    ['desert', 'Desert', 'Pískový teplý styl bez agresivních barev.'],
     ['royal', 'Royal', 'Sytější modro-zlatý kontrastní styl.']
   ];
   const APP_THEME_OPTIONS = [
@@ -350,14 +332,14 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 79,
-      appBuild: 162,
-      mode: 'warranty-attachments-compress-v162',
+      appBuild: 164,
+      mode: 'calendar-weather-icons-v164',
       createdAt: '',
       updatedAt: ''
     },
     settings: {
       theme: 'light',
-      iconTheme: 'cartoon',
+      iconTheme: 'ios',
       colorScheme: 'sky',
       dashboardNote: 'Domácí přehled je připravený na cloud. Každý si nastaví vlastní domácnost, profily a zapnuté moduly.',
       cloudEnabled: false,
@@ -1192,8 +1174,8 @@
 
     migrated.meta = {
       schemaVersion: 79,
-      appBuild: 162,
-      mode: 'warranty-attachments-compress-v162',
+      appBuild: 164,
+      mode: 'calendar-weather-icons-v164',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1354,7 +1336,7 @@
   }
 
   function normalizeIconTheme(value) {
-    return normalizeOptionId(value, ICON_THEME_OPTIONS, 'cartoon');
+    return normalizeOptionId(value, ICON_THEME_OPTIONS, 'ios');
   }
 
   function normalizeColorScheme(value) {
@@ -2550,12 +2532,7 @@
   }
 
   function renderPageActions(moduleId) {
-    if (moduleId === 'home' || moduleId === 'settings' || moduleId === 'more') return '';
-    return `
-      <div class="top-actions">
-        <button class="ghost-btn" type="button" data-nav="settings">Nastavení</button>
-      </div>
-    `;
+    return '';
   }
 
   function renderModule(moduleId) {
@@ -3497,7 +3474,7 @@
         <div class="form-actions compact-actions">
           <button class="ghost-btn" type="button" data-nav="weather">Podrobné počasí</button>
           <button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit</button>
-          <button class="ghost-btn" type="button" data-nav="settings" data-target-tab="dashboard">Nastavit místo</button>
+          
         </div>
       </section>
     `;
@@ -3547,14 +3524,14 @@
     const todayWeather = (weather.daily || [])[0] || {};
     const sourceLabel = weatherSourceLabel(weather.source);
     const location = normalizeWeatherLocation(weather.location);
-    const providerLabel = normalizeText(weather.meta?.providerLabel) || (weather.source === 'chmi' ? 'ČHMÚ + doplněné číselné detaily' : sourceLabel);
+    const providerLabel = normalizeText(weather.meta?.providerLabel) || (weather.source === 'chmi' ? 'ČHMÚ + doplněné detaily' : sourceLabel);
     const astronomySource = normalizeText(weather.meta?.astronomySource || weather.meta?.numericFallback) || (weather.source === 'chmi' ? 'Open-Meteo' : sourceLabel);
     ensureWeatherFresh(false);
     return `
       <div class="grid two weather-page">
         <section class="card desktop-span-2 weather-page-hero">
           <div class="card-header compact-card-header">
-            <div><h2>${escapeHtml(weatherLocationLabel())}</h2><p>Hlavní předpověď: ${escapeHtml(sourceLabel)} · detaily jako východ/západ: ${escapeHtml(astronomySource)} · aktualizováno: ${escapeHtml(updated)}</p></div>
+            <div><h2>${escapeHtml(weatherLocationLabel())}</h2><p>Aktualizováno: ${escapeHtml(updated)}</p></div>
             <span class="badge ${weather.current ? 'good' : weather.error ? 'warn' : ''}">${weather.loading ? 'načítám' : weather.current ? escapeHtml(providerLabel) : 'není načtené'}</span>
           </div>
           <div class="weather-main-row">
@@ -3571,20 +3548,7 @@
               <div class="mini-stat"><span>Zdroj</span><strong>${escapeHtml(sourceLabel)}</strong></div>
             </div>
           </div>
-          <div class="form-actions compact-actions"><button class="primary-btn" type="button" data-action="weather-refresh">Obnovit počasí</button><button class="ghost-btn" type="button" data-nav="settings" data-target-tab="dashboard">Nastavit místo</button></div>
-        </section>
-        <section class="card desktop-span-2 weather-settings-card">
-          <div class="card-header"><div><h2>Nastavení počasí</h2><p>Preferovaný zdroj je ČHMÚ přes Edge Function. Když data vypadnou, appka bezpečně použije Open-Meteo fallback.</p></div><span class="badge ${weather.current ? 'good' : ''}">${weather.current ? 'aktivní' : 'nastavit'}</span></div>
-          <form data-form="weather-settings" class="compact-form">
-            <div class="form-grid two">
-              ${selectField('Zdroj', 'weatherSource', WEATHER_PROVIDER_OPTIONS, normalizeWeatherSource(weather.source))}
-              ${field('Místo', 'locationName', 'text', 'Hostinné', true, location.name)}
-              ${field('Země', 'country', 'text', 'CZ', false, location.country)}
-              ${field('Šířka', 'latitude', 'number', '50,5407', false, location.latitude)}
-              ${field('Délka', 'longitude', 'number', '15,7233', false, location.longitude)}
-            </div>
-            <div class="form-actions compact-actions"><button class="primary-btn" type="submit">Uložit a načíst počasí</button><button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit počasí</button></div>
-          </form>
+          <div class="form-actions compact-actions"><button class="primary-btn" type="button" data-action="weather-refresh">Obnovit počasí</button></div>
         </section>
         <section class="card desktop-span-2">
           <div class="card-header"><div><h2>Po hodinách</h2><p>Nejbližších 24 hodin pro rychlé plánování.</p></div></div>
@@ -3593,6 +3557,21 @@
         <section class="card desktop-span-2">
           <div class="card-header"><div><h2>Další dny</h2><p>Přehled dopředu, bez zbytečné omáčky.</p></div></div>
           ${renderWeatherDailyGrid((weather.daily || []).slice(0, 7))}
+        </section>
+        <section class="card desktop-span-2 weather-settings-card">
+          <details class="compact-edit-details weather-settings-details">
+            <summary><span>Nastavení počasí</span><em>${escapeHtml(weatherLocationLabel())}</em></summary>
+            <form data-form="weather-settings" class="compact-form">
+              <div class="form-grid two">
+                ${selectField('Zdroj', 'weatherSource', WEATHER_PROVIDER_OPTIONS, normalizeWeatherSource(weather.source))}
+                ${field('Místo', 'locationName', 'text', 'Hostinné', true, location.name)}
+                ${field('Země', 'country', 'text', 'CZ', false, location.country)}
+                ${field('Šířka', 'latitude', 'number', '50,5407', false, location.latitude)}
+                ${field('Délka', 'longitude', 'number', '15,7233', false, location.longitude)}
+              </div>
+              <div class="form-actions compact-actions"><button class="primary-btn" type="submit">Uložit a načíst počasí</button><button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit počasí</button></div>
+            </form>
+          </details>
         </section>
       </div>
     `;
@@ -4115,6 +4094,8 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_164', note: 'Hotovo: přidané nové sady ikon Duotone Fresh, Sticker UI, Soft Clay 3D, Mono Luxe a Isometric Micro; Kalendář je uklizený, zdroje/Google/ruční zdroj jsou zabalené a Počasí má nastavení dole.' },
+      { title: 'Domácnost+ v.0.1_163', note: 'Vzhled aplikace: barevná schémata jsou zúžená na Modrá a Royal, sada ikon zůstává jen iOS Soft kvůli čistému a sjednocenému UI.' },
       { title: 'Domácnost+ v.0.1_162', note: 'Záruky: přidání je nahoře a v základu zabalené, formulář má ochranu proti dvojitému uložení a fotky účtenek se před uložením automaticky komprimují.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
       { title: 'Domácnost+ v.0.1_150', note: 'Hotovo: Garáž má opravenou kalkulačku cesty s automatickým načtením hodnot podle auta, rozšířený technický list a základ katalogu značek/modelů pro předvyplnění.' },
@@ -4303,9 +4284,13 @@
 
   function calendarSourceOptions(selected = '') {
     const sources = getCalendarSources().filter((source) => source.isEnabled !== false);
-    const options = sources.map((source) => [source.id || source.cloudId, `${source.name} · ${calendarSourceProviderLabel(source.provider)}`]);
-    if (!options.length) options.push(['manual', 'Ruční kalendář']);
-    return selectField('Kalendář', 'sourceId', options, selected || options[0]?.[0] || 'manual');
+    const options = [['manual', 'Sdílený kalendář domácnosti']];
+    sources.forEach((source) => {
+      const id = source.id || source.cloudId;
+      if (!id || String(id) === 'manual') return;
+      options.push([id, `${source.name} · ${calendarSourceProviderLabel(source.provider)}`]);
+    });
+    return selectField('Uložit do', 'sourceId', options, selected || 'manual');
   }
 
   function googleCalendarConnection() {
@@ -4338,12 +4323,12 @@
     const tokenState = String(connection?.tokenState || '').toLowerCase();
     const reason = String(lastError?.code || lastError?.reason || connection?.lastError || '').toLowerCase();
     const message = lastError?.message || lastError?.error || connection?.lastError || '';
-    if (status === 'connected' && tokenState === 'ready') return { tone: 'good', title: 'Token uložený', text: 'Kalendáře je možné načíst. Token zůstává pouze na backendu v app_private.' };
-    if (status === 'oauth_pending') return { tone: 'warn', title: 'Připojení čeká na dokončení OAuth', text: 'Dokonči přihlášení u Googlu. Když ses vrátil zpět a stav se nezměnil, použij znovupřipojení.' };
-    if (status === 'connected' && tokenState === 'missing') return { tone: 'warn', title: 'Google účet je přihlášený, ale kalendářový token chybí', text: 'Aplikace už nebude sama dokola přesměrovávat. Spusť čisté znovupřipojení Google kalendáře.' };
-    if (['missing_google_token', 'token_store_failed', 'missing_encryption_key', 'redirect_uri_mismatch', 'missing_calendar_scope'].includes(reason)) return { tone: 'danger', title: 'Kalendářové připojení selhalo', text: message || 'Zkontroluj redirect_uri, scopes, Edge Function secrets a šifrovací klíč.' };
-    if (status === 'error' || message) return { tone: 'danger', title: 'Kalendářové připojení má chybu', text: message || 'Zkus znovu spustit připojení Google kalendáře.' };
-    return { tone: '', title: 'Google kalendář není připojený', text: 'Kalendář připoj přes samostatné Google OAuth tlačítko níže.' };
+    if (status === 'connected' && tokenState === 'ready') return { tone: 'good', title: 'Google kalendář je připojený', text: 'Můžeš načíst dostupné kalendáře a vybrat, které se mají zobrazovat v domácnosti.' };
+    if (status === 'oauth_pending') return { tone: 'warn', title: 'Připojení čeká na dokončení', text: 'Dokonči přihlášení u Googlu. Když se stav nezmění, spusť znovupřipojení.' };
+    if (status === 'connected' && tokenState === 'missing') return { tone: 'warn', title: 'Google kalendář je potřeba znovu připojit', text: 'Přihlášení do aplikace nestačí pro kalendář. Spusť znovu připojení Google kalendáře.' };
+    if (['missing_google_token', 'token_store_failed', 'missing_encryption_key', 'redirect_uri_mismatch', 'missing_calendar_scope'].includes(reason)) return { tone: 'danger', title: 'Připojení Google kalendáře selhalo', text: message || 'Zkus připojení spustit znovu.' };
+    if (status === 'error' || message) return { tone: 'danger', title: 'Google kalendář má chybu', text: message || 'Zkus znovu spustit připojení Google kalendáře.' };
+    return { tone: '', title: 'Google kalendář není připojený', text: 'Rozbal Google kalendář a spusť připojení.' };
   }
 
   function isGoogleCalendarSelected(calendarId, sourceList = getCalendarSources()) {
@@ -4359,50 +4344,44 @@
     const statusNote = googleCalendarStatusNote(connection);
     const googleSources = sourceList.filter((source) => normalizeCalendarSourceProvider(source.provider) === 'google');
     return `
-      <section class="google-calendar-connector">
-        <div class="item-top connector-head">
-          <div>
-            <div class="item-title"><span class="calendar-source-icon google-icon">G</span> Google kalendáře</div>
-            <div class="item-meta">Google login slouží jen pro přihlášení. Kalendář se připojuje samostatným OAuth flow přes backend, takže token nikdy není ve frontendu.</div>
+      <details class="compact-edit-details google-calendar-connector calendar-google-details">
+        <summary><span>Google kalendář</span><em>${escapeHtml(googleCalendarStatusLabel(connection))}</em></summary>
+        <div class="google-calendar-connector-body">
+          <div class="cloud-status-grid compact-cloud-stats google-calendar-stats">
+            <div class="mini-stat"><span>Účet</span><strong>${escapeHtml(connection?.googleAccountEmail || connection?.email || '—')}</strong></div>
+            <div class="mini-stat"><span>Vybrané</span><strong>${googleSources.length}</strong></div>
+            <div class="mini-stat"><span>Dostupné</span><strong>${calendars.length || '—'}</strong></div>
           </div>
-          <span class="badge ${connected ? 'good' : ''}">${escapeHtml(googleCalendarStatusLabel(connection))}</span>
+          <div class="form-actions connector-actions">
+            ${cloudReady ? `<button class="primary-btn" type="button" data-action="google-calendar-reconnect">${connected ? 'Znovu připojit Google kalendář' : 'Připojit Google kalendář'}</button>` : '<span class="badge">nejdřív online účet</span>'}
+            ${cloudReady ? `<button class="ghost-btn" type="button" data-action="google-calendar-list-calendars" ${tokenReady ? '' : 'aria-describedby="google-calendar-state-note"'}>Načíst kalendáře</button>` : ''}
+            ${cloudReady && googleSources.length ? '<button class="ghost-btn" type="button" data-action="google-calendar-sync">Spustit sync</button>' : ''}
+            ${cloudReady && connected ? '<button class="danger-btn" type="button" data-action="google-calendar-disconnect">Odpojit Google</button>' : ''}
+          </div>
+          ${cloudReady ? `<div id="google-calendar-state-note" class="inline-note google-calendar-state-note ${statusNote.tone ? `is-${statusNote.tone}` : ''}"><strong>${escapeHtml(statusNote.title)}</strong><span>${escapeHtml(statusNote.text)}</span></div>` : '<div class="inline-note">Google kalendář funguje jen v online domácnosti.</div>'}
+          ${calendars.length ? `
+            <form data-form="google-calendar-save-sources" class="google-calendar-picker">
+              <div class="google-calendar-grid">
+                ${calendars.map((calendar) => {
+                  const checked = isGoogleCalendarSelected(calendar.id, sourceList) || calendar.selected;
+                  return `
+                    <label class="google-calendar-option ${checked ? 'active' : ''}">
+                      <input type="checkbox" name="googleCalendarIds" value="${escapeHtml(calendar.id)}" ${checked ? 'checked' : ''}>
+                      <span>
+                        <strong>${escapeHtml(calendar.summary || calendar.name || 'Google kalendář')}</strong>
+                        <em>${calendar.primary ? 'hlavní' : escapeHtml(calendar.id || '')}${calendar.accessRole ? ` · ${escapeHtml(calendar.accessRole)}` : ''}</em>
+                      </span>
+                    </label>
+                  `;
+                }).join('')}
+              </div>
+              <div class="form-actions">
+                <button class="primary-btn" type="submit">Uložit vybrané kalendáře</button>
+              </div>
+            </form>
+          ` : ''}
         </div>
-        <div class="cloud-status-grid compact-cloud-stats google-calendar-stats">
-          <div class="mini-stat"><span>Účet</span><strong>${escapeHtml(connection?.googleAccountEmail || connection?.email || '—')}</strong></div>
-          <div class="mini-stat"><span>Vybrané</span><strong>${googleSources.length}</strong></div>
-          <div class="mini-stat"><span>Dostupné</span><strong>${calendars.length || '—'}</strong></div>
-          <div class="mini-stat"><span>Token</span><strong>${escapeHtml(connection?.tokenState === 'ready' ? 'uložený' : connection?.tokenState === 'missing' ? 'chybí' : '—')}</strong></div>
-        </div>
-        <div class="form-actions connector-actions">
-          ${cloudReady ? `<button class="primary-btn" type="button" data-action="google-calendar-reconnect">${connected ? 'Znovu připojit Google kalendář' : 'Připojit Google kalendář'}</button>` : '<span class="badge">nejdřív online účet</span>'}
-          ${cloudReady ? `<button class="ghost-btn" type="button" data-action="google-calendar-list-calendars" ${tokenReady ? '' : 'aria-describedby="google-calendar-state-note"'}>Načíst kalendáře</button>` : ''}
-          ${cloudReady && googleSources.length ? '<button class="ghost-btn" type="button" data-action="google-calendar-sync">Spustit sync</button>' : ''}
-          ${cloudReady && connected ? '<button class="danger-btn" type="button" data-action="google-calendar-disconnect">Odpojit Google</button>' : ''}
-        </div>
-        ${cloudReady ? `<div id="google-calendar-state-note" class="inline-note google-calendar-state-note ${statusNote.tone ? `is-${statusNote.tone}` : ''}"><strong>${escapeHtml(statusNote.title)}</strong><span>${escapeHtml(statusNote.text)}</span></div>` : '<div class="inline-note">Google napojení funguje jen v ostrém online účtu domácnosti. Demo zůstává read-only sandbox.</div>'}
-        ${calendars.length ? `
-          <form data-form="google-calendar-save-sources" class="google-calendar-picker">
-            <div class="item-meta">Vyber kalendáře, které chceš zobrazovat v Domácnost+. Každý vybraný kalendář se uloží jako samostatný zdroj.</div>
-            <div class="google-calendar-grid">
-              ${calendars.map((calendar) => {
-                const checked = isGoogleCalendarSelected(calendar.id, sourceList) || calendar.selected;
-                return `
-                  <label class="google-calendar-option ${checked ? 'active' : ''}">
-                    <input type="checkbox" name="googleCalendarIds" value="${escapeHtml(calendar.id)}" ${checked ? 'checked' : ''}>
-                    <span>
-                      <strong>${escapeHtml(calendar.summary || calendar.name || 'Google kalendář')}</strong>
-                      <em>${escapeHtml(calendar.id || '')}${calendar.primary ? ' · hlavní' : ''}${calendar.accessRole ? ` · ${escapeHtml(calendar.accessRole)}` : ''}</em>
-                    </span>
-                  </label>
-                `;
-              }).join('')}
-            </div>
-            <div class="form-actions">
-              <button class="primary-btn" type="submit">Uložit vybrané kalendáře</button>
-            </div>
-          </form>
-        ` : '<div class="inline-note">Po připojení Google kalendáře se tady zobrazí dostupné kalendáře. Když token chybí, spusť připojení znovu tímto tlačítkem.</div>'}
-      </section>
+      </details>
     `;
   }
 
@@ -4575,9 +4554,9 @@
 
   function renderCalendarSourceList(sources = getCalendarSources()) {
     if (!sources.length) {
-      return renderEmptyCta({ icon: '📅', title: 'Zatím žádné zdroje', text: 'Začni ručním rodinným kalendářem. Google Calendar bude připravený přes bezpečný backend.', action: 'cloud-load-calendar-sources', label: 'Načíst zdroje' });
+      return renderEmptyCta({ icon: '📅', title: 'Zatím žádné zdroje', text: 'Přidej ruční domácí zdroj nebo připoj Google kalendář.', nav: 'calendar', tab: 'sources', label: 'Přidat zdroj' });
     }
-    return `<div class="list compact-list calendar-source-list">${sources.map((source) => {
+    return `<details class="compact-edit-details calendar-source-list-details"><summary><span>Aktivní zdroje</span><em>${sources.length} zdrojů</em></summary><div class="list compact-list calendar-source-list">${sources.map((source) => {
       const linkedEvents = (state.calendar || []).filter((event) => String(event.sourceId || '') === String(source.id || source.cloudId || '')).length;
       const google = normalizeCalendarSourceProvider(source.provider) === 'google';
       return `
@@ -4586,7 +4565,7 @@
             <div class="item-title"><span class="calendar-source-icon">${escapeHtml(calendarSourceIcon(source.provider))}</span> ${escapeHtml(source.name)}</div>
             <span class="badge ${source.isEnabled === false ? '' : 'good'}">${source.isEnabled === false ? 'skrytý' : 'aktivní'}</span>
           </div>
-          <div class="item-meta">${escapeHtml(calendarSourceProviderLabel(source.provider))}${source.providerCalendarId ? ` · ${escapeHtml(source.providerCalendarId)}` : ''}${source.syncEnabled ? ' · sync zapnutý' : ''}${source.lastSyncedAt ? ` · poslední sync ${formatDateTime(source.lastSyncedAt)}` : ''}</div>
+          <div class="item-meta">${escapeHtml(calendarSourceProviderLabel(source.provider))}${source.providerCalendarId ? ` · ${escapeHtml(source.providerCalendarId)}` : ''}${source.lastSyncedAt ? ` · sync ${formatDateTime(source.lastSyncedAt)}` : ''}</div>
           ${source.note ? `<div class="item-meta">${escapeHtml(source.note)}</div>` : ''}
           <div class="cloud-status-grid compact-cloud-stats source-mini-stats">
             <div class="mini-stat"><span>Události</span><strong>${linkedEvents}</strong></div>
@@ -4597,18 +4576,19 @@
             <button class="ghost-btn" type="button" data-action="calendar-toggle-source" data-source-id="${escapeHtml(source.id || source.cloudId || '')}" data-enabled="${source.isEnabled === false ? 'true' : 'false'}">${source.isEnabled === false ? 'Zobrazit' : 'Skrýt'}</button>
             ${google && state.cloud?.householdId ? `<button class="ghost-btn" type="button" data-action="google-calendar-sync" data-source-id="${escapeHtml(source.cloudId || source.id || '')}">Sync</button>` : ''}
             <button class="danger-btn" type="button" data-action="calendar-delete-source" data-source-id="${escapeHtml(source.id || source.cloudId || '')}">Odebrat</button>
-            ${google && !state.cloud?.householdId ? '<span class="badge">čeká na online účet</span>' : ''}
           </div>
         </div>
       `;
-    }).join('')}</div>`;
+    }).join('')}</div></details>`;
   }
 
   function renderCalendar() {
     const sourceList = getCalendarSources();
     const enabledSourceIds = new Set(sourceList.filter((source) => source.isEnabled !== false).map((source) => String(source.id || source.cloudId || '')));
     const events = [...visibleCalendarEvents()].sort((a, b) => `${a.date || ''}${a.time || ''}`.localeCompare(`${b.date || ''}${b.time || ''}`));
+    const todayEvents = events.filter((event) => event.date === todayISO());
     const upcoming = events.filter((event) => !event.date || event.date >= todayISO()).slice(0, 12);
+    const soonCount = events.filter((event) => event.date && event.date > todayISO() && event.date <= dateOffsetISO(7)).length;
     const past = events.filter((event) => event.date && event.date < todayISO()).reverse().slice(0, 8);
     const hiddenEvents = (state.calendar || []).filter((event) => event.sourceId && !enabledSourceIds.has(String(event.sourceId)) && getCalendarSource(event.sourceId)).length;
     const cloudReady = Boolean(state.cloud?.householdId);
@@ -4618,7 +4598,7 @@
     const activeCalendarTab = getModuleTab('calendar', 'overview');
     return `
       ${renderSectionTabs('calendar', [
-        { id: 'overview', label: 'Přehled', icon: '📅', count: upcoming.length },
+        { id: 'overview', label: 'Přehled', icon: '📅', count: todayEvents.length },
         { id: 'sources', label: 'Zdroje', icon: '🧩', count: sourceList.length },
         { id: 'add', label: 'Přidat', icon: '➕' },
         { id: 'history', label: 'Historie', icon: '🕘', count: past.length }
@@ -4626,56 +4606,52 @@
       <div class="grid two module-tabbed calendar-tab-${activeCalendarTab}" data-tab-area="calendar">
         <section class="card desktop-span-2 calendar-panel panel-overview">
           <div class="card-header">
-            <div><h2>Kalendář</h2><p>Události se dají držet ve více kalendářích. Google Calendar je připravený přes bezpečný backend, ne přes tokeny ve frontendu.</p></div>
-            <span class="badge ${cloudCount ? 'good' : ''}">${events.length} položek · ${activeSources} zdrojů</span>
+            <div><h2>Kalendář</h2></div>
+            <span class="badge ${cloudCount ? 'good' : ''}">${events.length} událostí</span>
           </div>
-          <div class="cloud-status-grid compact-cloud-stats">
-            <div class="mini-stat"><span>Dnes</span><strong>${events.filter((event) => event.date === todayISO()).length}</strong></div>
-            <div class="mini-stat"><span>Brzy</span><strong>${upcoming.length}</strong></div>
+          <div class="cloud-status-grid compact-cloud-stats calendar-overview-stats">
+            <div class="mini-stat"><span>Dnes</span><strong>${todayEvents.length}</strong></div>
+            <div class="mini-stat"><span>Brzy</span><strong>${soonCount}</strong></div>
             <div class="mini-stat"><span>Zdroje</span><strong>${activeSources}/${sourceList.length || 1}</strong></div>
             <div class="mini-stat"><span>Lokálně</span><strong>${localOnly}</strong></div>
           </div>
           ${hiddenEvents ? `<div class="inline-note">${hiddenEvents} událostí je schovaných, protože jejich kalendář je vypnutý.</div>` : ''}
           ${renderCalendarMonthGrid(events, calendarViewMonth)}
-          ${events.length ? '' : renderEmptyCta({ icon: '📅', title: 'Kalendář je prázdný', text: 'Přidej první událost nebo zdroj kalendáře. Měsíční přehled zůstává připravený.', nav: 'calendar', tab: 'add', label: 'Přidat událost' })}
+          ${events.length ? '' : renderEmptyCta({ icon: '📅', title: 'Kalendář je prázdný', text: 'Přidej první sdílenou domácí událost.', nav: 'calendar', tab: 'add', label: 'Přidat událost' })}
         </section>
 
         <section class="card desktop-span-2 calendar-panel panel-sources">
           <div class="card-header">
-            <div><h2>Zdroje kalendáře</h2><p>Tady se spravují ruční, rodinné, pracovní a Google kalendáře. Google se páruje přes bezpečný backend.</p></div>
+            <div><h2>Zdroje kalendáře</h2></div>
             <span class="badge ${cloudReady ? 'good' : ''}">${cloudReady ? 'cloud' : 'lokálně'}</span>
           </div>
           ${renderGoogleCalendarConnector(cloudReady, sourceList)}
-          ${renderCalendarSourceList(sourceList)}
-          <details class="compact-edit-details" open>
-            <summary><span>Přidat zdroj kalendáře</span><em>ruční / Google připravený na backend</em></summary>
+          <details class="compact-edit-details calendar-manual-source-details">
+            <summary><span>Přidat ruční zdroj kalendáře</span><em>domácí / veřejný Google iCal odkaz</em></summary>
             <form data-form="add-calendar-source" class="compact-form">
               <div class="form-grid two">
-                ${field('Název kalendáře', 'name', 'text', 'Rodina / Práce / Google osobní', true)}
-                ${selectField('Typ', 'provider', [['manual', 'Ruční'], ['family', 'Rodinný'], ['work', 'Práce'], ['google', 'Google Calendar'], ['ical', 'iCal / externí'], ['other', 'Jiný']])}
-                ${field('ID / popis kalendáře', 'providerCalendarId', 'text', 'volitelné, např. primární / práce')}
+                ${field('Název kalendáře', 'name', 'text', 'Rodina / Práce / Veřejný Google', true)}
+                ${selectField('Typ', 'provider', [['manual', 'Ruční domácí'], ['family', 'Rodinný'], ['work', 'Práce'], ['ical', 'Veřejný Google / iCal odkaz'], ['other', 'Jiný']])}
+                ${field('Veřejný odkaz / ID', 'providerCalendarId', 'text', 'volitelné, např. veřejný iCal odkaz')}
                 ${field('Barva', 'color', 'text', '#8b5cf6')}
                 ${field('Poznámka', 'note', 'text', 'volitelné')}
               </div>
-              <div class="form-actions">
-                <button class="primary-btn" type="submit">Přidat zdroj</button>
-                ${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-calendar-sources">Načíst zdroje</button>' : ''}
-                ${cloudReady && sourceList.filter((source) => !source.cloudId).length ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-calendar-sources">Odeslat lokální zdroje (${sourceList.filter((source) => !source.cloudId).length})</button>` : ''}
-              </div>
+              <div class="inline-note compact-note">Veřejný Google kalendář vlož jako veřejný iCal odkaz. Zatím se uloží jako zdroj; automatické načítání iCal událostí bude samostatný krok.</div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Přidat zdroj</button></div>
             </form>
           </details>
-          <div class="inline-note">Google Calendar v tomhle buildu počítá se Supabase Edge Functions. Bez Google Cloud credentials půjde UI připravit, ale reálné přihlášení poběží až po nasazení funkcí a doplnění secrets.</div>
+          ${renderCalendarSourceList(sourceList)}
         </section>
 
         <section class="card calendar-panel panel-add">
           <div class="card-header">
-            <div><h2>Přidat událost</h2><p>Vyber kalendář/zdroj, aby šlo později oddělit rodinu, práci, Google nebo další externí kalendáře.</p></div>
-            <span class="badge ${cloudCount ? 'good' : ''}">${cloudCount ? 'cloud' : 'lokálně'}</span>
+            <div><h2>Přidat událost</h2><p>Událost může být jen sdílená v domácnosti, bez Google kalendáře.</p></div>
+            <span class="badge ${cloudCount ? 'good' : ''}">${cloudReady ? 'sdílené v domácnosti' : 'lokálně'}</span>
           </div>
           <form data-form="add-event">
             <div class="form-grid two">
               ${field('Název', 'title', 'text', 'Doktor / návštěva / výlet', true)}
-              ${calendarSourceOptions()}
+              ${calendarSourceOptions('manual')}
               ${field('Datum', 'date', 'date', '', true, todayISO())}
               ${field('Konec vícedenní události', 'endDate', 'date', '')}
               ${field('Začátek', 'time', 'time', '')}
@@ -4686,8 +4662,6 @@
             </div>
             <div class="form-actions">
               <button class="primary-btn" type="submit">Uložit událost</button>
-              ${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-calendar">Načíst cloud kalendář</button>' : ''}
-              ${cloudReady && localOnly ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-calendar">Odeslat lokální (${localOnly})</button>` : ''}
             </div>
           </form>
         </section>
@@ -8320,6 +8294,11 @@
     if (type === 'iconTheme') {
       const previewIconsByTheme = {
         ios: ['home', 'packages', 'settings'],
+        'duotone-fresh': ['home', 'calendar', 'finance'],
+        'sticker-ui': ['home', 'calendar', 'garage'],
+        'clay-3d': ['homecare', 'garage', 'finance'],
+        'mono-luxe': ['home', 'calendar', 'warranties'],
+        'isometric-micro': ['home', 'garage', 'devices'],
         cartoon: ['home', 'shopping', 'weather'],
         glass: ['calendar', 'hdo', 'warranties'],
         material: ['garage', 'calendar', 'shopping'],
@@ -8450,7 +8429,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 162))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 164))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -13657,7 +13636,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 79, appBuild: 162, mode: 'rich-demo-v162', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 79, appBuild: 164, mode: 'rich-demo-v164', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -13800,7 +13779,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 162, mode: 'warranty-attachments-compress-v162', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 164, mode: 'calendar-weather-icons-v164', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -16382,7 +16361,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 162
+        appBuild: 164
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -16505,7 +16484,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 162, schema_version: 79, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 164, schema_version: 79, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -16718,7 +16697,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 162,
+          app_build: 164,
           schema_version: 79,
           created_by: user.id,
           ...householdUiPayload()
@@ -16972,7 +16951,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-162-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-164-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -17232,7 +17211,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_162</span>
+          <span class="badge">Domácnost+ v.0.1_164</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
