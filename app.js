@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_168';
+  const APP_VERSION = 'Domácnost+ v.0.1_170';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -332,8 +332,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 79,
-      appBuild: 168,
-      mode: 'calendar-weather-icons-v166',
+      appBuild: 170,
+      mode: 'visual-icons-hotfix-v170',
       createdAt: '',
       updatedAt: ''
     },
@@ -656,6 +656,7 @@
   let garageModal = null;
   let filePreviewModal = null;
   let activeWarrantyDetailId = null;
+  let visualSettingsDrawerOpen = false;
   let couponEditId = '';
   let warrantyFormDraft = safeParse(sessionStorage.getItem('domacnostPlus.warrantyDraft'), null) || null;
   let calendarDetailEventId = null;
@@ -1176,8 +1177,8 @@
 
     migrated.meta = {
       schemaVersion: 79,
-      appBuild: 168,
-      mode: 'calendar-weather-icons-v166',
+      appBuild: 170,
+      mode: 'visual-icons-hotfix-v170',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -3291,7 +3292,28 @@
     const extraClass = options.extraClass ? ` ${escapeHtml(String(options.extraClass).trim())}` : '';
     const themeId = normalizeIconTheme(options.themeId || state.settings?.iconTheme || 'ios');
     const body = getThemedModuleIconBody(iconId);
-    return `<svg class="module-theme-icon module-theme-icon-${escapeHtml(iconId)} icon-style-${escapeHtml(themeId)}${extraClass}" style="--icon-a:${a};--icon-b:${b};--icon-c:${c}" viewBox="0 0 64 64" focusable="false" aria-hidden="true"><rect class="icon-tile" x="5" y="5" width="54" height="54" rx="17"></rect><g class="icon-glyph">${body}</g></svg>`;
+    const layers = getThemedModuleIconStyleLayers(themeId);
+    return `<svg class="module-theme-icon module-theme-icon-${escapeHtml(iconId)} icon-style-${escapeHtml(themeId)}${extraClass}" style="--icon-a:${a};--icon-b:${b};--icon-c:${c}" viewBox="0 0 64 64" focusable="false" aria-hidden="true"><rect class="icon-tile" x="5" y="5" width="54" height="54" rx="17"></rect>${layers}<g class="icon-glyph">${body}</g></svg>`;
+  }
+
+  function getThemedModuleIconStyleLayers(themeId = 'ios') {
+    const theme = normalizeIconTheme(themeId);
+    if (theme === 'duotone-fresh') {
+      return '<g class="icon-style-layer icon-duotone-layer"><circle class="icon-orb-a" cx="25" cy="25" r="18"/><circle class="icon-orb-b" cx="42" cy="40" r="15"/><path class="icon-spark" d="M47 13l2 4 4 2-4 2-2 4-2-4-4-2 4-2Z"/></g>';
+    }
+    if (theme === 'sticker-ui') {
+      return '<g class="icon-style-layer icon-sticker-layer"><path class="icon-sticker-paper" d="M32 6c12 0 21 8 23 19 3 13-5 25-18 29-12 4-26-2-29-14C5 28 11 14 22 9c3-2 6-3 10-3Z"/><path class="icon-sticker-shadow" d="M12 42c6 11 20 16 32 8"/></g>';
+    }
+    if (theme === 'clay-3d') {
+      return '<g class="icon-style-layer icon-clay-layer"><ellipse class="icon-clay-shadow" cx="34" cy="51" rx="20" ry="6"/><circle class="icon-clay-blob" cx="32" cy="31" r="23"/><path class="icon-clay-highlight" d="M19 23c5-9 16-12 26-7"/></g>';
+    }
+    if (theme === 'mono-luxe') {
+      return '<g class="icon-style-layer icon-mono-layer"><circle class="icon-mono-ring" cx="32" cy="32" r="25"/><circle class="icon-mono-dot" cx="47" cy="17" r="4"/></g>';
+    }
+    if (theme === 'isometric-micro') {
+      return '<g class="icon-style-layer icon-iso-layer"><path class="icon-iso-side" d="M14 31 32 42l18-11v10L32 54 14 41Z"/><path class="icon-iso-top" d="M14 31 32 20l18 11-18 11Z"/><path class="icon-iso-edge" d="M32 42v12M14 31v10M50 31v10"/></g>';
+    }
+    return '';
   }
 
   function getThemedModuleIconBody(id) {
@@ -4165,7 +4187,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_168', note: 'Hotovo: přílohy záruk a smluv se otevírají v náhledu přímo v aplikaci, PDF i fotky mají vlastní modal a zůstává možnost otevřít mimo app nebo stáhnout.' },
+      { title: 'Domácnost+ v.0.1_170', note: 'Hotovo: Vzhled aplikace zůstává při přepínání otevřený a nové ikonové sady mají vlastní výrazné vrstvy/efekty, aby se opravdu vizuálně lišily.' },
       { title: 'Domácnost+ v.0.1_163', note: 'Vzhled aplikace: barevná schémata jsou zúžená na Modrá a Royal, sada ikon zůstává jen iOS Soft kvůli čistému a sjednocenému UI.' },
       { title: 'Domácnost+ v.0.1_162', note: 'Záruky: přidání je nahoře a v základu zabalené, formulář má ochranu proti dvojitému uložení a fotky účtenek se před uložením automaticky komprimují.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
@@ -8443,7 +8465,7 @@
         pixel: ['home', 'cameras', 'shopping']
       };
       const iconIds = previewIconsByTheme[id] || ['home', 'packages', 'settings'];
-      return `<span class="visual-icon-preview-row">${iconIds.map((iconId) => getThemedModuleIconSvg(iconId)).join('')}</span>`;
+      return `<span class="visual-icon-preview-row">${iconIds.map((iconId) => getThemedModuleIconSvg(iconId, { themeId: id })).join('')}</span>`;
     }
     if (type === 'theme') {
       return `<span class="theme-preview-orb ${escapeHtml(id)}"></span>`;
@@ -8459,7 +8481,7 @@
           <div><h2>Vzhled aplikace</h2><p>Styl ikon i barevné schéma jsou osobní nastavení účtu. Každý člen domácnosti může mít vlastní vzhled.</p></div>
           <span class="badge">${escapeHtml(getOptionLabel(ICON_THEME_OPTIONS, visual.iconTheme))} · ${escapeHtml(getOptionLabel(COLOR_SCHEME_OPTIONS, visual.colorScheme))}</span>
         </div>
-        <details class="compact-edit-details settings-visual-details">
+        <details class="compact-edit-details settings-visual-details" ${visualSettingsDrawerOpen ? 'open' : ''}>
           <summary><span>Styl ikon a schéma</span><em>${escapeHtml(getOptionLabel(ICON_THEME_OPTIONS, visual.iconTheme))} · ${escapeHtml(getOptionLabel(COLOR_SCHEME_OPTIONS, visual.colorScheme))}</em></summary>
           <div class="visual-settings-stack">
             <div class="visual-settings-group">
@@ -8566,7 +8588,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 168))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 170))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -13827,7 +13849,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 79, appBuild: 168, mode: 'rich-demo-v168', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 79, appBuild: 170, mode: 'rich-demo-v170', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -13970,7 +13992,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 168, mode: 'calendar-weather-icons-v166', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 170, mode: 'visual-icons-hotfix-v170', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -15138,6 +15160,7 @@
   }
 
   function setAppTheme(value) {
+    visualSettingsDrawerOpen = true;
     state.settings.theme = normalizeAppTheme(value);
     persistVisualSettings(false);
     render();
@@ -15145,6 +15168,7 @@
   }
 
   function setIconTheme(value) {
+    visualSettingsDrawerOpen = true;
     state.settings.iconTheme = normalizeIconTheme(value);
     persistVisualSettings(false);
     render();
@@ -15152,6 +15176,7 @@
   }
 
   function setColorScheme(value) {
+    visualSettingsDrawerOpen = true;
     state.settings.colorScheme = normalizeColorScheme(value);
     persistVisualSettings(false);
     render();
@@ -16560,7 +16585,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 168
+        appBuild: 170
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -16683,7 +16708,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 168, schema_version: 79, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 170, schema_version: 79, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -16896,7 +16921,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 168,
+          app_build: 170,
           schema_version: 79,
           created_by: user.id,
           ...householdUiPayload()
@@ -17150,7 +17175,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-168-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-170-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -17411,7 +17436,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_168</span>
+          <span class="badge">Domácnost+ v.0.1_170</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

@@ -12775,7 +12775,7 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   stroke-width: 2;
 }
 
-/* Domácnost+ v.0.1_168 – náhled příloh přímo v aplikaci */
+/* Domácnost+ v.0.1_170 – náhled příloh přímo v aplikaci */
 .file-preview-modal {
   width: min(1040px, 100%);
   max-height: min(92vh, 920px);
@@ -12853,7 +12853,7 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 }
 
 
-/* Domácnost+ v.0.1_168 – Záruky: čistý přehled + detail */
+/* Domácnost+ v.0.1_170 – Záruky: čistý přehled + detail */
 .warranty-overview-button {
   width: 100%;
   display: grid;
@@ -12892,4 +12892,203 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 .warranty-detail-danger .danger-hint,
 .warranty-detail-danger .form-actions {
   margin: 10px 12px 12px;
+}
+
+/* Domácnost+ v.0.1_170 – výraznější ikonové sady a otevřený panel vzhledu při přepnutí */
+.module-theme-icon .icon-style-layer {
+  display: none;
+  pointer-events: none;
+}
+.module-theme-icon.icon-style-duotone-fresh .icon-style-layer,
+.module-theme-icon.icon-style-sticker-ui .icon-style-layer,
+.module-theme-icon.icon-style-clay-3d .icon-style-layer,
+.module-theme-icon.icon-style-mono-luxe .icon-style-layer,
+.module-theme-icon.icon-style-isometric-micro .icon-style-layer {
+  display: block;
+}
+.module-theme-icon.icon-style-duotone-fresh .icon-tile,
+.module-theme-icon.icon-style-sticker-ui .icon-tile,
+.module-theme-icon.icon-style-clay-3d .icon-tile,
+.module-theme-icon.icon-style-mono-luxe .icon-tile,
+.module-theme-icon.icon-style-isometric-micro .icon-tile {
+  display: none !important;
+}
+.module-theme-icon.icon-style-duotone-fresh {
+  filter: drop-shadow(0 10px 14px rgba(14, 165, 233, .20));
+}
+.module-theme-icon.icon-style-duotone-fresh .icon-orb-a {
+  fill: color-mix(in srgb, var(--icon-a) 50%, #38bdf8 50%);
+  opacity: .96;
+}
+.module-theme-icon.icon-style-duotone-fresh .icon-orb-b {
+  fill: color-mix(in srgb, var(--icon-b) 40%, #a7f3d0 60%);
+  opacity: .94;
+}
+.module-theme-icon.icon-style-duotone-fresh .icon-spark {
+  fill: color-mix(in srgb, var(--icon-c) 55%, #fef08a 45%);
+  opacity: .98;
+}
+.module-theme-icon.icon-style-duotone-fresh .icon-glyph {
+  transform: translate(.5px, .5px) scale(.76);
+  transform-origin: 32px 32px;
+}
+.module-theme-icon.icon-style-duotone-fresh .icon-primary {
+  fill: rgba(15, 23, 42, .82) !important;
+}
+.module-theme-icon.icon-style-duotone-fresh .icon-secondary {
+  fill: rgba(255, 255, 255, .72) !important;
+}
+.module-theme-icon.icon-style-duotone-fresh .icon-accent {
+  fill: #fef08a !important;
+}
+.module-theme-icon.icon-style-duotone-fresh .icon-line {
+  stroke: rgba(15, 23, 42, .45) !important;
+  stroke-width: 2.5;
+}
+
+.module-theme-icon.icon-style-sticker-ui {
+  transform: rotate(-5deg) scale(1.03);
+  filter: drop-shadow(0 2px 0 rgba(255,255,255,.95)) drop-shadow(0 12px 18px rgba(15, 23, 42, .22));
+}
+.module-theme-icon.icon-style-sticker-ui .icon-sticker-paper {
+  fill: rgba(255,255,255,.98);
+}
+.module-theme-icon.icon-style-sticker-ui .icon-sticker-shadow {
+  fill: none;
+  stroke: rgba(15,23,42,.12);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.module-theme-icon.icon-style-sticker-ui .icon-glyph {
+  transform: scale(.82);
+  transform-origin: 32px 32px;
+}
+.module-theme-icon.icon-style-sticker-ui .icon-primary,
+.module-theme-icon.icon-style-sticker-ui .icon-secondary,
+.module-theme-icon.icon-style-sticker-ui .icon-accent {
+  stroke: rgba(255,255,255,.98) !important;
+  stroke-width: 3 !important;
+  paint-order: stroke fill;
+  stroke-linejoin: round;
+}
+.module-theme-icon.icon-style-sticker-ui .icon-primary {
+  fill: color-mix(in srgb, var(--icon-a) 66%, #fb7185 34%) !important;
+}
+.module-theme-icon.icon-style-sticker-ui .icon-secondary {
+  fill: color-mix(in srgb, var(--icon-b) 50%, #ffffff 50%) !important;
+}
+.module-theme-icon.icon-style-sticker-ui .icon-accent {
+  fill: color-mix(in srgb, var(--icon-c) 52%, #facc15 48%) !important;
+}
+.module-theme-icon.icon-style-sticker-ui .icon-line {
+  stroke: rgba(255,255,255,.98) !important;
+  stroke-width: 3.3 !important;
+}
+
+.module-theme-icon.icon-style-clay-3d {
+  filter: drop-shadow(0 14px 18px rgba(15,23,42,.18));
+}
+.module-theme-icon.icon-style-clay-3d .icon-clay-shadow {
+  fill: rgba(15, 23, 42, .13);
+}
+.module-theme-icon.icon-style-clay-3d .icon-clay-blob {
+  fill: color-mix(in srgb, var(--icon-a) 28%, #fff3e6 72%);
+}
+.module-theme-icon.icon-style-clay-3d .icon-clay-highlight {
+  fill: none;
+  stroke: rgba(255,255,255,.86);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.module-theme-icon.icon-style-clay-3d .icon-glyph {
+  transform: translateY(-1px) scale(.72);
+  transform-origin: 32px 32px;
+}
+.module-theme-icon.icon-style-clay-3d .icon-primary {
+  fill: color-mix(in srgb, var(--icon-a) 44%, #ffe6d4 56%) !important;
+}
+.module-theme-icon.icon-style-clay-3d .icon-secondary {
+  fill: color-mix(in srgb, var(--icon-b) 32%, #ffffff 68%) !important;
+}
+.module-theme-icon.icon-style-clay-3d .icon-accent {
+  fill: color-mix(in srgb, var(--icon-c) 48%, #fcd34d 52%) !important;
+}
+.module-theme-icon.icon-style-clay-3d .icon-line {
+  stroke: rgba(92, 64, 51, .34) !important;
+  stroke-width: 2.3 !important;
+}
+
+.module-theme-icon.icon-style-mono-luxe {
+  color: color-mix(in srgb, var(--text) 88%, #0f172a 12%);
+  filter: drop-shadow(0 8px 14px rgba(15,23,42,.12));
+}
+[data-theme="dark"] .module-theme-icon.icon-style-mono-luxe { color: #f8fafc; }
+.module-theme-icon.icon-style-mono-luxe .icon-mono-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  opacity: .9;
+}
+.module-theme-icon.icon-style-mono-luxe .icon-mono-dot {
+  fill: #d4af37;
+}
+.module-theme-icon.icon-style-mono-luxe .icon-glyph {
+  transform: scale(.76);
+  transform-origin: 32px 32px;
+}
+.module-theme-icon.icon-style-mono-luxe .icon-primary,
+.module-theme-icon.icon-style-mono-luxe .icon-secondary {
+  fill: currentColor !important;
+}
+.module-theme-icon.icon-style-mono-luxe .icon-secondary { opacity: .44; }
+.module-theme-icon.icon-style-mono-luxe .icon-accent {
+  fill: #d4af37 !important;
+  opacity: 1 !important;
+}
+.module-theme-icon.icon-style-mono-luxe .icon-line {
+  stroke: currentColor !important;
+  stroke-width: 2.1 !important;
+}
+
+.module-theme-icon.icon-style-isometric-micro {
+  transform: perspective(130px) rotateX(14deg) rotateZ(-8deg) translateY(-1px);
+  transform-origin: center;
+  filter: drop-shadow(6px 11px 11px rgba(15,23,42,.20));
+}
+.module-theme-icon.icon-style-isometric-micro .icon-iso-top {
+  fill: color-mix(in srgb, var(--icon-b) 44%, #ffffff 56%);
+  stroke: rgba(15,23,42,.18);
+  stroke-width: 1.2;
+}
+.module-theme-icon.icon-style-isometric-micro .icon-iso-side {
+  fill: color-mix(in srgb, var(--icon-a) 58%, #bfdbfe 42%);
+  stroke: rgba(15,23,42,.18);
+  stroke-width: 1.2;
+}
+.module-theme-icon.icon-style-isometric-micro .icon-iso-edge {
+  fill: none;
+  stroke: rgba(15,23,42,.25);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+.module-theme-icon.icon-style-isometric-micro .icon-glyph {
+  transform: translateY(-4px) scale(.58);
+  transform-origin: 32px 32px;
+}
+.module-theme-icon.icon-style-isometric-micro .icon-primary {
+  fill: color-mix(in srgb, var(--icon-a) 70%, #dbeafe 30%) !important;
+  stroke: rgba(15,23,42,.16) !important;
+  stroke-width: 1.4 !important;
+}
+.module-theme-icon.icon-style-isometric-micro .icon-secondary {
+  fill: color-mix(in srgb, var(--icon-b) 46%, #fff 54%) !important;
+  stroke: rgba(15,23,42,.12) !important;
+  stroke-width: 1.3 !important;
+}
+.module-theme-icon.icon-style-isometric-micro .icon-accent {
+  fill: color-mix(in srgb, var(--icon-c) 62%, #fde68a 38%) !important;
+}
+.module-theme-icon.icon-style-isometric-micro .icon-line {
+  stroke: rgba(15,23,42,.48) !important;
+  stroke-width: 2 !important;
 }
