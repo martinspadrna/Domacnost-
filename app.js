@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_175';
+  const APP_VERSION = 'Domácnost+ v.0.1_176';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -317,7 +317,6 @@
     ['duotone-fresh', 'Duotone Fresh', 'Dvoutónové barevné ikonky se svěžím kontrastem.'],
     ['sticker-ui', 'Sticker UI', 'Výraznější barevné samolepkové ikonky bez pozadí.'],
     ['clay-3d', 'Soft Clay 3D', 'Měkké 3D ikonky s jemným plastickým stínem.'],
-    ['mono-luxe', 'Mono Luxe', 'Čisté monochromatické premium ikonky.'],
     ['isometric-micro', 'Isometric Micro', 'Drobnější prostorové ikonky s technickým detailem.']
   ];
 
@@ -327,7 +326,6 @@
     'duotone-fresh': { surface: 'dark', pathPrefix: './assets/icon-themes/duotone-fresh/' },
     'sticker-ui': { surface: 'dark', pathPrefix: './assets/icon-themes/sticker-ui/' },
     'clay-3d': { surface: 'clay', pathPrefix: './assets/icon-themes/clay-3d/' },
-    'mono-luxe': { surface: 'dark', pathPrefix: './assets/icon-themes/mono-luxe/' },
     'isometric-micro': { surface: 'dark', pathPrefix: './assets/icon-themes/isometric-micro/' }
   };
 
@@ -344,7 +342,7 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 79,
-      appBuild: 175,
+      appBuild: 176,
       mode: 'approved-icon-themes-v175',
       createdAt: '',
       updatedAt: ''
@@ -1189,7 +1187,7 @@
 
     migrated.meta = {
       schemaVersion: 79,
-      appBuild: 175,
+      appBuild: 176,
       mode: 'approved-icon-themes-v175',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
@@ -2767,10 +2765,10 @@
 
     return `
       <div class="dashboard-v10 dashboard-empty-home">
-        ${heroCount && homeHeroEditMode ? `<div class="station-summary-edit-toolbar home-hero-edit-toolbar-top"><strong>Úprava Home panelů</strong><span>Šipkami změň pořadí. Podržením panelu se úprava zapíná.</span><button class="primary-btn" type="button" data-action="home-hero-edit-done">Hotovo</button></div>` : ''}
         <section class="card hero-card station-hero home-minimal-hero home-hero-count-${heroCount} ${homeHeroEditMode ? 'home-hero-editing' : ''}">
           <div class="station-hero-main">
             <div class="station-clock-area">
+              ${homeHeroEditMode ? `<button class="primary-btn home-hero-edit-done-overlay" type="button" data-action="home-hero-edit-done">Hotovo</button>` : ''}
               <div class="hero-clock-row">
                 <button class="hero-clock-copy hero-clock-button" type="button" data-nav="calendar" data-target-tab="overview" aria-label="Otevřít kalendář">
                   <div class="hero-time">${clockText(now)}</div>
@@ -3271,7 +3269,7 @@
     const size = options.size || 'md';
     const baseClass = options.baseClass || 'module-illustration-slot';
     const innerClass = options.innerClass || 'theme-asset-icon';
-    return `<span class="${baseClass} ${baseClass}-${escapeHtml(String(size))}${slotClass}${extraClass} theme-asset-icon-slot theme-asset-icon-slot-${escapeHtml(config.surface)}" data-icon-id="${escapeHtml(String(config.iconId))}" data-icon-theme-asset="${escapeHtml(String(themeId))}" aria-hidden="true"><span class="${innerClass} ${innerClass}-${escapeHtml(String(size))} theme-asset-icon-surface theme-asset-icon-surface-${escapeHtml(config.surface)}"><img class="theme-asset-icon-image" src="${escapeHtml(config.src)}" alt="" loading="lazy" decoding="async"></span></span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
+    return `<span class="${baseClass} ${baseClass}-${escapeHtml(String(size))}${slotClass}${extraClass} theme-asset-icon-slot theme-asset-icon-slot-${escapeHtml(config.surface)}" data-icon-id="${escapeHtml(String(config.iconId))}" data-icon-theme-asset="${escapeHtml(String(themeId))}" aria-hidden="true"><span class="${innerClass} ${innerClass}-${escapeHtml(String(size))} theme-asset-icon-surface theme-asset-icon-surface-${escapeHtml(config.surface)}"><img class="theme-asset-icon-image" src="${escapeHtml(config.src)}" alt="" loading="eager" decoding="sync" fetchpriority="low" draggable="false" width="128" height="128"></span></span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
   }
 
   function getModuleIllustrationSrc(id) {
@@ -3346,9 +3344,6 @@
     }
     if (theme === 'clay-3d') {
       return '<g class="icon-style-layer icon-clay-layer"><ellipse class="icon-clay-shadow" cx="34" cy="51" rx="20" ry="6"/><circle class="icon-clay-blob" cx="32" cy="31" r="23"/><path class="icon-clay-highlight" d="M19 23c5-9 16-12 26-7"/></g>';
-    }
-    if (theme === 'mono-luxe') {
-      return '<g class="icon-style-layer icon-mono-layer"><circle class="icon-mono-ring" cx="32" cy="32" r="25"/><circle class="icon-mono-dot" cx="47" cy="17" r="4"/></g>';
     }
     if (theme === 'isometric-micro') {
       return '<g class="icon-style-layer icon-iso-layer"><path class="icon-iso-side" d="M14 31 32 42l18-11v10L32 54 14 41Z"/><path class="icon-iso-top" d="M14 31 32 20l18 11-18 11Z"/><path class="icon-iso-edge" d="M32 42v12M14 31v10M50 31v10"/></g>';
@@ -4227,7 +4222,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_175', note: 'Hotovo: do aplikace jsou vložené schválené kompletní ikonové sady Duotone Fresh, Sticker UI, Soft Clay 3D a Isometric Micro. Mono Luxe má doplněné tmavé ohraničení, aby nezanikalo na světlém pozadí. Sady jsou napojené jako assety napříč hlavními moduly a sekcemi.' },
+      { title: 'Domácnost+ v.0.1_176', note: 'Hotovo: Mono Luxe je odebraný, zbývající ikonové sady mají opravené ořezy a průhlednost, Sticker UI už nepřichází o bílé části ikon, asset ikony se načítají stabilněji bez poblikávání a editace Home panelů má jen tlačítko Hotovo přes pevný čas/počasí.' },
       { title: 'Domácnost+ v.0.1_163', note: 'Vzhled aplikace: barevná schémata jsou zúžená na Modrá a Royal, sada ikon zůstává jen iOS Soft kvůli čistému a sjednocenému UI.' },
       { title: 'Domácnost+ v.0.1_162', note: 'Záruky: přidání je nahoře a v základu zabalené, formulář má ochranu proti dvojitému uložení a fotky účtenek se před uložením automaticky komprimují.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
@@ -8498,7 +8493,6 @@
         'duotone-fresh': ['home', 'calendar', 'finance'],
         'sticker-ui': ['home', 'calendar', 'garage'],
         'clay-3d': ['homecare', 'garage', 'finance'],
-        'mono-luxe': ['home', 'calendar', 'warranties'],
         'isometric-micro': ['home', 'garage', 'devices'],
         cartoon: ['home', 'shopping', 'weather'],
         glass: ['calendar', 'hdo', 'warranties'],
@@ -8636,7 +8630,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 175))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 176))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -13897,7 +13891,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 79, appBuild: 175, mode: 'rich-demo-v175', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 79, appBuild: 176, mode: 'rich-demo-v176', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -14040,7 +14034,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 175, mode: 'approved-icon-themes-v175', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 176, mode: 'approved-icon-themes-v175', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -16633,7 +16627,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 175
+        appBuild: 176
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -16756,7 +16750,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 175, schema_version: 79, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 176, schema_version: 79, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -16969,7 +16963,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 175,
+          app_build: 176,
           schema_version: 79,
           created_by: user.id,
           ...householdUiPayload()
@@ -17223,7 +17217,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-175-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-176-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -17491,7 +17485,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_175</span>
+          <span class="badge">Domácnost+ v.0.1_176</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
