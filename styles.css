@@ -13098,7 +13098,8 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow: visible;
+  background: transparent;
 }
 .theme-asset-icon-surface,
 .theme-asset-mini-icon {
@@ -13107,29 +13108,34 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   justify-content: center;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  border-radius: 18px;
+  overflow: visible;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0;
 }
-.theme-asset-icon-surface-dark {
-  background: linear-gradient(180deg, rgba(8,22,46,0.98), rgba(5,14,31,0.98));
-  box-shadow: inset 0 1px 0 rgba(122, 184, 255, 0.12), 0 8px 20px rgba(4, 12, 26, 0.28);
-}
+.theme-asset-icon-surface-dark,
 .theme-asset-icon-surface-clay {
-  background: linear-gradient(180deg, #f1e4d4, #deccb8);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 8px 18px rgba(86, 58, 33, 0.18);
+  background: transparent !important;
+  box-shadow: none !important;
 }
 .theme-asset-icon-image {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.12));
+}
+.theme-asset-icon-slot[data-icon-theme-asset="mono-luxe"] .theme-asset-icon-image {
+  filter: drop-shadow(0 2px 8px rgba(15, 23, 42, 0.35));
+}
+.theme-asset-icon-slot[data-icon-theme-asset="clay-3d"] .theme-asset-icon-image {
+  filter: drop-shadow(0 3px 8px rgba(86, 58, 33, 0.14));
 }
 .visual-asset-icon {
   display: inline-flex;
   width: 34px;
   height: 34px;
-  border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
 }
 .visual-asset-icon-inner {
   display: inline-flex;
@@ -13138,15 +13144,14 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 }
 .nav-item .nav-icon.theme-asset-icon-slot,
 .mini-module-icon-nav.theme-asset-icon-slot {
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
 }
 .module-illustration-slot-card.theme-asset-icon-slot,
 .module-status-icon.theme-asset-icon-slot,
 .module-illustration-slot-picker.theme-asset-icon-slot,
 .module-illustration-slot-tab.theme-asset-icon-slot {
-  border-radius: 18px;
+  border-radius: 0;
 }
 .warranty-item-actions {
   gap: 8px;

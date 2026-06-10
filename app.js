@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_172';
+  const APP_VERSION = 'Domácnost+ v.0.1_174';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -321,64 +321,16 @@
     ['isometric-micro', 'Isometric Micro', 'Drobnější prostorové ikonky s technickým detailem.']
   ];
 
-  const ASSET_ICON_MODULE_IDS = new Set(['home', 'calendar', 'homecare', 'garage', 'finance', 'more']);
+  const ASSET_ICON_IDS = ['home', 'calendar', 'weather', 'packages', 'shopping', 'homecare', 'garage', 'contracts', 'cameras', 'finance', 'subscriptions', 'settings', 'coupons', 'hdo', 'waste', 'tasks', 'notes', 'devices', 'warranties', 'polishHolidays', 'more'];
+  const ASSET_ICON_MODULE_IDS = new Set(ASSET_ICON_IDS);
   const ASSET_ICON_THEMES = {
-    'duotone-fresh': {
-      surface: 'dark',
-      icons: {
-        home: './assets/icon-themes/duotone-fresh/home.png',
-        calendar: './assets/icon-themes/duotone-fresh/calendar.png',
-        homecare: './assets/icon-themes/duotone-fresh/homecare.png',
-        garage: './assets/icon-themes/duotone-fresh/garage.png',
-        finance: './assets/icon-themes/duotone-fresh/finance.png',
-        more: './assets/icon-themes/duotone-fresh/more.png'
-      }
-    },
-    'sticker-ui': {
-      surface: 'dark',
-      icons: {
-        home: './assets/icon-themes/sticker-ui/home.png',
-        calendar: './assets/icon-themes/sticker-ui/calendar.png',
-        homecare: './assets/icon-themes/sticker-ui/homecare.png',
-        garage: './assets/icon-themes/sticker-ui/garage.png',
-        finance: './assets/icon-themes/sticker-ui/finance.png',
-        more: './assets/icon-themes/sticker-ui/more.png'
-      }
-    },
-    'clay-3d': {
-      surface: 'clay',
-      icons: {
-        home: './assets/icon-themes/clay-3d/home.png',
-        calendar: './assets/icon-themes/clay-3d/calendar.png',
-        homecare: './assets/icon-themes/clay-3d/homecare.png',
-        garage: './assets/icon-themes/clay-3d/garage.png',
-        finance: './assets/icon-themes/clay-3d/finance.png',
-        more: './assets/icon-themes/clay-3d/more.png'
-      }
-    },
-    'mono-luxe': {
-      surface: 'dark',
-      icons: {
-        home: './assets/icon-themes/mono-luxe/home.png',
-        calendar: './assets/icon-themes/mono-luxe/calendar.png',
-        homecare: './assets/icon-themes/mono-luxe/homecare.png',
-        garage: './assets/icon-themes/mono-luxe/garage.png',
-        finance: './assets/icon-themes/mono-luxe/finance.png',
-        more: './assets/icon-themes/mono-luxe/more.png'
-      }
-    },
-    'isometric-micro': {
-      surface: 'dark',
-      icons: {
-        home: './assets/icon-themes/isometric-micro/home.png',
-        calendar: './assets/icon-themes/isometric-micro/calendar.png',
-        homecare: './assets/icon-themes/isometric-micro/homecare.png',
-        garage: './assets/icon-themes/isometric-micro/garage.png',
-        finance: './assets/icon-themes/isometric-micro/finance.png',
-        more: './assets/icon-themes/isometric-micro/more.png'
-      }
-    }
+    'duotone-fresh': { surface: 'dark', pathPrefix: './assets/icon-themes/duotone-fresh/' },
+    'sticker-ui': { surface: 'dark', pathPrefix: './assets/icon-themes/sticker-ui/' },
+    'clay-3d': { surface: 'clay', pathPrefix: './assets/icon-themes/clay-3d/' },
+    'mono-luxe': { surface: 'dark', pathPrefix: './assets/icon-themes/mono-luxe/' },
+    'isometric-micro': { surface: 'dark', pathPrefix: './assets/icon-themes/isometric-micro/' }
   };
+
 
   const COLOR_SCHEME_OPTIONS = [
     ['sky', 'Modrá', 'Výchozí svěží modrá.'],
@@ -392,8 +344,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 79,
-      appBuild: 172,
-      mode: 'asset-icon-themes-v172',
+      appBuild: 174,
+      mode: 'asset-icon-themes-v174',
       createdAt: '',
       updatedAt: ''
     },
@@ -1237,8 +1189,8 @@
 
     migrated.meta = {
       schemaVersion: 79,
-      appBuild: 172,
-      mode: 'asset-icon-themes-v172',
+      appBuild: 174,
+      mode: 'asset-icon-themes-v174',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -3302,11 +3254,11 @@
   function getAssetThemeIconConfig(id, themeId = state.settings?.iconTheme || 'ios') {
     const iconId = getModuleIllustrationId(id);
     if (!ASSET_ICON_MODULE_IDS.has(iconId)) return null;
-    const theme = ASSET_ICON_THEMES[normalizeIconTheme(themeId)];
-    if (!theme) return null;
-    const src = theme.icons?.[iconId];
-    if (!src) return null;
-    return { iconId, themeId: normalizeIconTheme(themeId), src, surface: theme.surface || 'dark' };
+    const normalizedThemeId = normalizeIconTheme(themeId);
+    const theme = ASSET_ICON_THEMES[normalizedThemeId];
+    if (!theme?.pathPrefix) return null;
+    const src = `${theme.pathPrefix}${iconId}.png`;
+    return { iconId, themeId: normalizedThemeId, src, surface: theme.surface || 'dark' };
   }
 
   function renderAssetThemeIcon(id, options = {}) {
@@ -4275,7 +4227,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_172', note: 'Hotovo: Duotone Fresh, Sticker UI, Soft Clay 3D, Mono Luxe a Isometric Micro jsou pro spodní lištu a hlavní ikonky modulů napojené přes skutečné PNG assety podle schválených návrhů. Opravené je i nezavírání panelu Styl ikon a schéma a u záruk přibylo rychlé otevření nahrané přílohy.' },
+      { title: 'Domácnost+ v.0.1_174', note: 'Hotovo: Duotone Fresh, Sticker UI, Soft Clay 3D, Mono Luxe a Isometric Micro mají už kompletní assetové sady napojené napříč aplikací. Do appky jsou přidané i další ikony modulů a sekcí, takže přepínání stylu teď neřeší jen spodní lištu, ale i zbytek hlavních modulových ikon.' },
       { title: 'Domácnost+ v.0.1_163', note: 'Vzhled aplikace: barevná schémata jsou zúžená na Modrá a Royal, sada ikon zůstává jen iOS Soft kvůli čistému a sjednocenému UI.' },
       { title: 'Domácnost+ v.0.1_162', note: 'Záruky: přidání je nahoře a v základu zabalené, formulář má ochranu proti dvojitému uložení a fotky účtenek se před uložením automaticky komprimují.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
@@ -8684,7 +8636,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 172))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 174))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -13945,7 +13897,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 79, appBuild: 172, mode: 'rich-demo-v172', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 79, appBuild: 174, mode: 'rich-demo-v174', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -14088,7 +14040,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 172, mode: 'asset-icon-themes-v172', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 174, mode: 'asset-icon-themes-v174', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -16681,7 +16633,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 172
+        appBuild: 174
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -16804,7 +16756,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 172, schema_version: 79, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 174, schema_version: 79, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -17017,7 +16969,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 172,
+          app_build: 174,
           schema_version: 79,
           created_by: user.id,
           ...householdUiPayload()
@@ -17271,7 +17223,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-172-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-174-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -17539,7 +17491,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_172</span>
+          <span class="badge">Domácnost+ v.0.1_174</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
