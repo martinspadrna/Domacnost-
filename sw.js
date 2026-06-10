@@ -1,4 +1,4 @@
-const CACHE_NAME = 'domacnost-plus-v0-1-176';
+const CACHE_NAME = 'domacnost-plus-v0-1-178';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -81,7 +81,6 @@ const APP_ASSETS = [
   './assets/icon-themes/duotone-fresh/polishHolidays.png',
   './assets/icon-themes/duotone-fresh/settings.png',
   './assets/icon-themes/duotone-fresh/shopping.png',
-  './assets/icon-themes/duotone-fresh/shopping_white_preview.png',
   './assets/icon-themes/duotone-fresh/subscriptions.png',
   './assets/icon-themes/duotone-fresh/tasks.png',
   './assets/icon-themes/duotone-fresh/warranties.png',
@@ -127,7 +126,6 @@ const APP_ASSETS = [
   './assets/icon-themes/sticker-ui/subscriptions.png',
   './assets/icon-themes/sticker-ui/tasks.png',
   './assets/icon-themes/sticker-ui/warranties.png',
-  './assets/icon-themes/sticker-ui/warranties_white_preview.png',
   './assets/icon-themes/sticker-ui/waste.png',
   './assets/icon-themes/sticker-ui/weather.png',
 ];

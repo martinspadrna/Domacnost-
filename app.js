@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_176';
+  const APP_VERSION = 'Domácnost+ v.0.1_178';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -341,9 +341,9 @@
   const VISUAL_SETTINGS_STORAGE_KEY = 'domacnostPlus.visualSettings.v1';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 79,
-      appBuild: 176,
-      mode: 'approved-icon-themes-v175',
+      schemaVersion: 80,
+      appBuild: 178,
+      mode: 'shopping-lists-v178',
       createdAt: '',
       updatedAt: ''
     },
@@ -1186,9 +1186,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 79,
-      appBuild: 176,
-      mode: 'approved-icon-themes-v175',
+      schemaVersion: 80,
+      appBuild: 178,
+      mode: 'shopping-lists-v178',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1277,6 +1277,31 @@
           ...item
         }));
     });
+
+    if (!Array.isArray(migrated.shoppingLists)) migrated.shoppingLists = [];
+    if (Number(migrated.shoppingSeedVersion || 0) < 178) {
+      if (Array.isArray(migrated.shopping) && migrated.shopping.length && !migrated.shoppingLists.length) {
+        const legacyList = {
+          id: migrated.activeShoppingListId || `shopping-list-${uid()}`,
+          householdId: migrated.household.id,
+          profileId: migrated.activeProfileId || migrated.profiles[0]?.id || '',
+          name: 'Nákup',
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          sortOrder: 0,
+          source: 'legacy'
+        };
+        migrated.shoppingLists = [legacyList];
+        migrated.activeShoppingListId = legacyList.id;
+        migrated.shopping = migrated.shopping.map((item) => ({ ...item, listId: item.listId || legacyList.id }));
+      }
+      seedDefaultShoppingLists(migrated);
+    } else {
+      migrated.shoppingLists = normalizeShoppingLists(migrated.shoppingLists, migrated);
+      if (!migrated.shoppingLists.length) migrated.shoppingLists = DEFAULT_SHOPPING_LISTS.map((list, index) => ({ ...list, householdId: migrated.household.id, profileId: migrated.activeProfileId || migrated.profiles[0]?.id || '', createdAt: timestamp, updatedAt: timestamp, sortOrder: index }));
+      if (!migrated.shoppingLists.some((list) => list.id === migrated.activeShoppingListId)) migrated.activeShoppingListId = migrated.shoppingLists[0]?.id || 'shop-list-polsko';
+    }
+    migrated.shopping = (migrated.shopping || []).map((item) => normalizeShoppingItemRecord(item, migrated.activeShoppingListId || migrated.shoppingLists[0]?.id || 'shop-list-polsko'));
 
     const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
     migrated.vehicles = migrated.vehicles.map((vehicle) => {
@@ -1431,7 +1456,7 @@
   }
 
   function getCollectionNames() {
-    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'notes', 'devices', 'warranties', 'warrantyFiles', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'cameras', 'finance', 'financeAccounts', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
+    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingLists', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'notes', 'devices', 'warranties', 'warrantyFiles', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'cameras', 'finance', 'financeAccounts', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
   }
 
   function normalizeModuleList(value) {
@@ -4222,7 +4247,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_176', note: 'Hotovo: Mono Luxe je odebraný, zbývající ikonové sady mají opravené ořezy a průhlednost, Sticker UI už nepřichází o bílé části ikon, asset ikony se načítají stabilněji bez poblikávání a editace Home panelů má jen tlačítko Hotovo přes pevný čas/počasí.' },
+      { title: 'Domácnost+ v.0.1_178', note: 'Hotovo: Mono Luxe je odebraný, zbývající ikonové sady mají opravené ořezy a průhlednost, Sticker UI už nepřichází o bílé části ikon, asset ikony se načítají stabilněji bez poblikávání a editace Home panelů má jen tlačítko Hotovo přes pevný čas/počasí.' },
       { title: 'Domácnost+ v.0.1_163', note: 'Vzhled aplikace: barevná schémata jsou zúžená na Modrá a Royal, sada ikon zůstává jen iOS Soft kvůli čistému a sjednocenému UI.' },
       { title: 'Domácnost+ v.0.1_162', note: 'Záruky: přidání je nahoře a v základu zabalené, formulář má ochranu proti dvojitému uložení a fotky účtenek se před uložením automaticky komprimují.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
@@ -4934,6 +4959,188 @@
     return status || 'new';
   }
 
+
+  function shoppingKindIcon(kind) {
+    const label = normalizeText(kind) || 'Ostatní';
+    const match = getShoppingCategories().find(([name]) => normalizeKey(name) === normalizeKey(label));
+    return match?.[1] || '🛒';
+  }
+
+  function shoppingKindLabel(item) {
+    const catalogItem = item?.name ? DEFAULT_SHOPPING_CATALOG.find((entry) => normalizeKey(entry.name) === normalizeKey(item.name)) : null;
+    return normalizeText(item?.kind || item?.category || catalogItem?.kind || catalogItem?.category) || 'Ostatní';
+  }
+
+  function normalizeShoppingListRecord(list, index = 0) {
+    return {
+      id: list?.id || `shopping-list-${uid()}`,
+      householdId: list?.householdId || currentHouseholdId?.() || '',
+      profileId: list?.profileId || currentProfileId?.() || '',
+      name: normalizeText(list?.name) || `Seznam ${index + 1}`,
+      createdAt: list?.createdAt || new Date().toISOString(),
+      updatedAt: list?.updatedAt || list?.createdAt || new Date().toISOString(),
+      sortOrder: Number(list?.sortOrder ?? index),
+      source: list?.source || ''
+    };
+  }
+
+  function cloneDefaultShoppingLists() {
+    const timestamp = new Date().toISOString();
+    return DEFAULT_SHOPPING_LISTS.map((list, index) => ({
+      ...list,
+      householdId: currentHouseholdId?.() || '',
+      profileId: currentProfileId?.() || '',
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      sortOrder: index
+    }));
+  }
+
+  function cloneDefaultShoppingItems() {
+    const timestamp = new Date().toISOString();
+    return DEFAULT_SHOPPING_ITEMS.map((item) => ({
+      ...item,
+      householdId: currentHouseholdId?.() || '',
+      profileId: currentProfileId?.() || '',
+      createdAt: timestamp,
+      done: Boolean(item.done)
+    }));
+  }
+
+  function normalizeShoppingLists(listValue, migrated = state) {
+    const source = Array.isArray(listValue) ? listValue : [];
+    const normalized = source
+      .filter((list) => list && typeof list === 'object')
+      .map((list, index) => ({
+        ...normalizeShoppingListRecord(list, index),
+        householdId: list.householdId || migrated.household?.id || currentHouseholdId?.() || '',
+        profileId: list.profileId || migrated.activeProfileId || currentProfileId?.() || ''
+      }));
+    const byId = new Map();
+    normalized.forEach((list) => byId.set(list.id, list));
+    return [...byId.values()].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.name).localeCompare(String(b.name), 'cs'));
+  }
+
+  function normalizeShoppingItemRecord(item, listId) {
+    const catalogItem = item?.name ? DEFAULT_SHOPPING_CATALOG.find((entry) => normalizeKey(entry.name) === normalizeKey(item.name)) : null;
+    const kind = normalizeText(item?.kind || item?.category || catalogItem?.kind || catalogItem?.category) || 'Ostatní';
+    return {
+      ...item,
+      id: item?.id || `shopping-${uid()}`,
+      householdId: item?.householdId || currentHouseholdId?.() || '',
+      profileId: item?.profileId || currentProfileId?.() || '',
+      createdAt: item?.createdAt || new Date().toISOString(),
+      listId: item?.listId || listId,
+      name: normalizeText(item?.name),
+      category: kind,
+      kind,
+      quantity: Number(item?.quantity || item?.amount || 1) || 1,
+      unit: normalizeText(item?.unit) || catalogItem?.defaultUnit || 'ks',
+      note: normalizeText(item?.note),
+      done: Boolean(item?.done),
+      doneAt: item?.doneAt || ''
+    };
+  }
+
+  function seedDefaultShoppingLists(migrated) {
+    migrated.shoppingLists = normalizeShoppingLists(migrated.shoppingLists, migrated);
+    const existingListIds = new Set(migrated.shoppingLists.map((list) => list.id));
+    const existingItemKeys = new Set((migrated.shopping || []).map((item) => `${item.listId || migrated.activeShoppingListId || ''}|${normalizeKey(item.name)}`));
+    const timestamp = new Date().toISOString();
+
+    DEFAULT_SHOPPING_LISTS.forEach((list, index) => {
+      if (!existingListIds.has(list.id)) {
+        migrated.shoppingLists.push({
+          ...list,
+          householdId: migrated.household?.id || '',
+          profileId: migrated.activeProfileId || '',
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          sortOrder: index,
+          source: 'listonic-import-v178'
+        });
+        existingListIds.add(list.id);
+      }
+    });
+
+    const seededItems = DEFAULT_SHOPPING_ITEMS
+      .filter((item) => {
+        const key = `${item.listId}|${normalizeKey(item.name)}`;
+        if (existingItemKeys.has(key)) return false;
+        existingItemKeys.add(key);
+        return true;
+      })
+      .map((item) => ({
+        ...item,
+        householdId: migrated.household?.id || '',
+        profileId: migrated.activeProfileId || '',
+        createdAt: timestamp,
+        source: 'listonic-import-v178'
+      }));
+
+    migrated.shopping = [...(migrated.shopping || []), ...seededItems];
+    migrated.activeShoppingListId = migrated.activeShoppingListId || 'shop-list-polsko';
+    migrated.shoppingSeedVersion = 178;
+  }
+
+  function ensureShoppingListsReady() {
+    state.shoppingLists = normalizeShoppingLists(state.shoppingLists, state);
+    if (!state.shoppingLists.length) state.shoppingLists = cloneDefaultShoppingLists();
+    const validIds = new Set(state.shoppingLists.map((list) => list.id));
+    if (!validIds.has(state.activeShoppingListId)) state.activeShoppingListId = state.shoppingLists[0]?.id || '';
+    state.shopping = (state.shopping || []).map((item) => normalizeShoppingItemRecord(item, state.activeShoppingListId || state.shoppingLists[0]?.id || 'shop-list-polsko'));
+  }
+
+  function getShoppingLists() {
+    ensureShoppingListsReady();
+    return [...state.shoppingLists].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.name).localeCompare(String(b.name), 'cs'));
+  }
+
+  function getActiveShoppingListId() {
+    const lists = getShoppingLists();
+    if (!lists.some((list) => list.id === state.activeShoppingListId)) state.activeShoppingListId = lists[0]?.id || '';
+    return state.activeShoppingListId || lists[0]?.id || '';
+  }
+
+  function getActiveShoppingList() {
+    const id = getActiveShoppingListId();
+    return getShoppingLists().find((list) => list.id === id) || getShoppingLists()[0] || null;
+  }
+
+  function shoppingItemsForList(listId = getActiveShoppingListId()) {
+    return (state.shopping || []).filter((item) => (item.listId || getActiveShoppingListId()) === listId);
+  }
+
+  function shoppingListStats(listId) {
+    const items = shoppingItemsForList(listId);
+    const open = items.filter((item) => !item.done).length;
+    const done = items.length - open;
+    return { total: items.length, open, done };
+  }
+
+  function shoppingKindSortIndex(kind) {
+    const key = normalizeKey(kind);
+    const index = getShoppingCategories().findIndex(([name]) => normalizeKey(name) === key);
+    return index >= 0 ? index : 999;
+  }
+
+  function groupShoppingItemsByKind(items) {
+    const groups = new Map();
+    items.forEach((item) => {
+      const kind = shoppingKindLabel(item);
+      if (!groups.has(kind)) groups.set(kind, []);
+      groups.get(kind).push(item);
+    });
+    return [...groups.entries()]
+      .sort(([a], [b]) => shoppingKindSortIndex(a) - shoppingKindSortIndex(b) || String(a).localeCompare(String(b), 'cs'))
+      .map(([kind, rows]) => ({
+        kind,
+        icon: shoppingKindIcon(kind),
+        items: rows.sort((a, b) => String(a.name).localeCompare(String(b.name), 'cs'))
+      }));
+  }
+
+
   function getShoppingUnits() {
     const cloudUnits = state.shoppingCloud?.units || [];
     if (cloudUnits.length) return cloudUnits.map((unit) => [unit.code, unit.label || unit.code]);
@@ -4950,14 +5157,18 @@
 
   function getShoppingCatalog() {
     const cloudCatalog = state.shoppingCloud?.catalog || [];
-    const mappedCloud = cloudCatalog.map((item) => ({
-      id: item.id,
-      name: item.name,
-      defaultUnit: item.default_unit || item.defaultUnit || 'ks',
-      category: item.category_name || item.category || 'Ostatní',
-      householdId: item.household_id || '',
-      source: item.household_id ? 'household' : 'global'
-    }));
+    const mappedCloud = cloudCatalog.map((item) => {
+      const kind = item.kind || item.category_name || item.category || 'Ostatní';
+      return {
+        id: item.id,
+        name: item.name,
+        defaultUnit: item.default_unit || item.defaultUnit || 'ks',
+        category: kind,
+        kind,
+        householdId: item.household_id || '',
+        source: item.household_id ? 'household' : 'global'
+      };
+    });
     const localCustom = (state.shoppingCatalogCustom || []).map((item) => ({ ...item, source: 'local' }));
     const base = mappedCloud.length ? mappedCloud : DEFAULT_SHOPPING_CATALOG;
     const byName = new Map();
@@ -4965,7 +5176,7 @@
       if (!item?.name) return;
       byName.set(normalizeKey(item.name), item);
     });
-    return [...byName.values()].sort((a, b) => String(a.name).localeCompare(String(b.name), 'cs'));
+    return [...byName.values()].sort((a, b) => shoppingKindSortIndex(a.kind || a.category) - shoppingKindSortIndex(b.kind || b.category) || String(a.name).localeCompare(String(b.name), 'cs'));
   }
 
   function findShoppingCatalogItem(name) {
@@ -5018,63 +5229,92 @@
   }
 
   function renderShopping() {
-    const openItems = state.shopping.filter((item) => !item.done);
-    const doneItems = state.shopping.filter((item) => item.done);
+    ensureShoppingListsReady();
+    const lists = getShoppingLists();
+    const activeList = getActiveShoppingList();
+    const activeListId = activeList?.id || getActiveShoppingListId();
+    const activeItems = shoppingItemsForList(activeListId);
+    const openItems = activeItems.filter((item) => !item.done);
+    const doneItems = activeItems.filter((item) => item.done);
+    const groupedOpen = groupShoppingItemsByKind(openItems);
+    const groupedDone = groupShoppingItemsByKind(doneItems);
     const coupons = [...state.coupons].sort((a, b) => String(a.expiry || '9999').localeCompare(String(b.expiry || '9999')));
     const units = getShoppingUnits();
     const categories = getShoppingCategories();
     const catalog = getShoppingCatalog();
-    const quickItems = getShoppingQuickItems(10);
+    const quickItems = getShoppingQuickItems(14);
     const cloudReady = Boolean(state.cloud?.userId && state.cloud?.householdId);
     const ownCatalogCount = catalog.filter((item) => item.householdId || item.source === 'local').length;
-    const localOnlyShoppingCount = state.shopping.filter((item) => !item.cloudId).length;
+    const localOnlyShoppingCount = activeItems.filter((item) => !item.cloudId).length;
     const activeShoppingTab = getModuleTab('shopping', 'list');
+    const progress = activeItems.length ? Math.round((doneItems.length / activeItems.length) * 100) : 0;
     return `
       ${renderSectionTabs('shopping', [
-        { id: 'list', label: 'Seznam', icon: '🛒', count: openItems.length },
+        { id: 'list', label: 'Seznamy', icon: '🛒', count: openItems.length },
         { id: 'catalog', label: 'Katalog', icon: '📚', count: catalog.length },
         { id: 'coupons', label: 'Kódy', icon: '🏷️', count: coupons.length }
       ], 'list')}
       <div class="grid two module-tabbed shopping-tab-${activeShoppingTab}">
         <section class="card desktop-span-2 shopping-panel panel-list listonic-panel">
           <div class="card-header">
-            <div><h2>Nákupní seznam</h2><p>Jednoduchý checklist ve stylu rychlého nákupu: přidat, odškrtnout, hotovo.</p></div>
+            <div><h2>${escapeHtml(activeList?.name || 'Nákupní seznam')}</h2><p>Více seznamů podle obchodů nebo situace. Položky se řadí podle druhu, ať se v krámě nelítá sem a tam.</p></div>
             <span class="badge ${cloudReady ? 'good' : ''}">${cloudReady ? 'cloud nákupy' : 'lokálně'}</span>
           </div>
-          <div class="shopping-progress-card"><div><strong>${openItems.length ? `${openItems.length} koupit` : 'Nákup hotový'}</strong><span>${doneItems.length} hotovo · ${state.shopping.length} celkem</span></div><div class="shopping-progress"><span style="width:${state.shopping.length ? Math.round((doneItems.length / state.shopping.length) * 100) : 0}%"></span></div></div>
+
+          <div class="shopping-list-switcher">
+            ${lists.map((list) => {
+              const stat = shoppingListStats(list.id);
+              return `<button class="shopping-list-chip ${list.id === activeListId ? 'active' : ''}" type="button" data-action="set-shopping-list" data-id="${escapeHtml(list.id)}"><strong>${escapeHtml(list.name)}</strong><span>${stat.open ? `${stat.open} koupit` : 'hotovo'} · ${stat.total}</span></button>`;
+            }).join('')}
+          </div>
+
+          <details class="action-details compact-edit-details shopping-list-create-details">
+            <summary><span>Nový seznam</span><em>obchod, výlet nebo pravidelný nákup</em></summary>
+            <form data-form="add-shopping-list" class="compact-form">
+              <div class="form-grid two">
+                ${field('Název seznamu', 'name', 'text', 'Penny / Polsko / Lékárna', true)}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Vytvořit seznam</button>${lists.length > 1 ? `<button class="danger-btn" type="button" data-action="delete-shopping-list" data-id="${escapeHtml(activeListId)}">Smazat aktuální</button>` : ''}</div>
+            </form>
+          </details>
+
+          <div class="shopping-progress-card"><div><strong>${openItems.length ? `${openItems.length} koupit` : 'Nákup hotový'}</strong><span>${doneItems.length} hotovo · ${activeItems.length} celkem · ${escapeHtml(activeList?.name || 'seznam')}</span></div><div class="shopping-progress"><span style="width:${progress}%"></span></div></div>
+
           <div class="quick-add-panel listonic-quick-add">
-            <div class="quick-add-head"><strong>Rychlé přidání</strong><span>Časem se sem dostanou věci, které kupujete nejčastěji.</span></div>
+            <div class="quick-add-head"><strong>Rychlé přidání</strong><span>Nejčastější věci z katalogu a historie používání.</span></div>
             <div class="quick-chip-row">
-              ${quickItems.map((item) => `<button class="quick-chip" type="button" data-action="quick-add-shopping" data-name="${escapeHtml(item.name)}"><span>${escapeHtml(item.name)}</span><small>${escapeHtml(item.defaultUnit || 'ks')}</small></button>`).join('')}
+              ${quickItems.map((item) => `<button class="quick-chip" type="button" data-action="quick-add-shopping" data-name="${escapeHtml(item.name)}"><span>${escapeHtml(item.name)}</span><small>${escapeHtml(shoppingKindIcon(item.kind || item.category))} ${escapeHtml(item.defaultUnit || 'ks')}</small></button>`).join('')}
             </div>
           </div>
+
           <form data-form="add-shopping" class="listonic-add-form">
             <datalist id="shoppingCatalogList">
               ${catalog.map((item) => `<option value="${escapeHtml(item.name)}"></option>`).join('')}
             </datalist>
             <div class="form-grid four">
-              <div class="field"><label>Položka</label><input class="input" name="name" list="shoppingCatalogList" placeholder="mléko / rohlíky / granule" required></div>
-              ${selectField('Kategorie', 'category', categories.map(([name]) => [name, name]), 'Ostatní')}
+              <div class="field"><label>Položka</label><input class="input" name="name" list="shoppingCatalogList" placeholder="rohlíky / aviváž / kapsle" required></div>
+              ${selectField('Druh výrobku', 'kind', categories.map(([name]) => [name, `${shoppingKindIcon(name)} ${name}`]), 'Ostatní')}
               ${field('Množství', 'quantity', 'number', '1')}
               ${selectField('Jednotka', 'unit', units, 'ks')}
               ${field('Poznámka', 'note', 'text', 'volitelné')}
             </div>
             <div class="form-actions">
-              <button class="primary-btn" type="submit">Přidat do seznamu</button>
+              <button class="primary-btn" type="submit">Přidat do ${escapeHtml(activeList?.name || 'seznamu')}</button>
               ${cloudReady ? `<button class="ghost-btn" type="button" data-action="cloud-load-shopping">Načíst cloud nákupy</button>` : ''}
               ${cloudReady && localOnlyShoppingCount ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-shopping">Odeslat lokální (${localOnlyShoppingCount})</button>` : ''}
             </div>
           </form>
-          <div class="hint-box">Když zadáš novou položku, která není v katalogu, uloží se jako vlastní položka téhle domácnosti. Nepřepíše se nikomu jinému.</div>
+
+          <div class="hint-box">Druh výrobku určuje řazení v seznamu a ikonku vpravo. Stejné druhy se drží u sebe.</div>
           <div style="height:14px"></div>
-          ${openItems.length ? `<div class="list shopping-listonic-list">${openItems.map(renderShoppingItem).join('')}</div>` : renderEmptyCta({ icon: '🛒', title: 'Nákup je prázdný', text: 'Přidej položku z katalogu nebo vlastní položku domácnosti.', nav: 'shopping', tab: 'list', label: 'Přidat položku' })}
-          ${doneItems.length ? `<div class="card-header" style="margin-top:16px"><div><h3>Hotovo</h3><p>${doneItems.length} položek</p></div></div><div class="list shopping-listonic-list shopping-listonic-done">${doneItems.slice(0, 6).map(renderShoppingItem).join('')}</div>` : ''}
+          ${openItems.length ? `<div class="shopping-grouped-list">${groupedOpen.map(renderShoppingGroup).join('')}</div>` : renderEmptyCta({ icon: '🛒', title: 'Nákup je prázdný', text: 'Přidej položku z katalogu nebo vlastní položku domácnosti.', nav: 'shopping', tab: 'list', label: 'Přidat položku' })}
+          ${doneItems.length ? `<details class="shopping-done-details"><summary><span>Hotovo</span><em>${doneItems.length} položek</em></summary><div class="shopping-grouped-list shopping-listonic-done">${groupedDone.map(renderShoppingGroup).join('')}</div></details>` : ''}
         </section>
 
         <section class="card shopping-panel panel-catalog">
-          <div class="card-header"><div><h2>Katalog domácnosti</h2><p>Časté věci k nákupu. Základ je společný, tvoje vlastní položky jsou oddělené podle domácnosti.</p></div></div>
-          <div class="list compact-list">
-            ${catalog.slice(0, 24).map((item) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(item.name)}</div><span class="badge">${escapeHtml(item.defaultUnit || 'ks')}</span></div><div class="item-meta">${escapeHtml(item.category || 'Ostatní')} · ${shoppingSourceLabel(item)}${getShoppingStat(item.name)?.count ? ` · použito ${getShoppingStat(item.name).count}×` : ''}</div><div class="item-actions"><button class="ghost-btn" type="button" data-action="quick-add-shopping" data-name="${escapeHtml(item.name)}">Přidat</button></div></div>`).join('')}
+          <div class="card-header"><div><h2>Katalog domácnosti</h2><p>Katalog je nově podle tvých Listonic seznamů. Druh výrobku slouží pro řazení v obchodě.</p></div><span class="badge">${ownCatalogCount ? `${ownCatalogCount} vlastních` : 'základ'}</span></div>
+          <div class="list compact-list shopping-catalog-list">
+            ${catalog.map((item) => `<div class="item compact-item"><div class="item-top"><div class="item-title"><span class="shopping-kind-badge" aria-hidden="true">${escapeHtml(shoppingKindIcon(item.kind || item.category))}</span>${escapeHtml(item.name)}</div><span class="badge">${escapeHtml(item.defaultUnit || 'ks')}</span></div><div class="item-meta">${escapeHtml(item.kind || item.category || 'Ostatní')} · ${shoppingSourceLabel(item)}${getShoppingStat(item.name)?.count ? ` · použito ${getShoppingStat(item.name).count}×` : ''}</div><div class="item-actions"><button class="ghost-btn" type="button" data-action="quick-add-shopping" data-name="${escapeHtml(item.name)}">Přidat do ${escapeHtml(activeList?.name || 'seznamu')}</button></div></div>`).join('')}
           </div>
         </section>
 
@@ -5100,8 +5340,19 @@
     `;
   }
 
+  function renderShoppingGroup(group) {
+    return `
+      <section class="shopping-kind-group">
+        <div class="shopping-kind-heading"><span>${escapeHtml(group.icon)}</span><strong>${escapeHtml(group.kind)}</strong><em>${group.items.length}</em></div>
+        <div class="list shopping-listonic-list">${group.items.map(renderShoppingItem).join('')}</div>
+      </section>
+    `;
+  }
+
+
   function renderShoppingItem(item) {
     const amount = [item.quantity || item.amount || 1, item.unit || 'ks'].filter(Boolean).join(' ');
+    const kind = shoppingKindLabel(item);
     return `
       <div class="item shopping-listonic-item ${item.done ? 'done' : ''}">
         <button class="shopping-check-btn ${item.done ? 'checked' : ''}" type="button" data-action="toggle-done" data-collection="shopping" data-id="${item.id}" aria-label="${item.done ? 'Vrátit položku' : 'Označit jako koupené'}">
@@ -5109,13 +5360,15 @@
         </button>
         <div class="shopping-listonic-copy">
           <div class="item-title">${escapeHtml(item.name)}</div>
-          <div class="item-meta">${escapeHtml(item.category || 'bez kategorie')}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ''}</div>
+          <div class="item-meta">${escapeHtml(kind)}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ''}</div>
         </div>
         <span class="badge shopping-amount-pill">${escapeHtml(amount)}</span>
+        <span class="shopping-row-kind-icon" title="${escapeHtml(kind)}" aria-hidden="true">${escapeHtml(shoppingKindIcon(kind))}</span>
         <button class="danger-btn mini-danger-btn" type="button" data-action="delete" data-collection="shopping" data-id="${item.id}" aria-label="Smazat ${escapeHtml(item.name)}">×</button>
       </div>
     `;
   }
+
 
   function renderCouponItem(coupon) {
     const left = daysUntil(coupon.expiry);
@@ -10685,20 +10938,23 @@
 
 
   async function addShoppingFromForm(data, form) {
+    ensureShoppingListsReady();
     const name = normalizeText(data.name);
     if (!name) return showToast('Zadej položku');
     const catalogItem = findShoppingCatalogItem(name);
-    const category = normalizeText(data.category) || catalogItem?.category || 'Ostatní';
+    const kind = normalizeText(data.kind || data.category) || catalogItem?.kind || catalogItem?.category || 'Ostatní';
+    const category = kind;
     const unit = normalizeText(data.unit) || catalogItem?.defaultUnit || 'ks';
     const quantity = decimalValue(data.quantity) || 1;
     const note = normalizeText(data.note);
     const isKnown = Boolean(catalogItem);
+    const listId = getActiveShoppingListId();
     const cloudReady = Boolean(state.cloud?.userId && state.cloud?.householdId);
 
     if (!isKnown) {
       state.shoppingCatalogCustom = state.shoppingCatalogCustom || [];
       if (!state.shoppingCatalogCustom.some((item) => normalizeKey(item.name) === normalizeKey(name))) {
-        state.shoppingCatalogCustom.push({ id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name, defaultUnit: unit, category });
+        state.shoppingCatalogCustom.push({ id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name, defaultUnit: unit, category, kind });
       }
     }
 
@@ -10707,8 +10963,10 @@
       householdId: currentHouseholdId(),
       profileId: currentProfileId(),
       createdAt: new Date().toISOString(),
+      listId,
       name,
       category,
+      kind,
       quantity,
       unit,
       note,
@@ -10731,7 +10989,7 @@
     saveState();
     form?.reset();
     render();
-    showToast(isKnown ? 'Přidáno do nákupu' : 'Přidáno i do katalogu domácnosti');
+    showToast(isKnown ? 'Přidáno do seznamu' : 'Přidáno i do katalogu domácnosti');
   }
 
   async function quickAddShoppingByName(name) {
@@ -10739,17 +10997,67 @@
     if (!catalogItem) return showToast('Položku se nepovedlo najít v katalogu');
     await addShoppingFromForm({
       name: catalogItem.name,
-      category: catalogItem.category || 'Ostatní',
+      kind: catalogItem.kind || catalogItem.category || 'Ostatní',
+      category: catalogItem.kind || catalogItem.category || 'Ostatní',
       quantity: '1',
       unit: catalogItem.defaultUnit || 'ks',
       note: ''
     }, null);
   }
 
+  function addShoppingListFromForm(data, form) {
+    ensureShoppingListsReady();
+    const name = normalizeText(data.name);
+    if (!name) return showToast('Zadej název seznamu');
+    const id = `shopping-list-${uid()}`;
+    const timestamp = new Date().toISOString();
+    state.shoppingLists.push({
+      id,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      name,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      sortOrder: state.shoppingLists.length,
+      source: 'custom'
+    });
+    state.activeShoppingListId = id;
+    touchState();
+    saveState();
+    form?.reset();
+    render();
+    showToast(`Seznam ${name} vytvořen`);
+  }
+
+  function setActiveShoppingList(id) {
+    ensureShoppingListsReady();
+    if (!state.shoppingLists.some((list) => list.id === id)) return;
+    state.activeShoppingListId = id;
+    touchState();
+    saveState();
+    render();
+  }
+
+  function deleteShoppingList(id) {
+    ensureShoppingListsReady();
+    const lists = getShoppingLists();
+    if (lists.length <= 1) return showToast('Poslední seznam nejde smazat');
+    const list = lists.find((entry) => entry.id === id);
+    if (!list) return;
+    if (!window.confirm(`Smazat seznam ${list.name} včetně položek?`)) return;
+    state.shoppingLists = state.shoppingLists.filter((entry) => entry.id !== id);
+    state.shopping = state.shopping.filter((item) => item.listId !== id);
+    if (state.activeShoppingListId === id) state.activeShoppingListId = state.shoppingLists[0]?.id || '';
+    touchState();
+    saveState();
+    render();
+    showToast('Seznam smazán');
+  }
+
   async function cloudSyncLocalShoppingItems() {
     const cloudReady = Boolean(state.cloud?.userId && state.cloud?.householdId);
     if (!cloudReady) return showToast('Nejdřív napoj domácnost na cloud');
-    const localItems = state.shopping.filter((item) => !item.cloudId);
+    const localItems = shoppingItemsForList().filter((item) => !item.cloudId);
     if (!localItems.length) return showToast('Není co odeslat');
     let synced = 0;
     for (const item of localItems) {
@@ -10823,7 +11131,9 @@
       note: item.note || '',
       done: Boolean(item.is_done),
       catalogItemId: item.catalog_item_id || '',
-      category: findShoppingCatalogItem(item.name)?.category || 'Ostatní'
+      category: findShoppingCatalogItem(item.name)?.kind || findShoppingCatalogItem(item.name)?.category || 'Ostatní',
+      kind: findShoppingCatalogItem(item.name)?.kind || findShoppingCatalogItem(item.name)?.category || 'Ostatní',
+      listId: getActiveShoppingListId()
     }));
     const localOnly = state.shopping.filter((item) => !item.cloudId);
     state.shopping = [...localOnly, ...cloudItems];
@@ -13305,6 +13615,7 @@
       'google-calendar-save-sources': () => saveGoogleCalendarSourcesFromForm(form),
       'add-package': () => addPackageFromForm(data, form),
       'add-shopping': () => addShoppingFromForm(data, form),
+      'add-shopping-list': () => addShoppingListFromForm(data, form),
       'add-coupon': () => addItem('coupons', { store: data.store, code: data.code, discount: data.discount, expiry: data.expiry, note: data.note, used: false }),
       'update-coupon': () => updateCoupon(form.dataset.id, data),
       'add-hdo': () => addHdoWindowFromForm(data, form),
@@ -13891,7 +14202,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 79, appBuild: 176, mode: 'rich-demo-v176', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 80, appBuild: 178, mode: 'rich-demo-v178', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -14034,7 +14345,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 176, mode: 'approved-icon-themes-v175', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 80, appBuild: 178, mode: 'shopping-lists-v178', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -15678,6 +15989,14 @@
       cloudLoadShoppingData(true);
       return;
     }
+    if (action === 'set-shopping-list') {
+      setActiveShoppingList(button.dataset.id || '');
+      return;
+    }
+    if (action === 'delete-shopping-list') {
+      deleteShoppingList(button.dataset.id || '');
+      return;
+    }
     if (action === 'quick-add-shopping') {
       quickAddShoppingByName(button.dataset.name || '');
       return;
@@ -16627,7 +16946,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 176
+        appBuild: 178
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -16750,7 +17069,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 176, schema_version: 79, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 178, schema_version: 80, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -16963,8 +17282,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 176,
-          schema_version: 79,
+          app_build: 178,
+          schema_version: 80,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -17217,7 +17536,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-176-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-178-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -17485,7 +17804,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_176</span>
+          <span class="badge">Domácnost+ v.0.1_178</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
