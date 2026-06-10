@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_164';
+  const APP_VERSION = 'Domácnost+ v.0.1_168';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -332,8 +332,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 79,
-      appBuild: 164,
-      mode: 'calendar-weather-icons-v164',
+      appBuild: 168,
+      mode: 'calendar-weather-icons-v166',
       createdAt: '',
       updatedAt: ''
     },
@@ -654,6 +654,8 @@
   let fuelioPreview = null;
   let garageEditRecord = null;
   let garageModal = null;
+  let filePreviewModal = null;
+  let activeWarrantyDetailId = null;
   let couponEditId = '';
   let warrantyFormDraft = safeParse(sessionStorage.getItem('domacnostPlus.warrantyDraft'), null) || null;
   let calendarDetailEventId = null;
@@ -1174,8 +1176,8 @@
 
     migrated.meta = {
       schemaVersion: 79,
-      appBuild: 164,
-      mode: 'calendar-weather-icons-v164',
+      appBuild: 168,
+      mode: 'calendar-weather-icons-v166',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1688,7 +1690,7 @@
     applyVisualSettings();
     const showStartChoice = shouldShowStartChoice();
     if (showStartChoice) activeOverview = null;
-    document.body.classList.toggle('overview-open', Boolean(activeOverview || garageModal || calendarDetailEventId));
+    document.body.classList.toggle('overview-open', Boolean(activeOverview || garageModal || calendarDetailEventId || filePreviewModal || activeWarrantyDetailId));
 
     if (showStartChoice) {
       app?.classList?.remove('home-app-shell');
@@ -1985,7 +1987,7 @@
   }
 
   function renderGlobalModals() {
-    return `${renderCalendarEventDetailModal()}${renderGarageRecordModal()}`;
+    return `${renderCalendarEventDetailModal()}${renderGarageRecordModal()}${renderWarrantyDetailModal()}${renderFilePreviewModal()}`;
   }
 
   function findCalendarEventById(id) {
@@ -2092,6 +2094,74 @@
         </section>
       </div>
     `;
+  }
+
+  function filePreviewTypeLabel(type = '', name = '') {
+    const value = String(type || '').toLowerCase();
+    const fileName = String(name || '').toLowerCase();
+    if (value.includes('pdf') || fileName.endsWith('.pdf')) return 'PDF';
+    if (value.startsWith('image/') || /\.(png|jpe?g|webp|gif|heic|heif)$/i.test(fileName)) return 'Fotka';
+    return 'Soubor';
+  }
+
+  function isPreviewableImage(type = '', name = '') {
+    const value = String(type || '').toLowerCase();
+    const fileName = String(name || '').toLowerCase();
+    return value.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(fileName);
+  }
+
+  function isPreviewablePdf(type = '', name = '') {
+    const value = String(type || '').toLowerCase();
+    const fileName = String(name || '').toLowerCase();
+    return value.includes('pdf') || fileName.endsWith('.pdf');
+  }
+
+  function renderFilePreviewModal() {
+    if (!filePreviewModal?.url) return '';
+    const name = filePreviewModal.name || 'Příloha';
+    const type = filePreviewModal.type || '';
+    const label = filePreviewTypeLabel(type, name);
+    const src = escapeHtml(filePreviewModal.url);
+    const titleId = 'file-preview-title';
+    const preview = isPreviewableImage(type, name)
+      ? `<div class="file-preview-stage image-stage"><img src="${src}" alt="${escapeHtml(name)}" loading="eager"></div>`
+      : isPreviewablePdf(type, name)
+        ? `<div class="file-preview-stage pdf-stage"><iframe src="${src}" title="${escapeHtml(name)}"></iframe></div>`
+        : `<div class="file-preview-stage unsupported-stage"><strong>Náhled tohoto typu souboru nejde bezpečně zobrazit.</strong><span>Můžeš ho otevřít mimo aplikaci nebo stáhnout.</span></div>`;
+    return `
+      <div class="app-modal-backdrop file-preview-backdrop" data-modal-backdrop role="presentation">
+        <section class="app-modal file-preview-modal" role="dialog" aria-modal="true" aria-labelledby="${titleId}">
+          <div class="app-modal-head file-preview-head">
+            <div>
+              <span class="badge good">${escapeHtml(label)} · ${escapeHtml(filePreviewModal.source || 'příloha')}</span>
+              <h2 id="${titleId}">${escapeHtml(name)}</h2>
+              <p>Soubor se otevřel přímo v aplikaci.</p>
+            </div>
+            <button class="icon-btn" type="button" data-action="close-modal" aria-label="Zavřít náhled">×</button>
+          </div>
+          ${preview}
+          <div class="form-actions modal-actions file-preview-actions">
+            <a class="ghost-btn" href="${src}" target="_blank" rel="noopener">Otevřít mimo app</a>
+            <a class="primary-btn" href="${src}" download="${escapeHtml(name)}">Stáhnout</a>
+            <button class="ghost-btn" type="button" data-action="close-modal">Zavřít</button>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function closeFilePreviewModal() {
+    if (filePreviewModal?.objectUrl) {
+      try { URL.revokeObjectURL(filePreviewModal.objectUrl); } catch {}
+    }
+    filePreviewModal = null;
+  }
+
+  function showFilePreviewModal({ url, objectUrl = '', name = 'Příloha', type = '', source = '' } = {}) {
+    if (!url) return showToast('Soubor nejde otevřít');
+    closeFilePreviewModal();
+    filePreviewModal = { url, objectUrl, name, type, source };
+    render();
   }
 
   function closeOverview() {
@@ -3219,8 +3289,9 @@
     const iconId = getModuleIllustrationId(id);
     const [a, b, c] = themedIconColors(iconId);
     const extraClass = options.extraClass ? ` ${escapeHtml(String(options.extraClass).trim())}` : '';
+    const themeId = normalizeIconTheme(options.themeId || state.settings?.iconTheme || 'ios');
     const body = getThemedModuleIconBody(iconId);
-    return `<svg class="module-theme-icon module-theme-icon-${escapeHtml(iconId)}${extraClass}" style="--icon-a:${a};--icon-b:${b};--icon-c:${c}" viewBox="0 0 64 64" focusable="false" aria-hidden="true"><rect class="icon-tile" x="5" y="5" width="54" height="54" rx="17"></rect><g class="icon-glyph">${body}</g></svg>`;
+    return `<svg class="module-theme-icon module-theme-icon-${escapeHtml(iconId)} icon-style-${escapeHtml(themeId)}${extraClass}" style="--icon-a:${a};--icon-b:${b};--icon-c:${c}" viewBox="0 0 64 64" focusable="false" aria-hidden="true"><rect class="icon-tile" x="5" y="5" width="54" height="54" rx="17"></rect><g class="icon-glyph">${body}</g></svg>`;
   }
 
   function getThemedModuleIconBody(id) {
@@ -4094,7 +4165,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_164', note: 'Hotovo: přidané nové sady ikon Duotone Fresh, Sticker UI, Soft Clay 3D, Mono Luxe a Isometric Micro; Kalendář je uklizený, zdroje/Google/ruční zdroj jsou zabalené a Počasí má nastavení dole.' },
+      { title: 'Domácnost+ v.0.1_168', note: 'Hotovo: přílohy záruk a smluv se otevírají v náhledu přímo v aplikaci, PDF i fotky mají vlastní modal a zůstává možnost otevřít mimo app nebo stáhnout.' },
       { title: 'Domácnost+ v.0.1_163', note: 'Vzhled aplikace: barevná schémata jsou zúžená na Modrá a Royal, sada ikon zůstává jen iOS Soft kvůli čistému a sjednocenému UI.' },
       { title: 'Domácnost+ v.0.1_162', note: 'Záruky: přidání je nahoře a v základu zabalené, formulář má ochranu proti dvojitému uložení a fotky účtenek se před uložením automaticky komprimují.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
@@ -4609,12 +4680,15 @@
             <div><h2>Kalendář</h2></div>
             <span class="badge ${cloudCount ? 'good' : ''}">${events.length} událostí</span>
           </div>
-          <div class="cloud-status-grid compact-cloud-stats calendar-overview-stats">
-            <div class="mini-stat"><span>Dnes</span><strong>${todayEvents.length}</strong></div>
-            <div class="mini-stat"><span>Brzy</span><strong>${soonCount}</strong></div>
-            <div class="mini-stat"><span>Zdroje</span><strong>${activeSources}/${sourceList.length || 1}</strong></div>
-            <div class="mini-stat"><span>Lokálně</span><strong>${localOnly}</strong></div>
-          </div>
+          <details class="compact-edit-details calendar-overview-summary-details">
+            <summary><span>Souhrn kalendáře</span><em>${events.length} událostí · ${activeSources}/${sourceList.length || 0} zdrojů</em></summary>
+            <div class="cloud-status-grid compact-cloud-stats calendar-overview-stats">
+              <div class="mini-stat"><span>Celkem</span><strong>${events.length}</strong></div>
+              <div class="mini-stat"><span>Dnes</span><strong>${todayEvents.length}</strong></div>
+              <div class="mini-stat"><span>Brzy</span><strong>${soonCount}</strong></div>
+              <div class="mini-stat"><span>Zdroje</span><strong>${activeSources}/${sourceList.length || 0}</strong></div>
+            </div>
+          </details>
           ${hiddenEvents ? `<div class="inline-note">${hiddenEvents} událostí je schovaných, protože jejich kalendář je vypnutý.</div>` : ''}
           ${renderCalendarMonthGrid(events, calendarViewMonth)}
           ${events.length ? '' : renderEmptyCta({ icon: '📅', title: 'Kalendář je prázdný', text: 'Přidej první sdílenou domácí událost.', nav: 'calendar', tab: 'add', label: 'Přidat událost' })}
@@ -5158,43 +5232,100 @@
       });
   }
 
-  function renderWarrantyFileItem(file) {
+  function renderWarrantyFileItem(file, options = {}) {
+    const deletable = options.deletable !== false;
     return `
       <div class="warranty-file-row">
         <button class="ghost-btn file-open-btn" type="button" data-action="open-warranty-file" data-id="${escapeHtml(file.id)}">${escapeHtml(file.fileName || 'Příloha')}</button>
         <span class="item-meta">${escapeHtml(file.fileType || 'soubor')} · ${formatBytes(file.size)}${file.cloudId ? ' · cloud' : ' · lokálně'}</span>
-        <button class="danger-btn mini-danger-btn" type="button" data-action="delete-warranty-file" data-id="${escapeHtml(file.id)}" aria-label="Smazat přílohu">×</button>
+        ${deletable ? `<button class="danger-btn mini-danger-btn" type="button" data-action="delete-warranty-file" data-id="${escapeHtml(file.id)}" aria-label="Smazat přílohu">×</button>` : ''}
       </div>
     `;
   }
 
   function renderWarrantyItem(item) {
-    const files = warrantyFilesFor(item.id);
+    const fileCount = warrantyFileCount(item.id);
     const meta = [
       item.store,
       item.price ? formatCurrency(item.price) : '',
       `koupeno ${formatDate(item.purchaseDate)}`,
       `${item.warrantyYears || 2} roky`,
       `do ${formatDate(item.warrantyUntil)}`,
-      files.length ? `${files.length} příloh` : '',
+      fileCount ? `${fileCount} příloh` : 'bez příloh',
       warrantyStatusLabel(item.status)
     ].filter(Boolean).join(' · ');
     return `
-      <div class="item warranty-item">
+      <button class="item warranty-item warranty-overview-button" type="button" data-action="open-warranty-detail" data-id="${escapeHtml(item.id)}">
         <div class="item-top">
           <div class="item-title">🧾 ${escapeHtml(item.name)}</div>
           <span class="badge ${warrantyTone(item)}">${escapeHtml(warrantyBadge(item))}</span>
         </div>
         <div class="item-meta">${escapeHtml(meta)}</div>
         ${item.note ? `<div class="inline-note compact-note">${escapeHtml(item.note)}</div>` : ''}
-        <div class="warranty-files-block">
-          ${files.length ? `<div class="warranty-file-list">${files.map(renderWarrantyFileItem).join('')}</div>` : '<div class="item-meta">Bez přílohy</div>'}
-          <form data-form="add-warranty-files" data-warranty-id="${escapeHtml(item.id)}" class="compact-form warranty-file-form">
-            <label class="field"><span>Fotka / PDF</span><input class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf"></label>
-            <div class="form-actions compact-actions"><button class="ghost-btn" type="submit">Přidat přílohu</button></div>
-          </form>
-        </div>
-        <div class="item-actions"><button class="danger-btn" type="button" data-action="delete-warranty" data-id="${item.id}">Smazat</button></div>
+        <div class="item-actions compact-actions"><span class="ghost-btn fake-btn">Detail</span></div>
+      </button>
+    `;
+  }
+
+  function renderWarrantyDetailModal() {
+    if (!activeWarrantyDetailId) return '';
+    const item = normalizeWarranties(state.warranties).find((entry) => entry.id === activeWarrantyDetailId);
+    if (!item) return '';
+    const files = warrantyFilesFor(item.id);
+    const purchaseDate = item.purchaseDate || todayISO();
+    const warrantyYears = normalizeWarrantyYears(item.warrantyYears || warrantyYearsFromDates(purchaseDate, item.warrantyUntil) || 2, purchaseDate);
+    const warrantyUntil = item.warrantyUntil || addYearsIso(purchaseDate, warrantyYears);
+    return `
+      <div class="app-modal-backdrop warranty-detail-backdrop" data-modal-backdrop role="presentation">
+        <section class="app-modal warranty-detail-modal" role="dialog" aria-modal="true" aria-labelledby="warranty-detail-title">
+          <div class="app-modal-head warranty-detail-head">
+            <div>
+              <span class="badge ${warrantyTone(item)}">${escapeHtml(warrantyBadge(item))}</span>
+              <h2 id="warranty-detail-title">${escapeHtml(item.name)}</h2>
+              <p>${escapeHtml([item.store, item.price ? formatCurrency(item.price) : '', `do ${formatDate(item.warrantyUntil)}`].filter(Boolean).join(' · '))}</p>
+            </div>
+            <button class="icon-btn" type="button" data-action="close-modal" aria-label="Zavřít detail záruky">×</button>
+          </div>
+
+          <div class="modal-detail-grid warranty-detail-summary">
+            <div class="modal-detail-card"><span>Koupeno</span><strong>${escapeHtml(formatDate(item.purchaseDate))}</strong></div>
+            <div class="modal-detail-card"><span>Záruka do</span><strong>${escapeHtml(formatDate(item.warrantyUntil))}</strong></div>
+            <div class="modal-detail-card"><span>Délka</span><strong>${escapeHtml(String(item.warrantyYears || 2))} roky</strong></div>
+            <div class="modal-detail-card"><span>Přílohy</span><strong>${files.length}</strong></div>
+          </div>
+
+          <details class="compact-edit-details warranty-detail-edit" open>
+            <summary><span>Upravit údaje</span><em>všechny hodnoty záruky</em></summary>
+            <form data-form="edit-warranty" data-id="${escapeHtml(item.id)}" class="compact-form warranty-form">
+              <div class="form-grid two">
+                ${field('Věc', 'name', 'text', 'televize / pračka / telefon', true, item.name)}
+                ${field('Obchod', 'store', 'text', 'Alza / Datart / Kaufland', false, item.store)}
+                ${field('Cena', 'price', 'text', 'volitelné', false, item.price, 'decimal')}
+                ${field('Datum koupě', 'purchaseDate', 'date', '', true, purchaseDate)}
+                ${selectField('Délka záruky', 'warrantyYears', WARRANTY_YEARS_OPTIONS, String(warrantyYears))}
+                ${field('Záruka do', 'warrantyUntil', 'date', 'automaticky podle délky', false, warrantyUntil)}
+                ${selectField('Stav', 'status', WARRANTY_STATUS_OPTIONS, item.status)}
+                ${field('Poznámka / reklamace', 'note', 'text', 'reklamace, domluva', false, item.note)}
+              </div>
+              <div class="form-actions modal-actions"><button class="primary-btn" type="submit">Uložit změny</button></div>
+            </form>
+          </details>
+
+          <details class="compact-edit-details warranty-detail-files" open>
+            <summary><span>Přílohy</span><em>${files.length ? `${files.length} souborů` : 'fotka / PDF'}</em></summary>
+            ${files.length ? `<div class="warranty-file-list">${files.map((file) => renderWarrantyFileItem(file)).join('')}</div>` : '<div class="item-meta">Bez přílohy</div>'}
+            <form data-form="add-warranty-files" data-warranty-id="${escapeHtml(item.id)}" class="compact-form warranty-file-form">
+              <label class="field"><span>Přidat fotku / PDF</span><input class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf"></label>
+              <div class="form-actions compact-actions"><button class="ghost-btn" type="submit">Přidat přílohu</button></div>
+            </form>
+          </details>
+
+          <details class="compact-edit-details danger-zone warranty-detail-danger">
+            <summary><span>Smazat záruku</span><em>nevratná akce</em></summary>
+            <div class="hint-box danger-hint">Smaže se záruka i její vazby na přílohy.</div>
+            <div class="form-actions modal-actions"><button class="danger-btn" type="button" data-action="delete-warranty" data-id="${escapeHtml(item.id)}">Smazat záruku</button></div>
+          </details>
+        </section>
       </div>
     `;
   }
@@ -8328,20 +8459,23 @@
           <div><h2>Vzhled aplikace</h2><p>Styl ikon i barevné schéma jsou osobní nastavení účtu. Každý člen domácnosti může mít vlastní vzhled.</p></div>
           <span class="badge">${escapeHtml(getOptionLabel(ICON_THEME_OPTIONS, visual.iconTheme))} · ${escapeHtml(getOptionLabel(COLOR_SCHEME_OPTIONS, visual.colorScheme))}</span>
         </div>
-        <div class="visual-settings-stack">
-          <div class="visual-settings-group">
-            <h3>Režim</h3>
-            ${renderVisualChoiceGrid(APP_THEME_OPTIONS, visual.theme, 'set-app-theme', 'theme', 'theme-choice-grid')}
+        <details class="compact-edit-details settings-visual-details">
+          <summary><span>Styl ikon a schéma</span><em>${escapeHtml(getOptionLabel(ICON_THEME_OPTIONS, visual.iconTheme))} · ${escapeHtml(getOptionLabel(COLOR_SCHEME_OPTIONS, visual.colorScheme))}</em></summary>
+          <div class="visual-settings-stack">
+            <div class="visual-settings-group">
+              <h3>Režim</h3>
+              ${renderVisualChoiceGrid(APP_THEME_OPTIONS, visual.theme, 'set-app-theme', 'theme', 'theme-choice-grid')}
+            </div>
+            <div class="visual-settings-group">
+              <h3>Styl ikon</h3>
+              ${renderVisualChoiceGrid(ICON_THEME_OPTIONS, visual.iconTheme, 'set-icon-theme', 'iconTheme', 'icon-choice-grid')}
+            </div>
+            <div class="visual-settings-group">
+              <h3>Barevné schéma</h3>
+              ${renderVisualChoiceGrid(COLOR_SCHEME_OPTIONS, visual.colorScheme, 'set-color-scheme', 'colorScheme', 'scheme-choice-grid')}
+            </div>
           </div>
-          <div class="visual-settings-group">
-            <h3>Styl ikon</h3>
-            ${renderVisualChoiceGrid(ICON_THEME_OPTIONS, visual.iconTheme, 'set-icon-theme', 'iconTheme', 'icon-choice-grid')}
-          </div>
-          <div class="visual-settings-group">
-            <h3>Barevné schéma</h3>
-            ${renderVisualChoiceGrid(COLOR_SCHEME_OPTIONS, visual.colorScheme, 'set-color-scheme', 'colorScheme', 'scheme-choice-grid')}
-          </div>
-        </div>
+        </details>
       </section>
     `;
   }
@@ -8402,15 +8536,18 @@
         <div class="settings-panel panel-modules grid two">
           <section class="card desktop-span-2 compact-settings-card">
             <div class="card-header"><div><h2>Zapnuté moduly</h2><p>Každá domácnost si může nechat jen to, co opravdu používá.</p></div><span class="badge">${enabled.size}</span></div>
-            <div class="module-toggle-grid compact-module-toggle-grid">
-              ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => `
-                <button class="module-toggle ${enabled.has(module.id) ? 'active' : ''}" type="button" data-action="toggle-module" data-id="${module.id}">
-                  ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'module-toggle-icon-slot', label: module.label })}
-                  <strong>${escapeHtml(module.label)}</strong>
-                  <em>${enabled.has(module.id) ? 'zapnuto' : 'vypnuto'}</em>
-                </button>
-              `).join('')}
-            </div>
+            <details class="compact-edit-details settings-enabled-modules-details">
+              <summary><span>Zapnuté moduly</span><em>${enabled.size} zapnuto</em></summary>
+              <div class="module-toggle-grid compact-module-toggle-grid">
+                ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => `
+                  <button class="module-toggle ${enabled.has(module.id) ? 'active' : ''}" type="button" data-action="toggle-module" data-id="${module.id}">
+                    ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'module-toggle-icon-slot', label: module.label })}
+                    <strong>${escapeHtml(module.label)}</strong>
+                    <em>${enabled.has(module.id) ? 'zapnuto' : 'vypnuto'}</em>
+                  </button>
+                `).join('')}
+              </div>
+            </details>
           </section>
 
           <section class="card desktop-span-2 compact-settings-card">
@@ -8429,7 +8566,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 164))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 168))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -9700,12 +9837,21 @@
     if (!client || !meta?.storagePath) return showToast('Cloud příloha není dostupná');
     const { data, error } = await client.storage
       .from('contract-files')
-      .createSignedUrl(meta.storagePath, 60, download ? { download: meta.fileName || 'priloha' } : undefined);
+      .createSignedUrl(meta.storagePath, 300, download ? { download: meta.fileName || 'priloha' } : undefined);
     if (error || !data?.signedUrl) {
       showToast(error?.message || 'Dočasný odkaz nejde vytvořit');
       return;
     }
-    window.open(data.signedUrl, '_blank', 'noopener');
+    if (download) {
+      const link = document.createElement('a');
+      link.href = data.signedUrl;
+      link.download = meta.fileName || 'priloha';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      return;
+    }
+    showFilePreviewModal({ url: data.signedUrl, name: meta.fileName || 'Příloha smlouvy', type: meta.fileType || meta.mimeType || '', source: 'Smlouvy' });
   }
 
   async function openOrDownloadContractFile(id, openInNewTab = false) {
@@ -9722,8 +9868,7 @@
       }
       const url = URL.createObjectURL(record.blob);
       if (openInNewTab) {
-        window.open(url, '_blank', 'noopener');
-        setTimeout(() => URL.revokeObjectURL(url), 15000);
+        showFilePreviewModal({ url, objectUrl: url, name: meta?.fileName || record.fileName || 'Příloha smlouvy', type: meta?.fileType || record.fileType || record.blob.type || '', source: 'Smlouvy' });
       } else {
         const link = document.createElement('a');
         link.href = url;
@@ -10050,9 +10195,18 @@
     if (!client || !meta?.storagePath) return showToast('Cloud příloha není dostupná');
     const { data, error } = await client.storage
       .from('warranty-files')
-      .createSignedUrl(meta.storagePath, 60, download ? { download: meta.fileName || 'priloha' } : undefined);
+      .createSignedUrl(meta.storagePath, 300, download ? { download: meta.fileName || 'priloha' } : undefined);
     if (error || !data?.signedUrl) return showToast(error?.message || 'Dočasný odkaz nejde vytvořit');
-    window.open(data.signedUrl, '_blank', 'noopener');
+    if (download) {
+      const link = document.createElement('a');
+      link.href = data.signedUrl;
+      link.download = meta.fileName || 'priloha';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      return;
+    }
+    showFilePreviewModal({ url: data.signedUrl, name: meta.fileName || 'Příloha záruky', type: meta.fileType || meta.mimeType || '', source: 'Záruky' });
   }
 
   async function openWarrantyFile(id) {
@@ -10062,8 +10216,7 @@
       const record = await getStoredWarrantyFile(id);
       if (!record?.blob) return showToast('Soubor není v tomto prohlížeči dostupný');
       const url = URL.createObjectURL(record.blob);
-      window.open(url, '_blank', 'noopener');
-      setTimeout(() => URL.revokeObjectURL(url), 15000);
+      showFilePreviewModal({ url, objectUrl: url, name: meta?.fileName || record.fileName || 'Příloha záruky', type: meta?.fileType || record.fileType || record.blob.type || '', source: 'Záruky' });
     } catch {
       showToast('Soubor nejde otevřít');
     }
@@ -12583,6 +12736,43 @@
     }
   }
 
+  async function updateWarrantyFromForm(data, form) {
+    const id = form?.dataset?.id || '';
+    const existing = (state.warranties || []).find((item) => item.id === id);
+    if (!existing) return showToast('Záruka nenalezena');
+    const purchaseDate = normalizeText(data.purchaseDate) || existing.purchaseDate || todayISO();
+    const warrantyYears = normalizeWarrantyYears(data.warrantyYears || existing.warrantyYears || 2, purchaseDate);
+    const updated = normalizeWarrantyItem({
+      ...existing,
+      name: normalizeText(data.name) || existing.name,
+      store: normalizeText(data.store),
+      price: normalizeText(data.price),
+      purchaseDate,
+      warrantyYears,
+      warrantyUntil: normalizeText(data.warrantyUntil) || addYearsIso(purchaseDate, warrantyYears),
+      status: normalizeWarrantyStatus(data.status),
+      note: normalizeText(data.note),
+      updatedAt: new Date().toISOString()
+    });
+    state.warranties = normalizeWarranties(state.warranties).map((item) => item.id === id ? updated : item);
+    touchState();
+    saveState();
+    if (cloudReady()) {
+      const current = state.warranties.find((item) => item.id === id) || updated;
+      if (current.cloudId) await cloudUpdateExtraItem('warranties', current);
+      else {
+        const saved = await cloudAddExtraItem('warranties', current);
+        if (saved?.id) {
+          state.warranties = normalizeWarranties(state.warranties).map((item) => item.id === id ? { ...item, cloudId: saved.id } : item);
+          touchState();
+          saveState();
+        }
+      }
+    }
+    render();
+    showToast('Záruka upravena');
+  }
+
   async function deleteWarranty(id) {
     const before = (state.warranties || []).length;
     const warranty = state.warranties.find((item) => item.id === id);
@@ -13059,6 +13249,7 @@
       'add-note': () => addItem('notes', { text: data.text, createdAt: new Date().toISOString() }),
       'add-device': () => addItem('devices', { name: data.name, type: data.type, address: data.address, note: data.note }),
       'add-warranty': () => addWarrantyFromForm(data, form),
+      'edit-warranty': () => updateWarrantyFromForm(data, form),
       'add-warranty-files': () => addWarrantyFiles(form),
       'polish-holidays-year': () => {
         state.polishShopClosures = normalizePolishShopState({ ...state.polishShopClosures, year: data.year });
@@ -13636,7 +13827,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 79, appBuild: 164, mode: 'rich-demo-v164', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 79, appBuild: 168, mode: 'rich-demo-v168', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -13779,7 +13970,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 164, mode: 'calendar-weather-icons-v164', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 168, mode: 'calendar-weather-icons-v166', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -14994,7 +15185,9 @@
     if (action === 'close-modal') {
       garageModal = null;
       calendarDetailEventId = null;
+      activeWarrantyDetailId = null;
       garageEditRecord = null;
+      closeFilePreviewModal();
       render();
       return;
     }
@@ -15282,8 +15475,14 @@
       showToast(removed ? `Duplicity v Garáži opravené: ${removed} odstraněno ze zobrazení` : 'Garáž zkontrolovaná, duplicity se nenašly');
       return;
     }
+    if (action === 'open-warranty-detail') {
+      activeWarrantyDetailId = button.dataset.id || '';
+      render();
+      return;
+    }
     if (action === 'delete-warranty') {
       deleteWarranty(button.dataset.id);
+      activeWarrantyDetailId = null;
       return;
     }
     if (action === 'open-warranty-file') {
@@ -16361,7 +16560,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 164
+        appBuild: 168
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -16484,7 +16683,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 164, schema_version: 79, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 168, schema_version: 79, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -16697,7 +16896,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 164,
+          app_build: 168,
           schema_version: 79,
           created_by: user.id,
           ...householdUiPayload()
@@ -16951,7 +17150,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-164-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-168-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -16997,10 +17196,12 @@
 
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
-    if (garageModal || calendarDetailEventId) {
+    if (garageModal || calendarDetailEventId || activeWarrantyDetailId || filePreviewModal) {
       garageModal = null;
       calendarDetailEventId = null;
+      activeWarrantyDetailId = null;
       garageEditRecord = null;
+      closeFilePreviewModal();
       render();
       return;
     }
@@ -17042,7 +17243,9 @@
     if (modalBackdrop && !event.target.closest('.app-modal')) {
       garageModal = null;
       calendarDetailEventId = null;
+      activeWarrantyDetailId = null;
       garageEditRecord = null;
+      closeFilePreviewModal();
       render();
       return;
     }
@@ -17082,7 +17285,7 @@
   });
 
   app.addEventListener('change', (event) => {
-    const warrantyForm = event.target.closest('form[data-form="add-warranty"]');
+    const warrantyForm = event.target.closest('form[data-form="add-warranty"], form[data-form="edit-warranty"]');
     if (warrantyForm) {
       const warrantyYears = event.target.closest('select[name="warrantyYears"]');
       if (warrantyYears) {
@@ -17150,30 +17353,27 @@
     if (hdoTimeInput) formatHdoTimeInputLive(hdoTimeInput, event);
     const fuelCalcInput = event.target.closest('[data-fuel-calc]');
     if (fuelCalcInput) fillFuelFormCalculation(fuelCalcInput.form, fuelCalcInput);
-    const warrantyPurchase = event.target.closest('form[data-form="add-warranty"] input[name="purchaseDate"]');
-    if (warrantyPurchase) {
-      const form = warrantyPurchase.form;
-      const until = form?.querySelector('[name="warrantyUntil"]');
-      const years = Number(form?.querySelector('[name="warrantyYears"]')?.value || 2);
-      if (until && (!until.value || until.dataset.autoWarranty !== 'false')) {
-        until.value = addYearsIso(warrantyPurchase.value || todayISO(), years || 2);
-        until.dataset.autoWarranty = 'true';
+    const warrantyForm = event.target.closest('form[data-form="add-warranty"], form[data-form="edit-warranty"]');
+    if (warrantyForm) {
+      if (event.target.matches('input[name="purchaseDate"]')) {
+        const until = warrantyForm.querySelector('[name="warrantyUntil"]');
+        const years = Number(warrantyForm.querySelector('[name="warrantyYears"]')?.value || 2);
+        if (until && (!until.value || until.dataset.autoWarranty !== 'false')) {
+          until.value = addYearsIso(event.target.value || todayISO(), years || 2);
+          until.dataset.autoWarranty = 'true';
+        }
       }
-    }
-    const warrantyYears = event.target.closest('form[data-form="add-warranty"] select[name="warrantyYears"]');
-    if (warrantyYears) {
-      const form = warrantyYears.form;
-      const until = form?.querySelector('[name="warrantyUntil"]');
-      const purchase = form?.querySelector('[name="purchaseDate"]');
-      if (until) {
-        until.value = addYearsIso(purchase?.value || todayISO(), Number(warrantyYears.value || 2));
-        until.dataset.autoWarranty = 'true';
+      if (event.target.matches('select[name="warrantyYears"]')) {
+        const until = warrantyForm.querySelector('[name="warrantyUntil"]');
+        const purchase = warrantyForm.querySelector('[name="purchaseDate"]');
+        if (until) {
+          until.value = addYearsIso(purchase?.value || todayISO(), Number(event.target.value || 2));
+          until.dataset.autoWarranty = 'true';
+        }
       }
+      if (event.target.matches('input[name="warrantyUntil"]')) event.target.dataset.autoWarranty = 'false';
+      saveWarrantyDraftFromForm(warrantyForm);
     }
-    const warrantyUntil = event.target.closest('form[data-form="add-warranty"] input[name="warrantyUntil"]');
-    if (warrantyUntil) warrantyUntil.dataset.autoWarranty = 'false';
-    const warrantyForm = event.target.closest('form[data-form="add-warranty"]');
-    if (warrantyForm) saveWarrantyDraftFromForm(warrantyForm);
   });
 
   app.addEventListener('focusout', (event) => {
@@ -17211,7 +17411,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_164</span>
+          <span class="badge">Domácnost+ v.0.1_168</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

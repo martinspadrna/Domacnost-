@@ -12525,3 +12525,371 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 .calendar-overview-stats {
   margin-bottom: 12px;
 }
+
+/* Domácnost+ v.0.1_165 – glass iOS polish, kompaktnější kalendář a věrnější sady ikon */
+:root {
+  --card: rgba(255, 255, 255, 0.34);
+  --card-strong: rgba(255, 255, 255, 0.48);
+  --glass: rgba(255, 255, 255, 0.20);
+  --shadow-soft: 0 12px 30px rgba(31, 54, 88, 0.08);
+  --ios-glass: rgba(255, 255, 255, 0.30);
+  --ios-glass-strong: rgba(255, 255, 255, 0.46);
+  --ios-glass-edge: rgba(255, 255, 255, 0.62);
+  --ios-glass-shadow: 0 18px 42px rgba(31, 54, 88, 0.10);
+}
+[data-theme="dark"] {
+  --card: rgba(16, 24, 39, 0.34);
+  --card-strong: rgba(18, 28, 46, 0.46);
+  --glass: rgba(16, 24, 39, 0.18);
+  --shadow-soft: 0 14px 34px rgba(0, 0, 0, 0.16);
+  --ios-glass: rgba(18, 28, 46, 0.28);
+  --ios-glass-strong: rgba(20, 31, 50, 0.42);
+  --ios-glass-edge: rgba(255, 255, 255, 0.16);
+  --ios-glass-shadow: 0 22px 54px rgba(0, 0, 0, 0.20);
+}
+html,
+body {
+  background-attachment: fixed;
+}
+body {
+  background:
+    radial-gradient(circle at 8% 6%, rgba(99, 167, 255, 0.22), transparent 34%),
+    radial-gradient(circle at 92% 10%, rgba(128, 88, 255, 0.10), transparent 30%),
+    linear-gradient(135deg, var(--bg), var(--bg-2));
+}
+body::before {
+  background:
+    radial-gradient(circle at 18% 8%, rgba(255, 255, 255, .42), transparent 22%),
+    radial-gradient(circle at 80% 0%, rgba(92, 149, 255, .20), transparent 28%),
+    radial-gradient(circle at 54% 88%, rgba(169, 110, 255, .10), transparent 30%);
+}
+.topbar,
+.card,
+.nav-shell,
+.overview-panel,
+.onboarding-card,
+.boot-fallback-card,
+.station-summary-item,
+.item,
+.section-tab,
+.profile-switcher,
+.action-details,
+.sync-overview-row,
+.weather-current-button,
+.hero-weather-pill,
+.module-toggle,
+.switch-row,
+.visual-choice-card,
+.quick-chip,
+.mini-stat,
+.badge {
+  backdrop-filter: blur(32px) saturate(1.24);
+  -webkit-backdrop-filter: blur(32px) saturate(1.24);
+}
+.topbar,
+.card,
+.nav-shell,
+.overview-panel,
+.onboarding-card,
+.boot-fallback-card {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--ios-glass-strong) 62%, transparent), color-mix(in srgb, var(--ios-glass) 90%, transparent)),
+    transparent;
+}
+.topbar {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--ios-glass-strong) 70%, transparent), color-mix(in srgb, var(--ios-glass) 92%, transparent)),
+    transparent;
+}
+.card::before,
+.overview-panel::before,
+.nav-shell::before,
+.topbar::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,.28), transparent 34%);
+  content: "";
+}
+.topbar > *,
+.card > *,
+.overview-panel > *,
+.nav-shell > * {
+  position: relative;
+  z-index: 1;
+}
+.calendar-overview-summary-details,
+.settings-visual-details,
+.settings-enabled-modules-details {
+  margin-top: 8px;
+}
+.calendar-overview-summary-details .cloud-status-grid,
+.settings-enabled-modules-details .module-toggle-grid,
+.settings-visual-details .visual-settings-stack {
+  padding: 10px 12px 2px;
+}
+.calendar-month-toolbar {
+  padding: 12px 14px;
+}
+.calendar-month-actions {
+  gap: 6px;
+}
+.calendar-month-actions .ghost-btn {
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 14px;
+}
+
+/* výraznější odlišení ikonových stylů podle návrhů */
+html[data-icon-theme="duotone-fresh"] .module-theme-icon,
+.visual-choice-preview-duotone-fresh .module-theme-icon {
+  filter: drop-shadow(0 10px 14px rgba(14, 165, 233, .16));
+}
+html[data-icon-theme="duotone-fresh"] .module-theme-icon .icon-primary,
+.visual-choice-preview-duotone-fresh .module-theme-icon .icon-primary {
+  fill: color-mix(in srgb, var(--icon-a) 56%, #22d3ee 44%);
+}
+html[data-icon-theme="duotone-fresh"] .module-theme-icon .icon-secondary,
+.visual-choice-preview-duotone-fresh .module-theme-icon .icon-secondary {
+  fill: color-mix(in srgb, var(--icon-b) 30%, #cffafe 70%);
+}
+html[data-icon-theme="duotone-fresh"] .module-theme-icon .icon-accent,
+.visual-choice-preview-duotone-fresh .module-theme-icon .icon-accent {
+  fill: color-mix(in srgb, var(--icon-c) 34%, #bef264 66%);
+}
+html[data-icon-theme="duotone-fresh"] .module-theme-icon .icon-line,
+.visual-choice-preview-duotone-fresh .module-theme-icon .icon-line {
+  stroke: rgba(15, 23, 42, .20);
+  stroke-width: 2.35;
+}
+
+html[data-icon-theme="sticker-ui"] .module-theme-icon,
+.visual-choice-preview-sticker-ui .module-theme-icon {
+  transform: rotate(-4deg);
+  filter: drop-shadow(0 2px 0 rgba(255,255,255,.96)) drop-shadow(0 12px 16px rgba(15,23,42,.18));
+}
+html[data-icon-theme="sticker-ui"] .module-theme-icon .icon-primary,
+.visual-choice-preview-sticker-ui .module-theme-icon .icon-primary,
+html[data-icon-theme="sticker-ui"] .module-theme-icon .icon-secondary,
+.visual-choice-preview-sticker-ui .module-theme-icon .icon-secondary,
+html[data-icon-theme="sticker-ui"] .module-theme-icon .icon-accent,
+.visual-choice-preview-sticker-ui .module-theme-icon .icon-accent {
+  stroke: rgba(255,255,255,.98);
+  stroke-width: 2.4;
+  paint-order: stroke fill;
+  stroke-linejoin: round;
+}
+html[data-icon-theme="sticker-ui"] .module-theme-icon .icon-primary,
+.visual-choice-preview-sticker-ui .module-theme-icon .icon-primary {
+  fill: color-mix(in srgb, var(--icon-a) 68%, #fb7185 32%);
+}
+html[data-icon-theme="sticker-ui"] .module-theme-icon .icon-secondary,
+.visual-choice-preview-sticker-ui .module-theme-icon .icon-secondary {
+  fill: color-mix(in srgb, var(--icon-b) 38%, #fff 62%);
+}
+html[data-icon-theme="sticker-ui"] .module-theme-icon .icon-accent,
+.visual-choice-preview-sticker-ui .module-theme-icon .icon-accent {
+  fill: color-mix(in srgb, var(--icon-c) 55%, #facc15 45%);
+}
+html[data-icon-theme="sticker-ui"] .module-theme-icon .icon-line,
+.visual-choice-preview-sticker-ui .module-theme-icon .icon-line {
+  stroke: rgba(255,255,255,.96);
+  stroke-width: 3.1;
+}
+
+html[data-icon-theme="clay-3d"] .module-theme-icon,
+.visual-choice-preview-clay-3d .module-theme-icon {
+  transform: translateY(-1px) scale(1.02);
+  filter: drop-shadow(0 12px 16px rgba(15,23,42,.16));
+}
+html[data-icon-theme="clay-3d"] .module-theme-icon .icon-primary,
+.visual-choice-preview-clay-3d .module-theme-icon .icon-primary {
+  fill: color-mix(in srgb, var(--icon-a) 46%, #fff6ed 54%);
+}
+html[data-icon-theme="clay-3d"] .module-theme-icon .icon-secondary,
+.visual-choice-preview-clay-3d .module-theme-icon .icon-secondary {
+  fill: color-mix(in srgb, var(--icon-b) 36%, #ffffff 64%);
+}
+html[data-icon-theme="clay-3d"] .module-theme-icon .icon-accent,
+.visual-choice-preview-clay-3d .module-theme-icon .icon-accent {
+  fill: color-mix(in srgb, var(--icon-c) 48%, #fde68a 52%);
+}
+html[data-icon-theme="clay-3d"] .module-theme-icon .icon-line,
+.visual-choice-preview-clay-3d .module-theme-icon .icon-line {
+  stroke: rgba(15, 23, 42, .18);
+  stroke-width: 2;
+  opacity: .7;
+}
+
+html[data-icon-theme="mono-luxe"] .module-theme-icon,
+.visual-choice-preview-mono-luxe .module-theme-icon {
+  color: color-mix(in srgb, var(--text) 88%, #111827 12%);
+  filter: drop-shadow(0 8px 14px rgba(15,23,42,.12));
+}
+html[data-theme="dark"][data-icon-theme="mono-luxe"] .module-theme-icon { color: #f8fafc; }
+html[data-icon-theme="mono-luxe"] .module-theme-icon .icon-primary,
+html[data-icon-theme="mono-luxe"] .module-theme-icon .icon-secondary,
+.visual-choice-preview-mono-luxe .module-theme-icon .icon-primary,
+.visual-choice-preview-mono-luxe .module-theme-icon .icon-secondary {
+  fill: currentColor;
+}
+html[data-icon-theme="mono-luxe"] .module-theme-icon .icon-secondary,
+.visual-choice-preview-mono-luxe .module-theme-icon .icon-secondary { opacity: .46; }
+html[data-icon-theme="mono-luxe"] .module-theme-icon .icon-accent,
+.visual-choice-preview-mono-luxe .module-theme-icon .icon-accent {
+  fill: #d4af37;
+  opacity: 1;
+}
+html[data-icon-theme="mono-luxe"] .module-theme-icon .icon-line,
+.visual-choice-preview-mono-luxe .module-theme-icon .icon-line {
+  stroke: currentColor;
+  stroke-width: 2.1;
+}
+
+html[data-icon-theme="isometric-micro"] .module-theme-icon,
+.visual-choice-preview-isometric-micro .module-theme-icon {
+  transform: perspective(120px) rotateX(14deg) rotateZ(-8deg) translateY(-1px);
+  transform-origin: center;
+  filter: drop-shadow(5px 10px 10px rgba(15,23,42,.18));
+}
+html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-primary,
+.visual-choice-preview-isometric-micro .module-theme-icon .icon-primary {
+  fill: color-mix(in srgb, var(--icon-a) 60%, #bfdbfe 40%);
+  stroke: rgba(15,23,42,.18);
+  stroke-width: 1.1;
+}
+html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-secondary,
+.visual-choice-preview-isometric-micro .module-theme-icon .icon-secondary {
+  fill: color-mix(in srgb, var(--icon-b) 44%, #ffffff 56%);
+  stroke: rgba(15,23,42,.12);
+  stroke-width: 1.1;
+}
+html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-accent,
+.visual-choice-preview-isometric-micro .module-theme-icon .icon-accent {
+  fill: color-mix(in srgb, var(--icon-c) 60%, #fde68a 40%);
+}
+html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
+.visual-choice-preview-isometric-micro .module-theme-icon .icon-line {
+  stroke: rgba(15,23,42,.42);
+  stroke-width: 2;
+}
+
+/* Domácnost+ v.0.1_168 – náhled příloh přímo v aplikaci */
+.file-preview-modal {
+  width: min(1040px, 100%);
+  max-height: min(92vh, 920px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--ios-glass-strong, rgba(255,255,255,.48)) 70%, transparent), color-mix(in srgb, var(--ios-glass, rgba(255,255,255,.30)) 92%, transparent)),
+    transparent;
+}
+.file-preview-head {
+  flex: 0 0 auto;
+}
+.file-preview-stage {
+  flex: 1 1 auto;
+  min-height: 48vh;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--ios-glass-edge, rgba(255,255,255,.5)) 58%, var(--line));
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--ios-glass, rgba(255,255,255,.28)) 52%, rgba(15,23,42,.06));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+}
+.file-preview-stage img {
+  max-width: 100%;
+  max-height: 72vh;
+  display: block;
+  object-fit: contain;
+}
+.file-preview-stage iframe {
+  width: 100%;
+  height: min(72vh, 760px);
+  border: 0;
+  border-radius: 20px;
+  background: white;
+}
+.unsupported-stage {
+  gap: 8px;
+  padding: 28px;
+  text-align: center;
+  color: var(--muted);
+}
+.unsupported-stage strong {
+  color: var(--text);
+  font-size: 1.05rem;
+}
+.file-preview-actions {
+  flex: 0 0 auto;
+  padding-top: 12px;
+}
+.file-preview-actions a {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 560px) {
+  .file-preview-modal {
+    width: 100%;
+    max-height: 94vh;
+    border-radius: 28px 28px 0 0;
+  }
+  .file-preview-stage {
+    min-height: 55vh;
+    border-radius: 20px;
+  }
+  .file-preview-stage iframe {
+    height: 60vh;
+  }
+  .file-preview-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Domácnost+ v.0.1_168 – Záruky: čistý přehled + detail */
+.warranty-overview-button {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+.warranty-overview-button .fake-btn {
+  pointer-events: none;
+  display: inline-flex;
+  width: fit-content;
+  min-height: 0;
+  padding: 6px 10px;
+  font-size: .82rem;
+}
+.warranty-detail-modal {
+  width: min(760px, calc(100vw - 24px));
+  max-height: min(88svh, 860px);
+  overflow: auto;
+}
+.warranty-detail-summary {
+  margin: 8px 0 12px;
+}
+.warranty-detail-edit,
+.warranty-detail-files,
+.warranty-detail-danger {
+  margin-top: 12px;
+}
+.warranty-detail-files .warranty-file-list {
+  padding: 10px 12px 0;
+}
+.warranty-detail-files .warranty-file-form,
+.warranty-detail-edit .warranty-form {
+  padding: 10px 12px 12px;
+}
+.warranty-detail-danger .danger-hint,
+.warranty-detail-danger .form-actions {
+  margin: 10px 12px 12px;
+}
