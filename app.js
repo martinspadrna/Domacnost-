@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_174';
+  const APP_VERSION = 'Domácnost+ v.0.1_175';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -344,8 +344,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 79,
-      appBuild: 174,
-      mode: 'asset-icon-themes-v174',
+      appBuild: 175,
+      mode: 'approved-icon-themes-v175',
       createdAt: '',
       updatedAt: ''
     },
@@ -1189,8 +1189,8 @@
 
     migrated.meta = {
       schemaVersion: 79,
-      appBuild: 174,
-      mode: 'asset-icon-themes-v174',
+      appBuild: 175,
+      mode: 'approved-icon-themes-v175',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -4227,7 +4227,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_174', note: 'Hotovo: Duotone Fresh, Sticker UI, Soft Clay 3D, Mono Luxe a Isometric Micro mají už kompletní assetové sady napojené napříč aplikací. Do appky jsou přidané i další ikony modulů a sekcí, takže přepínání stylu teď neřeší jen spodní lištu, ale i zbytek hlavních modulových ikon.' },
+      { title: 'Domácnost+ v.0.1_175', note: 'Hotovo: do aplikace jsou vložené schválené kompletní ikonové sady Duotone Fresh, Sticker UI, Soft Clay 3D a Isometric Micro. Mono Luxe má doplněné tmavé ohraničení, aby nezanikalo na světlém pozadí. Sady jsou napojené jako assety napříč hlavními moduly a sekcemi.' },
       { title: 'Domácnost+ v.0.1_163', note: 'Vzhled aplikace: barevná schémata jsou zúžená na Modrá a Royal, sada ikon zůstává jen iOS Soft kvůli čistému a sjednocenému UI.' },
       { title: 'Domácnost+ v.0.1_162', note: 'Záruky: přidání je nahoře a v základu zabalené, formulář má ochranu proti dvojitému uložení a fotky účtenek se před uložením automaticky komprimují.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
@@ -8636,7 +8636,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 174))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 175))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -13897,7 +13897,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 79, appBuild: 174, mode: 'rich-demo-v174', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 79, appBuild: 175, mode: 'rich-demo-v175', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -14040,7 +14040,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 174, mode: 'asset-icon-themes-v174', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 79, appBuild: 175, mode: 'approved-icon-themes-v175', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -16633,7 +16633,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 174
+        appBuild: 175
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -16756,7 +16756,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 174, schema_version: 79, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 175, schema_version: 79, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -16969,7 +16969,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 174,
+          app_build: 175,
           schema_version: 79,
           created_by: user.id,
           ...householdUiPayload()
@@ -17223,7 +17223,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-174-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-175-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -17491,7 +17491,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_174</span>
+          <span class="badge">Domácnost+ v.0.1_175</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
