@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_182';
+  const APP_VERSION = 'Domácnost+ v.0.1_183';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -2873,8 +2873,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 80,
-      appBuild: 182,
-      mode: 'shopping-lists-v182',
+      appBuild: 183,
+      mode: 'shopping-lists-v183',
       createdAt: '',
       updatedAt: ''
     },
@@ -3720,8 +3720,8 @@
 
     migrated.meta = {
       schemaVersion: 80,
-      appBuild: 182,
-      mode: 'shopping-lists-v182',
+      appBuild: 183,
+      mode: 'shopping-lists-v183',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5843,7 +5843,7 @@
     const size = options.size || 'md';
     const baseClass = options.baseClass || 'module-illustration-slot';
     const innerClass = options.innerClass || 'theme-asset-icon';
-    return `<span class="${baseClass} ${baseClass}-${escapeHtml(String(size))}${slotClass}${extraClass} theme-asset-icon-slot theme-asset-icon-slot-${escapeHtml(config.surface)}" data-icon-id="${escapeHtml(String(config.iconId))}" data-icon-theme-asset="${escapeHtml(String(themeId))}" style="--asset-icon-url:url(${escapeHtml(config.src)})" aria-hidden="true"><span class="${innerClass} ${innerClass}-${escapeHtml(String(size))} theme-asset-icon-surface theme-asset-icon-surface-${escapeHtml(config.surface)}"></span></span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
+    return `<span class="${baseClass} ${baseClass}-${escapeHtml(String(size))}${slotClass}${extraClass} theme-asset-icon-slot theme-asset-icon-slot-${escapeHtml(config.surface)}" data-icon-id="${escapeHtml(String(config.iconId))}" data-icon-theme-asset="${escapeHtml(String(themeId))}" style="--asset-icon-url:url(${escapeHtml(config.src)})" aria-hidden="true"><span class="${innerClass} ${innerClass}-${escapeHtml(String(size))} theme-asset-icon-surface theme-asset-icon-surface-${escapeHtml(config.surface)}"><img class="theme-asset-icon-image" src="${escapeHtml(config.src)}" alt="" loading="eager" decoding="async" fetchpriority="low" draggable="false" width="128" height="128"></span></span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
   }
 
   function getModuleIllustrationSrc(id) {
@@ -6796,7 +6796,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_182', note: 'Hotfix: opravený překlep v názvu normalizační funkce pro klíče, který shazoval část aplikace po startu. Přidaná kontrola na starý název funkce a chybějící DEFAULT konstanty.' },
+      { title: 'Domácnost+ v.0.1_183', note: 'Hotfix: opravený překlep v názvu normalizační funkce pro klíče, který shazoval část aplikace po startu. Přidaná kontrola na starý název funkce a chybějící DEFAULT konstanty.' },
       { title: 'Domácnost+ v.0.1_180', note: 'Hotfix: doplněná chybějící konstanta DEFAULT_BOTTOM_NAV_IDS a přidaná statická kontrola DEFAULT konstant, aby Nákupy ani start aplikace nepadaly na chybějící výchozí hodnotě.' },
       { title: 'Domácnost+ v.0.1_179', note: 'Hotfix: oprava pádu Nákupů kvůli chybějící konstantě DEFAULT_SHOPPING_LISTS. Doplněné jsou výchozí seznamy Polsko, Penny, JIP a Martínek a katalog podle Listonic screenů.' },
       { title: 'Domácnost+ v.0.1_163', note: 'Vzhled aplikace: barevná schémata jsou zúžená na Modrá a Royal, sada ikon zůstává jen iOS Soft kvůli čistému a sjednocenému UI.' },
@@ -16753,7 +16753,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 80, appBuild: 182, mode: 'rich-demo-v182', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 80, appBuild: 183, mode: 'rich-demo-v183', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -16896,7 +16896,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 80, appBuild: 182, mode: 'shopping-lists-v182', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 80, appBuild: 183, mode: 'shopping-lists-v183', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -19498,7 +19498,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 182
+        appBuild: 183
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19621,7 +19621,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 182, schema_version: 80, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 183, schema_version: 80, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -19834,7 +19834,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 182,
+          app_build: 183,
           schema_version: 80,
           created_by: user.id,
           ...householdUiPayload()
@@ -20088,7 +20088,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-182-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-183-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20357,7 +20357,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_182</span>
+          <span class="badge">Domácnost+ v.0.1_183</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

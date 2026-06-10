@@ -13399,3 +13399,36 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 .theme-asset-icon-image {
   display: none !important;
 }
+
+
+/* Domácnost+ v.0.1_183 – viditelné asset sety bez Home re-render blikání */
+.theme-asset-icon-surface::before {
+  display: none !important;
+  content: none !important;
+  background-image: none !important;
+}
+
+.theme-asset-icon-slot,
+.theme-asset-icon-surface {
+  overflow: visible !important;
+  background: transparent !important;
+}
+
+.theme-asset-icon-image {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: none !important;
+  animation: none !important;
+  transform: translateZ(0);
+  image-rendering: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.12));
+}
+
+.theme-asset-icon-slot[data-icon-theme-asset="clay-3d"] .theme-asset-icon-image {
+  filter: drop-shadow(0 3px 8px rgba(86, 58, 33, 0.14));
+}
