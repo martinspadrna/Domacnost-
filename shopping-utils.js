@@ -76,11 +76,24 @@
       return normalizeText(item?.kind || item?.category || catalogItem?.kind || catalogItem?.category) || 'Ostatní';
     }
 
+    function isCatalogItemHidden(item, hiddenKeys) {
+      if (!item?.name) return true;
+      const nameKey = normalizeKey(item.name);
+      const idKey = normalizeKey(item.id || '');
+      return hiddenKeys.has(nameKey) || (idKey && hiddenKeys.has(idKey));
+    }
+
+    function isShoppingCatalogItemRemovable(item) {
+      if (!item?.name) return false;
+      return true;
+    }
+
     function getShoppingCatalog() {
       if (catalogCache && catalogCacheVersion === cacheVersion) return catalogCache;
       const state = getState();
       const categories = getShoppingCategories();
       const categoryOrder = new Map(categories.map(([name], index) => [normalizeKey(name), index]));
+      const hiddenKeys = new Set((state.shoppingCatalogHidden || []).map((value) => normalizeKey(value)).filter(Boolean));
       const cloudCatalog = state.shoppingCloud?.catalog || [];
       const mappedCloud = cloudCatalog.map((item) => {
         const kind = item.kind || item.category_name || item.category || 'Ostatní';
@@ -98,7 +111,7 @@
       const base = mappedCloud.length ? mappedCloud : defaultCatalog;
       const byName = new Map();
       [...base, ...localCustom].forEach((item) => {
-        if (!item?.name) return;
+        if (!item?.name || isCatalogItemHidden(item, hiddenKeys)) return;
         byName.set(normalizeKey(item.name), item);
       });
       catalogCache = [...byName.values()].sort((a, b) => {
@@ -155,7 +168,9 @@
     function renderShoppingCatalogItem(item, activeList) {
       const stat = getShoppingStat(item.name);
       const usedText = stat?.count ? ` · použito ${stat.count}×` : '';
-      return `<div class="item compact-item"><div class="item-top"><div class="item-title"><span class="shopping-kind-badge" aria-hidden="true">${escapeHtml(shoppingKindIcon(item.kind || item.category))}</span>${escapeHtml(item.name)}</div><span class="badge">${escapeHtml(item.defaultUnit || 'ks')}</span></div><div class="item-meta">${escapeHtml(item.kind || item.category || 'Ostatní')} · ${shoppingSourceLabel(item)}${usedText}</div><div class="item-actions"><button class="ghost-btn" type="button" data-action="quick-add-shopping" data-name="${escapeHtml(item.name)}">Přidat do ${escapeHtml(activeList?.name || 'seznamu')}</button></div></div>`;
+      const removable = isShoppingCatalogItemRemovable(item);
+      const deleteButton = removable ? `<button class="ghost-btn danger-outline-btn shopping-catalog-delete-btn" type="button" data-action="delete-shopping-catalog-item" data-id="${escapeHtml(item.id || '')}" data-name="${escapeHtml(item.name)}">Smazat z katalogu</button>` : '';
+      return `<div class="item compact-item shopping-catalog-item"><div class="item-top"><div class="item-title"><span class="shopping-kind-badge" aria-hidden="true">${escapeHtml(shoppingKindIcon(item.kind || item.category))}</span>${escapeHtml(item.name)}</div><span class="badge">${escapeHtml(item.defaultUnit || 'ks')}</span></div><div class="item-meta">${escapeHtml(item.kind || item.category || 'Ostatní')} · ${shoppingSourceLabel(item)}${usedText}</div><div class="item-actions shopping-catalog-actions"><button class="ghost-btn" type="button" data-action="quick-add-shopping" data-name="${escapeHtml(item.name)}">Přidat do ${escapeHtml(activeList?.name || 'seznamu')}</button>${deleteButton}</div></div>`;
     }
 
     function buildShoppingListStats(lists = []) {
@@ -206,6 +221,7 @@
       getShoppingQuickItems,
       getShoppingDatalistItems,
       shoppingSourceLabel,
+      isShoppingCatalogItemRemovable,
       renderShoppingCatalogItem,
       buildShoppingListStats,
       groupShoppingItemsByKind

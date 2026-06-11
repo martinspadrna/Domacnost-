@@ -1,4 +1,4 @@
-/* Domácnost+ v.0.1_204 – oddělené styly asset ikon */
+/* Domácnost+ v.0.1_205 – oddělené styly asset ikon */
 /* Domácnost+ v.0.1_189 – lehké asset ikony bez IMG a bez těžkého inline CSS */
 .theme-asset-icon-slot {
   display: inline-flex !important;
@@ -13,6 +13,37 @@
   will-change: auto !important;
   backface-visibility: visible !important;
   contain: layout paint;
+}
+
+
+/* v0.1_205 – robustní vykreslení asset ikon přes pseudo-element slotu.
+   Na iOS/Safari je to stabilnější než spoléhat jen na vnořený surface. */
+.theme-asset-icon-slot::before {
+  content: "" !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+  flex: 0 0 100% !important;
+  background-image: var(--asset-icon-url) !important;
+  background-size: contain !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: none !important;
+  filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.12));
+}
+
+.theme-asset-icon-slot > .theme-asset-icon-surface,
+.theme-asset-icon-slot > .theme-asset-mini-icon,
+.theme-asset-icon-slot > .visual-asset-icon-inner {
+  display: none !important;
+}
+
+.theme-asset-icon-slot[data-icon-theme-asset="clay-3d"]::before {
+  filter: drop-shadow(0 3px 8px rgba(86, 58, 33, 0.14));
 }
 
 .theme-asset-icon-slot *,

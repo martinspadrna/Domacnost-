@@ -29,6 +29,17 @@
       return deps.getActiveShoppingList?.() || null;
     }
 
+    function isWholePieceUnit(unit) {
+      const key = normalizeKey(unit || 'ks');
+      return key === 'ks' || key === 'kus' || key === 'kusy' || key === 'kusu' || key === 'bal' || key === 'baleni';
+    }
+
+    function sanitizeShoppingQuantity(value, unit) {
+      const parsed = decimalValue(value) || 1;
+      if (isWholePieceUnit(unit)) return Math.max(1, Math.round(parsed));
+      return Math.max(0.25, Number(parsed.toFixed(2)));
+    }
+
     async function addShoppingFromForm(data, form) {
       deps.ensureShoppingListsReady?.();
       const store = state();
@@ -38,7 +49,7 @@
       const kind = normalizeText(data.kind || data.category) || catalogItem?.kind || catalogItem?.category || 'Ostatní';
       const category = kind;
       const unit = normalizeText(data.unit) || catalogItem?.defaultUnit || 'ks';
-      const quantity = decimalValue(data.quantity) || 1;
+      const quantity = sanitizeShoppingQuantity(data.quantity, unit);
       const note = normalizeText(data.note);
       const isKnown = Boolean(catalogItem);
       const listId = deps.getActiveShoppingListId?.() || '';
@@ -148,9 +159,13 @@
       deps.ensureShoppingListsReady?.();
       const store = state();
       if (!store.shoppingLists?.some((list) => list.id === id)) return;
-      if (store.activeShoppingListId === id && !deps.getQuantityEditId?.() && !deps.getDoneModalOpen?.()) return;
+      const sameList = store.activeShoppingListId === id;
       store.activeShoppingListId = id;
       deps.closeShoppingTransientUi?.();
+      if (sameList) {
+        deps.requestRender?.();
+        return;
+      }
       persist('request');
     }
 
@@ -196,9 +211,12 @@
       const store = state();
       const item = store.shopping?.find((entry) => entry.id === id);
       if (!item) return;
-      const current = Number(item.quantity || item.amount || 1) || 1;
-      const next = Math.max(0.25, current + delta);
-      item.quantity = Number.isInteger(next) ? next : Number(next.toFixed(2));
+      const unit = item.unit || 'ks';
+      const current = sanitizeShoppingQuantity(item.quantity || item.amount || 1, unit);
+      const step = isWholePieceUnit(unit) ? 1 : 0.25;
+      const direction = delta < 0 ? -1 : 1;
+      const next = current + (direction * step);
+      item.quantity = sanitizeShoppingQuantity(next, unit);
       deps.setQuantityEditId?.(id);
       persist('request');
     }
@@ -274,6 +292,31 @@
       showToast('Smazáno');
     }
 
+    async function deleteShoppingCatalogItem(id, name) {
+      const store = state();
+      const catalog = deps.getShoppingCatalog?.() || [];
+      const item = catalog.find((entry) => String(entry.id || '') === String(id || '')) || deps.findShoppingCatalogItem?.(name);
+      if (!item?.name) return showToast('Položku katalogu se nepovedlo najít');
+      if (!confirmDialog(`Odebrat z katalogu položku ${item.name}? Položky v nákupních seznamech zůstanou.`)) return;
+      if (item.source === 'local') {
+        store.shoppingCatalogCustom = (store.shoppingCatalogCustom || []).filter((entry) => normalizeKey(entry.name) !== normalizeKey(item.name) && String(entry.id || '') !== String(item.id || ''));
+      } else if (item.householdId && deps.cloudDeleteShoppingCatalogItem) {
+        const ok = await deps.cloudDeleteShoppingCatalogItem(item);
+        if (ok === false) return;
+        store.shoppingCloud = {
+          ...(store.shoppingCloud || {}),
+          catalog: (store.shoppingCloud?.catalog || []).filter((entry) => String(entry.id || '') !== String(item.id || '') && normalizeKey(entry.name) !== normalizeKey(item.name))
+        };
+      } else {
+        store.shoppingCatalogHidden = Array.isArray(store.shoppingCatalogHidden) ? store.shoppingCatalogHidden : [];
+        const key = normalizeKey(item.name);
+        if (!store.shoppingCatalogHidden.some((value) => normalizeKey(value) === key)) store.shoppingCatalogHidden.push(key);
+      }
+      deps.markShoppingCatalogDirty?.();
+      persist('full');
+      showToast('Odebráno z katalogu');
+    }
+
     return {
       addShoppingFromForm,
       quickAddShoppingByName,
@@ -287,7 +330,8 @@
       deleteDoneShoppingBySwipe,
       cloudSyncLocalShoppingItems,
       toggleShoppingDone,
-      deleteShoppingItem
+      deleteShoppingItem,
+      deleteShoppingCatalogItem
     };
   }
 

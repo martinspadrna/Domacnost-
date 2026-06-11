@@ -1,4 +1,4 @@
-/* Domácnost+ v.0.1_204 – oddělené styly modulu Nákupy */
+/* Domácnost+ v.0.1_205 – oddělené styly modulu Nákupy */
 /* Domácnost+ v.0.1_178 – nákupní seznamy podle Listonicu */
 .shopping-list-switcher {
   display: flex;
@@ -299,4 +299,50 @@ html[data-theme="dark"] .danger-outline-btn {
 
 body:not(.overview-open) .shopping-done-modal-backdrop {
   display: none !important;
+}
+
+/* Domácnost+ v.0.1_205 – větší ovládání množství a katalogové mazání */
+.shopping-quantity-wrap {
+  gap: 9px;
+}
+
+.shopping-quantity-wrap.editing {
+  padding: 5px;
+}
+
+.shopping-qty-btn {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  font-size: 1.45rem !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.10);
+}
+
+.shopping-amount-pill {
+  min-height: 38px;
+  padding-inline: 12px;
+  font-weight: 900;
+}
+
+.shopping-catalog-actions {
+  flex-wrap: wrap;
+}
+
+.shopping-catalog-delete-btn {
+  min-height: 38px;
+}
+
+@media (max-width: 520px) {
+  .shopping-qty-btn {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+  }
+  .shopping-catalog-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
 }

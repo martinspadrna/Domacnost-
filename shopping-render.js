@@ -158,9 +158,21 @@
     `;
     }
 
+    function isWholePieceUnit(unit) {
+      const key = String(unit || 'ks').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      return key === 'ks' || key === 'kus' || key === 'kusy' || key === 'kusu' || key === 'bal' || key === 'baleni';
+    }
+
+    function formatShoppingAmount(item) {
+      const unit = item.unit || 'ks';
+      const raw = Number(item.quantity || item.amount || 1) || 1;
+      const value = isWholePieceUnit(unit) ? Math.max(1, Math.round(raw)) : Math.max(0.25, Number(raw.toFixed(2)));
+      return [String(value).replace('.', ','), unit].filter(Boolean).join(' ');
+    }
+
     function renderShoppingItem(item) {
       const viewState = deps.getShoppingViewState ? deps.getShoppingViewState() : {};
-      const amount = [item.quantity || item.amount || 1, item.unit || 'ks'].filter(Boolean).join(' ');
+      const amount = formatShoppingAmount(item);
       const kind = deps.shoppingKindLabel(item);
       const isQuantityEditing = viewState.quantityEditId === item.id && !item.done;
       return `
