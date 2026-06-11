@@ -160,6 +160,7 @@
       const store = state();
       if (!store.shoppingLists?.some((list) => list.id === id)) return;
       const sameList = store.activeShoppingListId === id;
+      deps.clearShoppingOverlayArtifacts?.();
       store.activeShoppingListId = id;
       deps.closeShoppingTransientUi?.();
       if (sameList) {
@@ -207,18 +208,26 @@
       deps.requestRender?.();
     }
 
-    function updateShoppingQuantity(id, delta) {
+    async function updateShoppingQuantity(id, delta) {
       const store = state();
       const item = store.shopping?.find((entry) => entry.id === id);
       if (!item) return;
+      const previousQuantity = item.quantity || item.amount || 1;
       const unit = item.unit || 'ks';
-      const current = sanitizeShoppingQuantity(item.quantity || item.amount || 1, unit);
+      const current = sanitizeShoppingQuantity(previousQuantity, unit);
       const step = isWholePieceUnit(unit) ? 1 : 0.25;
       const direction = delta < 0 ? -1 : 1;
       const next = current + (direction * step);
       item.quantity = sanitizeShoppingQuantity(next, unit);
       deps.setQuantityEditId?.(id);
       persist('request');
+      if (deps.cloudUpdateShoppingItem) {
+        const ok = await deps.cloudUpdateShoppingItem(item);
+        if (ok === false) {
+          item.quantity = sanitizeShoppingQuantity(previousQuantity, unit);
+          persist('request');
+        }
+      }
     }
 
     async function deleteDoneShoppingBySwipe(id) {
@@ -238,12 +247,21 @@
     async function cloudSyncLocalShoppingItems() {
       deps.ensureShoppingListsReady?.();
       const store = state();
-      const local = (store.shopping || []).filter((item) => !item.cloudId);
-      if (!local.length) return showToast('Žádné lokální nákupy k odeslání');
-      let synced = 0;
-      for (const item of local) {
+      const localLists = (store.shoppingLists || []).filter((list) => !(list.cloudId || list.cloudListId));
+      const localItems = (store.shopping || []).filter((item) => !item.cloudId);
+      if (!localLists.length && !localItems.length) return showToast('Žádné lokální nákupy k odeslání');
+      let syncedLists = 0;
+      let syncedItems = 0;
+
+      for (const list of localLists) {
+        const cloudList = await deps.cloudEnsureShoppingList?.(list);
+        if (cloudList?.id) syncedLists += 1;
+      }
+
+      for (const item of localItems) {
         const catalogItem = deps.findShoppingCatalogItem?.(item.name) || null;
         const list = (store.shoppingLists || []).find((entry) => entry.id === item.listId) || activeList();
+        if (list && !(list.cloudId || list.cloudListId)) await deps.cloudEnsureShoppingList?.(list);
         const cloudItem = await deps.cloudAddShoppingItem?.({
           name: item.name,
           category: item.category || item.kind || 'Ostatní',
@@ -257,11 +275,11 @@
           item.cloudId = cloudItem.id;
           item.cloudListId = cloudItem.list_id;
           item.catalogItemId = cloudItem.catalog_item_id || item.catalogItemId || '';
-          synced += 1;
+          syncedItems += 1;
         }
       }
       persist('full');
-      showToast(synced ? `Odesláno do cloudu: ${synced}` : 'Nic se nepovedlo odeslat');
+      showToast((syncedLists || syncedItems) ? `Cloud nákupy: ${syncedLists} seznamů, ${syncedItems} položek` : 'Nic se nepovedlo odeslat');
     }
 
     async function toggleShoppingDone(id) {

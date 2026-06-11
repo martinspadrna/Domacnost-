@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_207';
+  const APP_VERSION = 'Domácnost+ v.0.1_208';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -685,8 +685,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 81,
-      appBuild: 207,
-      mode: 'flat-package-v207',
+      appBuild: 208,
+      mode: 'shopping-cloud-v208',
       createdAt: '',
       updatedAt: ''
     },
@@ -1550,8 +1550,8 @@
 
     migrated.meta = {
       schemaVersion: 81,
-      appBuild: 207,
-      mode: 'flat-package-v207',
+      appBuild: 208,
+      mode: 'shopping-cloud-v208',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -4496,7 +4496,7 @@
   function getCloudSyncOverviewItems() {
     const counters = [
       { nav: 'settings', tab: 'household', icon: '👥', label: 'Profily', items: state.profiles || [], loadedAt: state.cloud?.profilesLoadedAt },
-      { nav: 'shopping', tab: 'list', icon: '🛒', label: 'Nákupy', items: state.shopping || [], loadedAt: state.shoppingCloud?.loadedAt },
+      { nav: 'shopping', tab: 'list', icon: '🛒', label: 'Nákupy', items: [...(state.shoppingLists || []), ...(state.shopping || [])], loadedAt: state.shoppingCloud?.loadedAt },
       { nav: 'contracts', tab: 'overview', icon: '📄', label: 'Smlouvy', items: state.contracts || [] },
       { nav: 'contracts', tab: 'detail', icon: '📎', label: 'Přílohy smluv', items: state.contractFiles || [] },
       { nav: 'homecare', tab: 'warranties', icon: '🧾', label: 'Přílohy záruk', items: state.warrantyFiles || [] },
@@ -4793,6 +4793,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_208', note: 'Nákupy cloud-first: nákupní seznamy i položky se při přihlášené domácnosti ukládají online/autosyncem, kusové množství zůstává celé a přepnutí seznamu tvrdě čistí světlý overlay stav.' },
       { title: 'Domácnost+ v.0.1_207', note: 'Hotfix Home ikon: panelové ikonky na hlavní obrazovce znovu respektují zvolený icon pack. SVG/glass render zůstává jen jako nouzový fallback, když asset chybí.' },
       { title: 'Domácnost+ v.0.1_206', note: 'Hotfix Home panelů: ikonky na hlavní obrazovce se nově vykreslují přes stabilní inline SVG/glass render místo problematického CSS background slotu. Spodní lišta a ikonové sady zůstávají beze změny.' },
       { title: 'Domácnost+ v.0.1_205', note: 'Hotfix Home ikon a Nákupů: asset ikony se vykreslují přes stabilnější CSS pseudo-slot, přepnutí i stejného seznamu čistí overlay stavy, plus/minus u množství je větší, ks se drží jen po celých kusech a katalog umí položky odebrat.' },
@@ -5674,7 +5675,7 @@
         createdAt: timestamp,
         updatedAt: timestamp,
         sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v207'
+        source: 'martin-private-restore-v208'
       });
       existingListNames.add(nameKey);
       existingListIds.add(list.id);
@@ -5696,7 +5697,7 @@
         householdId: data.household?.id || '',
         profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
         createdAt: timestamp,
-        source: 'martin-private-restore-v207'
+        source: 'martin-private-restore-v208'
       }));
 
     data.shopping = [...data.shopping, ...restoredItems];
@@ -5711,7 +5712,7 @@
     martinPrivateShoppingRestorePromise = new Promise((resolve) => {
       const run = async () => {
         try {
-          const response = await fetch('./martin-shopping-restore-v207.json', { cache: 'force-cache' });
+          const response = await fetch('./martin-shopping-restore-v208.json', { cache: 'force-cache' });
           if (!response.ok) throw new Error(`restore ${response.status}`);
           const payload = await response.json();
           const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
@@ -5886,16 +5887,22 @@
   }
 
 
-  function closeShoppingTransientUi() {
-    shoppingQuantityEditId = '';
+  function clearShoppingOverlayArtifacts() {
     shoppingDoneModalOpen = false;
+    shoppingQuantityEditId = '';
     shoppingSwipeStart = null;
+    document.body?.classList?.remove('overview-open');
+    document.querySelectorAll?.('.shopping-done-modal-backdrop').forEach((element) => element.remove());
+  }
+
+
+  function closeShoppingTransientUi() {
+    clearShoppingOverlayArtifacts();
     activeOverview = null;
     closeFilePreviewModal();
     garageModal = null;
     calendarDetailEventId = null;
     activeWarrantyDetailId = null;
-    document.body.classList.remove('overview-open');
     applyVisualSettings();
   }
 
@@ -5931,12 +5938,17 @@
       cloudDeleteShoppingItem,
       cloudArchiveShoppingList,
       cloudDeleteShoppingCatalogItem,
+      cloudEnsureShoppingList,
       getShoppingCatalog,
       closeShoppingTransientUi,
+      clearShoppingOverlayArtifacts,
       getQuantityEditId: () => shoppingQuantityEditId,
       setQuantityEditId: (value) => { shoppingQuantityEditId = value || ''; },
       getDoneModalOpen: () => shoppingDoneModalOpen,
-      setDoneModalOpen: (value) => { shoppingDoneModalOpen = Boolean(value); },
+      setDoneModalOpen: (value) => {
+        shoppingDoneModalOpen = Boolean(value);
+        if (!shoppingDoneModalOpen) clearShoppingOverlayArtifacts();
+      },
       confirm: (message) => window.confirm(message),
       prompt: (message, value) => window.prompt(message, value)
     });
@@ -9450,7 +9462,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 207))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 208))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -11654,9 +11666,26 @@
     if (!client || !state.cloud?.householdId) return null;
     const user = await refreshCloudSession(false);
     if (!user) return null;
+    const cleanName = normalizeText(name) || 'Nákup';
+    const householdId = state.cloud.householdId;
+
+    try {
+      const { data: existing, error: existingError } = await client
+        .from('shopping_lists')
+        .select('id,name,status,created_at,updated_at')
+        .eq('household_id', householdId)
+        .eq('status', 'active')
+        .ilike('name', cleanName)
+        .limit(1)
+        .maybeSingle();
+      if (!existingError && existing?.id) return existing;
+    } catch (error) {
+      console.warn('Cloud shopping list lookup failed', error);
+    }
+
     const { data, error } = await client
       .from('shopping_lists')
-      .insert({ household_id: state.cloud.householdId, name: normalizeText(name) || 'Nákup', status: 'active', created_by: user.id })
+      .insert({ household_id: householdId, name: cleanName, status: 'active', created_by: user.id })
       .select('id,name,status,created_at,updated_at')
       .single();
     if (error) {
@@ -11665,6 +11694,23 @@
     }
     state.cloud.lastSyncAt = new Date().toISOString();
     return data;
+  }
+
+
+  async function cloudEnsureShoppingList(list) {
+    if (!list) return null;
+    const cloudListId = list.cloudId || list.cloudListId || '';
+    if (cloudListId) return { id: cloudListId, name: list.name || 'Nákup', status: list.status || 'active' };
+    if (!cloudReady()) return null;
+    const cloudList = await cloudAddShoppingList(list.name || 'Nákup');
+    if (!cloudList?.id) return null;
+    list.cloudId = cloudList.id;
+    list.cloudListId = cloudList.id;
+    list.source = 'cloud';
+    list.updatedAt = cloudList.updated_at || new Date().toISOString();
+    state.shoppingCloud = { ...(state.shoppingCloud || {}), activeListId: cloudList.id };
+    markShoppingRuntimeDirty();
+    return cloudList;
   }
 
 
@@ -11732,15 +11778,8 @@
     const activeList = list || getActiveShoppingList();
     let listId = activeList?.cloudId || activeList?.cloudListId || '';
     if (!listId && activeList?.name) {
-      const cloudList = await cloudAddShoppingList(activeList.name);
-      if (cloudList?.id) {
-        activeList.cloudId = cloudList.id;
-        activeList.cloudListId = cloudList.id;
-        activeList.source = 'cloud';
-        state.shoppingCloud = { ...(state.shoppingCloud || {}), activeListId: cloudList.id };
-        markShoppingRuntimeDirty();
-        listId = cloudList.id;
-      }
+      const cloudList = await cloudEnsureShoppingList(activeList);
+      if (cloudList?.id) listId = cloudList.id;
     }
     if (!listId) return null;
     const householdId = state.cloud.householdId;
@@ -14756,7 +14795,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 81, appBuild: 207, mode: 'rich-demo-v207', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 81, appBuild: 208, mode: 'rich-demo-v208', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -14899,7 +14938,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 81, appBuild: 207, mode: 'flat-package-v207', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 81, appBuild: 208, mode: 'shopping-cloud-v208', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -17538,7 +17577,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 207
+        appBuild: 208
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -18128,7 +18167,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-207-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-208-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -18422,7 +18461,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_207</span>
+          <span class="badge">Domácnost+ v.0.1_208</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
