@@ -1,0 +1,302 @@
+/* Domácnost+ v.0.1_202 – oddělené styly modulu Nákupy */
+/* Domácnost+ v.0.1_178 – nákupní seznamy podle Listonicu */
+.shopping-list-switcher {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 10px;
+  margin: 0 0 10px;
+  -webkit-overflow-scrolling: touch;
+}
+.shopping-list-chip {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 2px;
+  min-width: 118px;
+  border: 1px solid rgba(148, 163, 184, .22);
+  border-radius: 18px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,.58);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, .06);
+}
+[data-theme="dark"] .shopping-list-chip {
+  background: rgba(255,255,255,.055);
+  border-color: rgba(255,255,255,.09);
+}
+.shopping-list-chip strong {
+  font-size: .92rem;
+  letter-spacing: -.03em;
+  white-space: nowrap;
+}
+.shopping-list-chip span {
+  color: var(--muted);
+  font-size: .74rem;
+  white-space: nowrap;
+}
+.shopping-list-chip.active {
+  border-color: rgba(37, 99, 235, .46);
+  background: linear-gradient(135deg, rgba(59,130,246,.18), rgba(34,197,94,.12));
+}
+.shopping-list-create-details {
+  margin-bottom: 12px;
+}
+.shopping-grouped-list {
+  display: grid;
+  gap: 12px;
+}
+.shopping-kind-group {
+  display: grid;
+  gap: 7px;
+}
+.shopping-kind-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 850;
+}
+.shopping-kind-heading span {
+  width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(15,23,42,.055);
+}
+[data-theme="dark"] .shopping-kind-heading span {
+  background: rgba(255,255,255,.08);
+}
+.shopping-kind-heading em {
+  margin-left: auto;
+  font-style: normal;
+  font-size: .75rem;
+  opacity: .78;
+}
+.shopping-listonic-item {
+  grid-template-columns: 38px minmax(0, 1fr) auto 32px auto;
+}
+.shopping-row-kind-icon {
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 11px;
+  background: rgba(15,23,42,.055);
+  font-size: 1rem;
+}
+[data-theme="dark"] .shopping-row-kind-icon {
+  background: rgba(255,255,255,.08);
+}
+.shopping-kind-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+  border-radius: 10px;
+  background: rgba(15,23,42,.055);
+}
+[data-theme="dark"] .shopping-kind-badge {
+  background: rgba(255,255,255,.08);
+}
+.shopping-catalog-list {
+  max-height: min(68vh, 760px);
+  overflow: auto;
+  padding-right: 3px;
+}
+.shopping-done-details {
+  margin-top: 14px;
+  border: 1px solid rgba(148,163,184,.18);
+  border-radius: 22px;
+  overflow: hidden;
+  background: rgba(255,255,255,.38);
+}
+[data-theme="dark"] .shopping-done-details {
+  background: rgba(255,255,255,.04);
+}
+.shopping-done-details > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-weight: 900;
+}
+.shopping-done-details > summary em {
+  color: var(--muted);
+  font-style: normal;
+  font-size: .82rem;
+}
+.shopping-done-details .shopping-grouped-list {
+  padding: 0 10px 10px;
+}
+@media (max-width: 520px) {
+  .shopping-listonic-item {
+    grid-template-columns: 34px minmax(0, 1fr) auto 30px;
+  }
+  .shopping-listonic-item .mini-danger-btn {
+    display: none;
+  }
+  .shopping-row-kind-icon {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Domácnost+ v.0.1_184 – Nákupy: počet kusů, hotovo modal, plus seznam */
+.shopping-list-switcher {
+  align-items: stretch;
+}
+
+.shopping-list-add-chip {
+  min-width: 74px;
+  justify-content: center;
+  border-style: dashed !important;
+}
+
+.shopping-list-add-chip strong {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.shopping-quantity-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.shopping-amount-pill {
+  border: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.shopping-quantity-wrap.editing {
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+.shopping-qty-btn {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 999px;
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.shopping-done-open-card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  align-items: center;
+  text-align: left;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.72);
+  box-shadow: 0 10px 30px rgba(15,23,42,0.08), inset 0 0 0 1px rgba(255,255,255,0.8);
+  color: inherit;
+  cursor: pointer;
+}
+
+.shopping-done-open-card span {
+  font-weight: 900;
+}
+
+.shopping-done-open-card strong {
+  justify-self: end;
+  font-size: .92rem;
+}
+
+.shopping-done-open-card em {
+  grid-column: 1 / -1;
+  font-style: normal;
+  color: var(--muted);
+  font-size: .86rem;
+}
+
+.shopping-done-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  background: rgba(15, 23, 42, 0.32);
+  backdrop-filter: blur(16px);
+}
+
+.shopping-done-modal {
+  width: min(760px, 100%);
+  max-height: min(82vh, 780px);
+  overflow: auto;
+  border-radius: 28px 28px 22px 22px;
+}
+
+.shopping-done-modal .shopping-listonic-item.done {
+  touch-action: pan-y;
+}
+
+@media (min-width: 820px) {
+  .shopping-done-modal-backdrop {
+    align-items: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .shopping-listonic-item {
+    gap: 8px;
+  }
+  .shopping-quantity-wrap.editing {
+    order: 3;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* Domácnost+ v.0.1_187 – Nákupy: nástroje seznamu a stabilní vizuální vrstva */
+.shopping-list-tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: -4px 0 12px;
+}
+
+.danger-outline-btn {
+  color: #b91c1c !important;
+  border-color: rgba(185, 28, 28, 0.24) !important;
+  background: rgba(255, 255, 255, 0.52) !important;
+}
+
+html[data-theme="dark"] .danger-outline-btn {
+  color: #fecaca !important;
+  background: rgba(127, 29, 29, 0.24) !important;
+}
+
+.shopping-panel,
+.listonic-panel,
+.shopping-list-chip,
+.shopping-progress-card,
+.shopping-done-open-card {
+  transition-property: transform, box-shadow, border-color !important;
+}
+
+body:not(.overview-open) .shopping-done-modal-backdrop {
+  display: none !important;
+}

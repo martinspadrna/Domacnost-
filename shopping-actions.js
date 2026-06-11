@@ -1,0 +1,295 @@
+(function () {
+  'use strict';
+
+  function createController(deps) {
+    const getState = deps.getState || (() => ({}));
+    const normalizeText = deps.normalizeText || ((value) => String(value || '').trim());
+    const normalizeKey = deps.normalizeKey || ((value) => normalizeText(value).toLowerCase());
+    const decimalValue = deps.decimalValue || ((value) => Number(value || 0));
+    const uid = deps.uid || (() => Math.random().toString(36).slice(2));
+    const confirmDialog = deps.confirm || ((message) => window.confirm(message));
+    const promptDialog = deps.prompt || ((message, value) => window.prompt(message, value));
+
+    function state() {
+      return getState();
+    }
+
+    function showToast(message) {
+      if (typeof deps.showToast === 'function') deps.showToast(message);
+    }
+
+    function persist(renderMode = 'full') {
+      deps.touchState?.();
+      deps.saveState?.();
+      if (renderMode === 'request') deps.requestRender?.();
+      else deps.render?.();
+    }
+
+    function activeList() {
+      return deps.getActiveShoppingList?.() || null;
+    }
+
+    async function addShoppingFromForm(data, form) {
+      deps.ensureShoppingListsReady?.();
+      const store = state();
+      const name = normalizeText(data.name);
+      if (!name) return showToast('Zadej položku');
+      const catalogItem = deps.findShoppingCatalogItem?.(name) || null;
+      const kind = normalizeText(data.kind || data.category) || catalogItem?.kind || catalogItem?.category || 'Ostatní';
+      const category = kind;
+      const unit = normalizeText(data.unit) || catalogItem?.defaultUnit || 'ks';
+      const quantity = decimalValue(data.quantity) || 1;
+      const note = normalizeText(data.note);
+      const isKnown = Boolean(catalogItem);
+      const listId = deps.getActiveShoppingListId?.() || '';
+      if (!listId) return showToast('Nejdřív vytvoř nákupní seznam přes plus');
+      const list = activeList();
+      const cloudReady = Boolean(deps.cloudReady?.());
+
+      if (!isKnown) {
+        store.shoppingCatalogCustom = store.shoppingCatalogCustom || [];
+        if (!store.shoppingCatalogCustom.some((item) => normalizeKey(item.name) === normalizeKey(name))) {
+          store.shoppingCatalogCustom.push({
+            id: uid(),
+            householdId: deps.currentHouseholdId?.() || '',
+            profileId: deps.currentProfileId?.() || '',
+            createdAt: new Date().toISOString(),
+            name,
+            defaultUnit: unit,
+            category,
+            kind
+          });
+          deps.markShoppingCatalogDirty?.();
+        }
+      }
+
+      const localItem = {
+        id: uid(),
+        householdId: deps.currentHouseholdId?.() || '',
+        profileId: deps.currentProfileId?.() || '',
+        createdAt: new Date().toISOString(),
+        listId,
+        name,
+        category,
+        kind,
+        quantity,
+        unit,
+        note,
+        done: false,
+        catalogItemId: catalogItem?.id || ''
+      };
+
+      if (cloudReady && deps.cloudAddShoppingItem) {
+        const cloudItem = await deps.cloudAddShoppingItem({ name, category, quantity, unit, note, catalogItem, list });
+        if (cloudItem) {
+          localItem.cloudId = cloudItem.id;
+          localItem.cloudListId = cloudItem.list_id;
+          localItem.catalogItemId = cloudItem.catalog_item_id || localItem.catalogItemId;
+        }
+      }
+
+      deps.trackShoppingUsage?.(name, unit, category);
+      store.shopping = Array.isArray(store.shopping) ? store.shopping : [];
+      store.shopping.push(localItem);
+      persist('full');
+      form?.reset?.();
+      showToast(isKnown ? 'Přidáno do seznamu' : 'Přidáno i do katalogu domácnosti');
+    }
+
+    async function quickAddShoppingByName(name) {
+      const catalogItem = deps.findShoppingCatalogItem?.(name);
+      if (!catalogItem) return showToast('Položku se nepovedlo najít v katalogu');
+      return addShoppingFromForm({
+        name: catalogItem.name,
+        kind: catalogItem.kind || catalogItem.category || 'Ostatní',
+        category: catalogItem.kind || catalogItem.category || 'Ostatní',
+        quantity: '1',
+        unit: catalogItem.defaultUnit || 'ks',
+        note: ''
+      }, null);
+    }
+
+    async function addShoppingListFromForm(data, form) {
+      deps.ensureShoppingListsReady?.();
+      const store = state();
+      const name = normalizeText(data.name);
+      if (!name) return showToast('Zadej název seznamu');
+      store.shoppingLists = Array.isArray(store.shoppingLists) ? store.shoppingLists : [];
+      const id = `shopping-list-${uid()}`;
+      const timestamp = new Date().toISOString();
+      const record = {
+        id,
+        householdId: deps.currentHouseholdId?.() || '',
+        profileId: deps.currentProfileId?.() || '',
+        name,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        sortOrder: store.shoppingLists.length,
+        source: 'custom'
+      };
+      if (deps.cloudReady?.() && deps.cloudAddShoppingList) {
+        const cloudList = await deps.cloudAddShoppingList(name);
+        if (cloudList?.id) {
+          record.cloudId = cloudList.id;
+          record.cloudListId = cloudList.id;
+          record.source = 'cloud';
+          store.shoppingCloud = { ...(store.shoppingCloud || {}), activeListId: cloudList.id };
+        }
+      }
+      deps.markShoppingRuntimeDirty?.();
+      store.shoppingLists.push(record);
+      store.activeShoppingListId = id;
+      persist('full');
+      form?.reset?.();
+      showToast(record.cloudId ? `Seznam ${name} vytvořen v cloudu` : `Seznam ${name} vytvořen`);
+    }
+
+    function setActiveShoppingList(id) {
+      deps.ensureShoppingListsReady?.();
+      const store = state();
+      if (!store.shoppingLists?.some((list) => list.id === id)) return;
+      if (store.activeShoppingListId === id && !deps.getQuantityEditId?.() && !deps.getDoneModalOpen?.()) return;
+      store.activeShoppingListId = id;
+      deps.closeShoppingTransientUi?.();
+      persist('request');
+    }
+
+    async function deleteShoppingList(id) {
+      deps.ensureShoppingListsReady?.();
+      const store = state();
+      const lists = deps.getShoppingLists?.() || [];
+      if (lists.length <= 1) return showToast('Poslední seznam nejde smazat');
+      const list = lists.find((entry) => entry.id === id);
+      if (!list) return;
+      if (!confirmDialog(`Smazat seznam ${list.name} včetně položek?`)) return;
+      if (deps.cloudArchiveShoppingList) {
+        const ok = await deps.cloudArchiveShoppingList(list);
+        if (!ok) return;
+      }
+      deps.markShoppingRuntimeDirty?.();
+      store.shoppingLists = (store.shoppingLists || []).filter((entry) => entry.id !== id);
+      store.shopping = (store.shopping || []).filter((item) => item.listId !== id);
+      if (store.activeShoppingListId === id) store.activeShoppingListId = store.shoppingLists[0]?.id || '';
+      deps.closeShoppingTransientUi?.();
+      persist('full');
+      showToast('Seznam smazán');
+    }
+
+    function promptAddShoppingList() {
+      const name = normalizeText(promptDialog('Název nového seznamu', ''));
+      if (!name) return;
+      addShoppingListFromForm({ name }, null);
+    }
+
+    function toggleQuantityEditor(id) {
+      const next = deps.getQuantityEditId?.() === id ? '' : id;
+      deps.setQuantityEditId?.(next);
+      deps.requestRender?.();
+    }
+
+    function setDoneModalOpen(open) {
+      deps.setDoneModalOpen?.(Boolean(open));
+      deps.requestRender?.();
+    }
+
+    function updateShoppingQuantity(id, delta) {
+      const store = state();
+      const item = store.shopping?.find((entry) => entry.id === id);
+      if (!item) return;
+      const current = Number(item.quantity || item.amount || 1) || 1;
+      const next = Math.max(0.25, current + delta);
+      item.quantity = Number.isInteger(next) ? next : Number(next.toFixed(2));
+      deps.setQuantityEditId?.(id);
+      persist('request');
+    }
+
+    async function deleteDoneShoppingBySwipe(id) {
+      const store = state();
+      const item = store.shopping?.find((entry) => entry.id === id);
+      if (!item || !item.done) return;
+      if (!confirmDialog(`Smazat koupenou položku ${item.name}?`)) return;
+      if (deps.cloudDeleteShoppingItem) {
+        const ok = await deps.cloudDeleteShoppingItem(item);
+        if (!ok) return;
+      }
+      store.shopping = store.shopping.filter((entry) => entry.id !== id);
+      persist('full');
+      showToast('Položka smazána');
+    }
+
+    async function cloudSyncLocalShoppingItems() {
+      deps.ensureShoppingListsReady?.();
+      const store = state();
+      const local = (store.shopping || []).filter((item) => !item.cloudId);
+      if (!local.length) return showToast('Žádné lokální nákupy k odeslání');
+      let synced = 0;
+      for (const item of local) {
+        const catalogItem = deps.findShoppingCatalogItem?.(item.name) || null;
+        const list = (store.shoppingLists || []).find((entry) => entry.id === item.listId) || activeList();
+        const cloudItem = await deps.cloudAddShoppingItem?.({
+          name: item.name,
+          category: item.category || item.kind || 'Ostatní',
+          quantity: item.quantity || 1,
+          unit: item.unit || 'ks',
+          note: item.note || '',
+          catalogItem,
+          list
+        });
+        if (cloudItem?.id) {
+          item.cloudId = cloudItem.id;
+          item.cloudListId = cloudItem.list_id;
+          item.catalogItemId = cloudItem.catalog_item_id || item.catalogItemId || '';
+          synced += 1;
+        }
+      }
+      persist('full');
+      showToast(synced ? `Odesláno do cloudu: ${synced}` : 'Nic se nepovedlo odeslat');
+    }
+
+    async function toggleShoppingDone(id) {
+      const store = state();
+      const item = store.shopping?.find((entry) => entry.id === id);
+      if (!item) return;
+      const previousDone = Boolean(item.done);
+      const previousDoneAt = item.doneAt || '';
+      item.done = !item.done;
+      item.doneAt = item.done ? new Date().toISOString() : '';
+      const ok = await deps.cloudUpdateShoppingItem?.(item);
+      if (ok === false) {
+        item.done = previousDone;
+        item.doneAt = previousDoneAt;
+        return;
+      }
+      persist('full');
+    }
+
+    async function deleteShoppingItem(id) {
+      const store = state();
+      const item = store.shopping?.find((entry) => entry.id === id);
+      if (!item) return;
+      const ok = await deps.cloudDeleteShoppingItem?.(item);
+      if (ok === false) return;
+      store.shopping = store.shopping.filter((entry) => entry.id !== id);
+      persist('full');
+      showToast('Smazáno');
+    }
+
+    return {
+      addShoppingFromForm,
+      quickAddShoppingByName,
+      addShoppingListFromForm,
+      setActiveShoppingList,
+      deleteShoppingList,
+      promptAddShoppingList,
+      toggleQuantityEditor,
+      setDoneModalOpen,
+      updateShoppingQuantity,
+      deleteDoneShoppingBySwipe,
+      cloudSyncLocalShoppingItems,
+      toggleShoppingDone,
+      deleteShoppingItem
+    };
+  }
+
+  window.DomacnostShoppingActions = { createController };
+})();

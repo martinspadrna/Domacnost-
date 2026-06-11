@@ -1,0 +1,18348 @@
+(() => {
+  'use strict';
+
+  try {
+
+  window.__DOMACNOST_APP_STARTED__ = true;
+  if (window.__DOMACNOST_BOOT_TIMEOUT__) window.clearTimeout(window.__DOMACNOST_BOOT_TIMEOUT__);
+
+  const localStorage = createSafeStorage(window.localStorage, 'local');
+  const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
+
+  const APP_VERSION = 'Domácnost+ v.0.1_202';
+  const APP_TIME_ZONE = 'Europe/Prague';
+  const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
+  const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
+  const STORAGE_KEY = 'domacnostPlus.v0.1_86';
+  const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_85';
+  const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_82', 'domacnostPlus.v0.1_81', 'domacnostPlus.v0.1_80', 'domacnostPlus.v0.1_79', 'domacnostPlus.v0.1_78', 'domacnostPlus.v0.1_77', 'domacnostPlus.v0.1_72', 'domacnostPlus.v0.1_71', 'domacnostPlus.v0.1_70', 'domacnostPlus.v0.1_69', 'domacnostPlus.v0.1_68', 'domacnostPlus.v0.1_67', 'domacnostPlus.v0.1_66', 'domacnostPlus.v0.1_65', 'domacnostPlus.v0.1_64', 'domacnostPlus.v0.1_63', 'domacnostPlus.v0.1_62', 'domacnostPlus.v0.1_61', 'domacnostPlus.v0.1_60', 'domacnostPlus.v0.1_59', 'domacnostPlus.v0.1_58', 'domacnostPlus.v0.1_57', 'domacnostPlus.v0.1_56', 'domacnostPlus.v0.1_55', 'domacnostPlus.v0.1_54', 'domacnostPlus.v0.1_53', 'domacnostPlus.v0.1_52', 'domacnostPlus.v0.1_51', 'domacnostPlus.v0.1_50', 'domacnostPlus.v0.1_49', 'domacnostPlus.v0.1_48', 'domacnostPlus.v0.1_47', 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
+
+  const MODULES = [
+    { id: 'home', label: 'Domů', icon: '🏠' },
+    { id: 'weather', label: 'Počasí', icon: '🌤️' },
+    { id: 'calendar', label: 'Kalendář', icon: '📅' },
+    { id: 'packages', label: 'Balíky', icon: '📦' },
+    { id: 'shopping', label: 'Nákupy', icon: '🛒' },
+    { id: 'homecare', label: 'Domácnost', icon: '💡' },
+    { id: 'garage', label: 'Garáž', icon: '🚗' },
+    { id: 'contracts', label: 'Smlouvy', icon: '📄' },
+    { id: 'cameras', label: 'Kamery', icon: '📹' },
+    { id: 'finance', label: 'Finance', icon: '💰' },
+    { id: 'subscriptions', label: 'Předplatné', icon: '🎬' },
+    { id: 'settings', label: 'Nastavení', icon: '⚙️' }
+  ];
+
+  const DEFAULT_BOTTOM_NAV_IDS = ['home', 'calendar', 'homecare', 'garage', 'finance'];
+
+
+
+  const SHOPPING_UNITS = [
+    ['ks', 'ks'], ['g', 'g'], ['kg', 'kg'], ['ml', 'ml'], ['l', 'l'], ['bal', 'balení'], ['krab', 'krabice'], ['lahev', 'láhev'], ['plech', 'plechovka'], ['role', 'role'], ['sacek', 'sáček'], ['m', 'm'], ['jine', 'jiné']
+  ];
+
+  const SHOPPING_CATEGORIES = [
+  [
+    "Ovoce a zelenina",
+    "🥦"
+  ],
+  [
+    "Pečivo",
+    "🥐"
+  ],
+  [
+    "Mléčné",
+    "🧀"
+  ],
+  [
+    "Maso a uzeniny",
+    "🥩"
+  ],
+  [
+    "Ryby",
+    "🐟"
+  ],
+  [
+    "Trvanlivé",
+    "🥫"
+  ],
+  [
+    "Mražené",
+    "❄️"
+  ],
+  [
+    "Nápoje",
+    "🧃"
+  ],
+  [
+    "Káva a čaj",
+    "☕"
+  ],
+  [
+    "Koření a pečení",
+    "🧁"
+  ],
+  [
+    "Sladkosti a snacky",
+    "🍬"
+  ],
+  [
+    "Drogerie",
+    "🧴"
+  ],
+  [
+    "Domácnost",
+    "🧻"
+  ],
+  [
+    "Děti",
+    "🛒"
+  ],
+  [
+    "Zvířata",
+    "🐾"
+  ],
+  [
+    "Lékárna",
+    "💊"
+  ],
+  [
+    "Ostatní",
+    "🛒"
+  ]
+];
+
+  const CONTRACT_TYPE_OPTIONS = [
+    ['car_insurance', 'Pojištění auta'],
+    ['home_insurance', 'Pojištění domácnosti'],
+    ['property_insurance', 'Pojištění nemovitosti'],
+    ['electricity', 'Elektřina'],
+    ['gas', 'Plyn'],
+    ['water', 'Voda'],
+    ['internet', 'Internet'],
+    ['mobile', 'Mobil / paušál'],
+    ['subscription', 'Předplatné'],
+    ['loan', 'Úvěr / půjčka'],
+    ['leasing', 'Leasing'],
+    ['service', 'Servis / služba'],
+    ['other', 'Jiné']
+  ];
+
+  const TASK_CATEGORY_OPTIONS = [
+    ['domacnost', 'Domácnost'],
+    ['uklid', 'Úklid'],
+    ['udrzba', 'Údržba'],
+    ['nakupy', 'Nákupy'],
+    ['zahrada', 'Zahrada'],
+    ['auto', 'Auto'],
+    ['finance', 'Finance'],
+    ['zdravi', 'Zdraví'],
+    ['ostatni', 'Ostatní']
+  ];
+
+  const TASK_PRIORITY_OPTIONS = [
+    ['low', 'Nízká'],
+    ['normal', 'Normální'],
+    ['high', 'Vysoká'],
+    ['urgent', 'Urgentní']
+  ];
+
+  const FINANCE_CATEGORY_OPTIONS = [
+    ['salary', 'Výplata', 'income'],
+    ['bonus', 'Bonus / odměna', 'income'],
+    ['sale', 'Prodej', 'income'],
+    ['other_income', 'Ostatní příjem', 'income'],
+    ['groceries', 'Potraviny', 'expense'],
+    ['drugstore', 'Drogerie', 'expense'],
+    ['housing', 'Bydlení', 'expense'],
+    ['energy', 'Energie', 'expense'],
+    ['car', 'Auto', 'expense'],
+    ['kids', 'Děti', 'expense'],
+    ['health', 'Zdraví', 'expense'],
+    ['fun', 'Zábava', 'expense'],
+    ['restaurant', 'Restaurace', 'expense'],
+    ['subscription', 'Předplatné', 'expense'],
+    ['contracts', 'Smlouvy / pojistky', 'expense'],
+    ['other_expense', 'Ostatní výdaj', 'expense']
+  ];
+
+  const SUBSCRIPTION_SERVICE_OPTIONS = [
+    ['netflix', 'Netflix', 319, 5],
+    ['disney', 'Disney+', 199, 7],
+    ['hbo', 'HBO Max', 219, 5],
+    ['skyshowtime', 'SkyShowtime', 179, 5],
+    ['prime', 'Prime Video', 79, 6],
+    ['apple-tv', 'Apple TV+', 199, 6],
+    ['spotify', 'Spotify', 229, 6],
+    ['youtube', 'YouTube Premium', 239, 6],
+    ['oneplay', 'Oneplay', 199, 5],
+    ['canal', 'Canal+', 189, 4],
+    ['o2-tv', 'O2 TV', 399, 4],
+    ['telly', 'Telly', 250, 4],
+    ['t-mobile', 'T-Mobile', 0, 6],
+    ['other', 'Vlastní služba', 0, 0]
+  ];
+
+  const DEFAULT_SHOPPING_CATALOG = [
+  {
+    "name": "Rohlíky",
+    "defaultUnit": "ks",
+    "kind": "Pečivo",
+    "category": "Pečivo",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Chléb",
+    "defaultUnit": "ks",
+    "kind": "Pečivo",
+    "category": "Pečivo",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Toustový chléb",
+    "defaultUnit": "ks",
+    "kind": "Pečivo",
+    "category": "Pečivo",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Mléko",
+    "defaultUnit": "l",
+    "kind": "Mléčné",
+    "category": "Mléčné",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Máslo",
+    "defaultUnit": "ks",
+    "kind": "Mléčné",
+    "category": "Mléčné",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Sýr",
+    "defaultUnit": "ks",
+    "kind": "Mléčné",
+    "category": "Mléčné",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Jogurt",
+    "defaultUnit": "ks",
+    "kind": "Mléčné",
+    "category": "Mléčné",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Vejce",
+    "defaultUnit": "bal",
+    "kind": "Mléčné",
+    "category": "Mléčné",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Šunka",
+    "defaultUnit": "g",
+    "kind": "Maso a uzeniny",
+    "category": "Maso a uzeniny",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Kuřecí maso",
+    "defaultUnit": "kg",
+    "kind": "Maso a uzeniny",
+    "category": "Maso a uzeniny",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Mleté maso",
+    "defaultUnit": "kg",
+    "kind": "Maso a uzeniny",
+    "category": "Maso a uzeniny",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Párky",
+    "defaultUnit": "bal",
+    "kind": "Maso a uzeniny",
+    "category": "Maso a uzeniny",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Jablka",
+    "defaultUnit": "kg",
+    "kind": "Ovoce a zelenina",
+    "category": "Ovoce a zelenina",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Banány",
+    "defaultUnit": "kg",
+    "kind": "Ovoce a zelenina",
+    "category": "Ovoce a zelenina",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Brambory",
+    "defaultUnit": "kg",
+    "kind": "Ovoce a zelenina",
+    "category": "Ovoce a zelenina",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Cibule",
+    "defaultUnit": "kg",
+    "kind": "Ovoce a zelenina",
+    "category": "Ovoce a zelenina",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Česnek",
+    "defaultUnit": "ks",
+    "kind": "Ovoce a zelenina",
+    "category": "Ovoce a zelenina",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Rajčata",
+    "defaultUnit": "kg",
+    "kind": "Ovoce a zelenina",
+    "category": "Ovoce a zelenina",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Okurka",
+    "defaultUnit": "ks",
+    "kind": "Ovoce a zelenina",
+    "category": "Ovoce a zelenina",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Paprika",
+    "defaultUnit": "ks",
+    "kind": "Ovoce a zelenina",
+    "category": "Ovoce a zelenina",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Rýže",
+    "defaultUnit": "kg",
+    "kind": "Trvanlivé",
+    "category": "Trvanlivé",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Těstoviny",
+    "defaultUnit": "bal",
+    "kind": "Trvanlivé",
+    "category": "Trvanlivé",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Mouka",
+    "defaultUnit": "kg",
+    "kind": "Trvanlivé",
+    "category": "Trvanlivé",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Cukr",
+    "defaultUnit": "kg",
+    "kind": "Trvanlivé",
+    "category": "Trvanlivé",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Sůl",
+    "defaultUnit": "kg",
+    "kind": "Trvanlivé",
+    "category": "Trvanlivé",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Olej",
+    "defaultUnit": "l",
+    "kind": "Trvanlivé",
+    "category": "Trvanlivé",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Kečup",
+    "defaultUnit": "ks",
+    "kind": "Trvanlivé",
+    "category": "Trvanlivé",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Hořčice",
+    "defaultUnit": "ks",
+    "kind": "Trvanlivé",
+    "category": "Trvanlivé",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Káva",
+    "defaultUnit": "bal",
+    "kind": "Káva a čaj",
+    "category": "Káva a čaj",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Čaj",
+    "defaultUnit": "bal",
+    "kind": "Káva a čaj",
+    "category": "Káva a čaj",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Voda",
+    "defaultUnit": "ks",
+    "kind": "Nápoje",
+    "category": "Nápoje",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Džus",
+    "defaultUnit": "ks",
+    "kind": "Nápoje",
+    "category": "Nápoje",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Pizza mražená",
+    "defaultUnit": "ks",
+    "kind": "Mražené",
+    "category": "Mražené",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Hranolky",
+    "defaultUnit": "bal",
+    "kind": "Mražené",
+    "category": "Mražené",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Toaletní papír",
+    "defaultUnit": "bal",
+    "kind": "Domácnost",
+    "category": "Domácnost",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Kuchyňské utěrky",
+    "defaultUnit": "role",
+    "kind": "Domácnost",
+    "category": "Domácnost",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Jar",
+    "defaultUnit": "ks",
+    "kind": "Drogerie",
+    "category": "Drogerie",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Prací gel",
+    "defaultUnit": "ks",
+    "kind": "Drogerie",
+    "category": "Drogerie",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Šampon",
+    "defaultUnit": "ks",
+    "kind": "Drogerie",
+    "category": "Drogerie",
+    "source": "basic-default-v185"
+  },
+  {
+    "name": "Zubní pasta",
+    "defaultUnit": "ks",
+    "kind": "Drogerie",
+    "category": "Drogerie",
+    "source": "basic-default-v185"
+  }
+];
+
+  const DEFAULT_SHOPPING_LISTS = [];
+
+  const DEFAULT_SHOPPING_ITEMS = [];
+
+
+
+  const BOTTOM_NAV_MIN = 3;
+  const BOTTOM_NAV_MAX = 5;
+  const MORE_MODULE = { id: 'more', label: 'Více', icon: '⚙️' };
+  const FILE_DB_NAME = 'homeWebOfflineFiles.v1';
+  const FILE_STORE_CONTRACTS = 'contractFiles';
+  const FILE_STORE_WARRANTIES = 'warrantyFiles';
+  const CONTRACT_FILE_MAX_BYTES = 15 * 1024 * 1024;
+  const CONTRACT_FILE_ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
+  const WARRANTY_FILE_MAX_BYTES = 15 * 1024 * 1024;
+  const WARRANTY_IMAGE_MAX_DIMENSION = 1800;
+  const WARRANTY_IMAGE_JPEG_QUALITY = 0.82;
+  const WARRANTY_FILE_ALLOWED_MIME = CONTRACT_FILE_ALLOWED_MIME;
+  const SUPABASE_URL = 'https://cgshssdjgzzuprlwnabl.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_v7jeuZC-MNUEO5nfE5xcUQ_Pu9pT-X_';
+  const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
+  const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
+  const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
+  const BRAND_ICON_SRC = './icons/domacnost-plus-icon-180.png';
+
+  const MANAGED_MODULE_IDS = MODULES
+    .filter((module) => !['home', 'settings'].includes(module.id))
+    .map((module) => module.id);
+
+  const DASHBOARD_WIDGETS = [];
+  const DEFAULT_DASHBOARD_WIDGET_IDS = [];
+  const HOME_HERO_ITEMS = [
+    { id: 'calendar', label: 'Kalendář', icon: '📅', overview: 'calendar', metric: (ctx) => ctx.calendarPanelEvents?.length || 0, text: () => 'nejbližší události' },
+    { id: 'packages', label: 'Balíky', icon: '📦', overview: 'packages', metric: (ctx) => ctx.activePackages.length, text: () => 'aktivní balíky' },
+    { id: 'shopping', label: 'Nákup', icon: '🛒', overview: 'shopping', metric: (ctx) => ctx.openShopping.length, text: () => 'v nákupu' },
+    { id: 'coupons', label: 'Slevové kódy', icon: '🏷️', nav: 'shopping', tab: 'coupons', metric: () => state.coupons.filter((item) => !item.used).length, text: () => 'nepoužité kódy' },
+    { id: 'hdo', label: 'HDO', icon: '💡', overview: 'hdo', metric: (ctx) => ctx.hdo.active ? 'Běží' : 'Ne', text: () => 'HDO' },
+    { id: 'waste', label: 'Odpad', icon: '♻️', overview: 'waste', metric: (ctx) => ctx.wasteSoon.length, text: () => 'svoz do 7 dnů' },
+    { id: 'tasks', label: 'Úkoly', icon: '✅', overview: 'tasks', metric: (ctx) => ctx.openTasks.length, text: () => 'otevřené úkoly' },
+    { id: 'notes', label: 'Poznámky', icon: '📝', nav: 'homecare', tab: 'tasks', metric: () => state.notes.length, text: () => 'poznámky' },
+    { id: 'devices', label: 'Zařízení', icon: '🔌', nav: 'homecare', tab: 'devices', metric: () => state.devices.length, text: () => 'zařízení' },
+    { id: 'warranties', label: 'Záruky', icon: '🧾', nav: 'homecare', tab: 'warranties', metric: () => state.warranties.filter((item) => item.status !== 'archived').length, text: () => 'záruky' },
+    { id: 'polishHolidays', label: 'PL svátky', icon: '🇵🇱', nav: 'homecare', tab: 'polish-holidays', metric: () => polishShopHeroMetric(), text: () => polishShopHeroText() },
+    { id: 'garage', label: 'Garáž', icon: '🚗', overview: 'garage', metric: () => state.vehicles.length, text: () => garageCountLabel(state.vehicles.length) },
+    { id: 'contracts', label: 'Smlouvy', icon: '📄', overview: 'contracts', metric: () => state.contracts.length, text: () => 'smlouvy' },
+    { id: 'finance', label: 'Finance', icon: '💰', overview: 'finance', metric: () => formatCurrency(financeMonthSummary().balance), text: () => 'měsíční rozdíl' },
+    { id: 'subscriptions', label: 'Předplatné', icon: '🎬', nav: 'subscriptions', tab: 'overview', metric: () => formatCurrency(subscriptionMonthSummary().expectedReturn), text: () => 'má se vrátit' },
+    { id: 'cameras', label: 'Kamery', icon: '📹', nav: 'cameras', tab: 'overview', metric: () => state.cameras.length, text: () => 'kamery' }
+  ];
+  const DEFAULT_HOME_HERO_IDS = [];
+  const HOME_HERO_MAX = 8;
+  const POLISH_SHOP_HOLIDAY_API = 'https://date.nager.at/api/v3/PublicHolidays';
+  const POLISH_SHOP_YEAR_MIN = 2025;
+  const POLISH_SHOP_YEAR_MAX = 2032;
+  const WEATHER_DEFAULT_LOCATION = { name: 'Hostinné', country: 'CZ', latitude: 50.5407, longitude: 15.7233 };
+  const WEATHER_CACHE_MS = 30 * 60 * 1000;
+  const WEATHER_PROVIDER_OPTIONS = [
+    ['chmi', 'ČHMÚ – preferovaný zdroj'],
+    ['open-meteo', 'Open-Meteo fallback']
+  ];
+  const VEHICLE_ICON_COLORS = [
+    ['blue', 'Modrá'],
+    ['green', 'Zelená'],
+    ['teal', 'Tyrkysová'],
+    ['amber', 'Žlutá'],
+    ['red', 'Červená'],
+    ['purple', 'Fialová'],
+    ['graphite', 'Šedá']
+  ];
+
+  const GARAGE_VEHICLE_PRESETS = [
+    { id: 'skoda-octavia-3-1-6-tdi', brand: 'Škoda', model: 'Octavia', generation: 'III', productionYear: '2013–2020', bodyType: 'liftback / combi', fuelType: 'diesel', engineName: '1.6 TDI', engineCode: '', displacementCcm: '1598', powerKw: '77', powerHp: '105', torqueNm: '250', cylinders: '4', transmission: 'manuál / DSG', drive: 'přední', emissionNorm: 'Euro 5/6', officialConsumption: '3,8–4,6', fuelTankLiters: '50', seats: '5', doors: '5', tireSize: '205/55 R16', note: 'Orientační katalogová data, ověřit podle TP konkrétního auta.' },
+    { id: 'skoda-octavia-3-2-0-tdi', brand: 'Škoda', model: 'Octavia', generation: 'III', productionYear: '2013–2020', bodyType: 'liftback / combi', fuelType: 'diesel', engineName: '2.0 TDI', engineCode: '', displacementCcm: '1968', powerKw: '110', powerHp: '150', torqueNm: '320', cylinders: '4', transmission: 'manuál / DSG', drive: 'přední / 4x4', emissionNorm: 'Euro 5/6', officialConsumption: '4,1–5,0', fuelTankLiters: '50', seats: '5', doors: '5', tireSize: '205/55 R16', note: 'Orientační katalogová data, ověřit podle TP konkrétního auta.' },
+    { id: 'skoda-fabia-1-1-9-tdi', brand: 'Škoda', model: 'Fabia', generation: 'I', productionYear: '1999–2007', bodyType: 'hatchback / combi / sedan', fuelType: 'diesel', engineName: '1.9 TDI', engineCode: '', displacementCcm: '1896', powerKw: '74', powerHp: '101', torqueNm: '240', cylinders: '4', transmission: 'manuál', drive: 'přední', emissionNorm: 'Euro 3/4', officialConsumption: '4,9–5,2', fuelTankLiters: '45', seats: '5', doors: '5', tireSize: '185/60 R14', note: 'Orientační katalogová data, ověřit podle TP konkrétního auta.' },
+    { id: 'hyundai-i20-1-2', brand: 'Hyundai', model: 'i20', generation: '', productionYear: '2014–2020', bodyType: 'hatchback', fuelType: 'gasoline', engineName: '1.2', engineCode: '', displacementCcm: '1248', powerKw: '55', powerHp: '75', torqueNm: '122', cylinders: '4', transmission: 'manuál', drive: 'přední', emissionNorm: 'Euro 6', officialConsumption: '5,1–5,6', fuelTankLiters: '50', seats: '5', doors: '5', tireSize: '185/65 R15', note: 'Orientační katalogová data, ověřit podle TP konkrétního auta.' },
+    { id: 'skoda-elroq-85', brand: 'Škoda', model: 'Elroq', generation: '', productionYear: '2025–', bodyType: 'SUV', fuelType: 'electric', engineName: '85', engineCode: '', powerKw: '210', powerHp: '286', torqueNm: '', transmission: 'automat', drive: 'zadní', emissionNorm: 'EV', officialConsumption: '15,2–16,4 kWh/100 km', batteryKwh: '82', seats: '5', doors: '5', tireSize: '235/55 R19', note: 'Orientační katalogová data, ověřit podle TP konkrétního auta.' }
+  ];
+  function garagePresetId(text) {
+    return String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+  }
+  function addGaragePresetBrandCatalog(brand, models) {
+    const defaultNote = 'Orientační lokální katalog pro rychlé předvyplnění. Přesné údaje vždy ověřit podle TP konkrétního auta.';
+    Object.entries(models).forEach(([model, engines]) => {
+      engines.forEach((engine) => {
+        const item = {
+          brand,
+          model,
+          generation: engine.generation || '',
+          productionYear: engine.productionYear || '',
+          bodyType: engine.bodyType || '',
+          fuelType: engine.fuelType || '',
+          engineName: engine.engineName || '',
+          engineCode: engine.engineCode || '',
+          displacementCcm: engine.displacementCcm || '',
+          powerKw: engine.powerKw || '',
+          powerHp: engine.powerHp || '',
+          torqueNm: engine.torqueNm || '',
+          cylinders: engine.cylinders || '',
+          transmission: engine.transmission || '',
+          drive: engine.drive || '',
+          emissionNorm: engine.emissionNorm || '',
+          officialConsumption: engine.officialConsumption || '',
+          fuelTankLiters: engine.fuelTankLiters || '',
+          batteryKwh: engine.batteryKwh || '',
+          seats: engine.seats || '5',
+          doors: engine.doors || '5',
+          tireSize: engine.tireSize || '',
+          note: engine.note || defaultNote
+        };
+        item.id = `catalog-${garagePresetId([brand, model, item.engineName, item.powerKw, item.productionYear, item.generation].filter(Boolean).join('-'))}`;
+        if (!GARAGE_VEHICLE_PRESETS.some((preset) => preset.id === item.id || (preset.brand === item.brand && preset.model === item.model && preset.engineName === item.engineName && preset.powerKw === item.powerKw && preset.productionYear === item.productionYear))) {
+          GARAGE_VEHICLE_PRESETS.push(item);
+        }
+      });
+    });
+  }
+  function enginePreset(engineName, powerKw, extra = {}) {
+    const kw = Number(powerKw || 0);
+    return { engineName, powerKw: powerKw ? String(powerKw) : '', powerHp: kw ? String(Math.round(kw * 1.35962)) : '', ...extra };
+  }
+  [
+    ['Audi', { A3:[enginePreset('1.5 TFSI',110,{fuelType:'gasoline',displacementCcm:'1498',transmission:'manuál / S tronic',drive:'přední',bodyType:'hatchback / sedan'}), enginePreset('2.0 TDI',110,{fuelType:'diesel',displacementCcm:'1968',transmission:'S tronic',drive:'přední'})], A4:[enginePreset('2.0 TDI',120,{fuelType:'diesel',displacementCcm:'1968',transmission:'S tronic',drive:'přední / quattro'}), enginePreset('2.0 TFSI',150,{fuelType:'gasoline',displacementCcm:'1984',transmission:'S tronic',drive:'přední / quattro'})], Q5:[enginePreset('40 TDI quattro',150,{fuelType:'diesel',displacementCcm:'1968',transmission:'S tronic',drive:'4x4',bodyType:'SUV'}), enginePreset('45 TFSI quattro',195,{fuelType:'gasoline',displacementCcm:'1984',transmission:'S tronic',drive:'4x4',bodyType:'SUV'})] }],
+    ['BMW', { 'Řada 1':[enginePreset('118i',100,{fuelType:'gasoline',transmission:'manuál / automat',drive:'přední'}), enginePreset('120d',140,{fuelType:'diesel',transmission:'automat',drive:'přední / xDrive'})], 'Řada 3':[enginePreset('320d',140,{fuelType:'diesel',transmission:'automat',drive:'zadní / xDrive'}), enginePreset('330i',190,{fuelType:'gasoline',transmission:'automat',drive:'zadní / xDrive'})], X3:[enginePreset('20d xDrive',140,{fuelType:'diesel',transmission:'automat',drive:'4x4',bodyType:'SUV'}), enginePreset('30e xDrive',215,{fuelType:'plugin-hybrid',transmission:'automat',drive:'4x4',bodyType:'SUV'})] }],
+    ['Citroën', { C3:[enginePreset('1.2 PureTech',81,{fuelType:'gasoline',displacementCcm:'1199',transmission:'manuál / automat'}), enginePreset('1.5 BlueHDi',75,{fuelType:'diesel',displacementCcm:'1499'})], C4:[enginePreset('1.2 PureTech',96,{fuelType:'gasoline'}), enginePreset('ë-C4',100,{fuelType:'electric',batteryKwh:'50'})], Berlingo:[enginePreset('1.5 BlueHDi',96,{fuelType:'diesel',bodyType:'MPV / dodávka'}), enginePreset('1.2 PureTech',81,{fuelType:'gasoline',bodyType:'MPV / dodávka'})] }],
+    ['Dacia', { Sandero:[enginePreset('1.0 SCe',49,{fuelType:'gasoline'}), enginePreset('1.0 TCe LPG',74,{fuelType:'lpg'})], Duster:[enginePreset('1.0 TCe LPG',74,{fuelType:'lpg',bodyType:'SUV'}), enginePreset('1.3 TCe',96,{fuelType:'gasoline',bodyType:'SUV'})], Jogger:[enginePreset('1.0 TCe LPG',74,{fuelType:'lpg',bodyType:'MPV'}), enginePreset('Hybrid 140',104,{fuelType:'hybrid',bodyType:'MPV'})] }],
+    ['Fiat', { 500:[enginePreset('1.0 Hybrid',51,{fuelType:'hybrid'}), enginePreset('500e',87,{fuelType:'electric',batteryKwh:'42'})], Tipo:[enginePreset('1.0 T3',74,{fuelType:'gasoline'}), enginePreset('1.6 MultiJet',96,{fuelType:'diesel'})], Panda:[enginePreset('1.0 Hybrid',51,{fuelType:'hybrid'}), enginePreset('0.9 TwinAir 4x4',63,{fuelType:'gasoline',drive:'4x4'})] }],
+    ['Ford', { Fiesta:[enginePreset('1.0 EcoBoost',74,{fuelType:'gasoline'}), enginePreset('1.5 TDCi',63,{fuelType:'diesel'})], Focus:[enginePreset('1.0 EcoBoost',92,{fuelType:'gasoline'}), enginePreset('1.5 EcoBlue',88,{fuelType:'diesel'})], Kuga:[enginePreset('1.5 EcoBoost',110,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('2.5 PHEV',165,{fuelType:'plugin-hybrid',bodyType:'SUV'})] }],
+    ['Honda', { Civic:[enginePreset('1.5 VTEC Turbo',134,{fuelType:'gasoline'}), enginePreset('e:HEV',135,{fuelType:'hybrid'})], Jazz:[enginePreset('1.5 e:HEV',80,{fuelType:'hybrid'}), enginePreset('1.3 i-VTEC',75,{fuelType:'gasoline'})], 'CR-V':[enginePreset('2.0 e:HEV',135,{fuelType:'hybrid',bodyType:'SUV'}), enginePreset('1.5 VTEC Turbo',142,{fuelType:'gasoline',bodyType:'SUV'})] }],
+    ['Hyundai', { i20:[enginePreset('1.2',55,{fuelType:'gasoline',displacementCcm:'1248'}), enginePreset('1.0 T-GDI',74,{fuelType:'gasoline'})], i30:[enginePreset('1.0 T-GDI',88,{fuelType:'gasoline'}), enginePreset('1.5 T-GDI',118,{fuelType:'gasoline'})], Tucson:[enginePreset('1.6 T-GDI',110,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('1.6 CRDi',100,{fuelType:'diesel',bodyType:'SUV'})] }],
+    ['Kia', { Ceed:[enginePreset('1.0 T-GDI',88,{fuelType:'gasoline'}), enginePreset('1.5 T-GDI',118,{fuelType:'gasoline'})], Sportage:[enginePreset('1.6 T-GDI',110,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('1.6 CRDi',100,{fuelType:'diesel',bodyType:'SUV'})], Rio:[enginePreset('1.2 CVVT',62,{fuelType:'gasoline'}), enginePreset('1.0 T-GDI',74,{fuelType:'gasoline'})] }],
+    ['Mazda', { '3':[enginePreset('2.0 Skyactiv-G',90,{fuelType:'gasoline'}), enginePreset('2.0 e-Skyactiv X',137,{fuelType:'gasoline'})], 'CX-5':[enginePreset('2.0 Skyactiv-G',121,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('2.2 Skyactiv-D',110,{fuelType:'diesel',bodyType:'SUV'})], 'CX-30':[enginePreset('2.0 Skyactiv-G',90,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('2.0 e-Skyactiv X',137,{fuelType:'gasoline',bodyType:'SUV'})] }],
+    ['Mercedes-Benz', { 'Třída A':[enginePreset('A 180',100,{fuelType:'gasoline'}), enginePreset('A 200 d',110,{fuelType:'diesel'})], 'Třída C':[enginePreset('C 200',150,{fuelType:'gasoline'}), enginePreset('C 220 d',147,{fuelType:'diesel'})], GLC:[enginePreset('220 d 4MATIC',145,{fuelType:'diesel',bodyType:'SUV',drive:'4x4'}), enginePreset('300 e 4MATIC',230,{fuelType:'plugin-hybrid',bodyType:'SUV',drive:'4x4'})] }],
+    ['Nissan', { Micra:[enginePreset('1.0 IG-T',68,{fuelType:'gasoline'}), enginePreset('1.0',52,{fuelType:'gasoline'})], Qashqai:[enginePreset('1.3 DIG-T',103,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('e-POWER',140,{fuelType:'hybrid',bodyType:'SUV'})], XTrail:[enginePreset('e-POWER',150,{fuelType:'hybrid',bodyType:'SUV'}), enginePreset('1.5 VC-T',120,{fuelType:'gasoline',bodyType:'SUV'})] }],
+    ['Opel', { Corsa:[enginePreset('1.2',55,{fuelType:'gasoline'}), enginePreset('1.2 Turbo',74,{fuelType:'gasoline'})], Astra:[enginePreset('1.2 Turbo',96,{fuelType:'gasoline'}), enginePreset('1.5 Diesel',96,{fuelType:'diesel'})], Mokka:[enginePreset('1.2 Turbo',96,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('Mokka-e',100,{fuelType:'electric',batteryKwh:'50',bodyType:'SUV'})] }],
+    ['Peugeot', { 208:[enginePreset('1.2 PureTech',74,{fuelType:'gasoline'}), enginePreset('e-208',100,{fuelType:'electric',batteryKwh:'50'})], 308:[enginePreset('1.2 PureTech',96,{fuelType:'gasoline'}), enginePreset('1.5 BlueHDi',96,{fuelType:'diesel'})], 3008:[enginePreset('1.2 PureTech',96,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('Hybrid 225',165,{fuelType:'plugin-hybrid',bodyType:'SUV'})] }],
+    ['Renault', { Clio:[enginePreset('1.0 TCe',67,{fuelType:'gasoline'}), enginePreset('E-Tech hybrid',105,{fuelType:'hybrid'})], Megane:[enginePreset('1.3 TCe',103,{fuelType:'gasoline'}), enginePreset('E-Tech electric',160,{fuelType:'electric',batteryKwh:'60'})], Captur:[enginePreset('1.0 TCe LPG',74,{fuelType:'lpg',bodyType:'SUV'}), enginePreset('E-Tech hybrid',105,{fuelType:'hybrid',bodyType:'SUV'})] }],
+    ['Seat', { Ibiza:[enginePreset('1.0 TSI',70,{fuelType:'gasoline'}), enginePreset('1.5 TSI',110,{fuelType:'gasoline'})], Leon:[enginePreset('1.5 TSI',110,{fuelType:'gasoline'}), enginePreset('2.0 TDI',110,{fuelType:'diesel'})], Ateca:[enginePreset('1.5 TSI',110,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('2.0 TDI 4Drive',110,{fuelType:'diesel',bodyType:'SUV',drive:'4x4'})] }],
+    ['Škoda', { Fabia:[enginePreset('1.0 MPI',59,{fuelType:'gasoline'}), enginePreset('1.0 TSI',81,{fuelType:'gasoline'})], Octavia:[enginePreset('1.5 TSI',110,{fuelType:'gasoline'}), enginePreset('2.0 TDI',110,{fuelType:'diesel'})], Superb:[enginePreset('2.0 TDI',110,{fuelType:'diesel'}), enginePreset('1.5 TSI',110,{fuelType:'gasoline'})], Kodiaq:[enginePreset('2.0 TDI 4x4',147,{fuelType:'diesel',bodyType:'SUV',drive:'4x4'}), enginePreset('1.5 TSI',110,{fuelType:'gasoline',bodyType:'SUV'})], Enyaq:[enginePreset('85',210,{fuelType:'electric',batteryKwh:'82',bodyType:'SUV'}), enginePreset('60',132,{fuelType:'electric',batteryKwh:'62',bodyType:'SUV'})] }],
+    ['Toyota', { Yaris:[enginePreset('1.5 Hybrid',85,{fuelType:'hybrid'}), enginePreset('1.5 Dynamic Force',92,{fuelType:'gasoline'})], Corolla:[enginePreset('1.8 Hybrid',103,{fuelType:'hybrid'}), enginePreset('2.0 Hybrid',132,{fuelType:'hybrid'})], RAV4:[enginePreset('2.5 Hybrid',163,{fuelType:'hybrid',bodyType:'SUV'}), enginePreset('2.5 Plug-in Hybrid',225,{fuelType:'plugin-hybrid',bodyType:'SUV'})] }],
+    ['Volkswagen', { Polo:[enginePreset('1.0 TSI',70,{fuelType:'gasoline'}), enginePreset('1.0 MPI',59,{fuelType:'gasoline'})], Golf:[enginePreset('1.5 TSI',110,{fuelType:'gasoline'}), enginePreset('2.0 TDI',110,{fuelType:'diesel'})], Passat:[enginePreset('2.0 TDI',110,{fuelType:'diesel'}), enginePreset('1.5 TSI',110,{fuelType:'gasoline'})], Tiguan:[enginePreset('1.5 TSI',110,{fuelType:'gasoline',bodyType:'SUV'}), enginePreset('2.0 TDI 4Motion',147,{fuelType:'diesel',bodyType:'SUV',drive:'4x4'})] }],
+    ['Volvo', { V60:[enginePreset('B4',145,{fuelType:'mild-hybrid'}), enginePreset('T6 Recharge',253,{fuelType:'plugin-hybrid'})], XC40:[enginePreset('B3',120,{fuelType:'mild-hybrid',bodyType:'SUV'}), enginePreset('Recharge Single Motor',170,{fuelType:'electric',bodyType:'SUV'})], XC60:[enginePreset('B4 AWD',145,{fuelType:'mild-hybrid',bodyType:'SUV',drive:'4x4'}), enginePreset('T8 Recharge',335,{fuelType:'plugin-hybrid',bodyType:'SUV',drive:'4x4'})] }]
+  ].forEach(([brand, models]) => addGaragePresetBrandCatalog(brand, models));
+
+  const GARAGE_EXTRA_MODEL_CATALOG = {
+    'Audi': ['A1','A3','A4','A5','A6','A7','A8','Q2','Q3','Q5','Q7','Q8','TT','e-tron'],
+    'BMW': ['Řada 1','Řada 2','Řada 3','Řada 4','Řada 5','Řada 7','X1','X2','X3','X4','X5','X6','i3','i4','iX'],
+    'Citroën': ['C1','C2','C3','C3 Aircross','C4','C4 Picasso','C5','C5 Aircross','Berlingo','Jumpy'],
+    'Dacia': ['Spring','Sandero','Logan','Jogger','Duster','Lodgy','Dokker'],
+    'Fiat': ['500','500X','500L','Panda','Punto','Tipo','Bravo','Doblo','Ducato'],
+    'Ford': ['Fiesta','Focus','Mondeo','Puma','Kuga','S-Max','Galaxy','Tourneo','Transit','Mustang Mach-E'],
+    'Honda': ['Jazz','Civic','Accord','HR-V','CR-V','ZR-V','e:Ny1'],
+    'Hyundai': ['i10','i20','i30','ix20','Kona','Tucson','Santa Fe','Bayon','Ioniq','Ioniq 5','Ioniq 6'],
+    'Kia': ['Picanto','Rio','Ceed','XCeed','ProCeed','Stonic','Niro','Sportage','Sorento','EV6'],
+    'Mazda': ['2','3','6','CX-3','CX-30','CX-5','CX-60','MX-5','MX-30'],
+    'Mercedes-Benz': ['Třída A','Třída B','Třída C','Třída E','CLA','CLS','GLA','GLB','GLC','GLE','Vito','Viano'],
+    'Nissan': ['Micra','Juke','Qashqai','X-Trail','Leaf','Note','Pulsar','Primastar'],
+    'Opel': ['Agila','Corsa','Astra','Insignia','Meriva','Zafira','Mokka','Crossland','Grandland','Combo'],
+    'Peugeot': ['107','108','206','207','208','2008','307','308','3008','407','508','5008','Partner','Rifter'],
+    'Renault': ['Twingo','Clio','Megane','Scenic','Captur','Kadjar','Austral','Koleos','Laguna','Talisman','Kangoo','Trafic'],
+    'Seat': ['Mii','Ibiza','Cordoba','Leon','Toledo','Altea','Arona','Ateca','Tarraco','Alhambra'],
+    'Škoda': ['Citigo','Fabia','Scala','Rapid','Octavia','Superb','Roomster','Kamiq','Karoq','Kodiaq','Yeti','Enyaq','Elroq'],
+    'Toyota': ['Aygo','Yaris','Corolla','Auris','Avensis','Camry','C-HR','RAV4','Prius','Proace','Land Cruiser'],
+    'Volkswagen': ['Up','Polo','Golf','Jetta','Passat','Arteon','Touran','Sharan','T-Cross','T-Roc','Tiguan','Touareg','Caddy','Transporter','ID.3','ID.4'],
+    'Volvo': ['C30','S40','S60','S80','S90','V40','V50','V60','V70','V90','XC40','XC60','XC70','XC90']
+  };
+  function genericEngineSetForModel(model = '') {
+    const m = normalizeKey(model);
+    if (m.includes('id') || m.includes('ioniq') || m.includes('leaf') || m.includes('ev') || m.includes('e-tron') || m.includes('enyaq') || m.includes('elroq') || m.includes('spring') || m.includes('e-c4')) return [enginePreset('Elektro', 100, { fuelType:'electric', transmission:'automat', drive:'přední / zadní', batteryKwh:'50–85' })];
+    return [
+      enginePreset('benzín', 81, { fuelType:'gasoline', transmission:'manuál / automat', drive:'přední' }),
+      enginePreset('nafta', 110, { fuelType:'diesel', transmission:'manuál / automat', drive:'přední / 4x4' }),
+      enginePreset('hybrid', 103, { fuelType:'hybrid', transmission:'automat', drive:'přední' })
+    ];
+  }
+  Object.entries(GARAGE_EXTRA_MODEL_CATALOG).forEach(([brand, models]) => {
+    const expanded = {};
+    models.forEach((model) => { expanded[model] = genericEngineSetForModel(model); });
+    addGaragePresetBrandCatalog(brand, expanded);
+  });
+  const WARRANTY_STATUS_OPTIONS = [
+    ['active', 'Aktivní'],
+    ['claim', 'Reklamace'],
+    ['done', 'Vyřešeno'],
+    ['archived', 'Archiv']
+  ];
+  const WARRANTY_YEARS_OPTIONS = Array.from({ length: 9 }, (_, index) => [String(index + 2), `${index + 2} roky`]);
+  const WEATHER_CHMI_FUNCTION = 'weather-chmi-forecast';
+  const ICON_THEME_OPTIONS = [
+    ['ios', 'iOS Soft', 'Jemné hladké ikonky inspirované moderním iOS stylem.'],
+    ['duotone-fresh', 'Duotone Fresh', 'Dvoutónové barevné ikonky se svěžím kontrastem.'],
+    ['sticker-ui', 'Sticker UI', 'Výraznější barevné samolepkové ikonky bez pozadí.'],
+    ['clay-3d', 'Soft Clay 3D', 'Měkké 3D ikonky s jemným plastickým stínem.'],
+    ['isometric-micro', 'Isometric Micro', 'Drobnější prostorové ikonky s technickým detailem.']
+  ];
+
+  const ASSET_ICON_IDS = ['home', 'calendar', 'weather', 'packages', 'shopping', 'homecare', 'garage', 'contracts', 'cameras', 'finance', 'subscriptions', 'settings', 'coupons', 'hdo', 'waste', 'tasks', 'notes', 'devices', 'warranties', 'polishHolidays', 'more'];
+  const ASSET_ICON_MODULE_IDS = new Set(ASSET_ICON_IDS);
+  const ASSET_ICON_THEMES = {
+    'duotone-fresh': { surface: 'dark', pathPrefix: './icons/icon-themes/duotone-fresh/' },
+    'sticker-ui': { surface: 'dark', pathPrefix: './icons/icon-themes/sticker-ui/' },
+    'clay-3d': { surface: 'clay', pathPrefix: './icons/icon-themes/clay-3d/' },
+    'isometric-micro': { surface: 'dark', pathPrefix: './icons/icon-themes/isometric-micro/' }
+  };
+
+  const ASSET_ICON_PRELOAD_CACHE = new Set();
+
+
+  const COLOR_SCHEME_OPTIONS = [
+    ['sky', 'Modrá', 'Výchozí svěží modrá.'],
+    ['royal', 'Royal', 'Sytější modro-zlatý kontrastní styl.']
+  ];
+  const APP_THEME_OPTIONS = [
+    ['light', 'Světlý', 'Světlé sklo pro běžné použití.'],
+    ['dark', 'Tmavý', 'Tmavší režim na večer a tablet.']
+  ];
+  const VISUAL_SETTINGS_STORAGE_KEY = 'domacnostPlus.visualSettings.v1';
+  const DEFAULT_STATE = {
+    meta: {
+      schemaVersion: 80,
+      appBuild: 202,
+      mode: 'flat-package-v202',
+      createdAt: '',
+      updatedAt: ''
+    },
+    settings: {
+      theme: 'light',
+      iconTheme: 'ios',
+      colorScheme: 'sky',
+      dashboardNote: 'Domácí přehled je připravený na cloud. Každý si nastaví vlastní domácnost, profily a zapnuté moduly.',
+      cloudEnabled: false,
+      bottomNavIds: [...DEFAULT_BOTTOM_NAV_IDS],
+      dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGET_IDS],
+      homeHeroItems: [...DEFAULT_HOME_HERO_IDS],
+      vehicleIconColors: {}
+    },
+    household: {
+      id: '',
+      name: '',
+      isConfigured: false,
+      createdAt: ''
+    },
+    profiles: [],
+    activeProfileId: '',
+    enabledModules: [...MANAGED_MODULE_IDS],
+    calendar: [],
+    packages: [],
+    coupons: [],
+    hdoWindows: [],
+    shopping: [],
+    shoppingLists: [],
+    activeShoppingListId: '',
+    shoppingCatalogCustom: [],
+    shoppingCloud: { units: [], categories: [], catalog: [], activeListId: '', loadedAt: '' },
+    hdoCloud: { settingId: '', loadedAt: '' },
+    wasteCloud: { types: [], loadedAt: '' },
+    parcelsCloud: { loadedAt: '' },
+    tasksCloud: { loadedAt: '' },
+    calendarCloud: { sources: [], loadedAt: '', sourcesLoadedAt: '', googleConnection: null, googleCalendars: [], googleCalendarsLoadedAt: '', googleLastSyncAt: '' },
+    shoppingStats: {},
+    pwa: { installed: false, lastUpdateCheck: '', lastInstallPrompt: '', diagnostics: null },
+    homeTasks: [],
+    waste: [],
+    notes: [],
+    devices: [],
+    warranties: [],
+    warrantyFiles: [],
+    vehicles: [],
+    fuel: [],
+    services: [],
+    contracts: [],
+    contractFiles: [],
+    cameras: [],
+    finance: [],
+    financeAccounts: [],
+    subscriptions: [],
+    subscriptionPeople: [],
+    subscriptionPayments: [],
+    financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: '' },
+    subscriptionsCloud: { loadedAt: '' },
+    householdExtrasCloud: { loadedAt: '' },
+    weather: {
+      location: { ...WEATHER_DEFAULT_LOCATION },
+      current: null,
+      daily: [],
+      hourly: [],
+      updatedAt: '',
+      error: '',
+      loading: false,
+      source: 'chmi',
+      meta: {}
+    },
+    polishShopClosures: {
+      year: new Date().getFullYear(),
+      updatedAt: '',
+      source: 'built-in',
+      onlineHolidays: {},
+      error: ''
+    },
+    cloud: {
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      userId: '',
+      email: '',
+      householdId: '',
+      lastSyncAt: '',
+      profilesLoadedAt: '',
+      lastRealtimeAt: '',
+      lastAutosyncAt: '',
+      localPendingCount: 0,
+      autoSyncEnabled: true,
+      autosyncStatus: 'idle',
+      realtimeStatus: 'offline',
+      status: 'offline',
+      households: [],
+      invitations: []
+    },
+    householdWorkspaces: {}
+  };
+
+
+  const CLOUD_EXTRA_COLLECTIONS = {
+    coupons: {
+      table: 'household_coupons',
+      select: 'id,store,code,discount,expiry,note,used,created_at',
+      order: { column: 'expiry', ascending: true },
+      payload: (item, userId) => ({
+        household_id: state.cloud.householdId,
+        profile_id: null,
+        store: item.store || 'Obchod',
+        code: item.code || null,
+        discount: item.discount || null,
+        expiry: item.expiry || null,
+        note: item.note || null,
+        used: Boolean(item.used),
+        created_by: item.cloudId ? undefined : userId,
+        updated_by: userId
+      }),
+      map: (item) => ({
+        id: state.coupons.find((entry) => entry.cloudId === item.id)?.id || `coupon-cloud-${item.id}`,
+        cloudId: item.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        store: item.store || 'Obchod',
+        code: item.code || '',
+        discount: item.discount || '',
+        expiry: item.expiry || '',
+        note: item.note || '',
+        used: Boolean(item.used)
+      })
+    },
+    warranties: {
+      table: 'household_warranties',
+      select: 'id,name,store,price,purchase_date,warranty_years,warranty_until,status,note,source_key,created_at,updated_at',
+      order: { column: 'warranty_until', ascending: true },
+      payload: (item, userId) => ({
+        household_id: state.cloud.householdId,
+        profile_id: null,
+        name: item.name || 'Věc v záruce',
+        store: item.store || null,
+        price: decimalValue(item.price) || null,
+        purchase_date: item.purchaseDate || null,
+        warranty_years: normalizeWarrantyYears(item.warrantyYears || 2, item.purchaseDate),
+        warranty_until: item.warrantyUntil || addYearsIso(item.purchaseDate || todayISO(), normalizeWarrantyYears(item.warrantyYears || 2, item.purchaseDate)),
+        status: normalizeWarrantyStatus(item.status),
+        note: item.note || null,
+        source_key: item.id || item.sourceKey || null,
+        created_by: item.cloudId ? undefined : userId,
+        updated_by: userId
+      }),
+      map: (item) => {
+        const existing = state.warranties.find((entry) => entry.cloudId === item.id || (item.source_key && entry.id === item.source_key));
+        return normalizeWarrantyItem({
+          id: existing?.id || item.source_key || `warranty-cloud-${item.id}`,
+          cloudId: item.id,
+          householdId: currentHouseholdId(),
+          profileId: currentProfileId(),
+          createdAt: item.created_at || new Date().toISOString(),
+          updatedAt: item.updated_at || '',
+          name: item.name || 'Věc v záruce',
+          store: item.store || '',
+          price: item.price ?? '',
+          purchaseDate: item.purchase_date || '',
+          warrantyYears: item.warranty_years || 2,
+          warrantyUntil: item.warranty_until || '',
+          status: item.status || 'active',
+          note: item.note || ''
+        });
+      }
+    },
+    notes: {
+      table: 'household_notes',
+      select: 'id,text,status,created_at',
+      order: { column: 'created_at', ascending: false },
+      payload: (item, userId) => ({
+        household_id: state.cloud.householdId,
+        profile_id: null,
+        text: item.text || 'Poznámka',
+        status: item.status || 'active',
+        created_by: item.cloudId ? undefined : userId,
+        updated_by: userId
+      }),
+      map: (item) => ({
+        id: state.notes.find((entry) => entry.cloudId === item.id)?.id || `note-cloud-${item.id}`,
+        cloudId: item.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        text: item.text || 'Poznámka',
+        status: item.status || 'active'
+      })
+    },
+    devices: {
+      table: 'household_devices',
+      select: 'id,name,type,address,note,status,created_at',
+      order: { column: 'created_at', ascending: false },
+      payload: (item, userId) => ({
+        household_id: state.cloud.householdId,
+        profile_id: null,
+        name: item.name || 'Zařízení',
+        type: item.type || null,
+        address: item.address || null,
+        note: item.note || null,
+        status: item.status || 'active',
+        created_by: item.cloudId ? undefined : userId,
+        updated_by: userId
+      }),
+      map: (item) => ({
+        id: state.devices.find((entry) => entry.cloudId === item.id)?.id || `device-cloud-${item.id}`,
+        cloudId: item.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        name: item.name || 'Zařízení',
+        type: item.type || '',
+        address: item.address || '',
+        note: item.note || '',
+        status: item.status || 'active'
+      })
+    },
+    cameras: {
+      table: 'camera_feeds',
+      select: 'id,name,location,snapshot_url,status,note,created_at',
+      order: { column: 'created_at', ascending: false },
+      payload: (item, userId) => ({
+        household_id: state.cloud.householdId,
+        profile_id: null,
+        name: item.name || 'Kamera',
+        location: item.location || null,
+        snapshot_url: item.snapshotUrl || null,
+        status: item.status || 'offline',
+        note: item.note || null,
+        created_by: item.cloudId ? undefined : userId,
+        updated_by: userId
+      }),
+      map: (item) => ({
+        id: state.cameras.find((entry) => entry.cloudId === item.id)?.id || `camera-cloud-${item.id}`,
+        cloudId: item.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        name: item.name || 'Kamera',
+        location: item.location || '',
+        snapshotUrl: item.snapshot_url || '',
+        status: item.status || 'offline',
+        note: item.note || ''
+      })
+    }
+  };
+
+
+  const REALTIME_CLOUD_TABLES = [
+    'shopping_lists',
+    'shopping_list_items',
+    'profiles',
+    'household_members',
+    'contracts',
+    'contract_files',
+    'vehicles',
+    'fuel_logs',
+    'service_logs',
+    'hdo_settings',
+    'hdo_windows',
+    'waste_types',
+    'waste_schedules',
+    'household_tasks',
+    'task_events',
+    'parcels',
+    'calendar_events',
+    'calendar_sources',
+    'finance_accounts',
+    'finance_transactions',
+    'household_notes',
+    'household_devices',
+    'camera_feeds',
+    'household_coupons',
+    'household_warranties',
+    'household_warranty_files'
+  ];
+
+  const REALTIME_STATUS_LABELS = {
+    offline: 'vypnuto',
+    connecting: 'připojuji',
+    online: 'živě',
+    subscribed: 'živě',
+    timed_out: 'timeout',
+    channel_error: 'chyba',
+    closed: 'zavřeno',
+    refreshing: 'obnovuji',
+    unsupported: 'nedostupné'
+  };
+
+  const AUTOSYNC_STATUS_LABELS = {
+    idle: 'čeká',
+    pending: 'čeká na sync',
+    syncing: 'synchronizuje',
+    done: 'hotovo',
+    blocked: 'ručně dořešit',
+    error: 'chyba',
+    disabled: 'vypnuto'
+  };
+
+  let state = loadState();
+  mergeVisualSettings({ ...readLocalVisualSettings(), ...(state.settings || {}) });
+  applyVisualSettings();
+  let demoRuntimeActive = false;
+  let activeModule = 'home';
+  let activeOverview = null;
+  let moduleTabs = isStoredDemoState(state) ? {} : (safeParse(localStorage.getItem('domacnostPlus.moduleTabs'), {}) || {});
+  let garageVehicleId = null;
+  let garageHistoryYearFilter = 'all';
+  let garageHistoryTypeFilter = 'all';
+  let garageStatsVehicleId = '';
+  let garageCalcVehicleId = '';
+  let garageTripCalcResult = null;
+  let garageVehicleExtendedSchemaPending = false;
+  let garageStatsPeriodFilter = 'last12';
+  let garageStatsTypeFilter = 'all';
+  let calendarViewMonth = localStorage.getItem('domacnostPlus.calendarViewMonth') || todayISO().slice(0, 7);
+  let activeContractId = null;
+  let fuelioPreview = null;
+  let garageEditRecord = null;
+  let garageModal = null;
+  let filePreviewModal = null;
+  let activeWarrantyDetailId = null;
+  let visualSettingsDrawerOpen = false;
+  let couponEditId = '';
+  let shoppingQuantityEditId = '';
+  let shoppingDoneModalOpen = false;
+  let shoppingSwipeStart = null;
+  let shoppingRuntimeReady = false;
+  let shoppingToolkitInstance = null;
+  let shoppingRendererInstance = null;
+  let shoppingActionsInstance = null;
+  let warrantyFormDraft = safeParse(sessionStorage.getItem('domacnostPlus.warrantyDraft'), null) || null;
+  let calendarDetailEventId = null;
+  let toastTimer = null;
+  let now = new Date();
+  let supabaseClientInstance = null;
+  let deferredInstallPrompt = null;
+  let serviceWorkerRegistration = null;
+  let pendingServiceWorker = null;
+  let pwaUpdateAvailable = false;
+  let onboardingMode = sessionStorage.getItem('domacnostPlus.onboardingMode') || 'choice';
+  const ONBOARDING_GOOGLE_INTENT_KEY = 'domacnostPlus.googleAuthIntent';
+  let cloudWarmStartDone = false;
+  let cloudRealtimeChannel = null;
+  let cloudRealtimeHouseholdId = '';
+  let cloudRealtimeReloadTimer = null;
+  let cloudRealtimeReloading = false;
+  let cloudAutosyncTimer = null;
+  let cloudAutosyncRunning = false;
+  let homeHeroEditMode = false;
+  let homeHeroLongPressTimer = null;
+  let homeHeroLongPressPointer = null;
+  let cloudAutosyncLastAttempt = 0;
+  let suppressToastDepth = 0;
+  let renderDeferDepth = 0;
+  let renderDeferredPending = false;
+  let renderInProgress = false;
+  let renderFrameRequest = 0;
+  let lastVisualSettingsSignature = '';
+  const ICON_HTML_CACHE_LIMIT = 360;
+  const iconHtmlCache = new Map();
+
+  const app = document.getElementById('app');
+  applyVisualSettings();
+
+  window.addEventListener?.('error', (event) => {
+    if (!app || app.getAttribute?.('data-boot-ok') === '1') return;
+    renderBootFallback(event.error || event.message || 'Neznámá chyba při spuštění');
+  });
+  window.addEventListener?.('unhandledrejection', (event) => {
+    if (!app || app.getAttribute?.('data-boot-ok') === '1') return;
+    renderBootFallback(event.reason || 'Nezachycená chyba při spuštění');
+  });
+
+  function createSafeStorage(storage, label = 'storage') {
+    const memory = new Map();
+    const readNativeLength = () => {
+      try {
+        return storage ? storage.length : 0;
+      } catch {
+        return 0;
+      }
+    };
+    const hasNative = () => {
+      try {
+        if (!storage) return false;
+        const testKey = `domacnostPlus.${label}.test`;
+        storage.setItem(testKey, '1');
+        storage.removeItem(testKey);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    let nativeAvailable = hasNative();
+    const fallback = () => {
+      nativeAvailable = false;
+      return memory;
+    };
+    return {
+      get length() {
+        if (nativeAvailable) return readNativeLength();
+        return memory.size;
+      },
+      key(index) {
+        if (nativeAvailable) {
+          try { return storage.key(index); } catch { fallback(); }
+        }
+        return Array.from(memory.keys())[index] || null;
+      },
+      getItem(key) {
+        if (nativeAvailable) {
+          try { return storage.getItem(key); } catch { fallback(); }
+        }
+        return memory.has(key) ? memory.get(key) : null;
+      },
+      setItem(key, value) {
+        if (nativeAvailable) {
+          try { storage.setItem(key, value); return; } catch { fallback(); }
+        }
+        memory.set(key, String(value));
+      },
+      removeItem(key) {
+        if (nativeAvailable) {
+          try { storage.removeItem(key); return; } catch { fallback(); }
+        }
+        memory.delete(key);
+      },
+      clear() {
+        if (nativeAvailable) {
+          try { storage.clear(); return; } catch { fallback(); }
+        }
+        memory.clear();
+      }
+    };
+  }
+
+  function uid() {
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function localISODate(date = new Date(), timeZone = APP_TIME_ZONE) {
+    const safeDate = toSafeDate(date, new Date());
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(safeDate).reduce((acc, part) => {
+      if (part.type !== 'literal') acc[part.type] = part.value;
+      return acc;
+    }, {});
+    return `${parts.year}-${parts.month}-${parts.day}`;
+  }
+
+  function todayISO() {
+    return localISODate(new Date(), APP_TIME_ZONE);
+  }
+
+  function easterSundayDate(year) {
+    const y = Number(year);
+    if (!Number.isInteger(y) || y < 1900 || y > 2200) return null;
+    const a = y % 19;
+    const b = Math.floor(y / 100);
+    const c = y % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31);
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(Date.UTC(y, month - 1, day));
+  }
+
+  function addDaysIso(isoDate, days) {
+    const [year, month, day] = String(isoDate || '').slice(0, 10).split('-').map(Number);
+    if (!year || !month || !day) return '';
+    const date = new Date(Date.UTC(year, month - 1, day));
+    date.setUTCDate(date.getUTCDate() + Number(days || 0));
+    return date.toISOString().slice(0, 10);
+  }
+
+  function addYearsIso(isoDate, years = 2) {
+    const [year, month, day] = String(isoDate || '').slice(0, 10).split('-').map(Number);
+    if (!year || !month || !day) return '';
+    const date = new Date(Date.UTC(year, month - 1, day));
+    date.setUTCFullYear(date.getUTCFullYear() + Number(years || 0));
+    return date.toISOString().slice(0, 10);
+  }
+
+  function czechPublicHolidayName(isoDate) {
+    const value = String(isoDate || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
+    const fixed = {
+      '01-01': 'Nový rok / Den obnovy samostatného českého státu',
+      '05-01': 'Svátek práce',
+      '05-08': 'Den vítězství',
+      '07-05': 'Cyril a Metoděj',
+      '07-06': 'Jan Hus',
+      '09-28': 'Den české státnosti',
+      '10-28': 'Den vzniku samostatného československého státu',
+      '11-17': 'Den boje za svobodu a demokracii',
+      '12-24': 'Štědrý den',
+      '12-25': '1. svátek vánoční',
+      '12-26': '2. svátek vánoční'
+    };
+    const fixedName = fixed[value.slice(5)];
+    if (fixedName) return fixedName;
+    const year = Number(value.slice(0, 4));
+    const easter = easterSundayDate(year);
+    if (!easter) return '';
+    const easterIso = easter.toISOString().slice(0, 10);
+    if (value === addDaysIso(easterIso, -2)) return 'Velký pátek';
+    if (value === addDaysIso(easterIso, 1)) return 'Velikonoční pondělí';
+    return '';
+  }
+
+  function isCzechPublicHolidayDate(date) {
+    return Boolean(czechPublicHolidayName(localISODate(date, APP_TIME_ZONE)));
+  }
+
+  function normalizePolishShopState(value = {}) {
+    const raw = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    const year = clampPolishShopYear(raw.year || new Date().getFullYear());
+    const onlineHolidays = raw.onlineHolidays && typeof raw.onlineHolidays === 'object' && !Array.isArray(raw.onlineHolidays) ? raw.onlineHolidays : {};
+    const cleanOnline = {};
+    Object.entries(onlineHolidays).forEach(([rawYear, list]) => {
+      const safeYear = clampPolishShopYear(rawYear);
+      if (!Array.isArray(list)) return;
+      cleanOnline[safeYear] = list
+        .filter((item) => item && typeof item === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(String(item.date || '').slice(0, 10)))
+        .map((item) => ({ date: String(item.date).slice(0, 10), name: normalizeText(item.name || item.localName || item.englishName || 'Svátek') }));
+    });
+    return {
+      year,
+      updatedAt: normalizeText(raw.updatedAt),
+      source: normalizeText(raw.source) || 'built-in',
+      onlineHolidays: cleanOnline,
+      error: normalizeText(raw.error)
+    };
+  }
+
+  function clampPolishShopYear(value) {
+    const year = Number(value || new Date().getFullYear());
+    if (!Number.isFinite(year)) return new Date().getFullYear();
+    return Math.min(POLISH_SHOP_YEAR_MAX, Math.max(POLISH_SHOP_YEAR_MIN, Math.round(year)));
+  }
+
+  function polishShopSelectedYear() {
+    state.polishShopClosures = normalizePolishShopState(state.polishShopClosures);
+    return clampPolishShopYear(state.polishShopClosures.year || new Date().getFullYear());
+  }
+
+  function polishPublicHolidayBuiltins(year) {
+    const y = clampPolishShopYear(year);
+    const easter = easterSundayDate(y);
+    const easterIso = easter ? easter.toISOString().slice(0, 10) : '';
+    const items = [
+      [`${y}-01-01`, 'Nowy Rok'],
+      [`${y}-01-06`, 'Święto Trzech Króli'],
+      [`${y}-05-01`, 'Święto Pracy'],
+      [`${y}-05-03`, 'Święto Konstytucji 3 Maja'],
+      [`${y}-08-15`, 'Wniebowzięcie NMP / Święto Wojska Polskiego'],
+      [`${y}-11-01`, 'Wszystkich Świętych'],
+      [`${y}-11-11`, 'Narodowe Święto Niepodległości'],
+      [`${y}-12-24`, 'Wigilia Bożego Narodzenia'],
+      [`${y}-12-25`, 'Boże Narodzenie'],
+      [`${y}-12-26`, 'Drugi dzień Bożego Narodzenia']
+    ];
+    if (easterIso) {
+      items.push([easterIso, 'Wielkanoc']);
+      items.push([addDaysIso(easterIso, 1), 'Poniedziałek Wielkanocny']);
+      items.push([addDaysIso(easterIso, 49), 'Zielone Świątki']);
+      items.push([addDaysIso(easterIso, 60), 'Boże Ciało']);
+    }
+    return items.map(([date, name]) => ({ date, name }));
+  }
+
+  function polishPublicHolidays(year) {
+    const y = clampPolishShopYear(year);
+    const built = polishPublicHolidayBuiltins(y);
+    const online = normalizePolishShopState(state.polishShopClosures).onlineHolidays?.[y] || [];
+    const map = new Map(built.map((item) => [item.date, { ...item }]));
+    online.forEach((item) => {
+      if (!item.date) return;
+      const existing = map.get(item.date);
+      map.set(item.date, { date: item.date, name: normalizeText(item.name) || existing?.name || 'Svátek' });
+    });
+    return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  function utcDateFromIso(isoDate) {
+    const [year, month, day] = String(isoDate || '').slice(0, 10).split('-').map(Number);
+    if (!year || !month || !day) return null;
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+
+  function isoWeekday(isoDate) {
+    const date = utcDateFromIso(isoDate);
+    return date ? date.getUTCDay() : -1;
+  }
+
+  function polishLastSundayIso(year, month) {
+    const y = clampPolishShopYear(year);
+    const date = new Date(Date.UTC(y, Number(month), 0));
+    while (date.getUTCDay() !== 0) date.setUTCDate(date.getUTCDate() - 1);
+    return date.toISOString().slice(0, 10);
+  }
+
+  function previousSundayBeforeIso(isoDate) {
+    const date = utcDateFromIso(isoDate);
+    if (!date) return '';
+    date.setUTCDate(date.getUTCDate() - 1);
+    while (date.getUTCDay() !== 0) date.setUTCDate(date.getUTCDate() - 1);
+    return date.toISOString().slice(0, 10);
+  }
+
+  function allSundaysIso(year) {
+    const y = clampPolishShopYear(year);
+    const date = new Date(Date.UTC(y, 0, 1));
+    while (date.getUTCDay() !== 0) date.setUTCDate(date.getUTCDate() + 1);
+    const result = [];
+    while (date.getUTCFullYear() === y) {
+      result.push(date.toISOString().slice(0, 10));
+      date.setUTCDate(date.getUTCDate() + 7);
+    }
+    return result;
+  }
+
+  function polishTradingSundays(year) {
+    const y = clampPolishShopYear(year);
+    const easter = easterSundayDate(y);
+    const dates = new Set([
+      polishLastSundayIso(y, 1),
+      polishLastSundayIso(y, 4),
+      polishLastSundayIso(y, 6),
+      polishLastSundayIso(y, 8)
+    ]);
+    if (easter) dates.add(addDaysIso(easter.toISOString().slice(0, 10), -7));
+    let christmasSunday = previousSundayBeforeIso(`${y}-12-24`);
+    for (let index = 0; index < 3 && christmasSunday; index += 1) {
+      dates.add(christmasSunday);
+      christmasSunday = addDaysIso(christmasSunday, -7);
+    }
+    return [...dates].filter((date) => date.startsWith(String(y))).sort();
+  }
+
+  function addPolishShopEntry(map, entry) {
+    if (!entry?.date) return;
+    const existing = map.get(entry.date);
+    if (!existing) {
+      map.set(entry.date, { ...entry, labels: [entry.name].filter(Boolean) });
+      return;
+    }
+    const status = existing.status === 'closed' || entry.status === 'closed' ? 'closed' : entry.status || existing.status;
+    const labels = [...new Set([...(existing.labels || []), entry.name].filter(Boolean))];
+    map.set(entry.date, {
+      ...existing,
+      ...entry,
+      status,
+      name: labels.join(' + '),
+      labels,
+      reason: [...new Set([existing.reason, entry.reason].filter(Boolean))].join(' · ')
+    });
+  }
+
+  function buildPolishShopCalendarYear(year) {
+    const y = clampPolishShopYear(year);
+    const map = new Map();
+    polishPublicHolidays(y).forEach((holiday) => addPolishShopEntry(map, {
+      date: holiday.date,
+      name: holiday.name,
+      type: 'holiday',
+      status: 'closed',
+      reason: 'svátek / obchody zavřené'
+    }));
+    const trading = new Set(polishTradingSundays(y));
+    allSundaysIso(y).forEach((date) => {
+      if (!trading.has(date)) {
+        addPolishShopEntry(map, {
+          date,
+          name: 'Neděle nehandlová',
+          type: 'sunday',
+          status: 'closed',
+          reason: 'větší obchody zavřené'
+        });
+      }
+    });
+    const easter = easterSundayDate(y);
+    if (easter) {
+      const easterSaturday = addDaysIso(easter.toISOString().slice(0, 10), -1);
+      if (!map.has(easterSaturday)) {
+        addPolishShopEntry(map, {
+          date: easterSaturday,
+          name: 'Wielka Sobota',
+          type: 'limited',
+          status: 'limited',
+          reason: 'obvykle zkráceno do 14:00'
+        });
+      }
+    }
+    return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  function polishShopCalendarAround(year = polishShopSelectedYear()) {
+    const y = clampPolishShopYear(year);
+    return [y - 1, y, y + 1]
+      .filter((item) => item >= POLISH_SHOP_YEAR_MIN && item <= POLISH_SHOP_YEAR_MAX)
+      .flatMap((item) => buildPolishShopCalendarYear(item));
+  }
+
+  function nextPolishShopEntry(status = '') {
+    const today = todayISO();
+    return polishShopCalendarAround(new Date().getFullYear())
+      .filter((entry) => entry.date >= today && (!status || entry.status === status))
+      .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+  }
+
+  function isPolishShopSundayEntry(entry) {
+    return entry?.type === 'sunday' || normalizeText(entry?.name).toLowerCase().includes('neděle nehandlová');
+  }
+
+  function nextPolishShopImportantEntry(status = '') {
+    const today = todayISO();
+    return polishShopCalendarAround(new Date().getFullYear())
+      .filter((entry) => entry.date >= today && !isPolishShopSundayEntry(entry) && (!status || entry.status === status))
+      .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+  }
+
+  function polishShopTodayEntry(offset = 0) {
+    const iso = addDaysIso(todayISO(), offset);
+    return polishShopCalendarAround(Number(iso.slice(0, 4))).find((entry) => entry.date === iso) || null;
+  }
+
+  function polishShopHeroMetric() {
+    const todayEntry = polishShopTodayEntry(0);
+    if (todayEntry && !isPolishShopSundayEntry(todayEntry) && todayEntry.status === 'closed') return 'Zavřeno';
+    if (todayEntry && !isPolishShopSundayEntry(todayEntry) && todayEntry.status === 'limited') return 'Pozor';
+    const next = nextPolishShopImportantEntry('closed');
+    return next ? dueBadge(daysUntil(next.date)) : 'OK';
+  }
+
+  function polishShopHeroText() {
+    const todayEntry = polishShopTodayEntry(0);
+    if (todayEntry && !isPolishShopSundayEntry(todayEntry) && todayEntry.status === 'closed') return todayEntry.name;
+    if (todayEntry && !isPolishShopSundayEntry(todayEntry) && todayEntry.status === 'limited') return `${todayEntry.name} · zkráceno`;
+    const next = nextPolishShopImportantEntry('closed');
+    return next ? `${formatDate(next.date)} · ${next.name}` : 'Žádné známé zavření';
+  }
+
+  function dateOffsetISO(days) {
+    const date = new Date();
+    date.setDate(date.getDate() + Number(days || 0));
+    return localISODate(date, APP_TIME_ZONE);
+  }
+
+  function safeParse(json, fallback) {
+    try {
+      return JSON.parse(json) ?? fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function loadState() {
+    const candidates = [];
+    const addCandidate = (key, raw, priority = 0) => {
+      const parsed = safeParse(raw, null);
+      if (!parsed || typeof parsed !== 'object') return;
+      candidates.push({ key, value: parsed, priority, score: scoreStoredState(parsed, priority) });
+    };
+
+    addCandidate(STORAGE_KEY, localStorage.getItem(STORAGE_KEY), 100);
+    LEGACY_STORAGE_KEYS.forEach((key, index) => addCandidate(key, localStorage.getItem(key), 80 - index));
+
+    // PWA/iOS cache při update může přepnout na nový storage klíč dřív,
+    // než se zkopíruje stará domácnost. Proto projdeme všechny známé klíče
+    // v prohlížeči a vybereme nejlépe vyplněnou domácnost.
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key || candidates.some((candidate) => candidate.key === key)) continue;
+      if (/^(domacnostPlus|homeWebOffline)\./.test(key)) {
+        addCandidate(key, localStorage.getItem(key), 20);
+      }
+    }
+
+    const best = candidates
+      .sort((a, b) => b.score - a.score)
+      .find((candidate) => candidate.value);
+
+    if (best) {
+      const migrated = migrateState(mergeState(DEFAULT_STATE, best.value), { fromLegacy: best.key !== STORAGE_KEY });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+
+    return migrateState(mergeState(DEFAULT_STATE, {}));
+  }
+
+  function isStoredDemoState(candidate) {
+    return Boolean(
+      candidate?.settings?.demoMode
+      || candidate?.cloud?.provider === 'demo'
+      || candidate?.cloud?.status === 'demo'
+      || String(candidate?.meta?.mode || '').includes('demo')
+    );
+  }
+
+  function scoreStoredState(candidate, priority = 0) {
+    if (!candidate || typeof candidate !== 'object') return -1;
+    if (isStoredDemoState(candidate)) return -1;
+    let score = priority;
+    const household = candidate.household || {};
+    const collections = getCollectionNames ? getCollectionNames() : [];
+
+    if (household.isConfigured) score += 1000;
+    if (household.id) score += 150;
+    if (normalizeText(household.name || candidate.settings?.householdName)) score += 150;
+    if (Array.isArray(candidate.profiles) && candidate.profiles.length) score += 120 + candidate.profiles.length;
+    if (candidate.cloud?.householdId) score += 200;
+    if (candidate.cloud?.userId) score += 80;
+
+    collections.forEach((collection) => {
+      if (Array.isArray(candidate[collection]) && candidate[collection].length) score += Math.min(100, candidate[collection].length * 3);
+    });
+
+    const updated = Date.parse(candidate.meta?.updatedAt || candidate.cloud?.lastSyncAt || candidate.household?.createdAt || '');
+    if (Number.isFinite(updated)) score += Math.min(50, Math.floor(updated / 86400000) % 50);
+    return score;
+  }
+
+  function mergeState(base, saved) {
+    const merged = structuredCloneSafe(base);
+    Object.keys(saved || {}).forEach((key) => {
+      if (Array.isArray(merged[key])) {
+        merged[key] = Array.isArray(saved[key]) ? saved[key] : merged[key];
+      } else if (typeof merged[key] === 'object' && merged[key] !== null) {
+        merged[key] = { ...merged[key], ...(saved[key] || {}) };
+      } else {
+        merged[key] = saved[key] ?? merged[key];
+      }
+    });
+    return merged;
+  }
+
+  function migrateState(input, options = {}) {
+    const migrated = structuredCloneSafe(input || DEFAULT_STATE);
+    const timestamp = new Date().toISOString();
+    const previousAppBuild = Number(migrated.meta?.appBuild || 0);
+
+    migrated.meta = {
+      schemaVersion: 80,
+      appBuild: 202,
+      mode: 'flat-package-v202',
+      createdAt: migrated.meta?.createdAt || timestamp,
+      updatedAt: migrated.meta?.updatedAt || timestamp
+    };
+
+    migrated.settings = {
+      ...(migrated.settings || {}),
+      theme: normalizeAppTheme(migrated.settings?.theme),
+      iconTheme: normalizeIconTheme(migrated.settings?.iconTheme),
+      colorScheme: normalizeColorScheme(migrated.settings?.colorScheme),
+      dashboardNote: migrated.settings?.dashboardNote || DEFAULT_STATE.settings.dashboardNote,
+      bottomNavIds: Array.isArray(migrated.settings?.bottomNavIds) ? migrated.settings.bottomNavIds : [...DEFAULT_BOTTOM_NAV_IDS],
+      dashboardWidgets: [],
+      homeHeroItems: previousAppBuild && previousAppBuild < 74 ? [] : normalizeHomeHeroIds(migrated.settings?.homeHeroItems),
+      vehicleIconColors: normalizeVehicleIconColorMap(migrated.settings?.vehicleIconColors)
+    };
+
+    migrated.household = {
+      id: migrated.household?.id || `household-${uid()}`,
+      name: normalizeText(migrated.household?.name || migrated.settings?.householdName || ''),
+      isConfigured: Boolean(migrated.household?.isConfigured),
+      createdAt: migrated.household?.createdAt || timestamp
+    };
+
+    if (options.fromLegacy) {
+      migrated.household.name = migrated.household.name || normalizeText(input?.settings?.householdName) || 'Moje domácnost';
+      migrated.household.isConfigured = true;
+    }
+
+    migrated.profiles = Array.isArray(migrated.profiles) ? migrated.profiles : [];
+    if (!migrated.profiles.length && migrated.household.isConfigured) {
+      migrated.profiles = [createProfile(options.fromLegacy ? 'Martin' : 'Já', 'owner', migrated.household.id)];
+    }
+
+    migrated.profiles = migrated.profiles.map((profile, index) => ({
+      id: profile.id || `profile-${uid()}`,
+      householdId: profile.householdId || migrated.household.id,
+      name: normalizeText(profile.name) || `Profil ${index + 1}`,
+      color: profile.color || ['blue', 'green', 'violet', 'orange'][index % 4],
+      role: profile.role || (index === 0 ? 'owner' : 'member'),
+      createdAt: profile.createdAt || timestamp
+    }));
+
+    if (!migrated.profiles.some((profile) => profile.id === migrated.activeProfileId)) {
+      migrated.activeProfileId = migrated.profiles[0]?.id || '';
+    }
+
+    migrated.shoppingStats = migrated.shoppingStats && typeof migrated.shoppingStats === 'object' && !Array.isArray(migrated.shoppingStats) ? migrated.shoppingStats : {};
+    migrated.tasksCloud = migrated.tasksCloud && typeof migrated.tasksCloud === 'object' && !Array.isArray(migrated.tasksCloud) ? migrated.tasksCloud : { loadedAt: '' };
+    migrated.hdoCloud = migrated.hdoCloud && typeof migrated.hdoCloud === 'object' && !Array.isArray(migrated.hdoCloud)
+      ? { settingId: migrated.hdoCloud.settingId || '', loadedAt: migrated.hdoCloud.loadedAt || '' }
+      : { ...DEFAULT_STATE.hdoCloud };
+    migrated.householdWorkspaces = migrated.householdWorkspaces && typeof migrated.householdWorkspaces === 'object' && !Array.isArray(migrated.householdWorkspaces) ? migrated.householdWorkspaces : {};
+    migrated.cloud.households = Array.isArray(migrated.cloud?.households) ? migrated.cloud.households : [];
+    migrated.cloud.invitations = Array.isArray(migrated.cloud?.invitations) ? migrated.cloud.invitations : [];
+    migrated.cloud.autoSyncEnabled = migrated.cloud?.autoSyncEnabled !== false;
+    migrated.cloud.autosyncStatus = migrated.cloud?.autosyncStatus || 'idle';
+    migrated.cloud.lastAutosyncAt = migrated.cloud?.lastAutosyncAt || '';
+    migrated.cloud.profilesLoadedAt = migrated.cloud?.profilesLoadedAt || '';
+    migrated.cloud.localPendingCount = Number(migrated.cloud?.localPendingCount || 0);
+    migrated.weather = normalizeWeatherState(migrated.weather);
+    migrated.polishShopClosures = normalizePolishShopState(migrated.polishShopClosures);
+    if (previousAppBuild < 82 && migrated.weather.source === 'open-meteo') {
+      migrated.weather.source = 'chmi';
+      migrated.weather.updatedAt = '';
+      migrated.weather.error = '';
+    }
+    if (previousAppBuild < 84) {
+      migrated.weather.source = 'chmi';
+      migrated.weather.updatedAt = '';
+      migrated.weather.error = '';
+      migrated.weather.loading = false;
+    }
+
+    migrated.enabledModules = normalizeModuleList(migrated.enabledModules);
+    if (!migrated.enabledModules.includes('weather')) migrated.enabledModules = ['weather', ...migrated.enabledModules];
+    if (previousAppBuild && previousAppBuild < 130 && !migrated.enabledModules.includes('subscriptions')) migrated.enabledModules = [...migrated.enabledModules, 'subscriptions'];
+    migrated.settings.bottomNavIds = normalizeBottomNavIds(migrated.settings.bottomNavIds, migrated.enabledModules);
+
+    getCollectionNames().forEach((collection) => {
+      migrated[collection] = Array.isArray(migrated[collection]) ? migrated[collection] : [];
+      migrated[collection] = migrated[collection]
+        .filter((item) => item && typeof item === 'object')
+        .map((item) => ({
+          householdId: item.householdId || migrated.household.id,
+          profileId: item.profileId || migrated.activeProfileId || migrated.profiles[0]?.id || '',
+          ...item
+        }));
+    });
+
+    if (!Array.isArray(migrated.shoppingLists)) migrated.shoppingLists = [];
+    migrated.shoppingLists = normalizeShoppingLists(migrated.shoppingLists, migrated);
+
+    if (Array.isArray(migrated.shopping) && migrated.shopping.length && !migrated.shoppingLists.length) {
+      const legacyList = {
+        id: migrated.activeShoppingListId || `shopping-list-${uid()}`,
+        householdId: migrated.household.id,
+        profileId: migrated.activeProfileId || migrated.profiles[0]?.id || '',
+        name: 'Nákup',
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        sortOrder: 0,
+        source: 'legacy'
+      };
+      migrated.shoppingLists = [legacyList];
+      migrated.activeShoppingListId = legacyList.id;
+      migrated.shopping = migrated.shopping.map((item) => ({ ...item, listId: item.listId || legacyList.id }));
+    }
+
+    if (!migrated.shoppingLists.some((list) => list.id === migrated.activeShoppingListId)) migrated.activeShoppingListId = migrated.shoppingLists[0]?.id || '';
+    migrated.shopping = (migrated.shopping || []).map((item) => normalizeShoppingItemRecord(item, migrated.activeShoppingListId || migrated.shoppingLists[0]?.id || ''));
+    migrated.shoppingSeedVersion = 201;
+
+    const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
+    migrated.vehicles = migrated.vehicles.map((vehicle) => {
+      const baseVehicle = {
+        technicalInspectionUntil: '',
+        insuranceUntil: '',
+        serviceIntervalKm: '',
+        nextServiceKm: '',
+        nextServiceDate: '',
+        purchaseDate: '',
+        purchasePrice: '',
+        purchaseOdometer: '',
+        ownershipStatus: 'owned',
+        brand: '',
+        model: '',
+        generation: '',
+        productionYear: '',
+        bodyType: '',
+        vin: '',
+        engineName: '',
+        engineCode: '',
+        displacementCcm: '',
+        powerKw: '',
+        powerHp: '',
+        torqueNm: '',
+        cylinders: '',
+        transmission: '',
+        drive: '',
+        emissionNorm: '',
+        co2: '',
+        curbWeightKg: '',
+        grossWeightKg: '',
+        seats: '',
+        doors: '',
+        fuelTankLiters: '',
+        batteryKwh: '',
+        officialConsumption: '',
+        tireSize: '',
+        towingBrakedKg: '',
+        towingUnbrakedKg: '',
+        lengthMm: '',
+        widthMm: '',
+        heightMm: '',
+        wheelbaseMm: '',
+        technicalSpecs: {},
+        saleDate: '',
+        salePrice: '',
+        saleOdometer: '',
+        note: '',
+        ...vehicle
+      };
+      const keys = [baseVehicle.cloudId, baseVehicle.id, normalizeKey(baseVehicle.name)].filter(Boolean);
+      baseVehicle.ownershipStatus = normalizeVehicleOwnershipStatus(baseVehicle.ownershipStatus || (baseVehicle.saleDate ? 'sold' : 'owned'));
+      baseVehicle.iconColor = normalizeVehicleIconColor(baseVehicle.iconColor || keys.map((key) => migratedVehicleIconColors[key]).find(Boolean) || 'blue');
+      keys.forEach((key) => { migratedVehicleIconColors[key] = baseVehicle.iconColor; });
+      return baseVehicle;
+    });
+    migrated.settings.vehicleIconColors = migratedVehicleIconColors;
+
+    return migrated;
+  }
+
+  function normalizeOptionId(value, options, fallback) {
+    const id = normalizeText(value);
+    return options.some(([key]) => key === id) ? id : fallback;
+  }
+
+  function normalizeAppTheme(value) {
+    return value === 'dark' ? 'dark' : 'light';
+  }
+
+  function normalizeIconTheme(value) {
+    return normalizeOptionId(value, ICON_THEME_OPTIONS, 'ios');
+  }
+
+  function normalizeColorScheme(value) {
+    return normalizeOptionId(value, COLOR_SCHEME_OPTIONS, 'sky');
+  }
+
+  function getVisualSettingsSnapshot(source = state?.settings || {}) {
+    return {
+      theme: normalizeAppTheme(source.theme),
+      iconTheme: normalizeIconTheme(source.iconTheme),
+      colorScheme: normalizeColorScheme(source.colorScheme)
+    };
+  }
+
+  function readLocalVisualSettings() {
+    try {
+      return getVisualSettingsSnapshot(JSON.parse(localStorage.getItem(VISUAL_SETTINGS_STORAGE_KEY) || '{}'));
+    } catch (error) {
+      return getVisualSettingsSnapshot({});
+    }
+  }
+
+  function saveLocalVisualSettings() {
+    try {
+      localStorage.setItem(VISUAL_SETTINGS_STORAGE_KEY, JSON.stringify(getVisualSettingsSnapshot()));
+    } catch (error) {}
+  }
+
+  function applyVisualSettings() {
+    if (!state?.settings) return;
+    state.settings.theme = normalizeAppTheme(state.settings.theme);
+    state.settings.iconTheme = normalizeIconTheme(state.settings.iconTheme);
+    state.settings.colorScheme = normalizeColorScheme(state.settings.colorScheme);
+    const signature = `${state.settings.theme}|${state.settings.iconTheme}|${state.settings.colorScheme}`;
+    if (signature === lastVisualSettingsSignature) return;
+    lastVisualSettingsSignature = signature;
+    document.documentElement.dataset.theme = state.settings.theme;
+    document.documentElement.dataset.iconTheme = state.settings.iconTheme;
+    document.documentElement.dataset.colorScheme = state.settings.colorScheme;
+    preloadAssetIconTheme(state.settings.iconTheme);
+  }
+
+  function getOptionLabel(options, id) {
+    return options.find(([key]) => key === id)?.[1] || id;
+  }
+
+  function mergeVisualSettings(settings) {
+    if (!settings || typeof settings !== 'object') return false;
+    const before = JSON.stringify(getVisualSettingsSnapshot());
+    state.settings = {
+      ...(state.settings || {}),
+      theme: normalizeAppTheme(settings.theme ?? state.settings?.theme),
+      iconTheme: normalizeIconTheme(settings.iconTheme ?? settings.icon_theme ?? state.settings?.iconTheme),
+      colorScheme: normalizeColorScheme(settings.colorScheme ?? settings.color_scheme ?? state.settings?.colorScheme)
+    };
+    applyVisualSettings();
+    return before !== JSON.stringify(getVisualSettingsSnapshot());
+  }
+
+  function persistVisualSettings(showMessage = false) {
+    applyVisualSettings();
+    saveLocalVisualSettings();
+    touchState();
+    saveState();
+    cloudSaveUserVisualSettings(false).catch((error) => console.warn('Cloud visual settings save failed', error));
+    if (showMessage) showToast(state.cloud?.userId ? 'Vzhled uložen na účet' : 'Vzhled uložen v zařízení');
+  }
+
+  function structuredCloneSafe(value) {
+    if (typeof structuredClone === 'function') return structuredClone(value);
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function createProfile(name, role = 'member', householdId = '') {
+    return {
+      id: `profile-${uid()}`,
+      householdId: householdId || currentHouseholdId(false),
+      name: normalizeText(name) || 'Profil',
+      color: 'blue',
+      role,
+      createdAt: new Date().toISOString()
+    };
+  }
+
+  function getCollectionNames() {
+    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingLists', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'notes', 'devices', 'warranties', 'warrantyFiles', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'cameras', 'finance', 'financeAccounts', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
+  }
+
+  function normalizeModuleList(value) {
+    const list = Array.isArray(value) ? value : typeof value === 'string' ? [value] : [];
+    const clean = list.filter((id) => MANAGED_MODULE_IDS.includes(id));
+    return clean.length ? [...new Set(clean)] : [...MANAGED_MODULE_IDS];
+  }
+
+  function getNavCandidateIds(enabledModules = state?.enabledModules) {
+    const enabled = new Set(normalizeModuleList(enabledModules));
+    return MODULES
+      .filter((module) => module.id === 'home' || (module.id !== 'settings' && enabled.has(module.id)))
+      .map((module) => module.id);
+  }
+
+  function normalizeBottomNavIds(value, enabledModules = state?.enabledModules) {
+    const candidates = getNavCandidateIds(enabledModules);
+    const candidateSet = new Set(candidates);
+    const requested = Array.isArray(value) ? value : [];
+    const result = [...new Set(requested.filter((id) => candidateSet.has(id)))].slice(0, BOTTOM_NAV_MAX);
+    const fallback = [...DEFAULT_BOTTOM_NAV_IDS, ...candidates].filter((id) => candidateSet.has(id));
+    const minimum = Math.min(BOTTOM_NAV_MIN, candidates.length);
+
+    for (const id of fallback) {
+      if (result.length >= minimum) break;
+      if (!result.includes(id)) result.push(id);
+    }
+
+    if (!result.length && candidates[0]) result.push(candidates[0]);
+    return result.slice(0, BOTTOM_NAV_MAX);
+  }
+
+  function normalizeDashboardWidgetIds(value) {
+    return [];
+  }
+
+  function dashboardWidgetById(id) {
+    return DASHBOARD_WIDGETS.find((item) => item.id === id) || DASHBOARD_WIDGETS[0];
+  }
+
+  function normalizeHomeHeroIds(value) {
+    const allowed = new Set(HOME_HERO_ITEMS.map((item) => item.id));
+    const requested = Array.isArray(value) ? value : DEFAULT_HOME_HERO_IDS;
+    const result = [];
+    requested.forEach((id) => {
+      if (allowed.has(id) && !result.includes(id)) result.push(id);
+    });
+    return result.slice(0, HOME_HERO_MAX);
+  }
+
+  function homeHeroItemById(id) {
+    return HOME_HERO_ITEMS.find((item) => item.id === id) || HOME_HERO_ITEMS[0];
+  }
+
+  function normalizeWeatherLocation(location) {
+    const source = location && typeof location === 'object' ? location : WEATHER_DEFAULT_LOCATION;
+    const latitude = Number(source.latitude ?? source.lat ?? WEATHER_DEFAULT_LOCATION.latitude);
+    const longitude = Number(source.longitude ?? source.lon ?? WEATHER_DEFAULT_LOCATION.longitude);
+    return {
+      name: normalizeText(source.name || source.city || WEATHER_DEFAULT_LOCATION.name),
+      country: normalizeText(source.country || WEATHER_DEFAULT_LOCATION.country),
+      latitude: Number.isFinite(latitude) ? latitude : WEATHER_DEFAULT_LOCATION.latitude,
+      longitude: Number.isFinite(longitude) ? longitude : WEATHER_DEFAULT_LOCATION.longitude
+    };
+  }
+
+  function normalizeWeatherSource(value) {
+    const clean = String(value || '').trim().toLowerCase();
+    if (clean === 'chmi' || clean === 'open-meteo' || clean === 'open-meteo-fallback' || clean === 'demo') return clean;
+    return 'chmi';
+  }
+
+  function normalizeWeatherState(value) {
+    const base = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    return {
+      location: normalizeWeatherLocation(base.location),
+      current: base.current && typeof base.current === 'object' ? base.current : null,
+      daily: Array.isArray(base.daily) ? base.daily : [],
+      hourly: Array.isArray(base.hourly) ? base.hourly : [],
+      updatedAt: base.updatedAt || '',
+      error: base.error || '',
+      loading: false,
+      source: normalizeWeatherSource(base.source),
+      meta: base.meta && typeof base.meta === 'object' ? base.meta : {}
+    };
+  }
+
+  function currentHouseholdId(createFallback = true) {
+    if (state?.household?.id) return state.household.id;
+    return createFallback ? `household-${uid()}` : '';
+  }
+
+  function currentProfile() {
+    return state.profiles.find((profile) => profile.id === state.activeProfileId) || state.profiles[0] || null;
+  }
+
+  function currentProfileId() {
+    return currentProfile()?.id || '';
+  }
+
+  function householdName() {
+    return state.household?.name || state.settings?.householdName || 'Domácnost';
+  }
+
+  function getAppBaseUrl() {
+    return APP_PUBLIC_URL;
+  }
+
+  function getAuthRedirectUrl() {
+    return `${APP_PUBLIC_URL}?auth=confirmed`;
+  }
+
+  function getVisibleModules() {
+    const enabled = new Set(normalizeModuleList(state.enabledModules));
+    return MODULES.filter((module) => module.id === 'home' || module.id === 'settings' || module.id === 'weather' || enabled.has(module.id));
+  }
+
+  function getBottomNavModules() {
+    const visible = getVisibleModules();
+    const selectedIds = normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules);
+    const selected = selectedIds
+      .map((id) => visible.find((module) => module.id === id))
+      .filter(Boolean);
+    return [...selected, MORE_MODULE];
+  }
+
+  function isMoreNavActive() {
+    const selectedIds = normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules);
+    return activeModule === MORE_MODULE.id || !selectedIds.includes(activeModule);
+  }
+
+  function isModuleEnabled(moduleId) {
+    return moduleId === 'home' || moduleId === 'settings' || moduleId === 'weather' || normalizeModuleList(state.enabledModules).includes(moduleId);
+  }
+
+  function persistStateSnapshot() {
+    if (isDemoOnlyState()) return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function saveState() {
+    // Demo je jen dočasný sandbox. Nikdy ho neukládáme do localStorage,
+    // aby se všem při každém spuštění ukázala stejná plná demo domácnost.
+    if (isDemoOnlyState()) return;
+    if (state?.meta) state.meta.updatedAt = new Date().toISOString();
+    persistStateSnapshot();
+    scheduleCloudAutosync('save');
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  function formatDate(value, options = {}) {
+    if (!value) return '—';
+    const date = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return '—';
+    return new Intl.DateTimeFormat('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric', ...options }).format(date);
+  }
+
+  function parseDateValue(value) {
+    if (value instanceof Date) return Number.isFinite(value.getTime()) ? value : null;
+    if (typeof value === 'number') {
+      const date = new Date(value);
+      return Number.isFinite(date.getTime()) ? date : null;
+    }
+    const text = normalizeText(value);
+    if (!text) return null;
+    const iso = text.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+    if (iso) {
+      const date = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+      return Number.isFinite(date.getTime()) ? date : null;
+    }
+    const cz = text.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})/);
+    if (cz) {
+      const year = Number(cz[3].length === 2 ? `20${cz[3]}` : cz[3]);
+      const date = new Date(year, Number(cz[2]) - 1, Number(cz[1]));
+      return Number.isFinite(date.getTime()) ? date : null;
+    }
+    const parsed = new Date(text);
+    return Number.isFinite(parsed.getTime()) ? parsed : null;
+  }
+
+  function toSafeDate(value, fallback = null) {
+    if (value instanceof Date) return Number.isFinite(value.getTime()) ? value : fallback;
+    if (typeof value === 'number') {
+      const date = new Date(value);
+      return Number.isFinite(date.getTime()) ? date : fallback;
+    }
+    if (typeof value === 'string' && value.trim()) {
+      const date = new Date(value);
+      return Number.isFinite(date.getTime()) ? date : fallback;
+    }
+    return fallback;
+  }
+
+  function formatDateTime(value) {
+    const date = toSafeDate(value);
+    if (!date) return '—';
+    return new Intl.DateTimeFormat('cs-CZ', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(date);
+  }
+
+  function formatCurrency(value) {
+    const number = Number(value || 0);
+    return new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK', maximumFractionDigits: 0 }).format(number);
+  }
+
+  function formatBytes(value) {
+    const bytes = Number(value || 0);
+    if (!bytes) return '0 B';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1048576) return `${(bytes / 1024).toFixed(1).replace('.', ',')} kB`;
+    return `${(bytes / 1048576).toFixed(1).replace('.', ',')} MB`;
+  }
+
+  function daysUntil(dateISO) {
+    if (!dateISO) return null;
+    const start = new Date(todayISO());
+    const target = new Date(`${dateISO}T00:00:00`);
+    if (Number.isNaN(target.getTime())) return null;
+    return Math.ceil((target - start) / 86400000);
+  }
+
+  function normalizeText(value) {
+    return String(value || '').trim();
+  }
+
+  function getFormData(form) {
+    const data = new FormData(form);
+    const result = {};
+    for (const [key, value] of data.entries()) {
+      if (result[key]) {
+        result[key] = Array.isArray(result[key]) ? [...result[key], value] : [result[key], value];
+      } else {
+        result[key] = value;
+      }
+    }
+    return result;
+  }
+
+  function isDemoOnlyState() {
+    return Boolean(state?.settings?.demoMode || state?.cloud?.provider === 'demo' || state?.cloud?.status === 'demo');
+  }
+
+  function shouldShowStartChoice() {
+    if (isDemoOnlyState()) return !demoRuntimeActive;
+    if (!hasUsableAppSession()) {
+      if (state.cloud?.status === 'email-confirmation') onboardingMode = 'account';
+      else if (onboardingMode !== 'google-setup') onboardingMode = sessionStorage.getItem('domacnostPlus.onboardingMode') || 'choice';
+      return true;
+    }
+    if (!state.household?.isConfigured) return true;
+    return false;
+  }
+
+  function withDeferredRender(callback) {
+    renderDeferDepth += 1;
+    const finish = () => {
+      renderDeferDepth = Math.max(0, renderDeferDepth - 1);
+      if (!renderDeferDepth && renderDeferredPending) {
+        renderDeferredPending = false;
+        render();
+      }
+    };
+    try {
+      const result = callback();
+      if (result && typeof result.then === 'function') return result.finally(finish);
+      finish();
+      return result;
+    } catch (error) {
+      finish();
+      throw error;
+    }
+  }
+
+  function requestRender() {
+    if (renderDeferDepth > 0 || renderInProgress) {
+      renderDeferredPending = true;
+      return;
+    }
+    if (renderFrameRequest) return;
+    const schedule = window.requestAnimationFrame || window.webkitRequestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
+    renderFrameRequest = schedule(() => {
+      renderFrameRequest = 0;
+      render();
+    });
+  }
+
+  function render() {
+    if (renderDeferDepth > 0 || renderInProgress) {
+      renderDeferredPending = true;
+      return;
+    }
+    renderInProgress = true;
+    try {
+      applyVisualSettings();
+      const showStartChoice = shouldShowStartChoice();
+      if (showStartChoice) activeOverview = null;
+      document.body.classList.toggle('overview-open', Boolean(activeOverview || garageModal || calendarDetailEventId || filePreviewModal || activeWarrantyDetailId || shoppingDoneModalOpen));
+
+      if (showStartChoice) {
+        app?.classList?.remove('home-app-shell');
+        renderOnboarding();
+        if (app) app.setAttribute?.('data-boot-ok', '1');
+      } else {
+        const visibleModules = getVisibleModules();
+        const selectableModules = [...visibleModules, MORE_MODULE];
+        if (!selectableModules.some((module) => module.id === activeModule)) activeModule = 'home';
+        if (!isDemoOnlyState()) localStorage.setItem('homeWeb.activeModule', activeModule);
+
+        const active = selectableModules.find((module) => module.id === activeModule) || visibleModules[0];
+        const bottomNavModules = getBottomNavModules();
+        const isHomeModule = active.id === 'home';
+        app?.classList?.toggle('home-app-shell', isHomeModule);
+        const pageTitle = isHomeModule ? householdName() : active.label;
+        const pageSubtitle = isHomeModule ? '' : getModuleSubtitle(active.id);
+
+        app.innerHTML = `
+          <div class="app-frame ${isHomeModule ? 'home-clean-frame' : ''}">
+            <main>
+              <section class="page-head ${isHomeModule ? 'home-page-head' : ''}">
+                <div>
+                  <h2 class="page-title">${escapeHtml(pageTitle)}</h2>
+                  ${pageSubtitle ? `<p class="page-subtitle">${escapeHtml(pageSubtitle)}</p>` : ''}
+                </div>
+                ${renderPageActions(active.id)}
+              </section>
+              ${renderDemoReadOnlyBanner()}${renderModule(active.id)}
+            </main>
+          </div>
+
+          <nav class="nav-shell" aria-label="Hlavní navigace">
+            <div class="nav-scroll">
+              ${bottomNavModules.map((module) => {
+                const isActive = module.id === MORE_MODULE.id ? isMoreNavActive() : module.id === activeModule;
+                return `
+                  <button class="nav-item ${isActive ? 'active' : ''}" type="button" data-nav="${module.id}">
+                    ${renderMiniModuleIcon(module.id, { size: 'nav', slotClass: 'nav-icon', label: module.label })}
+                    <span>${escapeHtml(module.label)}</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </nav>
+          ${renderOverviewDrawer()}
+          ${renderGlobalModals()}
+          <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
+        `;
+
+        if (app) app.setAttribute?.('data-boot-ok', '1');
+        promoteActiveContentBeforeForms();
+        keepActiveNavCentered();
+        keepActiveSectionTabsCentered();
+      }
+    } finally {
+      renderInProgress = false;
+      if (!renderDeferDepth && renderDeferredPending) {
+        renderDeferredPending = false;
+        window.setTimeout(() => render(), 0);
+      }
+    }
+  }
+
+  function renderDemoReadOnlyBanner() {
+    if (!isDemoOnlyState()) return '';
+    return `
+      <section class="card demo-readonly-banner desktop-span-2">
+        <div class="item-top">
+          <div>
+            <h2>Demo verze</h2>
+            <p>Ukázková domácnost je vždy stejná. Všechno si můžeš proklikat, ale změny se neukládají a po novém spuštění začne demo znovu čisté.</p>
+          </div>
+          <div class="item-actions compact-actions">
+            <span class="badge warn">bez ukládání</span>
+            <button class="ghost-btn" type="button" data-action="exit-demo">Zpět na úvod</button>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  function promoteActiveContentBeforeForms() {
+    // V modulech má být nejdřív vidět aktivní obsah a až potom přidávání nové položky.
+    document.querySelectorAll('.card').forEach((card) => {
+      const form = card.querySelector(':scope > form');
+      const list = card.querySelector(':scope > .list');
+      if (!form || !list) return;
+      if (form.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING) {
+        card.insertBefore(list, form);
+      }
+    });
+  }
+
+  function safeAnimationFrame(callback) {
+    const frame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
+    frame(callback);
+  }
+
+  function keepActiveNavCentered(behavior = 'auto') {
+    safeAnimationFrame(() => {
+      const navScroll = document.querySelector('.nav-scroll');
+      const activeItem = navScroll?.querySelector('.nav-item.active');
+      if (!navScroll || !activeItem) return;
+      const maxLeft = Math.max(0, navScroll.scrollWidth - navScroll.clientWidth);
+      if (!maxLeft) return;
+      const itemLeft = activeItem.offsetLeft;
+      const itemRight = itemLeft + activeItem.clientWidth;
+      const visibleLeft = navScroll.scrollLeft;
+      const visibleRight = visibleLeft + navScroll.clientWidth;
+      if (itemLeft >= visibleLeft && itemRight <= visibleRight) return;
+      const targetLeft = itemLeft - ((navScroll.clientWidth - activeItem.clientWidth) / 2);
+      navScroll.scrollTo({ left: Math.max(0, Math.min(maxLeft, targetLeft)), behavior });
+    });
+  }
+
+
+  function keepActiveSectionTabsCentered(behavior = 'auto') {
+    safeAnimationFrame(() => {
+      document.querySelectorAll('.section-tabs').forEach((tabs) => {
+        const activeTab = tabs.querySelector('.section-tab.active');
+        if (!activeTab) return;
+        const maxLeft = tabs.scrollWidth - tabs.clientWidth;
+        const targetLeft = activeTab.offsetLeft - ((tabs.clientWidth - activeTab.clientWidth) / 2);
+        tabs.scrollTo({
+          left: Math.max(0, Math.min(maxLeft, targetLeft)),
+          behavior
+        });
+      });
+    });
+  }
+
+  function getModuleTab(area, fallback) {
+    return moduleTabs?.[area] || fallback;
+  }
+
+  function setModuleTab(area, tab) {
+    moduleTabs = { ...(moduleTabs || {}), [area]: tab };
+    if (area === 'shopping' && tab !== 'list') {
+      shoppingQuantityEditId = '';
+      shoppingDoneModalOpen = false;
+      shoppingSwipeStart = null;
+      document.body.classList.remove('overview-open');
+    }
+    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    render();
+    keepActiveSectionTabsCentered('smooth');
+  }
+
+  function renderSectionTabs(area, tabs, fallback) {
+    const fallbackTab = fallback || tabs[0]?.id || 'main';
+    const rawActive = getModuleTab(area, fallbackTab);
+    const active = tabs.some((tab) => tab.id === rawActive) ? rawActive : fallbackTab;
+    return `
+      <div class="section-tabs compact-tabs" role="tablist" aria-label="Záložky modulu">
+        ${tabs.map((tab) => `
+          <button class="section-tab ${active === tab.id ? 'active' : ''}" type="button" role="tab" aria-selected="${active === tab.id ? 'true' : 'false'}" data-action="set-section-tab" data-area="${escapeHtml(area)}" data-tab="${escapeHtml(tab.id)}">
+            ${tab.iconHtml || `<span aria-hidden="true">${escapeHtml(tab.icon || '')}</span>`}<strong>${escapeHtml(tab.label)}</strong>${tab.count !== undefined ? `<em>${escapeHtml(String(tab.count))}</em>` : ''}
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function renderOverviewItem({ title, badge = '', meta = '', badgeClass = '', icon = '' }) {
+    return `
+      <div class="item compact-item overview-list-item">
+        <div class="item-top">
+          <div class="item-title">${icon ? `${escapeHtml(icon)} ` : ''}${escapeHtml(title || '—')}</div>
+          ${badge ? `<span class="badge ${escapeHtml(badgeClass)}">${escapeHtml(badge)}</span>` : ''}
+        </div>
+        ${meta ? `<div class="item-meta">${escapeHtml(meta)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function renderOverviewSummary(items = []) {
+    const cleanItems = items.filter((item) => item && item.value !== undefined && item.value !== null && item.value !== '');
+    if (!cleanItems.length) return '';
+    return `
+      <div class="overview-summary-grid">
+        ${cleanItems.map((item) => `
+          <div class="overview-summary-card ${escapeHtml(item.tone || '')}">
+            <span>${escapeHtml(item.label || '')}</span>
+            <strong>${escapeHtml(String(item.value))}</strong>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function renderPackageOverviewItem(pkg) {
+    const status = packageStatus(pkg.status);
+    return renderOverviewItem({
+      title: pkg.title || carrierLabel(pkg.carrier) || 'Balík',
+      badge: status.label,
+      badgeClass: status.kind,
+      meta: [carrierLabel(pkg.carrier), pkg.tracking, pkg.expectedDate ? `doručení ${formatDate(pkg.expectedDate)}` : '', pkg.pickupPlace, pkg.note, pkg.cloudId ? 'cloud' : 'lokálně'].filter(Boolean).join(' · '),
+      icon: '📦'
+    });
+  }
+
+  function renderShoppingOverviewItem(item) {
+    const amount = [item.quantity || item.amount || 1, item.unit || 'ks'].filter(Boolean).join(' ');
+    return renderOverviewItem({
+      title: item.name,
+      badge: amount,
+      meta: [item.category || 'bez kategorie', item.note, item.cloudId ? 'cloud' : ''].filter(Boolean).join(' · '),
+      icon: '🛒'
+    });
+  }
+
+  function renderContractOverviewItem(contract) {
+    const days = daysUntil(contract.validTo);
+    return renderOverviewItem({
+      title: contract.name,
+      badge: dueBadge(days),
+      badgeClass: days !== null && days <= 14 ? 'warn' : 'good',
+      meta: [contract.provider || 'Bez poskytovatele', contract.type ? contractTypeLabel(contract.type) : '', contract.validTo ? `do ${formatDate(contract.validTo)}` : '', contract.price ? formatCurrency(contract.price) : '', contract.cloudId ? 'cloud' : 'lokálně'].filter(Boolean).join(' · '),
+      icon: '📄'
+    });
+  }
+
+  function renderGarageOverviewItem(vehicle) {
+    const rows = garageRowsForVehicle(vehicle.id);
+    const currentKm = getVehicleCurrentOdometer(vehicle, rows.fuelRows, rows.serviceRows);
+    return `
+      <div class="item compact-item overview-list-item overview-action-item vehicle-overview-action vehicle-overview-action-with-tools">
+        <button class="vehicle-overview-main" type="button" data-action="select-vehicle" data-id="${escapeHtml(vehicle.id)}">
+          <div class="item-top">
+            <div class="item-title"><span class="vehicle-icon-bubble ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span>${escapeHtml(vehicle.name || 'Auto')}</div>
+            ${currentKm ? `<span class="badge">${escapeHtml(formatKm(currentKm))}</span>` : ''}
+          </div>
+          <div class="item-meta">${escapeHtml([vehicle.brand, vehicle.model, vehicle.year, vehicle.plate].filter(Boolean).join(' · ') || 'Otevřít přehled auta')}</div>
+        </button>
+        ${vehicleOwnershipStatus(vehicle) === 'owned' ? `<button class="primary-btn icon-action-btn fuel-add-shortcut overview-fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${escapeHtml(vehicle.id)}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name || 'auta')}">⛽+</button>` : ''}
+      </div>
+    `;
+  }
+
+  function renderVehicleAlertOverviewItem(item) {
+    if (item.vehicleId) {
+      return `
+        <button class="item compact-item overview-list-item overview-action-item vehicle-overview-action" type="button" data-action="select-vehicle" data-id="${item.vehicleId}">
+          <div class="item-top">
+            <div class="item-title"><span class="vehicle-icon-bubble ${vehicleIconColorClass(item.iconColor)}" aria-hidden="true">🚗</span>${escapeHtml(item.title || 'Upozornění')}</div>
+            <span class="badge ${item.days !== null && item.days <= 7 ? 'warn' : ''}">${escapeHtml(dueBadge(item.days))}</span>
+          </div>
+          <div class="item-meta">${escapeHtml(item.meta || 'Otevřít detail auta')}</div>
+        </button>
+      `;
+    }
+    return renderOverviewItem({
+      title: item.title,
+      badge: dueBadge(item.days),
+      badgeClass: item.days !== null && item.days <= 7 ? 'warn' : '',
+      meta: item.meta,
+      icon: '🚗'
+    });
+  }
+
+  function renderFinanceOverviewItem(item) {
+    const isIncome = item.type === 'income';
+    const isTransfer = item.type === 'transfer';
+    const account = financeAccountById(item.accountId);
+    const target = financeAccountById(item.transferAccountId);
+    return renderOverviewItem({
+      title: item.title,
+      badge: formatCurrency(item.amount),
+      badgeClass: isIncome || isTransfer ? 'good' : 'warn',
+      meta: [formatDate(item.date), isTransfer ? 'Přesun' : financeCategoryLabel(item.category), account?.name, target ? `→ ${target.name}` : '', financePaymentLabel(item.paymentMethod), item.note, item.cloudId ? 'cloud' : 'lokálně'].filter(Boolean).join(' · '),
+      icon: isTransfer ? '↔️' : isIncome ? '➕' : '➖'
+    });
+  }
+
+  function renderTaskOverviewItem(task) {
+    const days = daysUntil(task.due);
+    return renderOverviewItem({
+      title: task.title,
+      badge: task.due ? formatDate(task.due) : 'bez termínu',
+      badgeClass: task.due && days <= 2 ? 'warn' : '',
+      meta: task.note || taskCategoryLabel(task.category),
+      icon: '✅'
+    });
+  }
+
+  function renderWasteOverviewItem(item) {
+    return renderOverviewItem({
+      title: `${item.type} odpad`,
+      badge: item.days === null ? 'bez data' : dueBadge(item.days),
+      badgeClass: item.days !== null && item.days <= 1 ? 'warn' : '',
+      meta: `Svoz ${formatDate(item.date)}${item.note ? ` · ${item.note}` : ''}`,
+      icon: '♻️'
+    });
+  }
+
+  function renderOverviewDrawer() {
+    if (!activeOverview) return '';
+    return `
+      <div class="overview-backdrop" data-overview-backdrop role="presentation">
+        <aside class="overview-panel" data-overview-panel role="dialog" aria-modal="true" aria-labelledby="overview-title">
+          ${renderOverviewContent(activeOverview)}
+        </aside>
+      </div>
+    `;
+  }
+
+  function renderGlobalModals() {
+    return `${renderCalendarEventDetailModal()}${renderGarageRecordModal()}${renderWarrantyDetailModal()}${renderFilePreviewModal()}`;
+  }
+
+  function findCalendarEventById(id) {
+    const key = String(id || '');
+    if (!key) return null;
+    return (state.calendar || []).find((event) => String(event.id || '') === key || String(event.cloudId || '') === key) || null;
+  }
+
+  function renderCalendarEventDetailModal() {
+    const event = findCalendarEventById(calendarDetailEventId);
+    if (!event) return '';
+    const running = calendarEventIsRunning(event, now);
+    const source = calendarSourceName(event.sourceId);
+    return `
+      <div class="app-modal-backdrop" data-modal-backdrop role="presentation">
+        <section class="app-modal calendar-event-modal" role="dialog" aria-modal="true" aria-labelledby="calendar-event-title">
+          <div class="app-modal-head">
+            <div>
+              <span class="badge ${running ? 'good' : ''}">${running ? 'probíhá' : event.date ? formatDate(event.date) : 'bez data'}</span>
+              <h2 id="calendar-event-title">${escapeHtml(event.title || 'Událost')}</h2>
+              <p>${escapeHtml(calendarEventMetaLabel(event, now))} · ${escapeHtml(source)}</p>
+            </div>
+            <button class="icon-btn" type="button" data-action="close-modal" aria-label="Zavřít detail události">×</button>
+          </div>
+          <div class="modal-detail-grid">
+            <div class="modal-detail-card"><span>Datum</span><strong>${escapeHtml(calendarEventDateLabel(event))}</strong></div>
+            <div class="modal-detail-card"><span>Čas</span><strong>${escapeHtml(calendarEventTimeLabel(event, now) || '—')}</strong></div>
+            <div class="modal-detail-card"><span>Typ</span><strong>${escapeHtml(event.type || 'událost')}</strong></div>
+            <div class="modal-detail-card"><span>Zdroj</span><strong>${escapeHtml(source)}</strong></div>
+          </div>
+          ${event.location ? `<div class="inline-note"><strong>Místo:</strong> ${escapeHtml(event.location)}</div>` : ''}
+          ${event.note ? `<div class="inline-note"><strong>Poznámka:</strong> ${escapeHtml(event.note)}</div>` : ''}
+          <div class="form-actions modal-actions">
+            <button class="ghost-btn" type="button" data-action="close-modal">Zavřít</button>
+            ${!event.cloudId ? `<button class="danger-btn" type="button" data-action="delete-calendar" data-id="${escapeHtml(event.id || '')}">Smazat událost</button>` : ''}
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderGarageRecordModal() {
+    if (!garageModal) return '';
+    const type = garageModal.type || '';
+    const vehicle = state.vehicles.find((item) => item.id === garageModal.vehicleId) || state.vehicles.find((item) => item.id === garageVehicleId) || state.vehicles[0] || null;
+    if (!vehicle) return '';
+    let title = '';
+    let subtitle = escapeHtml(vehicle.name || 'Auto');
+    let form = '';
+    if (type === 'add-fuel') {
+      title = 'Přidat tankování';
+      form = `
+        <form data-form="add-fuel" data-vehicle-id="${escapeHtml(vehicle.id)}" class="compact-form garage-modal-form">
+          <div class="form-grid two">
+            ${field('Datum tankování', 'date', 'date', '', true, todayISO())}
+            ${field('Stav km', 'odometer', 'number', 'např. 125000', true)}
+            <div class="fuel-cost-row wide-row">
+              ${fuelNumberField('Litry', 'liters', 'např. 42,5')}
+              ${fuelNumberField('Cena za litr', 'pricePerLiter', 'např. 38,90')}
+            </div>
+            ${fuelNumberField('Cena celkem', 'price', 'např. 1600')}
+            ${field('Poznámka', 'note', 'text', 'volitelné')}
+          </div>
+          <div class="form-actions modal-actions"><button class="primary-btn" type="submit">Uložit tankování</button><button class="ghost-btn" type="button" data-action="close-modal">Zrušit</button></div>
+        </form>`;
+    } else if (type === 'add-service') {
+      title = 'Přidat servis / náklad';
+      form = `
+        <form data-form="add-service" data-vehicle-id="${escapeHtml(vehicle.id)}" class="compact-form garage-modal-form">
+          <div class="form-grid two">
+            ${field('Datum servisu', 'date', 'date', '', true, todayISO())}
+            ${field('Stav km', 'odometer', 'number', 'volitelné')}
+            ${field('Popis', 'title', 'text', 'olej / pneu / STK', true)}
+            ${field('Cena', 'price', 'number', 'volitelné')}
+            ${field('Poznámka', 'note', 'text', 'volitelné')}
+          </div>
+          <div class="form-actions modal-actions"><button class="primary-btn" type="submit">Uložit servis</button><button class="ghost-btn" type="button" data-action="close-modal">Zrušit</button></div>
+        </form>`;
+    } else if (type === 'edit-fuel') {
+      const item = state.fuel.find((entry) => entry.id === garageModal.recordId);
+      if (!item) return '';
+      title = 'Upravit tankování';
+      subtitle = `${escapeHtml(vehicle.name || 'Auto')} · ${formatDate(item.date)}`;
+      form = renderGarageRecordEditForm('fuel', item);
+    } else if (type === 'edit-service') {
+      const item = state.services.find((entry) => entry.id === garageModal.recordId);
+      if (!item) return '';
+      title = 'Upravit servis / náklad';
+      subtitle = `${escapeHtml(vehicle.name || 'Auto')} · ${formatDate(item.date)}`;
+      form = renderGarageRecordEditForm('services', item);
+    } else return '';
+    return `
+      <div class="app-modal-backdrop" data-modal-backdrop role="presentation">
+        <section class="app-modal garage-record-modal" role="dialog" aria-modal="true" aria-labelledby="garage-modal-title">
+          <div class="app-modal-head">
+            <div>
+              <span class="badge good">${subtitle}</span>
+              <h2 id="garage-modal-title">${escapeHtml(title)}</h2>
+              <p>Formulář je zvlášť, aby detail auta nezajížděl dolů.</p>
+            </div>
+            <button class="icon-btn" type="button" data-action="close-modal" aria-label="Zavřít formulář">×</button>
+          </div>
+          ${form}
+        </section>
+      </div>
+    `;
+  }
+
+  function filePreviewTypeLabel(type = '', name = '') {
+    const value = String(type || '').toLowerCase();
+    const fileName = String(name || '').toLowerCase();
+    if (value.includes('pdf') || fileName.endsWith('.pdf')) return 'PDF';
+    if (value.startsWith('image/') || /\.(png|jpe?g|webp|gif|heic|heif)$/i.test(fileName)) return 'Fotka';
+    return 'Soubor';
+  }
+
+  function isPreviewableImage(type = '', name = '') {
+    const value = String(type || '').toLowerCase();
+    const fileName = String(name || '').toLowerCase();
+    return value.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(fileName);
+  }
+
+  function isPreviewablePdf(type = '', name = '') {
+    const value = String(type || '').toLowerCase();
+    const fileName = String(name || '').toLowerCase();
+    return value.includes('pdf') || fileName.endsWith('.pdf');
+  }
+
+  function renderFilePreviewModal() {
+    if (!filePreviewModal?.url) return '';
+    const name = filePreviewModal.name || 'Příloha';
+    const type = filePreviewModal.type || '';
+    const label = filePreviewTypeLabel(type, name);
+    const src = escapeHtml(filePreviewModal.url);
+    const titleId = 'file-preview-title';
+    const preview = isPreviewableImage(type, name)
+      ? `<div class="file-preview-stage image-stage"><img src="${src}" alt="${escapeHtml(name)}" loading="eager"></div>`
+      : isPreviewablePdf(type, name)
+        ? `<div class="file-preview-stage pdf-stage"><iframe src="${src}" title="${escapeHtml(name)}"></iframe></div>`
+        : `<div class="file-preview-stage unsupported-stage"><strong>Náhled tohoto typu souboru nejde bezpečně zobrazit.</strong><span>Můžeš ho otevřít mimo aplikaci nebo stáhnout.</span></div>`;
+    return `
+      <div class="app-modal-backdrop file-preview-backdrop" data-modal-backdrop role="presentation">
+        <section class="app-modal file-preview-modal" role="dialog" aria-modal="true" aria-labelledby="${titleId}">
+          <div class="app-modal-head file-preview-head">
+            <div>
+              <span class="badge good">${escapeHtml(label)} · ${escapeHtml(filePreviewModal.source || 'příloha')}</span>
+              <h2 id="${titleId}">${escapeHtml(name)}</h2>
+              <p>Soubor se otevřel přímo v aplikaci.</p>
+            </div>
+            <button class="icon-btn" type="button" data-action="close-modal" aria-label="Zavřít náhled">×</button>
+          </div>
+          ${preview}
+          <div class="form-actions modal-actions file-preview-actions">
+            <a class="ghost-btn" href="${src}" target="_blank" rel="noopener">Otevřít mimo app</a>
+            <a class="primary-btn" href="${src}" download="${escapeHtml(name)}">Stáhnout</a>
+            <button class="ghost-btn" type="button" data-action="close-modal">Zavřít</button>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function closeFilePreviewModal() {
+    if (filePreviewModal?.objectUrl) {
+      try { URL.revokeObjectURL(filePreviewModal.objectUrl); } catch {}
+    }
+    filePreviewModal = null;
+  }
+
+  function showFilePreviewModal({ url, objectUrl = '', name = 'Příloha', type = '', source = '' } = {}) {
+    if (!url) return showToast('Soubor nejde otevřít');
+    closeFilePreviewModal();
+    filePreviewModal = { url, objectUrl, name, type, source };
+    render();
+  }
+
+  function closeOverview() {
+    if (!activeOverview) return;
+    activeOverview = null;
+    render();
+  }
+
+  function openOverview(type) {
+    activeOverview = type || 'homecare';
+    try {
+      render();
+    } catch (error) {
+      console.error('Overview render failed', type, error);
+      activeOverview = null;
+      render();
+      showToast('Rychlý přehled se nepovedlo otevřít. Data jsem neuložil ani nesmazal.');
+    }
+  }
+
+  function overviewTarget(type) {
+    const map = {
+      calendar: { nav: 'calendar', tab: 'overview' },
+      hdo: { nav: 'homecare', tab: 'hdo' },
+      homecare: { nav: 'homecare', tab: 'hdo' },
+      shopping: { nav: 'shopping', tab: 'list' },
+      packages: { nav: 'packages', tab: 'active' },
+      contracts: { nav: 'contracts', tab: 'overview' },
+      garage: { nav: 'garage', tab: 'overview' },
+      finance: { nav: 'finance', tab: 'summary' },
+      tasks: { nav: 'homecare', tab: 'tasks' },
+      waste: { nav: 'homecare', tab: 'waste' },
+      important: { nav: 'homecare', tab: 'tasks' }
+    };
+    return map[type] || { nav: type || 'homecare', tab: '' };
+  }
+
+  function hdoAppliesToNormalDays(item) {
+    const days = sanitizeHdoDays(item?.days);
+    return days.some((day) => day >= 1 && day <= 5);
+  }
+
+  function hdoAppliesToWeekendHoliday(item) {
+    const days = sanitizeHdoDays(item?.days);
+    return days.includes(0) || days.includes(6);
+  }
+
+  function renderHdoOverviewTable(title, subtitle, rows = []) {
+    const cleanRows = sortHdoWindowsForOverview(rows);
+    return `
+      <div class="hdo-overview-table-card">
+        <div class="hdo-overview-table-head">
+          <strong>${escapeHtml(title)}</strong>
+          <span>${escapeHtml(subtitle)}</span>
+        </div>
+        ${cleanRows.length ? `
+          <div class="hdo-overview-table" role="table" aria-label="${escapeHtml(title)}">
+            <div class="hdo-overview-table-row hdo-overview-table-row-head" role="row">
+              <span role="columnheader">Čas</span>
+              <span role="columnheader">Název</span>
+              <span role="columnheader">Stav</span>
+            </div>
+            ${cleanRows.map((item) => {
+              const isValidTime = timeToMinutes(item.start) !== null && timeToMinutes(item.end) !== null;
+              return `
+                <div class="hdo-overview-table-row" role="row">
+                  <span role="cell"><strong>${escapeHtml(isValidTime ? hdoWindowTimeLabel(item) : 'zkontrolovat')}</strong></span>
+                  <span role="cell">${escapeHtml(item.label || 'HDO okno')}</span>
+                  <span role="cell"><em class="hdo-overview-state ${item.enabled && isValidTime ? 'good' : 'warn'}">${item.enabled && isValidTime ? 'aktivní' : item.enabled ? 'čas?' : 'vypnuto'}</em></span>
+                </div>`;
+            }).join('')}
+          </div>` : `<div class="inline-note compact-note">Pro tuhle skupinu není nastavené žádné okno.</div>`}
+      </div>`;
+  }
+
+  function renderHdoOverviewTables(rows = []) {
+    const safeRows = getSafeHdoWindows().length ? rows : [];
+    const normalRows = safeRows.filter(hdoAppliesToNormalDays);
+    const weekendRows = safeRows.filter(hdoAppliesToWeekendHoliday);
+    return `
+      <div class="hdo-overview-table-grid">
+        ${renderHdoOverviewTable('Normální dny', 'Po–Pá', normalRows)}
+        ${renderHdoOverviewTable('Víkend + svátky', 'Sobota, neděle a české svátky', weekendRows)}
+      </div>`;
+  }
+
+
+  function renderHdoModuleTable(title, subtitle, rows = []) {
+    const cleanRows = sortHdoWindowsForOverview(rows);
+    return `
+      <div class="hdo-overview-table-card hdo-module-table-card">
+        <div class="hdo-overview-table-head">
+          <strong>${escapeHtml(title)}</strong>
+          <span>${escapeHtml(subtitle)}</span>
+        </div>
+        ${cleanRows.length ? `<div class="list hdo-module-list">${cleanRows.map((item) => `
+          <div class="item hdo-module-row">
+            <div class="item-top"><div class="item-title">${escapeHtml(item.label)}</div><span class="badge ${item.enabled ? 'good' : ''}">${item.enabled ? 'aktivní' : 'vypnuto'}</span></div>
+            <div class="item-meta">${escapeHtml(item.start)}–${escapeHtml(item.end)} · ${escapeHtml(daysLabel(item.days))}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
+            <div class="item-actions"><button class="ghost-btn" type="button" data-action="toggle-hdo" data-id="${item.id}">${item.enabled ? 'Vypnout' : 'Zapnout'}</button>${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-hdo" data-id="${item.id}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-hdo" data-id="${item.id}">Smazat</button></div>
+          </div>`).join('')}</div>` : `<div class="inline-note compact-note">Pro tuhle skupinu není nastavené žádné okno.</div>`}
+      </div>`;
+  }
+
+  function renderHdoModuleTables(rows = []) {
+    const safeRows = getSafeHdoWindows().length ? rows : [];
+    const normalRows = safeRows.filter(hdoAppliesToNormalDays);
+    const weekendRows = safeRows.filter(hdoAppliesToWeekendHoliday);
+    return `
+      <div class="hdo-overview-table-grid hdo-module-table-grid">
+        ${renderHdoModuleTable('Normální dny', 'Po–Pá', normalRows)}
+        ${renderHdoModuleTable('Víkend + svátky', 'Sobota, neděle a české svátky', weekendRows)}
+      </div>`;
+  }
+
+  function renderOverviewContent(type) {
+    const hdo = getHdoStatus(now);
+    const titleMap = {
+      calendar: ['📅', 'Kalendář'],
+      hdo: ['💡', 'HDO / nízký tarif'],
+      homecare: ['🏠', 'Domácnost'],
+      shopping: ['🛒', 'Nákupy'],
+      packages: ['📦', 'Balíky'],
+      contracts: ['📄', 'Smlouvy'],
+      garage: ['🚗', 'Garáž'],
+      finance: ['💰', 'Finance'],
+      tasks: ['✅', 'Úkoly'],
+      waste: ['♻️', 'Odpad'],
+      important: ['⭐', 'Důležité']
+    };
+    const [icon, title] = titleMap[type] || ['🏠', 'Přehled'];
+    let body = '';
+    const target = overviewTarget(type);
+    const navTarget = target.nav;
+    const tabTarget = target.tab;
+
+    if (type === 'hdo') {
+      const rows = sortHdoWindowsForOverview(getSafeHdoWindows());
+      const enabledRows = rows.filter((item) => item.enabled && timeToMinutes(item.start) !== null && timeToMinutes(item.end) !== null);
+      const nextHdo = findNextHdoWindow(now);
+      body = `
+        <div class="overview-status ${hdo.active ? 'good' : 'warn'}"><strong>${hdo.active ? 'Nízký tarif právě běží' : 'Nízký tarif teď neběží'}</strong><span>${escapeHtml(hdo.message)}</span></div>
+        ${renderOverviewSummary([
+          { label: 'Okna', value: rows.length },
+          { label: 'Aktivní', value: enabledRows.length, tone: enabledRows.length ? 'good' : '' },
+          { label: 'Další změna', value: hdo.active ? 'běží' : nextHdo ? humanDuration(nextHdo.diffMinutes) : '—' }
+        ])}
+        ${rows.length ? renderHdoOverviewTables(rows) : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard ukáže aktuální stav i další přepnutí.', nav: 'homecare', tab: 'hdo', label: 'Nastavit HDO' })}
+      `;
+    } else if (type === 'calendar') {
+      const upcomingAll = upcomingCalendarEvents(now);
+      const runningCount = upcomingAll.filter((event) => calendarEventIsRunning(event, now)).length;
+      const todayCount = upcomingAll.filter((event) => event.date === todayISO()).length;
+      const weekCount = upcomingAll.filter((event) => event.date && daysUntil(event.date) !== null && daysUntil(event.date) <= 7).length;
+      const rows = upcomingAll.slice(0,8);
+      body = `${renderOverviewSummary([{ label: 'Probíhá', value: runningCount, tone: runningCount ? 'good' : '' }, { label: 'Dnes', value: todayCount }, { label: 'Do 7 dnů', value: weekCount }])}${rows.length ? renderEventList(rows, false) : renderEmptyCta({ icon: '📅', title: 'Kalendář je prázdný', text: 'Přidej první událost a dashboard začne ukazovat dnešek i nejbližší dny.', nav: 'calendar', tab: 'add', label: 'Přidat událost' })}`;
+    } else if (type === 'shopping') {
+      const openItems = state.shopping.filter((item) => !item.done);
+      const doneCount = state.shopping.filter((item) => item.done).length;
+      const categoryCount = new Set(openItems.map((item) => item.category || 'Ostatní')).size;
+      const rows = openItems.slice(0,10);
+      body = `${renderOverviewSummary([{ label: 'Koupit', value: openItems.length }, { label: 'Hotovo', value: doneCount, tone: doneCount ? 'good' : '' }, { label: 'Kategorie', value: categoryCount }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map(renderShoppingOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '🛒', title: 'Nákup je prázdný', text: 'Přidej položku z katalogu nebo vlastní položku domácnosti.', nav: 'shopping', tab: 'list', label: 'Přidat položku' })}`;
+    } else if (type === 'packages') {
+      const activePackages = state.packages.filter((item) => !['delivered', 'archived'].includes(item.status));
+      const deliveredCount = state.packages.filter((item) => item.status === 'delivered').length;
+      const carrierCount = new Set(activePackages.map((item) => carrierLabel(item.carrier) || item.carrier || 'jiný')).size;
+      const rows = activePackages.slice(0,8);
+      body = `${renderOverviewSummary([{ label: 'Aktivní', value: activePackages.length }, { label: 'Doručené', value: deliveredCount, tone: deliveredCount ? 'good' : '' }, { label: 'Dopravci', value: carrierCount }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map(renderPackageOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '📦', title: 'Žádný aktivní balík', text: 'Přidej zásilku ručně. Později půjde automatika přes bezpečný backend.', nav: 'packages', tab: 'add', label: 'Přidat balík' })}`;
+    } else if (type === 'contracts') {
+      const sortedContracts = state.contracts.map((contract) => ({...contract, days: daysUntil(contract.validTo)})).sort((a,b)=>(a.days ?? 9999)-(b.days ?? 9999));
+      const overdueCount = sortedContracts.filter((contract) => contract.days !== null && contract.days < 0).length;
+      const soonCount = sortedContracts.filter((contract) => contract.days !== null && contract.days >= 0 && contract.days <= 30).length;
+      const rows = sortedContracts.slice(0,8);
+      body = `${renderOverviewSummary([{ label: 'Celkem', value: state.contracts.length }, { label: 'Do 30 dnů', value: soonCount, tone: soonCount ? 'warn' : '' }, { label: 'Po termínu', value: overdueCount, tone: overdueCount ? 'bad' : '' }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map(renderContractOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '📄', title: 'Žádné smlouvy', text: 'Přidej první pojistku, tarif nebo smlouvu a aplikace začne hlídat platnost.', nav: 'contracts', tab: 'add', label: 'Přidat smlouvu' })}`;
+    } else if (type === 'garage') {
+      const ownedVehicles = garageOwnedVehicles();
+      const ownedVehicleIds = new Set(ownedVehicles.map((vehicle) => vehicle.id));
+      const allAlerts = getVehicleAlerts().filter((alert) => ownedVehicleIds.has(alert.vehicleId));
+      const alerts = allAlerts.slice(0,8);
+      const ownedFuelCount = state.fuel.filter((item) => ownedVehicleIds.has(item.vehicleId)).length;
+      const ownedServiceCount = state.services.filter((item) => ownedVehicleIds.has(item.vehicleId)).length;
+      body = `${renderOverviewSummary([{ label: 'Auta', value: ownedVehicles.length }, { label: 'Upozornění', value: allAlerts.length, tone: allAlerts.length ? 'warn' : 'good' }, { label: 'Záznamy', value: ownedFuelCount + ownedServiceCount }])}${alerts.length ? `<div class="list compact-list overview-list">${alerts.map(renderVehicleAlertOverviewItem).join('')}</div>` : `<div class="list compact-list overview-list">${ownedVehicles.slice(0,6).map(renderGarageOverviewItem).join('') || renderEmptyCta({ icon: '🚗', title: 'Žádné aktivní auto', text: 'Prodána auta zůstávají v historii. Přidej aktivní auto a dashboard začne hlídat STK, pojistku a servis.', nav: 'garage', tab: 'add', label: 'Přidat auto' })}</div>`}`;
+    } else if (type === 'finance') {
+      const summary = financeMonthSummary();
+      const month = financeSelectedMonth();
+      const rows = state.finance.filter((item) => String(item.date || '').slice(0, 7) === month).sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 8);
+      body = `${renderOverviewSummary([{ label: 'Příjmy', value: formatCurrency(summary.income), tone: 'good' }, { label: 'Výdaje', value: formatCurrency(summary.expense), tone: 'warn' }, { label: 'Rozdíl', value: formatCurrency(summary.balance), tone: summary.balance >= 0 ? 'good' : 'bad' }])}<div class="list compact-list overview-list">${rows.map(renderFinanceOverviewItem).join('') || renderEmptyCta({ icon: '💰', title: 'Finance jsou prázdné', text: 'Založ účet nebo přidej první pohyb. Přehled se začne počítat automaticky.', nav: 'finance', tab: 'accounts', label: 'Založit finance' })}</div>`;
+    } else if (type === 'tasks') {
+      const openTasks = state.homeTasks.filter((task) => !task.done);
+      const urgentTasks = openTasks.filter((task) => task.due && daysUntil(task.due) !== null && daysUntil(task.due) <= 2).length;
+      const doneCount = state.homeTasks.filter((task) => task.done).length;
+      const tasks = openTasks.slice(0,8);
+      body = `${renderOverviewSummary([{ label: 'Otevřené', value: openTasks.length }, { label: 'Brzy', value: urgentTasks, tone: urgentTasks ? 'warn' : '' }, { label: 'Hotovo', value: doneCount, tone: doneCount ? 'good' : '' }])}${tasks.length ? `<div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '✅', title: 'Žádné otevřené úkoly', text: 'Přidej domácí úkol, údržbu nebo připomínku.', nav: 'homecare', tab: 'tasks', label: 'Přidat úkol' })}`;
+    } else if (type === 'waste') {
+      const upcomingWaste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days === null || item.days >= 0).sort((a,b)=>(a.days ?? 9999)-(b.days ?? 9999));
+      const nextWaste = upcomingWaste.find((item) => item.days !== null);
+      const typeCount = new Set(state.waste.map((item) => item.type || 'jiný')).size;
+      const waste = upcomingWaste.slice(0,8);
+      body = `${renderOverviewSummary([{ label: 'Nejbližší', value: nextWaste ? dueBadge(nextWaste.days) : '—', tone: nextWaste?.days <= 1 ? 'warn' : '' }, { label: 'Typy', value: typeCount }, { label: 'Plánů', value: state.waste.length }])}${waste.length ? `<div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej typ odpadu a termín. Dashboard pak ukáže nejbližší svoz.', nav: 'homecare', tab: 'waste', label: 'Přidat svoz' })}`;
+    } else {
+      const tasks = state.homeTasks.filter((task) => !task.done).slice(0,5);
+      const waste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days !== null && item.days >= 0).sort((a,b)=>a.days-b.days).slice(0,4);
+      body = `${tasks.length ? `<h3 class="overview-mini-title">Úkoly</h3><div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : ''}${waste.length ? `<h3 class="overview-mini-title">Odpad</h3><div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '✨', title: 'Nic akutního tu není', text: 'Přidej úkol nebo svoz odpadu, ať má domácí přehled co hlídat.', nav: 'homecare', tab: 'tasks', label: 'Přidat úkol' })}`;
+    }
+
+    return `
+      <div class="overview-head">
+        <div><span class="overview-icon">${escapeHtml(icon)}</span><div><h2 id="overview-title">${escapeHtml(title)}</h2><p>Rychlý náhled bez úprav. Detail otevřeš dole.</p></div></div>
+        <button class="icon-btn" type="button" data-action="close-overview" aria-label="Zavřít">×</button>
+      </div>
+      <div class="overview-body">${body}</div>
+      <div class="form-actions overview-actions"><button class="primary-btn" type="button" data-nav="${escapeHtml(navTarget)}" ${tabTarget ? `data-target-tab="${escapeHtml(tabTarget)}"` : ''}>Otevřít modul</button><button class="ghost-btn" type="button" data-action="close-overview">Zavřít</button></div>
+    `;
+  }
+
+  function renderOnboarding() {
+    applyVisualSettings();
+
+    if (onboardingMode === 'choice') {
+      app.innerHTML = `
+        <div class="onboarding-screen">
+          <section class="onboarding-card onboarding-choice-card compact-auth-card">
+            <div class="onboarding-hero compact-auth-hero">
+              <div class="brand-mark big logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
+              <div>
+                <span class="badge">${escapeHtml(APP_VERSION)}</span>
+                <h1>Domácnost+</h1>
+              </div>
+            </div>
+
+            <div class="grid two onboarding-choice-grid compact-login-grid">
+              <article class="card flat choice-tile">
+                <div class="choice-icon">🔐</div>
+                <h2>Přihlášení</h2>
+                <button class="primary-btn" type="button" data-action="onboarding-mode" data-mode="account">Přihlásit se</button>
+              </article>
+              <article class="card flat choice-tile">
+                <div class="choice-icon">🏡</div>
+                <h2>Demo</h2>
+                <button class="ghost-btn" type="button" data-action="start-demo">Spustit demo</button>
+              </article>
+            </div>
+          </section>
+        </div>
+        <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
+      `;
+      return;
+    }
+
+    if (onboardingMode === 'register' || onboardingMode === 'google-setup') {
+      const isGoogleSetup = onboardingMode === 'google-setup';
+      const email = state.cloud?.email || '';
+      const profileName = currentProfile()?.name || (email ? email.split('@')[0] : 'Já');
+      app.innerHTML = `
+        <div class="onboarding-screen">
+          <section class="onboarding-card compact-auth-card">
+            <div class="onboarding-hero compact-auth-hero">
+              <div class="brand-mark big logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
+              <div>
+                <span class="badge">${escapeHtml(APP_VERSION)}</span>
+                <h1>Nastavení domácnosti</h1>
+              </div>
+            </div>
+
+            ${renderEmailConfirmationCard()}
+
+            <section class="card flat">
+              <form data-form="${isGoogleSetup ? 'onboarding-google-setup' : 'onboarding'}" class="stack-form">
+                ${field('Název domácnosti', 'householdName', 'text', 'Špadrnovi / Doma / Byt', true)}
+                ${isGoogleSetup ? `<input type="hidden" name="email" value="${escapeHtml(email)}">` : field('E-mail vlastníka', 'email', 'email', 'email@domena.cz', true)}
+                ${isGoogleSetup ? '' : `
+                  <div class="form-grid two">
+                    ${field('Heslo', 'password', 'password', 'min. 6 znaků', true)}
+                    ${field('Heslo znovu', 'passwordConfirm', 'password', 'pro kontrolu', true)}
+                  </div>
+                `}
+                <div class="form-grid two">
+                  ${field('Hlavní profil', 'profilePrimary', 'text', profileName, true)}
+                  ${field('Druhý profil', 'profileSecondary', 'text', 'Manželka')}
+                </div>
+                ${field('Další profily', 'profilesExtra', 'text', 'děti, babička… odděl čárkou')}
+                <details class="soft-details" open>
+                  <summary>Vybrat moduly</summary>
+                  <div class="module-check-grid">
+                    ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => moduleCheckbox(module, true)).join('')}
+                  </div>
+                </details>
+                <div class="form-actions"><button class="primary-btn" type="submit">Dokončit nastavení domácnosti</button></div>
+              </form>
+            </section>
+
+            <div class="form-actions onboarding-actions">
+              <button class="ghost-btn" type="button" data-action="onboarding-mode" data-mode="account">Zpět</button>
+            </div>
+          </section>
+        </div>
+        <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
+      `;
+      return;
+    }
+
+    app.innerHTML = `
+      <div class="onboarding-screen">
+        <section class="onboarding-card compact-auth-card">
+          <div class="onboarding-hero compact-auth-hero">
+            <div class="brand-mark big logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
+            <div>
+              <span class="badge">${escapeHtml(APP_VERSION)}</span>
+              <h1>Přihlášení</h1>
+            </div>
+          </div>
+
+          ${renderEmailConfirmationCard()}
+
+          <div class="grid two compact-auth-grid">
+            <section class="card flat">
+              <div class="card-header"><div><h2>Přihlášení přes e-mail</h2></div></div>
+              <form data-form="onboarding-login" class="stack-form">
+                ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
+                ${field('Heslo', 'password', 'password', 'heslo', true)}
+                <div class="form-actions"><button class="primary-btn" type="submit">Přihlásit e-mailem</button></div>
+              </form>
+            </section>
+
+            <section class="card flat">
+              <div class="card-header"><div><h2>Přihlášení přes Google</h2></div></div>
+              <button class="oauth-btn google-oauth-btn full-width" type="button" data-action="cloud-oauth-google" data-intent="login">
+                <span aria-hidden="true">G</span>
+                <strong>Přihlásit přes Google</strong>
+              </button>
+            </section>
+
+            <section class="card flat">
+              <div class="card-header"><div><h2>Registrace e-mailem</h2></div></div>
+              <button class="primary-btn full-width" type="button" data-action="onboarding-mode" data-mode="register">Registrovat e-mailem</button>
+            </section>
+
+            <section class="card flat">
+              <div class="card-header"><div><h2>Registrace přes Google</h2></div></div>
+              <button class="oauth-btn google-oauth-btn full-width" type="button" data-action="cloud-oauth-google" data-intent="register">
+                <span aria-hidden="true">G</span>
+                <strong>Registrovat přes Google</strong>
+              </button>
+            </section>
+          </div>
+
+          <div class="form-actions onboarding-actions">
+            <button class="ghost-btn" type="button" data-action="onboarding-mode" data-mode="choice">Zpět</button>
+          </div>
+        </section>
+      </div>
+      <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
+    `;
+  }
+
+
+
+  function renderOAuthButtons() {
+    return `
+      <div class="oauth-block">
+        <div class="oauth-divider"><span>nebo rychleji</span></div>
+        <div class="oauth-actions single">
+          <button class="oauth-btn google-oauth-btn" type="button" data-action="cloud-oauth-google">
+            <span aria-hidden="true">G</span>
+            <strong>Pokračovat přes Google</strong>
+          </button>
+        </div>
+        <div class="small-muted oauth-note">Google přihlášení slouží jen pro účet. Kalendář se připojuje samostatně v nastavení zdrojů.</div>
+      </div>
+    `;
+  }
+
+
+  function renderEmailConfirmationCard() {
+    const cloud = state.cloud || {};
+    if (cloud.status !== 'email-confirmation') return '';
+    const email = cloud.email || '';
+    return `
+      <section class="card flat auth-confirm-card">
+        <div class="card-header">
+          <div>
+            <h2>Čeká se na ověření e-mailu</h2>
+            <p>Potvrzovací e-mail jsme poslali na <strong>${escapeHtml(email || 'zadaný e-mail')}</strong>. Po kliknutí na odkaz se vrať sem a aplikace se pokusí domácnost napojit na cloud.</p>
+          </div>
+          <span class="badge warn">ověření</span>
+        </div>
+        <div class="cloud-status-grid">
+          <div class="mini-stat"><span>Návratová adresa</span><strong>${escapeHtml(getAuthRedirectUrl())}</strong></div>
+          <div class="mini-stat"><span>Stav</span><strong>čeká na potvrzení</strong></div>
+        </div>
+        <div class="form-actions">
+          <button class="primary-btn" type="button" data-action="cloud-check-confirmation">Už jsem ověřil, zkusit napojit</button>
+          <button class="ghost-btn" type="button" data-action="cloud-resend-confirmation">Poslat ověřovací e-mail znovu</button>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderProfileSwitcher() {
+    if (!state.profiles?.length) return '';
+    return `
+      <label class="profile-switcher" aria-label="Aktivní profil">
+        <span>Profil</span>
+        <select data-profile-switch>
+          ${state.profiles.map((profile) => `<option value="${escapeHtml(profile.id)}" ${profile.id === currentProfileId() ? 'selected' : ''}>${escapeHtml(profile.name)}</option>`).join('')}
+        </select>
+      </label>
+    `;
+  }
+
+  function moduleCheckbox(module, checked) {
+    return `
+      <label class="check-card">
+        <input type="checkbox" name="modules" value="${escapeHtml(module.id)}" ${checked ? 'checked' : ''}>
+        ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'check-icon module-toggle-icon-slot', label: module.label })}
+        <span><strong>${escapeHtml(module.label)}</strong><em>${escapeHtml(getModuleSubtitle(module.id))}</em></span>
+      </label>
+    `;
+  }
+
+  function getModuleSubtitle(moduleId) {
+    const subtitles = {
+      weather: 'Aktuální počasí, hodinový výhled a předpověď pro místo domácnosti.',
+      home: 'Rychlý domácí přehled pro tablet i mobil. Online domácnost je hlavní zdroj, lokál jen cache/fallback.',
+      calendar: 'Kalendář umí více zdrojů. Google Calendar je připravený přes bezpečný backend, ne přes tokeny ve frontendu.',
+      packages: 'Základ pro sledování balíků. Teď ručně, později automatika přes backend.',
+      shopping: 'Sdílený nákupní seznam s katalogem položek, jednotkami a cloudovým oddělením domácností.',
+      homecare: 'HDO, odpad, poznámky, úkoly a domácí zařízení na jednom místě.',
+      garage: 'Auta v domácnosti, tankování, servis a základní přehled spotřeby.',
+      contracts: 'Evidence smluv a pojistek s hlídáním platnosti.',
+      cameras: 'Přehled kamer. Metadata karet se sdílí cloudově, streamy později bezpečně přes lokální síť/VPN.',
+      finance: 'Jednoduchý přehled příjmů a výdajů domácnosti s cloudovým oddělením podle householdId.',
+      subscriptions: 'Předplatné, sdílení streamovacích služeb, platby lidí a kontrola dluhů/přeplatků.',
+      settings: 'Domácnost, profily, zapnuté moduly, export/import a reset offline prototypu.',
+      more: 'Všechny další moduly a nastavení na jednom místě. Spodní lišta zůstává čistá a krátká.'
+    };
+    return subtitles[moduleId] || '';
+  }
+
+  function renderPageActions(moduleId) {
+    return '';
+  }
+
+  function renderModule(moduleId) {
+    const renderers = {
+      home: renderDashboard,
+      weather: renderWeatherPage,
+      calendar: renderCalendar,
+      packages: renderPackages,
+      shopping: renderShopping,
+      homecare: renderHomecare,
+      garage: renderGarage,
+      contracts: renderContracts,
+      cameras: renderCameras,
+      finance: renderFinance,
+      subscriptions: renderSubscriptions,
+      settings: renderSettings,
+      more: renderMore
+    };
+    const renderer = renderers[moduleId] || renderDashboard;
+    try {
+      return renderer();
+    } catch (error) {
+      console.error(`Domácnost+ render modulu ${moduleId} spadl`, error);
+      if (moduleId === 'garage') return renderGarageRecovery(error);
+      return renderModuleRecovery(moduleId, error);
+    }
+  }
+
+  function renderModuleRecovery(moduleId, error) {
+    const module = MODULES.find((item) => item.id === moduleId) || { label: moduleId || 'Modul', icon: '⚠️' };
+    return `
+      <section class="card desktop-span-2 module-error-card">
+        <div class="card-header"><div><h2>${escapeHtml(module.label)}</h2><p>Modul se nenačetl čistě, ale aplikace zůstala běžet.</p></div><span class="badge warn">chyba renderu</span></div>
+        <div class="inline-note"><strong>Technicky:</strong> ${escapeHtml(error?.message || String(error || 'neznámá chyba'))}</div>
+        <div class="form-actions"><button class="ghost-btn" type="button" data-nav="home">Zpět domů</button><button class="ghost-btn" type="button" data-action="soft-ui-reset">Vyčistit UI stav</button></div>
+      </section>
+    `;
+  }
+
+  function renderGarageRecovery(error) {
+    const vehicles = Array.isArray(state.vehicles) ? state.vehicles.filter(Boolean) : [];
+    return `
+      <section class="card desktop-span-2 module-error-card">
+        <div class="card-header"><div><h2>🚗 Garáž</h2><p>Garáž se zachytila v bezpečném režimu. Data nejsou smazaná.</p></div><span class="badge warn">oprava UI</span></div>
+        <div class="inline-note"><strong>Technicky:</strong> ${escapeHtml(error?.message || String(error || 'neznámá chyba'))}</div>
+        <div class="cloud-status-grid compact-cloud-stats">
+          <div class="mini-stat"><span>Auta</span><strong>${vehicles.length}</strong></div>
+          <div class="mini-stat"><span>Tankování</span><strong>${Array.isArray(state.fuel) ? state.fuel.length : 0}</strong></div>
+          <div class="mini-stat"><span>Servisy</span><strong>${Array.isArray(state.services) ? state.services.length : 0}</strong></div>
+          <div class="mini-stat"><span>Build</span><strong>112</strong></div>
+        </div>
+        <div class="form-actions"><button class="ghost-btn" type="button" data-action="garage-ui-repair">Opravit stav Garáže</button><button class="ghost-btn" type="button" data-nav="home">Zpět domů</button></div>
+      </section>
+    `;
+  }
+
+  const DEFAULT_CALENDAR_EVENT_MINUTES = 60;
+
+  function calendarEventStartMs(event) {
+    if (!event?.date) return Number.MAX_SAFE_INTEGER;
+    if (!event.time) return new Date(buildCalendarDateTime(event.date, '00:00')).getTime();
+    return new Date(buildCalendarDateTime(event.date, event.time)).getTime();
+  }
+
+  function calendarEventEndMs(event) {
+    if (!event?.date) return Number.MAX_SAFE_INTEGER;
+    const startMs = calendarEventStartMs(event);
+    if (!Number.isFinite(startMs)) return Number.MAX_SAFE_INTEGER;
+    const endDate = normalizeText(event.endDate) || event.date;
+    if (!event.time) {
+      const allDayEndDate = event.endDate && event.endDate > event.date ? addDaysIso(event.endDate, -1) : event.date;
+      return new Date(buildCalendarDateTime(allDayEndDate, '23:59')).getTime() + 59999;
+    }
+    if (event.endTime || event.endDate) {
+      let endMs = new Date(buildCalendarDateTime(endDate, event.endTime || event.time, event.time)).getTime();
+      if (Number.isFinite(endMs) && endMs <= startMs) endMs += 24 * 60 * 60 * 1000;
+      return endMs;
+    }
+    return startMs + DEFAULT_CALENDAR_EVENT_MINUTES * 60 * 1000;
+  }
+
+  function calendarEventIsRunning(event, referenceDate = now) {
+    const refMs = toSafeDate(referenceDate, new Date()).getTime();
+    return calendarEventStartMs(event) <= refMs && calendarEventEndMs(event) > refMs;
+  }
+
+  function calendarEventIsRelevant(event, referenceDate = now) {
+    if (!event?.date) return true;
+    const refMs = toSafeDate(referenceDate, new Date()).getTime();
+    return calendarEventEndMs(event) > refMs;
+  }
+
+  function sortCalendarEventsByStart(rows) {
+    return [...(rows || [])].sort((a, b) => calendarEventStartMs(a) - calendarEventStartMs(b) || String(a.title || '').localeCompare(String(b.title || '')));
+  }
+
+  function upcomingCalendarEvents(referenceDate = now) {
+    return sortCalendarEventsByStart(visibleCalendarEvents().filter((event) => calendarEventIsRelevant(event, referenceDate)));
+  }
+
+  function calendarEventTimeLabel(event, referenceDate = now) {
+    if (!event) return '';
+    const running = calendarEventIsRunning(event, referenceDate);
+    const endDate = calendarEventDisplayEndDate(event);
+    const dateRange = endDate && endDate !== event.date ? `${shortDateText(event.date)}–${shortDateText(endDate)}` : shortDateText(event.date);
+    if (!event.time) return event.date === todayISO() && endDate === event.date ? 'dnes · celý den' : `${dateRange} · celý den`;
+    const range = event.endTime ? `${event.time}–${event.endTime}` : event.time;
+    if (running) return event.endTime ? `probíhá do ${event.endTime}` : `probíhá od ${event.time}`;
+    if (event.date === todayISO()) return `dnes ${range}`;
+    return `${shortDateText(event.date)} · ${range}`;
+  }
+
+  function calendarEventMetaLabel(event, referenceDate = now) {
+    const timeLabel = calendarEventTimeLabel(event, referenceDate);
+    return `${timeLabel}${event?.location ? ` · ${event.location}` : ''}${event?.note ? ` · ${event.note}` : ''}`;
+  }
+
+  function renderDashboard() {
+    const calendarPanelEvents = upcomingCalendarEvents(now);
+    const todayEvents = calendarPanelEvents
+      .filter((event) => event.date === todayISO())
+      .sort((a, b) => calendarEventStartMs(a) - calendarEventStartMs(b));
+    const upcomingEvents = calendarPanelEvents.slice(0, 6);
+    const activePackages = state.packages.filter((pkg) => pkg.status !== 'delivered');
+    const hdo = getHdoStatus(now);
+    const urgentContracts = state.contracts
+      .map((contract) => ({ ...contract, days: daysUntil(contract.validTo) }))
+      .filter((contract) => contract.days !== null && contract.days <= 45)
+      .sort((a, b) => a.days - b.days)
+      .slice(0, 4);
+    const openShopping = state.shopping.filter((item) => !item.done);
+    const openTasks = state.homeTasks
+      .filter((task) => !task.done)
+      .sort((a, b) => String(a.due || '9999-12-31').localeCompare(String(b.due || '9999-12-31')))
+      .slice(0, 4);
+    const wasteSoon = state.waste
+      .map((item) => ({ ...item, days: daysUntil(item.date) }))
+      .filter((item) => item.days !== null && item.days >= 0 && item.days <= 7)
+      .sort((a, b) => a.days - b.days)
+      .slice(0, 3);
+    const vehicleAlerts = getVehicleAlerts().slice(0, 4);
+    const visibleModules = getVisibleModules();
+    ensureWeatherFresh(false);
+    normalizeGarageRuntimeState({ persist: false });
+    const weather = normalizeWeatherState(state.weather);
+    const dashboardContext = { hdo, todayEvents, upcomingEvents, calendarPanelEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, weather, notes: state.notes, devices: state.devices, cameras: state.cameras, coupons: state.coupons, contracts: state.contracts };
+    const selectedHeroItems = normalizeHomeHeroIds(state.settings?.homeHeroItems);
+    const heroCount = selectedHeroItems.length;
+
+    return `
+      <div class="dashboard-v10 dashboard-empty-home">
+        <section class="card hero-card station-hero home-minimal-hero home-hero-count-${heroCount} ${homeHeroEditMode ? 'home-hero-editing' : ''}">
+          <div class="station-hero-main">
+            <div class="station-clock-area">
+              ${homeHeroEditMode ? `<button class="primary-btn home-hero-edit-done-overlay" type="button" data-action="home-hero-edit-done">Hotovo</button>` : ''}
+              <div class="hero-clock-row">
+                <button class="hero-clock-copy hero-clock-button" type="button" data-nav="calendar" data-target-tab="overview" aria-label="Otevřít kalendář">
+                  <div class="hero-time">${clockText(now)}</div>
+                  <div class="hero-date">${escapeHtml(formatDateTime(now))}</div>
+                </button>
+                ${renderHeroWeatherPill(dashboardContext, { expanded: heroCount === 0 })}
+              </div>
+            </div>
+            ${heroCount ? `<div class="station-summary station-summary-count-${heroCount} ${homeHeroEditMode ? 'station-summary-editing' : ''}">${renderHomeHeroSummaryItems(dashboardContext)}</div>` : ''}
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function homeCycleIndex(length, seconds = 45) {
+    const count = Number(length || 0);
+    if (count <= 1) return 0;
+    const slot = Math.floor(now.getTime() / Math.max(1000, Number(seconds || 45) * 1000));
+    return Math.abs(slot) % count;
+  }
+
+  function homeCycleItem(rows, seconds = 45) {
+    const list = Array.isArray(rows) ? rows.filter(Boolean) : [];
+    if (!list.length) return null;
+    return list[homeCycleIndex(list.length, seconds)] || list[0];
+  }
+
+  function renderHeroWeatherPill(ctx, options = {}) {
+    const weather = normalizeWeatherState(ctx?.weather || state.weather);
+    const current = weather.current || {};
+    const [condition, currentIcon] = weatherCodeLabel(current.weatherCode);
+    const hasCurrent = Boolean(weather.current);
+    const daily = Array.isArray(weather.daily) ? weather.daily.slice(0, 4) : [];
+    const today = daily[0] || {};
+    const nextDay = daily[1] || null;
+    const currentValue = hasCurrent ? roundWeather(current.temperature, '°') : '—';
+    const currentLabel = weather.loading ? 'Načítám počasí' : (weather.error && !hasCurrent) ? 'Počasí nejde načíst' : hasCurrent ? condition : 'Počasí není načtené';
+    const secondaryLabel = currentLabel;
+    const tomorrowHint = nextDay ? (() => {
+      const [dayLabel] = weatherCodeLabel(nextDay.weatherCode);
+      return `Zítra ${roundWeather(nextDay.max, '°')} · ${dayLabel}`;
+    })() : '';
+    const forecast = options.expanded && daily.length ? `
+          <span class="hero-weather-forecast" aria-label="Výhled počasí na další dny">
+            ${daily.map((day, index) => {
+              const [, dayIcon] = weatherCodeLabel(day.weatherCode);
+              const label = index === 0 ? 'Dnes' : shortWeekday(day.date);
+              return `<span class="hero-weather-day"><em>${escapeHtml(label)}</em><strong>${renderWeatherAnimeIcon(day.weatherCode, { size: 'xs', extraClass: 'weather-inline-icon' })} ${roundWeather(day.max, '°')}</strong><small>${roundWeather(day.min, '°')}</small></span>`;
+            }).join('')}
+          </span>` : '';
+    return `
+      <button class="hero-weather-pill ${options.expanded ? 'hero-weather-pill-expanded' : ''} ${daily.length > 1 ? 'hero-weather-pill-live' : ''}" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
+        ${renderWeatherAnimeIcon(current.weatherCode, { size: options.expanded ? 'hero' : 'md', extraClass: 'hero-weather-icon' })}
+        <span class="hero-weather-copy"><strong>${escapeHtml(currentValue)}</strong><em>${escapeHtml(secondaryLabel)}</em>${options.expanded && tomorrowHint ? `<small>${escapeHtml(tomorrowHint)}</small>` : ''}</span>
+        ${forecast}
+      </button>
+    `;
+  }
+
+  function renderHomeHeroSummaryItems(ctx) {
+    const selected = normalizeHomeHeroIds(state.settings?.homeHeroItems);
+    const heroCount = selected.length;
+    const density = heroCount <= 4 ? 'large' : 'small';
+    return selected.map((id) => {
+      const item = homeHeroItemById(id);
+      const metric = typeof item.metric === 'function' ? item.metric(ctx) : '—';
+      const text = typeof item.text === 'function' ? item.text(ctx) : item.label;
+      const presentation = getHomeHeroItemPresentation(id, ctx, item, metric, text, { density, heroCount });
+      const attrs = id === 'calendar'
+        ? 'data-nav="calendar" data-target-tab="overview"'
+        : item.nav
+          ? `data-nav="${escapeHtml(item.nav)}"${item.tab ? ` data-target-tab="${escapeHtml(item.tab)}"` : ''}`
+          : `data-action="open-overview" data-overview="${escapeHtml(item.overview)}"`;
+      const chips = Array.isArray(presentation.chips) && presentation.chips.length
+        ? `<span class="station-summary-chipline">${presentation.chips.slice(0, density === 'large' ? 4 : 3).map((chip) => `<b>${escapeHtml(chip)}</b>`).join('')}</span>`
+        : '';
+      const extraRows = Array.isArray(presentation.extraRows) && presentation.extraRows.length
+        ? `<span class="station-summary-extra" aria-label="Další položky">${presentation.extraRows.slice(0, density === 'large' ? 5 : density === 'medium' ? 2 : 0).map((row) => `<b>${escapeHtml(row)}</b>`).join('')}</span>`
+        : '';
+      const commonInner = `
+          ${renderModuleIllustration(id, { size: density === 'large' ? 'hero-card' : 'home-sm', slotClass: 'station-summary-icon station-summary-illustration-slot', extraClass: 'station-summary-illustration', label: item.label })}
+          <span class="station-summary-copy">
+            <em>${escapeHtml(item.label)}</em>
+            <strong class="station-summary-metric">${escapeHtml(presentation.metric)}</strong>
+            <span class="station-summary-primary">${escapeHtml(presentation.text)}</span>
+            ${presentation.detail ? `<small class="station-summary-detail">${escapeHtml(presentation.detail)}</small>` : ''}
+            ${chips}
+            ${extraRows}
+          </span>`;
+      if (homeHeroEditMode) {
+        return `
+        <div class="station-summary-item station-summary-item-${escapeHtml(id)} station-summary-size-${density} station-summary-tone-${escapeHtml(presentation.tone || 'neutral')} ${presentation.live ? 'station-summary-live' : ''} station-summary-sortable" data-home-hero-id="${escapeHtml(id)}">
+          ${commonInner}
+          <span class="station-summary-reorder-controls" aria-label="Přesunout panel">
+            <button class="mini-glass-btn" type="button" data-action="home-hero-move-left" data-id="${escapeHtml(id)}" aria-label="Přesunout doleva">‹</button>
+            <button class="mini-glass-btn" type="button" data-action="home-hero-move-right" data-id="${escapeHtml(id)}" aria-label="Přesunout doprava">›</button>
+          </span>
+        </div>`;
+      }
+      return `
+        <button class="station-summary-item station-summary-item-${escapeHtml(id)} station-summary-size-${density} station-summary-tone-${escapeHtml(presentation.tone || 'neutral')} ${presentation.live ? 'station-summary-live' : ''}" type="button" data-home-hero-id="${escapeHtml(id)}" ${attrs}>
+          ${commonInner}
+        </button>`;
+    }).join('');
+  }
+
+  function setHomeHeroEditMode(enabled) {
+    homeHeroEditMode = Boolean(enabled);
+    render();
+    if (homeHeroEditMode) showToast('Úprava Home panelů zapnutá');
+  }
+
+  function moveHomeHeroItem(id, direction) {
+    const list = normalizeHomeHeroIds(state.settings?.homeHeroItems);
+    const index = list.indexOf(id);
+    const delta = Number(direction || 0);
+    if (index < 0 || !delta) return;
+    const target = Math.max(0, Math.min(list.length - 1, index + delta));
+    if (target === index) return;
+    const [item] = list.splice(index, 1);
+    list.splice(target, 0, item);
+    state.settings = { ...(state.settings || {}), homeHeroItems: normalizeHomeHeroIds(list) };
+    touchState();
+    saveState();
+    if (cloudReady()) cloudSaveHouseholdUiSettings(false).catch((error) => console.warn('Home hero order cloud save failed', error));
+    render();
+  }
+
+  function clearHomeHeroLongPress() {
+    clearTimeout(homeHeroLongPressTimer);
+    homeHeroLongPressTimer = null;
+    homeHeroLongPressPointer = null;
+  }
+
+  function getHomeHeroItemPresentation(id, ctx, item, metric, text, options = {}) {
+    const density = options.density || 'small';
+    const extraLimit = density === 'large' ? 5 : density === 'medium' ? 2 : 0;
+    const base = { metric: metric ?? '—', text: text || item?.label || '', detail: '', chips: [], extraRows: [], tone: 'neutral' };
+    const firstTitle = (value, fallback = '—') => normalizeText(value?.title || value?.name || value?.label || value?.store || value?.provider || value?.note || fallback);
+    const detailRows = (rows, mapper) => extraLimit ? rows.slice(0, extraLimit).map(mapper).filter(Boolean) : [];
+    const nextDateLine = (date, prefix = '') => {
+      const days = daysUntil(date);
+      if (days === null) return '';
+      return `${prefix}${dueBadge(days)}`.trim();
+    };
+    if (id === 'hdo') return getHdoHeroPresentation(ctx, options);
+    if (id === 'polishHolidays') {
+      const todayEntry = polishShopTodayEntry(0);
+      const todayImportant = todayEntry && !isPolishShopSundayEntry(todayEntry) ? todayEntry : null;
+      const nextClosed = nextPolishShopImportantEntry('closed');
+      const nextLimited = nextPolishShopImportantEntry('limited');
+      const isClosed = todayImportant?.status === 'closed';
+      const isLimited = todayImportant?.status === 'limited';
+      const compactPolishName = (value = '') => normalizeText(value).replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+      const compactPolishLine = (entry) => `${shortDateText(entry.date)} · ${compactPolishName(entry.name)}`;
+      const slides = [
+        todayImportant ? { metric: todayImportant.status === 'closed' ? 'Zavřeno' : todayImportant.status === 'limited' ? 'Pozor' : 'Dnes OK', text: compactPolishName(todayImportant.name) || 'Dnes', detail: 'dnešní stav v Polsku' } : null,
+        nextClosed ? { metric: dueBadge(daysUntil(nextClosed.date)), text: compactPolishLine(nextClosed), detail: 'zavřené obchody' } : null,
+        nextLimited ? { metric: 'Pozor', text: compactPolishLine(nextLimited), detail: 'omezení' } : null
+      ].filter(Boolean);
+      const slide = homeCycleItem(slides, 45);
+      return {
+        ...base,
+        metric: isClosed ? 'Zavřeno' : isLimited ? 'Pozor' : slide?.metric || 'OK',
+        text: isClosed || isLimited ? todayImportant.name : slide?.text || 'Bez známého zavření',
+        detail: isClosed || isLimited ? 'běžné neděle jsou až v detailu' : slide?.detail || 'neděle najdeš po rozkliknutí',
+        live: slides.length > 1,
+        tone: isClosed ? 'bad' : isLimited || nextClosed && daysUntil(nextClosed.date) <= 3 ? 'warn' : 'good'
+      };
+    }
+    if (id === 'calendar') {
+      const events = (ctx.calendarPanelEvents || ctx.upcomingEvents || []);
+      const runningEvents = events.filter((event) => calendarEventIsRunning(event, now));
+      const next = runningEvents.length ? (runningEvents[homeCycleIndex(runningEvents.length, 45)] || runningEvents[0]) : events[0];
+      const isRunning = next ? calendarEventIsRunning(next, now) : false;
+      return {
+        ...base,
+        metric: isRunning ? 'Nyní' : next ? 'Další' : 'Volno',
+        text: next ? firstTitle(next, 'Událost') : 'Žádná nadcházející událost',
+        detail: next ? calendarEventTimeLabel(next, now) : 'Kliknutím otevřeš kalendář',
+        chips: [],
+        extraRows: [],
+        live: runningEvents.length > 1,
+        tone: isRunning ? 'good' : next ? 'warn' : 'neutral'
+      };
+    }
+    if (id === 'packages') {
+      const active = ctx.activePackages || [];
+      const currentPackage = homeCycleItem(active, 45);
+      return { ...base, metric: active.length, text: currentPackage ? firstTitle(currentPackage, 'Balík') : 'Žádný aktivní balík', detail: currentPackage ? normalizeText(currentPackage.statusLabel || packageStatus(currentPackage.status).label || currentPackage.carrier || currentPackage.trackingNumber || currentPackage.tracking || 'sledovat zásilku') : 'Nový balík přidáš ručně', extraRows: detailRows(active, (entry) => `${carrierLabel(entry.carrier) || 'Balík'} · ${firstTitle(entry, entry.tracking || 'zásilka')}`), live: active.length > 1, tone: active.length ? 'warn' : 'good' };
+    }
+    if (id === 'shopping') {
+      const open = ctx.openShopping || [];
+      const currentShopping = homeCycleItem(open, 45);
+      return { ...base, metric: open.length, text: currentShopping ? firstTitle(currentShopping, 'Položka') : 'Nákup je prázdný', detail: currentShopping?.quantity ? `množství ${currentShopping.quantity}` : open.length > 1 ? `+${open.length - 1} další položky` : 'Kliknutím otevřeš seznam', chips: open.slice(0, density === 'large' ? 4 : 2).map((entry) => firstTitle(entry, '')).filter(Boolean), extraRows: detailRows(open, (entry) => `${firstTitle(entry, 'Položka')}${entry.quantity ? ` · ${entry.quantity}` : ''}`), live: open.length > 1, tone: open.length ? 'warn' : 'good' };
+    }
+    if (id === 'coupons') {
+      const unused = (state.coupons || []).filter((entry) => !entry.used).map((entry) => ({ ...entry, days: daysUntil(entry.expiry) })).sort((a, b) => (a.days ?? 9999) - (b.days ?? 9999));
+      const currentCoupon = homeCycleItem(unused, 45);
+      return { ...base, metric: unused.length, text: currentCoupon ? firstTitle(currentCoupon, 'Kupón') : 'Žádný nepoužitý kód', detail: currentCoupon?.days !== null && currentCoupon?.days !== undefined ? `platí ${dueBadge(currentCoupon.days)}` : 'Ulož si slevový kód', live: unused.length > 1, tone: currentCoupon && currentCoupon.days !== null && currentCoupon.days <= 7 ? 'warn' : unused.length ? 'good' : 'neutral' };
+    }
+    if (id === 'waste') {
+      const upcoming = (state.waste || []).map((entry) => ({ ...entry, days: daysUntil(entry.date) })).filter((entry) => entry.days !== null && entry.days >= 0).sort((a, b) => a.days - b.days);
+      const next = homeCycleItem(upcoming, 45);
+      return { ...base, metric: next ? dueBadge(next.days) : '—', text: next ? firstTitle(next, 'Svoz') : 'Svoz není nastavený', detail: next ? shortDateText(next.date) : 'Přidej termín odpadu', extraRows: detailRows(upcoming, (entry) => `${shortDateText(entry.date)} · ${firstTitle(entry, 'Svoz')}`), live: upcoming.length > 1, tone: next?.days <= 1 ? 'warn' : next ? 'good' : 'neutral' };
+    }
+    if (id === 'tasks') {
+      const open = ctx.openTasks || [];
+      const currentTask = homeCycleItem(open, 45);
+      return { ...base, metric: open.length, text: currentTask ? firstTitle(currentTask, 'Úkol') : 'Nic nečeká', detail: currentTask?.due ? `termín ${dueBadge(daysUntil(currentTask.due))}` : open.length ? 'bez termínu' : 'Domácí úkoly jsou čisté', extraRows: detailRows(open, (entry) => `${entry.due ? `${shortDateText(entry.due)} · ` : ''}${firstTitle(entry, 'Úkol')}`), live: open.length > 1, tone: open.length ? 'warn' : 'good' };
+    }
+    if (id === 'notes') {
+      const notes = state.notes || [];
+      const currentNote = homeCycleItem(notes, 45);
+      return { ...base, metric: notes.length, text: currentNote ? firstTitle(currentNote, 'Poznámka') : 'Žádné poznámky', detail: currentNote?.text ? normalizeText(currentNote.text).slice(0, 48) : 'Rychlé domácí poznámky', live: notes.length > 1, tone: notes.length ? 'good' : 'neutral' };
+    }
+    if (id === 'devices') {
+      const devices = state.devices || [];
+      const active = devices.filter((device) => device.status !== 'offline' && device.status !== 'archived').length;
+      const currentDevice = homeCycleItem(devices, 45);
+      return { ...base, metric: devices.length, text: currentDevice ? firstTitle(currentDevice, 'Zařízení') : 'Žádné zařízení', detail: devices.length ? `${active} aktivní / ${devices.length} celkem` : 'Přidej domácí zařízení', live: devices.length > 1, tone: devices.length ? 'good' : 'neutral' };
+    }
+    if (id === 'warranties') {
+      const warranties = (state.warranties || [])
+        .filter((entry) => entry.status !== 'archived')
+        .map((entry) => ({ ...entry, days: daysUntil(entry.warrantyUntil) }))
+        .sort((a, b) => (a.days ?? 9999) - (b.days ?? 9999));
+      const currentWarranty = homeCycleItem(warranties, 45);
+      const hasWarrantyDays = Boolean(currentWarranty) && currentWarranty.days !== null && currentWarranty.days !== undefined;
+      return {
+        ...base,
+        metric: warranties.length,
+        text: currentWarranty ? firstTitle(currentWarranty, 'Věc') : 'Žádná záruka',
+        detail: hasWarrantyDays ? `do ${dueBadge(currentWarranty.days)}` : currentWarranty ? 'bez konce záruky' : 'Přidej koupenou věc',
+        live: warranties.length > 1,
+        tone: hasWarrantyDays && currentWarranty.days <= 30 ? 'warn' : warranties.length ? 'good' : 'neutral'
+      };
+    }
+    if (id === 'garage') {
+      const alert = (ctx.vehicleAlerts || [])[0];
+      const vehicles = garageOwnedVehicles();
+      const vehicleCount = vehicles.length;
+      if (vehicleCount) {
+        const selectedVehicle = vehicles[homeCycleIndex(vehicleCount, 45)] || vehicles[0];
+        const rows = garageRowsForVehicle(selectedVehicle.id);
+        const stats = getVehicleStats(rows.fuelRows, rows.serviceRows);
+        const currentKm = getVehicleCurrentOdometer(selectedVehicle, rows.fuelRows, rows.serviceRows);
+        const fuelCostPerKm = stats.totalKm > 0 ? stats.fuelCost / stats.totalKm : null;
+        const consumption = stats.averageConsumption ? `${stats.averageConsumption.toFixed(1).replace('.', ',')} l/100` : 'spotřeba bez dat';
+        const fuelKm = fuelCostPerKm ? `${fuelCostPerKm.toFixed(2).replace('.', ',')} Kč/km` : currentKm ? formatKm(currentKm) : 'km bez dat';
+        return { ...base, metric: firstTitle(selectedVehicle, 'Auto'), text: currentKm ? `${formatKm(currentKm)} · ${consumption}` : consumption, detail: fuelKm, live: vehicleCount > 1, tone: alert ? 'warn' : 'good' };
+      }
+      return { ...base, metric: 0, text: garageCountLabel(0), detail: 'Přidej první auto', tone: 'neutral' };
+    }
+    if (id === 'contracts') {
+      const urgentList = ctx.urgentContracts || [];
+      const contractSlides = urgentList.length ? urgentList : (state.contracts || []).map((contract) => ({ ...contract, days: daysUntil(contract.validTo) })).sort((a, b) => (a.days ?? 9999) - (b.days ?? 9999)).slice(0, 5);
+      const contract = homeCycleItem(contractSlides, 45);
+      return { ...base, metric: state.contracts.length, text: contract ? firstTitle(contract, 'Smlouva') : 'Žádná akutní smlouva', detail: contract?.days !== null && contract?.days !== undefined ? `končí ${dueBadge(contract.days)}` : 'Hlídání platností je klidné', live: contractSlides.length > 1, tone: urgentList.length ? 'warn' : state.contracts.length ? 'good' : 'neutral' };
+    }
+    if (id === 'finance') {
+      const summary = financeMonthSummary();
+      const financeSlides = [
+        { metric: formatCurrency(summary.balance), text: summary.balance >= 0 ? 'měsíc v plusu' : 'měsíc v mínusu', detail: `Příjmy ${formatCurrency(summary.income)} · výdaje ${formatCurrency(summary.expense)}` },
+        { metric: formatCurrency(summary.income), text: 'příjmy tento měsíc', detail: financeMonthLabel() },
+        { metric: formatCurrency(summary.expense), text: 'výdaje tento měsíc', detail: financeMonthLabel() }
+      ];
+      const slide = homeCycleItem(financeSlides, 45) || financeSlides[0];
+      return { ...base, metric: slide.metric, text: slide.text, detail: slide.detail, live: true, tone: summary.balance >= 0 ? 'good' : 'warn' };
+    }
+    if (id === 'subscriptions') {
+      const summary = subscriptionMonthSummary();
+      const debtRows = summary.peopleRows.filter((row) => row.debt > 0).sort((a, b) => b.debt - a.debt);
+      const currentDebt = homeCycleItem(debtRows, 45);
+      const servicesWithShares = summary.services.filter((service) => (service.shares || []).length);
+      const serviceSlide = homeCycleItem(servicesWithShares, 45);
+      const debtChips = debtRows.map((row) => `${row.person.name}: ${formatCurrency(row.debt)}`);
+      const slides = [
+        { metric: formatCurrency(summary.expectedReturn), text: 'má se vrátit', detail: `${formatCurrency(summary.paid)} už zaplaceno` },
+        { metric: formatCurrency(summary.owed), text: summary.owed ? 'ještě chybí' : 'vše srovnané', detail: financeMonthLabel(summary.month) },
+        currentDebt ? { metric: formatCurrency(currentDebt.debt), text: `${currentDebt.person.name} dluží`, detail: `má platit ${formatCurrency(currentDebt.expected)}` } : null,
+        serviceSlide ? { metric: subscriptionCapacityLabel(serviceSlide).replace(' míst', ''), text: serviceSlide.name, detail: `${formatCurrency(serviceSlide.price)} / měsíc` } : null
+      ].filter(Boolean);
+      const slide = homeCycleItem(slides, 45) || slides[0];
+      return { ...base, metric: slide.metric, text: slide.text, detail: slide.detail, chips: debtChips, extraRows: debtChips, live: slides.length > 1 || debtRows.length > 1, tone: summary.owed ? 'warn' : summary.expectedReturn ? 'good' : 'neutral' };
+    }
+    if (id === 'cameras') {
+      const cameras = state.cameras || [];
+      const online = cameras.filter((camera) => camera.status === 'online' || camera.status === 'active').length;
+      const currentCamera = homeCycleItem(cameras, 45);
+      return { ...base, metric: cameras.length, text: currentCamera ? firstTitle(currentCamera, 'Kamera') : 'Žádná kamera', detail: cameras.length ? `${online} online / ${cameras.length} celkem` : 'Přidej kameru do přehledu', live: cameras.length > 1, tone: cameras.length ? 'good' : 'neutral' };
+    }
+    return base;
+  }
+
+  function getHdoHeroPresentation(ctx, options = {}) {
+    const safeDate = toSafeDate(now, new Date());
+    const minuteNow = safeDate.getHours() * 60 + safeDate.getMinutes();
+    const extraLimit = options.density === 'large' ? 5 : options.density === 'medium' ? 2 : 0;
+    const allEnabled = getSafeHdoWindows().filter((entry) => entry.enabled && timeToMinutes(entry.start) !== null && timeToMinutes(entry.end) !== null);
+    const enabledToday = allEnabled.filter((entry) => hdoWindowMatchesDate(entry, safeDate));
+    const enabled = enabledToday.length ? enabledToday : allEnabled;
+    const extraRows = extraLimit ? sortHdoWindowsForOverview(enabled).slice(0, extraLimit).map((entry) => hdoWindowTimeLabel(entry)) : [];
+    const active = enabledToday.find((entry) => isTimeInWindow(minuteNow, entry.start, entry.end));
+    if (active) {
+      const endMinutes = timeToMinutes(active.end);
+      let diff = endMinutes - minuteNow;
+      if (diff <= 0) diff += 1440;
+      return {
+        metric: 'Běží',
+        text: `do ${active.end}`,
+        detail: `ještě ${humanDuration(diff)}`,
+        chips: [daysLabel(active.days)],
+        extraRows,
+        tone: 'good'
+      };
+    }
+    const next = findNextHdoWindow(safeDate);
+    if (next) {
+      return {
+        metric: `za ${humanDuration(next.diffMinutes)}`,
+        text: hdoWindowTimeLabel(next.item),
+        detail: '',
+        chips: [daysLabel(next.item.days)],
+        extraRows,
+        tone: 'warn'
+      };
+    }
+    return { metric: '—', text: 'HDO není nastavené', detail: 'Přidej okna nízkého tarifu', chips: [], extraRows: [], tone: 'neutral' };
+  }
+
+
+  function renderDashboardWidget(id, ctx) {
+    switch (id) {
+      case 'weather':
+      case 'cloud':
+        return '';
+      case 'setup':
+        return `${renderStarterStateCard()}${renderSetupChecklist()}`;
+      case 'focus':
+        return `<section class="tablet-focus-grid dashboard-widget-block" data-dashboard-widget="focus">${ctx.focusItems.map(renderDashboardFocusItem).join('')}</section>`;
+      case 'timeline':
+        return `
+          <section class="card tablet-agenda-card dashboard-widget-block" data-dashboard-widget="timeline">
+            <div class="card-header">
+              <div><h2>Dnes a brzy</h2><p>Rychlý přehled věcí, které by na domácím tabletu měly být vidět hned.</p></div>
+              <span class="badge">${ctx.focusItems.length} položek</span>
+            </div>
+            <div class="timeline-list">
+              ${renderDashboardTimeline(ctx.todayEvents, ctx.upcomingEvents, ctx.urgentContracts, ctx.openTasks, ctx.wasteSoon, ctx.vehicleAlerts)}
+            </div>
+          </section>
+        `;
+      case 'now':
+        return `
+          <section class="card tablet-now-card dashboard-widget-block" data-dashboard-widget="now">
+            <div class="card-header">
+              <div><h2>Teď doma</h2><p>${escapeHtml(state.settings.dashboardNote || '')}</p></div>
+              <span class="badge ${ctx.hdo.active ? 'good' : 'warn'}">HDO ${ctx.hdo.active ? 'běží' : 'neběží'}</span>
+            </div>
+            <div class="list">
+              <button class="item module-hub-item" type="button" data-action="open-overview" data-overview="hdo">
+                <div class="item-top"><div class="item-title">Nízký tarif</div><span class="badge ${ctx.hdo.active ? 'good' : 'warn'}">${escapeHtml(ctx.hdo.label)}</span></div>
+                <div class="item-meta">${escapeHtml(ctx.hdo.message)}</div>
+              </button>
+              <button class="item module-hub-item" type="button" data-action="open-overview" data-overview="shopping">
+                <div class="item-top"><div class="item-title">Nákupy</div><span class="badge ${ctx.openShopping.length ? 'warn' : 'good'}">${ctx.openShopping.length} koupit</span></div>
+                <div class="item-meta">${ctx.openShopping.slice(0, 3).map((item) => item.name).filter(Boolean).join(' · ') || 'Nákupní seznam je prázdný.'}</div>
+              </button>
+            </div>
+          </section>
+        `;
+      case 'readiness':
+        return '';
+      case 'modules':
+        return `
+          <section class="card desktop-span-2 tablet-modules-card dashboard-widget-block" data-dashboard-widget="modules">
+            <div class="card-header">
+              <div><h2>Rychlé moduly</h2><p>Zapnuté části domácnosti. Viditelnost karet hlavní obrazovky se nastavuje samostatně.</p></div>
+              <button class="ghost-btn" type="button" data-nav="more">Více</button>
+            </div>
+            <div class="grid four">
+              ${ctx.visibleModules.filter((module) => module.id !== 'home' && module.id !== 'settings').map(renderModuleStatusCard).join('')}
+            </div>
+          </section>
+        `;
+      default:
+        return '';
+    }
+  }
+
+  function renderDashboardWidgetDock(widgetIds) {
+    const selected = new Set(widgetIds);
+    const hiddenCount = DASHBOARD_WIDGETS.filter((widget) => !selected.has(widget.id)).length;
+    return `
+      <section class="card dashboard-layout-card dashboard-widget-block" data-dashboard-widget="layout">
+        <div class="card-header compact-card-header">
+          <div><h2>Hlavní obrazovka</h2><p>Zapnuté sekce Home se dají přidávat a odebírat. Počasí se nastavuje v horním rychlém panelu.</p></div>
+          <span class="badge ${hiddenCount ? 'warn' : 'good'}">${widgetIds.length}/${DASHBOARD_WIDGETS.length}</span>
+        </div>
+        <div class="dashboard-widget-chip-row">
+          ${DASHBOARD_WIDGETS.map((widget) => `
+            <button class="quick-chip dashboard-widget-chip ${selected.has(widget.id) ? 'active' : ''}" type="button" data-action="toggle-dashboard-widget" data-id="${escapeHtml(widget.id)}">
+              <span>${escapeHtml(widget.icon)}</span><strong>${escapeHtml(widget.label)}</strong>
+            </button>
+          `).join('')}
+        </div>
+        <div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-nav="settings" data-target-tab="dashboard">Podrobné nastavení</button><button class="ghost-btn" type="button" data-action="dashboard-reset-widgets">Výchozí karty</button></div>
+      </section>
+    `;
+  }
+
+  function weatherSourceLabel(source = state.weather?.source) {
+    const normalized = normalizeWeatherSource(source);
+    if (normalized === 'chmi') return 'ČHMÚ';
+    if (normalized === 'open-meteo-fallback') return 'Open-Meteo fallback';
+    if (normalized === 'demo') return 'Demo';
+    return 'Open-Meteo';
+  }
+
+  function renderGlassIcon(kind, options = {}) {
+    const size = options.size || 'md';
+    const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
+    const svg = getGlassIconSvg(kind);
+    return `<span class="glass-icon glass-icon-${escapeHtml(String(kind || 'generic'))} glass-icon-size-${escapeHtml(String(size))}${extraClass}" aria-hidden="true">${svg}</span>`;
+  }
+
+  function getHomeIconKind(id) {
+    return {
+      calendar: 'calendar',
+      packages: 'package',
+      shopping: 'cart',
+      coupons: 'tag',
+      hdo: 'bulb',
+      waste: 'recycle',
+      tasks: 'check',
+      notes: 'note',
+      devices: 'plug',
+      warranties: 'receipt',
+      polishHolidays: 'flag-pl',
+      garage: 'car',
+      contracts: 'doc',
+      finance: 'coins',
+      subscriptions: 'tag',
+      cameras: 'camera',
+      weather: 'weather-partly-cloud',
+      settings: 'settings',
+      more: 'settings',
+      homecare: 'home'
+    }[String(id || '')] || 'generic';
+  }
+
+  function getModuleIllustrationId(id) {
+    return {
+      weather: 'weather',
+      calendar: 'calendar',
+      packages: 'packages',
+      shopping: 'shopping',
+      homecare: 'homecare',
+      garage: 'garage',
+      contracts: 'contracts',
+      cameras: 'cameras',
+      finance: 'finance',
+      subscriptions: 'subscriptions',
+      settings: 'settings',
+      coupons: 'coupons',
+      hdo: 'hdo',
+      waste: 'waste',
+      tasks: 'tasks',
+      notes: 'notes',
+      devices: 'devices',
+      warranties: 'warranties',
+      polishHolidays: 'polishHolidays',
+      more: 'more',
+      home: 'home'
+    }[String(id || '')] || 'settings';
+  }
+
+
+  function getAssetThemeIconConfig(id, themeId = state.settings?.iconTheme || 'ios') {
+    const iconId = getModuleIllustrationId(id);
+    if (!ASSET_ICON_MODULE_IDS.has(iconId)) return null;
+    const normalizedThemeId = normalizeIconTheme(themeId);
+    const theme = ASSET_ICON_THEMES[normalizedThemeId];
+    if (!theme?.pathPrefix) return null;
+    const src = `${theme.pathPrefix}${iconId}.png`;
+    return { iconId, themeId: normalizedThemeId, src, surface: theme.surface || 'dark' };
+  }
+
+  function preloadAssetIconTheme(themeId = state.settings?.iconTheme || 'ios') {
+    // v0.1_201: ikonky se dál načítají lazy přes CSS background podle reálně vykreslených slotů.
+    // Nepřednačítáme celý pack na startu, aby se iPhone/PWA zbytečně nedusil.
+    return normalizeIconTheme(themeId);
+  }
+
+  function rememberIconHtml(key, html) {
+    if (iconHtmlCache.has(key)) return iconHtmlCache.get(key);
+    iconHtmlCache.set(key, html);
+    if (iconHtmlCache.size > ICON_HTML_CACHE_LIMIT) {
+      const firstKey = iconHtmlCache.keys().next().value;
+      iconHtmlCache.delete(firstKey);
+    }
+    return html;
+  }
+
+  function renderAssetThemeIcon(id, options = {}) {
+    const themeId = normalizeIconTheme(options.themeId || state.settings?.iconTheme || 'ios');
+    const config = getAssetThemeIconConfig(id, themeId);
+    if (!config) return '';
+    const label = options.label || '';
+    const slotClass = options.slotClass ? ` ${options.slotClass}` : '';
+    const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
+    const size = options.size || 'md';
+    const baseClass = options.baseClass || 'module-illustration-slot';
+    const innerClass = options.innerClass || 'theme-asset-icon';
+    const cacheKey = [config.iconId, themeId, config.surface, size, baseClass, innerClass, slotClass, extraClass, label].join('|');
+    if (iconHtmlCache.has(cacheKey)) return iconHtmlCache.get(cacheKey);
+    const html = `<span class="${baseClass} ${baseClass}-${escapeHtml(String(size))}${slotClass}${extraClass} theme-asset-icon-slot theme-asset-icon-slot-${escapeHtml(config.surface)}" data-icon-id="${escapeHtml(String(config.iconId))}" data-icon-theme-asset="${escapeHtml(String(themeId))}" style="--asset-icon-url: url('${escapeHtml(config.src)}')" aria-hidden="true"><span class="${innerClass} ${innerClass}-${escapeHtml(String(size))} theme-asset-icon-surface theme-asset-icon-surface-${escapeHtml(config.surface)}"></span></span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
+    return rememberIconHtml(cacheKey, html);
+  }
+
+  function getModuleIllustrationSrc(id) {
+    return `./icons/module-icons/${getModuleIllustrationId(id)}.png`;
+  }
+
+  function renderModuleIllustration(id, options = {}) {
+    const assetHtml = renderAssetThemeIcon(id, { ...options, baseClass: 'module-illustration-slot', innerClass: 'theme-asset-icon' });
+    if (assetHtml) return assetHtml;
+    const size = options.size || 'md';
+    const slotClass = options.slotClass ? ` ${options.slotClass}` : '';
+    const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
+    const label = options.label || '';
+    const svg = getThemedModuleIconSvg(id, { extraClass });
+    return `<span class="module-illustration-slot module-illustration-slot-${escapeHtml(String(size))}${slotClass}" data-icon-id="${escapeHtml(String(id || 'settings'))}" aria-hidden="true">${svg}</span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
+  }
+
+  function renderMiniModuleIcon(id, options = {}) {
+    const assetHtml = renderAssetThemeIcon(id, { ...options, baseClass: 'mini-module-icon', innerClass: 'theme-asset-mini-icon' });
+    if (assetHtml) return assetHtml;
+    const size = options.size || 'nav';
+    const slotClass = options.slotClass ? ` ${options.slotClass}` : '';
+    const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
+    const label = options.label || '';
+    const svg = getThemedModuleIconSvg(id, { extraClass: options.extraClass || '' });
+    return `<span class="mini-module-icon mini-module-icon-${escapeHtml(String(size))}${slotClass}${extraClass}" data-icon-id="${escapeHtml(String(id || 'settings'))}" aria-hidden="true">${svg}</span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
+  }
+
+  function themedIconColors(id) {
+    return {
+      home: ['#2563EB', '#93C5FD', '#F59E0B'],
+      weather: ['#0EA5E9', '#FACC15', '#FFFFFF'],
+      calendar: ['#EF4444', '#FDE68A', '#2563EB'],
+      packages: ['#D97706', '#FDBA74', '#7C2D12'],
+      shopping: ['#10B981', '#A7F3D0', '#0F766E'],
+      homecare: ['#8B5CF6', '#DDD6FE', '#F59E0B'],
+      garage: ['#2563EB', '#BFDBFE', '#334155'],
+      contracts: ['#3B82F6', '#DBEAFE', '#16A34A'],
+      cameras: ['#64748B', '#E2E8F0', '#0EA5E9'],
+      settings: ['#64748B', '#CBD5E1', '#334155'],
+      more: ['#64748B', '#CBD5E1', '#334155'],
+      subscriptions: ['#7C3AED', '#DDD6FE', '#F59E0B'],
+      warranties: ['#16A34A', '#BBF7D0', '#FFFFFF'],
+      polishHolidays: ['#EF4444', '#FEE2E2', '#FFFFFF'],
+      hdo: ['#10B981', '#D1FAE5', '#F59E0B'],
+      coupons: ['#A855F7', '#F3E8FF', '#F59E0B'],
+      waste: ['#16A34A', '#DCFCE7', '#0F766E'],
+      tasks: ['#2563EB', '#DBEAFE', '#22C55E'],
+      notes: ['#F59E0B', '#FEF3C7', '#EF4444'],
+      devices: ['#0EA5E9', '#E0F2FE', '#1D4ED8'],
+      finance: ['#16A34A', '#DCFCE7', '#F59E0B']
+    }[String(id || '')] || ['#64748B', '#E2E8F0', '#334155'];
+  }
+
+  function getThemedModuleIconSvg(id, options = {}) {
+    const iconId = getModuleIllustrationId(id);
+    const [a, b, c] = themedIconColors(iconId);
+    const extraClass = options.extraClass ? ` ${escapeHtml(String(options.extraClass).trim())}` : '';
+    const themeId = normalizeIconTheme(options.themeId || state.settings?.iconTheme || 'ios');
+    const body = getThemedModuleIconBody(iconId);
+    const layers = getThemedModuleIconStyleLayers(themeId);
+    return `<svg class="module-theme-icon module-theme-icon-${escapeHtml(iconId)} icon-style-${escapeHtml(themeId)}${extraClass}" style="--icon-a:${a};--icon-b:${b};--icon-c:${c}" viewBox="0 0 64 64" focusable="false" aria-hidden="true"><rect class="icon-tile" x="5" y="5" width="54" height="54" rx="17"></rect>${layers}<g class="icon-glyph">${body}</g></svg>`;
+  }
+
+  function getThemedModuleIconStyleLayers(themeId = 'ios') {
+    const theme = normalizeIconTheme(themeId);
+    if (theme === 'duotone-fresh') {
+      return '<g class="icon-style-layer icon-duotone-layer"><circle class="icon-orb-a" cx="25" cy="25" r="18"/><circle class="icon-orb-b" cx="42" cy="40" r="15"/><path class="icon-spark" d="M47 13l2 4 4 2-4 2-2 4-2-4-4-2 4-2Z"/></g>';
+    }
+    if (theme === 'sticker-ui') {
+      return '<g class="icon-style-layer icon-sticker-layer"><path class="icon-sticker-paper" d="M32 6c12 0 21 8 23 19 3 13-5 25-18 29-12 4-26-2-29-14C5 28 11 14 22 9c3-2 6-3 10-3Z"/><path class="icon-sticker-shadow" d="M12 42c6 11 20 16 32 8"/></g>';
+    }
+    if (theme === 'clay-3d') {
+      return '<g class="icon-style-layer icon-clay-layer"><ellipse class="icon-clay-shadow" cx="34" cy="51" rx="20" ry="6"/><circle class="icon-clay-blob" cx="32" cy="31" r="23"/><path class="icon-clay-highlight" d="M19 23c5-9 16-12 26-7"/></g>';
+    }
+    if (theme === 'isometric-micro') {
+      return '<g class="icon-style-layer icon-iso-layer"><path class="icon-iso-side" d="M14 31 32 42l18-11v10L32 54 14 41Z"/><path class="icon-iso-top" d="M14 31 32 20l18 11-18 11Z"/><path class="icon-iso-edge" d="M32 42v12M14 31v10M50 31v10"/></g>';
+    }
+    return '';
+  }
+
+  function getThemedModuleIconBody(id) {
+    const map = {
+      home: '<path class="icon-primary" d="M14 31 32 15l18 16v20a3 3 0 0 1-3 3H36V40h-8v14H17a3 3 0 0 1-3-3Z"/><path class="icon-line" d="M10 32 32 12l22 20M42 22v-7h7v13"/>',
+      weather: '<circle class="icon-accent" cx="25" cy="24" r="10"/><path class="icon-primary" d="M24 47h22a10 10 0 0 0 .7-20 13 13 0 0 0-24.4 4.7A8 8 0 0 0 24 47Z"/><path class="icon-line" d="M13 24h-4M18 12l-3-3M32 8V4"/>',
+      calendar: '<rect class="icon-primary" x="15" y="17" width="34" height="34" rx="8"/><path class="icon-accent" d="M15 25h34v-3a5 5 0 0 0-5-5H20a5 5 0 0 0-5 5Z"/><path class="icon-line light" d="M23 12v10M41 12v10M24 33h4M31 33h4M38 33h4M24 41h4M31 41h4M38 41h4"/>',
+      packages: '<path class="icon-primary" d="m15 22 17-10 17 10v20L32 52 15 42Z"/><path class="icon-line light" d="M15 22 32 32l17-10M32 32v20M24 17l17 10"/>',
+      shopping: '<path class="icon-primary" d="M17 25h30l-3 23H20Z"/><path class="icon-line light" d="M23 25v-4a9 9 0 0 1 18 0v4"/><path class="icon-accent" d="M30 35c5-7 11-5 15-5-1 7-6 12-15 13Z"/>',
+      homecare: '<path class="icon-primary" d="M19 49V29h26v20Z"/><path class="icon-accent" d="M25 44h14V32H25Z"/><path class="icon-line" d="M18 29 32 18l14 11M44 49H20M43 29v-8"/>',
+      garage: '<path class="icon-primary" d="M14 49V27l18-12 18 12v22Z"/><path class="icon-secondary" d="M21 34h22v15H21Z"/><path class="icon-line" d="M25 45h14M22 38h20"/><path class="icon-accent" d="M24 44c2-5 3-6 8-6s6 1 8 6Z"/>',
+      contracts: '<path class="icon-primary" d="M18 12h22l8 8v31a3 3 0 0 1-3 3H18a3 3 0 0 1-3-3V15a3 3 0 0 1 3-3Z"/><path class="icon-secondary" d="M40 12v10h9"/><path class="icon-line light" d="M23 30h16M23 38h13M23 46h8"/><path class="icon-accent" d="M42 38 51 42v6c0 4-3 7-9 10-6-3-9-6-9-10v-6Z"/>',
+      cameras: '<path class="icon-primary" d="M14 26h32a6 6 0 0 1 6 6v7a6 6 0 0 1-6 6H14Z"/><circle class="icon-secondary" cx="31" cy="35" r="9"/><circle class="icon-accent" cx="31" cy="35" r="4"/><path class="icon-line" d="M46 31l8-5v18l-8-5"/>',
+      settings: '<path class="icon-primary" d="m35 12 2 7a16 16 0 0 1 4 2l7-2 4 7-5 5a17 17 0 0 1 0 4l5 5-4 7-7-2a16 16 0 0 1-4 2l-2 7h-8l-2-7a16 16 0 0 1-4-2l-7 2-4-7 5-5a17 17 0 0 1 0-4l-5-5 4-7 7 2a16 16 0 0 1 4-2l2-7Z"/><circle class="icon-secondary" cx="31" cy="33" r="8"/>',
+      more: '<circle class="icon-primary" cx="20" cy="32" r="6"/><circle class="icon-primary" cx="32" cy="32" r="6"/><circle class="icon-primary" cx="44" cy="32" r="6"/>',
+      subscriptions: '<rect class="icon-primary" x="15" y="19" width="34" height="26" rx="8"/><path class="icon-accent" d="m31 24 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z"/><path class="icon-line light" d="M20 47h24"/>',
+      warranties: '<path class="icon-primary" d="M32 11 49 18v13c0 11-6 18-17 23-11-5-17-12-17-23V18Z"/><path class="icon-line light" d="m23 32 7 7 13-15"/>',
+      polishHolidays: '<rect class="icon-primary" x="16" y="15" width="32" height="36" rx="8"/><path class="icon-secondary" d="M16 25h32v18H16Z"/><path class="icon-accent" d="M20 35h24v8H20Z"/><path class="icon-line light" d="M24 11v10M40 11v10"/>',
+      hdo: '<circle class="icon-primary" cx="32" cy="33" r="21"/><path class="icon-accent" d="m34 17-13 20h9l-3 14 15-23h-9Z"/><path class="icon-line light" d="M20 33a12 12 0 0 1 24 0"/>',
+      coupons: '<path class="icon-primary" d="M14 23a4 4 0 0 1 4-4h31v9a5 5 0 0 0 0 10v9H18a4 4 0 0 1-4-4Z"/><path class="icon-line light" d="M30 22v24M21 29h7M21 37h7"/><path class="icon-accent" d="m39 27 2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8Z"/>',
+      waste: '<path class="icon-primary" d="M20 24h24l-2 27a4 4 0 0 1-4 3H26a4 4 0 0 1-4-3Z"/><path class="icon-line" d="M18 24h28M25 24v-6h14v6"/><path class="icon-accent" d="M32 31c-5 3-7 7-6 12 4 0 7-2 9-6 2 3 4 5 8 6 1-5-1-9-6-12-1 3-3 5-5 6-2-1-4-3-5-6Z"/>',
+      tasks: '<rect class="icon-primary" x="18" y="12" width="28" height="40" rx="8"/><path class="icon-secondary" d="M24 20h16v26H24Z"/><path class="icon-line" d="m27 29 3 3 7-8M27 40l3 3 7-8"/>',
+      notes: '<path class="icon-primary" d="M17 14h30v38H17Z"/><path class="icon-accent" d="M39 14h8v8Z"/><path class="icon-line light" d="M24 29h16M24 38h13"/>',
+      devices: '<path class="icon-primary" d="M20 28a12 12 0 0 1 24 0v7a12 12 0 0 1-24 0Z"/><path class="icon-line" d="M15 22a21 21 0 0 1 34 0M24 48h16"/><path class="icon-accent" d="M32 25v10l7-5"/>',
+      finance: '<circle class="icon-primary" cx="32" cy="32" r="20"/><path class="icon-line light" d="M38 23c-8-4-16 1-16 8s8 12 17 7M21 29h20M21 36h16"/>'
+    };
+    return map[String(id || '')] || map.settings;
+  }
+
+
+  function getMiniModuleIconSvg(id) {
+    const map = {
+      home: `<svg viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2v8.8a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z" fill="#3B82F6"/><path d="M7 12.5h10" stroke="#BFDBFE" stroke-width="1.8" stroke-linecap="round"/><path d="M16.8 5.8 18 8l2.3 1.1-2.3 1.1L16.8 12l-1.1-1.8-2.2-1.1 2.2-1.1Z" fill="#FACC15"/></svg>`,
+      weather: `<svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="4" fill="#FBBF24"/><path d="M12.8 15.5a3.7 3.7 0 0 1 1-7.2 4.3 4.3 0 0 1 8.2 1.7 3.4 3.4 0 0 1-.4 6.8z" fill="#93C5FD"/><path d="M14 18h6" stroke="#60A5FA" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      calendar: `<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="4" fill="#2563EB"/><path d="M3 9h18" stroke="#BFDBFE" stroke-width="2"/><rect x="5" y="5" width="14" height="4" rx="2" fill="#EF4444"/><circle cx="15.5" cy="15" r="2.2" fill="#FCA5A5"/><circle cx="15.5" cy="15" r="1.2" fill="#DC2626"/></svg>`,
+      packages: `<svg viewBox="0 0 24 24"><path d="m12 3 8 4v10l-8 4-8-4V7z" fill="#F59E0B"/><path d="M12 3v8l8-4M12 11 4 7" stroke="#FDE68A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 6.2 16 10.2" stroke="#92400E" stroke-width="1.5"/></svg>`,
+      shopping: `<svg viewBox="0 0 24 24"><path d="M5 9h14l-1.4 8.2a1 1 0 0 1-1 .8H8.4a1 1 0 0 1-1-.8z" fill="#2563EB"/><path d="M8 9V7a4 4 0 0 1 8 0v2" stroke="#60A5FA" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="19" r="1.5" fill="#1E3A8A"/><circle cx="16" cy="19" r="1.5" fill="#1E3A8A"/><circle cx="11" cy="13" r="1.6" fill="#EF4444"/><path d="M14.5 12h3" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      coupons: `<svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H20v4a2 2 0 0 0 0 4v4H6.5A2.5 2.5 0 0 1 4 15.5z" fill="#A855F7"/><path d="M12.2 8.5v7" stroke="#E9D5FF" stroke-width="1.8" stroke-dasharray="1.5 1.5" stroke-linecap="round"/><path d="M8 12h2.5M8 9.5h6.5" stroke="#F3E8FF" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      hdo: `<svg viewBox="0 0 24 24"><path d="M12 3.5A6.5 6.5 0 0 0 8 15c1 .7 1.6 1.6 1.7 2.8h4.6c.1-1.2.7-2.1 1.7-2.8A6.5 6.5 0 0 0 12 3.5Z" fill="#FBBF24"/><path d="m13 7.5-3 4h2.2l-1.2 5 4-6H13z" fill="#F59E0B"/><path d="M10 20h4M10.5 22h3" stroke="#1D4ED8" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      waste: `<svg viewBox="0 0 24 24"><path d="M7 7h10l-1 12a1.1 1.1 0 0 1-1.1 1H9.1A1.1 1.1 0 0 1 8 19z" fill="#16A34A"/><path d="M9 7V5h6v2M5.5 7h13" stroke="#86EFAC" stroke-width="1.8" stroke-linecap="round"/><path d="M12 10c-1 .5-1.7 1.2-2 2.2 1 .2 1.7.8 2 1.8.4-1 1-1.6 2-1.8-.3-1-.9-1.7-2-2.2Z" fill="#DCFCE7"/></svg>`,
+      tasks: `<svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="3" fill="#2563EB"/><rect x="7.5" y="6" width="9" height="12" rx="2" fill="#EFF6FF"/><path d="M9.2 9.5 10.5 11l2.2-2.7M9.2 13.3 10.5 14.8l2.2-2.7" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.8 9.7h1.8M13.8 13.5h1.8" stroke="#60A5FA" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      notes: `<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z" fill="#FDE68A"/><path d="M16.5 5H19v2.5z" fill="#F59E0B"/><path d="M8 10h8M8 13h6" stroke="#92400E" stroke-width="1.8" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="1.2" fill="#EF4444"/></svg>`,
+      devices: `<svg viewBox="0 0 24 24"><path d="M7 11a5 5 0 0 1 10 0v1.3a4.7 4.7 0 0 1-9.4 0z" fill="#38BDF8"/><path d="M5 8c1.2-1.7 2.7-2.7 4.6-3.1M19 8c-1.2-1.7-2.7-2.7-4.6-3.1" stroke="#0EA5E9" stroke-width="1.8" stroke-linecap="round"/><path d="M12 16v3" stroke="#1D4ED8" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      warranties: `<svg viewBox="0 0 24 24"><path d="M12 3.5 18 6v5.3c0 3.6-2.2 6.6-6 9.2-3.8-2.6-6-5.6-6-9.2V6z" fill="#2563EB"/><path d="m8.5 12 2.1 2.1 4.9-5" stroke="#DBEAFE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      polishHolidays: `<svg viewBox="0 0 24 24"><path d="M6 4v16" stroke="#64748B" stroke-width="1.8" stroke-linecap="round"/><path d="M7 5h10a1 1 0 0 1 1 1l-1 2 1 2a1 1 0 0 1-1 1H7z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/><path d="M7 10h10v3H7z" fill="#EF4444"/></svg>`,
+      homecare: `<svg viewBox="0 0 24 24"><path d="M12 3.5A6.5 6.5 0 0 0 8 15c1 .7 1.6 1.6 1.7 2.8h4.6c.1-1.2.7-2.1 1.7-2.8A6.5 6.5 0 0 0 12 3.5Z" fill="#FBBF24"/><path d="M10 20h4M10.5 22h3" stroke="#1D4ED8" stroke-width="1.8" stroke-linecap="round"/><path d="M12 8v3.3l2.2 1.3" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      garage: `<svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" fill="#60A5FA"/><path d="M6.5 20v-6h11v6" fill="#1E40AF"/><path d="M8 15.2h8" stroke="#93C5FD" stroke-width="1.8"/><circle cx="10" cy="18" r="1.4" fill="#0F172A"/><circle cx="14" cy="18" r="1.4" fill="#0F172A"/></svg>`,
+      contracts: `<svg viewBox="0 0 24 24"><path d="M5 4h8l4 4v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z" fill="#2563EB"/><path d="M13 4v4h4" fill="#BFDBFE"/><path d="M8 12h8M8 15h6" stroke="#DBEAFE" stroke-width="1.8" stroke-linecap="round"/><circle cx="17.5" cy="17.5" r="2.5" fill="#22C55E"/></svg>`,
+      cameras: `<svg viewBox="0 0 24 24"><rect x="4" y="7" width="13" height="10" rx="5" fill="#CBD5E1"/><circle cx="10.5" cy="12" r="4" fill="#0F172A"/><circle cx="10.5" cy="12" r="2.1" fill="#60A5FA"/><path d="M17 9h3v6h-3" fill="#94A3B8"/><path d="M5 20c1.5-2 3.5-3 6-3" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+      finance: `<svg viewBox="0 0 24 24"><ellipse cx="7" cy="17" rx="4" ry="2" fill="#FBBF24"/><path d="M3 17v2c0 1.1 1.8 2 4 2s4-.9 4-2v-2" fill="#D97706"/><path d="M12 18h2v-5h-2Zm4 0h2V9h-2Zm4 0h2V5h-2Z" fill="#3B82F6"/><path d="M11 8c3 0 6-1.5 9-4" stroke="#22C55E" stroke-width="2" stroke-linecap="round"/></svg>`,
+      subscriptions: `<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="12" rx="4" fill="#A855F7"/><path d="m10 8.5 5 2.5-5 2.5z" fill="#F8FAFC"/><path d="M7 20h10" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"/><circle cx="18" cy="16.5" r="3" fill="#22C55E"/></svg>`,
+      settings: `<svg viewBox="0 0 24 24"><path d="m13.8 3 .6 2.5a6.7 6.7 0 0 1 1.7 1l2.4-.8 1.4 2.3-1.9 1.6c.1.5.1 1 .1 1.5s0 1-.1 1.5l1.9 1.6-1.4 2.3-2.4-.8a6.7 6.7 0 0 1-1.7 1l-.6 2.5h-2.8l-.6-2.5a6.7 6.7 0 0 1-1.7-1l-2.4.8-1.4-2.3 1.9-1.6a7.5 7.5 0 0 1 0-3L4.3 8l1.4-2.3 2.4.8a6.7 6.7 0 0 1 1.7-1L10.4 3z" fill="#94A3B8"/><circle cx="12" cy="12" r="3" fill="#334155"/></svg>`,
+      more: `<svg viewBox="0 0 24 24"><path d="M5 6h6v6H5z" fill="#3B82F6"/><path d="M13 6h6v6h-6z" fill="#F59E0B"/><path d="M5 14h6v6H5z" fill="#22C55E"/><path d="M13 14h6v6h-6z" fill="#A855F7"/></svg>`
+    };
+    return map[String(id || '')] || map.settings;
+  }
+
+  function weatherAnimeKind(code) {
+    const value = Number(code);
+    if (value === 0) return 'sun';
+    if (value === 1 || value === 2) return 'partly';
+    if (value === 3) return 'cloud';
+    if (value === 45 || value === 48) return 'fog';
+    if ([71,73,75].includes(value)) return 'snow';
+    if ([95,96,99,82].includes(value)) return 'storm';
+    if ([51,53,55,61,63,65,80,81].includes(value)) return 'rain';
+    return 'partly';
+  }
+
+  function renderWeatherAnimeIcon(code, options = {}) {
+    const size = options.size || 'md';
+    const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
+    const kind = options.kind || weatherAnimeKind(code);
+    return `<span class="weather-anime-icon weather-anime-icon-${escapeHtml(String(size))}${extraClass}" aria-hidden="true">${getWeatherAnimeSvg(kind)}</span>`;
+  }
+
+  function getWeatherAnimeSvg(kind) {
+    const icons = {
+      sun: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="14" fill="#FBBF24"/><g stroke="#F59E0B" stroke-width="4" stroke-linecap="round"><path d="M32 8v8M32 48v8M8 32h8M48 32h8M15 15l6 6M43 43l6 6M49 15l-6 6M21 43l-6 6"/></g></svg>`,
+      partly: `<svg viewBox="0 0 64 64"><circle cx="23" cy="22" r="11" fill="#FBBF24"/><g stroke="#F59E0B" stroke-width="3.5" stroke-linecap="round"><path d="M23 6v5M23 33v5M7 22h5M34 22h5M12 11l4 4M34 33l4 4"/></g><path d="M23 45h24a9 9 0 0 0 .7-18A12 12 0 0 0 25.4 23 10.5 10.5 0 0 0 23 45Z" fill="#93C5FD"/><path d="M24 45h22" stroke="#60A5FA" stroke-width="3.5" stroke-linecap="round"/></svg>`,
+      cloud: `<svg viewBox="0 0 64 64"><path d="M19 46h28a10 10 0 0 0 .8-20A14 14 0 0 0 21.8 24 12 12 0 0 0 19 46Z" fill="#93C5FD"/><path d="M20 46h26" stroke="#60A5FA" stroke-width="4" stroke-linecap="round"/></svg>`,
+      fog: `<svg viewBox="0 0 64 64"><path d="M19 35h28a10 10 0 0 0 .8-20A14 14 0 0 0 21.8 13 12 12 0 0 0 19 35Z" fill="#CBD5E1"/><g stroke="#94A3B8" stroke-width="4" stroke-linecap="round"><path d="M14 43h36M18 50h28"/></g></svg>`,
+      rain: `<svg viewBox="0 0 64 64"><path d="M19 33h28a10 10 0 0 0 .8-20A14 14 0 0 0 21.8 11 12 12 0 0 0 19 33Z" fill="#93C5FD"/><g stroke="#2563EB" stroke-width="4" stroke-linecap="round"><path d="m24 40-3 7M34 40l-3 7M44 40l-3 7"/></g></svg>`,
+      snow: `<svg viewBox="0 0 64 64"><path d="M19 33h28a10 10 0 0 0 .8-20A14 14 0 0 0 21.8 11 12 12 0 0 0 19 33Z" fill="#BFDBFE"/><g stroke="#60A5FA" stroke-width="3" stroke-linecap="round"><path d="M24 42h8M28 38v8M25 39l6 6M31 39l-6 6M39 42h8M43 38v8M40 39l6 6M46 39l-6 6"/></g></svg>`,
+      storm: `<svg viewBox="0 0 64 64"><path d="M19 31h28a10 10 0 0 0 .8-20A14 14 0 0 0 21.8 9 12 12 0 0 0 19 31Z" fill="#94A3B8"/><path d="m34 34-8 12h7l-3 11 12-16h-7l3-7Z" fill="#FBBF24"/><g stroke="#2563EB" stroke-width="3.5" stroke-linecap="round"><path d="m22 38-2 5M46 38l-2 5"/></g></svg>`
+    };
+    return icons[String(kind || 'partly')] || icons.partly;
+  }
+
+  function getGlassIconSvg(kind) {
+    const icons = {
+      calendar: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3.2"/><path d="M7.5 3.8v3.4M16.5 3.8v3.4M3.5 9.5h17M8 13h3M13 13h3M8 17h3"/></svg>`,
+      package: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="M12 21V12m8-4.5-8 4.5-8-4.5M8 5l8 4.5"/></svg>`,
+      cart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="19" r="1.8"/><circle cx="17" cy="19" r="1.8"/><path d="M4 5h2l2.1 8.2a1 1 0 0 0 1 .8h7.9a1 1 0 0 0 1-.8L20 8H7"/></svg>`,
+      tag: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11V5.7A2.2 2.2 0 0 1 5.7 3.5H11l8.5 8.5a2.2 2.2 0 0 1 0 3.1l-4.4 4.4a2.2 2.2 0 0 1-3.1 0L3.5 11Z"/><circle cx="8" cy="8" r="1.4"/></svg>`,
+      bulb: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M8.5 14.5c-1.4-1-2.5-2.8-2.5-5A6 6 0 0 1 12 3.5a6 6 0 0 1 6 6c0 2.2-1 4-2.5 5-.9.7-1.5 1.6-1.5 2.5h-4c0-.9-.6-1.8-1.5-2.5Z"/></svg>`,
+      recycle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10 3 2 3-2 3M12 6H8.8A2.8 2.8 0 0 0 6.4 7.5L5 10"/><path d="m19 14-3 .2-1.8-2.6M16 14.2l1.6 2.5A2.8 2.8 0 0 1 15.2 21H12"/><path d="m5 13 1-2.8 3 .2M6 10.2 4.4 12.7A2.8 2.8 0 0 0 6.8 17H10"/></svg>`,
+      check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.2 2.4 2.5 4.7-5"/></svg>`,
+      note: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20V3.5Z"/><path d="M14 3.5V8h4M9 12h6M9 15.5h6"/></svg>`,
+      plug: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9h8v4a4 4 0 0 1-4 4 4 4 0 0 1-4-4V9Z"/><path d="M10 5v4M14 5v4M12 17v4"/></svg>`,
+      receipt: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h10v17l-2.2-1.4-2.8 1.4-2.8-1.4L7 20.5v-17Z"/><path d="M9.2 8.5h5.6M9.2 12h5.6M9.2 15.5h4.2"/></svg>`,
+      'flag-pl': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><path d="M6 4v16" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/><path d="M7.2 5.2h10.1c.7 0 1.2.6 1 1.3l-1 2.6 1 2.5c.2.7-.3 1.3-1 1.3H7.2z" fill="#FFFFFF" stroke="rgba(148,163,184,.5)" stroke-width=".8"/><path d="M7.2 10.2h10.1v3.7H7.2z" fill="#EF4444"/></g></svg>`,
+      car: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15.5V12l1.8-4.2A2 2 0 0 1 8.6 6.5h6.8a2 2 0 0 1 1.8 1.3L19 12v3.5"/><path d="M5 15.5h14"/><circle cx="8" cy="16.5" r="1.8"/><circle cx="16" cy="16.5" r="1.8"/><path d="M7.4 9.5h9.2"/></svg>`,
+      doc: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20V3.5Z"/><path d="M14 3.5V8h4M9.2 12h5.6M9.2 15.5h5.6"/></svg>`,
+      coins: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="7" rx="5.8" ry="2.7"/><path d="M6.2 7v4c0 1.5 2.6 2.7 5.8 2.7s5.8-1.2 5.8-2.7V7"/><path d="M8.2 14.2v2.2c0 1.2 1.7 2.2 3.8 2.2 2.1 0 3.8-1 3.8-2.2v-2.2"/></svg>`,
+      camera: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8.5h2.5l1.3-2h6.4l1.3 2H19a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17v-7A1.5 1.5 0 0 1 5 8.5Z"/><circle cx="12" cy="13" r="3.5"/></svg>`,
+      home: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 11 8-6 8 6"/><path d="M6.5 10.5V19a.5.5 0 0 0 .5.5h3.5V15h3v4.5H17a.5.5 0 0 0 .5-.5v-8.5"/></svg>`,
+      settings: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.1"/><path d="M19.4 13.5a7.8 7.8 0 0 0 0-3l2-1.5-2-3.4-2.4 1a8 8 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.6A8 8 0 0 0 7 6.6l-2.4-1-2 3.4 2 1.5a7.8 7.8 0 0 0 0 3l-2 1.5 2 3.4 2.4-1a8 8 0 0 0 2.6 1.5l.4 2.6h4l.4-2.6a8 8 0 0 0 2.6-1.5l2.4 1 2-3.4-2-1.5Z"/></svg>`,
+      generic: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7.5"/></svg>`,
+      'weather-sun': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><circle cx="12" cy="12" r="5.1" fill="#FFC83D" stroke="#F59E0B" stroke-width="1.2"/><g stroke="#FDBA24" stroke-linecap="round" stroke-width="1.7"><path d="M12 2.9v3.1M12 18v3.1M21.1 12H18M6 12H2.9M18.45 5.55l-2.2 2.2M7.75 16.25l-2.2 2.2M18.45 18.45l-2.2-2.2M7.75 7.75l-2.2-2.2"/></g></g></svg>`,
+      'weather-partly-cloud': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><circle cx="8.5" cy="8.7" r="3.6" fill="#FFC83D" stroke="#F59E0B" stroke-width="1.1"/><path d="M8.5 4.2v1.5M5.3 8.7H3.8M13.2 8.7h-1.5M11.2 5.9l-1 1M5.8 5.9l1 1" stroke="#FDBA24" stroke-linecap="round" stroke-width="1.4"/><path d="M8.2 17.8h8.1a3.2 3.2 0 0 0 .2-6.39A4.8 4.8 0 0 0 7.6 13a2.8 2.8 0 0 0 .6 4.8Z" fill="#D8EEFF" stroke="#6BA8E5" stroke-width="1.2"/></g></svg>`,
+      'weather-cloud': `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.4 18h9.2a3.7 3.7 0 0 0 .2-7.39A5.4 5.4 0 0 0 6.7 12.2a3.2 3.2 0 0 0 .7 5.8Z" fill="#D8EEFF" stroke="#79A9D6" stroke-width="1.2"/></svg>`,
+      'weather-fog': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><path d="M7.9 12.6h8.2a3 3 0 0 0 .2-5.99A4.5 4.5 0 0 0 8.2 8a2.4 2.4 0 0 0-.3 4.6Z" fill="#E3EDF6" stroke="#93A7B9" stroke-width="1.1"/><path d="M4.8 16.3h14.4M7.2 19h9.6" stroke="#AAB8C5" stroke-linecap="round" stroke-width="1.5"/></g></svg>`,
+      'weather-rain': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><path d="M7.5 13.2h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 7.6a3 3 0 0 0 .7 5.6Z" fill="#D8EEFF" stroke="#6BA8E5" stroke-width="1.2"/><path d="M8.9 16.2c-.5.7-.8 1.5-.8 2.1M12.7 16.2c-.5.7-.8 1.5-.8 2.1M16.5 16.2c-.5.7-.8 1.5-.8 2.1" stroke="#3B82F6" stroke-linecap="round" stroke-width="1.7"/></g></svg>`,
+      'weather-snow': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><path d="M7.5 13.2h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 7.6a3 3 0 0 0 .7 5.6Z" fill="#E5F4FF" stroke="#7FB0DA" stroke-width="1.2"/><g stroke="#63B3ED" stroke-linecap="round" stroke-width="1.4"><path d="M8.8 16.8h1.7M9.65 16v1.7"/><path d="M11.9 18.2h1.7M12.75 17.35v1.7"/><path d="M15 16.8h1.7M15.85 16v1.7"/></g></g></svg>`,
+      'weather-storm': `<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" fill-rule="evenodd"><path d="M7.4 12.8h9a3.5 3.5 0 0 0 .2-7A5.2 5.2 0 0 0 6.8 7.2a3 3 0 0 0 .6 5.6Z" fill="#CBD5E1" stroke="#7C8EA6" stroke-width="1.2"/><path d="m11 14 2.8-1.1-1.5 3 1.8-.2-3 3.6.8-3-1.8.1Z" fill="#FACC15" stroke="#EAB308" stroke-width=".8"/></g></svg>`
+    };
+    const illustratedIcons = {
+      calendar: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCalBody" x1="10" x2="54" y1="12" y2="56"><stop stop-color="#7DD3FC"/><stop offset="1" stop-color="#2563EB"/></linearGradient></defs><rect x="10" y="14" width="44" height="40" rx="13" fill="url(#icCalBody)"/><rect x="14" y="23" width="36" height="27" rx="8" fill="#FFFFFF" fill-opacity=".95"/><rect x="10" y="14" width="44" height="15" rx="13" fill="#60A5FA"/><path d="M22 10v9M42 10v9" stroke="#EFF6FF" stroke-width="4" stroke-linecap="round"/><circle cx="23" cy="36" r="4" fill="#22C55E"/><circle cx="33" cy="36" r="4" fill="#F59E0B"/><circle cx="43" cy="36" r="4" fill="#EF4444"/><path d="M18 51c8-5 18-5 28 0" stroke="#1D4ED8" stroke-opacity=".32" stroke-width="3" stroke-linecap="round"/></svg>`,
+      package: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icPkg" x1="12" x2="52" y1="9" y2="55"><stop stop-color="#FDBA74"/><stop offset="1" stop-color="#EA580C"/></linearGradient></defs><path d="M13 21 32 10l19 11v22L32 54 13 43Z" fill="url(#icPkg)"/><path d="m13 21 19 11 19-11M32 32v22" stroke="#FFF7ED" stroke-opacity=".9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 16 41 27" stroke="#7C2D12" stroke-opacity=".35" stroke-width="4" stroke-linecap="round"/><path d="M16 43c7 5 15 8 24 7" stroke="#FED7AA" stroke-opacity=".7" stroke-width="3" stroke-linecap="round"/></svg>`,
+      cart: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCart" x1="13" x2="50" y1="14" y2="49"><stop stop-color="#67E8F9"/><stop offset="1" stop-color="#0891B2"/></linearGradient></defs><path d="M12 17h8l5 23h22l6-17H24" fill="none" stroke="#0E7490" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 23h28l-5 17H28Z" fill="url(#icCart)"/><circle cx="30" cy="50" r="5" fill="#22C55E"/><circle cx="47" cy="50" r="5" fill="#F59E0B"/><path d="M31 28h15" stroke="#ECFEFF" stroke-width="3" stroke-linecap="round"/></svg>`,
+      tag: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icTag" x1="12" x2="52" y1="12" y2="52"><stop stop-color="#F0ABFC"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs><path d="M13 32V17a4 4 0 0 1 4-4h15l19 19a5 5 0 0 1 0 7L39 51a5 5 0 0 1-7 0Z" fill="url(#icTag)"/><circle cx="24" cy="24" r="5" fill="#FFFFFF" fill-opacity=".95"/><path d="M33 25h10M25 35h18" stroke="#FDF4FF" stroke-width="4" stroke-linecap="round"/><path d="M16 35 31 50" stroke="#581C87" stroke-opacity=".22" stroke-width="5" stroke-linecap="round"/></svg>`,
+      bulb: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><radialGradient id="icBulbGlow" cx="50%" cy="33%" r="60%"><stop stop-color="#FEF3C7"/><stop offset=".55" stop-color="#FACC15"/><stop offset="1" stop-color="#F97316"/></radialGradient></defs><path d="M32 8c-12 0-20 9-20 20 0 8 4 13 10 17v3h20v-3c6-4 10-9 10-17C52 17 44 8 32 8Z" fill="url(#icBulbGlow)"/><path d="M24 52h16M27 58h10" stroke="#92400E" stroke-width="5" stroke-linecap="round"/><path d="M24 29c2-7 7-10 14-10" stroke="#FFF7AD" stroke-width="4" stroke-linecap="round"/><path d="M18 9 13 4M46 9l5-5M55 28h6M3 28h6" stroke="#FBBF24" stroke-width="4" stroke-linecap="round"/></svg>`,
+      recycle: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icRec" x1="12" x2="52" y1="10" y2="55"><stop stop-color="#86EFAC"/><stop offset="1" stop-color="#16A34A"/></linearGradient></defs><circle cx="32" cy="32" r="24" fill="#DCFCE7"/><path d="M28 11 38 22H31c-6 0-9 3-12 8" fill="none" stroke="url(#icRec)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M53 33 45 47l-4-7c-3 5-7 8-14 8" fill="none" stroke="#22C55E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 50 12 36l8 1c-1-6 0-11 5-16" fill="none" stroke="#15803D" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      check: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCheck" x1="13" x2="52" y1="10" y2="55"><stop stop-color="#BBF7D0"/><stop offset="1" stop-color="#16A34A"/></linearGradient></defs><circle cx="32" cy="32" r="24" fill="url(#icCheck)"/><path d="m20 33 8 8 17-20" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 18c6-5 15-7 24-3" stroke="#DCFCE7" stroke-width="3" stroke-linecap="round" opacity=".9"/></svg>`,
+      note: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icNote" x1="15" x2="49" y1="9" y2="55"><stop stop-color="#BFDBFE"/><stop offset="1" stop-color="#3B82F6"/></linearGradient></defs><path d="M18 8h23l9 9v36a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V12a4 4 0 0 1 4-4Z" fill="url(#icNote)"/><path d="M40 8v12h11" fill="#DBEAFE"/><path d="M22 28h20M22 38h17M22 48h12" stroke="#EFF6FF" stroke-width="4" stroke-linecap="round"/><circle cx="45" cy="46" r="7" fill="#FACC15"/></svg>`,
+      plug: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icPlug" x1="13" x2="51" y1="10" y2="55"><stop stop-color="#5EEAD4"/><stop offset="1" stop-color="#0F766E"/></linearGradient></defs><path d="M22 25h20v10c0 8-4 14-10 14S22 43 22 35Z" fill="url(#icPlug)"/><path d="M26 10v15M38 10v15M32 49v8" stroke="#134E4A" stroke-width="5" stroke-linecap="round"/><path d="M25 32h14" stroke="#CCFBF1" stroke-width="4" stroke-linecap="round"/><circle cx="47" cy="18" r="8" fill="#FDE68A"/></svg>`,
+      receipt: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icReceipt" x1="16" x2="48" y1="7" y2="56"><stop stop-color="#FEF3C7"/><stop offset="1" stop-color="#F59E0B"/></linearGradient></defs><path d="M18 7h28v50l-7-4-7 4-7-4-7 4Z" fill="url(#icReceipt)"/><path d="M25 20h14M25 30h14M25 40h10" stroke="#92400E" stroke-width="4" stroke-linecap="round"/><circle cx="43" cy="42" r="7" fill="#22C55E"/><path d="m40 42 2 2 4-5" stroke="#FFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      'flag-pl': `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 9v47" stroke="#64748B" stroke-width="5" stroke-linecap="round"/><path d="M21 12h31a4 4 0 0 1 3.6 5.8L52 25l3.6 7.2A4 4 0 0 1 52 38H21Z" fill="#FFFFFF"/><path d="M21 25h33l1.6 7.2A4 4 0 0 1 52 38H21Z" fill="#DC2626"/><path d="M21 12h31a4 4 0 0 1 3.6 5.8L52 25l3.6 7.2A4 4 0 0 1 52 38H21Z" fill="none" stroke="#CBD5E1" stroke-width="2"/><circle cx="43" cy="49" r="8" fill="#FACC15"/><path d="M40 49h6" stroke="#92400E" stroke-width="3" stroke-linecap="round"/></svg>`,
+      car: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCar" x1="10" x2="55" y1="20" y2="48"><stop stop-color="#FB7185"/><stop offset="1" stop-color="#DC2626"/></linearGradient></defs><path d="M13 38 18 24c1-4 4-6 8-6h12c4 0 7 2 8 6l5 14v9H13Z" fill="url(#icCar)"/><path d="M22 27h20l3 9H19Z" fill="#DBEAFE"/><circle cx="22" cy="48" r="6" fill="#111827"/><circle cx="42" cy="48" r="6" fill="#111827"/><circle cx="22" cy="48" r="2.5" fill="#CBD5E1"/><circle cx="42" cy="48" r="2.5" fill="#CBD5E1"/><path d="M16 39h32" stroke="#FEE2E2" stroke-width="3" stroke-linecap="round"/></svg>`,
+      doc: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icDoc" x1="16" x2="49" y1="8" y2="56"><stop stop-color="#C7D2FE"/><stop offset="1" stop-color="#2563EB"/></linearGradient></defs><path d="M18 8h23l9 9v36a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V12a4 4 0 0 1 4-4Z" fill="url(#icDoc)"/><path d="M40 8v12h11" fill="#EEF2FF"/><path d="M23 29h19M23 38h19M23 47h13" stroke="#EFF6FF" stroke-width="4" stroke-linecap="round"/><path d="M15 12c7 2 14 2 20 0" stroke="#FFFFFF" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/></svg>`,
+      coins: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCoins" x1="14" x2="50" y1="9" y2="55"><stop stop-color="#FDE68A"/><stop offset="1" stop-color="#D97706"/></linearGradient></defs><ellipse cx="32" cy="18" rx="18" ry="8" fill="url(#icCoins)"/><path d="M14 18v16c0 5 8 9 18 9s18-4 18-9V18" fill="#FBBF24"/><ellipse cx="32" cy="34" rx="18" ry="9" fill="#F59E0B"/><ellipse cx="32" cy="45" rx="15" ry="8" fill="#FDE68A"/><path d="M23 18c5 3 14 3 19 0M22 34c6 3 15 3 21 0" stroke="#92400E" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/></svg>`,
+      camera: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCam" x1="12" x2="52" y1="15" y2="51"><stop stop-color="#DDD6FE"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs><path d="M15 23h9l4-6h8l4 6h9a5 5 0 0 1 5 5v20a5 5 0 0 1-5 5H15a5 5 0 0 1-5-5V28a5 5 0 0 1 5-5Z" fill="url(#icCam)"/><circle cx="32" cy="38" r="11" fill="#EEF2FF"/><circle cx="32" cy="38" r="7" fill="#4C1D95"/><circle cx="36" cy="34" r="3" fill="#A78BFA"/><path d="M17 30h8" stroke="#F5F3FF" stroke-width="4" stroke-linecap="round"/></svg>`,
+      home: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icHome" x1="12" x2="52" y1="13" y2="55"><stop stop-color="#BAE6FD"/><stop offset="1" stop-color="#0EA5E9"/></linearGradient></defs><path d="M10 31 32 13l22 18" fill="none" stroke="#0369A1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 29v25h30V29L32 17Z" fill="url(#icHome)"/><path d="M27 54V40h10v14" fill="#FEF3C7"/><circle cx="43" cy="25" r="7" fill="#FACC15"/></svg>`,
+      settings: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icSet" x1="12" x2="52" y1="10" y2="55"><stop stop-color="#E2E8F0"/><stop offset="1" stop-color="#64748B"/></linearGradient></defs><circle cx="32" cy="32" r="10" fill="#FFFFFF"/><path d="M36 9 38 18c2 1 4 2 6 4l9-3 5 9-7 6v6l7 6-5 9-9-3c-2 2-4 3-6 4l-2 9h-8l-2-9c-2-1-4-2-6-4l-9 3-5-9 7-6v-6l-7-6 5-9 9 3c2-2 4-3 6-4l2-9Z" fill="url(#icSet)"/><circle cx="32" cy="32" r="8" fill="#F8FAFC"/><circle cx="32" cy="32" r="4" fill="#334155"/></svg>`,
+      generic: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icGen" x1="12" x2="52" y1="12" y2="52"><stop stop-color="#CBD5E1"/><stop offset="1" stop-color="#64748B"/></linearGradient></defs><circle cx="32" cy="32" r="24" fill="url(#icGen)"/><circle cx="32" cy="32" r="10" fill="#F8FAFC"/></svg>`
+    };
+    const standaloneIcons = {
+      calendar: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M13 18h38c3 0 5 2 5 5v29c0 3-2 5-5 5H13c-3 0-5-2-5-5V23c0-3 2-5 5-5Z" fill="#F8FAFC"/><path d="M13 18h38c3 0 5 2 5 5v9H8v-9c0-3 2-5 5-5Z" fill="#EF4444"/><path d="M16 9v14" fill="none" class="anime-icon-line" stroke="#334155" stroke-width="4" stroke-linecap="round"/><path d="M28 9v14" fill="none" class="anime-icon-line" stroke="#334155" stroke-width="4" stroke-linecap="round"/><path d="M40 9v14" fill="none" class="anime-icon-line" stroke="#334155" stroke-width="4" stroke-linecap="round"/><path d="M17 38h6v5h-6zM29 38h6v5h-6zM41 38h6v5h-6zM17 48h6v5h-6zM29 48h6v5h-6z" fill="#DBEAFE"/><circle cx="44" cy="50" r="6" fill="#F97316"/><path d="M42 50h4M44 48v4" fill="none" class="anime-icon-line" stroke="#FFF7ED" stroke-width="2.6" stroke-linecap="round"/><path d="M10 31h46" fill="none" class="anime-icon-line" stroke="#CBD5E1" stroke-width="2"/><path d="M18 14c6-4 20-5 31 1" fill="none" class="anime-icon-line" stroke="#FFFFFF" stroke-opacity=".58" stroke-width="3" stroke-linecap="round"/><path d="M53 13c4-1 7 1 8 4-4 2-8 1-8-4Z" fill="#F9A8D4"/><path d="M48 9c3-3 7-3 10-1-2 4-6 5-10 1Z" fill="#FBCFE8"/></svg>`,
+      package: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M12 22 32 12l20 10v26L32 59 12 48Z" fill="#D97706"/><path d="M12 22 32 32v27L12 48Z" fill="#B7791F"/><path d="M52 22 32 32v27l20-11Z" fill="#92400E"/><path d="M12 22 32 12l20 10-20 10Z" fill="#F59E0B"/><path d="m22 17 20 10M32 32l10-5v10l-4 2-2-6-4 2Z" fill="none" class="anime-icon-line" stroke="#FDE68A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="33" width="13" height="9" rx="2" fill="#FEF3C7"/><path d="M18 36h7M18 39h5" fill="none" class="anime-icon-line" stroke="#92400E" stroke-width="1.8" stroke-linecap="round"/><path d="M37 47h8M41 43v8" fill="none" class="anime-icon-line" stroke="#FED7AA" stroke-width="2.6" stroke-linecap="round"/></svg>`,
+      cart: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M12 27h42l-5 24H17Z" fill="#0284C7"/><path d="M16 31h34l-3 16H19Z" fill="#38BDF8"/><path d="M16 28c1-8 8-13 16-13s15 5 16 13" fill="none" class="anime-icon-line" stroke="#075985" stroke-width="4" stroke-linecap="round"/><path d="M23 31v17M32 31v17M41 31v17" fill="none" class="anime-icon-line" stroke="#075985" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/><circle cx="22" cy="53" r="4" fill="#0F172A"/><circle cx="45" cy="53" r="4" fill="#0F172A"/><path d="M23 20c0-5 4-9 8-9 2 4 1 9-3 12" fill="#22C55E"/><path d="M35 20c2-6 8-8 13-6-1 6-6 9-12 9" fill="#84CC16"/><circle cx="32" cy="25" r="5" fill="#EF4444"/><path d="M42 16h9l-4 19h-9Z" fill="#F59E0B"/><path d="M44 17h9" fill="none" class="anime-icon-line" stroke="#FEF3C7" stroke-width="3" stroke-linecap="round"/></svg>`,
+      tag: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M8 22c0-4 3-7 7-7h34c4 0 7 3 7 7v6c-4 1-6 4-6 8s2 7 6 8v6c0 4-3 7-7 7H15c-4 0-7-3-7-7v-6c4-1 6-4 6-8s-2-7-6-8Z" fill="#A855F7"/><path d="M12 23c0-2 2-4 4-4h34c2 0 3 1 4 3-9 3-20 5-42 5Z" fill="#C084FC"/><path d="M39 18v37" fill="none" class="anime-icon-line" stroke="#F5D0FE" stroke-width="2.4" stroke-dasharray="3 4" stroke-linecap="round"/><text x="18" y="39" font-size="12" font-family="Arial, sans-serif" font-weight="900" fill="#FFFFFF">%</text><path d="M18 46h14" fill="none" class="anime-icon-line" stroke="#F5D0FE" stroke-width="3" stroke-linecap="round"/><path d="M46 27h5M46 34h5M46 41h5" fill="none" class="anime-icon-line" stroke="#E9D5FF" stroke-width="2" stroke-linecap="round"/><path d="M58 12l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" fill="#C084FC"/></svg>`,
+      bulb: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6c-12 0-21 9-21 21 0 8 4 14 11 18v3h20v-3c7-4 11-10 11-18C53 15 44 6 32 6Z" fill="#FDE68A"/><path d="M19 26c0-8 6-14 14-15 7 1 12 7 12 15 0 7-4 12-10 16H25c-4-4-6-9-6-16Z" fill="#FACC15"/><path d="M27 25h10l-5 9h7L28 48l3-11h-6Z" fill="#FFFFFF" fill-opacity=".9"/><path d="M24 49h16v5H24Z" fill="#475569"/><path d="M27 56h10" fill="none" class="anime-icon-line" stroke="#1E293B" stroke-width="5" stroke-linecap="round"/><path d="M23 16c3-4 7-6 12-6" fill="none" class="anime-icon-line" stroke="#FFF7AD" stroke-width="4" stroke-linecap="round"/><path d="M11 9l5 5M52 9l-5 5M6 29h7M51 29h7M13 51l5-5M51 51l-5-5" fill="none" class="anime-icon-line" stroke="#FBBF24" stroke-width="3.5" stroke-linecap="round"/></svg>`,
+      recycle: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M19 18h29l-3 38H22Z" fill="#16A34A"/><path d="M17 14h33v7H17Z" fill="#15803D"/><path d="M24 18h19l-1-5H25Z" fill="#22C55E"/><path d="M28 30c4-5 10-4 13 1" fill="none" class="anime-icon-line" stroke="#DCFCE7" stroke-width="3" stroke-linecap="round"/><path d="M40 27v6h-6" fill="none" class="anime-icon-line" stroke="#DCFCE7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M37 42c-4 5-10 4-13-1" fill="none" class="anime-icon-line" stroke="#DCFCE7" stroke-width="3" stroke-linecap="round"/><path d="M25 45v-6h6" fill="none" class="anime-icon-line" stroke="#DCFCE7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M46 40c6 1 10 6 9 14H43c-1-7 0-12 3-14Z" fill="#111827"/><path d="M49 42c2 3 3 7 2 11" fill="none" class="anime-icon-line" stroke="#334155" stroke-width="2" stroke-linecap="round"/><circle cx="25" cy="58" r="3" fill="#0F172A"/><circle cx="42" cy="58" r="3" fill="#0F172A"/></svg>`,
+      check: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M18 10h29c3 0 5 2 5 5v39c0 3-2 5-5 5H18c-3 0-5-2-5-5V15c0-3 2-5 5-5Z" fill="#2563EB"/><path d="M20 16h25v36H20Z" fill="#F8FAFC"/><path d="M26 8h14c2 0 4 2 4 4v4H22v-4c0-2 2-4 4-4Z" fill="#1E293B"/><path d="M25 27l3 3 6-7" fill="none" class="anime-icon-line" stroke="#22C55E" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 39l3 3 6-7" fill="none" class="anime-icon-line" stroke="#22C55E" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M38 27h8M38 39h8" fill="none" class="anime-icon-line" stroke="#CBD5E1" stroke-width="3" stroke-linecap="round"/><path d="M50 37l7 7-12 12-7-7Z" fill="#F59E0B"/><path d="M42 53l3-1-2-2Z" fill="#92400E"/></svg>`,
+      note: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M15 13h36c3 0 5 2 5 5v34c0 3-2 5-5 5H15c-3 0-5-2-5-5V18c0-3 2-5 5-5Z" fill="#FDE68A"/><path d="M47 13c6 10 7 22 3 38" fill="#FCD34D" opacity=".5"/><circle cx="49" cy="14" r="6" fill="#EF4444"/><path d="M44 19 31 32" fill="none" class="anime-icon-line" stroke="#991B1B" stroke-width="2" stroke-linecap="round"/><path d="M20 27h22M20 37h26M20 47h17" fill="none" class="anime-icon-line" stroke="#78350F" stroke-width="3" stroke-linecap="round"/><path d="M43 46c2 4 7 4 9 0" fill="none" class="anime-icon-line" stroke="#78350F" stroke-width="2.5" stroke-linecap="round"/><circle cx="43" cy="41" r="1.8" fill="#78350F"/><circle cx="52" cy="41" r="1.8" fill="#78350F"/></svg>`,
+      plug: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M28 22c8-7 20-3 23 8 4 14-8 25-20 22-8-2-13-8-14-15" fill="#FDE68A"/><path d="M12 38c5-11 17-17 27-14" fill="none" class="anime-icon-line" stroke="#0EA5E9" stroke-width="5" stroke-linecap="round"/><path d="M12 38h16v10H12Z" fill="#334155"/><path d="M8 35v16" fill="none" class="anime-icon-line" stroke="#334155" stroke-width="5" stroke-linecap="round"/><path d="M30 14 16 31h13l-7 19 19-25H29Z" fill="#22C55E"/><path d="M42 23c3 3 5 7 4 13" fill="none" class="anime-icon-line" stroke="#FFF7AD" stroke-width="4" stroke-linecap="round"/><path d="M50 9l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" fill="#38BDF8"/></svg>`,
+      receipt: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M24 8h27v43l-6-3-5 3-5-3-5 3-6-3Z" fill="#F8FAFC"/><path d="M29 20h16M29 29h16M29 38h12" fill="none" class="anime-icon-line" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/><path d="M9 26c9-2 17-6 24-12 7 6 15 10 24 12-1 18-10 27-24 33-14-6-23-15-24-33Z" fill="#2563EB"/><path d="m24 37 6 6 13-15" fill="none" class="anime-icon-line" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 29c9-3 14-6 18-10" fill="none" class="anime-icon-line" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/></svg>`,
+      'flag-pl': `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M21 28h20v27H21Z" fill="#D97706"/><path d="M18 25h26l-13-13Z" fill="#F59E0B"/><path d="M30 11h4v44h-4Z" fill="#92400E"/><path d="M10 38h18v17H10Z" fill="#FBBF24"/><path d="M36 35h18v20H36Z" fill="#FDE68A"/><path d="M24 34h5v7h-5ZM34 34h5v7h-5ZM16 44h5v6h-5ZM42 42h5v7h-5Z" fill="#DBEAFE"/><path d="M43 9h14v9H43Z" fill="#FFFFFF"/><path d="M43 18h14v9H43Z" fill="#DC2626"/><path d="M43 9v22" fill="none" class="anime-icon-line" stroke="#475569" stroke-width="3" stroke-linecap="round"/><path d="M12 57h44" fill="none" class="anime-icon-line" stroke="#A7F3D0" stroke-width="4" stroke-linecap="round"/><path d="M9 26c5-6 11-7 16-4" fill="none" class="anime-icon-line" stroke="#F9A8D4" stroke-width="3" stroke-linecap="round"/></svg>`,
+      car: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 27h44v24H10Z" fill="#334155"/><path d="M15 22h34l5 8H10Z" fill="#475569"/><path d="M18 30h28v13H18Z" fill="#BFDBFE"/><path d="M22 36h20" fill="none" class="anime-icon-line" stroke="#60A5FA" stroke-width="3" stroke-linecap="round"/><path d="M20 45h24v9H20Z" fill="#2563EB"/><path d="M24 39c2-6 5-8 9-8h5c4 0 7 2 9 8l3 8H21Z" fill="#1D4ED8"/><path d="M29 35h14l2 6H26Z" fill="#DBEAFE"/><circle cx="29" cy="51" r="5" fill="#0F172A"/><circle cx="45" cy="51" r="5" fill="#0F172A"/><path d="M14 20h36" fill="none" class="anime-icon-line" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/><path d="M52 43h7M54 38h5" fill="none" class="anime-icon-line" stroke="#64748B" stroke-width="4" stroke-linecap="round"/></svg>`,
+      doc: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M9 21h18l5 6h23v25c0 3-2 5-5 5H14c-3 0-5-2-5-5Z" fill="#2563EB"/><path d="M16 13h28c3 0 5 2 5 5v30H16Z" fill="#F8FAFC"/><path d="M21 25h22M21 34h18M21 43h13" fill="none" class="anime-icon-line" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/><path d="M9 29h46v23c0 3-2 5-5 5H14c-3 0-5-2-5-5Z" fill="#1D4ED8"/><path d="M35 49c6 4 10 3 15-2" fill="none" class="anime-icon-line" stroke="#BFDBFE" stroke-width="3" stroke-linecap="round"/><circle cx="51" cy="52" r="7" fill="#22C55E"/><path d="m48 52 2 2 4-5" fill="none" class="anime-icon-line" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      coins: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M12 52h8V35h-8Zm13 0h8V27h-8Zm13 0h8V20h-8Zm13 0h8V13h-8Z" fill="#3B82F6"/><path d="M12 52h47" fill="none" class="anime-icon-line" stroke="#64748B" stroke-width="3" stroke-linecap="round"/><path d="M10 31c10 2 23-3 38-18" fill="none" class="anime-icon-line" stroke="#22C55E" stroke-width="4" stroke-linecap="round"/><path d="M45 13h8v8" fill="none" class="anime-icon-line" stroke="#22C55E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="22" cy="47" rx="10" ry="5" fill="#FBBF24"/><path d="M12 47v6c0 3 4 5 10 5s10-2 10-5v-6" fill="#D97706"/><ellipse cx="22" cy="47" rx="10" ry="5" fill="#FDE68A"/><text x="17" y="51" font-size="9" font-family="Arial, sans-serif" font-weight="900" fill="#92400E">Kč</text></svg>`,
+      camera: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M13 22h28c8 0 14 6 14 14v3c0 8-6 14-14 14H13Z" fill="#CBD5E1"/><path d="M13 22h28c5 0 9 4 9 9H13Z" fill="#F8FAFC"/><circle cx="31" cy="39" r="13" fill="#1E293B"/><circle cx="31" cy="39" r="8" fill="#0F172A"/><circle cx="35" cy="35" r="4" fill="#60A5FA"/><path d="M53 25h7v19h-7Z" fill="#94A3B8"/><path d="M54 30h6" fill="none" class="anime-icon-line" stroke="#64748B" stroke-width="3" stroke-linecap="round"/><path d="M12 57c2-8 7-12 15-13" fill="none" class="anime-icon-line" stroke="#86EFAC" stroke-width="4" stroke-linecap="round"/><path d="M8 49c7 0 12 3 15 9" fill="none" class="anime-icon-line" stroke="#22C55E" stroke-width="4" stroke-linecap="round"/></svg>`,
+      settings: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M37 8 39 17c2 1 5 2 7 4l9-3 5 9-7 6v6l7 6-5 9-9-3c-2 2-5 3-7 4l-2 9H27l-2-9c-2-1-5-2-7-4l-9 3-5-9 7-6v-6l-7-6 5-9 9 3c2-2 5-3 7-4l2-9Z" fill="#94A3B8"/><path d="M37 8 39 17c2 1 5 2 7 4l9-3 5 9-7 6v6l7 6-5 9-9-3c-2 2-5 3-7 4l-2 9H32V8Z" fill="#64748B" opacity=".7"/><circle cx="32" cy="36" r="13" fill="#F8FAFC"/><circle cx="32" cy="36" r="6" fill="#334155"/><path d="M18 21c5-5 12-8 20-7" fill="none" class="anime-icon-line" stroke="#E2E8F0" stroke-width="4" stroke-linecap="round"/></svg>`,
+      home: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M8 32 32 12l24 20" fill="none" class="anime-icon-line" stroke="#0369A1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 30v25h34V30L32 16Z" fill="#38BDF8"/><path d="M26 55V41h12v14" fill="#FEF3C7"/><path d="M20 35h9v8h-9ZM36 35h9v8h-9Z" fill="#DBEAFE"/><path d="M43 17l3 6 6 3-6 3-3 6-3-6-6-3 6-3Z" fill="#FACC15"/></svg>`,
+      generic: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M16 14h32c3 0 5 2 5 5v32c0 3-2 5-5 5H16c-3 0-5-2-5-5V19c0-3 2-5 5-5Z" fill="#94A3B8"/><circle cx="32" cy="32" r="11" fill="#F8FAFC"/></svg>`
+    };
+    return standaloneIcons[String(kind || 'generic')] || illustratedIcons[String(kind || 'generic')] || icons[String(kind || 'generic')] || icons.generic;
+  }
+
+  function weatherCodeLabel(code) {
+    const labels = {
+      0: ['Jasno', 'weather-sun'],
+      1: ['Skoro jasno', 'weather-partly-cloud'],
+      2: ['Polojasno', 'weather-partly-cloud'],
+      3: ['Zataženo', 'weather-cloud'],
+      45: ['Mlha', 'weather-fog'],
+      48: ['Namrzající mlha', 'weather-fog'],
+      51: ['Slabé mrholení', 'weather-rain'],
+      53: ['Mrholení', 'weather-rain'],
+      55: ['Silné mrholení', 'weather-rain'],
+      61: ['Slabý déšť', 'weather-rain'],
+      63: ['Déšť', 'weather-rain'],
+      65: ['Silný déšť', 'weather-rain'],
+      71: ['Slabé sněžení', 'weather-snow'],
+      73: ['Sněžení', 'weather-snow'],
+      75: ['Silné sněžení', 'weather-snow'],
+      80: ['Přeháňky', 'weather-rain'],
+      81: ['Silné přeháňky', 'weather-rain'],
+      82: ['Prudké přeháňky', 'weather-storm'],
+      95: ['Bouřka', 'weather-storm'],
+      96: ['Bouřka s kroupami', 'weather-storm'],
+      99: ['Silná bouřka', 'weather-storm']
+    };
+    return labels[Number(code)] || ['Počasí', 'weather-partly-cloud'];
+  }
+
+  function roundWeather(value, suffix = '') {
+    if (value === null || value === undefined || value === '') return '—';
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '—';
+    return `${Math.round(number)}${suffix}`;
+  }
+
+  function weatherLocationLabel() {
+    const location = normalizeWeatherLocation(state.weather?.location);
+    return [location.name, location.country].filter(Boolean).join(', ');
+  }
+
+  function makeDemoWeatherState() {
+    return {
+      location: { name: 'Demo Hostinné', country: 'CZ', latitude: 50.5407, longitude: 15.7233 },
+      current: { temperature: 18, feelsLike: 17, humidity: 63, windSpeed: 10, precipitation: 0, weatherCode: 2, time: new Date().toISOString() },
+      daily: [
+        { date: todayISO(), weatherCode: 2, min: 12, max: 21, precipitation: 0, sunrise: `${todayISO()}T05:02`, sunset: `${todayISO()}T20:57` },
+        { date: dateOffsetISO(1), weatherCode: 61, min: 11, max: 18, precipitation: 3 },
+        { date: dateOffsetISO(2), weatherCode: 3, min: 10, max: 19, precipitation: 1 },
+        { date: dateOffsetISO(3), weatherCode: 0, min: 13, max: 23, precipitation: 0 }
+      ],
+      updatedAt: new Date().toISOString(),
+      error: '',
+      loading: false,
+      source: 'demo'
+    };
+  }
+
+  function renderDashboardWeatherCard() {
+    const weather = normalizeWeatherState(state.weather);
+    const current = weather.current || {};
+    const [condition, icon] = weatherCodeLabel(current.weatherCode);
+    const hasCurrent = Boolean(weather.current);
+    const updated = weather.updatedAt ? formatDateTime(new Date(weather.updatedAt)) : 'nenačteno';
+    const today = (weather.daily || [])[0] || {};
+    const rain = Number.isFinite(Number(current.precipitation)) ? `${String(current.precipitation).replace('.', ',')} mm` : '—';
+    const sourceLabel = weatherSourceLabel(weather.source);
+    return `
+      <section class="card weather-card weather-card-compact dashboard-widget-block desktop-span-2" data-dashboard-widget="weather">
+        <div class="card-header compact-card-header">
+          <button class="plain-card-title weather-title-button" type="button" data-nav="weather">
+            <div><h2>Počasí</h2><p>${escapeHtml(weatherLocationLabel())} · ${escapeHtml(sourceLabel)} · ${weather.error ? escapeHtml(weather.error) : `Aktualizováno: ${escapeHtml(updated)}`}</p></div>
+          </button>
+          <span class="badge ${weather.error ? 'warn' : hasCurrent ? 'good' : ''}">${weather.loading ? 'načítám' : hasCurrent ? escapeHtml(sourceLabel) : 'není načtené'}</span>
+        </div>
+        <button class="weather-main-row weather-current-button" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
+          <div class="weather-current">
+            ${renderWeatherAnimeIcon(current.weatherCode, { size: 'md', extraClass: 'weather-icon' })}
+            <div><strong>${hasCurrent ? roundWeather(current.temperature, '°') : '—'}</strong><em>${escapeHtml(condition)}</em></div>
+          </div>
+          <div class="weather-metrics weather-metrics-compact">
+            <div class="mini-stat"><span>Pocitově</span><strong>${roundWeather(current.feelsLike, '°')}</strong></div>
+            <div class="mini-stat"><span>Dnes</span><strong>${roundWeather(today.min, '°')} / ${roundWeather(today.max, '°')}</strong></div>
+            <div class="mini-stat"><span>Srážky</span><strong>${rain}</strong></div>
+            <div class="mini-stat"><span>Vítr</span><strong>${roundWeather(current.windSpeed, ' km/h')}</strong></div>
+          </div>
+        </button>
+        <details class="weather-dashboard-details">
+          <summary>Ukázat rychlý výhled</summary>
+          ${renderWeatherHourlyStrip((weather.hourly || []).slice(0, 8))}
+          ${renderWeatherDailyGrid((weather.daily || []).slice(0, 5))}
+        </details>
+        <div class="form-actions compact-actions">
+          <button class="ghost-btn" type="button" data-nav="weather">Podrobné počasí</button>
+          <button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit</button>
+          
+        </div>
+      </section>
+    `;
+  }
+
+  function renderWeatherHourlyStrip(hours = []) {
+    if (!hours.length) return '<div class="empty">Hodinový výhled zatím není načtený.</div>';
+    return `<div class="weather-hourly-strip">${hours.map((hour) => {
+      const [label, hourIcon] = weatherCodeLabel(hour.weatherCode);
+      return `<div class="weather-hour"><span>${escapeHtml(shortTime(hour.time))}</span><strong>${renderWeatherAnimeIcon(hour.weatherCode, { size: 'xs', extraClass: 'weather-inline-icon' })}<span>${roundWeather(hour.temperature, '°')}</span></strong><em>${roundWeather(hour.precipitation, ' mm')} · ${escapeHtml(label)}</em></div>`;
+    }).join('')}</div>`;
+  }
+
+  function compactWeatherText(value, maxLength = 92) {
+    const text = normalizeText(value);
+    if (!text) return '';
+    return text.length > maxLength ? `${text.slice(0, maxLength - 1).trim()}…` : text;
+  }
+
+  function renderWeatherDailyGrid(days = []) {
+    if (!days.length) return '<div class="empty">Denní předpověď zatím není načtená.</div>';
+    return `<div class="weather-daily-row">${days.map((day) => {
+      const [label, dayIcon] = weatherCodeLabel(day.weatherCode);
+      const sunLine = day.sunrise || day.sunset ? `☀ ${shortTime(day.sunrise)}/${shortTime(day.sunset)}` : '';
+      const textLine = compactWeatherText(day.text && day.text !== label ? day.text : '', 86);
+      const detail = [
+        `${roundWeather(day.min, '°')} / ${roundWeather(day.max, '°')}`,
+        roundWeather(day.precipitation, ' mm'),
+        sunLine,
+        textLine || label
+      ].filter((part) => part && part !== '—').join(' · ');
+      return `<div class="weather-day"><span>${escapeHtml(shortWeekday(day.date))}</span><strong>${renderWeatherAnimeIcon(day.weatherCode, { size: 'xs', extraClass: 'weather-inline-icon' })}<span>${roundWeather(day.max, '°')}</span></strong><em>${escapeHtml(detail)}</em></div>`;
+    }).join('')}</div>`;
+  }
+
+  function shortTime(value) {
+    const date = toSafeDate(value, null);
+    if (!date) return '—';
+    return new Intl.DateTimeFormat('cs-CZ', { hour: '2-digit', minute: '2-digit' }).format(date);
+  }
+
+  function renderWeatherPage() {
+    const weather = normalizeWeatherState(state.weather);
+    const current = weather.current || {};
+    const [condition, icon] = weatherCodeLabel(current.weatherCode);
+    const updated = weather.updatedAt ? formatDateTime(new Date(weather.updatedAt)) : 'nenačteno';
+    const todayWeather = (weather.daily || [])[0] || {};
+    const sourceLabel = weatherSourceLabel(weather.source);
+    const location = normalizeWeatherLocation(weather.location);
+    const providerLabel = normalizeText(weather.meta?.providerLabel) || (weather.source === 'chmi' ? 'ČHMÚ + doplněné detaily' : sourceLabel);
+    const astronomySource = normalizeText(weather.meta?.astronomySource || weather.meta?.numericFallback) || (weather.source === 'chmi' ? 'Open-Meteo' : sourceLabel);
+    ensureWeatherFresh(false);
+    return `
+      <div class="grid two weather-page">
+        <section class="card desktop-span-2 weather-page-hero">
+          <div class="card-header compact-card-header">
+            <div><h2>${escapeHtml(weatherLocationLabel())}</h2><p>Aktualizováno: ${escapeHtml(updated)}</p></div>
+            <span class="badge ${weather.current ? 'good' : weather.error ? 'warn' : ''}">${weather.loading ? 'načítám' : weather.current ? escapeHtml(providerLabel) : 'není načtené'}</span>
+          </div>
+          <div class="weather-main-row">
+            <div class="weather-current weather-current-large">
+              ${renderWeatherAnimeIcon(current.weatherCode, { size: 'md', extraClass: 'weather-icon' })}
+              <div><strong>${roundWeather(current.temperature, '°')}</strong><em>${escapeHtml(condition)} · pocitově ${roundWeather(current.feelsLike, '°')}</em></div>
+            </div>
+            <div class="weather-metrics">
+              <div class="mini-stat"><span>Vlhkost</span><strong>${roundWeather(current.humidity, '%')}</strong></div>
+              <div class="mini-stat"><span>Vítr</span><strong>${roundWeather(current.windSpeed, ' km/h')}</strong></div>
+              <div class="mini-stat"><span>Srážky teď</span><strong>${Number.isFinite(Number(current.precipitation)) ? `${String(current.precipitation).replace('.', ',')} mm` : '—'}</strong></div>
+              <div class="mini-stat"><span>Východ</span><strong>${escapeHtml(shortTime(todayWeather.sunrise))}</strong></div>
+              <div class="mini-stat"><span>Západ</span><strong>${escapeHtml(shortTime(todayWeather.sunset))}</strong></div>
+              <div class="mini-stat"><span>Zdroj</span><strong>${escapeHtml(sourceLabel)}</strong></div>
+            </div>
+          </div>
+          <div class="form-actions compact-actions"><button class="primary-btn" type="button" data-action="weather-refresh">Obnovit počasí</button></div>
+        </section>
+        <section class="card desktop-span-2">
+          <div class="card-header"><div><h2>Po hodinách</h2><p>Nejbližších 24 hodin pro rychlé plánování.</p></div></div>
+          ${renderWeatherHourlyStrip((weather.hourly || []).slice(0, 24))}
+        </section>
+        <section class="card desktop-span-2">
+          <div class="card-header"><div><h2>Další dny</h2><p>Přehled dopředu, bez zbytečné omáčky.</p></div></div>
+          ${renderWeatherDailyGrid((weather.daily || []).slice(0, 7))}
+        </section>
+        <section class="card desktop-span-2 weather-settings-card">
+          <details class="compact-edit-details weather-settings-details">
+            <summary><span>Nastavení počasí</span><em>${escapeHtml(weatherLocationLabel())}</em></summary>
+            <form data-form="weather-settings" class="compact-form">
+              <div class="form-grid two">
+                ${selectField('Zdroj', 'weatherSource', WEATHER_PROVIDER_OPTIONS, normalizeWeatherSource(weather.source))}
+                ${field('Místo', 'locationName', 'text', 'Hostinné', true, location.name)}
+                ${field('Země', 'country', 'text', 'CZ', false, location.country)}
+                ${field('Šířka', 'latitude', 'number', '50,5407', false, location.latitude)}
+                ${field('Délka', 'longitude', 'number', '15,7233', false, location.longitude)}
+              </div>
+              <div class="form-actions compact-actions"><button class="primary-btn" type="submit">Uložit a načíst počasí</button><button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit počasí</button></div>
+            </form>
+          </details>
+        </section>
+      </div>
+    `;
+  }
+
+  function shortWeekday(dateISO) {
+    if (!dateISO) return '—';
+    const date = new Date(`${dateISO}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return '—';
+    return new Intl.DateTimeFormat('cs-CZ', { weekday: 'short', day: 'numeric' }).format(date);
+  }
+
+  let weatherFetchPromise = null;
+  async function ensureWeatherFresh(force = false) {
+    if (isDemoOnlyState()) return;
+    state.weather = normalizeWeatherState(state.weather);
+    const updatedAt = Date.parse(state.weather.updatedAt || '');
+    if (!force && state.weather.current && updatedAt && Date.now() - updatedAt < WEATHER_CACHE_MS) return;
+    if (weatherFetchPromise) return weatherFetchPromise;
+    weatherFetchPromise = fetchWeatherForLocation(force)
+      .catch((error) => {
+        state.weather = { ...normalizeWeatherState(state.weather), loading: false, error: error?.message || 'Počasí se nepovedlo načíst' };
+        saveState();
+      })
+      .finally(() => { weatherFetchPromise = null; });
+    return weatherFetchPromise;
+  }
+
+  function normalizeWeatherPayload(payload, location, source = 'chmi', fallbackError = '') {
+    const raw = payload?.weather && typeof payload.weather === 'object' ? payload.weather : payload || {};
+    return {
+      location: normalizeWeatherLocation(raw.location || location),
+      current: raw.current && typeof raw.current === 'object' ? raw.current : null,
+      daily: Array.isArray(raw.daily) ? raw.daily : [],
+      hourly: Array.isArray(raw.hourly) ? raw.hourly : [],
+      updatedAt: raw.updatedAt || new Date().toISOString(),
+      error: raw.error || fallbackError || '',
+      loading: false,
+      source: normalizeWeatherSource(raw.source || source),
+      meta: raw.meta && typeof raw.meta === 'object' ? raw.meta : {}
+    };
+  }
+
+  async function fetchChmiWeatherForLocation(location) {
+    const client = getSupabaseClient();
+    if (!client?.functions?.invoke) throw new Error('ČHMÚ backend zatím není dostupný');
+    const normalizedLocation = normalizeWeatherLocation(location);
+    const body = {
+      householdId: state.cloud?.householdId || '',
+      location: normalizedLocation,
+      locationName: normalizedLocation.name,
+      name: normalizedLocation.name,
+      country: normalizedLocation.country,
+      latitude: normalizedLocation.latitude,
+      longitude: normalizedLocation.longitude,
+      region: normalizedLocation.region || normalizedLocation.name
+    };
+    const { data, error } = await client.functions.invoke(WEATHER_CHMI_FUNCTION, { body });
+    if (error || data?.error) throw new Error(error?.message || data?.error || 'ČHMÚ počasí se nepovedlo načíst');
+    return normalizeWeatherPayload(data, location, 'chmi');
+  }
+
+  async function fetchOpenMeteoWeatherForLocation(location) {
+    const params = new URLSearchParams({
+      latitude: String(location.latitude),
+      longitude: String(location.longitude),
+      current: 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m',
+      hourly: 'temperature_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m',
+      daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset',
+      timezone: 'auto',
+      forecast_days: '7'
+    });
+    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Počasí HTTP ${response.status}`);
+    const data = await response.json();
+    const current = data.current || {};
+    const daily = data.daily || {};
+    const hourly = data.hourly || {};
+    return {
+      location,
+      current: {
+        temperature: current.temperature_2m,
+        feelsLike: current.apparent_temperature,
+        humidity: current.relative_humidity_2m,
+        windSpeed: current.wind_speed_10m,
+        precipitation: current.precipitation,
+        weatherCode: current.weather_code,
+        time: current.time || new Date().toISOString()
+      },
+      daily: (daily.time || []).map((date, index) => ({
+        date,
+        weatherCode: daily.weather_code?.[index],
+        min: daily.temperature_2m_min?.[index],
+        max: daily.temperature_2m_max?.[index],
+        precipitation: daily.precipitation_sum?.[index],
+        sunrise: daily.sunrise?.[index],
+        sunset: daily.sunset?.[index]
+      })),
+      hourly: (hourly.time || []).map((time, index) => ({
+        time,
+        weatherCode: hourly.weather_code?.[index],
+        temperature: hourly.temperature_2m?.[index],
+        feelsLike: hourly.apparent_temperature?.[index],
+        windSpeed: hourly.wind_speed_10m?.[index],
+        precipitation: hourly.precipitation?.[index]
+      })),
+      updatedAt: new Date().toISOString(),
+      error: '',
+      loading: false,
+      source: 'open-meteo'
+    };
+  }
+
+  async function fetchWeatherForLocation(force = false) {
+    const location = normalizeWeatherLocation(state.weather?.location);
+    const storedSource = normalizeWeatherSource(state.weather?.source || 'chmi');
+    const preferredSource = storedSource === 'open-meteo-fallback' ? 'chmi' : storedSource;
+    state.weather = { ...normalizeWeatherState(state.weather), location, loading: true, error: '' };
+    if (force) render();
+
+    let nextWeather;
+    try {
+      nextWeather = preferredSource === 'chmi'
+        ? await fetchChmiWeatherForLocation(location)
+        : await fetchOpenMeteoWeatherForLocation(location);
+    } catch (error) {
+      const message = error?.message || 'Počasí se nepovedlo načíst';
+      if (preferredSource === 'chmi') {
+        nextWeather = await fetchOpenMeteoWeatherForLocation(location);
+        nextWeather.source = 'open-meteo-fallback';
+        nextWeather.error = `ČHMÚ zatím nedostupné, dočasně fallback: ${message}`;
+      } else {
+        throw error;
+      }
+    }
+
+    state.weather = normalizeWeatherPayload(nextWeather, location, nextWeather.source || preferredSource);
+    touchState();
+    saveState();
+    render();
+  }
+
+  async function findWeatherLocationByName(name) {
+    const clean = normalizeText(name);
+    if (!clean) throw new Error('Doplň název místa');
+    const params = new URLSearchParams({ name: clean, count: '1', language: 'cs', format: 'json' });
+    const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${params.toString()}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Vyhledání místa HTTP ${response.status}`);
+    const data = await response.json();
+    const item = data.results?.[0];
+    if (!item) throw new Error('Místo se nepovedlo najít');
+    return {
+      name: item.name || clean,
+      country: item.country_code || item.country || '',
+      latitude: item.latitude,
+      longitude: item.longitude
+    };
+  }
+
+  async function saveWeatherSettings(data, form) {
+    try {
+      let location;
+      const rawLatitude = String(data.latitude ?? '').trim();
+      const rawLongitude = String(data.longitude ?? '').trim();
+      const latitude = Number(rawLatitude.replace(',', '.'));
+      const longitude = Number(rawLongitude.replace(',', '.'));
+      const weatherSource = normalizeWeatherSource(data.weatherSource || state.weather?.source || 'chmi');
+      if (rawLatitude && rawLongitude && Number.isFinite(latitude) && Number.isFinite(longitude)) {
+        location = { name: normalizeText(data.locationName) || WEATHER_DEFAULT_LOCATION.name, country: normalizeText(data.country) || '', latitude, longitude };
+      } else {
+        location = await findWeatherLocationByName(data.locationName || data.city || WEATHER_DEFAULT_LOCATION.name);
+      }
+      state.weather = { ...normalizeWeatherState(state.weather), location, current: null, daily: [], hourly: [], updatedAt: '', error: '', source: weatherSource };
+      touchState();
+      saveState();
+      await cloudSaveHouseholdUiSettings(false);
+      await ensureWeatherFresh(true);
+      form?.reset?.();
+      showToast(`Počasí nastavené: ${location.name}`);
+    } catch (error) {
+      showToast(error?.message || 'Počasí se nepovedlo nastavit');
+    }
+  }
+
+  function getDashboardFocusItems({ hdo, todayEvents, upcomingEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts }) {
+    const firstEvent = todayEvents[0] || upcomingEvents[0];
+    const firstPackage = activePackages[0];
+    const firstContract = urgentContracts[0];
+    const firstTask = openTasks[0];
+    const firstWaste = wasteSoon[0];
+    const firstVehicle = vehicleAlerts[0];
+    const financeSummary = financeMonthSummary();
+    const financeMonth = financeSelectedMonth();
+
+    const items = [
+      {
+        nav: 'calendar',
+        icon: '📅',
+        title: firstEvent ? firstEvent.title : 'Kalendář je volný',
+        meta: firstEvent ? calendarEventMetaLabel(firstEvent, now) : 'Žádná událost na dnešek ani nejbližší dny.',
+        badge: firstEvent && calendarEventIsRunning(firstEvent, now) ? 'běží' : firstEvent ? 'další' : 'volno',
+        tone: todayEvents.length ? 'good' : ''
+      },
+      {
+        nav: 'homecare',
+        overview: 'hdo',
+        icon: '💡',
+        title: hdo.active ? 'Nízký tarif běží' : 'Nízký tarif neběží',
+        meta: hdo.message,
+        badge: hdo.active ? 'běží' : 'čeká',
+        tone: hdo.active ? 'good' : 'warn'
+      },
+      {
+        nav: 'packages',
+        icon: '📦',
+        title: firstPackage ? `${carrierLabel(firstPackage.carrier) || 'Balík'} · ${packageStatus(firstPackage.status).label}` : 'Žádný aktivní balík',
+        meta: firstPackage ? `${firstPackage.tracking || 'bez čísla'}${firstPackage.note ? ` · ${firstPackage.note}` : ''}` : 'Tady se později ukáže nejbližší zásilka.',
+        badge: `${activePackages.length} aktivní`,
+        tone: activePackages.length ? 'warn' : 'good'
+      },
+      {
+        nav: 'shopping',
+        icon: '🛒',
+        title: openShopping.length ? 'Nákup čeká' : 'Nákup hotový',
+        meta: openShopping.slice(0, 3).map((item) => item.name).filter(Boolean).join(' · ') || 'V seznamu není nic k nákupu.',
+        badge: `${openShopping.length} položek`,
+        tone: openShopping.length ? 'warn' : 'good'
+      },
+      {
+        nav: 'finance',
+        overview: 'finance',
+        icon: '💰',
+        title: financeSummary.balance >= 0 ? 'Finance drží plus' : 'Finance jsou v mínusu',
+        meta: `${financeMonthLabel(financeMonth)}: příjmy ${formatCurrency(financeSummary.income)} · výdaje ${formatCurrency(financeSummary.expense)}`,
+        badge: formatCurrency(financeSummary.balance),
+        tone: financeSummary.balance >= 0 ? 'good' : 'warn'
+      },
+      {
+        nav: firstContract ? 'contracts' : firstVehicle ? 'garage' : 'homecare',
+        overview: firstContract ? 'contracts' : firstVehicle ? 'garage' : firstTask ? 'tasks' : firstWaste ? 'waste' : 'homecare',
+        icon: firstContract ? '📄' : firstVehicle ? '🚗' : '🧹',
+        title: firstContract ? firstContract.name : firstVehicle ? firstVehicle.title : firstTask ? firstTask.title : firstWaste ? `${firstWaste.type} odpad` : 'Žádná akutní připomínka',
+        meta: firstContract
+          ? `${firstContract.provider || 'Bez poskytovatele'} · platnost do ${formatDate(firstContract.validTo)}`
+          : firstVehicle
+            ? firstVehicle.meta
+            : firstTask
+              ? `${firstTask.due ? `Termín ${formatDate(firstTask.due)}` : 'Bez termínu'}${firstTask.note ? ` · ${firstTask.note}` : ''}`
+              : firstWaste
+                ? `Svoz ${formatDate(firstWaste.date)}${firstWaste.note ? ` · ${firstWaste.note}` : ''}`
+                : 'Až přidáš úkoly, svoz, STK nebo smlouvy, objeví se tady.',
+        badge: firstContract ? dueBadge(firstContract.days) : firstVehicle ? dueBadge(firstVehicle.days) : firstTask?.due ? dueBadge(daysUntil(firstTask.due)) : firstWaste ? dueBadge(firstWaste.days) : 'klid',
+        tone: firstContract?.days < 0 || firstVehicle?.days < 0 ? 'bad' : firstContract || firstVehicle || firstTask || firstWaste ? 'warn' : 'good'
+      }
+    ];
+
+    return items;
+  }
+
+
+  function getCloudSyncOverviewItems() {
+    const counters = [
+      { nav: 'settings', tab: 'household', icon: '👥', label: 'Profily', items: state.profiles || [], loadedAt: state.cloud?.profilesLoadedAt },
+      { nav: 'shopping', tab: 'list', icon: '🛒', label: 'Nákupy', items: state.shopping || [], loadedAt: state.shoppingCloud?.loadedAt },
+      { nav: 'contracts', tab: 'overview', icon: '📄', label: 'Smlouvy', items: state.contracts || [] },
+      { nav: 'contracts', tab: 'detail', icon: '📎', label: 'Přílohy smluv', items: state.contractFiles || [] },
+      { nav: 'homecare', tab: 'warranties', icon: '🧾', label: 'Přílohy záruk', items: state.warrantyFiles || [] },
+      { nav: 'garage', tab: 'overview', icon: '🚗', label: 'Garáž', items: [...(state.vehicles || []), ...(state.fuel || []), ...(state.services || [])] },
+      { nav: 'homecare', tab: 'hdo', icon: '💡', label: 'HDO', items: state.hdoWindows || [], loadedAt: state.hdoCloud?.loadedAt },
+      { nav: 'homecare', tab: 'waste', icon: '♻️', label: 'Odpad', items: state.waste || [], loadedAt: state.wasteCloud?.loadedAt },
+      { nav: 'homecare', tab: 'tasks', icon: '✅', label: 'Úkoly', items: state.homeTasks || [], loadedAt: state.tasksCloud?.loadedAt },
+      { nav: 'packages', tab: 'active', icon: '📦', label: 'Balíky', items: state.packages || [], loadedAt: state.parcelsCloud?.loadedAt },
+      { nav: 'calendar', tab: 'overview', icon: '📅', label: 'Kalendář', items: state.calendar || [], loadedAt: state.calendarCloud?.loadedAt },
+      { nav: 'calendar', tab: 'sources', icon: '🧩', label: 'Zdroje kalendáře', items: getCalendarSources(), loadedAt: state.calendarCloud?.sourcesLoadedAt },
+      { nav: 'finance', tab: 'summary', icon: '💰', label: 'Finance', items: state.finance || [], loadedAt: state.financeCloud?.loadedAt },
+      { nav: 'subscriptions', tab: 'overview', icon: '🎬', label: 'Předplatné', items: [...(state.subscriptions || []), ...(state.subscriptionPeople || []), ...(state.subscriptionPayments || [])], loadedAt: state.subscriptionsCloud?.loadedAt, cloudSynced: Boolean(state.subscriptionsCloud?.loadedAt && cloudReady()) },
+      { nav: 'homecare', tab: 'tasks', icon: '📝', label: 'Poznámky', items: state.notes || [], loadedAt: state.householdExtrasCloud?.loadedAt },
+      { nav: 'homecare', tab: 'devices', icon: '🔌', label: 'Zařízení', items: state.devices || [], loadedAt: state.householdExtrasCloud?.loadedAt },
+      { nav: 'homecare', tab: 'warranties', icon: '🧾', label: 'Záruky', items: state.warranties || [], loadedAt: state.householdExtrasCloud?.loadedAt },
+      { nav: 'cameras', tab: 'overview', icon: '📹', label: 'Kamery', items: state.cameras || [], loadedAt: state.householdExtrasCloud?.loadedAt },
+      { nav: 'shopping', tab: 'coupons', icon: '🏷️', label: 'Slevové kódy', items: state.coupons || [], loadedAt: state.householdExtrasCloud?.loadedAt }
+    ];
+    return counters.map((entry) => {
+      const total = entry.items.length;
+      const cloud = entry.cloudSynced ? total : entry.items.filter((item) => item.cloudId).length;
+      const local = Math.max(total - cloud, 0);
+      const percent = total ? Math.round((cloud / total) * 100) : 100;
+      return { ...entry, total, cloud, local, percent };
+    });
+  }
+
+  function renderCloudSyncOverview(mode = 'dashboard') {
+    const cloudReady = Boolean(state.cloud?.userId && state.cloud?.householdId);
+    const items = getCloudSyncOverviewItems();
+    const totalLocal = items.reduce((sum, item) => sum + item.local, 0);
+    const totalCloud = items.reduce((sum, item) => sum + item.cloud, 0);
+    const total = totalLocal + totalCloud;
+    const overall = total ? Math.round((totalCloud / total) * 100) : (cloudReady ? 100 : 0);
+    const autosyncEnabled = state.cloud?.autoSyncEnabled !== false;
+    const autosyncStatus = cloudAutosyncStatusLabel();
+    const featuredCloudLabels = ['Profily', 'Nákupy', 'Smlouvy', 'Přílohy smluv', 'Přílohy záruk', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář', 'Finance', 'Předplatné', 'Poznámky', 'Zařízení', 'Kamery', 'Slevové kódy'];
+    const compactItems = mode === 'dashboard' ? items.filter((item) => item.total || featuredCloudLabels.includes(item.label)).slice(0, 14) : items;
+    return `
+      <section class="card desktop-span-2 cloud-sync-overview-card">
+        <div class="card-header">
+          <div>
+            <h2>Cloud-first data</h2>
+            <p>${cloudReady ? 'Online domácnost je hlavní zdroj. Lokál je jen cache nebo dočasný fallback při výpadku.' : 'Aplikace je připravená na cloud, ale domácnost zatím není napojená.'}</p>
+          </div>
+          <span class="badge ${cloudReady ? 'good' : 'warn'}">${cloudReady ? `${overall}% cloud` : 'lokálně'}</span>
+        </div>
+        <div class="cloud-status-grid compact-cloud-stats">
+          <div class="mini-stat"><span>Cloud záznamy</span><strong>${totalCloud}</strong></div>
+          <div class="mini-stat"><span>Jen lokálně</span><strong>${totalLocal}</strong></div>
+          <div class="mini-stat"><span>Poslední sync</span><strong>${state.cloud?.lastSyncAt ? escapeHtml(formatDateTime(state.cloud.lastSyncAt)) : 'nikdy'}</strong></div>
+          <div class="mini-stat"><span>Realtime</span><strong data-cloud-realtime-status>${cloudReady ? escapeHtml(realtimeStatusLabel()) : 'offline'}</strong></div>
+          <div class="mini-stat"><span>Autosync</span><strong>${cloudReady ? escapeHtml(autosyncStatus) : 'offline'}</strong></div>
+          <div class="mini-stat"><span>Poslední autosync</span><strong>${state.cloud?.lastAutosyncAt ? escapeHtml(formatDateTime(state.cloud.lastAutosyncAt)) : 'nikdy'}</strong></div>
+        </div>
+        ${cloudReady ? `<div class="cloud-automation-strip ${totalLocal ? 'warn' : 'good'}"><span class="sync-status-dot"></span><strong>${totalLocal ? `${totalLocal} položek čeká na cloud` : 'Cloud-first je čistý'}</strong><em>${autosyncEnabled ? 'Automatické dohnání je zapnuté.' : 'Automatické dohnání je vypnuté.'}</em></div>` : ''}
+        <div class="sync-overview-list">
+          ${compactItems.map((item) => `
+            <button class="sync-overview-row ${item.local ? 'pending' : item.cloud ? 'cloud-ok' : 'empty'}" type="button" data-nav="${escapeHtml(item.nav)}" ${item.tab ? `data-target-tab="${escapeHtml(item.tab)}"` : ''}>
+              <span class="sync-overview-icon">${escapeHtml(item.icon)}</span>
+              <span class="sync-overview-main">
+                <span class="sync-overview-title">${escapeHtml(item.label)}</span>
+                <span class="sync-progress"><i style="width:${item.percent}%"></i></span>
+              </span>
+              <span class="sync-overview-meta"><strong>${item.cloud}</strong> cloud · <strong>${item.local}</strong> lokál${item.loadedAt ? ` · ${formatDateTime(item.loadedAt)}` : ''}</span>
+            </button>
+          `).join('')}
+        </div>
+        <div class="form-actions">
+          ${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-all">Načíst vše z cloudu</button><button class="ghost-btn" type="button" data-action="cloud-start-realtime">Zapnout živé změny</button><button class="ghost-btn" type="button" data-action="cloud-run-autosync-now">Synchronizovat teď</button>' : '<button class="ghost-btn" type="button" data-nav="settings">Napojit cloud v Nastavení</button>'}
+          ${cloudReady ? `<button class="ghost-btn" type="button" data-action="cloud-toggle-autosync">${autosyncEnabled ? 'Vypnout autosync' : 'Zapnout autosync'}</button>` : ''}
+          ${cloudReady && totalLocal ? '<button class="primary-btn" type="button" data-action="cloud-sync-pending">Dohnat lokální → cloud</button>' : ''}
+          ${cloudReady && totalLocal ? '<span class="badge warn">něco je jen v tomto zařízení</span>' : '<span class="badge good">cloud-first OK</span>'}
+        </div>
+      </section>
+    `;
+  }
+
+
+  function getCloudLocalSyncAudit() {
+    const overview = getCloudSyncOverviewItems();
+    const online = overview.filter((item) => item.total && !item.local);
+    const localOnly = overview.filter((item) => item.local);
+    const watched = ['Nákupy', 'Předplatné', 'Garáž', 'Záruky', 'Smlouvy', 'HDO', 'Kalendář', 'Svátky PL', 'Počasí', 'Nastavení vzhledu'];
+    const riskNotes = [];
+    const shoppingListsLocal = (state.shoppingLists || []).filter((list) => !(list.cloudId || list.cloudListId)).length;
+    if (shoppingListsLocal) riskNotes.push({ label: 'Nákupní seznamy', note: `${shoppingListsLocal} seznamů je zatím jen lokálně. Autosync je může poslat do cloudu, až je domácnost online.` });
+    if (!state.googleCalendar?.connected && !getCalendarSources().some((source) => source.type === 'google')) riskNotes.push({ label: 'Google Kalendář', note: 'Bez samostatného OAuth napojení se používají jen ručně zadané / lokální události.' });
+    if (!state.weather?.loadedAt && !state.weather?.updatedAt) riskNotes.push({ label: 'Počasí', note: 'Počasí je cache/fallback modul, ne citlivá domácí evidence.' });
+    return { overview, online, localOnly, riskNotes, watched };
+  }
+
+  function renderCloudLocalSyncAudit() {
+    const audit = getCloudLocalSyncAudit();
+    const onlineNames = audit.online.map((item) => item.label).slice(0, 10);
+    const localNames = audit.localOnly.map((item) => `${item.label} (${item.local})`).slice(0, 10);
+    return `
+      <section class="card desktop-span-2 cloud-sync-audit-card">
+        <div class="card-header">
+          <div><h2>Audit cloud / lokál</h2><p>Rychlá kontrola, co je online synchronizované a co je ještě jen v tomto zařízení.</p></div>
+          <span class="badge ${audit.localOnly.length ? 'warn' : 'good'}">${audit.localOnly.length ? `${audit.localOnly.length} ke kontrole` : 'čisté'}</span>
+        </div>
+        <div class="cloud-status-grid compact-cloud-stats">
+          <div class="mini-stat"><span>Online OK</span><strong>${audit.online.length}</strong></div>
+          <div class="mini-stat"><span>Lokální / čeká</span><strong>${audit.localOnly.length}</strong></div>
+          <div class="mini-stat"><span>Sledované směry</span><strong>${audit.watched.length}</strong></div>
+        </div>
+        <div class="setup-list compact-sync-audit-list">
+          <div class="setup-item done"><span>✓</span><div><strong>Online sync hotovo / bez lokálních čekajících dat</strong><em>${escapeHtml(onlineNames.length ? onlineNames.join(', ') : 'Zatím nejsou data nebo domácnost není načtená.')}</em></div></div>
+          <div class="setup-item ${localNames.length ? '' : 'done'}"><span>${localNames.length ? '!' : '✓'}</span><div><strong>Lokální-only / čeká na autosync</strong><em>${escapeHtml(localNames.length ? localNames.join(', ') : 'Nic aktuálně nečeká jen lokálně.')}</em></div></div>
+          ${audit.riskNotes.map((item) => `<div class="setup-item"><span>•</span><div><strong>${escapeHtml(item.label)}</strong><em>${escapeHtml(item.note)}</em></div></div>`).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderDashboardFocusItem(item) {
+    const attrs = item.nav === 'calendar' || item.overview === 'calendar' ? 'data-nav="calendar" data-target-tab="overview"' : `data-action="open-overview" data-overview="${escapeHtml(item.overview || item.nav)}"`;
+    return `
+      <button class="card focus-tile ${item.tone || ''}" type="button" ${attrs}>
+        <div class="focus-icon">${escapeHtml(item.icon)}</div>
+        <div>
+          <div class="item-top"><h3>${escapeHtml(item.title)}</h3><span class="badge ${item.tone || ''}">${escapeHtml(item.badge)}</span></div>
+          <p>${escapeHtml(item.meta)}</p>
+        </div>
+      </button>
+    `;
+  }
+
+  function renderDashboardTimeline(todayEvents, upcomingEvents, urgentContracts, openTasks, wasteSoon, vehicleAlerts) {
+    const rows = [
+      ...todayEvents.slice(0, 3).map((event) => ({ nav: 'calendar', icon: '📅', title: event.title, meta: calendarEventMetaLabel(event, now), badge: calendarEventIsRunning(event, now) ? 'běží' : 'dnes', tone: 'good' })),
+      ...upcomingEvents.filter((event) => event.date !== todayISO()).slice(0, 3).map((event) => ({ nav: 'calendar', icon: '📅', title: event.title, meta: calendarEventMetaLabel(event, now), badge: 'brzy', tone: '' })),
+      ...urgentContracts.slice(0, 3).map((contract) => ({ nav: 'contracts', icon: '📄', title: contract.name, meta: `${contract.provider || 'Bez poskytovatele'} · platnost do ${formatDate(contract.validTo)}`, badge: dueBadge(contract.days), tone: contract.days < 0 ? 'bad' : contract.days <= 14 ? 'warn' : '' })),
+      ...openTasks.slice(0, 3).map((task) => ({ nav: 'homecare', overview: 'tasks', icon: '✅', title: task.title, meta: `${task.due ? `Termín ${formatDate(task.due)}` : 'Bez termínu'}${task.note ? ` · ${task.note}` : ''}`, badge: task.due ? dueBadge(daysUntil(task.due)) : 'úkol', tone: task.due && daysUntil(task.due) <= 2 ? 'warn' : '' })),
+      ...wasteSoon.slice(0, 2).map((item) => ({ nav: 'homecare', overview: 'waste', icon: '♻️', title: `${item.type} odpad`, meta: `${formatDate(item.date)}${item.note ? ` · ${item.note}` : ''}`, badge: dueBadge(item.days), tone: item.days <= 1 ? 'warn' : '' })),
+      ...vehicleAlerts.slice(0, 3).map((item) => ({ nav: 'garage', icon: '🚗', title: item.title, meta: item.meta, badge: dueBadge(item.days), tone: item.days < 0 ? 'bad' : item.days <= 30 ? 'warn' : '' }))
+    ].slice(0, 9);
+
+    if (!rows.length) {
+      if (isDemoOnlyState()) return renderEmpty('Zatím tu není nic důležitého. Jakmile přidáš kalendář, smlouvy, úkoly nebo auto, dashboard se začne plnit sám.');
+      const progress = getStarterSetupProgress();
+      const nextStep = progress.nextStep || { nav: 'calendar', tab: 'add' };
+      return renderEmptyCta({
+        icon: '✨',
+        title: 'Dashboard zatím čeká na první data',
+        text: 'Jakmile přidáš kalendář, úkol, svoz, auto nebo smlouvu, časová osa se začne plnit sama.',
+        nav: nextStep.nav,
+        tab: nextStep.tab,
+        label: `Pokračovat: ${nextStep.title || 'nastavení'}`
+      });
+    }
+
+    return rows.map((row) => `
+      <button class="timeline-item ${row.tone || ''}" type="button" ${row.nav === 'calendar' && !row.overview ? 'data-nav="calendar" data-target-tab="overview"' : `data-action="open-overview" data-overview="${escapeHtml(row.overview || row.nav)}"`}>
+        <span class="timeline-icon">${escapeHtml(row.icon)}</span>
+        <span class="timeline-copy"><strong>${escapeHtml(row.title)}</strong><em>${escapeHtml(row.meta)}</em></span>
+        <span class="badge ${row.tone || ''}">${escapeHtml(row.badge)}</span>
+      </button>
+    `).join('');
+  }
+
+  function getVehicleAlerts() {
+    const alerts = [];
+    state.vehicles.filter(isVehicleOwned).forEach((vehicle) => {
+      [
+        { key: 'technicalInspectionUntil', label: 'STK' },
+        { key: 'insuranceUntil', label: 'Pojistka' },
+        { key: 'nextServiceDate', label: 'Servis' }
+      ].forEach((item) => {
+        const days = daysUntil(vehicle[item.key]);
+        if (days !== null && days <= 45) {
+          alerts.push({
+            days,
+            vehicleId: vehicle.id,
+            iconColor: vehicle.iconColor,
+            title: `${item.label}: ${vehicle.name}`,
+            meta: `${item.label} do ${formatDate(vehicle[item.key])}`
+          });
+        }
+      });
+      const currentKm = Number(vehicle.odometer || 0);
+      const nextKm = Number(vehicle.nextServiceKm || 0);
+      if (currentKm && nextKm && nextKm - currentKm <= 1500) {
+        alerts.push({
+          days: nextKm < currentKm ? -1 : 30,
+          vehicleId: vehicle.id,
+          iconColor: vehicle.iconColor,
+          title: `Servis podle km: ${vehicle.name}`,
+          meta: `Aktuálně ${currentKm} km · další servis při ${nextKm} km`
+        });
+      }
+    });
+    return alerts.sort((a, b) => a.days - b.days);
+  }
+
+  function dueBadge(days) {
+    if (days === null || days === undefined) return 'bez termínu';
+    if (days < 0) return 'po termínu';
+    if (days === 0) return 'dnes';
+    if (days === 1) return 'zítra';
+    return `${days} dní`;
+  }
+
+  function renderSetupChecklist() {
+    if (isDemoOnlyState()) return '';
+    const progress = getStarterSetupProgress();
+    const steps = progress.orderedSteps;
+    return `
+      <section class="card setup-card guided-checklist-card">
+        <div class="card-header">
+          <div><h2>Dokončení základu</h2><p>Krátký stav toho, jestli je ostrá domácnost použitelná pro běžný den.</p></div>
+          <span class="badge ${progress.doneCount >= progress.total ? 'good' : progress.doneCount >= 3 ? 'warn' : ''}">${progress.doneCount}/${progress.total}</span>
+        </div>
+        <div class="starter-priority-line">
+          <span>Další: ${escapeHtml(progress.nextStep?.title || 'základ je hotový')}</span>
+          <button class="ghost-btn mini-btn" type="button" data-nav="${escapeHtml(progress.nextStep?.nav || 'settings')}" data-target-tab="${escapeHtml(progress.nextStep?.tab || 'household')}">Pokračovat</button>
+        </div>
+        <div class="progress-shell setup-progress"><span style="width:${progress.percent}%"></span></div>
+        <div class="setup-list compact-setup-list">
+          ${steps.map((item) => {
+            const isNext = !item.done && item.id === progress.nextStep?.id;
+            return `
+              <button class="setup-item setup-action-item ${item.done ? 'done' : ''} ${isNext ? 'is-next' : ''}" type="button" data-nav="${escapeHtml(item.nav)}" data-target-tab="${escapeHtml(item.tab)}">
+                <span>${item.done ? '✓' : escapeHtml(item.icon)}</span>
+                <div><strong>${escapeHtml(item.title)}</strong><em>${escapeHtml(item.note)}</em></div>
+                ${isNext ? '<small>další</small>' : ''}
+              </button>
+            `;
+          }).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+
+  function getModuleStats(moduleId) {
+    const countBy = (collection, predicate = null) => {
+      const list = Array.isArray(state[collection]) ? state[collection] : [];
+      return predicate ? list.filter(predicate).length : list.length;
+    };
+    const stats = {
+      weather: { count: normalizeWeatherState(state.weather).current ? 1 : 0, label: 'místo', note: weatherLocationLabel() || 'Počasí podle místa domácnosti.' },
+      calendar: { count: countBy('calendar'), label: 'událostí', note: 'Google napojení později přes backend.' },
+      packages: { count: countBy('packages', (item) => item.status !== 'delivered'), label: 'aktivních', note: `${countBy('packages')} balíků celkem.` },
+      shopping: { count: countBy('shopping', (item) => !item.done), label: 'koupit', note: `${countBy('coupons', (item) => !item.used)} nepoužitých kódů.` },
+      homecare: { count: countBy('homeTasks', (item) => !item.done) + countBy('hdoWindows') + countBy('waste') + countBy('warranties'), label: 'položek', note: `${countBy('hdoWindows')} HDO oken, ${countBy('waste')} svozů, ${countBy('homeTasks', (item) => !item.done)} úkolů, ${countBy('warranties')} záruk.` },
+      garage: { count: countBy('vehicles'), label: 'aut', note: `${countBy('fuel')} tankování, ${countBy('services')} servisů.` },
+      contracts: { count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh smluv, ${countBy('warrantyFiles')} příloh záruk.` },
+      cameras: { count: countBy('cameras'), label: 'kamer', note: 'Snapshot/stream zatím jen lokálně.' },
+      finance: { count: countBy('finance'), label: 'záznamů', note: `${formatCurrency(financeMonthSummary().balance)} rozdíl tento měsíc.` },
+      subscriptions: { count: countBy('subscriptions', (item) => item.enabled !== false), label: 'služeb', note: `${formatCurrency(subscriptionMonthSummary().expectedReturn)} se má vrátit tento měsíc.` }
+    };
+    return stats[moduleId] || { count: 0, label: 'položek', note: getModuleSubtitle(moduleId) };
+  }
+
+  function getCloudReadiness() {
+    const checks = [
+      { key: 'household', done: Boolean(state.household?.isConfigured && state.household?.id), title: 'Domácnost má svoje ID', note: 'Základ pro oddělení rodin a household_id v cloudu.' },
+      { key: 'profiles', done: state.profiles.length >= 1 && state.profiles.every((profile) => profile.householdId), title: 'Profily jsou navázané na domácnost', note: 'Profily se synchronizují přes cloud domácnosti.' },
+      { key: 'modules', done: normalizeModuleList(state.enabledModules).length > 0, title: 'Moduly jsou volitelné', note: 'Každá rodina si vybere vlastní sestavu.' },
+      { key: 'navigation', done: normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules).length >= BOTTOM_NAV_MIN, title: 'Spodní lišta je uživatelská', note: 'Dobré pro iPhone, Android i budoucí tablet.' },
+      { key: 'ids', done: getCollectionNames().every((collection) => (state[collection] || []).every((item) => item.householdId && item.profileId)), title: 'Data mají householdId/profileId', note: 'Důležité pro RLS a sdílení jen uvnitř domácnosti.' },
+      { key: 'storage', done: true, title: 'Soubory jsou mimo localStorage', note: 'Přílohy smluv i záruk jedou online přes soukromý Supabase Storage, IndexedDB je jen fallback.' }
+    ];
+    const doneCount = checks.filter((item) => item.done).length;
+    return { checks, doneCount, total: checks.length, percent: Math.round((doneCount / checks.length) * 100) };
+  }
+
+  function renderCloudReadiness(compact = false) {
+    const readiness = getCloudReadiness();
+    return `
+      <section class="card ${compact ? '' : 'desktop-span-2'}">
+        <div class="card-header">
+          <div><h2>Technická připravenost</h2><p>Kontrola cloud-first režimu, PWA a bezpečného fallbacku do lokální cache.</p></div>
+          <span class="badge ${readiness.percent >= 90 ? 'good' : readiness.percent >= 70 ? 'warn' : ''}">${readiness.percent} %</span>
+        </div>
+        <div class="progress-shell"><span style="width:${readiness.percent}%"></span></div>
+        ${compact ? `
+          <div class="inline-note" style="margin-top:12px;">${readiness.doneCount}/${readiness.total} technických bodů je připravených. Cloud je hlavní zdroj dat, lokál zůstává jen cache/fallback.</div>
+        ` : `
+          <div class="setup-list" style="margin-top:12px;">
+            ${readiness.checks.map((item) => `
+              <div class="setup-item ${item.done ? 'done' : ''}">
+                <span>${item.done ? '✓' : '•'}</span>
+                <div><strong>${escapeHtml(item.title)}</strong><em>${escapeHtml(item.note)}</em></div>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      </section>
+    `;
+  }
+
+  function renderNextPlanCard() {
+    const steps = [
+      { title: 'Domácnost+ v.0.1_202', note: 'Plochý ZIP: v kořeni jsou runtime soubory aplikace a zdrojové soubory, jediná složka je icons/ s instalačními ikonami, modulovými ikonami a ikonovými sadami; přepsané cesty v HTML, manifestu, SW, JS i CSS.' },
+      { title: 'Domácnost+ v.0.1_201', note: 'Čistý ZIP: odstraněné nepotřebné setup SQL/MD soubory a env example ze Supabase složky, runtime PWA assety, Edge Functions, ikony a soukromý restore zůstávají.' },
+      { title: 'Domácnost+ v.0.1_200', note: 'Checkpoint refactor: hotová série 196–200. Nákupy mají oddělené utils, render i actions, Nastavení má audit cloud/lokál a render už zbytečně nepřepisuje vizuální dataset ani ikonové HTML pořád dokola.' },
+      { title: 'Domácnost+ v.0.1_195', note: 'Hlavní render Nákupů je vytažený do assets/js/shopping-render.js, app.js je kratší a aktivní seznam se při renderu dělí na koupené/nekoupené jedním průchodem.' },
+      { title: 'Domácnost+ v.0.1_194', note: 'Katalogová logika Nákupů je v assets/js/shopping-utils.js, včetně runtime cache katalogu, jednotek, druhů, chytrých návrhů a statistik seznamů.' },
+      { title: 'Domácnost+ v.0.1_192', note: 'Druhá stabilizace Nákupů: méně opakované normalizace, méně výpočtů při renderu, aktivní záložka renderuje jen svůj panel a nové domácnosti nedostávají Martinův restore podle jména samotného.' },
+      { title: 'Domácnost+ v.0.1_191', note: 'Stabilizace výkonu po refactoru: service worker už na startu nepřednačítá celé ikonové sady, cloudové načítání dávkuje překreslení a Nákupy nerenderují skryté panely zbytečně.' },
+      { title: 'Domácnost+ v.0.1_190', note: 'Hotfix: opravený překlep v názvu normalizační funkce pro klíče, který shazoval část aplikace po startu. Přidaná kontrola na starý název funkce a chybějící DEFAULT konstanty.' },
+      { title: 'Domácnost+ v.0.1_180', note: 'Hotfix: doplněná chybějící konstanta DEFAULT_BOTTOM_NAV_IDS a přidaná statická kontrola DEFAULT konstant, aby Nákupy ani start aplikace nepadaly na chybějící výchozí hodnotě.' },
+      { title: 'Domácnost+ v.0.1_179', note: 'Hotfix: oprava pádu Nákupů kvůli chybějící konstantě DEFAULT_SHOPPING_LISTS. Doplněné jsou výchozí seznamy Polsko, Penny, JIP a Martínek a katalog podle Listonic screenů.' },
+      { title: 'Domácnost+ v.0.1_163', note: 'Vzhled aplikace: barevná schémata jsou zúžená na Modrá a Royal, sada ikon zůstává jen iOS Soft kvůli čistému a sjednocenému UI.' },
+      { title: 'Domácnost+ v.0.1_162', note: 'Záruky: přidání je nahoře a v základu zabalené, formulář má ochranu proti dvojitému uložení a fotky účtenek se před uložením automaticky komprimují.' },
+      { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
+      { title: 'Domácnost+ v.0.1_150', note: 'Hotovo: Garáž má opravenou kalkulačku cesty s automatickým načtením hodnot podle auta, rozšířený technický list a základ katalogu značek/modelů pro předvyplnění.' },
+      { title: 'Domácnost+ v.0.1_142', note: 'Hotovo: Garáž má jasnou šipku u výběru auta, grafy mají popisky vlevo a datumy prvního/posledního zápisu, detail auta ukazuje Kč/km celkem bez pořizovací ceny, graf poslední rok/celá doba a historie auta je zabalená.' },
+      { title: 'Domácnost+ v.0.1_141', note: 'Hotovo: Garáž má v grafech průměrnou čárkovanou linku a hodnoty vlevo, km přímo ve výběru auta, spotřebu u tankování a rychlé tlačítko tankování z Home přehledu.' },
+      { title: 'Domácnost+ v.0.1_140', note: 'Hotovo: Garáž má nový přehled aktivního auta s aktuálním stavem km, panelem Palivo, statistikami Tankování/Náklady/Vzdálenost a posuvnými grafy ceny, spotřeby a měsíčního paliva.' },
+      { title: 'Domácnost+ v.0.1_139', note: 'Hotovo: HDO rychlý přehled má dvě tabulky pro normální dny a víkend/svátky, formulář HDO je zabalený, ikonky se přednačítají a potvrzení řazení Home panelů je nahoře mimo dashboard.' },
+      { title: 'Domácnost+ v.0.1_138', note: 'Hotovo: Home panely lépe zobrazují delší texty, kalendář ukazuje nejbližší událost, PL svátky na Home ignorují běžné neděle, Předplatné má výchozí formuláře zabalené, Garáž a Nastavení jsou výrazně uklizené.' },
+      { title: 'Domácnost+ v.0.1_137', note: 'Hotfix: Předplatné už nemá ruční cloud tlačítka, ukládá a načítá se automaticky přes Supabase domácnost stejně jako ostatní cloudová data.' },
+      { title: 'Domácnost+ v.0.1_136', note: 'Hotovo: Předplatné se synchronizuje online přes cloud domácnosti a Home panely lze dlouhým podržením přepnout do režimu přesunu pořadí.' },
+      { title: 'Domácnost+ v.0.1_135', note: 'Hotovo: v Předplatném mají služby skutečnější logo-like značky místo pouhých iniciál a přidaná je i služba T-Mobile.' },
+      { title: 'Domácnost+ v.0.1_134', note: 'Hotovo: v Předplatném jde kliknout na člověka a přímo v jeho detailu mu přiřadit službu s částkou. Volná místa u služeb se automaticky odečítají a po odebrání sdílení zase uvolní.' },
+      { title: 'Domácnost+ v.0.1_133', note: 'Hotovo: Předplatné má logo-like badge ikonky, filtr Vše/Nezaplacené/Dlužníci a Home panel ukazuje rychlý souhrn dluhů.' },
+      { title: 'Domácnost+ v.0.1_132', note: 'Hotovo: modul Předplatné má barevné ikonky služeb v kartách, přehledu plateb i detailech, aby byly služby rychle poznat na mobilu.' },
+      { title: 'Domácnost+ v.0.1_131', note: 'Hotovo: Předplatné má Oneplay místo Voyo, limit míst/členů, volná místa v přehledech a aplikace se při novém spuštění otevírá na Home.' },
+      { title: 'Domácnost+ v.0.1_130', note: 'Hotovo: nový modul Předplatné pro streamovací služby, sdílení s lidmi, měsíční zaškrtávání plateb, dluhy a platby dopředu.' },
+      { title: 'Domácnost+ v.0.1_129', note: 'Hotfix: Home panel Záruky už bezpečně pracuje i bez nejbližší záruky nebo bez vypočtených dnů, takže nepadá na currentWarranty.days.' },
+      { title: 'Domácnost+ v.0.1_128', note: 'Hotovo: Home panely pod hodinami už používají schválené ikonky, počasí je celé v novém barevném stylu a spodní lišta má zjednodušené čitelnější ikonky pro malé rozměry.' },
+      { title: 'Domácnost+ v.0.1_127', note: 'Hotovo: celé modulové ikonky jsou předělané podle schváleného anime návrhu včetně spodní lišty, Home karet, Více a nastavení modulů. Počasí a čas na Home zůstaly vycentrované bez přetékání.' },
+      { title: 'Domácnost+ v.0.1_126', note: 'Hotovo: anime ikonky bez pozadí pro Home/Moduly, HDO jako žárovka s bleskem a vycentrované panely času a počasí bez přetékání textu.' },
+      { title: 'Domácnost+ v.0.1_125', note: 'Hotovo: oprava Garáže po chybě parseDateValue a nové kreslené barevné ikonky v Home/Moduly panelech.' },
+      { title: 'Domácnost+ v.0.1_124', note: 'Hotovo: Home panely mají větší barevné ikonky bez bílého přebití, počasí vedle času ukazuje aktuální teplotu a stav počasí a vybrané Home panely živě střídají konkrétní položky.' },
+      { title: 'Domácnost+ v.0.1_123', note: 'Hotovo: Home ikonky jsou bez viditelného pozadí, barevně výraznější podle modulu, opravena čárka u počasí a obrazovka Více je zjednodušená na Nastavení aplikace + univerzální seznam Moduly.' },
+      { title: 'Domácnost+ v.0.1_115', note: 'Hotovo: nový modul Svátky Polsko s přehledem zavřených obchodů a online aktualizací svátků, mazání auta je přesunuté do detailu s potvrzením a Home má větší čas/počasí s modernějšími ikonami.' },
+      { title: 'Domácnost+ v.0.1_113', note: 'Hotovo: hlavní Home panel je roztažený téměř přes celou šířku obrazovky a až ke spodní liště, vnitřní panely vyplňují dostupnou výšku.' },
+      { title: 'Domácnost+ v.0.1_112', note: 'Hotovo: Home panel je výškově roztáhnutý níž ke spodní liště a lépe využívá prostor pod rychlými panely.' },
+      { title: 'Domácnost+ v.0.1_111', note: 'Hotovo: oprava pádu Garáže v detailu auta, živé Home karty mají jemný flip efekt a PWA ikony přešly na stabilní názvy bez verzování při každém buildu.' },
+      { title: 'Domácnost+ v.0.1_109', note: 'Hotovo: Home má menší mezeru mezi časem/počasím a mini panely, vybrané Home karty umí živě střídat další info a základní Garáž počítá Kč/km jen z paliva.' },
+      { title: 'Domácnost+ v.0.1_108', note: 'Hotovo: Home Kalendář otevírá rovnou měsíční mřížku, klik na událost ukáže detail, Garáž má modální tankování/servis, cena/km počítá i servisní náklady a Nákupy dostaly čistší Listonic styl.' },
+      { title: 'Domácnost+ v.0.1_107', note: 'Hotovo: Home má vyšší část čas/počasí bez zvětšení celé karty, Kalendář na Home vrací stav Nyní/Další, HDO a Garáž mají čistší texty a Garáž má rychlé akce + chytrý dopočet tankování.' },
+      { title: 'Domácnost+ v.0.1_106', note: 'Hotovo: přehled Kalendáře je nově skutečný měsíční kalendář s týdny v řádcích, dny ve sloupcích a tlačítky předchozí měsíc / dnes / další měsíc.' },
+      { title: 'Domácnost+ v.0.1_105', note: 'Hotovo: oprava kliknutí na auto z rychlého přehledu Garáže a nový modul Záruky v Domácnosti se základní dvouletou zárukou, možností prodloužení a poznámkami k reklamaci.' },
+      { title: 'Domácnost+ v.0.1_104', note: 'Hotovo: vyšší panel času a počasí na Home, Kalendář bez popisku „Další“, HDO bez duplicitního „sepne v…“ a Garáž má klikací auta z rychlého přehledu plus volbu barvy ikonky auta.' },
+      { title: 'Domácnost+ v.0.1_103', note: 'Hotovo: Garáž na Home ukazuje počet aut místo nuly bez upozornění a detail auta má plnou historii s filtrem podle roku a typu záznamu.' },
+      { title: 'Domácnost+ v.0.1_102', note: 'Hotovo: vyšší Home mini panely pod časem a počasím, čitelnější karta Kalendář, HDO přehled řadí Po–Pá před víkend a Fuelio import čte vícesekční exporty včetně Data/Odo/Costs.' },
+      { title: 'Domácnost+ v.0.1_101', note: 'Hotovo: uklizené ikony do assets/icons, Home panel Kalendář ukazuje jen jednu aktuální nebo nejbližší událost, HDO víkend platí i pro české svátky a Fuelio import je tolerantnější na CSV exporty.' },
+      { title: 'Domácnost+ v.0.1_100', note: 'Hotovo: Home panel Kalendář ukazuje jen probíhající a nadcházející události. Skončené události z hlavní plochy mizí, probíhající ukazují čas konce.' },
+      { title: 'Domácnost+ v.0.1_99', note: 'Hotovo: automatické HDO podle distributora/kódu/importu bylo odstraněné. HDO se zadává jen ručně, zůstává rychlé číselné zadávání časů a cloudové uložení ručních oken.' },
+      { title: 'Domácnost+ v.0.1_98', note: 'Hotovo: HDO import měl fallback pro hlavní distributory v ČR a kalendář převáděl cloudové a Google události do Europe/Prague.' },
+      { title: 'Domácnost+ v.0.1_97', note: 'Hotovo: HDO dohledání bylo připravené pro ČEZ Distribuci, EG.D, PREdistribuci i ruční fallback. U kalendářů přibylo odebrání zdroje včetně jeho událostí a spodní lišta má stabilnější pozici po startu.' },
+      { title: 'Domácnost+ v.0.1_94', note: 'Hotovo: Google Calendar ukládá a čte serverové tokeny přes bezpečné RPC funkce do app_private, bez vystavení privátního schématu do API. Google login zůstává jen přihlášení.' },
+      { title: 'Domácnost+ v.0.1_10', note: 'Hotovo: tabletový domácí dashboard a první cloudový základ.' },
+      { title: 'Domácnost+ v.0.1_11', note: 'Hotovo: Supabase Auth, domácnost, členové, profily a cloudový základ Nákupů.' },
+      { title: 'Domácnost+ v.0.1_12', note: 'Hotovo: instalovatelná PWA, update flow po deployi, katalog nákupů a cloudové Hotovo/Vrátit/Smazat.' },
+      { title: 'Domácnost+ v.0.1_13', note: 'Hotovo: rychlé přidání často používaných nákupů, lokální statistika katalogu a stabilnější PWA popisky.' },
+      { title: 'Domácnost+ v.0.1_14', note: 'Hotovo: cloudové Smlouvy bez příloh, načtení/odeslání/smazání přes Supabase.' },
+      { title: 'Domácnost+ v.0.1_17', note: 'Hotovo: cloudový základ Garáže — auta, tankování, servis, načtení a odeslání lokálních dat.' },
+      { title: 'Domácnost+ v.0.1_18', note: 'Hotovo: editace tankování/servisu, Fuelio import rovnou do cloudu a stabilnější Garáž sync.' },
+      { title: 'Domácnost+ v.0.1_20', note: 'Hotovo: cloudový svoz odpadu, základ připomínek a dashboardové stavy cloud/lokál.' },
+      { title: 'Domácnost+ v.0.1_24', note: 'Hotovo: cloudový Kalendář a příprava na Google Calendar bez tokenů ve frontendu.' },
+      { title: 'Domácnost+ v.0.1_26', note: 'Hotovo: tvrdší oprava PWA ikon, relativní cesty, root apple-touch fallback a cache-busting pro iPhone/Android.' },
+      { title: 'Domácnost+ v.0.1_28', note: 'Hotovo: PWA diagnostika manifestu, ikon, Apple touch ikon, service workeru a cache přímo v aplikaci.' },
+      { title: 'Domácnost+ v.0.1_30', note: 'Hotovo: správa více cloud domácností, přepínání domácnosti a připravený panel pozvánek.' },
+      { title: 'Domácnost+ v.0.1_33', note: 'Hotovo: finance v cloudu a profil po přijetí pozvánky.' },
+      { title: 'Domácnost+ v.0.1_34', note: 'Hotovo: variabilní finanční účty, peněženky, obálky a osobní zůstatky.' },
+      { title: 'Domácnost+ v.0.1_40', note: 'Hotovo: bohatší demo, potvrzení e-mailu, opětovné odeslání ověřovacího e-mailu a přechod z demo do ostré domácnosti.' },
+      { title: 'Domácnost+ v.0.1_43', note: 'Hotovo: kontrola Supabase Auth nastavení, bezpečnější přechod demo → ostrá domácnost a jasný stav redirect URL.' },
+      { title: 'Domácnost+ v.0.1_48', note: 'Hotovo: kompaktní záložky v kalendáři, balících, financích, garáži a smlouvách + oprava rychlého přehledu financí.' },
+      { title: 'Domácnost+ v.0.1_49', note: 'Hotovo: čistší rychlé přehledy z dashboardu bez destruktivních akcí, finance na dashboardu a lepší mobilní centrování záložek.' },
+      { title: 'Domácnost+ v.0.1_50', note: 'Hotovo: kompaktní detaily Garáže a Smluv, rozbalovací editační bloky a čistší onboarding ostré domácnosti.' },
+      { title: 'Domácnost+ v.0.1_51', note: 'Hotovo: nouzová oprava načítání, bezpečnější service worker fallback a startovací diagnostika místo bílé stránky.' },
+      { title: 'Domácnost+ v.0.1_52', note: 'Hotovo: pojistka proti visícímu startu bez app.js, přehlednější dashboard modaly a Finance v cloud přehledu.' },
+      { title: 'Domácnost+ v.0.1_53', note: 'Hotovo: klikací horní souhrny na dashboardu, chytřejší otevření správné záložky a smazání účtu jen v Nastavení.' },
+      { title: 'Domácnost+ v.0.1_54', note: 'Hotovo: stabilnější mobilní rychlé přehledy, zamknuté pozadí při otevřeném modalu, Escape zavření a opravené pořadí roadmapy.' },
+      { title: 'Domácnost+ v.0.1_55', note: 'Hotovo: kompaktnější dashboard karty, sjednocené výšky rychlých modulů a lepší mobilní zahuštění bez zásahu do startu aplikace.' },
+      { title: 'Domácnost+ v.0.1_56', note: 'Hotovo: sjednocené mobilní záložky a kompaktnější formuláře/listy ve Financích a Kamerách bez zásahu do boot/PWA flow.' },
+      { title: 'Domácnost+ v.0.1_57', note: 'Hotovo: kompaktnější Nastavení se záložkami a lepší prázdné stavy pro ostrou domácnost.' },
+      { title: 'Domácnost+ v.0.1_58', note: 'Hotovo: průvodce prvním nastavením domácnosti, stavové kroky a čistší start pro prázdnou ostrou domácnost.' },
+      { title: 'Domácnost+ v.0.1_59', note: 'Hotovo: průvodce už neruší demo, prázdná časová osa navádí na další krok a setup karty mají lepší prioritu akcí.' },
+      { title: 'Domácnost+ v.0.1_60', note: 'Hotovo: průvodce prvním nastavením má fáze Základ / Denní provoz / Evidence a prázdné přehledy nově vedou rovnou na správné akce.' },
+      { title: 'Domácnost+ v.0.1_61', note: 'Hotovo: zvýrazněný nejbližší krok nastavení, jasnější fáze průvodce a oprava duplicitního meta řádku v dashboardu.' },
+      { title: 'Domácnost+ v.0.1_62', note: 'Hotovo: cloud-first režim, online drobné moduly, soukromé nahrávání příloh smluv a app-like chování bez zoomu/označování textu.' },
+      { title: 'Domácnost+ v.0.1_63', note: 'Hotovo: Supabase Realtime pro sdílené moduly, automatické občerstvení dat mezi členy domácnosti a stabilnější cloud sync.' },
+      { title: 'Domácnost+ v.0.1_64', note: 'Hotovo: cloud-first autosync, přehled položek cloud/lokál a cloud upload starších lokálních příloh smluv.' },
+      { title: 'Domácnost+ v.0.1_65', note: 'Hotovo: cloudové profily domácnosti, archivace profilů a Realtime pro profily/členy.' },
+      { title: 'Domácnost+ v.0.1_66', note: 'Hotovo: modulární hlavní obrazovka, zapínání/odebírání karet a počasí podle místa domácnosti.' },
+      { title: 'Domácnost+ v.0.1_67', note: 'Hotovo: čistší základní obrazovka bez horního panelu, název domácnosti místo Domů a oprava pádu DateTimeFormat při neplatném datu.' },
+      { title: 'Domácnost+ v.0.1_68', note: 'Hotovo: název domácnosti na Home, cloud domácnost po vytvoření a globálně odstraněný horní panel s přepínačem vzhledu.' },
+      { title: 'Domácnost+ v.0.1_69', note: 'Hotovo: cloud stav, autosync, Realtime a technická připravenost přesunuté z hlavní obrazovky do Nastavení.' },
+      { title: 'Domácnost+ v.0.1_70', note: 'Hotovo: upravitelný horní panel Home, kompaktní počasí s detailní stránkou, cloudová změna názvu domácnosti a číselná klávesnice pro HDO.' },
+      { title: 'Domácnost+ v.0.1_71', note: 'Hotovo: základ počasí vedle času na Home, počasí jako volitelná položka horního panelu a rozšíření horního panelu o hlavní funkce domácnosti.' },
+      { title: 'Domácnost+ v.0.1_73', note: 'Hotfix: bezpečný HDO rychlý přehled, sanitace HDO časů/dnů a ochrana proti zaseknutí při otevření přehledu.' },
+      { title: 'Domácnost+ v.0.1_72', note: 'Hotovo: odstranění samostatné weather karty z Home, sanitace starého dashboard nastavení a prevence duplicitních cloud domácností.' },
+      { title: 'Domácnost+ v.0.1_75', note: 'Hotfix: zavírání kalendáře/rychlých přehledů z Home a první globální posun UI do iOS glass stylu.' },
+      { title: 'Domácnost+ v.0.1_76', note: 'Hotovo: více zdrojů kalendáře, příprava Google Calendar napojení a výběr zdroje u událostí.' },
+      { title: 'Domácnost+ v.0.1_77', note: 'Hotovo: Home bez verze/popisků, bez badge nad časem a adaptivní horní panel s časem, počasím a 0–4 volitelnými položkami.' },
+      { title: 'Domácnost+ v.0.1_78', note: 'Hotovo: bezpečný první krok Google Calendar integrace: UI ve Zdrojích, výběr více Google kalendářů, sync akce, SQL migrace a Edge Function skeletony bez tokenů ve frontendu.' },
+      { title: 'Domácnost+ v.0.1_79', note: 'Hotfix: variabilní Home panel drží rozložení 0–4 položek a počasí v prázdném panelu ukazuje více detailů.' },
+      { title: 'Domácnost+ v.0.1_80', note: 'Hotovo: Home horní panel má stabilní výšku, položky se přizpůsobují uvnitř panelu a mini karty ukazují konkrétní stav, například HDO do kdy běží nebo kdy sepne.' },
+      { title: 'Domácnost+ v.0.1_81', note: 'Hotfix: při Home bez dalších panelů jsou čas a počasí pod sebou, hlavní panel zůstává stabilní a ve Více je nastavení hned nahoře.' },
+      { title: 'Domácnost+ v.0.1_82', note: 'Hotovo: první bezpečný krok ČHMÚ počasí přes Edge Function s Open-Meteo fallbackem a pevně ukotvený spodní panel.' },
+      { title: 'Domácnost+ v.0.1_83', note: 'Hotovo: ČHMÚ Edge Function nasazená v Supabase, spodní panel níž a rychlé detaily z Home nad navigací.' },
+      { title: 'Domácnost+ v.0.1_84', note: 'Hotfix: rychlé detaily z Home už nejsou schované dole, spodní panel je níž a počasí doplňuje východ/západ slunce z číselného fallbacku.' }
+    ];
+    return `
+      <section class="card roadmap-card">
+        <div class="card-header"><div><h2>Co mám v plánu dál</h2><p>Cloudová kostra běží. Další větší směr je dokončit nasazení Google OAuth, sync pravidla a potom doladit sdílení členů domácnosti.</p></div><span class="badge">roadmap</span></div>
+        <div class="list">
+          ${steps.map((step, index) => `
+            <div class="item">
+              <div class="item-top"><div class="item-title">${escapeHtml(step.title)}</div><span class="badge ${index === 0 ? 'good' : ''}">${index === 0 ? 'hotovo' : 'další'}</span></div>
+              <div class="item-meta">${escapeHtml(step.note)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderModuleStatusCard(module) {
+    const stats = getModuleStats(module.id);
+    return `
+      <button class="item module-hub-item module-status-card" type="button" data-nav="${module.id}">
+        ${renderModuleIllustration(module.id, { size: 'card', slotClass: 'module-status-icon module-card-illustration-slot dashboard-module-icon-slot', extraClass: 'module-card-illustration dashboard-module-icon', label: module.label })}
+        <div class="item-top"><div class="item-title">${escapeHtml(module.label)}</div><span class="badge">${stats.count} ${escapeHtml(stats.label)}</span></div>
+        <div class="item-meta">${escapeHtml(stats.note)}</div>
+      </button>
+    `;
+  }
+
+  function getCalendarSources() {
+    return Array.isArray(state.calendarCloud?.sources) ? state.calendarCloud.sources : [];
+  }
+
+  function normalizeCalendarSourceProvider(provider = '') {
+    const value = String(provider || '').toLowerCase();
+    if (['google', 'manual', 'family', 'work', 'ical', 'other'].includes(value)) return value;
+    return 'manual';
+  }
+
+  function calendarSourceProviderLabel(provider = '') {
+    const labels = {
+      manual: 'Ruční',
+      family: 'Rodinný',
+      work: 'Práce',
+      google: 'Google',
+      ical: 'iCal',
+      other: 'Jiný'
+    };
+    return labels[normalizeCalendarSourceProvider(provider)] || 'Kalendář';
+  }
+
+  function calendarSourceIcon(provider = '') {
+    const icons = { manual: '✍️', family: '👨‍👩‍👧', work: '🏭', google: 'G', ical: '📥', other: '📅' };
+    return icons[normalizeCalendarSourceProvider(provider)] || '📅';
+  }
+
+  function mapCalendarSource(row = {}) {
+    return {
+      id: row.id || row.cloudId || uid(),
+      cloudId: row.cloudId || row.id || '',
+      householdId: row.household_id || row.householdId || currentHouseholdId(),
+      profileId: row.profile_id || row.profileId || '',
+      name: row.name || 'Kalendář',
+      provider: normalizeCalendarSourceProvider(row.provider),
+      providerCalendarId: row.provider_calendar_id || row.providerCalendarId || row.calendar_id || row.external_calendar_id || row.google_calendar_id || '',
+      providerConnectionId: row.provider_connection_id || row.providerConnectionId || '',
+      color: row.color || '',
+      isEnabled: row.is_enabled !== undefined ? Boolean(row.is_enabled) : row.isEnabled !== false,
+      syncEnabled: row.sync_enabled !== undefined ? Boolean(row.sync_enabled) : Boolean(row.syncEnabled),
+      lastSyncedAt: row.last_synced_at || row.lastSyncedAt || '',
+      note: row.note || '',
+      createdAt: row.created_at || row.createdAt || new Date().toISOString()
+    };
+  }
+
+  function getCalendarSource(sourceId) {
+    const id = String(sourceId || '');
+    if (!id) return null;
+    return getCalendarSources().find((source) => [source.id, source.cloudId].filter(Boolean).map(String).includes(id)) || null;
+  }
+
+  function isCalendarSourceEnabled(sourceId) {
+    const source = getCalendarSource(sourceId);
+    return !source || source.isEnabled !== false;
+  }
+
+  function visibleCalendarEvents() {
+    return (state.calendar || []).filter((event) => isCalendarSourceEnabled(event.sourceId));
+  }
+
+  function calendarSourceName(sourceId) {
+    const source = getCalendarSource(sourceId);
+    return source?.name || 'Ruční kalendář';
+  }
+
+  function calendarSourceOptions(selected = '') {
+    const sources = getCalendarSources().filter((source) => source.isEnabled !== false);
+    const options = [['manual', 'Sdílený kalendář domácnosti']];
+    sources.forEach((source) => {
+      const id = source.id || source.cloudId;
+      if (!id || String(id) === 'manual') return;
+      options.push([id, `${source.name} · ${calendarSourceProviderLabel(source.provider)}`]);
+    });
+    return selectField('Uložit do', 'sourceId', options, selected || 'manual');
+  }
+
+  function googleCalendarConnection() {
+    return state.calendarCloud?.googleConnection || null;
+  }
+
+  function googleCalendarItems() {
+    return Array.isArray(state.calendarCloud?.googleCalendars) ? state.calendarCloud.googleCalendars : [];
+  }
+
+  function googleCalendarStatusLabel(connection = googleCalendarConnection()) {
+    const status = String(connection?.status || '').toLowerCase();
+    const tokenState = String(connection?.tokenState || '').toLowerCase();
+    if (status === 'connected' && tokenState === 'missing') return 'účet přihlášený, token chybí';
+    if (status === 'connected' && tokenState === 'ready') return 'token uložený';
+    if (status === 'connected') return 'připojeno';
+    if (status === 'oauth_pending') return 'čeká na dokončení OAuth';
+    if (status === 'error') return 'chyba připojení';
+    if (status === 'disconnected') return 'odpojeno';
+    return 'nepřipojeno';
+  }
+
+  function googleCalendarLastError() {
+    return state.calendarCloud?.googleLastError || googleCalendarConnection()?.lastError || null;
+  }
+
+  function googleCalendarStatusNote(connection = googleCalendarConnection()) {
+    const lastError = googleCalendarLastError();
+    const status = String(connection?.status || '').toLowerCase();
+    const tokenState = String(connection?.tokenState || '').toLowerCase();
+    const reason = String(lastError?.code || lastError?.reason || connection?.lastError || '').toLowerCase();
+    const message = lastError?.message || lastError?.error || connection?.lastError || '';
+    if (status === 'connected' && tokenState === 'ready') return { tone: 'good', title: 'Google kalendář je připojený', text: 'Můžeš načíst dostupné kalendáře a vybrat, které se mají zobrazovat v domácnosti.' };
+    if (status === 'oauth_pending') return { tone: 'warn', title: 'Připojení čeká na dokončení', text: 'Dokonči přihlášení u Googlu. Když se stav nezmění, spusť znovupřipojení.' };
+    if (status === 'connected' && tokenState === 'missing') return { tone: 'warn', title: 'Google kalendář je potřeba znovu připojit', text: 'Přihlášení do aplikace nestačí pro kalendář. Spusť znovu připojení Google kalendáře.' };
+    if (['missing_google_token', 'token_store_failed', 'missing_encryption_key', 'redirect_uri_mismatch', 'missing_calendar_scope'].includes(reason)) return { tone: 'danger', title: 'Připojení Google kalendáře selhalo', text: message || 'Zkus připojení spustit znovu.' };
+    if (status === 'error' || message) return { tone: 'danger', title: 'Google kalendář má chybu', text: message || 'Zkus znovu spustit připojení Google kalendáře.' };
+    return { tone: '', title: 'Google kalendář není připojený', text: 'Rozbal Google kalendář a spusť připojení.' };
+  }
+
+  function isGoogleCalendarSelected(calendarId, sourceList = getCalendarSources()) {
+    const id = String(calendarId || '');
+    return Boolean(id && sourceList.some((source) => normalizeCalendarSourceProvider(source.provider) === 'google' && String(source.providerCalendarId || '') === id));
+  }
+
+  function renderGoogleCalendarConnector(cloudReady, sourceList = getCalendarSources()) {
+    const connection = googleCalendarConnection();
+    const calendars = googleCalendarItems();
+    const connected = String(connection?.status || '').toLowerCase() === 'connected';
+    const tokenReady = String(connection?.tokenState || '').toLowerCase() === 'ready';
+    const statusNote = googleCalendarStatusNote(connection);
+    const googleSources = sourceList.filter((source) => normalizeCalendarSourceProvider(source.provider) === 'google');
+    return `
+      <details class="compact-edit-details google-calendar-connector calendar-google-details">
+        <summary><span>Google kalendář</span><em>${escapeHtml(googleCalendarStatusLabel(connection))}</em></summary>
+        <div class="google-calendar-connector-body">
+          <div class="cloud-status-grid compact-cloud-stats google-calendar-stats">
+            <div class="mini-stat"><span>Účet</span><strong>${escapeHtml(connection?.googleAccountEmail || connection?.email || '—')}</strong></div>
+            <div class="mini-stat"><span>Vybrané</span><strong>${googleSources.length}</strong></div>
+            <div class="mini-stat"><span>Dostupné</span><strong>${calendars.length || '—'}</strong></div>
+          </div>
+          <div class="form-actions connector-actions">
+            ${cloudReady ? `<button class="primary-btn" type="button" data-action="google-calendar-reconnect">${connected ? 'Znovu připojit Google kalendář' : 'Připojit Google kalendář'}</button>` : '<span class="badge">nejdřív online účet</span>'}
+            ${cloudReady ? `<button class="ghost-btn" type="button" data-action="google-calendar-list-calendars" ${tokenReady ? '' : 'aria-describedby="google-calendar-state-note"'}>Načíst kalendáře</button>` : ''}
+            ${cloudReady && googleSources.length ? '<button class="ghost-btn" type="button" data-action="google-calendar-sync">Spustit sync</button>' : ''}
+            ${cloudReady && connected ? '<button class="danger-btn" type="button" data-action="google-calendar-disconnect">Odpojit Google</button>' : ''}
+          </div>
+          ${cloudReady ? `<div id="google-calendar-state-note" class="inline-note google-calendar-state-note ${statusNote.tone ? `is-${statusNote.tone}` : ''}"><strong>${escapeHtml(statusNote.title)}</strong><span>${escapeHtml(statusNote.text)}</span></div>` : '<div class="inline-note">Google kalendář funguje jen v online domácnosti.</div>'}
+          ${calendars.length ? `
+            <form data-form="google-calendar-save-sources" class="google-calendar-picker">
+              <div class="google-calendar-grid">
+                ${calendars.map((calendar) => {
+                  const checked = isGoogleCalendarSelected(calendar.id, sourceList) || calendar.selected;
+                  return `
+                    <label class="google-calendar-option ${checked ? 'active' : ''}">
+                      <input type="checkbox" name="googleCalendarIds" value="${escapeHtml(calendar.id)}" ${checked ? 'checked' : ''}>
+                      <span>
+                        <strong>${escapeHtml(calendar.summary || calendar.name || 'Google kalendář')}</strong>
+                        <em>${calendar.primary ? 'hlavní' : escapeHtml(calendar.id || '')}${calendar.accessRole ? ` · ${escapeHtml(calendar.accessRole)}` : ''}</em>
+                      </span>
+                    </label>
+                  `;
+                }).join('')}
+              </div>
+              <div class="form-actions">
+                <button class="primary-btn" type="submit">Uložit vybrané kalendáře</button>
+              </div>
+            </form>
+          ` : ''}
+        </div>
+      </details>
+    `;
+  }
+
+  function normalizeCalendarMonth(value) {
+    const clean = String(value || '').slice(0, 7);
+    return /^\d{4}-\d{2}$/.test(clean) ? clean : todayISO().slice(0, 7);
+  }
+
+  function shiftCalendarMonth(monthKey, delta = 0) {
+    const clean = normalizeCalendarMonth(monthKey);
+    const [year, month] = clean.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1 + Number(delta || 0), 1));
+    return date.toISOString().slice(0, 7);
+  }
+
+  function calendarMonthTitle(monthKey) {
+    const clean = normalizeCalendarMonth(monthKey);
+    const [year, month] = clean.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, 1));
+    return new Intl.DateTimeFormat('cs-CZ', { month: 'long', year: 'numeric' }).format(date);
+  }
+
+  function calendarDayNumber(isoDate) {
+    const day = Number(String(isoDate || '').slice(8, 10));
+    return Number.isFinite(day) ? day : '';
+  }
+
+  function calendarDayHeaderText(isoDate) {
+    const date = new Date(`${String(isoDate || '').slice(0, 10)}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat('cs-CZ', { weekday: 'short', day: 'numeric', month: 'numeric' }).format(date);
+  }
+
+  function calendarCellEventTime(event) {
+    if (!event?.time) return 'celý den';
+    return event.endTime ? `${event.time}–${event.endTime}` : event.time;
+  }
+
+  function calendarEventDisplayEndDate(event = {}) {
+    const startDate = String(event.date || '').slice(0, 10);
+    let endDate = String(event.endDate || '').slice(0, 10);
+    if (!startDate) return '';
+    if (!endDate) {
+      const endMs = calendarEventEndMs(event);
+      if (Number.isFinite(endMs) && endMs !== Number.MAX_SAFE_INTEGER) {
+        endDate = localISODate(new Date(endMs));
+      }
+    }
+    if (!endDate || endDate < startDate) return startDate;
+    if (!event.time && event.endDate && endDate > startDate) {
+      // Google all-day events store the end date as exclusive. Display through the previous day.
+      endDate = addDaysIso(endDate, -1);
+    }
+    return endDate < startDate ? startDate : endDate;
+  }
+
+  function calendarEventDateRange(event = {}, gridStart = '', gridEnd = '') {
+    const startDate = String(event.date || '').slice(0, 10);
+    if (!startDate) return [];
+    let endDate = calendarEventDisplayEndDate(event);
+    if (!endDate) endDate = startDate;
+    let cursor = startDate < gridStart ? gridStart : startDate;
+    const last = endDate > gridEnd ? gridEnd : endDate;
+    const days = [];
+    while (cursor && last && cursor <= last && days.length < 366) {
+      days.push(cursor);
+      cursor = addDaysIso(cursor, 1);
+    }
+    return days;
+  }
+
+  function calendarEventDateLabel(event = {}) {
+    const startDate = String(event.date || '').slice(0, 10);
+    const endDate = calendarEventDisplayEndDate(event);
+    if (!startDate) return '—';
+    if (!endDate || endDate === startDate) return formatDate(startDate);
+    return `${formatDate(startDate)} – ${formatDate(endDate)}`;
+  }
+
+  function renderCalendarMonthGrid(events = [], monthKey = calendarViewMonth) {
+    const month = normalizeCalendarMonth(monthKey);
+    const [year, rawMonth] = month.split('-').map(Number);
+    const firstDay = new Date(Date.UTC(year, rawMonth - 1, 1));
+    const lastDay = new Date(Date.UTC(year, rawMonth, 0));
+    const leadingDays = (firstDay.getUTCDay() + 6) % 7;
+    const trailingDays = 6 - ((lastDay.getUTCDay() + 6) % 7);
+    const gridStart = addDaysIso(`${month}-01`, -leadingDays);
+    const gridEnd = addDaysIso(lastDay.toISOString().slice(0, 10), trailingDays);
+    const monthEvents = sortCalendarEventsByStart(events).filter((event) => {
+      const startDate = String(event.date || '').slice(0, 10);
+      const endDate = calendarEventDisplayEndDate(event) || startDate;
+      return startDate && startDate <= gridEnd && endDate >= gridStart;
+    });
+    const eventsByDate = monthEvents.reduce((acc, event) => {
+      calendarEventDateRange(event, gridStart, gridEnd).forEach((key) => {
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(event);
+      });
+      return acc;
+    }, {});
+    const days = [];
+    let cursor = gridStart;
+    while (cursor <= gridEnd) {
+      days.push(cursor);
+      cursor = addDaysIso(cursor, 1);
+    }
+    while (days.length < 35) days.push(addDaysIso(days[days.length - 1], 1));
+    const weeks = [];
+    for (let index = 0; index < days.length; index += 7) weeks.push(days.slice(index, index + 7));
+    const monthStart = `${month}-01`;
+    const monthEnd = lastDay.toISOString().slice(0, 10);
+    const monthEventCount = monthEvents.filter((event) => {
+      const startDate = String(event.date || '').slice(0, 10);
+      const endDate = calendarEventDisplayEndDate(event) || startDate;
+      return startDate && startDate <= monthEnd && endDate >= monthStart;
+    }).length;
+    const today = todayISO();
+    const dayNames = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
+    return `
+      <div class="calendar-month-view">
+        <div class="calendar-month-toolbar">
+          <div>
+            <span class="badge">Měsíční přehled</span>
+            <h3>${escapeHtml(calendarMonthTitle(month))}</h3>
+            <p>${monthEventCount ? `${monthEventCount} událostí v měsíci` : 'Žádné události v tomto měsíci'}</p>
+          </div>
+          <div class="calendar-month-actions">
+            <button class="ghost-btn" type="button" data-action="calendar-month-prev">‹</button>
+            <button class="ghost-btn" type="button" data-action="calendar-month-today">Dnes</button>
+            <button class="ghost-btn" type="button" data-action="calendar-month-next">›</button>
+          </div>
+        </div>
+        <div class="calendar-grid" role="table" aria-label="Kalendář ${escapeHtml(calendarMonthTitle(month))}">
+          <div class="calendar-weekdays" role="row">
+            ${dayNames.map((day) => `<div class="calendar-weekday" role="columnheader">${day}</div>`).join('')}
+          </div>
+          ${weeks.map((week, weekIndex) => `
+            <div class="calendar-week-row" role="row" aria-label="Týden ${weekIndex + 1}">
+              ${week.map((dayIso) => {
+                const dayEvents = eventsByDate[dayIso] || [];
+                const visible = dayEvents.slice(0, 3);
+                const hidden = dayEvents.length - visible.length;
+                const outside = !dayIso.startsWith(month);
+                const weekend = [0, 6].includes((new Date(`${dayIso}T00:00:00Z`)).getUTCDay());
+                const holiday = czechPublicHolidayName(dayIso);
+                return `
+                  <div class="calendar-day ${outside ? 'outside-month' : ''} ${dayIso === today ? 'today' : ''} ${weekend ? 'weekend' : ''} ${holiday ? 'holiday' : ''}" role="cell">
+                    <div class="calendar-day-head">
+                      <span class="calendar-day-number">${calendarDayNumber(dayIso)}</span>
+                      <span class="calendar-day-name">${escapeHtml(calendarDayHeaderText(dayIso))}</span>
+                    </div>
+                    <div class="calendar-day-events">
+                      ${visible.map((event) => `
+                        <button class="calendar-day-event ${event.cloudId ? 'cloud-event' : ''} ${dayIso !== String(event.date || '').slice(0, 10) ? 'continued-event' : ''}" type="button" data-action="calendar-event-detail" data-id="${escapeHtml(event.id || event.cloudId || '')}" title="${escapeHtml(event.title)}">
+                          <strong>${dayIso !== String(event.date || '').slice(0, 10) ? '↳ ' : ''}${escapeHtml(event.title)}</strong>
+                          <span>${escapeHtml(dayIso !== String(event.date || '').slice(0, 10) ? 'pokračuje' : calendarCellEventTime(event))}${event.location ? ` · ${escapeHtml(event.location)}` : ''}</span>
+                        </button>
+                      `).join('')}
+                      ${hidden > 0 ? `<div class="calendar-more-events">+${hidden} další</div>` : ''}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCalendarSourceList(sources = getCalendarSources()) {
+    if (!sources.length) {
+      return renderEmptyCta({ icon: '📅', title: 'Zatím žádné zdroje', text: 'Přidej ruční domácí zdroj nebo připoj Google kalendář.', nav: 'calendar', tab: 'sources', label: 'Přidat zdroj' });
+    }
+    return `<details class="compact-edit-details calendar-source-list-details"><summary><span>Aktivní zdroje</span><em>${sources.length} zdrojů</em></summary><div class="list compact-list calendar-source-list">${sources.map((source) => {
+      const linkedEvents = (state.calendar || []).filter((event) => String(event.sourceId || '') === String(source.id || source.cloudId || '')).length;
+      const google = normalizeCalendarSourceProvider(source.provider) === 'google';
+      return `
+        <div class="item calendar-source-item ${source.isEnabled === false ? 'muted-item' : ''}">
+          <div class="item-top">
+            <div class="item-title"><span class="calendar-source-icon">${escapeHtml(calendarSourceIcon(source.provider))}</span> ${escapeHtml(source.name)}</div>
+            <span class="badge ${source.isEnabled === false ? '' : 'good'}">${source.isEnabled === false ? 'skrytý' : 'aktivní'}</span>
+          </div>
+          <div class="item-meta">${escapeHtml(calendarSourceProviderLabel(source.provider))}${source.providerCalendarId ? ` · ${escapeHtml(source.providerCalendarId)}` : ''}${source.lastSyncedAt ? ` · sync ${formatDateTime(source.lastSyncedAt)}` : ''}</div>
+          ${source.note ? `<div class="item-meta">${escapeHtml(source.note)}</div>` : ''}
+          <div class="cloud-status-grid compact-cloud-stats source-mini-stats">
+            <div class="mini-stat"><span>Události</span><strong>${linkedEvents}</strong></div>
+            <div class="mini-stat"><span>Typ</span><strong>${escapeHtml(calendarSourceProviderLabel(source.provider))}</strong></div>
+            <div class="mini-stat"><span>Stav</span><strong>${source.isEnabled === false ? 'skrytý' : 'viditelný'}</strong></div>
+          </div>
+          <div class="item-actions">
+            <button class="ghost-btn" type="button" data-action="calendar-toggle-source" data-source-id="${escapeHtml(source.id || source.cloudId || '')}" data-enabled="${source.isEnabled === false ? 'true' : 'false'}">${source.isEnabled === false ? 'Zobrazit' : 'Skrýt'}</button>
+            ${google && state.cloud?.householdId ? `<button class="ghost-btn" type="button" data-action="google-calendar-sync" data-source-id="${escapeHtml(source.cloudId || source.id || '')}">Sync</button>` : ''}
+            <button class="danger-btn" type="button" data-action="calendar-delete-source" data-source-id="${escapeHtml(source.id || source.cloudId || '')}">Odebrat</button>
+          </div>
+        </div>
+      `;
+    }).join('')}</div></details>`;
+  }
+
+  function renderCalendar() {
+    const sourceList = getCalendarSources();
+    const enabledSourceIds = new Set(sourceList.filter((source) => source.isEnabled !== false).map((source) => String(source.id || source.cloudId || '')));
+    const events = [...visibleCalendarEvents()].sort((a, b) => `${a.date || ''}${a.time || ''}`.localeCompare(`${b.date || ''}${b.time || ''}`));
+    const todayEvents = events.filter((event) => event.date === todayISO());
+    const upcoming = events.filter((event) => !event.date || event.date >= todayISO()).slice(0, 12);
+    const soonCount = events.filter((event) => event.date && event.date > todayISO() && event.date <= dateOffsetISO(7)).length;
+    const past = events.filter((event) => event.date && event.date < todayISO()).reverse().slice(0, 8);
+    const hiddenEvents = (state.calendar || []).filter((event) => event.sourceId && !enabledSourceIds.has(String(event.sourceId)) && getCalendarSource(event.sourceId)).length;
+    const cloudReady = Boolean(state.cloud?.householdId);
+    const localOnly = events.filter((event) => !event.cloudId).length;
+    const cloudCount = events.filter((event) => event.cloudId).length;
+    const activeSources = sourceList.filter((source) => source.isEnabled !== false).length;
+    const activeCalendarTab = getModuleTab('calendar', 'overview');
+    return `
+      ${renderSectionTabs('calendar', [
+        { id: 'overview', label: 'Přehled', icon: '📅', count: todayEvents.length },
+        { id: 'sources', label: 'Zdroje', icon: '🧩', count: sourceList.length },
+        { id: 'add', label: 'Přidat', icon: '➕' },
+        { id: 'history', label: 'Historie', icon: '🕘', count: past.length }
+      ], 'overview')}
+      <div class="grid two module-tabbed calendar-tab-${activeCalendarTab}" data-tab-area="calendar">
+        <section class="card desktop-span-2 calendar-panel panel-overview">
+          <div class="card-header">
+            <div><h2>Kalendář</h2></div>
+            <span class="badge ${cloudCount ? 'good' : ''}">${events.length} událostí</span>
+          </div>
+          <details class="compact-edit-details calendar-overview-summary-details">
+            <summary><span>Souhrn kalendáře</span><em>${events.length} událostí · ${activeSources}/${sourceList.length || 0} zdrojů</em></summary>
+            <div class="cloud-status-grid compact-cloud-stats calendar-overview-stats">
+              <div class="mini-stat"><span>Celkem</span><strong>${events.length}</strong></div>
+              <div class="mini-stat"><span>Dnes</span><strong>${todayEvents.length}</strong></div>
+              <div class="mini-stat"><span>Brzy</span><strong>${soonCount}</strong></div>
+              <div class="mini-stat"><span>Zdroje</span><strong>${activeSources}/${sourceList.length || 0}</strong></div>
+            </div>
+          </details>
+          ${hiddenEvents ? `<div class="inline-note">${hiddenEvents} událostí je schovaných, protože jejich kalendář je vypnutý.</div>` : ''}
+          ${renderCalendarMonthGrid(events, calendarViewMonth)}
+          ${events.length ? '' : renderEmptyCta({ icon: '📅', title: 'Kalendář je prázdný', text: 'Přidej první sdílenou domácí událost.', nav: 'calendar', tab: 'add', label: 'Přidat událost' })}
+        </section>
+
+        <section class="card desktop-span-2 calendar-panel panel-sources">
+          <div class="card-header">
+            <div><h2>Zdroje kalendáře</h2></div>
+            <span class="badge ${cloudReady ? 'good' : ''}">${cloudReady ? 'cloud' : 'lokálně'}</span>
+          </div>
+          ${renderGoogleCalendarConnector(cloudReady, sourceList)}
+          <details class="compact-edit-details calendar-manual-source-details">
+            <summary><span>Přidat ruční zdroj kalendáře</span><em>domácí / veřejný Google iCal odkaz</em></summary>
+            <form data-form="add-calendar-source" class="compact-form">
+              <div class="form-grid two">
+                ${field('Název kalendáře', 'name', 'text', 'Rodina / Práce / Veřejný Google', true)}
+                ${selectField('Typ', 'provider', [['manual', 'Ruční domácí'], ['family', 'Rodinný'], ['work', 'Práce'], ['ical', 'Veřejný Google / iCal odkaz'], ['other', 'Jiný']])}
+                ${field('Veřejný odkaz / ID', 'providerCalendarId', 'text', 'volitelné, např. veřejný iCal odkaz')}
+                ${field('Barva', 'color', 'text', '#8b5cf6')}
+                ${field('Poznámka', 'note', 'text', 'volitelné')}
+              </div>
+              <div class="inline-note compact-note">Veřejný Google kalendář vlož jako veřejný iCal odkaz. Zatím se uloží jako zdroj; automatické načítání iCal událostí bude samostatný krok.</div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Přidat zdroj</button></div>
+            </form>
+          </details>
+          ${renderCalendarSourceList(sourceList)}
+        </section>
+
+        <section class="card calendar-panel panel-add">
+          <div class="card-header">
+            <div><h2>Přidat událost</h2><p>Událost může být jen sdílená v domácnosti, bez Google kalendáře.</p></div>
+            <span class="badge ${cloudCount ? 'good' : ''}">${cloudReady ? 'sdílené v domácnosti' : 'lokálně'}</span>
+          </div>
+          <form data-form="add-event">
+            <div class="form-grid two">
+              ${field('Název', 'title', 'text', 'Doktor / návštěva / výlet', true)}
+              ${calendarSourceOptions('manual')}
+              ${field('Datum', 'date', 'date', '', true, todayISO())}
+              ${field('Konec vícedenní události', 'endDate', 'date', '')}
+              ${field('Začátek', 'time', 'time', '')}
+              ${field('Konec', 'endTime', 'time', '')}
+              ${selectField('Typ', 'type', [['event', 'Událost'], ['family', 'Rodina'], ['shift', 'Směna'], ['reminder', 'Připomínka'], ['holiday', 'Volno/svátek'], ['other', 'Ostatní']])}
+              ${field('Místo', 'location', 'text', 'volitelné')}
+              ${field('Poznámka', 'note', 'text', 'volitelné')}
+            </div>
+            <div class="form-actions">
+              <button class="primary-btn" type="submit">Uložit událost</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card desktop-span-2 calendar-panel panel-history">
+          <div class="card-header"><div><h2>Historie</h2><p>Poslední starší události, aby hlavní přehled nebyl zbytečně dlouhý.</p></div></div>
+          ${past.length ? renderEventList(past, true) : renderEmpty('Historie je zatím prázdná.')}
+        </section>
+      </div>
+    `;
+  }
+
+  function renderEventList(events, withDelete = false) {
+    return `<div class="list">${events.map((event) => `
+      <div class="item">
+        <div class="item-top">
+          <div class="item-title">${escapeHtml(event.title)}</div>
+          <span class="badge ${event.cloudId ? 'good' : ''}">${event.cloudId ? 'cloud' : 'lokálně'}</span>
+        </div>
+        <div class="item-meta">${escapeHtml(calendarEventMetaLabel(event, now))} · ${escapeHtml(calendarSourceName(event.sourceId))}</div>
+        ${withDelete ? `<div class="item-actions">${state.cloud?.householdId && !event.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-calendar" data-id="${event.id}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-calendar" data-id="${event.id}">Smazat</button></div>` : ''}
+      </div>
+    `).join('')}</div>`;
+  }
+
+  function renderPackages() {
+    const packages = [...state.packages].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const activePackages = packages.filter((pkg) => !['delivered', 'archived'].includes(pkg.status));
+    const deliveredPackages = packages.filter((pkg) => ['delivered', 'archived'].includes(pkg.status));
+    const cloudReady = Boolean(state.cloud?.householdId);
+    const localOnly = packages.filter((pkg) => !pkg.cloudId).length;
+    const cloudCount = packages.filter((pkg) => pkg.cloudId).length;
+    const activePackagesTab = getModuleTab('packages', 'active');
+    return `
+      ${renderSectionTabs('packages', [
+        { id: 'active', label: 'Aktivní', icon: '📦', count: activePackages.length },
+        { id: 'add', label: 'Přidat', icon: '➕' },
+        { id: 'archive', label: 'Doručené', icon: '✅', count: deliveredPackages.length }
+      ], 'active')}
+      <div class="grid two module-tabbed packages-tab-${activePackagesTab}" data-tab-area="packages">
+        <section class="card desktop-span-2 packages-panel panel-active">
+          <div class="card-header">
+            <div><h2>Aktivní balíky</h2><p>Vepředu jsou jen zásilky, které ještě řešíš. Přidávání je schované v záložce, aby modul nebyl roztahaný.</p></div>
+            <span class="badge ${cloudCount ? 'good' : ''}">${packages.length} celkem · ${cloudCount} cloud</span>
+          </div>
+          <div class="cloud-status-grid compact-cloud-stats">
+            <div class="mini-stat"><span>Aktivní</span><strong>${activePackages.length}</strong></div>
+            <div class="mini-stat"><span>K vyzvednutí</span><strong>${activePackages.filter((pkg) => ['pickup', 'ready_pickup'].includes(pkg.status)).length}</strong></div>
+            <div class="mini-stat"><span>Cloud</span><strong>${cloudCount}</strong></div>
+            <div class="mini-stat"><span>Lokálně</span><strong>${localOnly}</strong></div>
+          </div>
+          ${activePackages.length ? `<div class="list compact-list">${activePackages.map(renderPackageItem).join('')}</div>` : renderEmptyCta({ icon: '📦', title: 'Žádný aktivní balík', text: 'Přidej zásilku ručně. Později půjde automatika přes bezpečný backend.', nav: 'packages', tab: 'add', label: 'Přidat balík' })}
+        </section>
+
+        <section class="card packages-panel panel-add">
+          <div class="card-header">
+            <div><h2>Přidat balík</h2><p>Ruční sledování zásilek. Automatika přes e-mail/backend přijde později.</p></div>
+            <span class="badge ${packages.some((pkg) => pkg.cloudId) ? 'good' : ''}">${packages.some((pkg) => pkg.cloudId) ? 'cloud' : 'lokálně'}</span>
+          </div>
+          <form data-form="add-package">
+            <div class="form-grid two">
+              ${selectField('Dopravce', 'carrier', [['zasilkovna','Zásilkovna'], ['balikovna','Balíkovna'], ['ceska_posta','Česká pošta'], ['ppl','PPL'], ['dpd','DPD'], ['gls','GLS'], ['one','One by Allegro'], ['alza','Alza'], ['other','Jiný']])}
+              ${field('Číslo zásilky', 'tracking', 'text', 'např. Z123456789', true)}
+              ${field('Název / obchod', 'title', 'text', 'např. Temu / Alza / dárek')}
+              ${selectField('Stav', 'status', [['new', 'Nový'], ['transit', 'Na cestě'], ['pickup', 'K vyzvednutí'], ['delivered', 'Doručeno'], ['problem', 'Problém']])}
+              ${field('Předpoklad doručení', 'expectedDate', 'date', '')}
+              ${field('Výdejní místo', 'pickupPlace', 'text', 'volitelné')}
+              ${field('Odkaz na tracking', 'url', 'url', 'volitelné')}
+              ${field('Poznámka', 'note', 'text', 'co to je / poznámka')}
+            </div>
+            <div class="form-actions">
+              <button class="primary-btn" type="submit">Přidat balík</button>
+              ${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-parcels">Načíst cloud balíky</button>' : ''}
+              ${cloudReady && localOnly ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-parcels">Odeslat lokální (${localOnly})</button>` : ''}
+            </div>
+          </form>
+          <div class="inline-note">Balíky jsou při cloudu oddělené podle domácnosti. Cizí domácnost neuvidí tvoje tracking čísla ani poznámky.</div>
+        </section>
+
+        <section class="card desktop-span-2 packages-panel panel-archive">
+          <div class="card-header"><div><h2>Doručené / archiv</h2><p>Hotové balíky jsou mimo hlavní přehled, aby aktivní část zůstala krátká.</p></div></div>
+          ${deliveredPackages.length ? `<div class="list compact-list">${deliveredPackages.slice(0, 30).map(renderPackageItem).join('')}</div>` : renderEmptyCta({ icon: '✅', title: 'Archiv je prázdný', text: 'Doručené balíky se sem přesunou automaticky po označení jako doručené.' })}
+        </section>
+      </div>
+    `;
+  }
+
+  function renderPackageItem(pkg) {
+    const status = packageStatus(pkg.status);
+    return `
+      <div class="item">
+        <div class="item-top">
+          <div class="item-title">${escapeHtml(pkg.title || carrierLabel(pkg.carrier) || 'Balík')}</div>
+          <span class="badge ${status.kind}">${escapeHtml(status.label)}</span>
+        </div>
+        <div class="item-meta">${escapeHtml(carrierLabel(pkg.carrier))} · ${escapeHtml(pkg.tracking)}${pkg.expectedDate ? ` · doručení ${formatDate(pkg.expectedDate)}` : ''}${pkg.pickupPlace ? ` · ${escapeHtml(pkg.pickupPlace)}` : ''}${pkg.note ? ` · ${escapeHtml(pkg.note)}` : ''}${pkg.cloudId ? ' · cloud' : ' · lokálně'}</div>
+        <div class="item-actions">
+          <button class="ghost-btn" type="button" data-action="copy" data-value="${escapeHtml(pkg.tracking)}">Kopírovat číslo</button>
+          ${pkg.url ? `<a class="ghost-btn" href="${escapeHtml(pkg.url)}" target="_blank" rel="noopener">Tracking</a>` : ''}
+          <button class="ghost-btn" type="button" data-action="package-status" data-id="${pkg.id}" data-status="pickup">K vyzvednutí</button>
+          <button class="ghost-btn" type="button" data-action="package-status" data-id="${pkg.id}" data-status="delivered">Doručeno</button>
+          ${state.cloud?.householdId && !pkg.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-parcel" data-id="${pkg.id}">Odeslat</button>` : ''}
+          <button class="danger-btn" type="button" data-action="delete-package" data-id="${pkg.id}">Smazat</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function packageStatus(status) {
+    const map = {
+      new: { label: 'Nový', kind: '' },
+      transit: { label: 'Na cestě', kind: '' },
+      in_transit: { label: 'Na cestě', kind: '' },
+      pickup: { label: 'K vyzvednutí', kind: 'good' },
+      ready_pickup: { label: 'K vyzvednutí', kind: 'good' },
+      delivered: { label: 'Doručeno', kind: 'good' },
+      problem: { label: 'Problém', kind: 'bad' },
+      archived: { label: 'Archiv', kind: '' }
+    };
+    return map[status] || map.new;
+  }
+
+  function carrierLabel(value) {
+    const map = {
+      zasilkovna: 'Zásilkovna', balikovna: 'Balíkovna', ceska_posta: 'Česká pošta', ppl: 'PPL', dpd: 'DPD', gls: 'GLS', one: 'One by Allegro', alza: 'Alza', other: 'Jiný'
+    };
+    return map[value] || value || 'Jiný';
+  }
+
+  function parcelStatusToCloud(status) {
+    if (status === 'transit') return 'in_transit';
+    if (status === 'pickup') return 'ready_pickup';
+    return status || 'new';
+  }
+
+  function parcelStatusFromCloud(status) {
+    if (status === 'in_transit') return 'transit';
+    if (status === 'ready_pickup') return 'pickup';
+    return status || 'new';
+  }
+
+
+  function getShoppingToolkit() {
+    if (shoppingToolkitInstance) return shoppingToolkitInstance;
+    const factory = window.DomacnostShoppingUtils?.createToolkit;
+    if (typeof factory !== 'function') throw new Error('Shopping utils nejsou načtené');
+    shoppingToolkitInstance = factory({
+      defaultUnits: SHOPPING_UNITS,
+      defaultCategories: SHOPPING_CATEGORIES,
+      defaultCatalog: DEFAULT_SHOPPING_CATALOG,
+      getState: () => state,
+      normalizeText,
+      normalizeKey,
+      escapeHtml
+    });
+    return shoppingToolkitInstance;
+  }
+
+  function getShoppingCategoryIconMap() {
+    return getShoppingToolkit().getShoppingCategoryIconMap();
+  }
+
+  function shoppingKindIcon(kind) {
+    return getShoppingToolkit().shoppingKindIcon(kind);
+  }
+
+  function shoppingKindLabel(item) {
+    return getShoppingToolkit().shoppingKindLabel(item);
+  }
+
+  function normalizeShoppingListRecord(list, index = 0) {
+    return {
+      id: list?.id || `shopping-list-${uid()}`,
+      householdId: list?.householdId || currentHouseholdId?.() || '',
+      profileId: list?.profileId || currentProfileId?.() || '',
+      name: normalizeText(list?.name) || `Seznam ${index + 1}`,
+      cloudId: list?.cloudId || list?.cloud_id || list?.cloudListId || '',
+      cloudListId: list?.cloudListId || list?.cloudId || list?.cloud_id || '',
+      status: list?.status || 'active',
+      createdAt: list?.createdAt || list?.created_at || new Date().toISOString(),
+      updatedAt: list?.updatedAt || list?.updated_at || list?.createdAt || list?.created_at || new Date().toISOString(),
+      sortOrder: Number(list?.sortOrder ?? list?.sort_order ?? index),
+      source: list?.source || ''
+    };
+  }
+
+  function cloneDefaultShoppingLists() {
+    const timestamp = new Date().toISOString();
+    return DEFAULT_SHOPPING_LISTS.map((list, index) => ({
+      ...list,
+      householdId: currentHouseholdId?.() || '',
+      profileId: currentProfileId?.() || '',
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      sortOrder: index
+    }));
+  }
+
+  function cloneDefaultShoppingItems() {
+    const timestamp = new Date().toISOString();
+    return DEFAULT_SHOPPING_ITEMS.map((item) => ({
+      ...item,
+      householdId: currentHouseholdId?.() || '',
+      profileId: currentProfileId?.() || '',
+      createdAt: timestamp,
+      done: Boolean(item.done)
+    }));
+  }
+
+  function normalizeShoppingLists(listValue, migrated = state) {
+    const source = Array.isArray(listValue) ? listValue : [];
+    const normalized = source
+      .filter((list) => list && typeof list === 'object')
+      .map((list, index) => ({
+        ...normalizeShoppingListRecord(list, index),
+        householdId: list.householdId || migrated.household?.id || currentHouseholdId?.() || '',
+        profileId: list.profileId || migrated.activeProfileId || currentProfileId?.() || ''
+      }));
+    const byId = new Map();
+    normalized.forEach((list) => byId.set(list.id, list));
+    return [...byId.values()].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.name).localeCompare(String(b.name), 'cs'));
+  }
+
+  function normalizeShoppingItemRecord(item, listId) {
+    const catalogItem = item?.name ? DEFAULT_SHOPPING_CATALOG.find((entry) => normalizeKey(entry.name) === normalizeKey(item.name)) : null;
+    const kind = normalizeText(item?.kind || item?.category || catalogItem?.kind || catalogItem?.category) || 'Ostatní';
+    return {
+      ...item,
+      id: item?.id || `shopping-${uid()}`,
+      householdId: item?.householdId || currentHouseholdId?.() || '',
+      profileId: item?.profileId || currentProfileId?.() || '',
+      createdAt: item?.createdAt || new Date().toISOString(),
+      listId: item?.listId || listId,
+      name: normalizeText(item?.name),
+      category: kind,
+      kind,
+      quantity: Number(item?.quantity || item?.amount || 1) || 1,
+      unit: normalizeText(item?.unit) || catalogItem?.defaultUnit || 'ks',
+      note: normalizeText(item?.note),
+      done: Boolean(item?.done),
+      doneAt: item?.doneAt || ''
+    };
+  }
+
+  function seedDefaultShoppingLists(migrated) {
+    migrated.shoppingLists = normalizeShoppingLists(migrated.shoppingLists, migrated);
+    if (!migrated.shoppingLists.some((list) => list.id === migrated.activeShoppingListId)) migrated.activeShoppingListId = migrated.shoppingLists[0]?.id || '';
+    migrated.shopping = (migrated.shopping || []).map((item) => normalizeShoppingItemRecord(item, migrated.activeShoppingListId || migrated.shoppingLists[0]?.id || ''));
+    migrated.shoppingSeedVersion = 201;
+  }
+
+  let martinPrivateShoppingRestorePromise = null;
+  const MARTIN_PRIVATE_RESTORE_CUTOFF_MS = Date.parse('2026-06-11T00:00:00+02:00');
+  const MARTIN_PRIVATE_RESTORE_VERSION = 201;
+
+  function isMartinPrivateShoppingRestoreTarget(data = state) {
+    if (Number(data.shoppingPrivateRestoreVersion || 0) >= MARTIN_PRIVATE_RESTORE_VERSION) return false;
+    if (!data?.household?.isConfigured) return false;
+
+    // Soukromý restore je jen záchrana starší Martinovy domácnosti.
+    // Nově založená domácnost nesmí dostat osobní seznamy jen proto, že se profil jmenuje Martin.
+    const createdAtText = data.household?.createdAt || data.meta?.createdAt || '';
+    const createdAtMs = createdAtText ? Date.parse(createdAtText) : 0;
+    if (createdAtMs && createdAtMs > MARTIN_PRIVATE_RESTORE_CUTOFF_MS) return false;
+
+    const existingListNames = new Set((data.shoppingLists || []).map((list) => normalizeKey(list.name)));
+    const alreadyHasMartinLists = ['polsko', 'penny', 'jip', 'martinek'].some((name) => existingListNames.has(name));
+    if (alreadyHasMartinLists) return true;
+
+    const profileText = (data.profiles || []).map((profile) => profile.name || profile.displayName || '').join(' ');
+    const cloudText = [data.cloud?.email, data.household?.name, data.settings?.householdName].filter(Boolean).join(' ');
+    const combined = normalizeKey(`${profileText} ${cloudText}`);
+    const looksLikeMartin = combined.includes('martin') || combined.includes('spadrna') || combined.includes('spadrno') || combined.includes('spadrnova');
+    return looksLikeMartin && (!createdAtMs || createdAtMs <= MARTIN_PRIVATE_RESTORE_CUTOFF_MS);
+  }
+
+  function applyMartinPrivateShoppingRestorePayload(data, payload) {
+    if (!payload?.lists?.length || !Array.isArray(payload.items)) return false;
+    if (!isMartinPrivateShoppingRestoreTarget(data)) return false;
+
+    const timestamp = new Date().toISOString();
+    data.shoppingLists = normalizeShoppingLists(data.shoppingLists || [], data);
+    data.shopping = Array.isArray(data.shopping) ? data.shopping : [];
+
+    const existingListNames = new Set(data.shoppingLists.map((list) => normalizeKey(list.name)));
+    const existingListIds = new Set(data.shoppingLists.map((list) => list.id));
+
+    payload.lists.forEach((list, index) => {
+      const nameKey = normalizeKey(list.name);
+      if (existingListNames.has(nameKey) || existingListIds.has(list.id)) return;
+      data.shoppingLists.push({
+        ...list,
+        householdId: data.household?.id || '',
+        profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        sortOrder: data.shoppingLists.length + index,
+        source: 'martin-private-restore-v201'
+      });
+      existingListNames.add(nameKey);
+      existingListIds.add(list.id);
+    });
+
+    const validListIds = new Set(data.shoppingLists.map((list) => list.id));
+    const existingItemKeys = new Set(data.shopping.map((item) => `${item.listId || ''}|${normalizeKey(item.name)}`));
+
+    const restoredItems = payload.items
+      .filter((item) => validListIds.has(item.listId))
+      .filter((item) => {
+        const key = `${item.listId}|${normalizeKey(item.name)}`;
+        if (existingItemKeys.has(key)) return false;
+        existingItemKeys.add(key);
+        return true;
+      })
+      .map((item) => ({
+        ...item,
+        householdId: data.household?.id || '',
+        profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
+        createdAt: timestamp,
+        source: 'martin-private-restore-v201'
+      }));
+
+    data.shopping = [...data.shopping, ...restoredItems];
+    if (!data.activeShoppingListId || !validListIds.has(data.activeShoppingListId)) data.activeShoppingListId = data.shoppingLists[0]?.id || '';
+    data.shoppingPrivateRestoreVersion = MARTIN_PRIVATE_RESTORE_VERSION;
+    markShoppingRuntimeDirty();
+    return Boolean(restoredItems.length || payload.lists.length);
+  }
+
+  function scheduleMartinPrivateShoppingRestore() {
+    if (martinPrivateShoppingRestorePromise || !isMartinPrivateShoppingRestoreTarget(state)) return martinPrivateShoppingRestorePromise;
+    martinPrivateShoppingRestorePromise = new Promise((resolve) => {
+      const run = async () => {
+        try {
+          const response = await fetch('./martin-shopping-restore-v202.json', { cache: 'force-cache' });
+          if (!response.ok) throw new Error(`restore ${response.status}`);
+          const payload = await response.json();
+          const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
+          if (changed) {
+            touchState();
+            saveState();
+            render();
+          }
+          resolve(changed);
+        } catch (error) {
+          console.warn('Martin shopping restore skipped', error);
+          resolve(false);
+        }
+      };
+      if ('requestIdleCallback' in window) window.requestIdleCallback(run, { timeout: 1200 });
+      else window.setTimeout(run, 0);
+    });
+    return martinPrivateShoppingRestorePromise;
+  }
+
+  function markShoppingCatalogDirty() {
+    if (shoppingToolkitInstance) shoppingToolkitInstance.markCatalogDirty();
+  }
+
+  function markShoppingRuntimeDirty() {
+    shoppingRuntimeReady = false;
+    markShoppingCatalogDirty();
+  }
+
+  function ensureShoppingListsReady(force = false) {
+    scheduleMartinPrivateShoppingRestore();
+    if (!force && shoppingRuntimeReady) {
+      const lists = Array.isArray(state.shoppingLists) ? state.shoppingLists : [];
+      if (!lists.some((list) => list.id === state.activeShoppingListId)) state.activeShoppingListId = lists[0]?.id || '';
+      return;
+    }
+    state.shoppingLists = normalizeShoppingLists(state.shoppingLists, state);
+    const validIds = new Set(state.shoppingLists.map((list) => list.id));
+    if (!validIds.has(state.activeShoppingListId)) state.activeShoppingListId = state.shoppingLists[0]?.id || '';
+    state.shopping = (state.shopping || []).map((item) => normalizeShoppingItemRecord(item, item.listId || state.activeShoppingListId || state.shoppingLists[0]?.id || ''));
+    shoppingRuntimeReady = true;
+  }
+
+  function getShoppingLists() {
+    ensureShoppingListsReady();
+    return [...state.shoppingLists].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.name).localeCompare(String(b.name), 'cs'));
+  }
+
+  function getActiveShoppingListId() {
+    const lists = getShoppingLists();
+    if (!lists.some((list) => list.id === state.activeShoppingListId)) state.activeShoppingListId = lists[0]?.id || '';
+    return state.activeShoppingListId || lists[0]?.id || '';
+  }
+
+  function getActiveShoppingList() {
+    const id = getActiveShoppingListId();
+    const lists = getShoppingLists();
+    return lists.find((list) => list.id === id) || lists[0] || null;
+  }
+
+  function shoppingItemsForList(listId = getActiveShoppingListId()) {
+    if (!listId) return [];
+    return (state.shopping || []).filter((item) => item.listId === listId);
+  }
+
+  function shoppingListStats(listId) {
+    const items = shoppingItemsForList(listId);
+    const open = items.filter((item) => !item.done).length;
+    const done = items.length - open;
+    return { total: items.length, open, done };
+  }
+
+  function buildShoppingListStats(lists = getShoppingLists()) {
+    return getShoppingToolkit().buildShoppingListStats(lists);
+  }
+
+  function groupShoppingItemsByKind(items) {
+    return getShoppingToolkit().groupShoppingItemsByKind(items);
+  }
+
+  function getShoppingUnits() {
+    return getShoppingToolkit().getShoppingUnits();
+  }
+
+  function getShoppingCategories() {
+    return getShoppingToolkit().getShoppingCategories();
+  }
+
+  function getShoppingCatalog() {
+    return getShoppingToolkit().getShoppingCatalog();
+  }
+
+  function findShoppingCatalogItem(name) {
+    return getShoppingToolkit().findShoppingCatalogItem(name);
+  }
+
+  function getShoppingStat(name) {
+    return getShoppingToolkit().getShoppingStat(name);
+  }
+
+  function trackShoppingUsage(name, unit = 'ks', category = 'Ostatní') {
+    const key = normalizeKey(name);
+    if (!key) return;
+    const current = state.shoppingStats?.[key] || {};
+    state.shoppingStats = {
+      ...(state.shoppingStats || {}),
+      [key]: {
+        name: normalizeText(name),
+        unit: normalizeText(unit) || current.unit || 'ks',
+        category: normalizeText(category) || current.category || 'Ostatní',
+        count: Number(current.count || 0) + 1,
+        lastUsedAt: new Date().toISOString()
+      }
+    };
+    markShoppingCatalogDirty();
+  }
+
+  function getShoppingQuickItems(limit = 10, catalog = getShoppingCatalog()) {
+    return getShoppingToolkit().getShoppingQuickItems(limit, catalog);
+  }
+
+  function getShoppingDatalistItems(catalog = getShoppingCatalog(), limit = 90) {
+    return getShoppingToolkit().getShoppingDatalistItems(catalog, limit);
+  }
+
+  function shoppingSourceLabel(item) {
+    return getShoppingToolkit().shoppingSourceLabel(item);
+  }
+
+  function renderShoppingCatalogItem(item, activeList) {
+    return getShoppingToolkit().renderShoppingCatalogItem(item, activeList);
+  }
+
+  function getShoppingRenderer() {
+    if (shoppingRendererInstance) return shoppingRendererInstance;
+    const factory = window.DomacnostShoppingRender?.createRenderer;
+    if (typeof factory !== 'function') throw new Error('Shopping render není načtený');
+    shoppingRendererInstance = factory({
+      getState: () => state,
+      defaultCatalogCount: DEFAULT_SHOPPING_CATALOG.length,
+      escapeHtml,
+      getModuleTab,
+      renderSectionTabs,
+      selectField,
+      field,
+      renderEmptyCta,
+      renderEmpty,
+      renderCouponItem,
+      ensureShoppingListsReady,
+      getShoppingLists,
+      getActiveShoppingListId,
+      buildShoppingListStats,
+      shoppingItemsForList,
+      groupShoppingItemsByKind,
+      getShoppingUnits,
+      getShoppingCategories,
+      getShoppingCatalog,
+      getShoppingDatalistItems,
+      shoppingKindIcon,
+      shoppingKindLabel,
+      renderShoppingCatalogItem,
+      getShoppingViewState: () => ({
+        quantityEditId: shoppingQuantityEditId,
+        doneModalOpen: shoppingDoneModalOpen
+      })
+    });
+    return shoppingRendererInstance;
+  }
+
+  function renderShopping() {
+    return getShoppingRenderer().renderShopping();
+  }
+
+
+  function closeShoppingTransientUi() {
+    shoppingQuantityEditId = '';
+    shoppingDoneModalOpen = false;
+    shoppingSwipeStart = null;
+    activeOverview = null;
+    closeFilePreviewModal();
+    garageModal = null;
+    calendarDetailEventId = null;
+    activeWarrantyDetailId = null;
+    document.body.classList.remove('overview-open');
+    applyVisualSettings();
+  }
+
+  function getShoppingActions() {
+    if (shoppingActionsInstance) return shoppingActionsInstance;
+    const factory = window.DomacnostShoppingActions?.createController;
+    if (typeof factory !== 'function') throw new Error('Shopping actions nejsou načtené');
+    shoppingActionsInstance = factory({
+      getState: () => state,
+      normalizeText,
+      normalizeKey,
+      decimalValue,
+      uid,
+      currentHouseholdId,
+      currentProfileId,
+      ensureShoppingListsReady,
+      getShoppingLists,
+      getActiveShoppingListId,
+      getActiveShoppingList,
+      findShoppingCatalogItem,
+      markShoppingCatalogDirty,
+      markShoppingRuntimeDirty,
+      trackShoppingUsage,
+      touchState,
+      saveState,
+      requestRender,
+      render,
+      showToast,
+      cloudReady,
+      cloudAddShoppingList,
+      cloudAddShoppingItem,
+      cloudUpdateShoppingItem,
+      cloudDeleteShoppingItem,
+      cloudArchiveShoppingList,
+      closeShoppingTransientUi,
+      getQuantityEditId: () => shoppingQuantityEditId,
+      setQuantityEditId: (value) => { shoppingQuantityEditId = value || ''; },
+      getDoneModalOpen: () => shoppingDoneModalOpen,
+      setDoneModalOpen: (value) => { shoppingDoneModalOpen = Boolean(value); },
+      confirm: (message) => window.confirm(message),
+      prompt: (message, value) => window.prompt(message, value)
+    });
+    return shoppingActionsInstance;
+  }
+
+  function renderCouponItem(coupon) {
+    const left = daysUntil(coupon.expiry);
+    const badgeClass = left === null ? '' : left < 0 ? 'bad' : left <= 7 ? 'warn' : 'good';
+    const badgeText = left === null ? 'bez expirace' : left < 0 ? 'propadlý' : `${left} dní`;
+    const isEditing = couponEditId === coupon.id;
+    return `
+      <div class="item">
+        <div class="item-top">
+          <div class="item-title">${escapeHtml(coupon.store)}</div>
+          <span class="badge ${badgeClass}">${escapeHtml(badgeText)}</span>
+        </div>
+        <div class="item-meta">Kód: <strong>${escapeHtml(coupon.code)}</strong>${coupon.discount ? ` · ${escapeHtml(coupon.discount)}` : ''}${coupon.expiry ? ` · do ${formatDate(coupon.expiry)}` : ''}${coupon.note ? ` · ${escapeHtml(coupon.note)}` : ''}</div>
+        <div class="item-actions coupon-actions">
+          <button class="ghost-btn" type="button" data-action="toggle-coupon-edit" data-id="${escapeHtml(coupon.id)}">${isEditing ? 'Zavřít úpravu' : 'Upravit kód'}</button>
+          <button class="ghost-btn" type="button" data-action="copy" data-value="${escapeHtml(coupon.code)}">Kopírovat kód</button>
+          <button class="danger-btn" type="button" data-action="delete" data-collection="coupons" data-id="${escapeHtml(coupon.id)}">Smazat</button>
+        </div>
+        ${isEditing ? `
+          <div class="coupon-inline-edit">
+            <form data-form="update-coupon" data-id="${escapeHtml(coupon.id)}" class="compact-form">
+              <div class="form-grid two">
+                ${field('Obchod / služba', 'store', 'text', 'Alza / Temu / Allegro', true, coupon.store || '')}
+                ${field('Kód', 'code', 'text', 'SLEVA10', true, coupon.code || '')}
+                ${field('Sleva', 'discount', 'text', '10 % / 200 Kč', false, coupon.discount || '')}
+                ${field('Platnost do', 'expiry', 'date', '', false, coupon.expiry || '')}
+                ${field('Poznámka', 'note', 'text', 'volitelné', false, coupon.note || '')}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button></div>
+            </form>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  function normalizeWarrantyStatus(value) {
+    const key = normalizeKey(value || 'active');
+    return WARRANTY_STATUS_OPTIONS.some(([id]) => id === key) ? key : 'active';
+  }
+
+  function warrantyStatusLabel(value) {
+    return WARRANTY_STATUS_OPTIONS.find(([id]) => id === normalizeWarrantyStatus(value))?.[1] || 'Aktivní';
+  }
+
+  function normalizeWarrantyYears(value, purchaseDate = '') {
+    const parsed = Number.parseInt(String(value || '').replace(/\D/g, ''), 10);
+    if (Number.isFinite(parsed)) return Math.min(10, Math.max(2, parsed));
+    return warrantyYearsFromDates(purchaseDate, '') || 2;
+  }
+
+  function warrantyYearsFromDates(purchaseDate = '', warrantyUntil = '') {
+    if (!purchaseDate || !warrantyUntil) return 0;
+    const start = new Date(`${purchaseDate}T00:00:00`);
+    const end = new Date(`${warrantyUntil}T00:00:00`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return 0;
+    const approx = Math.round((end.getTime() - start.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+    return Math.min(10, Math.max(2, approx || 2));
+  }
+
+  function warrantyFileCount(warrantyId) {
+    return (state.warrantyFiles || []).filter((file) => file.warrantyId === warrantyId).length;
+  }
+
+  function warrantyFilesFor(warrantyId) {
+    return (state.warrantyFiles || []).filter((file) => file.warrantyId === warrantyId).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  }
+
+  function primaryWarrantyFile(warrantyId) {
+    return warrantyFilesFor(warrantyId)[0] || null;
+  }
+
+  function normalizeWarrantyItem(item = {}) {
+    const purchaseDate = normalizeText(item.purchaseDate || item.purchase_date || item.date || todayISO());
+    const rawUntil = normalizeText(item.warrantyUntil || item.warranty_until || item.until || '');
+    const warrantyYears = normalizeWarrantyYears(item.warrantyYears || item.warranty_years || warrantyYearsFromDates(purchaseDate, rawUntil) || 2, purchaseDate);
+    const warrantyUntil = rawUntil || addYearsIso(purchaseDate, warrantyYears);
+    return {
+      id: item.id || `warranty-${uid()}`,
+      householdId: item.householdId || '',
+      profileId: item.profileId || '',
+      cloudId: item.cloudId || item.cloud_id || '',
+      createdAt: item.createdAt || item.created_at || new Date().toISOString(),
+      updatedAt: item.updatedAt || item.updated_at || '',
+      name: normalizeText(item.name || item.title) || 'Věc v záruce',
+      store: normalizeText(item.store || item.seller || ''),
+      category: '',
+      price: normalizeText(item.price || ''),
+      purchaseDate,
+      warrantyYears,
+      warrantyUntil,
+      status: normalizeWarrantyStatus(item.status),
+      note: normalizeText(item.note || item.notes || '')
+    };
+  }
+
+  function normalizeWarranties(items = []) {
+    return Array.isArray(items) ? items.map(normalizeWarrantyItem).filter((item) => item.name) : [];
+  }
+
+  function warrantyDraftValue(name, fallback = '') {
+    if (!warrantyFormDraft || typeof warrantyFormDraft !== 'object') return fallback;
+    return Object.prototype.hasOwnProperty.call(warrantyFormDraft, name) ? (warrantyFormDraft[name] || '') : fallback;
+  }
+
+  function warrantyDraftHasUserInput() {
+    if (!warrantyFormDraft || typeof warrantyFormDraft !== 'object') return false;
+    return ['name', 'store', 'price', 'purchaseDate', 'warrantyYears', 'warrantyUntil', 'status', 'note'].some((key) => {
+      const value = normalizeText(warrantyFormDraft[key]);
+      if (!value) return false;
+      if (key === 'purchaseDate' && value === todayISO()) return false;
+      if (key === 'warrantyYears' && value === '2') return false;
+      if (key === 'warrantyUntil' && value === addYearsIso(todayISO(), 2)) return false;
+      if (key === 'status' && value === 'active') return false;
+      return true;
+    });
+  }
+
+  function saveWarrantyDraftFromForm(form) {
+    if (!form || !form.matches?.('form[data-form="add-warranty"]')) return;
+    const data = getFormData(form);
+    warrantyFormDraft = {
+      name: normalizeText(data.name),
+      store: normalizeText(data.store),
+      price: normalizeText(data.price),
+      purchaseDate: normalizeText(data.purchaseDate),
+      warrantyYears: normalizeText(data.warrantyYears),
+      warrantyUntil: normalizeText(data.warrantyUntil),
+      status: normalizeText(data.status),
+      note: normalizeText(data.note)
+    };
+    sessionStorage.setItem('domacnostPlus.warrantyDraft', JSON.stringify(warrantyFormDraft));
+  }
+
+  function clearWarrantyDraft() {
+    warrantyFormDraft = null;
+    sessionStorage.removeItem('domacnostPlus.warrantyDraft');
+  }
+
+  function isWarrantyFormActive() {
+    const form = document.querySelector?.('form[data-form="add-warranty"]');
+    if (!form) return false;
+    return form.contains(document.activeElement) || warrantyDraftHasUserInput();
+  }
+
+  function warrantyTone(item) {
+    if (item.status === 'archived' || item.status === 'done') return 'good';
+    if (item.status === 'claim') return 'warn';
+    const days = daysUntil(item.warrantyUntil);
+    if (days === null) return '';
+    if (days < 0) return 'bad';
+    if (days <= 30) return 'warn';
+    return 'good';
+  }
+
+  function warrantyBadge(item) {
+    if (item.status === 'claim') return 'reklamace';
+    if (item.status === 'done') return 'vyřešeno';
+    if (item.status === 'archived') return 'archiv';
+    const days = daysUntil(item.warrantyUntil);
+    if (days === null) return 'bez data';
+    if (days < 0) return 'po záruce';
+    if (days === 0) return 'končí dnes';
+    if (days <= 30) return `končí za ${days} d`;
+    return `zbývá ${days} d`;
+  }
+
+  function sortedWarranties() {
+    return normalizeWarranties(state.warranties)
+      .sort((a, b) => {
+        const aArchived = ['archived', 'done'].includes(a.status) ? 1 : 0;
+        const bArchived = ['archived', 'done'].includes(b.status) ? 1 : 0;
+        if (aArchived !== bArchived) return aArchived - bArchived;
+        return String(a.warrantyUntil || '9999').localeCompare(String(b.warrantyUntil || '9999'));
+      });
+  }
+
+  function renderWarrantyFileItem(file, options = {}) {
+    const deletable = options.deletable !== false;
+    return `
+      <div class="warranty-file-row">
+        <button class="ghost-btn file-open-btn" type="button" data-action="open-warranty-file" data-id="${escapeHtml(file.id)}">${escapeHtml(file.fileName || 'Příloha')}</button>
+        <span class="item-meta">${escapeHtml(file.fileType || 'soubor')} · ${formatBytes(file.size)}${file.cloudId ? ' · cloud' : ' · lokálně'}</span>
+        ${deletable ? `<button class="danger-btn mini-danger-btn" type="button" data-action="delete-warranty-file" data-id="${escapeHtml(file.id)}" aria-label="Smazat přílohu">×</button>` : ''}
+      </div>
+    `;
+  }
+
+  function renderWarrantyItem(item) {
+    const fileCount = warrantyFileCount(item.id);
+    const firstFile = primaryWarrantyFile(item.id);
+    const meta = [
+      item.store,
+      item.price ? formatCurrency(item.price) : '',
+      `koupeno ${formatDate(item.purchaseDate)}`,
+      `${item.warrantyYears || 2} roky`,
+      `do ${formatDate(item.warrantyUntil)}`,
+      fileCount ? `${fileCount} příloh` : 'bez příloh',
+      warrantyStatusLabel(item.status)
+    ].filter(Boolean).join(' · ');
+    return `
+      <div class="item warranty-item">
+        <div class="item-top">
+          <div class="item-title">🧾 ${escapeHtml(item.name)}</div>
+          <span class="badge ${warrantyTone(item)}">${escapeHtml(warrantyBadge(item))}</span>
+        </div>
+        <div class="item-meta">${escapeHtml(meta)}</div>
+        ${item.note ? `<div class="inline-note compact-note">${escapeHtml(item.note)}</div>` : ''}
+        <div class="item-actions compact-actions warranty-item-actions">
+          ${firstFile ? `<button class="ghost-btn" type="button" data-action="open-warranty-file" data-id="${escapeHtml(firstFile.id)}">Otevřít soubor</button>` : ''}
+          <button class="ghost-btn" type="button" data-action="open-warranty-detail" data-id="${escapeHtml(item.id)}">Detail</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderWarrantyDetailModal() {
+    if (!activeWarrantyDetailId) return '';
+    const item = normalizeWarranties(state.warranties).find((entry) => entry.id === activeWarrantyDetailId);
+    if (!item) return '';
+    const files = warrantyFilesFor(item.id);
+    const purchaseDate = item.purchaseDate || todayISO();
+    const warrantyYears = normalizeWarrantyYears(item.warrantyYears || warrantyYearsFromDates(purchaseDate, item.warrantyUntil) || 2, purchaseDate);
+    const warrantyUntil = item.warrantyUntil || addYearsIso(purchaseDate, warrantyYears);
+    return `
+      <div class="app-modal-backdrop warranty-detail-backdrop" data-modal-backdrop role="presentation">
+        <section class="app-modal warranty-detail-modal" role="dialog" aria-modal="true" aria-labelledby="warranty-detail-title">
+          <div class="app-modal-head warranty-detail-head">
+            <div>
+              <span class="badge ${warrantyTone(item)}">${escapeHtml(warrantyBadge(item))}</span>
+              <h2 id="warranty-detail-title">${escapeHtml(item.name)}</h2>
+              <p>${escapeHtml([item.store, item.price ? formatCurrency(item.price) : '', `do ${formatDate(item.warrantyUntil)}`].filter(Boolean).join(' · '))}</p>
+            </div>
+            <button class="icon-btn" type="button" data-action="close-modal" aria-label="Zavřít detail záruky">×</button>
+          </div>
+
+          <div class="modal-detail-grid warranty-detail-summary">
+            <div class="modal-detail-card"><span>Koupeno</span><strong>${escapeHtml(formatDate(item.purchaseDate))}</strong></div>
+            <div class="modal-detail-card"><span>Záruka do</span><strong>${escapeHtml(formatDate(item.warrantyUntil))}</strong></div>
+            <div class="modal-detail-card"><span>Délka</span><strong>${escapeHtml(String(item.warrantyYears || 2))} roky</strong></div>
+            <div class="modal-detail-card"><span>Přílohy</span><strong>${files.length}</strong></div>
+          </div>
+
+          <details class="compact-edit-details warranty-detail-edit" open>
+            <summary><span>Upravit údaje</span><em>všechny hodnoty záruky</em></summary>
+            <form data-form="edit-warranty" data-id="${escapeHtml(item.id)}" class="compact-form warranty-form">
+              <div class="form-grid two">
+                ${field('Věc', 'name', 'text', 'televize / pračka / telefon', true, item.name)}
+                ${field('Obchod', 'store', 'text', 'Alza / Datart / Kaufland', false, item.store)}
+                ${field('Cena', 'price', 'text', 'volitelné', false, item.price, 'decimal')}
+                ${field('Datum koupě', 'purchaseDate', 'date', '', true, purchaseDate)}
+                ${selectField('Délka záruky', 'warrantyYears', WARRANTY_YEARS_OPTIONS, String(warrantyYears))}
+                ${field('Záruka do', 'warrantyUntil', 'date', 'automaticky podle délky', false, warrantyUntil)}
+                ${selectField('Stav', 'status', WARRANTY_STATUS_OPTIONS, item.status)}
+                ${field('Poznámka / reklamace', 'note', 'text', 'reklamace, domluva', false, item.note)}
+              </div>
+              <div class="form-actions modal-actions"><button class="primary-btn" type="submit">Uložit změny</button></div>
+            </form>
+          </details>
+
+          <details class="compact-edit-details warranty-detail-files" open>
+            <summary><span>Přílohy</span><em>${files.length ? `${files.length} souborů` : 'fotka / PDF'}</em></summary>
+            ${files.length ? `<div class="warranty-file-list">${files.map((file) => renderWarrantyFileItem(file)).join('')}</div>` : '<div class="item-meta">Bez přílohy</div>'}
+            <form data-form="add-warranty-files" data-warranty-id="${escapeHtml(item.id)}" class="compact-form warranty-file-form">
+              <label class="field"><span>Přidat fotku / PDF</span><input class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf"></label>
+              <div class="form-actions compact-actions"><button class="ghost-btn" type="submit">Přidat přílohu</button></div>
+            </form>
+          </details>
+
+          <details class="compact-edit-details danger-zone warranty-detail-danger">
+            <summary><span>Smazat záruku</span><em>nevratná akce</em></summary>
+            <div class="hint-box danger-hint">Smaže se záruka i její vazby na přílohy.</div>
+            <div class="form-actions modal-actions"><button class="danger-btn" type="button" data-action="delete-warranty" data-id="${escapeHtml(item.id)}">Smazat záruku</button></div>
+          </details>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderWarrantiesPanel(warranties) {
+    const draftPurchaseDate = warrantyDraftValue('purchaseDate', todayISO()) || todayISO();
+    const draftWarrantyYears = normalizeWarrantyYears(warrantyDraftValue('warrantyYears', '2'), draftPurchaseDate);
+    const draftWarrantyUntil = warrantyDraftValue('warrantyUntil', addYearsIso(draftPurchaseDate, draftWarrantyYears)) || addYearsIso(draftPurchaseDate, draftWarrantyYears);
+    const draftStatus = warrantyDraftValue('status', 'active') || 'active';
+    const activeItems = warranties.filter((item) => !['archived', 'done'].includes(item.status));
+    const claimCount = warranties.filter((item) => item.status === 'claim').length;
+    const endingSoon = warranties.filter((item) => {
+      const days = daysUntil(item.warrantyUntil);
+      return item.status === 'active' && days !== null && days >= 0 && days <= 30;
+    }).length;
+    const expired = warranties.filter((item) => {
+      const days = daysUntil(item.warrantyUntil);
+      return item.status === 'active' && days !== null && days < 0;
+    }).length;
+    return `
+      <section class="card homecare-panel panel-warranties">
+        <div class="card-header">
+          <div><h2>Záruky</h2><p>Koupené věci, konec záruky a poznámky třeba k reklamaci.</p></div>
+          <span class="badge ${state.cloud?.householdId ? 'good' : ''}">${state.cloud?.householdId ? 'sdílené v domácnosti' : 'lokálně'}</span>
+        </div>
+        <details class="action-details compact-edit-details warranty-add-details">
+          <summary><span>Přidat novou záruku</span><em>účtenka, fotka/PDF, délka záruky</em></summary>
+          <form data-form="add-warranty" class="compact-form warranty-form">
+            <div class="form-grid two">
+              ${field('Věc', 'name', 'text', 'televize / pračka / telefon', true, warrantyDraftValue('name', ''))}
+              ${field('Obchod', 'store', 'text', 'Alza / Datart / Kaufland', false, warrantyDraftValue('store', ''))}
+              ${field('Cena', 'price', 'text', 'volitelné', false, warrantyDraftValue('price', ''), 'decimal')}
+              ${field('Datum koupě', 'purchaseDate', 'date', '', true, draftPurchaseDate)}
+              ${selectField('Délka záruky', 'warrantyYears', WARRANTY_YEARS_OPTIONS, String(draftWarrantyYears))}
+              ${field('Záruka do', 'warrantyUntil', 'date', 'automaticky podle délky', false, draftWarrantyUntil)}
+              ${selectField('Stav', 'status', WARRANTY_STATUS_OPTIONS, draftStatus)}
+              ${field('Poznámka / reklamace', 'note', 'text', 'např. reklamováno, číslo reklamace, domluva', false, warrantyDraftValue('note', ''))}
+            </div>
+            <label class="field warranty-file-add-field"><span>Fotka / PDF účtenky</span><input class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf"></label>
+            <div class="inline-note compact-note">Základ je 2 roky. Fotky se před uložením automaticky zmenší tak, aby zůstal čitelný text. PDF se nechává beze změny.</div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Přidat záruku</button></div>
+          </form>
+        </details>
+        <div style="height:12px"></div>
+        ${renderOverviewSummary([
+          { label: 'Aktivní', value: activeItems.length },
+          { label: 'Do 30 dnů', value: endingSoon, tone: endingSoon ? 'warn' : '' },
+          { label: 'Reklamace', value: claimCount, tone: claimCount ? 'warn' : '' },
+          { label: 'Po záruce', value: expired, tone: expired ? 'bad' : '' }
+        ])}
+        <div style="height:14px"></div>
+        ${warranties.length ? `<div class="list warranty-list">${warranties.map(renderWarrantyItem).join('')}</div>` : renderEmptyCta({ icon: '🧾', title: 'Záruky jsou prázdné', text: 'Přidej první koupenou věc. Konec záruky se předvyplní na 2 roky od nákupu.', nav: 'homecare', tab: 'warranties', label: 'Přidat záruku' })}
+      </section>
+    `;
+  }
+
+  function polishShopEntryBadge(entry) {
+    if (!entry) return '—';
+    if (entry.status === 'closed') return 'zavřeno';
+    if (entry.status === 'limited') return 'omezeno';
+    return 'info';
+  }
+
+  function polishShopEntryTone(entry) {
+    if (!entry) return '';
+    if (entry.status === 'closed') return 'bad';
+    if (entry.status === 'limited') return 'warn';
+    return 'good';
+  }
+
+  function renderPolishShopEntry(entry) {
+    const days = daysUntil(entry.date);
+    const dayText = days === 0 ? 'dnes' : days === 1 ? 'zítra' : days !== null && days > 1 ? `za ${days} dní` : shortWeekday(entry.date);
+    return `
+      <div class="item polish-shop-row polish-shop-row-${escapeHtml(entry.status || 'info')}">
+        <div class="item-top">
+          <div class="item-title">${entry.status === 'limited' ? '⚠️' : '🇵🇱'} ${escapeHtml(entry.name)}</div>
+          <span class="badge ${polishShopEntryTone(entry)}">${escapeHtml(polishShopEntryBadge(entry))}</span>
+        </div>
+        <div class="item-meta">${escapeHtml(formatDate(entry.date))} · ${escapeHtml(dayText)} · ${escapeHtml(entry.reason || '')}</div>
+      </div>
+    `;
+  }
+
+  function renderPolishTradingSundayItem(date) {
+    const days = daysUntil(date);
+    const dayText = days === 0 ? 'dnes' : days === 1 ? 'zítra' : days !== null && days > 1 ? `za ${days} dní` : shortWeekday(date);
+    return `<div class="chip-card"><strong>${escapeHtml(formatDate(date))}</strong><span>${escapeHtml(dayText)}</span></div>`;
+  }
+
+  function renderPolishHolidaysPanel() {
+    state.polishShopClosures = normalizePolishShopState(state.polishShopClosures);
+    const year = polishShopSelectedYear();
+    const entries = buildPolishShopCalendarYear(year);
+    const todayEntry = polishShopTodayEntry(0);
+    const tomorrowEntry = polishShopTodayEntry(1);
+    const upcoming = polishShopCalendarAround(year).filter((entry) => entry.date >= todayISO()).slice(0, 8);
+    const closedCount = entries.filter((entry) => entry.status === 'closed').length;
+    const trading = polishTradingSundays(year);
+    const nextTrading = trading.filter((date) => date >= todayISO()).slice(0, 4);
+    const years = [];
+    for (let y = Math.max(POLISH_SHOP_YEAR_MIN, new Date().getFullYear() - 1); y <= Math.min(POLISH_SHOP_YEAR_MAX, new Date().getFullYear() + 3); y += 1) years.push([String(y), String(y)]);
+    const statusTitle = todayEntry?.status === 'closed' ? 'Dnes v Polsku zavřeno' : todayEntry?.status === 'limited' ? 'Dnes pozor na zkrácený provoz' : 'Dnes bez známého zákazu';
+    const statusText = todayEntry ? `${todayEntry.name} · ${todayEntry.reason}` : 'Velké obchody by dnes podle vestavěného kalendáře neměly být plošně zavřené.';
+    const source = state.polishShopClosures.updatedAt ? `online aktualizováno ${formatDateTime(new Date(state.polishShopClosures.updatedAt))}` : 'vestavěný kalendář + online aktualizace na tlačítko';
+    return `
+      <section class="card homecare-panel panel-polish-holidays polish-shop-panel">
+        <div class="card-header">
+          <div><h2>Svátky Polsko</h2><p>Hlídá dny, kdy bývají v Polsku zavřené velké obchody a galerie.</p></div>
+          <span class="badge ${todayEntry?.status === 'closed' ? 'bad' : todayEntry?.status === 'limited' ? 'warn' : 'good'}">${todayEntry?.status === 'closed' ? 'dnes zavřeno' : todayEntry?.status === 'limited' ? 'pozor dnes' : 'dnes OK'}</span>
+        </div>
+        <div class="polish-shop-hero">
+          <div class="polish-shop-status ${polishShopEntryTone(todayEntry)}"><span>🇵🇱</span><div><strong>${escapeHtml(statusTitle)}</strong><em>${escapeHtml(statusText)}</em></div></div>
+          <div class="polish-shop-mini">
+            <div class="mini-stat"><span>Zítra</span><strong>${escapeHtml(tomorrowEntry ? polishShopEntryBadge(tomorrowEntry) : 'OK')}</strong></div>
+            <div class="mini-stat"><span>${escapeHtml(year)}</span><strong>${closedCount}</strong></div>
+            <div class="mini-stat"><span>Neděle handl.</span><strong>${trading.length}</strong></div>
+          </div>
+        </div>
+        <form data-form="polish-holidays-year" class="compact-form polish-shop-toolbar">
+          <div class="form-grid two">
+            ${selectField('Rok', 'year', years, String(year))}
+            <div class="field"><label>Zdroj</label><input class="input" value="${escapeHtml(source)}" readonly></div>
+          </div>
+          <div class="form-actions compact-actions"><button class="ghost-btn" type="submit">Zobrazit rok</button><button class="primary-btn" type="button" data-action="polish-holidays-refresh">Online aktualizace</button></div>
+          ${state.polishShopClosures.error ? `<div class="inline-note warn-note">${escapeHtml(state.polishShopClosures.error)}</div>` : ''}
+        </form>
+        <div class="grid two polish-shop-grid">
+          <div>
+            <div class="card-header small"><div><h3>Nejbližší zavření / omezení</h3><p>Praktické pro cestu do Polska.</p></div></div>
+            ${upcoming.length ? `<div class="list compact-list">${upcoming.map(renderPolishShopEntry).join('')}</div>` : renderEmpty('V nejbližší době není známé zavření.')}
+          </div>
+          <div>
+            <div class="card-header small"><div><h3>Neděle handlowe ${escapeHtml(year)}</h3><p>V tyhle neděle bývají velké obchody otevřené.</p></div></div>
+            <div class="chip-grid polish-trading-grid">${(nextTrading.length ? nextTrading : trading.slice(0, 4)).map(renderPolishTradingSundayItem).join('')}</div>
+          </div>
+        </div>
+        <details class="compact-edit-details polish-shop-all">
+          <summary><span>Celý přehled roku ${escapeHtml(year)}</span><em>${entries.length} položek</em></summary>
+          <div class="list compact-list">${entries.map(renderPolishShopEntry).join('')}</div>
+        </details>
+        <div class="inline-note compact-note">Poznámka: výjimky můžou mít malé obchody, čerpací stanice, lékárny nebo provozy, kde obsluhuje majitel. Modul je dělaný hlavně pro velké obchody a galerie.</div>
+      </section>
+    `;
+  }
+
+  async function refreshPolishShopHolidaysOnline() {
+    state.polishShopClosures = normalizePolishShopState(state.polishShopClosures);
+    const year = polishShopSelectedYear();
+    const years = [...new Set([year, year + 1].filter((item) => item >= POLISH_SHOP_YEAR_MIN && item <= POLISH_SHOP_YEAR_MAX))];
+    try {
+      const nextOnline = { ...(state.polishShopClosures.onlineHolidays || {}) };
+      for (const y of years) {
+        const response = await fetch(`${POLISH_SHOP_HOLIDAY_API}/${y}/PL`, { headers: { accept: 'application/json' } });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        if (!Array.isArray(payload)) throw new Error('Nečekaná odpověď');
+        nextOnline[y] = payload.map((item) => ({ date: String(item.date || '').slice(0, 10), name: normalizeText(item.localName || item.name || item.englishName || 'Svátek') })).filter((item) => item.date);
+      }
+      state.polishShopClosures = normalizePolishShopState({ ...state.polishShopClosures, onlineHolidays: nextOnline, updatedAt: new Date().toISOString(), source: 'date.nager.at + lokální pravidla nedělí', error: '' });
+      touchState();
+      saveState();
+      render();
+      showToast('Polské svátky aktualizované online');
+    } catch (error) {
+      state.polishShopClosures.error = 'Online aktualizace se nepovedla, zůstává vestavěný kalendář.';
+      touchState();
+      saveState();
+      render();
+      showToast('Online aktualizace se nepovedla');
+    }
+  }
+
+  function renderHomecare() {
+    const hdo = getHdoStatus(now);
+    const tasks = [...state.homeTasks].sort((a, b) => Number(a.done) - Number(b.done));
+    const waste = [...state.waste].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+    const notes = [...state.notes].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const devices = [...state.devices].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    const warranties = sortedWarranties();
+    const polishShopCount = buildPolishShopCalendarYear(polishShopSelectedYear()).filter((entry) => entry.status === 'closed').length;
+    const activeHomecareTab = getModuleTab('homecare', 'hdo');
+
+    return `
+      ${renderSectionTabs('homecare', [
+        { id: 'hdo', label: 'HDO', icon: '💡', count: state.hdoWindows.length },
+        { id: 'waste', label: 'Odpad', icon: '♻️', count: waste.length },
+        { id: 'tasks', label: 'Úkoly', icon: '✅', count: tasks.filter((task) => !task.done).length },
+        { id: 'warranties', label: 'Záruky', icon: '🧾', count: warranties.length },
+        { id: 'polish-holidays', label: 'Svátky PL', icon: '🇵🇱', count: polishShopCount },
+        { id: 'devices', label: 'Zařízení', icon: '📡', count: devices.length }
+      ], 'hdo')}
+      <div class="grid two module-tabbed homecare-tab-${activeHomecareTab}">
+        <section class="card homecare-panel panel-hdo">
+          <div class="card-header">
+            <div><h2>HDO / nízký tarif</h2><p>${escapeHtml(hdo.message)}</p></div>
+            <span class="badge ${hdo.active ? 'good' : 'warn'}">${hdo.active ? 'běží' : 'neběží'} · ${state.hdoWindows.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
+          </div>
+          <details class="compact-edit-details hdo-manual-details">
+            <summary><span>Ruční zadání časů</span><em>funguje pořád stejně</em></summary>
+            <form data-form="add-hdo" class="compact-form hdo-manual-form">
+              <div class="form-grid two">
+                ${field('Název okna', 'label', 'text', 'např. Večerní tarif', true)}
+                ${hdoTimeField('Od', 'start', '0600 nebo 06:00', true)}
+                ${hdoTimeField('Do', 'end', '2200 nebo 22:00', true)}
+                ${selectField('Dny', 'daysMode', [['all', 'Každý den'], ['workdays', 'Po–Pá'], ['weekend', 'Víkend']])}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Přidat HDO okno</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-hdo">Načíst cloud HDO</button>' : ''}${state.cloud?.householdId && state.hdoWindows.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-hdo">Odeslat lokální HDO (${state.hdoWindows.filter((item) => !item.cloudId).length})</button>` : ''}</div>
+            </form>
+          </details>
+          <div style="height:14px"></div>
+          ${state.hdoWindows.length ? renderHdoModuleTables(sortHdoWindowsForOverview(getSafeHdoWindows())) : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard začne ukazovat aktuální stav.', nav: 'homecare', tab: 'hdo', label: 'Nastavit HDO' })}
+        </section>
+
+        <section class="card homecare-panel panel-waste">
+          <div class="card-header">
+            <div><h2>Odpad</h2><p>Svoz odpadu s přípravou na připomínky.</p></div>
+            <span class="badge ${waste.some((item) => item.cloudId) ? 'good' : ''}">${waste.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
+          </div>
+          <form data-form="add-waste">
+            <div class="form-grid two">
+              ${field('Typ', 'type', 'text', 'plast / papír / komunál', true)}
+              ${field('Datum svozu', 'date', 'date', '', true)}
+              ${selectField('Opakování', 'repeatRule', [['none', 'Jednorázově'], ['weekly', 'Týdně'], ['biweekly', 'Každé 2 týdny'], ['monthly', 'Měsíčně']])}
+              ${field('Upozornit předem (hod)', 'notifyBeforeHours', 'number', '12')}
+              ${field('Poznámka', 'note', 'text', 'volitelné')}
+            </div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Přidat svoz</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-waste">Načíst cloud odpad</button>' : ''}${state.cloud?.householdId && waste.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-waste">Odeslat lokální svozy (${waste.filter((item) => !item.cloudId).length})</button>` : ''}</div>
+          </form>
+          <div style="height:14px"></div>
+          ${waste.length ? `<div class="list">${waste.map((item) => `
+            <div class="item">
+              <div class="item-top"><div class="item-title">${escapeHtml(item.type)}</div><span class="badge ${daysUntil(item.date) <= 1 ? 'warn' : ''}">${formatDate(item.date)}</span></div>
+              <div class="item-meta">${escapeHtml(wasteRepeatLabel(item.repeatRule))}${item.notifyBeforeHours ? ` · připomenout ${escapeHtml(String(item.notifyBeforeHours))} h předem` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
+              <div class="item-actions">${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-waste" data-id="${item.id}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-waste" data-id="${item.id}">Smazat</button></div>
+            </div>
+          `).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej první svoz a aplikace ho ukáže v přehledu Dnes a brzy.', nav: 'homecare', tab: 'waste', label: 'Přidat svoz' })}
+        </section>
+
+        <section class="card homecare-panel panel-tasks">
+          <div class="card-header">
+            <div><h2>Úkoly a poznámky</h2><p>Domácí úkoly jsou připravené pro cloud i budoucí notifikace.</p></div>
+            <span class="badge ${tasks.some((task) => task.cloudId) ? 'good' : ''}">${tasks.some((task) => task.cloudId) ? 'cloud' : 'lokálně'}</span>
+          </div>
+          <form data-form="add-task">
+            <div class="form-grid two">
+              ${field('Úkol', 'title', 'text', 'vyměnit filtr / koupit baterky', true)}
+              ${field('Termín', 'due', 'date', '')}
+              ${selectField('Kategorie', 'category', TASK_CATEGORY_OPTIONS, 'domacnost')}
+              ${selectField('Priorita', 'priority', TASK_PRIORITY_OPTIONS, 'normal')}
+              ${field('Poznámka', 'note', 'text', 'volitelné')}
+            </div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Přidat úkol</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-tasks">Načíst cloud úkoly</button>' : ''}${state.cloud?.householdId && tasks.some((task) => !task.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-tasks">Odeslat lokální úkoly (${tasks.filter((task) => !task.cloudId).length})</button>` : ''}</div>
+          </form>
+          <div style="height:14px"></div>
+          ${tasks.length ? `<div class="list">${tasks.map((task) => `
+            <div class="item">
+              <div class="item-top"><div class="item-title">${task.done ? '✓ ' : ''}${escapeHtml(task.title)}</div><span class="badge ${task.due && daysUntil(task.due) <= 2 && !task.done ? 'warn' : ''}">${task.due ? formatDate(task.due) : 'bez termínu'}</span></div>
+              <div class="item-meta">${escapeHtml(taskCategoryLabel(task.category))} · ${escapeHtml(taskPriorityLabel(task.priority))}${task.note ? ` · ${escapeHtml(task.note)}` : ''}${task.cloudId ? ' · cloud' : ' · lokálně'}</div>
+              <div class="item-actions">${state.cloud?.householdId && !task.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-task" data-id="${task.id}">Odeslat</button>` : ''}<button class="ghost-btn" type="button" data-action="task-toggle" data-id="${task.id}">${task.done ? 'Vrátit' : 'Hotovo'}</button><button class="danger-btn" type="button" data-action="task-delete" data-id="${task.id}">Smazat</button></div>
+            </div>
+          `).join('')}</div>` : renderEmptyCta({ icon: '✅', title: 'Žádný domácí úkol', text: 'Přidej údržbu, připomínku nebo běžnou domácí poznámku.', nav: 'homecare', tab: 'tasks', label: 'Přidat úkol' })}
+          <form data-form="add-note" style="margin-top:14px;">
+            <div class="form-grid">
+              ${field('Rychlá poznámka', 'text', 'text', 'např. zavolat servis', true)}
+            </div>
+            <div class="form-actions"><button class="ghost-btn" type="submit">Přidat poznámku</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud poznámky</button>' : ''}${state.cloud?.householdId && notes.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální poznámky (${notes.filter((item) => !item.cloudId).length})</button>` : ''}</div>
+          </form>
+          ${notes.length ? `<div class="list" style="margin-top:12px;">${notes.slice(0, 6).map((note) => `
+            <div class="item"><div class="item-top"><div class="item-title">${escapeHtml(note.text)}</div><span class="badge ${note.cloudId ? 'good' : ''}">${note.cloudId ? 'cloud' : 'lokálně'}</span></div><div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="notes" data-id="${note.id}">Smazat</button></div></div>
+          `).join('')}</div>` : ''}
+        </section>
+
+        ${renderWarrantiesPanel(warranties)}
+
+        ${renderPolishHolidaysPanel()}
+
+        <section class="card homecare-panel panel-devices">
+          <div class="card-header"><div><h2>Domácí zařízení / síť</h2><p>Routery, NAS, kamery, tablety a další věci doma. V online domácnosti jsou sdílené.</p></div><span class="badge ${devices.some((item) => item.cloudId) ? 'good' : ''}">${devices.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span></div>
+          <form data-form="add-device">
+            <div class="form-grid two">
+              ${field('Název', 'name', 'text', 'WD My Cloud / router / kamera', true)}
+              ${field('Typ', 'type', 'text', 'síť / TV / kamera')}
+              ${field('IP / adresa', 'address', 'text', '192.168.1.10')}
+              ${field('Poznámka', 'note', 'text', 'volitelné')}
+            </div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Přidat zařízení</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud zařízení</button>' : ''}${state.cloud?.householdId && devices.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální zařízení (${devices.filter((item) => !item.cloudId).length})</button>` : ''}</div>
+          </form>
+          <div style="height:14px"></div>
+          ${devices.length ? `<div class="list">${devices.map((device) => `
+            <div class="item">
+              <div class="item-top"><div class="item-title">${escapeHtml(device.name)}</div><span class="badge">${escapeHtml(device.type || 'zařízení')}</span></div>
+              <div class="item-meta">${escapeHtml(device.address || 'bez adresy')}${device.note ? ` · ${escapeHtml(device.note)}` : ''}${device.cloudId ? ' · cloud' : ' · lokálně'}</div>
+              <div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="devices" data-id="${device.id}">Smazat</button></div>
+            </div>
+          `).join('')}</div>` : renderEmptyCta({ icon: '🔌', title: 'Zařízení jsou prázdná', text: 'Přidej router, kotel, spotřebič nebo jiné domácí zařízení.', nav: 'homecare', tab: 'devices', label: 'Přidat zařízení' })}
+        </section>
+      </div>
+    `;
+  }
+
+  function normalizeVehicleIconColor(value, fallback = 'blue') {
+    const key = normalizeKey(value || '');
+    return VEHICLE_ICON_COLORS.some(([id]) => id === key) ? key : fallback;
+  }
+
+  function normalizeVehicleIconColorMap(map = {}) {
+    if (!map || typeof map !== 'object' || Array.isArray(map)) return {};
+    return Object.fromEntries(Object.entries(map)
+      .map(([key, value]) => [String(key || '').trim(), normalizeVehicleIconColor(value, '')])
+      .filter(([key, value]) => key && value));
+  }
+
+  function vehicleIconColorOptions() {
+    return VEHICLE_ICON_COLORS.map(([id, label]) => [id, label]);
+  }
+
+  function vehicleIconColorClass(value) {
+    return `vehicle-icon-color-${normalizeVehicleIconColor(value)}`;
+  }
+
+  function vehicleIconColorFromSettings(vehicle = {}) {
+    const map = normalizeVehicleIconColorMap(state.settings?.vehicleIconColors);
+    const keys = [vehicle.cloudId, vehicle.id, normalizeKey(vehicle.name)].filter(Boolean);
+    for (const key of keys) {
+      if (map[key]) return map[key];
+    }
+    return 'blue';
+  }
+
+  function rememberVehicleIconColor(vehicle) {
+    if (!vehicle) return;
+    const color = normalizeVehicleIconColor(vehicle.iconColor);
+    vehicle.iconColor = color;
+    state.settings.vehicleIconColors = normalizeVehicleIconColorMap(state.settings?.vehicleIconColors);
+    [vehicle.cloudId, vehicle.id, normalizeKey(vehicle.name)].filter(Boolean).forEach((key) => {
+      state.settings.vehicleIconColors[key] = color;
+    });
+  }
+
+  function refreshVehicleIconColorSettings() {
+    state.settings.vehicleIconColors = normalizeVehicleIconColorMap(state.settings?.vehicleIconColors);
+    (state.vehicles || []).forEach((vehicle) => rememberVehicleIconColor(vehicle));
+  }
+
+  function garageNumberKey(value, decimals = 2) {
+    const normalized = parseCzNumber(value);
+    if (!Number.isFinite(normalized)) return '';
+    return Number(normalized).toFixed(decimals);
+  }
+
+  function garageVehicleDedupeKey(vehicle = {}) {
+    const plate = normalizeKey(vehicle.plate || vehicle.plateNumber || '');
+    if (plate) return `plate:${plate}`;
+    const name = normalizeKey(vehicle.name || vehicle.title || '');
+    if (name) return `name:${name}`;
+    const brandModel = normalizeKey([vehicle.brand, vehicle.model, vehicle.year].filter(Boolean).join(' '));
+    return brandModel ? `model:${brandModel}` : '';
+  }
+
+  function garageDateKey(value) {
+    const text = normalizeText(value);
+    if (!text) return '';
+    return parseFuelioDate(text) || text.slice(0, 10);
+  }
+
+  function garageRecordVehicleKey(vehicleId, vehicleMap = new Map()) {
+    const vehicle = vehicleMap.get(vehicleId) || null;
+    if (vehicle) return garageVehicleDedupeKey(vehicle) || (vehicle.cloudId ? `cloud:${vehicle.cloudId}` : `local:${vehicle.id || ''}`);
+    return `vehicle:${normalizeKey(vehicleId)}`;
+  }
+
+  function garageFuelDedupeKey(item = {}, vehicleMap = new Map()) {
+    const vehicleKey = garageRecordVehicleKey(item.vehicleId, vehicleMap);
+    const dateKey = garageDateKey(item.date);
+    const odometerKey = garageNumberKey(item.odometer, 0);
+    const litersKey = garageNumberKey(item.liters, 1);
+    const priceKey = garageNumberKey(item.price, 0);
+    if (vehicleKey && dateKey && odometerKey) {
+      return ['fuel', vehicleKey, dateKey, odometerKey, litersKey || priceKey || 'x'].join('|');
+    }
+    return ['fuel', vehicleKey, dateKey, odometerKey, litersKey || priceKey || 'x'].join('|');
+  }
+
+  function garageServiceDedupeKey(item = {}, vehicleMap = new Map()) {
+    const vehicleKey = garageRecordVehicleKey(item.vehicleId, vehicleMap);
+    const dateKey = garageDateKey(item.date);
+    const odometerKey = garageNumberKey(item.odometer, 0);
+    const priceKey = garageNumberKey(item.price, 0);
+    const titleKey = normalizeKey(item.title || item.category || 'servis');
+    if (vehicleKey && dateKey && titleKey) {
+      return ['service', vehicleKey, dateKey, titleKey, odometerKey || 'x', priceKey || 'x'].join('|');
+    }
+    return ['service', vehicleKey, dateKey, titleKey || 'servis', odometerKey || 'x', priceKey || 'x'].join('|');
+  }
+
+  function preferGarageCloudRecord(current = {}, candidate = {}) {
+    if (candidate.cloudId && !current.cloudId) return candidate;
+    if (!candidate.cloudId && current.cloudId) return current;
+    const candidateUpdated = Date.parse(candidate.updatedAt || candidate.createdAt || '') || 0;
+    const currentUpdated = Date.parse(current.updatedAt || current.createdAt || '') || 0;
+    return candidateUpdated >= currentUpdated ? { ...current, ...candidate, id: current.id || candidate.id } : current;
+  }
+
+  function dedupeGarageVehicles(vehicles = []) {
+    const map = new Map();
+    const idRemap = new Map();
+    const unique = [];
+    for (const vehicle of vehicles) {
+      const key = garageVehicleDedupeKey(vehicle) || `id:${vehicle.id}`;
+      if (!map.has(key)) {
+        map.set(key, vehicle);
+        unique.push(vehicle);
+        continue;
+      }
+      const existing = map.get(key);
+      const preferred = preferGarageVehicleRecord(existing, vehicle);
+      const dropped = preferred.id === existing.id ? vehicle : existing;
+      if (dropped?.id && preferred?.id && dropped.id !== preferred.id) idRemap.set(dropped.id, preferred.id);
+      const index = unique.indexOf(existing);
+      if (index >= 0) unique[index] = preferred;
+      map.set(key, preferred);
+    }
+    return { items: unique, idRemap };
+  }
+
+  function dedupeGarageRecords(records = [], keyFn, vehicleMap = new Map()) {
+    const map = new Map();
+    const unique = [];
+    for (const record of records) {
+      const key = keyFn(record, vehicleMap);
+      if (!key || key.includes('|||')) {
+        unique.push(record);
+        continue;
+      }
+      if (!map.has(key)) {
+        map.set(key, record);
+        unique.push(record);
+        continue;
+      }
+      const existing = map.get(key);
+      const preferred = preferGarageCloudRecord(existing, record);
+      if (preferred !== existing) {
+        const index = unique.indexOf(existing);
+        if (index >= 0) unique[index] = preferred;
+        map.set(key, preferred);
+      }
+    }
+    return unique;
+  }
+
+  function normalizeGarageRuntimeState(options = {}) {
+    const persist = options.persist !== false;
+    const beforeSignature = JSON.stringify({ vehicles: state.vehicles, fuel: state.fuel, services: state.services, active: garageVehicleId });
+    state.vehicles = Array.isArray(state.vehicles) ? state.vehicles.filter((item) => item && typeof item === 'object') : [];
+    state.fuel = Array.isArray(state.fuel) ? state.fuel.filter((item) => item && typeof item === 'object') : [];
+    state.services = Array.isArray(state.services) ? state.services.filter((item) => item && typeof item === 'object') : [];
+    state.settings = state.settings && typeof state.settings === 'object' ? state.settings : { ...DEFAULT_STATE.settings };
+    state.settings.vehicleIconColors = normalizeVehicleIconColorMap(state.settings.vehicleIconColors);
+    state.vehicles = state.vehicles.map((vehicle, index) => {
+      const id = normalizeText(vehicle.id) || `vehicle-${index + 1}-${uid()}`;
+      const normalized = {
+        technicalInspectionUntil: '',
+        insuranceUntil: '',
+        nextServiceKm: '',
+        nextServiceDate: '',
+        purchaseDate: '',
+        purchasePrice: '',
+        purchaseOdometer: '',
+        ownershipStatus: 'owned',
+        brand: '',
+        model: '',
+        generation: '',
+        productionYear: '',
+        bodyType: '',
+        vin: '',
+        engineName: '',
+        engineCode: '',
+        displacementCcm: '',
+        powerKw: '',
+        powerHp: '',
+        torqueNm: '',
+        cylinders: '',
+        transmission: '',
+        drive: '',
+        emissionNorm: '',
+        co2: '',
+        curbWeightKg: '',
+        grossWeightKg: '',
+        seats: '',
+        doors: '',
+        fuelTankLiters: '',
+        batteryKwh: '',
+        officialConsumption: '',
+        tireSize: '',
+        towingBrakedKg: '',
+        towingUnbrakedKg: '',
+        lengthMm: '',
+        widthMm: '',
+        heightMm: '',
+        wheelbaseMm: '',
+        technicalSpecs: {},
+        saleDate: '',
+        salePrice: '',
+        saleOdometer: '',
+        note: '',
+        ...vehicle,
+        id,
+        name: normalizeText(vehicle.name || vehicle.title || vehicle.model || `Auto ${index + 1}`),
+        ownershipStatus: vehicleOwnershipStatus(vehicle),
+        iconColor: normalizeVehicleIconColor(vehicle.iconColor || vehicle.color || state.settings.vehicleIconColors[id] || state.settings.vehicleIconColors[normalizeKey(vehicle.name)] || 'blue')
+      };
+      applyVehicleTechnicalFields(normalized, Object.keys(normalized.technicalSpecs || {}).length ? normalized.technicalSpecs : normalized);
+      rememberVehicleIconColor(normalized);
+      return normalized;
+    });
+    const dedupedVehicles = dedupeGarageVehicles(state.vehicles);
+    state.vehicles = dedupedVehicles.items;
+    if (dedupedVehicles.idRemap.has(garageVehicleId)) garageVehicleId = dedupedVehicles.idRemap.get(garageVehicleId);
+    const validVehicleIds = new Set(state.vehicles.map((vehicle) => vehicle.id));
+    const fallbackVehicleId = state.vehicles[0]?.id || '';
+    state.fuel = state.fuel.map((item, index) => {
+      const remappedVehicleId = dedupedVehicles.idRemap.get(item.vehicleId) || item.vehicleId;
+      return { ...item, id: normalizeText(item.id) || `fuel-${index + 1}-${uid()}`, vehicleId: validVehicleIds.has(remappedVehicleId) ? remappedVehicleId : fallbackVehicleId };
+    }).filter((item) => item.vehicleId);
+    state.services = state.services.map((item, index) => {
+      const remappedVehicleId = dedupedVehicles.idRemap.get(item.vehicleId) || item.vehicleId;
+      return { ...item, id: normalizeText(item.id) || `service-${index + 1}-${uid()}`, vehicleId: validVehicleIds.has(remappedVehicleId) ? remappedVehicleId : fallbackVehicleId, title: normalizeText(item.title || item.category || item.note || 'Servis / náklad') };
+    }).filter((item) => item.vehicleId);
+    const vehicleMap = new Map(state.vehicles.map((vehicle) => [vehicle.id, vehicle]));
+    state.fuel = dedupeGarageRecords(state.fuel, garageFuelDedupeKey, vehicleMap);
+    state.services = dedupeGarageRecords(state.services, garageServiceDedupeKey, vehicleMap);
+    if (!validVehicleIds.has(garageVehicleId)) garageVehicleId = fallbackVehicleId;
+    const afterSignature = JSON.stringify({ vehicles: state.vehicles, fuel: state.fuel, services: state.services, active: garageVehicleId });
+    if (beforeSignature !== afterSignature && persist && !isDemoMode()) {
+      state.meta = { ...(state.meta || {}), updatedAt: new Date().toISOString() };
+      saveState();
+    }
+  }
+
+  function renderGarage() {
+    normalizeGarageRuntimeState();
+    const vehicles = state.vehicles;
+    if (!garageVehicleId && vehicles.length) garageVehicleId = vehicles[0].id;
+    let activeVehicle = vehicles.find((vehicle) => vehicle.id === garageVehicleId) || null;
+    if (!activeVehicle && vehicles.length) {
+      garageVehicleId = vehicles[0].id;
+      activeVehicle = vehicles[0];
+    }
+    const fuelRowsAll = state.fuel || [];
+    const serviceRowsAll = state.services || [];
+    const alerts = getVehicleAlerts();
+    const activeGarageTab = getModuleTab('garage', 'overview');
+
+    return `
+      ${renderSectionTabs('garage', [
+        { id: 'overview', label: 'Přehled', icon: '🚗', count: vehicles.length },
+        { id: 'detail', label: 'Detail', icon: '🔧', count: activeVehicle ? 1 : 0 },
+        { id: 'stats', label: 'Statistiky', icon: '📊' },
+        { id: 'calculator', label: 'Kalkulačka', icon: '🧮' },
+        { id: 'add', label: 'Přidat auto', icon: '➕' },
+        { id: 'import', label: 'Fuelio', icon: '📥' }
+      ], 'overview')}
+      <div class="grid two module-tabbed garage-tab-${activeGarageTab}" data-tab-area="garage">
+        <section class="card desktop-span-2 garage-panel panel-overview garage-fuelio-panel clean-garage-overview garage-overview-dashboard-card">
+          ${renderGarageOverviewDashboard(vehicles, activeVehicle)}
+        </section>
+
+        <section class="card desktop-span-2 garage-panel panel-detail garage-fuelio-panel">
+          ${activeVehicle ? renderVehicleDetail(activeVehicle) : renderEmptyCta({ icon: '🚗', title: 'Nejdřív přidej auto', text: 'Detail se naplní tankováním, servisy, termíny STK a pojištěním.', nav: 'garage', tab: 'add', label: 'Přidat auto' })}
+        </section>
+
+        <section class="card desktop-span-2 garage-panel panel-stats garage-fuelio-panel">
+          ${renderGarageStatsPanel(vehicles, activeVehicle)}
+        </section>
+
+        <section class="card desktop-span-2 garage-panel panel-calculator garage-fuelio-panel">
+          ${renderGarageTripCalculator(vehicles, activeVehicle)}
+        </section>
+
+        <section class="card garage-panel panel-add">
+          <div class="card-header"><div><h2>Přidat auto</h2><p>Základ vozidla, termíny STK a pojištění. Detail se pak řeší v záložce Detail.</p></div></div>
+          <form data-form="add-vehicle">
+            ${renderVehiclePresetTool()}
+            <div class="form-grid two">
+              ${field('Název auta', 'name', 'text', 'Elroq / Octavia', true)}
+              ${field('SPZ', 'plate', 'text', 'volitelné')}
+              ${field('Palivo', 'fuelType', 'text', 'benzín / nafta / elektro')}
+              ${field('Aktuální km', 'odometer', 'number', '0')}
+              ${field('Datum koupě', 'purchaseDate', 'date', '')}
+              ${field('Cena při koupi', 'purchasePrice', 'number', 'volitelné')}
+              ${field('Km při koupi', 'purchaseOdometer', 'number', 'volitelné')}
+              ${selectField('Stav auta', 'ownershipStatus', [['owned', 'Vlastním'], ['sold', 'Nevlastním / prodané']], 'owned')}
+              ${field('Datum prodeje', 'saleDate', 'date', '')}
+              ${field('Cena při prodeji', 'salePrice', 'number', 'volitelné')}
+              ${field('Km při prodeji', 'saleOdometer', 'number', 'volitelné')}
+              ${field('STK do', 'technicalInspectionUntil', 'date', '')}
+              ${field('Pojistka do', 'insuranceUntil', 'date', '')}
+              ${selectField('Barva ikonky auta', 'iconColor', vehicleIconColorOptions(), 'blue')}
+            </div>
+            ${renderVehicleTechnicalFields()}
+
+            <div class="form-actions"><button class="primary-btn" type="submit">Přidat auto</button></div>
+          </form>
+        </section>
+
+        <section class="card desktop-span-2 garage-panel panel-import">
+          ${renderFuelioImport()}
+        </section>
+      </div>
+    `;
+  }
+
+  function renderVehicleListItem(vehicle) {
+    const fuelRows = state.fuel.filter((item) => item.vehicleId === vehicle.id);
+    const serviceRows = state.services.filter((item) => item.vehicleId === vehicle.id);
+    const stats = getVehicleStats(sortFuelRows(fuelRows), serviceRows);
+    const costPerKm = stats.totalKm > 0 ? stats.fuelCost / stats.totalKm : null;
+    return `
+      <div class="item vehicle-list-item fuelio-vehicle-card ${vehicle.id === garageVehicleId ? 'selected' : ''}">
+        <button class="vehicle-main-action" type="button" data-action="select-vehicle" data-id="${vehicle.id}">
+          <span class="vehicle-icon-bubble ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span>
+          <span class="vehicle-main-copy">
+            <strong>${escapeHtml(vehicle.name)}</strong>
+            <em>${escapeHtml([vehicle.brand, vehicle.model, vehicle.plate].filter(Boolean).join(' · ') || vehicle.fuelType || 'auto')}</em>
+          </span>
+        </button>
+        <div class="fuelio-vehicle-stats">
+          <span><strong>${stats.averageConsumption ? `${stats.averageConsumption.toFixed(1).replace('.', ',')}` : '—'}</strong><em>l/100</em></span>
+          <span><strong>${costPerKm ? `${costPerKm.toFixed(2).replace('.', ',')}` : '—'}</strong><em>Kč/km</em></span>
+          <span><strong>${fuelRows.length + serviceRows.length}</strong><em>záznamů</em></span>
+        </div>
+        <div class="item-actions vehicle-card-actions">
+          <button class="ghost-btn icon-action-btn" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="vehicle-settings" title="Nastavení auta" aria-label="Nastavení auta ${escapeHtml(vehicle.name)}">⚙️</button>
+          ${vehicleOwnershipStatus(vehicle) === 'owned' ? `<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name)}">⛽+</button>` : ''}
+          <button class="ghost-btn icon-action-btn" type="button" data-action="select-vehicle" data-id="${vehicle.id}" data-garage-target="add-service" title="Přidat servis" aria-label="Přidat servis ${escapeHtml(vehicle.name)}">🧾+</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function garagePeriodRange(period = 'last12') {
+    const today = parseDateValue(todayISO()) || new Date();
+    const year = today.getFullYear();
+    if (period === 'thisYear') return { start: `${year}-01-01`, end: `${year}-12-31`, label: 'tento rok' };
+    if (period === 'lastYear') return { start: `${year - 1}-01-01`, end: `${year - 1}-12-31`, label: 'minulý rok' };
+    if (period === 'all') return { start: '', end: '', label: 'vše' };
+    const start = new Date(today.getFullYear(), today.getMonth() - 11, 1);
+    return { start: localISODate(start), end: todayISO(), label: 'posledních 12 měsíců' };
+  }
+
+  function garageDateInRange(dateValue, range = {}) {
+    const iso = String(dateValue || '').slice(0, 10);
+    if (!iso) return false;
+    if (range.start && iso < range.start) return false;
+    if (range.end && iso > range.end) return false;
+    return true;
+  }
+
+  function filteredGarageRowsForStats(vehicleId, period = 'last12', type = 'all') {
+    const range = garagePeriodRange(period);
+    const fuelRows = (state.fuel || []).filter((item) => item.vehicleId === vehicleId && garageDateInRange(item.date, range));
+    const serviceRows = (state.services || []).filter((item) => item.vehicleId === vehicleId && garageDateInRange(item.date, range));
+    return {
+      range,
+      fuelRows: type === 'service' ? [] : fuelRows,
+      serviceRows: type === 'fuel' ? [] : serviceRows,
+      rawFuelRows: fuelRows,
+      rawServiceRows: serviceRows
+    };
+  }
+
+  function garageStatsMetrics(vehicle, fuelRows = [], serviceRows = []) {
+    const sortedFuel = sortFuelRows(fuelRows);
+    const stats = getVehicleStats(sortedFuel, serviceRows);
+    const fuelCost = stats.fuelCost || 0;
+    const serviceCost = stats.serviceCost || 0;
+    const totalCost = fuelCost + serviceCost;
+    const km = stats.totalKm || 0;
+    const dates = [...fuelRows, ...serviceRows].map((item) => parseDateValue(item.date)).filter(Boolean).sort((a, b) => a - b);
+    const monthSpan = dates.length >= 2 ? Math.max(1, ((dates[dates.length - 1].getFullYear() - dates[0].getFullYear()) * 12) + (dates[dates.length - 1].getMonth() - dates[0].getMonth()) + 1) : 1;
+    return {
+      averageConsumption: stats.averageConsumption,
+      fuelCostPerKm: km > 0 ? fuelCost / km : null,
+      totalCostPerKm: km > 0 ? totalCost / km : null,
+      km,
+      monthlyKm: km / monthSpan,
+      yearlyKm: (km / monthSpan) * 12,
+      fuelCost,
+      serviceCost,
+      totalCost,
+      fuelCount: fuelRows.length,
+      serviceCount: serviceRows.length,
+      monthSpan
+    };
+  }
+
+  function formatKm(value) {
+    const number = Number(value || 0);
+    if (!Number.isFinite(number) || number <= 0) return '—';
+    return `${Math.round(number).toLocaleString('cs-CZ')} km`;
+  }
+
+  function formatLitreValue(value) {
+    const number = Number(value || 0);
+    if (!Number.isFinite(number) || number <= 0) return '—';
+    return `${number.toFixed(2).replace('.', ',')} l/100`;
+  }
+
+  function formatCostPerKm(value) {
+    const number = Number(value || 0);
+    if (!Number.isFinite(number) || number <= 0) return '—';
+    return `${number.toFixed(2).replace('.', ',')} Kč/km`;
+  }
+
+
+  function normalizeVehicleOwnershipStatus(value) {
+    const key = normalizeKey(value || '');
+    return (key === 'sold' || key === 'not-owned' || key === 'not-owned' || key === 'nevlastnim' || key === 'prodane') ? 'sold' : 'owned';
+  }
+
+  function vehicleOwnershipStatus(vehicle = {}) {
+    if (vehicle?.saleDate || vehicle?.sale_date || vehicle?.saleOdometer || vehicle?.sale_odometer || vehicle?.salePrice || vehicle?.sale_price) return 'sold';
+    if (vehicle?.is_archived === true || vehicle?.isArchived === true) return 'sold';
+    return normalizeVehicleOwnershipStatus(vehicle?.ownershipStatus || vehicle?.ownership_status || 'owned');
+  }
+
+  function isVehicleOwned(vehicle) {
+    return vehicleOwnershipStatus(vehicle) === 'owned';
+  }
+
+  function garageOwnedVehicles() {
+    return (state.vehicles || []).filter(isVehicleOwned);
+  }
+
+  function keepExistingGarageValue(cloudValue, existingValue = '') {
+    if (cloudValue === null || cloudValue === undefined || cloudValue === '') return existingValue ?? '';
+    return String(cloudValue);
+  }
+
+  function keepExistingGarageObject(cloudValue, existingValue = {}) {
+    if (cloudValue && typeof cloudValue === 'object' && !Array.isArray(cloudValue) && Object.keys(cloudValue).length) return cloudValue;
+    return existingValue && typeof existingValue === 'object' && !Array.isArray(existingValue) ? existingValue : {};
+  }
+  function garageHasMeaningfulValue(value) {
+    if (value === null || value === undefined) return false;
+    if (typeof value === 'number') return Number.isFinite(value) && value !== 0;
+    if (typeof value === 'object') {
+      if (Array.isArray(value)) return value.length > 0;
+      return Object.values(value).some((entry) => garageHasMeaningfulValue(entry));
+    }
+    return normalizeText(value) !== '';
+  }
+
+  function garageCloudNumberValue(value, options = {}) {
+    const parsed = parseCzNumber(value);
+    if (parsed === '') return null;
+    const number = Number(parsed);
+    if (!Number.isFinite(number)) return null;
+    if (options.positiveOnly && number <= 0) return null;
+    return number;
+  }
+
+  function assignGaragePayloadField(payload, key, value, options = {}) {
+    const updateMode = options.updateMode === true;
+    if (options.type === 'number') {
+      const number = garageCloudNumberValue(value, { positiveOnly: updateMode });
+      if (number === null) {
+        if (!updateMode) payload[key] = null;
+        return;
+      }
+      payload[key] = number;
+      return;
+    }
+    const text = normalizeText(value);
+    if (!text) {
+      if (!updateMode) payload[key] = null;
+      return;
+    }
+    payload[key] = text;
+  }
+
+  function garageHasTechnicalSpecs(vehicle = {}) {
+    const specs = normalizeVehicleTechnicalSpecs(vehicle);
+    return Object.values(specs || {}).some((value) => normalizeText(value) !== '');
+  }
+
+  function mergeGarageTechnicalSpecs(primary = {}, fallback = {}) {
+    const result = { ...(fallback && typeof fallback === 'object' && !Array.isArray(fallback) ? fallback : {}) };
+    const source = primary && typeof primary === 'object' && !Array.isArray(primary) ? primary : {};
+    Object.entries(source).forEach(([key, value]) => {
+      if (normalizeText(value) !== '') result[key] = value;
+    });
+    return result;
+  }
+
+  function mergeGarageVehicleRecords(fallback = {}, primary = {}) {
+    const merged = { ...fallback, ...primary };
+    const preserveKeys = [
+      'name','plate','fuelType','odometer','purchaseDate','purchasePrice','purchaseOdometer','ownershipStatus','saleDate','salePrice','saleOdometer',
+      'technicalInspectionUntil','insuranceUntil','nextServiceKm','nextServiceDate','iconColor','note',
+      ...VEHICLE_TECHNICAL_FIELD_NAMES
+    ];
+    preserveKeys.forEach((key) => {
+      if (!garageHasMeaningfulValue(primary[key]) && garageHasMeaningfulValue(fallback[key])) merged[key] = fallback[key];
+    });
+    merged.technicalSpecs = mergeGarageTechnicalSpecs(primary.technicalSpecs, fallback.technicalSpecs);
+    if (primary.cloudId) {
+      merged.cloudId = primary.cloudId;
+      merged.id = primary.id || fallback.id || uid();
+    }
+    if (!merged.id) merged.id = fallback.id || primary.id || uid();
+    return merged;
+  }
+
+  function preferGarageVehicleRecord(current = {}, candidate = {}) {
+    const candidateUpdated = Date.parse(candidate.updatedAt || candidate.createdAt || '') || 0;
+    const currentUpdated = Date.parse(current.updatedAt || current.createdAt || '') || 0;
+    if (candidate.cloudId && !current.cloudId) return mergeGarageVehicleRecords(current, candidate);
+    if (!candidate.cloudId && current.cloudId) return mergeGarageVehicleRecords(candidate, current);
+    return candidateUpdated >= currentUpdated ? mergeGarageVehicleRecords(current, candidate) : mergeGarageVehicleRecords(candidate, current);
+  }
+
+  function garageVehicleHasBackupData(vehicle = {}) {
+    if (vehicleOwnershipStatus(vehicle) === 'sold') return true;
+    const keys = ['plate','fuelType','odometer','purchaseDate','purchasePrice','purchaseOdometer','saleDate','salePrice','saleOdometer','technicalInspectionUntil','insuranceUntil','nextServiceKm','nextServiceDate','note', ...VEHICLE_TECHNICAL_FIELD_NAMES];
+    return keys.some((key) => garageHasMeaningfulValue(vehicle[key])) || garageHasTechnicalSpecs(vehicle);
+  }
+
+  function vehicleOwnershipLabel(vehicle) {
+    return isVehicleOwned(vehicle) ? 'vlastním' : 'nevlastním';
+  }
+
+  function vehicleOwnershipMonths(vehicle) {
+    const start = parseDateValue(vehicle?.purchaseDate);
+    const end = isVehicleOwned(vehicle) ? new Date() : parseDateValue(vehicle?.saleDate);
+    if (!start || !end || end < start) return 0;
+    const months = ((end.getFullYear() - start.getFullYear()) * 12) + (end.getMonth() - start.getMonth()) + 1;
+    return Math.max(1, months);
+  }
+
+  function vehicleOwnedDistance(vehicle, analytics = {}) {
+    const purchaseKm = Number(vehicle?.purchaseOdometer || 0);
+    const saleKm = Number(vehicle?.saleOdometer || 0);
+    const currentKm = Number(analytics.currentKm || vehicle?.odometer || 0);
+    const endKm = Math.max(saleKm, currentKm, Number(analytics.endKnownKm || 0));
+    if (endKm > 0 && purchaseKm > 0 && endKm > purchaseKm) return endKm - purchaseKm;
+    if (saleKm > 0 && purchaseKm <= 0) return saleKm;
+    if (currentKm > 0 && purchaseKm <= 0) return currentKm;
+    return Number(analytics.totalDistance || analytics.stats?.totalKm || 0);
+  }
+
+  function vehicleMoneyValue(value) {
+    const number = Number(value || 0);
+    return Number.isFinite(number) && number > 0 ? number : 0;
+  }
+
+
+  const VEHICLE_TECHNICAL_FIELD_NAMES = ['brand','model','generation','productionYear','bodyType','vin','engineName','engineCode','displacementCcm','powerKw','powerHp','torqueNm','cylinders','transmission','drive','emissionNorm','co2','curbWeightKg','grossWeightKg','seats','doors','fuelTankLiters','batteryKwh','officialConsumption','tireSize','towingBrakedKg','towingUnbrakedKg','lengthMm','widthMm','heightMm','wheelbaseMm'];
+
+  function extractVehicleTechnicalFields(source = {}) {
+    const result = {};
+    VEHICLE_TECHNICAL_FIELD_NAMES.forEach((key) => { result[key] = normalizeText(source[key]); });
+    return result;
+  }
+
+  function normalizeVehicleTechnicalSpecs(source = {}) {
+    const base = source && typeof source === 'object' && !Array.isArray(source) ? source : {};
+    const specs = { ...base.technicalSpecs, ...extractVehicleTechnicalFields(base) };
+    Object.keys(specs).forEach((key) => { specs[key] = normalizeText(specs[key]); });
+    return specs;
+  }
+
+  function applyVehicleTechnicalFields(vehicle, source = {}) {
+    const technical = extractVehicleTechnicalFields(source);
+    Object.assign(vehicle, technical);
+    vehicle.technicalSpecs = normalizeVehicleTechnicalSpecs({ ...(vehicle.technicalSpecs || {}), ...technical });
+    if (!vehicle.name && (vehicle.brand || vehicle.model)) vehicle.name = [vehicle.brand, vehicle.model].filter(Boolean).join(' ');
+    return vehicle;
+  }
+
+  function garagePresetSort(a, b) {
+    return String(a || '').localeCompare(String(b || ''), 'cs', { sensitivity: 'base', numeric: true });
+  }
+
+  function garagePresetBrands() {
+    return [...new Set(GARAGE_VEHICLE_PRESETS.map((item) => normalizeText(item.brand)).filter(Boolean))].sort(garagePresetSort);
+  }
+
+  function garagePresetModels(brand = '') {
+    const selectedBrand = normalizeText(brand);
+    return [...new Set(GARAGE_VEHICLE_PRESETS
+      .filter((item) => normalizeText(item.brand) === selectedBrand)
+      .map((item) => normalizeText(item.model))
+      .filter(Boolean))].sort(garagePresetSort);
+  }
+
+  function garagePresetEngines(brand = '', model = '') {
+    const selectedBrand = normalizeText(brand);
+    const selectedModel = normalizeText(model);
+    return GARAGE_VEHICLE_PRESETS
+      .filter((item) => normalizeText(item.brand) === selectedBrand && normalizeText(item.model) === selectedModel)
+      .slice()
+      .sort((a, b) => garagePresetSort(`${a.engineName || ''} ${a.productionYear || ''} ${a.generation || ''}`, `${b.engineName || ''} ${b.productionYear || ''} ${b.generation || ''}`));
+  }
+
+  function garagePresetSelectField(label, name, options, selected = '', disabled = false, extraAttrs = '') {
+    const selectId = `field-${name}-${Math.random().toString(36).slice(2, 7)}`;
+    return `
+      <div class="field">
+        <label for="${selectId}">${escapeHtml(label)}</label>
+        <select class="select" id="${selectId}" name="${name}" ${disabled ? 'disabled' : ''} ${extraAttrs}>
+          ${options.map(([value, text]) => `<option value="${escapeHtml(value)}" ${String(value) === String(selected) ? 'selected' : ''}>${escapeHtml(text)}</option>`).join('')}
+        </select>
+      </div>
+    `;
+  }
+
+  function renderVehiclePresetTool() {
+    const brandOptions = [['', 'Nejdřív vyber značku…'], ...garagePresetBrands().map((brand) => [brand, brand])];
+    return `
+      <details class="action-details compact-edit-details garage-preset-tool">
+        <summary><span>Předvyplnit podle auta</span><em>značka → model → motorizace, vše abecedně</em></summary>
+        <div class="form-grid three garage-preset-grid">
+          ${garagePresetSelectField('Značka', 'vehiclePresetBrand', brandOptions, '', false, 'data-garage-preset-step="brand"')}
+          ${garagePresetSelectField('Model', 'vehiclePresetModel', [['', 'Vyber značku…']], '', true, 'data-garage-preset-step="model"')}
+          ${garagePresetSelectField('Motorizace', 'vehiclePresetId', [['', 'Vyber model…']], '', true, 'data-garage-preset-step="engine"')}
+        </div>
+        <div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="garage-apply-vehicle-preset">Načíst údaje</button></div>
+        <div class="inline-note compact-note">Nejde o online technický registr. Je to bezpečný lokální katalog bez scrapingu; přesné hodnoty je vždy lepší ověřit podle TP konkrétního auta.</div>
+      </details>
+    `;
+  }
+
+  function renderVehicleTechnicalFields(vehicle = {}) {
+    return `
+      <details class="action-details compact-edit-details garage-technical-fields">
+        <summary><span>Technický list auta</span><em>údaje z TP / technického listu</em></summary>
+        <div class="form-grid two">
+          ${field('Značka', 'brand', 'text', 'Škoda', false, vehicle.brand || '')}
+          ${field('Model', 'model', 'text', 'Octavia', false, vehicle.model || '')}
+          ${field('Generace / verze', 'generation', 'text', 'III / RS / Scout', false, vehicle.generation || '')}
+          ${field('Rok / výroba', 'productionYear', 'text', '2017 / 2013–2020', false, vehicle.productionYear || '')}
+          ${field('Karoserie', 'bodyType', 'text', 'combi / hatchback / SUV', false, vehicle.bodyType || '')}
+          ${field('VIN', 'vin', 'text', 'volitelné', false, vehicle.vin || '')}
+          ${field('Motor', 'engineName', 'text', '1.6 TDI / 2.0 TSI / EV', false, vehicle.engineName || '')}
+          ${field('Kód motoru', 'engineCode', 'text', 'např. CAYC', false, vehicle.engineCode || '')}
+          ${field('Objem ccm', 'displacementCcm', 'number', '1598', false, vehicle.displacementCcm || '')}
+          ${field('Výkon kW', 'powerKw', 'number', '77', false, vehicle.powerKw || '')}
+          ${field('Výkon hp', 'powerHp', 'number', '105', false, vehicle.powerHp || '')}
+          ${field('Točivý moment Nm', 'torqueNm', 'number', '250', false, vehicle.torqueNm || '')}
+          ${field('Válce', 'cylinders', 'number', '4', false, vehicle.cylinders || '')}
+          ${field('Převodovka', 'transmission', 'text', 'manuál / DSG / automat', false, vehicle.transmission || '')}
+          ${field('Pohon', 'drive', 'text', 'přední / zadní / 4x4', false, vehicle.drive || '')}
+          ${field('Emisní norma', 'emissionNorm', 'text', 'Euro 6 / EV', false, vehicle.emissionNorm || '')}
+          ${field('CO₂ g/km', 'co2', 'number', 'volitelné', false, vehicle.co2 || '')}
+          ${field('Pohotovostní hmotnost kg', 'curbWeightKg', 'number', 'volitelné', false, vehicle.curbWeightKg || '')}
+          ${field('Celková hmotnost kg', 'grossWeightKg', 'number', 'volitelné', false, vehicle.grossWeightKg || '')}
+          ${field('Počet míst', 'seats', 'number', '5', false, vehicle.seats || '')}
+          ${field('Počet dveří', 'doors', 'number', '5', false, vehicle.doors || '')}
+          ${field('Nádrž l', 'fuelTankLiters', 'number', '50', false, vehicle.fuelTankLiters || '')}
+          ${field('Baterie kWh', 'batteryKwh', 'number', '82', false, vehicle.batteryKwh || '')}
+          ${field('Oficiální spotřeba', 'officialConsumption', 'text', '4,8 l/100 km / 16 kWh/100 km', false, vehicle.officialConsumption || '')}
+          ${field('Pneu', 'tireSize', 'text', '205/55 R16', false, vehicle.tireSize || '')}
+          ${field('Brzděný přívěs kg', 'towingBrakedKg', 'number', 'volitelné', false, vehicle.towingBrakedKg || '')}
+          ${field('Nebrzděný přívěs kg', 'towingUnbrakedKg', 'number', 'volitelné', false, vehicle.towingUnbrakedKg || '')}
+          ${field('Délka mm', 'lengthMm', 'number', 'volitelné', false, vehicle.lengthMm || '')}
+          ${field('Šířka mm', 'widthMm', 'number', 'volitelné', false, vehicle.widthMm || '')}
+          ${field('Výška mm', 'heightMm', 'number', 'volitelné', false, vehicle.heightMm || '')}
+          ${field('Rozvor mm', 'wheelbaseMm', 'number', 'volitelné', false, vehicle.wheelbaseMm || '')}
+        </div>
+      </details>
+    `;
+  }
+
+  function fillGaragePresetModelOptions(form) {
+    const brand = form?.querySelector('[name="vehiclePresetBrand"]')?.value || '';
+    const modelSelect = form?.querySelector('[name="vehiclePresetModel"]');
+    const engineSelect = form?.querySelector('[name="vehiclePresetId"]');
+    if (!modelSelect || !engineSelect) return;
+    const models = garagePresetModels(brand);
+    modelSelect.innerHTML = models.length
+      ? '<option value="">Vyber model…</option>' + models.map((model) => `<option value="${escapeHtml(model)}">${escapeHtml(model)}</option>`).join('')
+      : '<option value="">Vyber značku…</option>';
+    modelSelect.disabled = !models.length;
+    engineSelect.innerHTML = '<option value="">Vyber model…</option>';
+    engineSelect.disabled = true;
+  }
+
+  function fillGaragePresetEngineOptions(form) {
+    const brand = form?.querySelector('[name="vehiclePresetBrand"]')?.value || '';
+    const model = form?.querySelector('[name="vehiclePresetModel"]')?.value || '';
+    const engineSelect = form?.querySelector('[name="vehiclePresetId"]');
+    if (!engineSelect) return;
+    const engines = garagePresetEngines(brand, model);
+    engineSelect.innerHTML = engines.length
+      ? '<option value="">Vyber motorizaci…</option>' + engines.map((item) => {
+          const label = [item.engineName, item.powerKw ? `${item.powerKw} kW` : '', item.productionYear, item.generation ? `gen. ${item.generation}` : ''].filter(Boolean).join(' · ');
+          return `<option value="${escapeHtml(item.id)}">${escapeHtml(label || item.id)}</option>`;
+        }).join('')
+      : '<option value="">Vyber model…</option>';
+    engineSelect.disabled = !engines.length;
+  }
+
+  function fillVehicleFormFromPreset(button) {
+    const form = button.closest('form');
+    if (!form) return;
+    const presetId = form.querySelector('[name="vehiclePresetId"]')?.value || '';
+    const preset = GARAGE_VEHICLE_PRESETS.find((item) => item.id === presetId);
+    if (!preset) return showToast('Vyber značku, model a motorizaci');
+    const values = { ...preset, name: `${preset.brand} ${preset.model}${preset.engineName ? ` ${preset.engineName}` : ''}`.trim() };
+    Object.entries(values).forEach(([key, value]) => {
+      const input = form.querySelector(`[name="${CSS.escape(key)}"]`);
+      if (input && value !== undefined && value !== null) input.value = String(value);
+    });
+    if (preset.fuelType) {
+      const fuelInput = form.querySelector('[name="fuelType"]');
+      if (fuelInput) fuelInput.value = fuelTypeFromCloud(fuelTypeToCloud(preset.fuelType)) || preset.fuelType;
+    }
+    showToast('Údaje auta předvyplněné');
+  }
+
+  function garageMonthlyDistancePoints(entries = []) {
+    const map = new Map();
+    [...entries]
+      .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
+      .forEach((item) => {
+        const key = garageMonthKey(item.date);
+        const km = Number(item.km || 0);
+        if (!key || !Number.isFinite(km) || km <= 0) return;
+        map.set(key, (map.get(key) || 0) + km);
+      });
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([key, value]) => ({ value, label: financeMonthLabel(key) }));
+  }
+
+  function garageDistanceForMonth(entries = [], monthKey = garageCurrentMonthKey()) {
+    return entries.filter((item) => garageMonthKey(item.date) === monthKey).reduce((sum, item) => sum + Number(item.km || 0), 0);
+  }
+
+  function garageDistanceForYear(entries = [], year = new Date().getFullYear()) {
+    return entries.filter((item) => Number(String(item.date || '').slice(0, 4)) === Number(year)).reduce((sum, item) => sum + Number(item.km || 0), 0);
+  }
+
+  function garageVehicleCostSummary(vehicle, analytics = {}) {
+    const fuelCost = Number(analytics.stats?.fuelCost || 0);
+    const serviceCost = Number(analytics.serviceCostTotal || analytics.stats?.serviceCost || 0);
+    const purchasePrice = vehicleMoneyValue(vehicle?.purchasePrice);
+    const salePrice = vehicleMoneyValue(vehicle?.salePrice);
+    const distance = vehicleOwnedDistance(vehicle, analytics);
+    const totalWithoutPurchase = fuelCost + serviceCost;
+    const totalWithPurchase = totalWithoutPurchase + purchasePrice - salePrice;
+    return {
+      fuelCost,
+      serviceCost,
+      purchasePrice,
+      salePrice,
+      distance,
+      fuelPerKm: distance > 0 ? fuelCost / distance : null,
+      runningPerKm: distance > 0 ? totalWithoutPurchase / distance : null,
+      totalPerKm: distance > 0 ? totalWithPurchase / distance : null,
+      totalWithoutPurchase,
+      totalWithPurchase
+    };
+  }
+
+  function garageRowsForVehicle(vehicleId) {
+    return {
+      fuelRows: sortFuelRows((state.fuel || []).filter((item) => item.vehicleId === vehicleId)),
+      serviceRows: (state.services || []).filter((item) => item.vehicleId === vehicleId).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
+    };
+  }
+
+  function getVehicleCurrentOdometer(vehicle, fuelRows = [], serviceRows = []) {
+    const values = [
+      vehicle?.odometer,
+      vehicle?.purchaseOdometer,
+      vehicle?.saleOdometer,
+      ...fuelRows.map((item) => item.odometer),
+      ...serviceRows.map((item) => item.odometer)
+    ]
+      .map((value) => Number(value || 0))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    return values.length ? Math.max(...values) : 0;
+  }
+
+  function garageMonthKey(value) {
+    return String(value || '').slice(0, 7);
+  }
+
+  function garageCurrentMonthKey() {
+    return todayISO().slice(0, 7);
+  }
+
+  function garagePreviousYear() {
+    return new Date().getFullYear() - 1;
+  }
+
+  function garageFuelEntryMetrics(fuelRows = []) {
+    const rows = sortFuelRows(fuelRows);
+    const entries = [];
+    for (let index = 1; index < rows.length; index += 1) {
+      const previous = rows[index - 1];
+      const current = rows[index];
+      const previousKm = Number(previous.odometer || 0);
+      const currentKm = Number(current.odometer || 0);
+      const liters = Number(current.liters || 0);
+      const price = Number(current.price || 0);
+      const km = currentKm - previousKm;
+      if (currentKm > previousKm && liters > 0) {
+        entries.push({ ...current, km, liters, price, consumption: (liters / km) * 100, pricePerLiter: fuelPricePerLiter(current) });
+      }
+    }
+    return entries;
+  }
+
+  function garageVehicleAnalytics(vehicle) {
+    const { fuelRows, serviceRows } = garageRowsForVehicle(vehicle?.id);
+    const stats = getVehicleStats(fuelRows, serviceRows);
+    const entries = garageFuelEntryMetrics(fuelRows);
+    const nowMonth = garageCurrentMonthKey();
+    const prevYear = garagePreviousYear();
+    const thisMonthFuel = fuelRows.filter((item) => garageMonthKey(item.date) === nowMonth);
+    const prevYearFuel = fuelRows.filter((item) => Number(String(item.date || '').slice(0, 4)) === prevYear);
+    const currentKm = getVehicleCurrentOdometer(vehicle, fuelRows, serviceRows);
+    const odometerValues = fuelRows.map((item) => Number(item.odometer || 0)).filter((value) => Number.isFinite(value) && value > 0);
+    const purchaseKm = Number(vehicle?.purchaseOdometer || 0);
+    const saleKm = Number(vehicle?.saleOdometer || 0);
+    const firstKnownKm = purchaseKm || (odometerValues.length ? Math.min(...odometerValues) : Number(vehicle?.odometerStart || vehicle?.startOdometer || 0));
+    const endKnownKm = saleKm > 0 ? saleKm : currentKm;
+    const totalDistance = endKnownKm && firstKnownKm && endKnownKm > firstKnownKm ? endKnownKm - firstKnownKm : stats.totalKm || 0;
+    const dates = [parseDateValue(vehicle?.purchaseDate), ...fuelRows.map((item) => parseDateValue(item.date)), parseDateValue(vehicle?.saleDate)].filter(Boolean).sort((a, b) => a - b);
+    const ownershipMonths = vehicleOwnershipMonths(vehicle);
+    const monthSpan = ownershipMonths || (dates.length >= 2 ? Math.max(1, ((dates[dates.length - 1].getFullYear() - dates[0].getFullYear()) * 12) + (dates[dates.length - 1].getMonth() - dates[0].getMonth()) + 1) : 1);
+    const prevYearEntries = entries.filter((item) => Number(String(item.date || '').slice(0, 4)) === prevYear);
+    const prevYearDistance = prevYearEntries.reduce((sum, item) => sum + Number(item.km || 0), 0);
+    const bestConsumption = entries.length ? Math.min(...entries.map((item) => item.consumption).filter((value) => Number.isFinite(value) && value > 0)) : null;
+    const worstConsumption = entries.length ? Math.max(...entries.map((item) => item.consumption).filter((value) => Number.isFinite(value) && value > 0)) : null;
+    return {
+      fuelRows,
+      serviceRows,
+      stats,
+      entries,
+      currentKm,
+      firstKnownKm,
+      endKnownKm,
+      latestFuel: fuelRows[fuelRows.length - 1] || null,
+      latestPricePerLiter: fuelRows.length ? fuelPricePerLiter(fuelRows[fuelRows.length - 1]) : null,
+      latestConsumption: entries.length ? entries[entries.length - 1].consumption : null,
+      averageConsumption: stats.averageConsumption,
+      fuelCountTotal: fuelRows.length,
+      fuelCountThisMonth: thisMonthFuel.length,
+      fuelCountPrevYear: prevYearFuel.length,
+      litersTotal: fuelRows.reduce((sum, item) => sum + Number(item.liters || 0), 0),
+      litersThisMonth: thisMonthFuel.reduce((sum, item) => sum + Number(item.liters || 0), 0),
+      litersPrevYear: prevYearFuel.reduce((sum, item) => sum + Number(item.liters || 0), 0),
+      bestConsumption,
+      worstConsumption,
+      serviceCostTotal: serviceRows.reduce((sum, item) => sum + Number(item.price || 0), 0),
+      serviceCountTotal: serviceRows.length,
+      serviceCostThisMonth: serviceRows.filter((item) => garageMonthKey(item.date) === nowMonth).reduce((sum, item) => sum + Number(item.price || 0), 0),
+      serviceCostPrevYear: serviceRows.filter((item) => Number(String(item.date || '').slice(0, 4)) === prevYear).reduce((sum, item) => sum + Number(item.price || 0), 0),
+      totalDistance,
+      averageMonthDistance: totalDistance / monthSpan,
+      averageYearDistance: (totalDistance / monthSpan) * 12,
+      prevYearDistance
+    };
+  }
+
+  function formatLiters(value) {
+    const number = Number(value || 0);
+    if (!Number.isFinite(number) || number <= 0) return '—';
+    return `${number.toFixed(1).replace('.', ',')} l`;
+  }
+
+  function formatGarageChartValue(value, suffix = '') {
+    const number = Number(value || 0);
+    if (!Number.isFinite(number) || number <= 0) return '—';
+    return `${number.toFixed(2).replace('.', ',')}${suffix}`;
+  }
+
+  function garageFuelConsumptionForItem(item) {
+    if (!item?.vehicleId) return null;
+    const rows = sortFuelRows((state.fuel || []).filter((entry) => entry.vehicleId === item.vehicleId));
+    const index = rows.findIndex((entry) => entry.id === item.id);
+    if (index <= 0) return null;
+    const previous = rows[index - 1];
+    const previousKm = Number(previous?.odometer || 0);
+    const currentKm = Number(item.odometer || 0);
+    const liters = Number(item.liters || 0);
+    const km = currentKm - previousKm;
+    if (!Number.isFinite(km) || km <= 0 || !Number.isFinite(liters) || liters <= 0) return null;
+    return (liters / km) * 100;
+  }
+
+  function garageLinePoints(values, width = 300, height = 90, padding = 12) {
+    const clean = values.map((value) => Number(value || 0)).filter((value) => Number.isFinite(value));
+    if (!clean.length) return '';
+    const min = Math.min(...clean);
+    const max = Math.max(...clean);
+    const span = Math.max(1, max - min);
+    return clean.map((value, index) => {
+      const x = clean.length === 1 ? width / 2 : padding + (index * ((width - padding * 2) / (clean.length - 1)));
+      const y = height - padding - (((value - min) / span) * (height - padding * 2));
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+  }
+
+  function renderGarageLineChart(title, subtitle, values = [], emptyText = 'Zatím není dost dat.', metrics = [], edgeLabels = null) {
+    const pointRows = values.map((entry) => (typeof entry === 'object' && entry !== null ? entry : { value: entry, label: '' }))
+      .map((entry) => ({ ...entry, value: Number(entry.value || 0) }))
+      .filter((entry) => Number.isFinite(entry.value) && entry.value > 0);
+    const validValues = pointRows.map((entry) => entry.value);
+    const metricRows = Array.isArray(metrics) && metrics.length ? metrics : [];
+    const header = `<div class="garage-chart-header-full"><strong>${escapeHtml(title)}</strong><em>${escapeHtml(subtitle)}</em></div>`;
+    if (validValues.length < 2) {
+      return `<article class="garage-chart-card">${header}<div class="garage-chart-body garage-chart-body-empty"><div class="garage-chart-values">${metricRows.map((row) => `<span><em>${escapeHtml(row.label)}</em><strong>${escapeHtml(row.value)}</strong></span>`).join('')}</div><div class="empty small-empty">${escapeHtml(emptyText)}</div></div></article>`;
+    }
+    const points = garageLinePoints(validValues);
+    const average = validValues.reduce((sum, value) => sum + value, 0) / validValues.length;
+    const min = Math.min(...validValues);
+    const max = Math.max(...validValues);
+    const span = Math.max(1, max - min);
+    const avgY = 90 - 12 - (((average - min) / span) * (90 - 24));
+    const defaultRows = [
+      { label: 'Průměr', value: formatGarageChartValue(average) },
+      { label: 'Poslední', value: formatGarageChartValue(validValues[validValues.length - 1]) }
+    ];
+    const resolvedMetrics = metricRows.length ? metricRows : defaultRows;
+    const labels = edgeLabels || garageEdgeLabels(pointRows);
+    return `
+      <article class="garage-chart-card">
+        ${header}
+        <div class="garage-chart-body">
+          <div class="garage-chart-values">
+            ${resolvedMetrics.map((row) => `<span><em>${escapeHtml(row.label)}</em><strong>${escapeHtml(row.value)}</strong></span>`).join('')}
+          </div>
+          <div class="garage-chart-plot">
+            <svg class="garage-line-chart" viewBox="0 0 300 90" role="img" aria-label="${escapeHtml(title)}">
+              <line class="garage-line-average" x1="12" x2="288" y1="${avgY.toFixed(1)}" y2="${avgY.toFixed(1)}"></line>
+              <polyline points="${points}" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
+              ${points.split(' ').map((point) => `<circle cx="${point.split(',')[0]}" cy="${point.split(',')[1]}" r="3.5" fill="currentColor"></circle>`).join('')}
+            </svg>
+            ${labels ? `<div class="garage-chart-axis-labels"><span>${escapeHtml(labels.first)}</span><span>${escapeHtml(labels.last)}</span></div>` : ''}
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function garageEdgeLabels(points = []) {
+    const rows = Array.isArray(points) ? points.filter((item) => item && Number(item.value || 0) > 0) : [];
+    if (rows.length < 2) return null;
+    return { first: rows[0].label || 'začátek', last: rows[rows.length - 1].label || 'poslední' };
+  }
+
+  function garageChartPointsFromFuelPrices(fuelRows = [], limit = 14) {
+    return sortFuelRows(fuelRows)
+      .map((item) => ({ value: fuelPricePerLiter(item), label: formatDate(item.date) }))
+      .filter((item) => Number(item.value || 0) > 0)
+      .slice(-limit);
+  }
+
+  function garageChartPointsFromConsumption(entries = [], limit = 14) {
+    return [...entries]
+      .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
+      .map((item) => ({ value: Number(item.consumption || 0), label: formatDate(item.date) }))
+      .filter((item) => Number(item.value || 0) > 0)
+      .slice(-limit);
+  }
+
+  function garageMonthlyFuelCostPoints(fuelRows = []) {
+    const map = new Map();
+    fuelRows.forEach((item) => {
+      const key = garageMonthKey(item.date);
+      if (!key) return;
+      map.set(key, (map.get(key) || 0) + Number(item.price || 0));
+    });
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([key, value]) => ({ value, label: financeMonthLabel(key) }));
+  }
+
+  function garageVehicleTotalCostPerKm(analytics = {}) {
+    const distance = Number(analytics.totalDistance || analytics.stats?.totalKm || 0);
+    const totalCost = Number(analytics.stats?.fuelCost || 0) + Number(analytics.serviceCostTotal || 0);
+    return distance > 0 ? totalCost / distance : null;
+  }
+
+  function garageMonthlyFuelCostRows(fuelRows = []) {
+    const map = new Map();
+    fuelRows.forEach((item) => {
+      const key = garageMonthKey(item.date);
+      if (!key) return;
+      map.set(key, (map.get(key) || 0) + Number(item.price || 0));
+    });
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([, value]) => value);
+  }
+
+  function garageVehiclePickerMeta(vehicle, rows) {
+    const status = vehicleOwnershipStatus(vehicle);
+    if (status === 'owned') return [vehicle.brand, vehicle.model, vehicle.plate].filter(Boolean).join(' · ') || vehicle.fuelType || 'auto';
+    const analytics = garageVehicleAnalytics(vehicle);
+    const costSummary = garageVehicleCostSummary(vehicle, analytics);
+    const ownedKm = vehicleOwnedDistance(vehicle, analytics);
+    const months = vehicleOwnershipMonths(vehicle);
+    const parts = [vehicleOwnershipLabel(vehicle)];
+    if (ownedKm) parts.push(`najeto ${formatKm(ownedKm)}`);
+    if (costSummary.totalPerKm) parts.push(`celkem ${formatCostPerKm(costSummary.totalPerKm)}`);
+    if (months) parts.push(`${months} měs. vlastnictví`);
+    return parts.filter(Boolean).join(' · ') || 'archivované auto';
+  }
+
+  function renderGarageVehiclePicker(vehicles = [], activeVehicle = null) {
+    const activeRows = activeVehicle ? garageRowsForVehicle(activeVehicle.id) : { fuelRows: [], serviceRows: [] };
+    const activeKm = activeVehicle ? getVehicleCurrentOdometer(activeVehicle, activeRows.fuelRows, activeRows.serviceRows) : 0;
+    const activeMeta = activeVehicle ? garageVehiclePickerMeta(activeVehicle, activeRows) : '';
+    const activeIsOwned = activeVehicle ? vehicleOwnershipStatus(activeVehicle) === 'owned' : true;
+    return `
+      <section class="garage-active-vehicle-selector garage-active-vehicle-selector-clean">
+        <details class="garage-vehicle-dropdown">
+          <summary>
+            <span class="garage-vehicle-summary-main"><span class="vehicle-icon-bubble ${vehicleIconColorClass(activeVehicle?.iconColor)}" aria-hidden="true">🚗</span><strong>${escapeHtml(activeVehicle?.name || 'Vyber auto')}</strong>${activeMeta ? `<em>${escapeHtml(activeMeta)}</em>` : ''}</span>
+            <span class="garage-vehicle-summary-side">${activeIsOwned ? `<span class="garage-vehicle-summary-km">${escapeHtml(formatKm(activeKm))}</span>` : ''}<span class="garage-vehicle-dropdown-arrow" aria-hidden="true">⌄</span></span>
+          </summary>
+          <div class="garage-vehicle-dropdown-list">
+            ${vehicles.map((vehicle) => {
+              const rows = garageRowsForVehicle(vehicle.id);
+              const km = getVehicleCurrentOdometer(vehicle, rows.fuelRows, rows.serviceRows);
+              const isOwned = vehicleOwnershipStatus(vehicle) === 'owned';
+              const meta = garageVehiclePickerMeta(vehicle, rows);
+              return `<div class="garage-vehicle-option-row ${vehicle.id === activeVehicle?.id ? 'active' : ''} ${!isOwned ? 'garage-vehicle-option-archived' : ''}">
+                <button class="garage-vehicle-option-main" type="button" data-action="garage-select-overview-vehicle" data-id="${escapeHtml(vehicle.id)}">
+                  <span class="vehicle-icon-bubble ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span>
+                  <span class="garage-vehicle-option-copy"><strong>${escapeHtml(vehicle.name || 'Auto')}</strong><em>${escapeHtml(meta)}</em></span>
+                  ${isOwned ? `<b>${escapeHtml(formatKm(km))}</b>` : ''}
+                </button>
+                ${isOwned ? `<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="select-vehicle" data-id="${escapeHtml(vehicle.id)}" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování ${escapeHtml(vehicle.name || 'auta')}">⛽+</button>` : ''}
+              </div>`;
+            }).join('')}
+          </div>
+        </details>
+      </section>
+    `;
+  }
+
+
+  function renderGarageFuelPanel(vehicle) {
+    const analytics = garageVehicleAnalytics(vehicle);
+    const priceChartPoints = garageChartPointsFromFuelPrices(analytics.fuelRows, 14);
+    const consumptionChartPoints = garageChartPointsFromConsumption(analytics.entries, 14);
+    const monthlyFuelCostPoints = garageMonthlyFuelCostPoints(analytics.fuelRows).slice(-12);
+    const monthlyDistancePoints = garageMonthlyDistancePoints(analytics.entries).slice(-12);
+    const priceChartValues = priceChartPoints.map((item) => item.value);
+    const consumptionChartValues = consumptionChartPoints.map((item) => item.value);
+    const monthlyChartValues = monthlyFuelCostPoints.map((item) => item.value);
+    const monthlyDistanceValues = monthlyDistancePoints.map((item) => item.value);
+    const avgPrice = priceChartValues.length ? priceChartValues.reduce((sum, value) => sum + value, 0) / priceChartValues.length : null;
+    const avgConsumption = consumptionChartValues.length ? consumptionChartValues.reduce((sum, value) => sum + value, 0) / consumptionChartValues.length : null;
+    const avgMonthlyFuel = monthlyChartValues.length ? monthlyChartValues.reduce((sum, value) => sum + value, 0) / monthlyChartValues.length : null;
+    const currentMonthDistance = garageDistanceForMonth(analytics.entries);
+    const currentYearDistance = garageDistanceForYear(analytics.entries);
+    return `
+      <section class="garage-dashboard-panel garage-fuel-dashboard-panel">
+        <div class="card-header compact-card-header"><div><h2>Palivo</h2><p>${escapeHtml(vehicle.name)} · přehled podle tankování a kilometrů</p></div></div>
+        <div class="detail-stack compact-detail-stack garage-fuel-lines">
+          <div class="stat-line"><span>Poslední spotřeba</span><strong>${formatLitreValue(analytics.latestConsumption)}</strong></div>
+          <div class="stat-line"><span>Poslední cena l/Kč</span><strong>${analytics.latestPricePerLiter ? escapeHtml(formatFuelPricePerLiter(analytics.latestPricePerLiter)) : '—'}</strong></div>
+          <div class="stat-line"><span>Průměrná celková spotřeba</span><strong>${formatLitreValue(analytics.averageConsumption)}</strong></div>
+        </div>
+        <div class="garage-chart-carousel" aria-label="Grafy paliva">
+          ${renderGarageLineChart('Cena tankování', 'Kč/litr podle posledních tankování', priceChartPoints, 'Přidej aspoň dvě tankování s cenou za litr.', [
+            { label: 'Průměr', value: avgPrice ? formatFuelPricePerLiter(avgPrice) : '—' },
+            { label: 'Poslední', value: analytics.latestPricePerLiter ? formatFuelPricePerLiter(analytics.latestPricePerLiter) : '—' },
+            { label: 'Nejvyšší', value: priceChartValues.length ? formatFuelPricePerLiter(Math.max(...priceChartValues)) : '—' }
+          ])}
+          ${renderGarageLineChart('Spotřeba', 'l/100 km podle tankování', consumptionChartPoints, 'Přidej aspoň dvě tankování s km a litry.', [
+            { label: 'Průměr', value: avgConsumption ? formatLitreValue(avgConsumption) : '—' },
+            { label: 'Poslední', value: formatLitreValue(analytics.latestConsumption) },
+            { label: 'Nejlepší', value: formatLitreValue(analytics.bestConsumption) }
+          ])}
+          ${renderGarageLineChart('Měsíční provoz', 'měsíční náklad na palivo', monthlyFuelCostPoints, 'Zatím není dost měsíců s tankováním.', [
+            { label: 'Průměr', value: avgMonthlyFuel ? formatCurrency(avgMonthlyFuel) : '—' },
+            { label: 'Poslední', value: monthlyChartValues.length ? formatCurrency(monthlyChartValues[monthlyChartValues.length - 1]) : '—' },
+            { label: 'Celkem', value: formatCurrency(monthlyChartValues.reduce((sum, value) => sum + value, 0)) }
+          ])}
+          ${renderGarageLineChart('Kilometry', 'měsíčně ujeté km', monthlyDistancePoints, 'Zatím není dost kilometrů mezi tankováními.', [
+            { label: 'Měsíční', value: formatKm(currentMonthDistance) },
+            { label: 'Roční', value: formatKm(currentYearDistance) },
+            { label: 'Průměr / měsíc', value: formatKm(analytics.averageMonthDistance) },
+            { label: 'Průměr / rok', value: formatKm(analytics.averageYearDistance) }
+          ])}
+        </div>
+      </section>
+    `;
+  }
+
+
+  function garageDecimalInputValue(value) {
+    const number = Number(value || 0);
+    if (!Number.isFinite(number) || number <= 0) return '';
+    return String(Number(number.toFixed(2))).replace('.', ',');
+  }
+
+  function garageTripDecimalField(label, name, placeholder, value, required = true) {
+    return `<label class="field"><span>${escapeHtml(label)}</span><input class="input" type="text" inputmode="decimal" autocomplete="off" name="${escapeHtml(name)}" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(garageDecimalInputValue(value))}" ${required ? 'required' : ''}></label>`;
+  }
+
+  function renderGarageTripCalculator(vehicles = [], activeVehicle = null) {
+    if (!vehicles.length) return renderEmptyCta({ icon: '🧮', title: 'Kalkulačka čeká na auto', text: 'Přidej první auto a kalkulačka si vezme jeho průměrnou spotřebu i poslední cenu paliva.', nav: 'garage', tab: 'add', label: 'Přidat auto' });
+    if (!garageCalcVehicleId || !vehicles.some((item) => item.id === garageCalcVehicleId)) garageCalcVehicleId = activeVehicle?.id || garageVehicleId || vehicles[0].id;
+    const selectedVehicle = vehicles.find((item) => item.id === garageCalcVehicleId) || activeVehicle || vehicles[0];
+    const analytics = garageVehicleAnalytics(selectedVehicle);
+    const defaultConsumption = Number(analytics.averageConsumption || analytics.latestConsumption || 0);
+    const defaultFuelPrice = Number(analytics.latestPricePerLiter || 0);
+    const hasManualResult = garageTripCalcResult?.vehicleId === selectedVehicle.id;
+    const consumption = hasManualResult ? Number(garageTripCalcResult.consumption || 0) : defaultConsumption;
+    const fuelPrice = hasManualResult ? Number(garageTripCalcResult.fuelPrice || 0) : defaultFuelPrice;
+    const distance = hasManualResult ? Number(garageTripCalcResult.distance || 0) : 0;
+    const total = hasManualResult ? garageTripCalcResult.total : null;
+    const liters = hasManualResult ? garageTripCalcResult.liters : null;
+    const calcCostSummary = garageVehicleCostSummary(selectedVehicle, analytics);
+    const runningPerKm = Number(calcCostSummary.runningPerKm || 0);
+    const fullRunningTripTotal = hasManualResult && distance > 0 && runningPerKm > 0 ? distance * runningPerKm : null;
+    return `
+      <div class="card-header">
+        <div><h2>Kalkulačka cesty</h2><p>Vybereš auto, spotřeba a poslední cena paliva se načtou automaticky podle auta. Oboje jde ručně přepsat.</p></div>
+        <span class="badge">${escapeHtml(selectedVehicle.name || 'Auto')}</span>
+      </div>
+      <form data-form="garage-trip-calc" class="compact-form garage-trip-calc-form">
+        <div class="form-grid two">
+          <label class="field"><span>Auto</span><select class="select" name="vehicleId" data-garage-calc-vehicle>${vehicles.map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === selectedVehicle.id ? 'selected' : ''}>${escapeHtml(item.name || 'Auto')}</option>`).join('')}</select></label>
+          ${garageTripDecimalField('Kolik pojedu km', 'distance', 'např. 120', distance)}
+          ${garageTripDecimalField('Průměrná spotřeba l/100 km', 'consumption', 'editovatelné', consumption)}
+          ${garageTripDecimalField('Cena paliva Kč/l', 'fuelPrice', 'editovatelné', fuelPrice)}
+        </div>
+        <div class="form-actions"><button class="primary-btn" type="submit">Spočítat cestu</button></div>
+      </form>
+      <div class="kpi-row compact garage-trip-result">
+        <div class="kpi"><strong>${total ? formatCurrency(total) : '—'}</strong><span>jen palivo</span></div>
+        <div class="kpi"><strong>${fullRunningTripTotal !== null ? formatCurrency(fullRunningTripTotal) : '—'}</strong><span>palivo + servis bez koupě</span></div>
+        <div class="kpi"><strong>${liters ? formatLiters(liters) : '—'}</strong><span>spotřebuješ</span></div>
+        <div class="kpi"><strong>${fuelPrice ? formatFuelPricePerLiter(fuelPrice) : '—'}</strong><span>poslední cena paliva</span></div>
+        <div class="kpi"><strong>${consumption ? formatLitreValue(consumption) : '—'}</strong><span>celková průměrná spotřeba</span></div>
+      </div>
+      <div class="inline-note compact-note">Po změně auta se hodnoty přepíšou podle vybraného auta. Cena „palivo + servis bez koupě“ používá celkový provozní průměr auta bez pořizovací ceny.</div>
+    `;
+  }
+
+
+  function renderGarageOverviewDashboard(vehicles = [], activeVehicle = null) {
+    if (!vehicles.length || !activeVehicle) return renderEmptyCta({ icon: '🚗', title: 'Garáž je prázdná', text: 'Přidej první auto, potom půjdou řešit tankování, servis, STK a pojistka.', nav: 'garage', tab: 'add', label: 'Přidat auto' });
+    return `${renderGarageVehiclePicker(vehicles, activeVehicle)}${renderGarageFuelPanel(activeVehicle)}`;
+  }
+
+  function renderGarageStatsPanel(vehicles = [], activeVehicle = null) {
+    if (!vehicles.length) return renderEmptyCta({ icon: '📊', title: 'Statistiky zatím nejsou', text: 'Nejdřív přidej auto a pár tankování.', nav: 'garage', tab: 'add', label: 'Přidat auto' });
+    if (!garageStatsVehicleId || !vehicles.some((vehicle) => vehicle.id === garageStatsVehicleId)) garageStatsVehicleId = activeVehicle?.id || garageVehicleId || vehicles[0].id;
+    const selectedVehicle = vehicles.find((vehicle) => vehicle.id === garageStatsVehicleId) || activeVehicle || vehicles[0];
+    const analytics = garageVehicleAnalytics(selectedVehicle);
+    const costSummary = garageVehicleCostSummary(selectedVehicle, analytics);
+    return `
+      <div class="card-header">
+        <div><h2>Statistiky</h2><p>${escapeHtml(selectedVehicle.name)} · tankování, náklady a vzdálenost zvlášť.</p></div>
+        <span class="badge">${escapeHtml(formatKm(analytics.currentKm))}</span>
+      </div>
+      <div class="garage-stats-filters garage-stats-single-filter">
+        <label class="compact-select-field"><span>Auto</span><select class="select" data-garage-stats-filter="vehicle">${vehicles.map((vehicle) => `<option value="${escapeHtml(vehicle.id)}" ${vehicle.id === selectedVehicle.id ? 'selected' : ''}>${escapeHtml(vehicle.name)}</option>`).join('')}</select></label>
+      </div>
+      <section class="garage-stat-block garage-stat-fuel">
+        <div class="garage-stat-block-head"><h3>Statistiky / Tankování</h3><p>Jen palivo, tankování a spotřeba podle kilometrů.</p></div>
+        <div class="kpi-row compact garage-stats-kpis">
+          <div class="kpi"><strong>${analytics.fuelCountTotal}</strong><span>tankování celkem</span></div>
+          <div class="kpi"><strong>${analytics.fuelCountThisMonth}</strong><span>tento měsíc</span></div>
+          <div class="kpi"><strong>${analytics.fuelCountPrevYear}</strong><span>minulý rok</span></div>
+          <div class="kpi"><strong>${formatLiters(analytics.litersTotal)}</strong><span>palivo celkem</span></div>
+          <div class="kpi"><strong>${formatLiters(analytics.litersThisMonth)}</strong><span>palivo tento měsíc</span></div>
+          <div class="kpi"><strong>${formatLiters(analytics.litersPrevYear)}</strong><span>palivo minulý rok</span></div>
+          <div class="kpi"><strong>${formatLitreValue(analytics.bestConsumption)}</strong><span>nejlepší spotřeba</span></div>
+          <div class="kpi"><strong>${formatLitreValue(analytics.worstConsumption)}</strong><span>nejhorší spotřeba</span></div>
+        </div>
+      </section>
+      <section class="garage-stat-block garage-stat-costs">
+        <div class="garage-stat-block-head"><h3>Statistiky / Náklady</h3><p>Servisy, pojistky, STK, pneu a ostatní výdaje mimo palivo.</p></div>
+        <div class="kpi-row compact garage-stats-kpis">
+          <div class="kpi"><strong>${analytics.serviceCountTotal}</strong><span>nákladů celkem</span></div>
+          <div class="kpi"><strong>${formatCurrency(analytics.serviceCostTotal)}</strong><span>náklady celkem</span></div>
+          <div class="kpi"><strong>${formatCurrency(analytics.serviceCostThisMonth)}</strong><span>tento měsíc</span></div>
+          <div class="kpi"><strong>${formatCurrency(analytics.serviceCostPrevYear)}</strong><span>minulý rok</span></div>
+          <div class="kpi"><strong>${formatCostPerKm(analytics.totalDistance ? analytics.serviceCostTotal / analytics.totalDistance : null)}</strong><span>servis / km</span></div>
+        </div>
+      </section>
+      <section class="garage-stat-block garage-stat-running-costs">
+        <div class="garage-stat-block-head"><h3>Statistiky / Kč za kilometr</h3><p>Palivo zvlášť, běžný provoz bez koupě a pak vše včetně koupě a případného prodeje.</p></div>
+        <div class="kpi-row compact garage-stats-kpis">
+          <div class="kpi"><strong>${formatCostPerKm(costSummary.fuelPerKm)}</strong><span>jen palivo</span></div>
+          <div class="kpi"><strong>${formatCostPerKm(costSummary.runningPerKm)}</strong><span>palivo + servis + STK + pojistky</span></div>
+          <div class="kpi"><strong>${formatCostPerKm(costSummary.totalPerKm)}</strong><span>včetně koupě / prodeje</span></div>
+          <div class="kpi"><strong>${costSummary.purchasePrice ? formatCurrency(costSummary.purchasePrice) : '—'}</strong><span>kupní cena</span></div>
+          <div class="kpi"><strong>${costSummary.salePrice ? formatCurrency(costSummary.salePrice) : '—'}</strong><span>prodejní cena</span></div>
+          <div class="kpi"><strong>${formatCurrency(costSummary.totalWithPurchase / Math.max(1, vehicleOwnershipMonths(selectedVehicle)))}</strong><span>náklad / měsíc vlastnictví</span></div>
+        </div>
+      </section>
+      <section class="garage-stat-block garage-stat-distance">
+        <div class="garage-stat-block-head"><h3>Statistiky / Vzdálenost</h3><p>Ujeté kilometry podle stavu km v tankování.</p></div>
+        <div class="kpi-row compact garage-stats-kpis">
+          <div class="kpi"><strong>${formatKm(analytics.totalDistance)}</strong><span>celkem od evidence</span></div>
+          <div class="kpi"><strong>${formatKm(analytics.averageMonthDistance)}</strong><span>průměr / měsíc</span></div>
+          <div class="kpi"><strong>${formatKm(analytics.averageYearDistance)}</strong><span>průměr / rok</span></div>
+          <div class="kpi"><strong>${formatKm(analytics.prevYearDistance)}</strong><span>minulý rok</span></div>
+          <div class="kpi"><strong>${formatKm(analytics.currentKm)}</strong><span>aktuální stav</span></div>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderFuelioImport() {
+    const rows = fuelioPreview?.rows || [];
+    const stats = getFuelioPreviewStats(rows);
+    return `
+      <div class="card-header">
+        <div><h2>Import z Fuelio</h2><p>Nahraj CSV export. Nejdřív se ukáže náhled, duplicity a až potom se data uloží.</p></div>
+        <span class="badge">CSV</span>
+      </div>
+      <form data-form="fuelio-preview">
+        <div class="upload-box">
+          <label for="fuelioCsv">Fuelio CSV export</label>
+          <input id="fuelioCsv" class="input" type="file" name="fuelioCsv" accept=".csv,text/csv" required>
+          <p>Mapování je tolerantní: datum, km, litry, cena, poznámka, kategorie a vozidlo. Import nikdy nezapisuje data bez náhledu.</p>
+        </div>
+        <div class="form-actions"><button class="ghost-btn" type="submit">Načíst náhled</button></div>
+      </form>
+      ${fuelioPreview ? `
+        <div class="preview-box">
+          <div class="item-top"><div class="item-title">${escapeHtml(fuelioPreview.fileName)}</div><span class="badge good">náhled</span></div>
+          <div class="kpi-row compact">
+            <div class="kpi"><strong>${stats.fuelCount}</strong><span>tankování</span></div>
+            <div class="kpi"><strong>${stats.serviceCount}</strong><span>servisy/náklady</span></div>
+            <div class="kpi"><strong>${stats.vehicleCount || 1}</strong><span>vozidla</span></div>
+            <div class="kpi"><strong>${stats.duplicateCount}</strong><span>možné duplicity</span></div>
+          </div>
+          <div class="inline-note">Import půjde do existujících aut podle názvu. Pokud CSV nemá název auta, použije se aktuálně vybrané auto nebo se vytvoří „Fuelio import“.</div>
+          ${renderFuelioPreviewTable(rows)}
+          <div class="form-actions">
+            <button class="primary-btn" type="button" data-action="confirm-fuelio-import">Importovat</button>
+            <button class="ghost-btn" type="button" data-action="clear-fuelio-preview">Zrušit náhled</button>
+          </div>
+          <div class="inline-note">Cloud import použije stejný náhled a potom odešle jen nové neuložené záznamy. Duplicity z Fuelia hlídá aplikace lokálně i databáze přes hash.</div>
+        </div>
+      ` : ''}
+    `;
+  }
+
+  function renderFuelioPreviewTable(rows) {
+    const sample = rows.slice(0, 8);
+    if (!sample.length) return '';
+    return `
+      <div class="table-wrap" style="margin-top:12px;">
+        <table class="preview-table">
+          <thead><tr><th>Typ</th><th>Datum</th><th>Auto</th><th>Km</th><th>Litry</th><th>Cena</th><th>Poznámka</th></tr></thead>
+          <tbody>
+            ${sample.map((row) => `
+              <tr>
+                <td>${row.kind === 'fuel' ? 'Tankování' : 'Náklad'}</td>
+                <td>${formatDate(row.date)}</td>
+                <td>${escapeHtml(row.vehicleName || 'aktuální auto')}</td>
+                <td>${escapeHtml(row.odometer || '—')}</td>
+                <td>${row.liters ? escapeHtml(String(row.liters).replace('.', ',')) : '—'}</td>
+                <td>${formatCurrency(row.price)}</td>
+                <td>${escapeHtml(row.note || row.title || '—')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${rows.length > sample.length ? `<div class="inline-note" style="margin-top:8px;">Zobrazuji prvních ${sample.length} řádků z ${rows.length}. Uloží se celý import bez duplicit.</div>` : ''}
+    `;
+  }
+
+
+
+  function garageCountLabel(count) {
+    const value = Number(count || 0);
+    if (value === 1) return 'auto v garáži';
+    if (value >= 2 && value <= 4) return 'auta v garáži';
+    return 'aut v garáži';
+  }
+
+  function garageHistoryYear(item) {
+    const year = Number(String(item?.date || '').slice(0, 4));
+    return Number.isFinite(year) && year > 1900 ? String(year) : '';
+  }
+
+  function garageHistoryTypeLabel(type) {
+    if (type === 'fuel') return 'tankování';
+    if (type === 'service') return 'servis / náklad';
+    return 'vše';
+  }
+
+  function garageHistoryRecords(fuelRows, serviceRows) {
+    const fuel = fuelRows.map((item) => ({ kind: 'fuel', date: item.date || '', odometer: Number(item.odometer || 0), item }));
+    const services = serviceRows.map((item) => ({ kind: 'service', date: item.date || '', odometer: Number(item.odometer || 0), item }));
+    return [...fuel, ...services].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || Number(b.odometer || 0) - Number(a.odometer || 0));
+  }
+
+  function garageHistoryYears(records) {
+    return [...new Set(records.map((record) => garageHistoryYear(record.item)).filter(Boolean))].sort((a, b) => Number(b) - Number(a));
+  }
+
+  function renderGarageHistoryFilters(records, visibleRecords) {
+    const years = garageHistoryYears(records);
+    const selectedYear = years.includes(String(garageHistoryYearFilter)) ? String(garageHistoryYearFilter) : 'all';
+    const selectedType = ['all', 'fuel', 'service'].includes(garageHistoryTypeFilter) ? garageHistoryTypeFilter : 'all';
+    const fuelCount = records.filter((record) => record.kind === 'fuel').length;
+    const serviceCount = records.filter((record) => record.kind === 'service').length;
+    return `
+      <div class="garage-history-toolbar">
+        <label class="compact-select-field">
+          <span>Rok</span>
+          <select class="select" data-garage-history-filter="year" aria-label="Filtrovat historii auta podle roku">
+            <option value="all" ${selectedYear === 'all' ? 'selected' : ''}>Všechny roky</option>
+            ${years.map((year) => `<option value="${escapeHtml(year)}" ${selectedYear === year ? 'selected' : ''}>${escapeHtml(year)}</option>`).join('')}
+          </select>
+        </label>
+        <label class="compact-select-field">
+          <span>Typ</span>
+          <select class="select" data-garage-history-filter="type" aria-label="Filtrovat historii auta podle typu záznamu">
+            <option value="all" ${selectedType === 'all' ? 'selected' : ''}>Vše</option>
+            <option value="fuel" ${selectedType === 'fuel' ? 'selected' : ''}>Tankování (${fuelCount})</option>
+            <option value="service" ${selectedType === 'service' ? 'selected' : ''}>Servis / náklady (${serviceCount})</option>
+          </select>
+        </label>
+        <div class="garage-history-count"><strong>${visibleRecords.length}</strong><span>z ${records.length} záznamů</span></div>
+      </div>
+    `;
+  }
+
+  function filterGarageHistoryRecords(records) {
+    const years = garageHistoryYears(records);
+    const selectedYear = years.includes(String(garageHistoryYearFilter)) ? String(garageHistoryYearFilter) : 'all';
+    const selectedType = ['all', 'fuel', 'service'].includes(garageHistoryTypeFilter) ? garageHistoryTypeFilter : 'all';
+    return records.filter((record) => {
+      const yearOk = selectedYear === 'all' || garageHistoryYear(record.item) === selectedYear;
+      const typeOk = selectedType === 'all' || record.kind === selectedType;
+      return yearOk && typeOk;
+    });
+  }
+
+  function renderGarageHistoryItem(record) {
+    return record.kind === 'fuel' ? renderFuelListItem(record.item) : renderServiceListItem(record.item);
+  }
+
+  function renderGarageHistory(vehicle, fuelRows, serviceRows) {
+    const records = garageHistoryRecords(fuelRows, serviceRows);
+    const visibleRecords = filterGarageHistoryRecords(records);
+    const selectedYear = garageHistoryYears(records).includes(String(garageHistoryYearFilter)) ? String(garageHistoryYearFilter) : 'all';
+    const selectedType = ['all', 'fuel', 'service'].includes(garageHistoryTypeFilter) ? garageHistoryTypeFilter : 'all';
+    const filterText = `${selectedYear === 'all' ? 'všechny roky' : selectedYear} · ${garageHistoryTypeLabel(selectedType)}`;
+    return `
+      <details class="action-details compact-edit-details garage-history-panel">
+        <summary><span>Historie auta</span><em>${records.length} záznamů celkem · ${escapeHtml(filterText)}</em></summary>
+        ${renderGarageHistoryFilters(records, visibleRecords)}
+        ${visibleRecords.length ? `<div class="list compact-list garage-history-list">${visibleRecords.map(renderGarageHistoryItem).join('')}</div>` : renderEmpty(`Pro filtr ${filterText} tu není žádný záznam.`)}
+      </details>
+    `;
+  }
+
+  function renderFuelListItem(item) {
+    return `
+      <div class="item garage-history-row fuelio-record-row">
+        <div class="item-top">
+          <div class="item-title">⛽ ${formatDate(item.date)}</div>
+          <span class="badge">${escapeHtml(item.odometer || '—')} km</span>
+        </div>
+        <div class="item-meta">${escapeHtml(item.liters || 0)} l · ${formatCurrency(item.price)}${fuelPricePerLiter(item) ? ` · ${escapeHtml(formatFuelPricePerLiter(fuelPricePerLiter(item)))}` : ''}${garageFuelConsumptionForItem(item) ? ` · spotřeba ${formatLitreValue(garageFuelConsumptionForItem(item))}` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div>
+        <div class="item-actions">
+          <button class="ghost-btn" type="button" data-action="edit-garage-record" data-collection="fuel" data-id="${item.id}">Upravit</button>
+          <button class="danger-btn" type="button" data-action="delete" data-collection="fuel" data-id="${item.id}">Smazat</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderServiceListItem(item) {
+    return `
+      <div class="item garage-history-row fuelio-record-row">
+        <div class="item-top">
+          <div class="item-title">🧾 ${escapeHtml(item.title)}</div>
+          <span class="badge">${formatDate(item.date)}</span>
+        </div>
+        <div class="item-meta">${formatCurrency(item.price)}${item.odometer ? ` · ${escapeHtml(item.odometer)} km` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div>
+        <div class="item-actions">
+          <button class="ghost-btn" type="button" data-action="edit-garage-record" data-collection="services" data-id="${item.id}">Upravit</button>
+          <button class="danger-btn" type="button" data-action="delete" data-collection="services" data-id="${item.id}">Smazat</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderGarageDetailCharts(vehicle, fuelRows = []) {
+    const analytics = garageVehicleAnalytics(vehicle);
+    const currentYear = new Date().getFullYear();
+    const lastYearStart = new Date();
+    lastYearStart.setFullYear(lastYearStart.getFullYear() - 1);
+    const lastYearStartIso = localISODate(lastYearStart);
+    const lastYearEntries = analytics.entries.filter((item) => String(item.date || '').slice(0, 10) >= lastYearStartIso);
+    const lastYearPoints = garageChartPointsFromConsumption(lastYearEntries, 24);
+    const allTimePoints = garageChartPointsFromConsumption(analytics.entries, 999);
+    const lastYearValues = lastYearPoints.map((item) => item.value);
+    const allTimeValues = allTimePoints.map((item) => item.value);
+    const avg = (values) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+    return `
+      <div class="garage-detail-chart-section">
+        <div class="garage-stat-block-head"><h3>Graf spotřeby</h3><p>Stejný styl jako přehled. První graf je poslední rok, druhý celá doba evidence.</p></div>
+        <div class="garage-chart-carousel garage-detail-chart-carousel" aria-label="Grafy spotřeby auta">
+          ${renderGarageLineChart('Poslední rok', 'spotřeba l/100 km', lastYearPoints, 'Za poslední rok není dost tankování s km a litry.', [
+            { label: 'Průměr', value: formatLitreValue(avg(lastYearValues)) },
+            { label: 'Poslední', value: lastYearValues.length ? formatLitreValue(lastYearValues[lastYearValues.length - 1]) : '—' },
+            { label: 'Rok', value: String(currentYear) }
+          ])}
+          ${renderGarageLineChart('Celá doba', 'spotřeba l/100 km', allTimePoints, 'Zatím není dost tankování s km a litry.', [
+            { label: 'Průměr', value: formatLitreValue(avg(allTimeValues)) },
+            { label: 'Nejlepší', value: formatLitreValue(analytics.bestConsumption) },
+            { label: 'Nejhorší', value: formatLitreValue(analytics.worstConsumption) }
+          ])}
+        </div>
+      </div>`;
+  }
+
+  function renderGarageRecordEditForm(collection, item) {
+    if (collection === 'fuel') {
+      return `
+        <form class="inline-edit-form" data-form="update-fuel" data-id="${item.id}">
+          <div class="form-grid two">
+            ${field('Datum', 'date', 'date', '', true, item.date || todayISO())}
+            ${field('Stav km', 'odometer', 'number', 'např. 125000', true, item.odometer || '')}
+            <div class="fuel-cost-row">
+              ${fuelNumberField('Litry', 'liters', 'např. 42,5', item.liters || '')}
+              ${fuelNumberField('Cena za litr', 'pricePerLiter', 'např. 38,90', item.pricePerLiter || fuelPricePerLiter(item))}
+            </div>
+            ${fuelNumberField('Cena celkem', 'price', 'např. 1600', item.price || '')}
+            ${field('Poznámka', 'note', 'text', 'volitelné', false, item.note || '')}
+          </div>
+          <div class="form-actions"><button class="primary-btn" type="submit">Uložit tankování</button><button class="ghost-btn" type="button" data-action="cancel-garage-edit">Zrušit</button></div>
+        </form>
+      `;
+    }
+    return `
+      <form class="inline-edit-form" data-form="update-service" data-id="${item.id}">
+        <div class="form-grid two">
+          ${field('Datum', 'date', 'date', '', true, item.date || todayISO())}
+          ${field('Stav km', 'odometer', 'number', 'volitelné', false, item.odometer || '')}
+          ${field('Popis', 'title', 'text', 'olej / pneu / STK', true, item.title || '')}
+          ${field('Cena', 'price', 'number', 'volitelné', false, item.price || '')}
+          ${field('Poznámka', 'note', 'text', 'volitelné', false, item.note || '')}
+        </div>
+        <div class="form-actions"><button class="primary-btn" type="submit">Uložit servis</button><button class="ghost-btn" type="button" data-action="cancel-garage-edit">Zrušit</button></div>
+      </form>
+    `;
+  }
+
+  function renderVehicleDetail(vehicle) {
+    const fuelRows = sortFuelRows(state.fuel.filter((item) => item.vehicleId === vehicle.id));
+    const serviceRows = state.services.filter((item) => item.vehicleId === vehicle.id).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    const stats = getVehicleStats(fuelRows, serviceRows);
+    const analytics = garageVehicleAnalytics(vehicle);
+    const latestFuel = fuelRows[fuelRows.length - 1] || null;
+    const latestService = serviceRows[0] || null;
+    const serviceStatus = getServiceStatus(vehicle, latestService, latestFuel);
+    const stk = dateStatus(vehicle.technicalInspectionUntil, 60);
+    const insurance = dateStatus(vehicle.insuranceUntil, 45);
+    const costPerKm = stats.totalKm > 0 ? stats.fuelCost / stats.totalKm : null;
+    const totalCost = stats.fuelCost + stats.serviceCost;
+    const costSummary = garageVehicleCostSummary(vehicle, analytics);
+    const totalCostPerKm = garageVehicleTotalCostPerKm(analytics);
+    return `
+      <div class="card-header compact-detail-head vehicle-detail-head">
+        <div class="vehicle-detail-title"><span class="vehicle-icon-bubble vehicle-icon-bubble-large ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span><div><h2>${escapeHtml(vehicle.name)}</h2><p>${escapeHtml(vehicle.plate || 'Bez SPZ')} · ${escapeHtml(vehicle.fuelType || 'palivo neuvedeno')} · ${escapeHtml(vehicleOwnershipLabel(vehicle))}</p></div></div>
+        <div class="vehicle-detail-head-actions">
+          <button class="ghost-btn icon-action-btn" type="button" data-action="open-garage-detail" data-garage-target="vehicle-settings" title="Nastavení auta" aria-label="Nastavení auta">⚙️</button>
+          ${vehicleOwnershipStatus(vehicle) === 'owned' ? '<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="open-garage-detail" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování">⛽+</button>' : ''}
+          <button class="ghost-btn icon-action-btn" type="button" data-action="open-garage-detail" data-garage-target="add-service" title="Přidat servis / náklad" aria-label="Přidat servis nebo náklad">🧾+</button>
+          <span class="badge ${vehicle.cloudId ? 'good' : ''}">${vehicle.cloudId ? 'cloud' : 'lokálně'} · ${escapeHtml(vehicle.odometer || latestFuel?.odometer || 0)} km</span>
+        </div>
+      </div>
+      <div class="kpi-row compact">
+        <div class="kpi"><strong>${stats.averageConsumption ? `${stats.averageConsumption.toFixed(2).replace('.', ',')}` : '—'}</strong><span>l/100 km</span></div>
+        <div class="kpi"><strong>${formatCurrency(stats.thisYearCost)}</strong><span>náklady letos</span></div>
+        <div class="kpi"><strong>${formatCurrency(totalCost)}</strong><span>provoz bez koupě</span></div>
+        <div class="kpi"><strong>${costPerKm ? `${costPerKm.toFixed(2).replace('.', ',')} Kč` : '—'}</strong><span>palivo / km</span></div>
+        <div class="kpi"><strong>${formatCostPerKm(costSummary.runningPerKm)}</strong><span>Kč/km bez pořizovací ceny</span></div>
+        <div class="kpi"><strong>${formatCostPerKm(costSummary.totalPerKm)}</strong><span>Kč/km včetně koupě</span></div>
+      </div>
+      <div class="garage-status-grid compact-status-grid">
+        ${renderDueCard('STK', stk, 'Datum STK zatím není nastavené.')}
+        ${renderDueCard('Pojistka', insurance, 'Datum konce pojistky zatím není nastavené.')}
+        ${renderDueCard('Servis', serviceStatus, 'Servisní interval zatím není nastavený.')}
+      </div>
+      <div class="grid two detail-summary-grid">
+        <div class="detail-stack compact-detail-stack">
+          <div class="stat-line"><span>Poslední tankování</span><strong>${latestFuel ? `${formatDate(latestFuel.date)} · ${escapeHtml(latestFuel.odometer || '—')} km` : '—'}</strong></div>
+          <div class="stat-line"><span>Poslední servis</span><strong>${latestService ? `${formatDate(latestService.date)} · ${escapeHtml(latestService.title || 'servis')}` : '—'}</strong></div>
+          <div class="stat-line"><span>Koupeno</span><strong>${vehicle.purchaseDate ? `${formatDate(vehicle.purchaseDate)}${vehicle.purchasePrice ? ` · ${formatCurrency(vehicle.purchasePrice)}` : ''}${vehicle.purchaseOdometer ? ` · ${escapeHtml(vehicle.purchaseOdometer)} km` : ''}` : 'nenastaveno'}</strong></div>
+          <div class="stat-line"><span>Prodáno</span><strong>${vehicle.saleDate ? `${formatDate(vehicle.saleDate)}${vehicle.salePrice ? ` · ${formatCurrency(vehicle.salePrice)}` : ''}${vehicle.saleOdometer ? ` · ${escapeHtml(vehicle.saleOdometer)} km` : ''}` : 'zatím ne'}</strong></div>
+          <div class="stat-line"><span>Záznamy</span><strong>${fuelRows.length} tankování · ${serviceRows.length} servisů</strong></div>
+          ${vehicle.note ? `<div class="inline-note compact-note">${escapeHtml(vehicle.note)}</div>` : ''}
+        </div>
+        <div class="detail-stack compact-detail-stack">
+          <div class="stat-line"><span>Kč/km jen palivo</span><strong>${formatCostPerKm(costSummary.fuelPerKm)}</strong></div>
+          <div class="stat-line"><span>Kč/km bez pořizovací ceny</span><strong>${formatCostPerKm(costSummary.runningPerKm)}</strong></div>
+          <div class="stat-line"><span>Kč/km včetně koupě</span><strong>${formatCostPerKm(costSummary.totalPerKm)}</strong></div>
+          <div class="stat-line"><span>Pořízení / prodej</span><strong>${costSummary.purchasePrice ? `${formatCurrency(costSummary.purchasePrice)}${vehicle.purchaseOdometer ? ` · ${escapeHtml(vehicle.purchaseOdometer)} km` : ''}${costSummary.salePrice ? ` · prodej ${formatCurrency(costSummary.salePrice)}` : ''}${vehicle.saleOdometer ? ` · ${escapeHtml(vehicle.saleOdometer)} km` : ''}` : 'nenastaveno'}</strong></div>
+          ${!isVehicleOwned(vehicle) ? `<div class="stat-line"><span>Náklad / měsíc vlastnictví</span><strong>${formatCurrency(costSummary.totalWithPurchase / Math.max(1, vehicleOwnershipMonths(vehicle)))}</strong></div><div class="stat-line"><span>Km / měsíc vlastnictví</span><strong>${formatKm(vehicleOwnedDistance(vehicle, analytics) / Math.max(1, vehicleOwnershipMonths(vehicle)))}</strong></div>` : ''}
+        </div>
+      </div>
+      ${renderGarageDetailCharts(vehicle, fuelRows)}
+      ${renderGarageHistory(vehicle, fuelRows, serviceRows)}
+      <details class="action-details compact-edit-details" data-garage-detail="vehicle-settings">
+        <summary><span>Upravit údaje auta</span><em>termíny, km, servisní intervaly</em></summary>
+        <form data-form="update-vehicle" data-vehicle-id="${vehicle.id}" class="compact-form">
+          <div class="form-grid two">
+            ${field('Název auta', 'name', 'text', 'Elroq / Octavia', true, vehicle.name)}
+            ${field('SPZ', 'plate', 'text', 'volitelné', false, vehicle.plate || '')}
+            ${field('Palivo', 'fuelType', 'text', 'benzín / nafta / elektro', false, vehicle.fuelType || '')}
+            ${field('Aktuální km', 'odometer', 'number', '0', false, vehicle.odometer || latestFuel?.odometer || '')}
+            ${field('Datum koupě', 'purchaseDate', 'date', '', false, vehicle.purchaseDate || '')}
+            ${field('Cena při koupi', 'purchasePrice', 'number', 'volitelné', false, vehicle.purchasePrice || '')}
+            ${field('Km při koupi', 'purchaseOdometer', 'number', 'volitelné', false, vehicle.purchaseOdometer || '')}
+            ${selectField('Stav auta', 'ownershipStatus', [['owned', 'Vlastním'], ['sold', 'Nevlastním / prodané']], vehicleOwnershipStatus(vehicle))}
+            ${field('Datum prodeje', 'saleDate', 'date', '', false, vehicle.saleDate || '')}
+            ${field('Cena při prodeji', 'salePrice', 'number', 'volitelné', false, vehicle.salePrice || '')}
+            ${field('Km při prodeji', 'saleOdometer', 'number', 'volitelné', false, vehicle.saleOdometer || '')}
+            ${field('STK do', 'technicalInspectionUntil', 'date', '', false, vehicle.technicalInspectionUntil || '')}
+            ${field('Pojistka do', 'insuranceUntil', 'date', '', false, vehicle.insuranceUntil || '')}
+            ${field('Další servis při km', 'nextServiceKm', 'number', 'např. 150000', false, vehicle.nextServiceKm || '')}
+            ${field('Další servis do data', 'nextServiceDate', 'date', '', false, vehicle.nextServiceDate || '')}
+            ${selectField('Barva ikonky auta', 'iconColor', vehicleIconColorOptions(), normalizeVehicleIconColor(vehicle.iconColor))}
+            ${field('Poznámka', 'note', 'text', 'pneu, rozměr, VIN...', false, vehicle.note || '')}
+          </div>
+          ${renderVehicleTechnicalFields(vehicle)}
+          <div class="form-actions"><button class="primary-btn" type="submit">Uložit údaje auta</button></div>
+        </form>
+      </details>
+      <details class="action-details compact-edit-details danger-zone-details">
+        <summary><span>Smazat auto</span><em>a všechny jeho záznamy</em></summary>
+        <div class="inline-note warn-note">Smaže se auto, tankování i servisní náklady. Akce bude ještě vyžadovat potvrzení.</div>
+        <div class="form-actions"><button class="danger-btn" type="button" data-action="delete-vehicle" data-id="${vehicle.id}">Smazat auto</button></div>
+      </details>
+    `;
+  }
+
+  function sortFuelRows(rows) {
+    return [...rows].sort((a, b) => Number(a.odometer || 0) - Number(b.odometer || 0) || String(a.date || '').localeCompare(String(b.date || '')));
+  }
+
+  function getVehicleStats(fuelRows, serviceRows) {
+    let km = 0;
+    let liters = 0;
+    for (let index = 1; index < fuelRows.length; index += 1) {
+      const previous = Number(fuelRows[index - 1].odometer || 0);
+      const current = Number(fuelRows[index].odometer || 0);
+      const rowLiters = Number(fuelRows[index].liters || 0);
+      if (current > previous && rowLiters > 0) {
+        km += current - previous;
+        liters += rowLiters;
+      }
+    }
+    const currentYear = new Date().getFullYear();
+    const fuelCost = fuelRows.reduce((sum, item) => sum + Number(item.price || 0), 0);
+    const serviceCost = serviceRows.reduce((sum, item) => sum + Number(item.price || 0), 0);
+    const thisYearFuel = fuelRows.filter((item) => Number(String(item.date || '').slice(0, 4)) === currentYear).reduce((sum, item) => sum + Number(item.price || 0), 0);
+    const thisYearService = serviceRows.filter((item) => Number(String(item.date || '').slice(0, 4)) === currentYear).reduce((sum, item) => sum + Number(item.price || 0), 0);
+    return {
+      averageConsumption: km > 0 ? (liters / km) * 100 : null,
+      fuelCost,
+      serviceCost,
+      thisYearCost: thisYearFuel + thisYearService,
+      totalKm: km
+    };
+  }
+
+  function dateStatus(dateISO, warnDays = 45) {
+    const left = daysUntil(dateISO);
+    if (left === null) return { left: null, className: '', shortText: 'nenastaveno', text: 'nenastaveno' };
+    if (left < 0) return { left, className: 'bad', shortText: `po termínu`, text: `po termínu ${Math.abs(left)} dní` };
+    if (left === 0) return { left, className: 'bad', shortText: 'dnes', text: 'končí dnes' };
+    if (left <= warnDays) return { left, className: 'warn', shortText: `${left} dní`, text: `zbývá ${left} dní` };
+    return { left, className: 'good', shortText: `${left} dní`, text: `zbývá ${left} dní` };
+  }
+
+  function renderDueCard(label, status, emptyText) {
+    const value = status.left === null ? emptyText : status.text;
+    return `
+      <div class="due-card ${status.className}">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+      </div>
+    `;
+  }
+
+  function getServiceStatus(vehicle, latestService, latestFuel) {
+    const date = dateStatus(vehicle.nextServiceDate, 45);
+    const currentKm = Number(vehicle.odometer || latestFuel?.odometer || 0);
+    const nextKm = Number(vehicle.nextServiceKm || 0);
+    if (nextKm > 0 && currentKm > 0) {
+      const leftKm = nextKm - currentKm;
+      if (leftKm <= 0) return { left: -1, className: 'bad', shortText: 'servis', text: `servis po termínu o ${Math.abs(leftKm)} km` };
+      if (leftKm <= 1500) return { left: leftKm, className: 'warn', shortText: `${leftKm} km`, text: `zbývá ${leftKm} km` };
+      return { left: leftKm, className: date.className || 'good', shortText: `${leftKm} km`, text: date.left !== null && date.className === 'warn' ? `${leftKm} km · ${date.text}` : `zbývá ${leftKm} km` };
+    }
+    if (date.left !== null) return date;
+    if (latestService) return { left: null, className: '', shortText: formatDate(latestService.date), text: `poslední servis ${formatDate(latestService.date)}` };
+    return { left: null, className: '', shortText: 'nenastaveno', text: 'nenastaveno' };
+  }
+
+  function getFuelioPreviewStats(rows) {
+    let duplicateCount = 0;
+    const vehicleByName = new Map(state.vehicles.map((vehicle) => [normalizeKey(vehicle.name), vehicle]));
+    const fallbackVehicle = state.vehicles.find((vehicle) => vehicle.id === garageVehicleId) || state.vehicles[0] || null;
+    rows.forEach((row) => {
+      const vehicle = row.vehicleName ? vehicleByName.get(normalizeKey(row.vehicleName)) : fallbackVehicle;
+      const vehicleId = vehicle?.id || fallbackVehicle?.id || '';
+      if (!vehicleId) return;
+      if (row.kind === 'fuel' && fuelDuplicateExists(row, vehicleId)) duplicateCount += 1;
+      if (row.kind === 'service' && serviceDuplicateExists(row, vehicleId)) duplicateCount += 1;
+    });
+    return {
+      fuelCount: rows.filter((row) => row.kind === 'fuel').length,
+      serviceCount: rows.filter((row) => row.kind === 'service').length,
+      vehicleCount: new Set(rows.map((row) => row.vehicleName).filter(Boolean)).size,
+      duplicateCount
+    };
+  }
+
+
+  function monthBucketKey(dateValue) {
+    const date = parseDateValue(dateValue);
+    if (!date) return '';
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  function previousMonthDate(offset = 0) {
+    const date = new Date();
+    date.setDate(1);
+    date.setMonth(date.getMonth() - offset);
+    return date;
+  }
+
+  function monthShortLabel(key) {
+    const [yearText, monthText] = String(key || '').split('-');
+    const year = Number(yearText);
+    const month = Number(monthText);
+    if (!year || !month) return '—';
+    return new Date(year, month - 1, 1).toLocaleDateString('cs-CZ', { month: 'short' }).replace('.', '');
+  }
+
+  function buildFuelConsumptionSeries(fuelRows, months = 12) {
+    const rows = sortFuelRows(fuelRows).filter((item) => Number(item.odometer) > 0 && Number(item.liters) > 0 && parseDateValue(item.date));
+    const keys = [];
+    const buckets = new Map();
+    for (let index = months - 1; index >= 0; index -= 1) {
+      const date = previousMonthDate(index);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      keys.push(key);
+      buckets.set(key, { km: 0, liters: 0 });
+    }
+    const keySet = new Set(keys);
+    for (let index = 1; index < rows.length; index += 1) {
+      const previous = Number(rows[index - 1].odometer || 0);
+      const current = Number(rows[index].odometer || 0);
+      const liters = Number(rows[index].liters || 0);
+      if (!(current > previous && liters > 0)) continue;
+      const key = monthBucketKey(rows[index].date);
+      if (!keySet.has(key)) continue;
+      const bucket = buckets.get(key);
+      bucket.km += current - previous;
+      bucket.liters += liters;
+    }
+    return keys.map((key) => {
+      const bucket = buckets.get(key) || { km: 0, liters: 0 };
+      const value = bucket.km > 0 ? Number(((bucket.liters / bucket.km) * 100).toFixed(2)) : null;
+      return { key, label: monthShortLabel(key), value, km: bucket.km, liters: bucket.liters };
+    });
+  }
+
+  function renderMiniChart(fuelRows) {
+    const series = buildFuelConsumptionSeries(fuelRows, 12);
+    const values = series.map((item) => item.value).filter((value) => Number.isFinite(value));
+    if (values.length < 2) return '<div class="inline-note" style="margin-top:12px;">Graf spotřeby za poslední rok se zobrazí po více tankováních s km a litry.</div>';
+    const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const yMin = Math.max(0, Math.floor((min - 0.4) * 2) / 2);
+    const yMax = Math.ceil((max + 0.4) * 2) / 2;
+    const chartWidth = 390;
+    const chartHeight = 206;
+    const padLeft = 38;
+    const padRight = 10;
+    const padTop = 18;
+    const padBottom = 42;
+    const innerWidth = chartWidth - padLeft - padRight;
+    const innerHeight = chartHeight - padTop - padBottom;
+    const tickCount = 4;
+    const step = Math.max((yMax - yMin) / (tickCount - 1), 0.5);
+    const ticks = Array.from({ length: tickCount }, (_, index) => Number((yMax - index * step).toFixed(1)));
+    const barGap = 6;
+    const barWidth = Math.max(10, Math.floor((innerWidth - (series.length - 1) * barGap) / series.length));
+    const valueY = (value) => padTop + ((yMax - value) / Math.max(yMax - yMin, 0.5)) * innerHeight;
+    const bars = series.map((item, index) => {
+      const x = padLeft + index * (barWidth + barGap);
+      const baseY = padTop + innerHeight;
+      if (!Number.isFinite(item.value)) {
+        return `<g class="consumption-bar empty"><text x="${x + barWidth / 2}" y="${baseY - 6}" text-anchor="middle">—</text><text x="${x + barWidth / 2}" y="${chartHeight - 18}" text-anchor="middle">${escapeHtml(item.label)}</text></g>`;
+      }
+      const y = valueY(item.value);
+      const height = Math.max(6, baseY - y);
+      return `<g class="consumption-bar"><rect x="${x}" y="${y.toFixed(1)}" width="${barWidth}" height="${height.toFixed(1)}" rx="8"></rect><text x="${x + barWidth / 2}" y="${Math.max(padTop + 10, y - 6).toFixed(1)}" text-anchor="middle">${String(item.value.toFixed(1)).replace('.', ',')}</text><text x="${x + barWidth / 2}" y="${chartHeight - 18}" text-anchor="middle">${escapeHtml(item.label)}</text></g>`;
+    }).join('');
+    const grid = ticks.map((tick) => {
+      const y = valueY(tick);
+      return `<g class="consumption-grid"><line x1="${padLeft}" y1="${y.toFixed(1)}" x2="${chartWidth - padRight}" y2="${y.toFixed(1)}"></line><text x="${padLeft - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${String(tick.toFixed(1)).replace('.', ',')}</text></g>`;
+    }).join('');
+    return `
+      <div class="consumption-chart-wrap">
+        <div class="consumption-chart-head"><strong>Spotřeba paliva</strong><span>posledních 12 měsíců</span></div>
+        <svg class="consumption-chart" viewBox="0 0 ${chartWidth} ${chartHeight}" role="img" aria-label="Graf spotřeby paliva za posledních 12 měsíců">
+          ${grid}
+          ${bars}
+        </svg>
+        <div class="consumption-chart-stats">
+          <span><strong>${String(avg.toFixed(2)).replace('.', ',')}</strong><em>průměr l/100</em></span>
+          <span><strong>${String(min.toFixed(2)).replace('.', ',')}</strong><em>minimum</em></span>
+          <span><strong>${String(max.toFixed(2)).replace('.', ',')}</strong><em>maximum</em></span>
+        </div>
+      </div>
+    `;
+  }
+
+
+  function renderContracts() {
+    const contracts = [...state.contracts].sort((a, b) => String(a.validTo || '9999').localeCompare(String(b.validTo || '9999')));
+    if (!activeContractId && contracts.length) activeContractId = contracts[0].id;
+    const activeContract = contracts.find((contract) => contract.id === activeContractId) || null;
+    const cloudCount = contracts.filter((contract) => contract.cloudId).length;
+    const localCount = contracts.length - cloudCount;
+    const warningCount = contracts.filter((contract) => {
+      const left = daysUntil(contract.validTo);
+      return left !== null && left <= 45;
+    }).length;
+    const activeContractsTab = getModuleTab('contracts', 'overview');
+    return `
+      ${renderSectionTabs('contracts', [
+        { id: 'overview', label: 'Přehled', icon: '📄', count: contracts.length },
+        { id: 'detail', label: 'Detail', icon: '📎', count: activeContract ? contractFileCount(activeContract.id) : 0 },
+        { id: 'add', label: 'Přidat', icon: '➕' }
+      ], 'overview')}
+      <div class="grid two module-tabbed contracts-tab-${activeContractsTab}" data-tab-area="contracts">
+        <section class="card desktop-span-2 contracts-panel panel-overview">
+          <div class="card-header"><div><h2>Smlouvy a pojistky</h2><p>Nejdřív přehled a blížící se termíny. Detail a přílohy jsou oddělené v záložce, aby se modul na mobilu netáhl.</p></div></div>
+          <div class="cloud-status-grid compact-cloud-stats">
+            <div class="mini-stat"><span>Smlouvy</span><strong>${contracts.length}</strong></div>
+            <div class="mini-stat"><span>Upozornění</span><strong>${warningCount}</strong></div>
+            <div class="mini-stat"><span>Cloud</span><strong>${cloudCount}</strong></div>
+            <div class="mini-stat"><span>Lokálně</span><strong>${localCount}</strong></div>
+          </div>
+          ${contracts.length ? `<div class="list compact-list">${contracts.map(renderContractItem).join('')}</div>` : renderEmptyCta({ icon: '📄', title: 'Smlouvy jsou prázdné', text: 'Přidej pojistku, tarif nebo smlouvu a aplikace začne hlídat platnost.', nav: 'contracts', tab: 'add', label: 'Přidat smlouvu' })}
+        </section>
+
+        <section class="card desktop-span-2 contracts-panel panel-detail">
+          ${activeContract ? renderContractDetail(activeContract) : renderEmptyCta({ icon: '📎', title: 'Detail smlouvy zatím není', text: 'Vyber existující smlouvu, nebo přidej první a potom k ní nahraj přílohy.', nav: 'contracts', tab: 'add', label: 'Přidat smlouvu' })}
+        </section>
+
+        <section class="card contracts-panel panel-add">
+          <div class="card-header"><div><h2>Přidat smlouvu / pojistku</h2><p>Základní evidence se ukládá podle domácnosti. Typy jsou sjednocené, aby šly později filtrovat a napojit na Garáž.</p></div><span class="badge ${state.cloud?.householdId ? 'good' : ''}">${state.cloud?.householdId ? 'cloud smlouvy' : 'lokálně'}</span></div>
+          <form data-form="add-contract">
+            <div class="form-grid two">
+              ${field('Název', 'name', 'text', 'Povinné ručení / internet / elektřina', true)}
+              ${selectField('Typ', 'type', contractTypeOptions('other'), 'other')}
+              ${field('Poskytovatel', 'provider', 'text', 'pojišťovna / dodavatel')}
+              ${field('Číslo smlouvy', 'number', 'text', 'volitelné')}
+              ${field('Platnost od', 'validFrom', 'date', '')}
+              ${field('Platnost do', 'validTo', 'date', '')}
+              ${field('Částka', 'amount', 'number', 'např. 1250')}
+              ${selectField('Frekvence platby', 'frequency', [['monthly', 'Měsíčně'], ['yearly', 'Ročně'], ['once', 'Jednorázově'], ['other', 'Jiné']])}
+              ${field('Poznámka', 'note', 'text', 'volitelné')}
+            </div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Uložit</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-contracts">Načíst cloud smlouvy</button>' : ''}${state.cloud?.householdId && state.contracts.some((contract) => !contract.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-contracts">Odeslat lokální (${state.contracts.filter((contract) => !contract.cloudId).length})</button>` : ''}</div>
+          </form>
+          <div class="inline-note">Základ smlouvy může být v cloudu podle domácnosti. PDF a fotky dokumentů se zatím ukládají jen v tomto prohlížeči. JSON export zatím obsahuje metadata, ne samotné soubory.</div>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderContractItem(contract) {
+    const left = daysUntil(contract.validTo);
+    const badgeClass = left === null ? '' : left < 0 ? 'bad' : left <= 45 ? 'warn' : 'good';
+    const badgeText = left === null ? 'bez konce' : left < 0 ? 'propadlé' : `${left} dní`;
+    const files = contractFileCount(contract.id);
+    return `
+      <div class="item ${contract.id === activeContractId ? 'selected' : ''}">
+        <div class="item-top"><div class="item-title">${escapeHtml(contract.name)}</div><span class="badge ${badgeClass}">${escapeHtml(badgeText)}</span></div>
+        <div class="item-meta">
+          ${escapeHtml(contract.provider || 'Bez poskytovatele')} · ${escapeHtml(contractTypeLabel(contract.type))}${contract.number ? ` · č. ${escapeHtml(contract.number)}` : ''}<br>
+          ${contract.validFrom ? `od ${formatDate(contract.validFrom)} · ` : ''}${contract.validTo ? `do ${formatDate(contract.validTo)} · ` : ''}${formatCurrency(contract.amount)} / ${frequencyLabel(contract.frequency)}${contract.cloudId ? ' · cloud' : ''}${contract.note ? ` · ${escapeHtml(contract.note)}` : ''}
+        </div>
+        <div class="item-actions">
+          <button class="ghost-btn" type="button" data-action="select-contract" data-id="${contract.id}">Detail</button>
+          ${state.cloud?.householdId && !contract.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-contract" data-id="${contract.id}">Odeslat</button>` : ''}
+          <span class="badge">${files} příloh</span>
+          <button class="danger-btn" type="button" data-action="delete" data-collection="contracts" data-id="${contract.id}">Smazat</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderContractDetail(contract) {
+    const files = state.contractFiles.filter((file) => file.contractId === contract.id).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const left = daysUntil(contract.validTo);
+    const statusText = left === null ? 'Bez nastaveného konce' : left < 0 ? `Propadlé před ${Math.abs(left)} dny` : left === 0 ? 'Končí dnes' : `Končí za ${left} dní`;
+    const cloudFiles = files.filter((file) => file.cloudId).length;
+    const localFiles = files.length - cloudFiles;
+    return `
+      <div class="card-header compact-detail-head">
+        <div><h2>${escapeHtml(contract.name)}</h2><p>${escapeHtml(contract.provider || 'Bez poskytovatele')} · ${escapeHtml(contractTypeLabel(contract.type))}</p></div>
+        <span class="badge ${left !== null && left <= 45 ? (left < 0 ? 'bad' : 'warn') : 'good'}">${escapeHtml(statusText)}</span>
+      </div>
+      <div class="grid two detail-summary-grid">
+        <div class="detail-stack compact-detail-stack">
+          <div class="stat-line"><span>Číslo smlouvy</span><strong>${escapeHtml(contract.number || '—')}</strong></div>
+          <div class="stat-line"><span>Platnost</span><strong>${contract.validFrom ? formatDate(contract.validFrom) : '—'} → ${contract.validTo ? formatDate(contract.validTo) : '—'}</strong></div>
+          <div class="stat-line"><span>Platba</span><strong>${formatCurrency(contract.amount)} / ${frequencyLabel(contract.frequency)}</strong></div>
+          <div class="stat-line"><span>Přílohy</span><strong>${files.length} celkem · ${cloudFiles} cloud · ${localFiles} lokálně</strong></div>
+          ${contract.note ? `<div class="inline-note compact-note">${escapeHtml(contract.note)}</div>` : ''}
+        </div>
+        <div class="inline-note compact-note">
+          <strong>Ukládání příloh</strong><br>Online domácnost ukládá přílohy rovnou do soukromého Supabase Storage a ostatní členové je otevřou přes dočasný odkaz. IndexedDB zůstává jen jako offline fallback.
+        </div>
+      </div>
+      <div class="card-header small compact-files-head"><div><h3>Přílohy</h3><p>${cloudFiles} cloud · ${localFiles} lokálně</p></div><div class="form-actions compact-actions">${contract.cloudId && state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-contract-files">Načíst cloud přílohy</button>' : ''}${cloudReady() && localFiles ? '<button class="primary-btn" type="button" data-action="cloud-sync-local-contract-files">Odeslat lokální přílohy</button>' : ''}</div></div>
+      ${files.length ? `<div class="file-list compact-file-list">${files.map((file) => `
+        <div class="file-row compact-file-row">
+          <div>
+            <strong>${escapeHtml(file.fileName)}</strong>
+            <em>${escapeHtml(file.fileType || 'soubor')} · ${formatBytes(file.size)} · ${formatDate(file.createdAt?.slice(0, 10))}${file.cloudId ? ' · cloud' : ' · lokálně'}</em>
+          </div>
+          <div class="item-actions compact-actions">
+            <button class="ghost-btn" type="button" data-action="open-contract-file" data-id="${file.id}">Otevřít</button>
+            <button class="ghost-btn" type="button" data-action="download-contract-file" data-id="${file.id}">Stáhnout</button>
+            <button class="danger-btn" type="button" data-action="delete-contract-file" data-id="${file.id}">Smazat</button>
+          </div>
+        </div>
+      `).join('')}</div>` : renderEmptyCta({ icon: '📎', title: 'Zatím žádné přílohy', text: 'Přidej PDF nebo fotku smlouvy. U online domácnosti se příloha nahraje do soukromého Supabase Storage.', nav: 'contracts', tab: 'detail', label: 'Přidat přílohu' })}
+      <details class="action-details compact-edit-details">
+        <summary><span>Upravit údaje smlouvy</span><em>název, platnost, částka, poznámka</em></summary>
+        <form data-form="update-contract" data-contract-id="${contract.id}" class="compact-form">
+          <div class="form-grid two">
+            ${field('Název', 'name', 'text', 'Název smlouvy', true, contract.name || '')}
+            ${selectField('Typ', 'type', contractTypeOptions(contract.type || 'other'), contract.type || 'other')}
+            ${field('Poskytovatel', 'provider', 'text', 'Poskytovatel', false, contract.provider || '')}
+            ${field('Číslo smlouvy', 'number', 'text', 'Číslo smlouvy', false, contract.number || '')}
+            ${field('Platnost od', 'validFrom', 'date', '', false, contract.validFrom || '')}
+            ${field('Platnost do', 'validTo', 'date', '', false, contract.validTo || '')}
+            ${field('Částka', 'amount', 'number', 'např. 1250', false, contract.amount || '')}
+            ${selectField('Frekvence platby', 'frequency', [['monthly', 'Měsíčně'], ['quarterly', 'Čtvrtletně'], ['yearly', 'Ročně'], ['once', 'Jednorázově'], ['other', 'Jiné']], contract.frequency || 'monthly')}
+            ${field('Poznámka', 'note', 'text', 'volitelné', false, contract.note || '')}
+          </div>
+          <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button>${contract.cloudId ? '<span class="badge good">cloud update</span>' : '<span class="badge">lokální smlouva</span>'}</div>
+        </form>
+      </details>
+      <details class="action-details compact-edit-details">
+        <summary><span>Přidat přílohu</span><em>PDF, fotka nebo scan dokumentu</em></summary>
+        <form data-form="add-contract-file" data-contract-id="${contract.id}" class="compact-form">
+          <div class="upload-box">
+            <label for="contractFiles">PDF / fotka smlouvy</label>
+            <input id="contractFiles" class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf">
+            <p>Na iPhonu/Androidu můžeš vybrat soubor, fotku z galerie nebo rovnou vyfotit dokument podle nabídky systému.</p>
+          </div>
+          <div class="form-actions"><button class="primary-btn" type="submit">Přidat přílohu</button>${cloudReady() ? '<span class="badge good">cloud upload</span>' : '<span class="badge">offline fallback</span>'}</div>
+        </form>
+      </details>
+    `;
+  }
+
+  function contractFileCount(contractId) {
+    return state.contractFiles.filter((file) => file.contractId === contractId).length;
+  }
+
+  function renderCameras() {
+    const cameras = state.cameras;
+    const onlineCount = cameras.filter((camera) => camera.status === 'online').length;
+    const activeCamerasTab = getModuleTab('cameras', 'overview');
+    return `
+      ${renderSectionTabs('cameras', [
+        { id: 'overview', label: 'Přehled', icon: '📷', count: cameras.length },
+        { id: 'add', label: 'Přidat', icon: '➕' }
+      ], 'overview')}
+      <div class="grid two module-tabbed cameras-tab-${activeCamerasTab}" data-tab-area="cameras">
+        <section class="card desktop-span-2 cameras-panel panel-overview">
+          <div class="card-header"><div><h2>Přehled kamer</h2><p>Rychlý grid kamer. Metadata karet jsou v online domácnosti sdílená, streamy později bezpečně přes lokální síť/VPN.</p></div><span class="badge ${onlineCount ? 'good' : ''}">${onlineCount}/${cameras.length} online</span></div><div class="form-actions compact-actions">${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud kamery</button>' : ''}${state.cloud?.householdId && cameras.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální kamery (${cameras.filter((item) => !item.cloudId).length})</button>` : ''}</div>
+          ${cameras.length ? `<div class="grid two compact-camera-grid">${cameras.map(renderCameraCard).join('')}</div>` : renderEmptyCta({ icon: '📷', title: 'Kamery jsou prázdné', text: 'Přidej kartu kamery nebo snapshot URL. Streamy půjdou později bezpečně přes lokální síť/VPN.', nav: 'cameras', tab: 'add', label: 'Přidat kameru' })}
+        </section>
+
+        <section class="card cameras-panel panel-add">
+          <div class="card-header"><div><h2>Přidat kameru</h2><p>Teď jen karta/snapshot. Streamy později lokálně přes HA/Frigate/go2rtc/VPN, ne veřejně přes cloud.</p></div></div>
+          <form data-form="add-camera" class="compact-form">
+            <div class="form-grid two">
+              ${field('Název', 'name', 'text', 'Vchod / garáž / zahrada', true)}
+              ${field('Umístění', 'location', 'text', 'venku / chodba')}
+              ${field('Snapshot URL', 'snapshotUrl', 'url', 'volitelné')}
+              ${selectField('Stav', 'status', [['online', 'Online'], ['offline', 'Offline'], ['unknown', 'Nevím']])}
+              ${field('Poznámka', 'note', 'text', 'volitelné')}
+            </div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Přidat kameru</button></div>
+          </form>
+          <div class="inline-note compact-note">Pozor na HTTPS/mixed-content: když poběží aplikace přes HTTPS a kamera jen přes HTTP, prohlížeč může náhled blokovat.</div>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderCameraCard(camera) {
+    return `
+      <div class="item compact-item camera-card">
+        <div class="camera-preview">
+          ${camera.snapshotUrl ? `<img src="${escapeHtml(camera.snapshotUrl)}" alt="Náhled kamery ${escapeHtml(camera.name)}" loading="lazy" onerror="this.replaceWith(document.createTextNode('Náhled nejde načíst'))">` : `<div>📹<br>${escapeHtml(camera.name)}</div>`}
+        </div>
+        <div class="item-top" style="margin-top:10px;"><div class="item-title">${escapeHtml(camera.name)}</div><span class="badge ${camera.status === 'online' ? 'good' : camera.status === 'offline' ? 'bad' : ''}">${escapeHtml(camera.status || 'unknown')}</span></div>
+        <div class="item-meta">${escapeHtml(camera.location || 'bez umístění')}${camera.note ? ` · ${escapeHtml(camera.note)}` : ''}</div>
+        <div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="cameras" data-id="${camera.id}">Smazat</button></div>
+      </div>
+    `;
+  }
+
+
+  function renderFinance() {
+    const items = [...(state.finance || [])].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const accounts = financeAccountsSorted();
+    const selectedMonth = financeSelectedMonth();
+    const visibleItems = items.filter((item) => String(item.date || '').slice(0, 7) === selectedMonth);
+    const summary = financeMonthSummary(selectedMonth);
+    const balances = financeAccountBalances();
+    const totalBalance = accounts.reduce((sum, account) => account.includeInTotal === false ? sum : sum + (balances[account.id] || 0), 0);
+    const localOnly = items.filter((item) => !item.cloudId).length;
+    const localAccounts = accounts.filter((account) => !account.cloudId).length;
+    const categoryRows = financeCategoryBreakdown(selectedMonth);
+    const accountRows = financeAccountMonthSummary(selectedMonth);
+    const managedRows = financeManagedGroups(balances);
+    const activeFinanceTab = getModuleTab('finance', 'summary');
+    return `
+      ${renderSectionTabs('finance', [
+        { id: 'summary', label: 'Přehled', icon: '💰', count: visibleItems.length },
+        { id: 'accounts', label: 'Účty', icon: '🏦', count: accounts.length },
+        { id: 'add', label: 'Přidat', icon: '➕' },
+        { id: 'analysis', label: 'Souhrny', icon: '📊' }
+      ], 'summary')}
+      <div class="grid two module-tabbed finance-tab-${activeFinanceTab}" data-tab-area="finance">
+        <section class="card desktop-span-2 finance-panel panel-summary">
+          <div class="card-header">
+            <div><h2>Finance</h2><p>Obecný přehled příjmů, výdajů, zůstatků, peněženek, spoření i peněz spravovaných pro někoho dalšího.</p></div>
+            <span class="badge ${items.some((item) => item.cloudId) || accounts.some((item) => item.cloudId) ? 'good' : ''}">${items.some((item) => item.cloudId) || accounts.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
+          </div>
+          <div class="kpi-grid compact-kpi-grid">
+            <div class="kpi"><strong>${formatCurrency(summary.income)}</strong><span>Příjmy za ${escapeHtml(financeMonthLabel(selectedMonth))}</span></div>
+            <div class="kpi"><strong>${formatCurrency(summary.expense)}</strong><span>Výdaje za ${escapeHtml(financeMonthLabel(selectedMonth))}</span></div>
+            <div class="kpi"><strong>${formatCurrency(summary.balance)}</strong><span>Rozdíl měsíce</span></div>
+            <div class="kpi"><strong>${formatCurrency(totalBalance)}</strong><span>Zůstatek účtů</span></div>
+          </div>
+          <form data-form="finance-month-filter" class="compact-filter-form">
+            <div class="form-grid two">
+              ${field('Měsíc přehledu', 'month', 'month', '', false, selectedMonth)}
+              <div class="field"><label>Rychlý posun</label><div class="item-actions"><button class="ghost-btn" type="button" data-action="finance-month-prev">Předchozí</button><button class="ghost-btn" type="button" data-action="finance-month-current">Aktuální</button><button class="ghost-btn" type="button" data-action="finance-month-next">Další</button></div></div>
+            </div>
+            <div class="form-actions"><button class="ghost-btn" type="submit">Zobrazit měsíc</button></div>
+          </form>
+          ${visibleItems.length ? `<div class="list compact-list">${visibleItems.slice(0, 18).map(renderFinanceItem).join('')}</div>` : renderEmptyCta({ icon: '💰', title: 'Měsíc je bez pohybů', text: 'Přidej příjem, výdaj nebo přesun mezi účty. Přehled se začne počítat automaticky.', nav: 'finance', tab: 'add', label: 'Přidat pohyb' })}
+        </section>
+
+        <section class="card finance-panel panel-accounts">
+          <div class="card-header"><div><h2>Účty / peněženky</h2><p>Každý účet má vlastní zůstatek. Může to být banka, hotovost, spoření, obálka nebo osoba.</p></div><span class="badge">${accounts.length}</span></div>
+          ${accounts.length ? `<div class="list compact-list">${accounts.map((account) => renderFinanceAccount(account, balances)).join('')}</div>` : renderEmptyCta({ icon: '🏦', title: 'Nejdřív přidej účet', text: 'Účet může být banka, hotovost, spoření, obálka nebo spravované peníze pro někoho dalšího.', nav: 'finance', tab: 'accounts', label: 'Přidat účet' })}
+          <details class="action-details compact-edit-details finance-form-drawer">
+            <summary><span>Přidat účet / peněženku</span><em>banka, hotovost, obálka nebo osoba</em></summary>
+            <form data-form="add-finance-account" class="compact-form">
+              <div class="form-grid two">
+                ${field('Název účtu', 'name', 'text', 'např. Tchyně – u mě', true)}
+                ${selectField('Typ účtu', 'accountType', financeAccountTypeOptions(), 'person')}
+                ${field('Počáteční zůstatek', 'openingBalance', 'number', 'např. 0')}
+                ${field('Vlastník / poznámka', 'ownerLabel', 'text', 'např. tchyně')}
+                ${selectField('Započítat do celku', 'includeInTotal', [['yes', 'Ano'], ['no', 'Ne']], 'yes')}
+                ${field('Poznámka', 'note', 'text', 'volitelné')}
+              </div>
+              <div class="form-actions">
+                <button class="primary-btn" type="submit">Přidat účet</button>
+                ${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-finance">Načíst cloud finance</button>' : ''}
+                ${state.cloud?.householdId && localAccounts ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-finance-accounts">Odeslat účty (${localAccounts})</button>` : ''}
+              </div>
+            </form>
+          </details>
+        </section>
+
+        <section class="card finance-panel panel-accounts">
+          <div class="card-header"><div><h2>Spravované zůstatky</h2><p>Součet účtů seskupený podle osoby/obálky.</p></div></div>
+          ${managedRows.length ? `<div class="list compact-list">${managedRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(row.label)}</div><span class="badge good">${formatCurrency(row.total)}</span></div><div class="item-meta">${row.accounts.map((account) => `${financeAccountIcon(account.accountType)} ${escapeHtml(account.name)}: ${formatCurrency(balances[account.id] || 0)}`).join(' · ')}</div></div>`).join('')}</div>` : renderEmptyCta({ icon: '👥', title: 'Spravované peníze zatím nejsou', text: 'Přidej účet s vlastníkem, třeba babička / tchyně, nebo použij rychlé založení dvojice účtů.', nav: 'finance', tab: 'accounts', label: 'Přidat spravované peníze' })}
+          <details class="action-details compact-edit-details finance-form-drawer">
+            <summary><span>Založit spravované peníze</span><em>dvojice hlavní účet + spoření</em></summary>
+            <form data-form="add-managed-finance-set" class="compact-form">
+              <div class="form-grid two">
+                ${field('Název osoby / obálky', 'ownerName', 'text', 'např. Tchyně / Dovolená / Kapesné', true)}
+                ${field('Hlavní účet', 'mainAccountName', 'text', 'např. Tchyně – u mě')}
+                ${field('Účet bokem / spoření', 'reserveAccountName', 'text', 'např. Tchyně – spoření')}
+                ${field('Počáteční zůstatek hlavní', 'mainOpeningBalance', 'number', '0')}
+                ${field('Počáteční zůstatek bokem', 'reserveOpeningBalance', 'number', '0')}
+                ${selectField('Započítat do celku', 'includeInTotal', [['yes', 'Ano'], ['no', 'Ne']], 'yes')}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Založit dvojici účtů</button></div>
+            </form>
+          </details>
+        </section>
+
+        <section class="card finance-panel panel-add">
+          <div class="card-header"><div><h2>Přidat pohyb</h2><p>Příjem, výdaj nebo přesun mezi účty. Přesun je vhodný pro peníze bokem na spoření.</p></div></div>
+          <div class="quick-add-panel">
+            <div class="quick-add-head"><strong>Rychlé šablony</strong><span>Vyplní formulář, částku jen doplníš.</span></div>
+            <div class="quick-chip-row">
+              <button class="quick-chip" type="button" data-action="finance-template" data-template="salary">💼 <span>Výplata</span></button>
+              <button class="quick-chip" type="button" data-action="finance-template" data-template="rent">🏠 <span>Nájem</span></button>
+              <button class="quick-chip" type="button" data-action="finance-template" data-template="energy">⚡ <span>Energie</span></button>
+              <button class="quick-chip" type="button" data-action="finance-template" data-template="cash">💵 <span>Výběr</span></button>
+              <button class="quick-chip" type="button" data-action="finance-template" data-template="savings">🏦 <span>Na spoření</span></button>
+            </div>
+          </div>
+          <form data-form="add-finance" class="compact-form spaced-form">
+            <div class="form-grid two">
+              ${selectField('Typ', 'type', [['expense', 'Výdaj'], ['income', 'Příjem'], ['transfer', 'Přesun mezi účty']], 'expense')}
+              ${selectField('Účet', 'accountId', financeAccountOptions(true), accounts[0]?.id || '')}
+              ${selectField('Cílový účet u přesunu', 'transferAccountId', financeAccountOptions(false), '')}
+              ${field('Název', 'title', 'text', 'např. výplata / energie / výběr', true)}
+              ${field('Částka', 'amount', 'number', 'např. 1250', true)}
+              ${field('Datum', 'date', 'date', '', false, todayISO())}
+              ${selectField('Kategorie', 'category', financeCategoryOptions(), 'groceries')}
+              ${selectField('Platba', 'paymentMethod', [['card', 'Kartou'], ['cash', 'Hotově'], ['bank_transfer', 'Převod'], ['direct_debit', 'Inkaso'], ['other', 'Jiné']], 'bank_transfer')}
+              ${field('Poznámka', 'note', 'text', 'volitelné')}
+            </div>
+            <div class="form-actions">
+              <button class="primary-btn" type="submit">Přidat pohyb</button>
+              ${state.cloud?.householdId && localOnly ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-finance">Odeslat pohyby (${localOnly})</button>` : ''}
+            </div>
+          </form>
+          <div class="inline-note">Pro spravované peníze můžeš mít účty třeba „Babička – u mě“ a „Babička – spoření“. Přesuny pak nepočítají jako výdaj domácnosti, ale jako pohyb mezi účty.</div>
+        </section>
+
+        <section class="card finance-panel panel-analysis">
+          <div class="card-header"><div><h2>Souhrn podle kategorií</h2><p>${escapeHtml(financeMonthLabel(selectedMonth))}</p></div></div>
+          ${categoryRows.length ? `<div class="list compact-list">${categoryRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(row.label)}</div><span class="badge ${row.type === 'income' ? 'good' : ''}">${formatCurrency(row.amount)}</span></div><div class="item-meta">${row.type === 'income' ? 'příjmy' : 'výdaje'} · ${row.count}×</div></div>`).join('')}</div>` : renderEmpty('V tomhle měsíci zatím nejsou žádné kategorie.')}
+        </section>
+
+        <section class="card finance-panel panel-analysis">
+          <div class="card-header"><div><h2>Souhrn podle účtů</h2><p>${escapeHtml(financeMonthLabel(selectedMonth))}</p></div></div>
+          ${accountRows.length ? `<div class="list compact-list">${accountRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(row.label)}</div><span class="badge">${formatCurrency(row.net)}</span></div><div class="item-meta">Příjmy ${formatCurrency(row.income)} · výdaje ${formatCurrency(row.expense)} · přesuny ${formatCurrency(row.transferIn - row.transferOut)}</div></div>`).join('')}</div>` : renderEmpty('V tomhle měsíci zatím nejsou žádné pohyby na účtech.')}
+        </section>
+      </div>
+    `;
+  }
+
+  function renderFinanceAccount(account, balances = financeAccountBalances()) {
+    return `
+      <div class="item">
+        <div class="item-top">
+          <div class="item-title">${financeAccountIcon(account.accountType)} ${escapeHtml(account.name)}</div>
+          <span class="badge good">${formatCurrency(balances[account.id] || 0)}</span>
+        </div>
+        <div class="item-meta">${escapeHtml(financeAccountTypeLabel(account.accountType))}${account.ownerLabel ? ` · ${escapeHtml(account.ownerLabel)}` : ''}${account.includeInTotal === false ? ' · mimo celkový součet' : ''}${account.note ? ` · ${escapeHtml(account.note)}` : ''}${account.cloudId ? ' · cloud' : ' · lokálně'}</div>
+        <div class="item-actions">
+          ${state.cloud?.householdId && !account.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-finance-account" data-id="${account.id}">Odeslat</button>` : ''}
+          <button class="danger-btn" type="button" data-action="delete-finance-account" data-id="${account.id}">Smazat</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderFinanceItem(item) {
+    const isIncome = item.type === 'income';
+    const isTransfer = item.type === 'transfer';
+    const account = financeAccountById(item.accountId);
+    const target = financeAccountById(item.transferAccountId);
+    return `
+      <div class="item">
+        <div class="item-top">
+          <div class="item-title">${isTransfer ? '↔️' : isIncome ? '➕' : '➖'} ${escapeHtml(item.title)}</div>
+          <span class="badge ${isIncome || isTransfer ? 'good' : 'warn'}">${formatCurrency(item.amount)}</span>
+        </div>
+        <div class="item-meta">${formatDate(item.date)} · ${isTransfer ? 'Přesun' : escapeHtml(financeCategoryLabel(item.category))}${account ? ` · ${escapeHtml(account.name)}` : ''}${target ? ` → ${escapeHtml(target.name)}` : ''} · ${escapeHtml(financePaymentLabel(item.paymentMethod))}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
+        <div class="item-actions">
+          ${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-finance" data-id="${item.id}">Odeslat</button>` : ''}
+          <button class="danger-btn" type="button" data-action="delete-finance" data-id="${item.id}">Smazat</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function normalizeSubscriptionServiceKey(serviceKey = '') {
+    const key = normalizeText(serviceKey || 'other') || 'other';
+    return key === 'voyo' ? 'oneplay' : key;
+  }
+
+  function subscriptionServiceName(serviceKey = '', customName = '') {
+    const key = normalizeSubscriptionServiceKey(serviceKey);
+    const custom = normalizeText(customName);
+    if (custom && normalizeKey(custom) !== 'voyo') return custom;
+    const found = SUBSCRIPTION_SERVICE_OPTIONS.find((item) => item[0] === key);
+    return found?.[1] || 'Předplatné';
+  }
+
+  function subscriptionServiceDefaultPrice(serviceKey = '') {
+    const key = normalizeSubscriptionServiceKey(serviceKey);
+    const found = SUBSCRIPTION_SERVICE_OPTIONS.find((item) => item[0] === key);
+    return Number(found?.[2] || 0);
+  }
+
+  function subscriptionServiceDefaultMembers(serviceKey = '') {
+    const key = normalizeSubscriptionServiceKey(serviceKey);
+    const found = SUBSCRIPTION_SERVICE_OPTIONS.find((item) => item[0] === key);
+    return Math.max(0, Math.floor(Number(found?.[3] || 0)));
+  }
+
+  function subscriptionServiceSelectOptions() {
+    return SUBSCRIPTION_SERVICE_OPTIONS.map(([id, label, price, members]) => [id, `${label}${price ? ` · orientačně ${formatCurrency(price)}` : ''}${members ? ` · max ${members}` : ''}`]);
+  }
+
+  function subscriptionSelectedMonth() {
+    const value = normalizeText(state.settings?.subscriptionMonth);
+    return /^\d{4}-\d{2}$/.test(value) ? value : todayISO().slice(0, 7);
+  }
+
+  function setSubscriptionMonth(month) {
+    const safe = /^\d{4}-\d{2}$/.test(String(month || '')) ? String(month) : todayISO().slice(0, 7);
+    state.settings = { ...(state.settings || {}), subscriptionMonth: safe };
+    touchState();
+    saveState();
+    render();
+  }
+
+  function shiftSubscriptionMonth(offset) {
+    const [year, month] = subscriptionSelectedMonth().split('-').map(Number);
+    const date = new Date(year || new Date().getFullYear(), (month || 1) - 1 + Number(offset || 0), 1);
+    setSubscriptionMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+  }
+
+  function normalizeSubscriptionPerson(person) {
+    return {
+      id: person.id || uid(),
+      householdId: person.householdId || currentHouseholdId(),
+      profileId: person.profileId || currentProfileId(),
+      createdAt: person.createdAt || new Date().toISOString(),
+      name: normalizeText(person.name) || 'Osoba',
+      note: normalizeText(person.note)
+    };
+  }
+
+  function normalizeSubscriptionService(item) {
+    const serviceKey = normalizeSubscriptionServiceKey(item.serviceKey || item.service || 'other');
+    const name = subscriptionServiceName(serviceKey, item.name);
+    const shares = Array.isArray(item.shares) ? item.shares.filter(Boolean).map((share) => ({ personId: normalizeText(share.personId), amount: decimalValue(share.amount) })).filter((share) => share.personId && share.amount > 0) : [];
+    const rawMaxMembers = item.maxMembers ?? item.memberLimit ?? item.membersLimit ?? subscriptionServiceDefaultMembers(serviceKey);
+    const maxMembers = Math.max(0, Math.floor(Number(rawMaxMembers || 0)));
+    return {
+      id: item.id || uid(),
+      householdId: item.householdId || currentHouseholdId(),
+      profileId: item.profileId || currentProfileId(),
+      createdAt: item.createdAt || new Date().toISOString(),
+      serviceKey,
+      name,
+      price: decimalValue(item.price) || subscriptionServiceDefaultPrice(serviceKey) || 0,
+      billingDay: Math.min(31, Math.max(1, Number(item.billingDay || 1))),
+      maxMembers,
+      enabled: item.enabled !== false,
+      note: normalizeText(item.note),
+      shares
+    };
+  }
+
+  function normalizeSubscriptionPayment(item) {
+    return {
+      id: item.id || uid(),
+      householdId: item.householdId || currentHouseholdId(),
+      profileId: item.profileId || currentProfileId(),
+      createdAt: item.createdAt || new Date().toISOString(),
+      subscriptionId: normalizeText(item.subscriptionId),
+      personId: normalizeText(item.personId),
+      month: /^\d{4}-\d{2}$/.test(String(item.month || '')) ? String(item.month) : subscriptionSelectedMonth(),
+      amount: decimalValue(item.amount),
+      paidAt: item.paidAt || todayISO(),
+      note: normalizeText(item.note)
+    };
+  }
+
+  function getSubscriptionPeople() {
+    state.subscriptionPeople = Array.isArray(state.subscriptionPeople) ? state.subscriptionPeople.map(normalizeSubscriptionPerson) : [];
+    return [...state.subscriptionPeople].sort((a, b) => a.name.localeCompare(b.name, 'cs'));
+  }
+
+  function getSubscriptionServices() {
+    state.subscriptions = Array.isArray(state.subscriptions) ? state.subscriptions.map(normalizeSubscriptionService) : [];
+    return [...state.subscriptions].sort((a, b) => Number(a.enabled === false) - Number(b.enabled === false) || a.name.localeCompare(b.name, 'cs'));
+  }
+
+  function getSubscriptionPayments() {
+    state.subscriptionPayments = Array.isArray(state.subscriptionPayments) ? state.subscriptionPayments.map(normalizeSubscriptionPayment).filter((payment) => payment.subscriptionId && payment.personId && payment.amount > 0) : [];
+    return [...state.subscriptionPayments].sort((a, b) => String(b.month || '').localeCompare(String(a.month || '')) || String(b.paidAt || '').localeCompare(String(a.paidAt || '')));
+  }
+
+  function persistSubscriptionsState({ renderView = true, toast = '' } = {}) {
+    touchState();
+    if (cloudReady()) state.subscriptionsCloud = { ...(state.subscriptionsCloud || {}), pendingAt: new Date().toISOString() };
+    saveState();
+    if (renderView) render();
+    if (toast) showToast(toast);
+    if (cloudReady()) {
+      cloudSaveHouseholdUiSettings(false)
+        .then((ok) => {
+          if (ok && activeModule === 'subscriptions') render();
+        })
+        .catch((error) => {
+          console.warn('Subscription autosync failed', error);
+          state.subscriptionsCloud = { ...(state.subscriptionsCloud || {}), pendingAt: new Date().toISOString(), error: error?.message || 'Automatická synchronizace selhala' };
+          persistStateSnapshot();
+        });
+    }
+  }
+
+  function subscriptionPersonName(personId) {
+    return getSubscriptionPeople().find((person) => person.id === personId)?.name || 'Osoba';
+  }
+
+  function subscriptionById(id) {
+    return getSubscriptionServices().find((item) => item.id === id) || null;
+  }
+
+  function subscriptionLabelById(id) {
+    return subscriptionById(id)?.name || 'Služba';
+  }
+
+  function subscriptionServiceBrandMeta(serviceOrKey = '', customName = '') {
+    const rawKey = typeof serviceOrKey === 'object' && serviceOrKey ? serviceOrKey.serviceKey : serviceOrKey;
+    const key = normalizeSubscriptionServiceKey(rawKey || 'other');
+    const name = typeof serviceOrKey === 'object' && serviceOrKey ? serviceOrKey.name : subscriptionServiceName(key, customName);
+    const meta = {
+      netflix: { className: 'brand-netflix' },
+      disney: { className: 'brand-disney' },
+      hbo: { className: 'brand-hbo' },
+      skyshowtime: { className: 'brand-skyshowtime' },
+      prime: { className: 'brand-prime' },
+      'apple-tv': { className: 'brand-apple-tv' },
+      spotify: { className: 'brand-spotify' },
+      youtube: { className: 'brand-youtube' },
+      oneplay: { className: 'brand-oneplay' },
+      canal: { className: 'brand-canal' },
+      'o2-tv': { className: 'brand-o2-tv' },
+      telly: { className: 'brand-telly' },
+      't-mobile': { className: 'brand-t-mobile' },
+      other: { className: 'brand-other' }
+    }[key] || { className: 'brand-other' };
+    return { key, name, ...meta };
+  }
+
+  function renderSubscriptionBrandSvg(meta, size = 'md') {
+    const variant = String(size || 'md') === 'xs' ? 'xs' : String(size || 'md') === 'sm' ? 'sm' : 'md';
+    const wordSize = variant === 'xs' ? 5.2 : variant === 'sm' ? 6.2 : 7.2;
+    const smallSize = variant === 'xs' ? 5.1 : variant === 'sm' ? 5.8 : 6.6;
+    const mediumSize = variant === 'xs' ? 6.1 : variant === 'sm' ? 7.0 : 8.0;
+    const key = meta?.key || 'other';
+    const logos = {
+      netflix: `<svg viewBox="0 0 44 24" role="img" aria-label="Netflix"><path d="M12 4v16h4.3V12l5.4 8H26V4h-4.3v8L16.3 4z" fill="#fff"/><path d="M14.8 4h2.8l8.3 16h-2.8z" fill="rgba(255,255,255,.18)"/></svg>`,
+      disney: `<svg viewBox="0 0 44 24" role="img" aria-label="Disney Plus"><path d="M10 9.5c0-2.6 2.1-4.2 4.6-4.2 1.9 0 3.5.7 4.8 1.8" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/><text x="8" y="16.6" font-size="${wordSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif">Disney+</text></svg>`,
+      hbo: `<svg viewBox="0 0 44 24" role="img" aria-label="Max"><text x="7" y="15.5" font-size="${mediumSize}" font-weight="800" fill="#fff" font-family="Arial, sans-serif">max</text></svg>`,
+      skyshowtime: `<svg viewBox="0 0 44 24" role="img" aria-label="SkyShowtime"><path d="M8 7h10" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M26 17H16" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M12 6c5 1 8 4 9 9" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M32 8 34 12l4 .4-3 2.5 1 4-3-2-3 2 1-4-3-2.5 4-.4z" fill="#fff"/></svg>`,
+      prime: `<svg viewBox="0 0 44 24" role="img" aria-label="Prime Video"><text x="7.5" y="13.3" font-size="${smallSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif">prime</text><path d="M12 16.2c5 2.2 10.5 2 17-.3" fill="none" stroke="#9be7ff" stroke-width="1.6" stroke-linecap="round"/><path d="m28.5 14.9 1.8 1.4-2.1.9" fill="#9be7ff"/></svg>`,
+      'apple-tv': `<svg viewBox="0 0 44 24" role="img" aria-label="Apple TV Plus"><path d="M13.5 7.3c.7-.8 1.1-1.7 1-2.7-.9.1-1.9.7-2.5 1.5-.5.6-1 1.6-.9 2.5.9.1 1.8-.4 2.4-1.3Zm1.5 5.7c0-2.1 1.7-3.1 1.8-3.2-1-1.5-2.6-1.7-3.1-1.7-1.3-.1-2.6.8-3.2.8-.6 0-1.6-.8-2.6-.8-1.4 0-2.6.8-3.3 2-.7 1.2-.2 3 1.2 5 .5.7 1.2 1.6 2 1.6.8 0 1.1-.5 2.1-.5 1 0 1.3.5 2.1.5.9 0 1.4-.8 1.9-1.5.6-.8.9-1.6 1-1.7-.1 0-1.9-.7-1.9-2.5Z" fill="#fff" transform="translate(7,2) scale(.58)"/><text x="18" y="15.4" font-size="${smallSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif">tv+</text></svg>`,
+      spotify: `<svg viewBox="0 0 44 24" role="img" aria-label="Spotify"><circle cx="12" cy="12" r="7" fill="#fff" opacity=".14"/><path d="M8.5 10.2c4.1-1 8.2-.4 11.5 1" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><path d="M9.4 13c3.3-.7 6.4-.2 9 1" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><path d="M10.5 15.6c2.2-.4 4.2-.1 5.9.8" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+      youtube: `<svg viewBox="0 0 44 24" role="img" aria-label="YouTube Premium"><rect x="8" y="6.8" width="13" height="10.4" rx="3.3" fill="#fff"/><path d="m14 9.4 4.4 2.6-4.4 2.6z" fill="#d00"/><text x="23" y="15.4" font-size="${smallSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif">Premium</text></svg>`,
+      oneplay: `<svg viewBox="0 0 44 24" role="img" aria-label="Oneplay"><path d="m10 7 8 5-8 5z" fill="#fff"/><text x="19.5" y="15.3" font-size="${smallSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif">oneplay</text></svg>`,
+      canal: `<svg viewBox="0 0 44 24" role="img" aria-label="Canal Plus"><rect x="8" y="7" width="18" height="10" rx="2.2" fill="#fff" opacity=".17"/><text x="10.5" y="14.8" font-size="${smallSize}" font-weight="800" fill="#fff" font-family="Arial, sans-serif">CANAL+</text></svg>`,
+      'o2-tv': `<svg viewBox="0 0 44 24" role="img" aria-label="O2 TV"><text x="8" y="15.3" font-size="${mediumSize}" font-weight="800" fill="#fff" font-family="Arial, sans-serif">O2</text><text x="22" y="15.3" font-size="${smallSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif">TV</text></svg>`,
+      telly: `<svg viewBox="0 0 44 24" role="img" aria-label="Telly"><text x="10" y="15.3" font-size="${mediumSize}" font-weight="800" fill="#fff" font-family="Arial, sans-serif">telly</text></svg>`,
+      't-mobile': `<svg viewBox="0 0 44 24" role="img" aria-label="T-Mobile"><text x="11" y="14.6" font-size="${mediumSize}" font-weight="800" fill="#fff" font-family="Arial, sans-serif">T</text><circle cx="23" cy="11.5" r="1.6" fill="#fff"/><circle cx="28.5" cy="11.5" r="1.6" fill="#fff"/></svg>`,
+      other: `<svg viewBox="0 0 44 24" role="img" aria-label="Vlastní služba"><text x="11" y="15.2" font-size="${smallSize}" font-weight="700" fill="#fff" font-family="Arial, sans-serif">služba</text></svg>`
+    };
+    return logos[key] || logos.other;
+  }
+
+  function renderSubscriptionServiceIcon(serviceOrKey = '', options = {}) {
+    const meta = subscriptionServiceBrandMeta(serviceOrKey, options.name || '');
+    const size = options.size || 'md';
+    const showName = options.showName !== false;
+    const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
+    return `<span class="subscription-service-brand subscription-service-brand-${escapeHtml(String(size))} ${escapeHtml(meta.className)}${extraClass}" aria-hidden="true">${renderSubscriptionBrandSvg(meta, size)}</span>${showName ? `<span class="subscription-service-brand-name">${escapeHtml(meta.name)}</span>` : ''}`;
+  }
+
+  function subscriptionPaymentFilter() {
+    const value = normalizeText(state.settings?.subscriptionPaymentFilter || 'all');
+    return ['all', 'unpaid', 'debtors'].includes(value) ? value : 'all';
+  }
+
+  function setSubscriptionPaymentFilter(filter) {
+    state.settings = { ...(state.settings || {}), subscriptionPaymentFilter: ['all', 'unpaid', 'debtors'].includes(filter) ? filter : 'all' };
+    touchState();
+    saveState();
+    render();
+  }
+
+  function subscriptionFilteredPeopleRows(summary, filter = subscriptionPaymentFilter()) {
+    const rows = Array.isArray(summary?.peopleRows) ? summary.peopleRows : [];
+    if (filter === 'debtors' || filter === 'unpaid') return rows.filter((row) => row.debt > 0);
+    return rows;
+  }
+
+  function subscriptionVisibleShares(service, month = subscriptionSelectedMonth(), filter = subscriptionPaymentFilter(), summary = subscriptionMonthSummary(month)) {
+    const shares = Array.isArray(service?.shares) ? service.shares : [];
+    if (filter === 'all') return shares;
+    const debtPersonIds = new Set((summary.peopleRows || []).filter((row) => row.debt > 0).map((row) => row.person.id));
+    return shares.filter((share) => {
+      if (filter === 'debtors' && !debtPersonIds.has(share.personId)) return false;
+      return !subscriptionIsPaid(share.personId, service.id, month);
+    });
+  }
+
+  function subscriptionCapacity(service) {
+    const maxMembers = Math.max(0, Math.floor(Number(service?.maxMembers || 0)));
+    const used = Array.isArray(service?.shares) ? service.shares.length : 0;
+    const free = maxMembers ? Math.max(0, maxMembers - used) : null;
+    return { maxMembers, used, free, isFull: Boolean(maxMembers && used >= maxMembers) };
+  }
+
+  function subscriptionCapacityLabel(service) {
+    const capacity = subscriptionCapacity(service);
+    if (!capacity.maxMembers) return `${capacity.used} míst obsazeno · bez limitu`;
+    return `${capacity.used}/${capacity.maxMembers} míst · volno ${capacity.free}`;
+  }
+
+  function subscriptionServiceOptions(includeEmpty = false) {
+    const rows = getSubscriptionServices().map((item) => [item.id, `${item.name} · ${formatCurrency(item.price)} · ${subscriptionCapacityLabel(item)}`]);
+    return includeEmpty ? [['', 'Vyber službu'], ...rows] : rows;
+  }
+
+  function subscriptionServiceOptionsForPerson(personId, includeEmpty = false) {
+    const rows = getSubscriptionServices()
+      .filter((service) => service.enabled !== false)
+      .map((service) => {
+        const share = (service.shares || []).find((entry) => entry.personId === personId);
+        const capacity = subscriptionCapacity(service);
+        if (!share && capacity.isFull) return null;
+        const status = share
+          ? `už přiřazeno · ${formatCurrency(share.amount)}`
+          : capacity.maxMembers
+            ? `volno ${capacity.free}/${capacity.maxMembers}`
+            : 'bez limitu';
+        return [service.id, `${service.name} · ${formatCurrency(service.price)} · ${status}`];
+      })
+      .filter(Boolean);
+    return includeEmpty ? [['', rows.length ? 'Vyber službu' : 'Žádná služba nemá volné místo'], ...rows] : rows;
+  }
+
+  function subscriptionShareAmountForPerson(personId, subscriptionId) {
+    const service = subscriptionById(subscriptionId);
+    const share = service?.shares?.find((entry) => entry.personId === personId);
+    return share ? decimalValue(share.amount) : 0;
+  }
+
+  function subscriptionPersonAssignedServices(personId) {
+    return getSubscriptionServices().filter((service) => (service.shares || []).some((share) => share.personId === personId));
+  }
+
+  function subscriptionPersonAvailableServiceCount(personId) {
+    return subscriptionServiceOptionsForPerson(personId, false).length;
+  }
+
+  function subscriptionPersonOptions(includeEmpty = false) {
+    const rows = getSubscriptionPeople().map((person) => [person.id, person.name]);
+    return includeEmpty ? [['', 'Vyber člověka'], ...rows] : rows;
+  }
+
+  function subscriptionExpectedForPerson(personId, month = subscriptionSelectedMonth()) {
+    return getSubscriptionServices().filter((service) => service.enabled !== false).reduce((sum, service) => {
+      const share = (service.shares || []).find((entry) => entry.personId === personId);
+      return sum + (share ? decimalValue(share.amount) : 0);
+    }, 0);
+  }
+
+  function subscriptionPaymentsForMonth(month = subscriptionSelectedMonth()) {
+    return getSubscriptionPayments().filter((payment) => payment.month === month);
+  }
+
+  function subscriptionPaidAmount(personId, subscriptionId, month = subscriptionSelectedMonth()) {
+    return getSubscriptionPayments()
+      .filter((payment) => payment.month === month && payment.personId === personId && payment.subscriptionId === subscriptionId)
+      .reduce((sum, payment) => sum + decimalValue(payment.amount), 0);
+  }
+
+  function subscriptionIsPaid(personId, subscriptionId, month = subscriptionSelectedMonth()) {
+    const service = subscriptionById(subscriptionId);
+    const share = service?.shares?.find((entry) => entry.personId === personId);
+    const expected = decimalValue(share?.amount);
+    return expected > 0 && subscriptionPaidAmount(personId, subscriptionId, month) >= expected;
+  }
+
+  function subscriptionMonthSummary(month = subscriptionSelectedMonth()) {
+    const services = getSubscriptionServices().filter((item) => item.enabled !== false);
+    const people = getSubscriptionPeople();
+    const payments = subscriptionPaymentsForMonth(month);
+    const totalCost = services.reduce((sum, item) => sum + decimalValue(item.price), 0);
+    const expectedReturn = services.reduce((sum, item) => sum + (item.shares || []).reduce((inner, share) => inner + decimalValue(share.amount), 0), 0);
+    const paid = payments.reduce((sum, item) => sum + decimalValue(item.amount), 0);
+    const owed = Math.max(0, expectedReturn - paid);
+    const netCost = totalCost - expectedReturn;
+    const capacityRows = services.map(subscriptionCapacity);
+    const maxSlots = capacityRows.reduce((sum, row) => sum + row.maxMembers, 0);
+    const usedSlots = capacityRows.reduce((sum, row) => sum + row.used, 0);
+    const freeSlots = capacityRows.reduce((sum, row) => sum + (row.free || 0), 0);
+    const fullServices = capacityRows.filter((row) => row.isFull).length;
+    const futurePayments = getSubscriptionPayments().filter((payment) => payment.month > month);
+    const peopleRows = people.map((person) => {
+      const expected = subscriptionExpectedForPerson(person.id, month);
+      const paidForMonth = payments.filter((payment) => payment.personId === person.id).reduce((sum, payment) => sum + decimalValue(payment.amount), 0);
+      const future = futurePayments.filter((payment) => payment.personId === person.id).reduce((sum, payment) => sum + decimalValue(payment.amount), 0);
+      return { person, expected, paid: paidForMonth, debt: Math.max(0, expected - paidForMonth), overpaid: Math.max(0, paidForMonth - expected), future };
+    });
+    return { month, services, people, payments, totalCost, expectedReturn, paid, owed, netCost, maxSlots, usedSlots, freeSlots, fullServices, futurePayments, peopleRows };
+  }
+
+  function renderSubscriptions() {
+    const activeTab = getModuleTab('subscriptions', 'overview');
+    const month = subscriptionSelectedMonth();
+    const summary = subscriptionMonthSummary(month);
+    const services = summary.services;
+    const people = summary.people;
+    const allServices = getSubscriptionServices();
+    const allPayments = getSubscriptionPayments();
+    const paymentFilter = subscriptionPaymentFilter();
+    const visiblePeopleRows = subscriptionFilteredPeopleRows(summary, paymentFilter);
+    const visiblePaymentServices = services
+      .map((service) => ({ service, visibleShares: subscriptionVisibleShares(service, month, paymentFilter, summary) }))
+      .filter((row) => paymentFilter === 'all' || row.visibleShares.length);
+    return `
+      ${renderSectionTabs('subscriptions', [
+        { id: 'overview', label: 'Přehled', icon: '🎬', count: services.length },
+        { id: 'services', label: 'Služby', icon: '📺', count: allServices.length },
+        { id: 'people', label: 'Lidé', icon: '👥', count: people.length },
+        { id: 'payments', label: 'Platby', icon: '✅', count: summary.payments.length }
+      ], 'overview')}
+      <div class="grid two module-tabbed subscriptions-tab-${escapeHtml(activeTab)} subscriptions-module" data-tab-area="subscriptions">
+        <section class="card desktop-span-2 subscription-panel panel-overview">
+          <div class="card-header"><div><h2>Předplatné</h2><p>Streamovací služby, sdílení s lidmi a měsíční kontrola, kdo už zaplatil.</p></div><span class="badge ${summary.owed ? 'warn' : 'good'}">${summary.owed ? `${formatCurrency(summary.owed)} chybí` : 'srovnáno'}</span></div>
+          ${cloudReady() ? `<div class="inline-note compact-note subscription-cloud-status"><span class="badge ${state.subscriptionsCloud?.pendingAt ? 'warn' : state.subscriptionsCloud?.loadedAt ? 'good' : ''}">${state.subscriptionsCloud?.pendingAt ? 'automaticky ukládám' : state.subscriptionsCloud?.loadedAt ? `cloud ${escapeHtml(formatDateTime(state.subscriptionsCloud.loadedAt))}` : 'cloud aktivní'}</span><span>Předplatné se synchronizuje automaticky přes Supabase domácnost. Není potřeba nic ručně odesílat ani načítat.</span></div>` : `<div class="inline-note compact-note">Po přihlášení a napojení domácnosti na cloud se Předplatné začne synchronizovat automaticky.</div>`}
+          <form data-form="subscription-month-filter" class="compact-filter-form">
+            <div class="form-grid two">
+              ${field('Měsíc přehledu', 'month', 'month', '', false, month)}
+              <div class="field"><label>Rychlý posun</label><div class="item-actions"><button class="ghost-btn" type="button" data-action="subscription-month-prev">Předchozí</button><button class="ghost-btn" type="button" data-action="subscription-month-current">Aktuální</button><button class="ghost-btn" type="button" data-action="subscription-month-next">Další</button></div></div>
+            </div>
+            <div class="form-actions"><button class="ghost-btn" type="submit">Zobrazit měsíc</button></div>
+          </form>
+          <div class="kpi-grid compact-kpi-grid subscription-kpi-grid">
+            <div class="kpi"><strong>${formatCurrency(summary.totalCost)}</strong><span>platím já za služby</span></div>
+            <div class="kpi"><strong>${formatCurrency(summary.expectedReturn)}</strong><span>má se mi vrátit</span></div>
+            <div class="kpi"><strong>${formatCurrency(summary.paid)}</strong><span>už zaplaceno za ${escapeHtml(financeMonthLabel(month))}</span></div>
+            <div class="kpi"><strong>${formatCurrency(summary.netCost)}</strong><span>reálný náklad po rozpočítání</span></div>
+            <div class="kpi"><strong>${summary.maxSlots ? `${summary.freeSlots}/${summary.maxSlots}` : '—'}</strong><span>volná místa / celkem</span></div>
+          </div>
+          ${summary.peopleRows.length ? (visiblePeopleRows.length ? `<div class="list compact-list subscription-person-summary-list">${visiblePeopleRows.map(renderSubscriptionPersonSummary).join('')}</div>` : '<div class="empty">Podle filtru není potřeba nic řešit.</div>') : renderEmptyCta({ icon: '👥', title: 'Zatím tu nejsou lidé', text: 'Přidej člověka, se kterým sdílíš Netflix, Disney+, Spotify nebo jinou službu.', nav: 'subscriptions', tab: 'people', label: 'Přidat člověka' })}
+        </section>
+
+        <section class="card desktop-span-2 subscription-panel panel-overview">
+          <div class="card-header"><div><h2>Kontrola plateb</h2><p>Zaškrtni aktuální měsíc u každé služby/osoby. Budoucí platby se berou jako předplaceno.</p></div><span class="badge">${escapeHtml(financeMonthLabel(month))}</span></div>
+          <div class="subscription-filter-row" role="group" aria-label="Filtr předplatného">
+            ${[
+              ['all', 'Vše'],
+              ['unpaid', 'Nezaplacené'],
+              ['debtors', 'Dlužníci']
+            ].map(([id, label]) => `<button class="quick-chip subscription-filter-chip ${paymentFilter === id ? 'active' : ''}" type="button" data-action="subscription-filter" data-filter="${id}">${label}</button>`).join('')}
+          </div>
+          ${services.length ? (visiblePaymentServices.length ? `<div class="subscription-payment-grid">${visiblePaymentServices.map((row) => renderSubscriptionPaymentCard(row.service, month, paymentFilter, summary)).join('')}</div>` : '<div class="empty">V tomhle filtru není nic k zaplacení.</div>') : renderEmptyCta({ icon: '🎬', title: 'Zatím žádná služba', text: 'Přidej předplatné a potom k němu přiřaď lidi.', nav: 'subscriptions', tab: 'services', label: 'Přidat službu' })}
+        </section>
+
+        <section class="card desktop-span-2 subscription-panel panel-services">
+          <div class="card-header"><div><h2>Služby</h2><p>Vyber službu, uprav cenu a potom nastav, kdo ti za ni kolik platí.</p></div><span class="badge">${allServices.length}</span></div>
+          <details class="action-details compact-edit-details subscription-form-drawer">
+            <summary><span>Přidat službu</span><em>Netflix, Disney+, Spotify nebo vlastní</em></summary>
+            <form data-form="add-subscription" class="compact-form">
+              <div class="form-grid two">
+                ${selectField('Služba', 'serviceKey', subscriptionServiceSelectOptions(), 'netflix')}
+                ${field('Vlastní název', 'name', 'text', 'vyplň jen u vlastní služby')}
+                ${field('Cena / měsíc', 'price', 'number', 'např. 319', true)}
+                ${field('Den stržení', 'billingDay', 'number', '1–31', false, '1')}
+                ${field('Max míst / členů', 'maxMembers', 'number', 'např. 5', false)}
+                ${field('Poznámka', 'note', 'text', 'např. rodinný tarif')}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Přidat službu</button></div>
+            </form>
+          </details>
+          ${allServices.length ? `<div class="list compact-list">${allServices.map(renderSubscriptionServiceItem).join('')}</div>` : renderEmpty('Zatím není uložená žádná služba.')}
+        </section>
+
+        <section class="card subscription-panel panel-services">
+          <div class="card-header"><div><h2>Přiřadit člověka ke službě</h2><p>Kolik ti má konkrétní člověk platit za konkrétní službu.</p></div></div>
+          ${allServices.length && people.length ? `
+            <form data-form="add-subscription-share" class="compact-form">
+              <div class="form-grid two">
+                ${selectField('Služba', 'subscriptionId', subscriptionServiceOptions(true), '')}
+                ${selectField('Člověk', 'personId', subscriptionPersonOptions(true), '')}
+                ${field('Částka / měsíc', 'amount', 'number', 'např. 80', true)}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Přidat / upravit sdílení</button></div>
+            </form>
+          ` : renderEmpty('Nejdřív přidej aspoň jednu službu a jednoho člověka.')}
+        </section>
+
+        <section class="card desktop-span-2 subscription-panel panel-people">
+          <div class="card-header"><div><h2>Lidé</h2><p>Klikni na člověka a přiřaď mu službu včetně částky. Volná místa u služeb se přepočítají sama.</p></div><span class="badge">${people.length}</span></div>
+          <details class="action-details compact-edit-details subscription-form-drawer">
+            <summary><span>Přidat člověka</span><em>kamarád, rodina, kolega</em></summary>
+            <form data-form="add-subscription-person" class="compact-form">
+              <div class="form-grid two">
+                ${field('Jméno', 'name', 'text', 'např. Lukáš', true)}
+                ${field('Poznámka', 'note', 'text', 'volitelné')}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Přidat člověka</button></div>
+            </form>
+          </details>
+          ${people.length ? `<div class="list compact-list">${summary.peopleRows.map(renderSubscriptionPersonDetail).join('')}</div>` : renderEmpty('Zatím tu nejsou žádní lidé.')}
+        </section>
+
+        <section class="card subscription-panel panel-payments">
+          <div class="card-header"><div><h2>Zapsat platbu / předplatné dopředu</h2><p>Když někdo zaplatí ručně nebo dopředu na další měsíc.</p></div></div>
+          ${allServices.length && people.length ? `
+            <form data-form="add-subscription-payment" class="compact-form">
+              <div class="form-grid two">
+                ${selectField('Služba', 'subscriptionId', subscriptionServiceOptions(true), '')}
+                ${selectField('Člověk', 'personId', subscriptionPersonOptions(true), '')}
+                ${field('Měsíc', 'month', 'month', '', false, month)}
+                ${field('Částka', 'amount', 'number', 'např. 80', true)}
+                ${field('Poznámka', 'note', 'text', 'např. zaplaceno dopředu')}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Zapsat platbu</button></div>
+            </form>
+          ` : renderEmpty('Nejdřív přidej službu a člověka.')}
+        </section>
+
+        <section class="card subscription-panel panel-payments">
+          <div class="card-header"><div><h2>Historie plateb</h2><p>Poslední zápisy plateb a přeplatků.</p></div><span class="badge">${allPayments.length}</span></div>
+          ${allPayments.length ? `<div class="list compact-list">${allPayments.slice(0, 24).map(renderSubscriptionPaymentItem).join('')}</div>` : renderEmpty('Zatím není zapsaná žádná platba.')}
+        </section>
+      </div>
+    `;
+  }
+
+  function renderSubscriptionPersonSummary(row) {
+    const tone = row.debt ? 'warn' : row.expected ? 'good' : '';
+    return `
+      <div class="item compact-item subscription-person-summary ${row.debt ? 'subscription-debt' : ''}">
+        <div class="item-top"><div class="item-title">${escapeHtml(row.person.name)}</div><span class="badge ${tone}">${row.debt ? `dluží ${formatCurrency(row.debt)}` : row.expected ? 'zaplaceno / OK' : 'bez služeb'}</span></div>
+        <div class="item-meta">Má platit ${formatCurrency(row.expected)} · zaplaceno ${formatCurrency(row.paid)}${row.overpaid ? ` · přeplatek ${formatCurrency(row.overpaid)}` : ''}${row.future ? ` · předplaceno ${formatCurrency(row.future)}` : ''}</div>
+      </div>`;
+  }
+
+  function renderSubscriptionPersonDetail(row) {
+    const services = subscriptionPersonAssignedServices(row.person.id);
+    const availableCount = subscriptionPersonAvailableServiceCount(row.person.id);
+    const canAssign = availableCount > 0;
+    return `
+      <details class="item compact-item subscription-person-detail-card ${row.debt ? 'subscription-debt' : ''}">
+        <summary class="subscription-person-summary-toggle">
+          <span class="subscription-person-summary-main">
+            <strong>${escapeHtml(row.person.name)}</strong>
+            <em>${services.length ? `${services.length} služeb · ${formatCurrency(row.expected)} / měsíc` : 'bez přiřazené služby'}</em>
+          </span>
+          <span class="badge ${row.debt ? 'warn' : row.expected ? 'good' : ''}">${row.debt ? `dluží ${formatCurrency(row.debt)}` : row.expected ? 'OK' : 'prázdné'}</span>
+        </summary>
+        <div class="subscription-person-detail-body">
+          <div class="item-meta">${services.length ? services.map((service) => {
+            const share = service.shares.find((entry) => entry.personId === row.person.id);
+            return `<span class="subscription-person-service-chip"><span class="subscription-inline-service">${renderSubscriptionServiceIcon(service, { size: 'xs' })}</span><strong>${escapeHtml(service.name)}</strong><em>${formatCurrency(share.amount)} / měsíc</em><button type="button" data-action="delete-subscription-share" data-subscription-id="${escapeHtml(service.id)}" data-person-id="${escapeHtml(row.person.id)}" aria-label="Odebrat službu ${escapeHtml(service.name)}">×</button></span>`;
+          }).join('') : 'Zatím s ním nesdílíš žádnou službu.'}${row.person.note ? ` <span class="subscription-person-note">${escapeHtml(row.person.note)}</span>` : ''}</div>
+          <div class="subscription-person-assign-box">
+            <h3>Přiřadit službu</h3>
+            <p>Vyber jednu ze svých služeb a částku, kterou ti má ${escapeHtml(row.person.name)} měsíčně platit. Obsazenost služby se tím automaticky přepočítá.</p>
+            ${canAssign ? `
+              <form data-form="add-subscription-share" class="compact-form subscription-person-assign-form">
+                <input type="hidden" name="personId" value="${escapeHtml(row.person.id)}">
+                <div class="form-grid two">
+                  ${selectField('Služba', 'subscriptionId', subscriptionServiceOptionsForPerson(row.person.id, true), '')}
+                  ${field('Částka / měsíc', 'amount', 'number', 'např. 80', true)}
+                </div>
+                <div class="form-actions"><button class="primary-btn" type="submit">Uložit službu člověku</button></div>
+              </form>
+            ` : '<div class="inline-note compact-note">Nemáš žádnou další službu s volným místem. Uvolni místo odebráním sdílení, nebo zvyš limit míst u služby.</div>'}
+          </div>
+          <div class="item-actions"><button class="danger-btn" type="button" data-action="delete-subscription-person" data-id="${escapeHtml(row.person.id)}">Smazat člověka</button></div>
+        </div>
+      </details>`;
+  }
+
+  function renderSubscriptionServiceItem(service) {
+    const shares = service.shares || [];
+    const shareTotal = shares.reduce((sum, share) => sum + decimalValue(share.amount), 0);
+    const capacity = subscriptionCapacity(service);
+    const capacityText = capacity.maxMembers ? `Obsazeno ${capacity.used}/${capacity.maxMembers} · volno ${capacity.free}` : `Obsazeno ${capacity.used} · bez limitu`;
+    return `
+      <div class="item compact-item subscription-service-item ${service.enabled === false ? 'muted-item' : ''}">
+        <div class="item-top"><div class="item-title subscription-service-title">${renderSubscriptionServiceIcon(service, { size: 'md' })}</div><span class="badge ${capacity.isFull ? 'warn' : service.enabled === false ? '' : 'good'}">${escapeHtml(capacityText)}</span></div>
+        <div class="item-meta">Cena ${formatCurrency(service.price)} · den stržení ${service.billingDay}. · Sdílení ${formatCurrency(shareTotal)} / měsíc · tvoje část ${formatCurrency(Math.max(0, decimalValue(service.price) - shareTotal))}${service.note ? ` · ${escapeHtml(service.note)}` : ''}</div>
+        ${shares.length ? `<div class="subscription-share-list">${shares.map((share) => `<span class="quick-chip static-chip">${escapeHtml(subscriptionPersonName(share.personId))}: ${formatCurrency(share.amount)} <button type="button" data-action="delete-subscription-share" data-subscription-id="${escapeHtml(service.id)}" data-person-id="${escapeHtml(share.personId)}" aria-label="Odebrat sdílení">×</button></span>`).join('')}</div>` : '<div class="inline-note compact-note">Zatím není nikomu přiřazená.</div>'}
+        <div class="item-actions"><button class="ghost-btn" type="button" data-action="subscription-toggle-service" data-id="${escapeHtml(service.id)}">${service.enabled === false ? 'Zapnout' : 'Vypnout'}</button><button class="danger-btn" type="button" data-action="delete-subscription" data-id="${escapeHtml(service.id)}">Smazat</button></div>
+      </div>`;
+  }
+
+  function renderSubscriptionPaymentCard(service, month, filter = 'all', summary = subscriptionMonthSummary(month)) {
+    const shares = subscriptionVisibleShares(service, month, filter, summary);
+    return `
+      <div class="subscription-payment-card">
+        <div class="subscription-payment-head"><strong class="subscription-service-title subscription-service-title-sm">${renderSubscriptionServiceIcon(service, { size: 'sm' })}</strong><span>${formatCurrency(service.price)} · ${escapeHtml(subscriptionCapacityLabel(service))}</span></div>
+        ${shares.length ? shares.map((share) => {
+          const paid = subscriptionIsPaid(share.personId, service.id, month);
+          const paidAmount = subscriptionPaidAmount(share.personId, service.id, month);
+          return `<button class="subscription-pay-row ${paid ? 'paid' : ''}" type="button" data-action="subscription-toggle-paid" data-subscription-id="${escapeHtml(service.id)}" data-person-id="${escapeHtml(share.personId)}" data-month="${escapeHtml(month)}"><span><strong>${escapeHtml(subscriptionPersonName(share.personId))}</strong><em>${formatCurrency(share.amount)}${paidAmount && paidAmount !== share.amount ? ` · zaplaceno ${formatCurrency(paidAmount)}` : ''}</em></span><b>${paid ? '✓' : '○'}</b></button>`;
+        }).join('') : '<div class="inline-note compact-note">Nikdo není přiřazený.</div>'}
+      </div>`;
+  }
+
+  function renderSubscriptionPaymentItem(payment) {
+    return `
+      <div class="item compact-item">
+        <div class="item-top"><div class="item-title subscription-payment-item-title">${escapeHtml(subscriptionPersonName(payment.personId))} · <span class="subscription-inline-service">${renderSubscriptionServiceIcon(subscriptionById(payment.subscriptionId) || 'other', { size: 'xs' })}</span></div><span class="badge good">${formatCurrency(payment.amount)}</span></div>
+        <div class="item-meta">${escapeHtml(financeMonthLabel(payment.month))} · zaplaceno ${escapeHtml(formatDate(payment.paidAt))}${payment.note ? ` · ${escapeHtml(payment.note)}` : ''}</div>
+        <div class="item-actions"><button class="danger-btn" type="button" data-action="delete-subscription-payment" data-id="${escapeHtml(payment.id)}">Smazat platbu</button></div>
+      </div>`;
+  }
+
+  function addSubscriptionPersonFromForm(data, form) {
+    const name = normalizeText(data.name);
+    if (!name) return showToast('Vyplň jméno člověka');
+    state.subscriptionPeople.push(normalizeSubscriptionPerson({ name, note: data.note }));
+    form.reset();
+    persistSubscriptionsState({ toast: 'Člověk přidaný' });
+  }
+
+  function addSubscriptionFromForm(data, form) {
+    const serviceKey = normalizeText(data.serviceKey || 'other') || 'other';
+    const price = decimalValue(data.price) || subscriptionServiceDefaultPrice(serviceKey);
+    const name = normalizeText(data.name) || subscriptionServiceName(serviceKey, '');
+    if (!name) return showToast('Vyplň název služby');
+    if (!(price > 0)) return showToast('Vyplň cenu služby');
+    const rawMaxMembers = Number(data.maxMembers || 0);
+    const maxMembers = Number.isFinite(rawMaxMembers) && rawMaxMembers > 0 ? Math.floor(rawMaxMembers) : subscriptionServiceDefaultMembers(serviceKey);
+    state.subscriptions.push(normalizeSubscriptionService({ serviceKey, name, price, billingDay: data.billingDay, maxMembers, note: data.note, shares: [] }));
+    form.reset();
+    persistSubscriptionsState({ toast: 'Předplatné přidané' });
+  }
+
+  function addSubscriptionShareFromForm(data, form) {
+    const service = state.subscriptions.find((item) => item.id === data.subscriptionId);
+    const person = state.subscriptionPeople.find((item) => item.id === data.personId);
+    const amount = decimalValue(data.amount);
+    if (!service || !person) return showToast('Vyber službu a člověka');
+    if (!(amount > 0)) return showToast('Vyplň částku');
+    service.shares = Array.isArray(service.shares) ? service.shares : [];
+    const existing = service.shares.find((share) => share.personId === person.id);
+    const capacity = subscriptionCapacity(service);
+    if (!existing && capacity.maxMembers && capacity.free <= 0) return showToast('U služby už nejsou volná místa');
+    if (existing) existing.amount = amount;
+    else service.shares.push({ personId: person.id, amount });
+    form.reset();
+    persistSubscriptionsState({ toast: 'Sdílení uložené' });
+  }
+
+  function addSubscriptionPaymentFromForm(data, form) {
+    const service = state.subscriptions.find((item) => item.id === data.subscriptionId);
+    const person = state.subscriptionPeople.find((item) => item.id === data.personId);
+    const amount = decimalValue(data.amount);
+    const month = /^\d{4}-\d{2}$/.test(String(data.month || '')) ? String(data.month) : subscriptionSelectedMonth();
+    if (!service || !person) return showToast('Vyber službu a člověka');
+    if (!(amount > 0)) return showToast('Vyplň částku');
+    state.subscriptionPayments.push(normalizeSubscriptionPayment({ subscriptionId: service.id, personId: person.id, month, amount, paidAt: todayISO(), note: data.note }));
+    form.reset();
+    persistSubscriptionsState({ toast: month > subscriptionSelectedMonth() ? 'Platba dopředu zapsaná' : 'Platba zapsaná' });
+  }
+
+  function toggleSubscriptionPaid(subscriptionId, personId, month = subscriptionSelectedMonth()) {
+    const service = state.subscriptions.find((item) => item.id === subscriptionId);
+    const share = service?.shares?.find((item) => item.personId === personId);
+    if (!service || !share) return showToast('Sdílení nenalezené');
+    state.subscriptionPayments = Array.isArray(state.subscriptionPayments) ? state.subscriptionPayments : [];
+    const indexes = state.subscriptionPayments
+      .map((payment, index) => ({ payment, index }))
+      .filter(({ payment }) => payment.subscriptionId === subscriptionId && payment.personId === personId && payment.month === month)
+      .map(({ index }) => index);
+    if (indexes.length) {
+      state.subscriptionPayments = state.subscriptionPayments.filter((_, index) => !indexes.includes(index));
+      showToast('Platba odškrtnutá');
+    } else {
+      state.subscriptionPayments.push(normalizeSubscriptionPayment({ subscriptionId, personId, month, amount: decimalValue(share.amount), paidAt: todayISO(), note: 'zaškrtnuto v přehledu' }));
+      showToast('Platba zaškrtnutá');
+    }
+    persistSubscriptionsState();
+  }
+
+  function deleteSubscription(id) {
+    state.subscriptions = (state.subscriptions || []).filter((item) => item.id !== id);
+    state.subscriptionPayments = (state.subscriptionPayments || []).filter((payment) => payment.subscriptionId !== id);
+    persistSubscriptionsState();
+    showToast('Předplatné smazané');
+  }
+
+  function deleteSubscriptionPerson(id) {
+    state.subscriptionPeople = (state.subscriptionPeople || []).filter((item) => item.id !== id);
+    state.subscriptions = (state.subscriptions || []).map((service) => ({ ...service, shares: (service.shares || []).filter((share) => share.personId !== id) }));
+    state.subscriptionPayments = (state.subscriptionPayments || []).filter((payment) => payment.personId !== id);
+    persistSubscriptionsState();
+    showToast('Člověk odebraný');
+  }
+
+  function deleteSubscriptionShare(subscriptionId, personId) {
+    const service = state.subscriptions.find((item) => item.id === subscriptionId);
+    if (!service) return;
+    service.shares = (service.shares || []).filter((share) => share.personId !== personId);
+    state.subscriptionPayments = (state.subscriptionPayments || []).filter((payment) => !(payment.subscriptionId === subscriptionId && payment.personId === personId));
+    persistSubscriptionsState();
+    showToast('Sdílení odebrané');
+  }
+
+  function deleteSubscriptionPayment(id) {
+    state.subscriptionPayments = (state.subscriptionPayments || []).filter((payment) => payment.id !== id);
+    persistSubscriptionsState();
+    showToast('Platba smazaná');
+  }
+
+  function toggleSubscriptionService(id) {
+    const service = state.subscriptions.find((item) => item.id === id);
+    if (!service) return;
+    service.enabled = service.enabled === false;
+    persistSubscriptionsState();
+    showToast(service.enabled ? 'Služba zapnutá' : 'Služba vypnutá');
+  }
+
+  function renderMoreModuleCard(module) {
+    const stats = getModuleStats(module.id);
+    return `
+      <button class="item module-hub-item module-status-card more-module-card" type="button" data-nav="${module.id}">
+        ${renderModuleIllustration(module.id, { size: 'card', slotClass: 'module-status-icon module-card-illustration-slot', extraClass: 'module-card-illustration', label: module.label })}
+        <div class="more-module-copy">
+          <strong>${escapeHtml(module.label)}</strong>
+          <span>${stats.count} ${escapeHtml(stats.label)}</span>
+        </div>
+      </button>
+    `;
+  }
+
+  function renderMore() {
+    const modules = getVisibleModules().filter((module) => !['home', 'settings'].includes(module.id));
+
+    return `
+      <div class="grid two more-hub-grid more-clean-hub">
+        <section class="card desktop-span-2 more-settings-priority">
+          <div class="card-header"><div><h2>Nastavení aplikace</h2><p>Domácnost, profily, zapnuté moduly, Home panel, cloud, PWA a export/import.</p></div></div>
+          <button class="item module-hub-item more-settings-card" type="button" data-nav="settings">
+            ${renderModuleIllustration('settings', { size: 'card', slotClass: 'module-status-icon module-card-illustration-slot settings-module-icon-slot', extraClass: 'module-card-illustration settings-module-icon', label: 'Nastavení aplikace' })}
+            <div class="more-module-copy">
+              <strong>Nastavení aplikace</strong>
+              <span>Správa domácnosti, modulů a vzhledu</span>
+            </div>
+            <span class="badge">otevřít</span>
+          </button>
+        </section>
+
+        <section class="card desktop-span-2 more-modules-panel">
+          <div class="card-header">
+            <div><h2>Moduly</h2><p>Univerzální vstup do všech zapnutých částí aplikace.</p></div>
+            <span class="badge">${modules.length}</span>
+          </div>
+          <div class="grid four more-module-grid">
+            ${modules.length ? modules.map(renderMoreModuleCard).join('') : '<div class="empty">Zatím nejsou zapnuté žádné další moduly.</div>'}
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderVisualChoiceGrid(options, selected, action, datasetName, typeClass = '') {
+    return `<div class="visual-choice-grid ${typeClass}">${options.map(([id, label, note]) => {
+      const active = id === selected;
+      const dataAttr = datasetName === 'theme' ? `data-theme-value="${escapeHtml(id)}"` : datasetName === 'iconTheme' ? `data-icon-theme="${escapeHtml(id)}"` : `data-color-scheme="${escapeHtml(id)}"`;
+      return `<button class="visual-choice-card ${active ? 'active' : ''}" type="button" data-action="${escapeHtml(action)}" ${dataAttr}>
+        <span class="visual-choice-preview visual-choice-preview-${escapeHtml(id)}" aria-hidden="true">${renderVisualPreview(id, datasetName)}</span>
+        <strong>${escapeHtml(label)}</strong>
+        <em>${escapeHtml(note || '')}</em>
+      </button>`;
+    }).join('')}</div>`;
+  }
+
+  function renderVisualPreview(id, type) {
+    if (type === 'iconTheme') {
+      const previewIconsByTheme = {
+        ios: ['home', 'packages', 'settings'],
+        'duotone-fresh': ['home', 'calendar', 'finance'],
+        'sticker-ui': ['home', 'calendar', 'garage'],
+        'clay-3d': ['homecare', 'garage', 'finance'],
+        'isometric-micro': ['home', 'garage', 'devices']
+      };
+      const iconIds = previewIconsByTheme[id] || ['home', 'packages', 'settings'];
+      return `<span class="visual-icon-preview-row">${iconIds.map((iconId) => renderAssetThemeIcon(iconId, { themeId: id, size: 'picker', baseClass: 'visual-asset-icon', innerClass: 'visual-asset-icon-inner' }) || getThemedModuleIconSvg(iconId, { themeId: id })).join('')}</span>`;
+    }
+    if (type === 'theme') {
+      return `<span class="theme-preview-orb ${escapeHtml(id)}"></span>`;
+    }
+    return `<span class="scheme-preview-dots"><i></i><i></i><i></i></span>`;
+  }
+
+  function renderVisualSettingsCard() {
+    const visual = getVisualSettingsSnapshot();
+    return `
+      <section class="card compact-settings-card visual-settings-card desktop-span-2">
+        <div class="card-header">
+          <div><h2>Vzhled aplikace</h2><p>Styl ikon i barevné schéma jsou osobní nastavení účtu. Každý člen domácnosti může mít vlastní vzhled.</p></div>
+          <span class="badge">${escapeHtml(getOptionLabel(ICON_THEME_OPTIONS, visual.iconTheme))} · ${escapeHtml(getOptionLabel(COLOR_SCHEME_OPTIONS, visual.colorScheme))}</span>
+        </div>
+        <details class="compact-edit-details settings-visual-details" ${visualSettingsDrawerOpen ? 'open' : ''}>
+          <summary><span>Styl ikon a schéma</span><em>${escapeHtml(getOptionLabel(ICON_THEME_OPTIONS, visual.iconTheme))} · ${escapeHtml(getOptionLabel(COLOR_SCHEME_OPTIONS, visual.colorScheme))}</em></summary>
+          <div class="visual-settings-stack">
+            <div class="visual-settings-group">
+              <h3>Režim</h3>
+              ${renderVisualChoiceGrid(APP_THEME_OPTIONS, visual.theme, 'set-app-theme', 'theme', 'theme-choice-grid')}
+            </div>
+            <div class="visual-settings-group">
+              <h3>Styl ikon</h3>
+              ${renderVisualChoiceGrid(ICON_THEME_OPTIONS, visual.iconTheme, 'set-icon-theme', 'iconTheme', 'icon-choice-grid')}
+            </div>
+            <div class="visual-settings-group">
+              <h3>Barevné schéma</h3>
+              ${renderVisualChoiceGrid(COLOR_SCHEME_OPTIONS, visual.colorScheme, 'set-color-scheme', 'colorScheme', 'scheme-choice-grid')}
+            </div>
+          </div>
+        </details>
+      </section>
+    `;
+  }
+
+  function renderSettings() {
+    const enabled = new Set(normalizeModuleList(state.enabledModules));
+    const settingsTabIds = ['household', 'modules', 'dashboard', 'cloud', 'data'];
+    const activeSettingsTab = settingsTabIds.includes(getModuleTab('settings', 'household')) ? getModuleTab('settings', 'household') : 'household';
+    return `
+      ${renderSectionTabs('settings', [
+        { id: 'household', label: 'Domácnost', iconHtml: renderModuleIllustration('home', { size: 'tab', slotClass: 'section-tab-icon-slot', label: 'Domácnost' }), count: state.profiles.length },
+        { id: 'modules', label: 'Moduly', iconHtml: renderModuleIllustration('more', { size: 'tab', slotClass: 'section-tab-icon-slot', label: 'Moduly' }), count: normalizeModuleList(state.enabledModules).length },
+        { id: 'dashboard', label: 'Home', iconHtml: renderModuleIllustration('weather', { size: 'tab', slotClass: 'section-tab-icon-slot', label: 'Home' }), count: normalizeHomeHeroIds(state.settings?.homeHeroItems).length },
+        { id: 'cloud', label: 'Cloud / PWA', icon: '☁️', count: state.cloud?.userId ? 1 : 0 },
+        { id: 'data', label: 'Data', icon: '🛟' }
+      ], 'household')}
+      <div class="settings-tabbed settings-tab-${activeSettingsTab}" data-tab-area="settings">
+        <div class="settings-panel panel-household grid two">
+          <section class="card compact-settings-card">
+            <div class="card-header"><div><h2>Domácnost</h2><p>Základ rodinného účtu a vzhled celé aplikace.</p></div><span class="badge">${escapeHtml(state.household.id)}</span></div>
+            <form data-form="household-settings" class="compact-form">
+              <div class="form-grid two">
+                ${field('Název domácnosti', 'householdName', 'text', 'Domácnost', true, householdName())}
+              </div>
+              <div class="form-actions compact-actions"><button class="primary-btn" type="submit">Uložit domácnost</button></div>
+            </form>
+          </section>
+
+          ${renderVisualSettingsCard()}
+
+          <section class="card compact-settings-card">
+            <div class="card-header"><div><h2>Profily</h2><p>Členové jedné domácnosti. Každý může mít svoje položky a nastavení.</p></div><span class="badge">${state.profiles.length} profilů</span></div>
+            <div class="profile-list compact-profile-list">
+              ${state.profiles.map((profile) => `
+                <div class="profile-chip ${profile.id === currentProfileId() ? 'active' : ''}">
+                  <button type="button" data-action="set-profile" data-id="${escapeHtml(profile.id)}">
+                    <strong>${escapeHtml(profile.name)}</strong>
+                    <span>${escapeHtml(profile.role === 'owner' ? 'správce' : 'člen domácnosti')}${profile.cloudId ? ' · cloud' : ' · lokálně'}</span>
+                  </button>
+                  ${state.profiles.length > 1 ? `<button class="mini-danger" type="button" data-action="delete-profile" data-id="${escapeHtml(profile.id)}" aria-label="Smazat profil">×</button>` : ''}
+                </div>
+              `).join('')}
+            </div>
+            ${state.cloud?.householdId ? `<div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="cloud-sync-local-profiles">Odeslat lokální profily</button><button class="ghost-btn" type="button" data-action="cloud-load-all">Načíst profily z cloudu</button></div>` : ''}
+            <details class="action-details compact-edit-details settings-form-drawer">
+              <summary><span>Přidat profil</span><em>další člen domácnosti</em></summary>
+              <form data-form="add-profile" class="compact-form">
+                <div class="form-grid two">
+                  ${field('Nový profil', 'name', 'text', 'Jméno člena domácnosti', true)}
+                  ${selectField('Role', 'role', [['member', 'Člen'], ['owner', 'Správce']], 'member')}
+                </div>
+                <div class="form-actions"><button class="ghost-btn" type="submit">Přidat profil</button></div>
+              </form>
+            </details>
+          </section>
+        </div>
+
+        <div class="settings-panel panel-modules grid two">
+          <section class="card desktop-span-2 compact-settings-card">
+            <div class="card-header"><div><h2>Zapnuté moduly</h2><p>Každá domácnost si může nechat jen to, co opravdu používá.</p></div><span class="badge">${enabled.size}</span></div>
+            <details class="compact-edit-details settings-enabled-modules-details">
+              <summary><span>Zapnuté moduly</span><em>${enabled.size} zapnuto</em></summary>
+              <div class="module-toggle-grid compact-module-toggle-grid">
+                ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => `
+                  <button class="module-toggle ${enabled.has(module.id) ? 'active' : ''}" type="button" data-action="toggle-module" data-id="${module.id}">
+                    ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'module-toggle-icon-slot', label: module.label })}
+                    <strong>${escapeHtml(module.label)}</strong>
+                    <em>${enabled.has(module.id) ? 'zapnuto' : 'vypnuto'}</em>
+                  </button>
+                `).join('')}
+              </div>
+            </details>
+          </section>
+
+          <section class="card desktop-span-2 compact-settings-card">
+            ${renderBottomNavSettings()}
+          </section>
+        </div>
+
+        <div class="settings-panel panel-dashboard grid two">
+          ${renderDashboardSettings()}
+        </div>
+
+        <div class="settings-panel panel-cloud grid two">
+          ${renderCloudAccount()}
+          ${renderCloudSyncOverview('settings')}
+          ${renderCloudLocalSyncAudit()}
+          ${renderCloudReadiness(false)}
+          ${renderPwaInstallCard()}
+          ${renderAuthSetupCard()}
+        </div>
+
+        <div class="settings-panel panel-data grid two">
+          <section class="card compact-settings-card">
+            <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 202))}</strong></div></div>
+            <div class="form-actions compact-actions">
+              <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
+              <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
+            </div>
+            <details class="action-details compact-edit-details settings-form-drawer">
+              <summary><span>Import JSON</span><em>vložit starší export</em></summary>
+              <form data-form="import-data" class="compact-form">
+                <div class="field"><label for="importJson">Import JSON</label><textarea id="importJson" class="textarea" name="json" placeholder="Sem vlož exportovaný JSON"></textarea></div>
+                <div class="form-actions"><button class="primary-btn" type="submit">Importovat</button></div>
+              </form>
+            </details>
+          </section>
+
+          ${renderDeleteAccountCard()}
+        </div>
+      </div>
+    `;
+  }
+
+
+  function renderDashboardSettings() {
+    const previewCtx = {
+      hdo: getHdoStatus(now),
+      todayEvents: upcomingCalendarEvents(now).filter((event) => event.date === todayISO()),
+      upcomingEvents: upcomingCalendarEvents(now).slice(0, 6),
+      calendarPanelEvents: upcomingCalendarEvents(now),
+      activePackages: state.packages.filter((pkg) => pkg.status !== 'delivered'),
+      openShopping: state.shopping.filter((item) => !item.done),
+      openTasks: state.homeTasks.filter((task) => !task.done),
+      wasteSoon: state.waste.map((item) => ({ ...item, days: daysUntil(item.date) })).filter((item) => item.days !== null && item.days >= 0 && item.days <= 7),
+      vehicleAlerts: getVehicleAlerts(),
+      weather: normalizeWeatherState(state.weather)
+    };
+    return `
+      <section class="card desktop-span-2 compact-settings-card dashboard-settings-card">
+        <div class="card-header"><div><h2>Panely v horním bloku Home</h2><p>Čas a počasí jsou na Home pevně. Vyber 0–8 dalších panelů pod ně. Pořadí můžeš měnit dlouhým podržením panelu přímo na Home.</p></div><span class="badge">${normalizeHomeHeroIds(state.settings?.homeHeroItems).length}/8</span></div>
+        <div class="switch-list dashboard-widget-picker">
+          ${HOME_HERO_ITEMS.map((item) => {
+            const active = normalizeHomeHeroIds(state.settings?.homeHeroItems).includes(item.id);
+            return `
+              <button class="switch-row dashboard-widget-switch ${active ? 'active' : ''}" type="button" role="switch" aria-checked="${active ? 'true' : 'false'}" data-action="toggle-home-hero-item" data-id="${escapeHtml(item.id)}">
+                ${renderModuleIllustration(item.id, { size: 'picker', slotClass: 'switch-row-icon', label: item.label })}
+                <span class="switch-row-copy"><strong>${escapeHtml(item.label)}</strong><em>${escapeHtml(item.text(previewCtx))}</em></span>
+                <span class="ios-switch" aria-hidden="true"><span></span></span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+        <div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="home-hero-reset">Bez dalších panelů</button>${cloudReady() ? '<span class="badge good">ukládá se i do domácnosti</span>' : '<span class="badge">lokálně</span>'}</div>
+      </section>
+    `;
+  }
+
+  function renderDeleteAccountCard() {
+    const signedIn = Boolean(state.cloud?.userId);
+    return `
+      <section class="card desktop-span-2 danger-zone">
+        <div class="card-header">
+          <div><h2>Smazat účet</h2><p>Trvalé smazání přihlášeného online účtu a jeho navázaných dat.</p></div>
+          <span class="badge warn">nevratné</span>
+        </div>
+        ${signedIn ? `
+          <div class="hint-box danger-hint">Smazání účtu je nevratné. Pokud jsi vlastník domácnosti, smažou se i data domácnosti navázaná na tento účet. Pro potvrzení napiš <strong>SMAZAT</strong>.</div>
+          <form data-form="delete-own-account" class="stack-form">
+            ${field('Potvrzení', 'confirmText', 'text', 'SMAZAT', true)}
+            <div class="form-actions"><button class="danger-btn" type="submit">Smazat můj účet</button></div>
+          </form>
+        ` : `
+          <div class="inline-note">Smazání účtu je dostupné až po přihlášení e-mailem a heslem.</div>
+        `}
+      </section>
+    `;
+  }
+
+  function renderBottomNavSettings() {
+    const selected = new Set(normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules));
+    const candidates = getNavCandidateIds(state.enabledModules)
+      .map((id) => MODULES.find((module) => module.id === id))
+      .filter(Boolean);
+
+    return `
+      <div class="card-header">
+        <div><h2>Spodní lišta</h2><p>Každá domácnost si může připnout vlastní hlavní položky. „Více“ zůstává dole vždycky.</p></div>
+        <span class="badge">${selected.size}/${BOTTOM_NAV_MAX} + Více</span>
+      </div>
+      <div class="hint-box">Vyber ${BOTTOM_NAV_MIN} až ${BOTTOM_NAV_MAX} položek. Vypnuté moduly se tady nezobrazí — nejdřív je zapni v části „Zapnuté moduly“.</div>
+      <div class="switch-list nav-picker-list">
+        ${candidates.map((module) => {
+          const isSelected = selected.has(module.id);
+          return `
+            <button class="switch-row nav-picker-switch ${isSelected ? 'active' : ''}" type="button" role="switch" aria-checked="${isSelected ? 'true' : 'false'}" data-action="toggle-bottom-nav" data-id="${module.id}">
+              ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'switch-row-icon', label: module.label })}
+              <span class="switch-row-copy">
+                <strong>${escapeHtml(module.label)}</strong>
+                <em>${isSelected ? 'zobrazuje se dole' : 'nezobrazuje se dole'}</em>
+              </span>
+              <span class="ios-switch" aria-hidden="true"><span></span></span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+
+  function cloudModeLabel() {
+    if (state.cloud?.userId) return `cloud: ${state.cloud.email || 'přihlášeno'}`;
+    return 'cloud-ready / lokální režim';
+  }
+
+  function getSupabaseClient() {
+    if (supabaseClientInstance) return supabaseClientInstance;
+    const factory = window.supabase?.createClient;
+    if (!factory) return null;
+    supabaseClientInstance = factory(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: {
+        storageKey: SUPABASE_STORAGE_KEY,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
+    return supabaseClientInstance;
+  }
+
+  function hasStoredSupabaseSession() {
+    const raw = localStorage.getItem(SUPABASE_STORAGE_KEY);
+    const session = safeParse(raw, null);
+    if (!session || typeof session !== 'object') return false;
+    const accessToken = normalizeText(session.access_token || session.currentSession?.access_token);
+    const refreshToken = normalizeText(session.refresh_token || session.currentSession?.refresh_token);
+    const expiresAt = Number(session.expires_at || session.currentSession?.expires_at || 0);
+    if (refreshToken) return true;
+    if (accessToken && (!expiresAt || expiresAt * 1000 > Date.now() - 60000)) return true;
+    return false;
+  }
+
+  function hasUsableAppSession() {
+    return Boolean(state.cloud?.status === 'signed-in' && state.cloud?.userId && hasStoredSupabaseSession());
+  }
+
+  function resetSignedOutAppState() {
+    const visualSettings = getVisualSettingsSnapshot();
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('homeWeb.activeModule');
+    localStorage.removeItem('domacnostPlus.moduleTabs');
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
+    sessionStorage.removeItem(ONBOARDING_GOOGLE_INTENT_KEY);
+    sessionStorage.setItem('domacnostPlus.onboardingMode', 'choice');
+    state = migrateState(mergeState(DEFAULT_STATE, {}));
+    state.settings = { ...(state.settings || {}), ...visualSettings };
+    state.household = { ...(state.household || {}), name: '', isConfigured: false };
+    state.profiles = [];
+    state.activeProfileId = '';
+    state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, provider: 'supabase', status: 'offline', userId: '', email: '', householdId: '', households: [], invitations: [] };
+    onboardingMode = 'choice';
+    demoRuntimeActive = false;
+    activeModule = 'home';
+    moduleTabs = {};
+  }
+
+
+  function isExistingAccountSignUpResponse(data, error) {
+    const message = String(error?.message || error?.code || '').toLowerCase();
+    if (message.includes('already') || message.includes('registered') || message.includes('exist') || message.includes('user_already_exists')) return true;
+    const identities = data?.user?.identities;
+    return Array.isArray(identities) && identities.length === 0 && !data?.session;
+  }
+
+  function markExistingAccount(email) {
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      status: 'existing-account',
+      email: normalizeText(email).toLowerCase()
+    };
+    onboardingMode = 'account';
+    sessionStorage.setItem('domacnostPlus.onboardingMode', 'account');
+    saveState();
+    render();
+    showToast('Účet s tímto e-mailem už existuje. Přihlas se nebo obnov heslo.');
+  }
+
+
+  async function deleteOwnAccount(confirmText) {
+    const cleanConfirm = String(confirmText || '').trim();
+    if (cleanConfirm !== 'SMAZAT') {
+      showToast('Pro smazání účtu napiš přesně SMAZAT');
+      return;
+    }
+    const ok = window.confirm('Opravdu trvale smazat přihlášený účet? Tohle nejde vrátit zpět.');
+    if (!ok) return;
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.userId) {
+      showToast('Nejdřív se přihlas k online účtu');
+      return;
+    }
+    const { error } = await client.rpc('delete_own_account', { confirm_text: cleanConfirm });
+    if (error) {
+      showToast(error.message || 'Účet se nepovedlo smazat');
+      return;
+    }
+    await client.auth.signOut().catch(() => {});
+    localStorage.removeItem(STORAGE_KEY);
+    state = migrateState(mergeState(DEFAULT_STATE, {}));
+    state.household.isConfigured = false;
+    state.cloud = { ...(state.cloud || {}), status: 'offline', userId: '', email: '', householdId: '' };
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
+    sessionStorage.setItem('domacnostPlus.onboardingMode', 'choice');
+    onboardingMode = 'choice';
+    activeModule = 'home';
+    render();
+    showToast('Účet byl smazán');
+  }
+
+  async function cloudOAuthSignIn(provider = 'google', intent = 'login') {
+    const client = getSupabaseClient();
+    if (!client?.auth?.signInWithOAuth) return showToast('Supabase OAuth není dostupný');
+    if (provider !== 'google') return showToast('Teď je připravené jen Google přihlášení');
+    sessionStorage.setItem(ONBOARDING_GOOGLE_INTENT_KEY, intent === 'register' ? 'register' : 'login');
+    try {
+      const { data, error } = await client.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${APP_PUBLIC_URL}?auth=google`,
+          scopes: 'openid email profile https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.calendarlist.readonly',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
+        }
+      });
+      if (error) return showToast(error.message || 'Google přihlášení se nepovedlo');
+      if (data?.url) window.location.href = data.url;
+    } catch (error) {
+      console.warn('Google OAuth sign-in failed', error);
+      showToast('Google přihlášení se nepovedlo spustit');
+    }
+  }
+
+  function renderCloudHouseholdManager() {
+    const households = Array.isArray(state.cloud?.households) ? state.cloud.households : [];
+    const activeCloudId = state.cloud?.householdId || '';
+    return `
+      <div class="cloud-household-panel">
+        <div class="card-subheader"><h3>Cloud domácnosti</h3><p>Cloud je hlavní zdroj dat pro všechny členy domácnosti. Lokální úložiště zůstává jen jako cache a nouzový fallback.</p></div>
+        <div class="form-actions compact-actions">
+          <button class="ghost-btn" type="button" data-action="cloud-load-households">Načíst moje domácnosti</button>
+          <button class="ghost-btn" type="button" data-action="cloud-load-all">Načíst data aktivní domácnosti</button>
+          <button class="primary-btn" type="button" data-action="cloud-sync-pending">Dohnat lokální → cloud</button>
+        </div>
+        ${households.length ? `
+          ${households.length > 1 ? '<div class="inline-note warn-note">Pod účtem je víc aktivních domácností. Appka teď novou nevytváří automaticky; duplicitní můžeš jen skrýt z tohoto účtu.</div>' : ''}
+          <div class="cloud-household-list">
+            ${households.map((household) => `
+              <div class="cloud-household-row ${household.id === activeCloudId ? 'active' : ''}">
+                <div><strong>${escapeHtml(household.name || 'Domácnost')}</strong><span>${escapeHtml(household.role || 'member')} · ${escapeHtml(shortId(household.id))}</span></div>
+                <div class="item-actions compact-actions">
+                  ${household.id === activeCloudId ? '<span class="badge good">aktivní</span>' : `<button class="ghost-btn" type="button" data-action="cloud-switch-household" data-id="${escapeHtml(household.id)}" data-name="${escapeHtml(household.name || 'Domácnost')}">Přepnout</button><button class="ghost-btn" type="button" data-action="cloud-archive-household" data-id="${escapeHtml(household.id)}">Skrýt</button>`}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : '<div class="inline-note">Zatím není načtený seznam domácností. Klikni na „Načíst moje domácnosti“.</div>'}
+        <details class="action-details compact-edit-details settings-form-drawer cloud-household-create-details">
+          <summary><span>Nová domácnost / pozvánka</span><em>otevřít jen když zakládáš nebo zveš</em></summary>
+          <div class="grid two cloud-auth-grid">
+            <form data-form="cloud-create-household">
+              <h3>Nová domácnost</h3>
+              <div class="form-grid two">
+                ${field('Název', 'name', 'text', 'Novákovi / Chata / Byt', true)}
+                ${field('Hlavní profil', 'profileName', 'text', currentProfile()?.name || 'Já', false)}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Vytvořit novou domácnost</button></div>
+            </form>
+            <form data-form="cloud-invite-member">
+              <h3>Pozvat člena</h3>
+              <div class="form-grid two">
+                ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
+                ${selectField('Role', 'role', [['member', 'Člen'], ['admin', 'Admin'], ['read_only', 'Jen čtení']], 'member')}
+              </div>
+              <div class="form-actions"><button class="ghost-btn" type="submit">Připravit pozvánku</button></div>
+            </form>
+          </div>
+        </details>
+        <div class="form-actions compact-actions">
+          <button class="ghost-btn" type="button" data-action="cloud-load-invitations">Načíst pozvánky</button>
+        </div>
+        ${renderCloudInvitationsPanel()}
+        <div class="inline-note">Pozvánky už jsou v Supabase. Pozvaný člověk se přihlásí stejným e-mailem, načte příchozí pozvánky a přijme je. Data se dál oddělují podle cloud ID domácnosti.</div>
+      </div>
+    `;
+  }
+
+  function renderCloudInvitationsPanel() {
+    const invitations = Array.isArray(state.cloud?.invitations) ? state.cloud.invitations : [];
+    const pending = invitations.filter((item) => item.status !== 'accepted' && item.status !== 'cancelled');
+    const incoming = pending.filter((item) => String(item.email || '').toLowerCase() === String(state.cloud?.email || '').toLowerCase());
+    const outgoing = pending.filter((item) => String(item.email || '').toLowerCase() !== String(state.cloud?.email || '').toLowerCase());
+    const row = (item, incomingMode = false) => `
+      <div class="cloud-household-row">
+        <div>
+          <strong>${escapeHtml(item.email || 'pozvánka')}</strong>
+          <span>${escapeHtml(item.role || 'member')} · ${escapeHtml(item.status || 'pending')}${item.expiresAt || item.expires_at ? ` · do ${escapeHtml(formatDate(item.expiresAt || item.expires_at))}` : ''}</span>
+        </div>
+        ${incomingMode ? `<button class="primary-btn" type="button" data-action="cloud-accept-invitation" data-id="${escapeHtml(item.id)}">Přijmout</button>` : `<span class="badge ${item.localOnly ? 'warn' : 'good'}">${item.localOnly ? 'lokálně' : 'cloud'}</span>`}
+      </div>`;
+    return `
+      <div class="cloud-invitations-panel">
+        <div class="card-subheader"><h3>Pozvánky</h3><p>${pending.length ? `${pending.length} aktivních pozvánek` : 'Zatím žádné aktivní pozvánky.'}</p></div>
+        ${incoming.length ? `<div class="cloud-household-list"><div class="inline-note">Příchozí pozvánky pro tvůj e-mail</div>${incoming.map((item) => row(item, true)).join('')}</div>` : ''}
+        ${outgoing.length ? `<div class="cloud-household-list"><div class="inline-note">Odeslané pozvánky z této domácnosti</div>${outgoing.map((item) => row(item, false)).join('')}</div>` : ''}
+      </div>`;
+  }
+
+  function shortId(value) {
+    return value ? `${String(value).slice(0, 8)}…` : '—';
+  }
+
+  function renderAuthSetupCard() {
+    const siteUrl = getAppBaseUrl();
+    const redirectUrl = getAuthRedirectUrl();
+    const currentUrl = location.protocol === 'file:' ? 'lokální soubor' : `${location.origin}/`;
+    const isProdHost = currentUrl === siteUrl;
+    const isLocalHost = ['localhost', '127.0.0.1'].includes(location.hostname);
+    const templatePath = 'email-confirmation-template-domacnost-plus.html';
+    const checks = [
+      {
+        ok: true,
+        title: 'Site URL v Supabase',
+        note: siteUrl
+      },
+      {
+        ok: true,
+        title: 'Povolený redirect URL',
+        note: redirectUrl
+      },
+      {
+        ok: !isLocalHost,
+        title: 'Aktuální adresa aplikace',
+        note: isProdHost ? 'Běží na produkční Vercel adrese.' : `${currentUrl} · potvrzovací e-mail se i tak posílá na produkční adresu.`
+      },
+      {
+        ok: true,
+        title: 'Šablona e-mailu',
+        note: `${templatePath} · vložit do Supabase → Authentication → Email Templates → Confirm signup`
+      }
+    ];
+    return `
+      <section class="card desktop-span-2 setup-card auth-setup-card">
+        <div class="card-header">
+          <div><h2>Supabase Auth nastavení</h2><p>Kontrola pro potvrzovací e-maily, aby odkazy nepadaly na localhost a šly zpět do Domácnost+.</p></div>
+          <span class="badge ${isProdHost ? 'good' : 'warn'}">${isProdHost ? 'produkce' : 'kontrola'}</span>
+        </div>
+        <div class="setup-list">
+          ${checks.map((item) => `
+            <div class="setup-item ${item.ok ? 'done' : ''}">
+              <span>${item.ok ? '✓' : '!'}</span>
+              <div><strong>${escapeHtml(item.title)}</strong><em>${escapeHtml(item.note)}</em></div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="hint-box" style="margin-top:12px;">
+          V Supabase musí být v Authentication → URL Configuration nastaveno <strong>${escapeHtml(siteUrl)}</strong> a <strong>${escapeHtml(redirectUrl)}</strong>. Aplikace při registraci používá produkční redirect natvrdo, takže už sama neposílá localhost.
+        </div>
+        <div class="inline-note" style="margin-top:12px;">Demo verze je lokální ukázka. Ostrou domácnost zakládej přes účet, aby měla vlastní cloudové ID a nemíchala se s demo daty.</div>
+      </section>
+    `;
+  }
+
+  function renderCloudAccount() {
+    const cloud = state.cloud || {};
+    const signedIn = Boolean(cloud.userId);
+    return `
+      <section class="card desktop-span-2 cloud-card">
+        <div class="card-header">
+          <div><h2>Cloud účet</h2><p>Online domácnost v Supabase. Synchronizace běží automaticky, ruční kontrolní panely jsou schované pryč.</p></div>
+          <span class="badge ${signedIn ? 'good' : ''}">${signedIn ? 'přihlášeno' : 'lokálně'}</span>
+        </div>
+        ${signedIn ? `
+          <div class="cloud-status-grid compact-cloud-stats">
+            <div class="mini-stat"><span>Účet</span><strong>${escapeHtml(cloud.email || 'nepřihlášeno')}</strong></div>
+            <div class="mini-stat"><span>Domácnost</span><strong>${escapeHtml(cloud.householdId ? shortId(cloud.householdId) : 'nevytvořena')}</strong></div>
+            <div class="mini-stat"><span>Autosync</span><strong>${escapeHtml(cloudAutosyncStatusLabel(cloud.autosyncStatus))}</strong></div>
+            <div class="mini-stat"><span>Poslední zápis</span><strong>${cloud.lastSyncAt ? escapeHtml(formatDateTime(cloud.lastSyncAt)) : 'nikdy'}</strong></div>
+          </div>
+          ${renderCloudHouseholdManager()}
+          <div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="cloud-refresh-session">Obnovit stav účtu</button><button class="danger-btn" type="button" data-action="cloud-logout">Odhlásit</button></div>
+        ` : `
+          <div class="grid two cloud-auth-grid">
+            <form data-form="cloud-login">
+              <h3>Přihlášení</h3>
+              <div class="form-grid two">
+                ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
+                ${field('Heslo', 'password', 'password', 'min. 6 znaků', true)}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Přihlásit</button></div>
+            </form>
+            <form data-form="cloud-signup">
+              <h3>Nový účet</h3>
+              <div class="form-grid two">
+                ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
+                ${field('Heslo', 'password', 'password', 'min. 6 znaků', true)}
+              </div>
+              <div class="form-actions"><button class="ghost-btn" type="submit">Založit účet</button></div>
+            </form>
+          </div>
+        `}
+      </section>
+    `;
+  }
+
+  function getPwaStatus() {
+    const standalone = window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone === true;
+    const secure = location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname);
+    const swSupported = 'serviceWorker' in navigator && location.protocol !== 'file:';
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent || '');
+    const android = /android/i.test(navigator.userAgent || '');
+    const manifestLink = document.querySelector('link[rel="manifest"]');
+    const appleLinks = Array.from(document.querySelectorAll('link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]'));
+    const iconLinks = Array.from(document.querySelectorAll('link[rel~="icon"]'));
+    return {
+      standalone,
+      secure,
+      swSupported,
+      ios,
+      android,
+      canPrompt: Boolean(deferredInstallPrompt),
+      updateAvailable: Boolean(pwaUpdateAvailable),
+      fileMode: location.protocol === 'file:',
+      manifestHref: manifestLink ? new URL(manifestLink.getAttribute('href'), location.href).href : '',
+      appleIconCount: appleLinks.length,
+      iconCount: iconLinks.length,
+      swControlled: Boolean(navigator.serviceWorker?.controller),
+      swReady: Boolean(serviceWorkerRegistration),
+      protocol: location.protocol.replace(':', ''),
+      host: location.host || 'lokální soubor'
+    };
+  }
+
+  function renderPwaDiagnostics() {
+    const diagnostics = state.pwa?.diagnostics;
+    if (!diagnostics?.checks?.length) {
+      return `<div class="hint-box">Diagnostiku spusť po otevření aplikace z Vercelu/HTTPS. Zkontroluje manifest, dostupnost ikon, Apple touch ikony, service worker a režim instalace.</div>`;
+    }
+    const okCount = diagnostics.checks.filter((item) => item.status === 'ok').length;
+    const warnCount = diagnostics.checks.filter((item) => item.status === 'warn').length;
+    const badCount = diagnostics.checks.filter((item) => item.status === 'bad').length;
+    return `
+      <div class="pwa-diagnostic-summary">
+        <span class="badge good">OK ${okCount}</span>
+        <span class="badge warn">Pozor ${warnCount}</span>
+        <span class="badge bad">Chyba ${badCount}</span>
+        <span class="badge">${escapeHtml(formatDateTime(diagnostics.checkedAt))}</span>
+      </div>
+      <div class="diagnostic-list">
+        ${diagnostics.checks.map((item) => `
+          <div class="diagnostic-row ${escapeHtml(item.status)}">
+            <span class="diagnostic-dot" aria-hidden="true"></span>
+            <div>
+              <strong>${escapeHtml(item.label)}</strong>
+              <em>${escapeHtml(item.message)}</em>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function renderPwaInstallCard() {
+    const pwa = getPwaStatus();
+    const statusLabel = pwa.standalone ? 'nainstalováno' : pwa.fileMode ? 'lokální soubor' : pwa.canPrompt ? 'lze instalovat' : 'připraveno';
+    return `
+      <section class="card desktop-span-2 pwa-card">
+        <div class="card-header">
+          <div><h2>Instalace aplikace</h2><p>Domácnost+ je instalovatelná PWA. Tahle část teď umí i diagnostiku ikon, manifestu a service workeru.</p></div>
+          <span class="badge ${pwa.standalone ? 'good' : pwa.updateAvailable ? 'warn' : ''}">${statusLabel}</span>
+        </div>
+        <div class="cloud-status-grid">
+          <div class="mini-stat"><span>Režim</span><strong>${pwa.standalone ? 'samostatná app' : 'prohlížeč'}</strong></div>
+          <div class="mini-stat"><span>Adresa</span><strong>${escapeHtml(pwa.host)}</strong></div>
+          <div class="mini-stat"><span>Service worker</span><strong>${pwa.swControlled ? 'aktivní' : pwa.swSupported ? 'podporovaný' : 'není dostupný'}</strong></div>
+          <div class="mini-stat"><span>Apple ikony</span><strong>${pwa.appleIconCount} odkazů</strong></div>
+          <div class="mini-stat"><span>Manifest</span><strong>${pwa.manifestHref ? 'nalezen' : 'chybí'}</strong></div>
+          <div class="mini-stat"><span>Verze</span><strong>${escapeHtml(APP_VERSION)}</strong></div>
+        </div>
+        ${pwa.fileMode ? `<div class="hint-box warn-box">Teď je appka otevřená jako lokální soubor ze ZIPu. Instalace, ikona a automatické aktualizace fungují správně až přes HTTPS, typicky přes Vercel.</div>` : ''}
+        <div class="hint-box">Když se na iPhonu pořád ukazuje stará nebo prázdná ikona, smaž starou ikonu z plochy, otevři web znovu v Safari a přidej ji znovu. iOS si ikonu ukládá mimo běžnou web cache.</div>
+        <div class="install-steps">
+          <div class="install-step"><strong>iPhone / iPad</strong><span>Safari → Sdílet → Přidat na plochu. iOS bere hlavně apple-touch-icon, proto je kontrolujeme zvlášť.</span></div>
+          <div class="install-step"><strong>Android / Chrome</strong><span>Menu prohlížeče → Instalovat aplikaci. Tlačítko se objeví jen když Chrome pošle instalační prompt.</span></div>
+          <div class="install-step"><strong>Update</strong><span>Nový deploy přes Vercel se kontroluje přes service worker podobně jako u RaK.</span></div>
+        </div>
+        <div class="form-actions">
+          ${pwa.canPrompt ? `<button class="primary-btn" type="button" data-action="pwa-install">Instalovat aplikaci</button>` : ''}
+          <button class="ghost-btn" type="button" data-action="pwa-run-diagnostics">Spustit diagnostiku</button>
+          <button class="ghost-btn" type="button" data-action="pwa-check-update">Zkontrolovat update</button>
+          <button class="ghost-btn" type="button" data-action="pwa-clear-cache">Vyčistit PWA cache</button>
+          ${pwa.updateAvailable ? `<button class="primary-btn" type="button" data-action="pwa-apply-update">Aktualizovat na novou verzi</button>` : ''}
+        </div>
+        ${renderPwaDiagnostics()}
+      </section>
+    `;
+  }
+
+  function field(label, name, type = 'text', placeholder = '', required = false, value = '', inputMode = '') {
+    const inputId = `field-${name}-${Math.random().toString(36).slice(2, 7)}`;
+    return `
+      <div class="field">
+        <label for="${inputId}">${escapeHtml(label)}</label>
+        <input class="input" id="${inputId}" name="${name}" type="${type}" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(value)}" ${required ? 'required' : ''} ${type === 'number' ? 'step="any" inputmode="decimal"' : inputMode ? `inputmode="${escapeHtml(inputMode)}" pattern="[0-9:., ]*"` : ''}>
+      </div>
+    `;
+  }
+
+  function fuelNumberField(label, name, placeholder = '', value = '') {
+    const inputId = `field-${name}-${Math.random().toString(36).slice(2, 7)}`;
+    return `
+      <div class="field">
+        <label for="${inputId}">${escapeHtml(label)}</label>
+        <input class="input" id="${inputId}" name="${name}" type="number" step="any" inputmode="decimal" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(value)}" data-fuel-calc>
+      </div>
+    `;
+  }
+
+  function hdoTimeField(label, name, placeholder = '06:00', required = false, value = '') {
+    const inputId = `field-${name}-${Math.random().toString(36).slice(2, 7)}`;
+    return `
+      <div class="field">
+        <label for="${inputId}">${escapeHtml(label)}</label>
+        <input class="input" id="${inputId}" name="${name}" type="text" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(value)}" ${required ? 'required' : ''} inputmode="numeric" pattern="[0-9:]*" autocomplete="off" data-hdo-time-input>
+      </div>
+    `;
+  }
+
+  function selectField(label, name, options, selected = '') {
+    const selectId = `field-${name}-${Math.random().toString(36).slice(2, 7)}`;
+    return `
+      <div class="field">
+        <label for="${selectId}">${escapeHtml(label)}</label>
+        <select class="select" id="${selectId}" name="${name}">
+          ${options.map(([value, text]) => `<option value="${escapeHtml(value)}" ${String(value) === String(selected) ? 'selected' : ''}>${escapeHtml(text)}</option>`).join('')}
+        </select>
+      </div>
+    `;
+  }
+
+  function renderEmpty(text) {
+    return `<div class="empty">${escapeHtml(text)}</div>`;
+  }
+
+  function renderEmptyCta({ icon = '✨', title = 'Zatím prázdno', text = '', nav = '', tab = '', action = '', label = '' } = {}) {
+    const button = nav
+      ? `<button class="ghost-btn" type="button" data-nav="${escapeHtml(nav)}" ${tab ? `data-target-tab="${escapeHtml(tab)}"` : ''}>${escapeHtml(label || 'Otevřít')}</button>`
+      : action
+        ? `<button class="ghost-btn" type="button" data-action="${escapeHtml(action)}">${escapeHtml(label || 'Pokračovat')}</button>`
+        : '';
+    return `
+      <div class="empty empty-cta">
+        <div class="empty-cta-icon" aria-hidden="true">${escapeHtml(icon)}</div>
+        <div>
+          <strong>${escapeHtml(title)}</strong>
+          ${text ? `<p>${escapeHtml(text)}</p>` : ''}
+        </div>
+        ${button ? `<div class="form-actions compact-actions">${button}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function isRealHouseholdStarterState() {
+    if (isDemoOnlyState()) return false;
+    const counts = [
+      state.calendar?.length || 0,
+      state.packages?.length || 0,
+      state.shopping?.length || 0,
+      state.homeTasks?.length || 0,
+      state.waste?.length || 0,
+      state.vehicles?.length || 0,
+      state.contracts?.length || 0,
+      state.finance?.length || 0,
+      state.cameras?.length || 0
+    ];
+    return counts.reduce((sum, value) => sum + value, 0) <= 2;
+  }
+
+
+  function getStarterSetupSteps() {
+    const shoppingOpen = state.shopping?.some((item) => !item.done) || false;
+    const hasFinanceBase = (state.financeAccounts?.length || 0) > 0 || (state.finance?.length || 0) > 0;
+    return [
+      {
+        id: 'profiles',
+        done: state.profiles.length >= 1,
+        nav: 'settings',
+        tab: 'household',
+        icon: '👤',
+        title: 'Doplnit profily',
+        note: state.profiles.length ? `${state.profiles.length} profilů v domácnosti.` : 'Aspoň jeden profil, později klidně celá rodina.'
+      },
+      {
+        id: 'hdo',
+        done: state.hdoWindows.length > 0,
+        nav: 'homecare',
+        tab: 'hdo',
+        icon: '💡',
+        title: 'Nastavit HDO',
+        note: state.hdoWindows.length ? `${state.hdoWindows.length} časových oken.` : 'Nízký tarif se pak ukáže na dashboardu.'
+      },
+      {
+        id: 'shopping',
+        done: shoppingOpen || (state.shopping?.length || 0) > 0,
+        nav: 'shopping',
+        tab: 'list',
+        icon: '🛒',
+        title: 'Přidat nákup',
+        note: shoppingOpen ? `${state.shopping.filter((item) => !item.done).length} položek k nákupu.` : 'První sdílený seznam hned oživí dashboard.'
+      },
+      {
+        id: 'garage',
+        done: state.vehicles.length > 0,
+        nav: 'garage',
+        tab: state.vehicles.length ? 'overview' : 'add',
+        icon: '🚗',
+        title: 'Přidat auto',
+        note: state.vehicles.length ? `${state.vehicles.length} aut v garáži.` : 'STK, pojistka, servis a později Fuelio import.'
+      },
+      {
+        id: 'contracts',
+        done: state.contracts.length > 0,
+        nav: 'contracts',
+        tab: state.contracts.length ? 'overview' : 'add',
+        icon: '📄',
+        title: 'Přidat smlouvu',
+        note: state.contracts.length ? `${state.contracts.length} smluv uložených.` : 'Pojistky, platnosti a později přílohy.'
+      },
+      {
+        id: 'finance',
+        done: hasFinanceBase,
+        nav: 'finance',
+        tab: hasFinanceBase ? 'summary' : 'accounts',
+        icon: '💰',
+        title: 'Založit finance',
+        note: hasFinanceBase ? 'Finance už mají první základ.' : 'Účty, hotovost, spoření a spravované peníze.'
+      }
+    ];
+  }
+
+
+  function getStarterSetupProgress() {
+    const steps = getStarterSetupSteps();
+    const doneSteps = steps.filter((step) => step.done);
+    const pendingSteps = steps.filter((step) => !step.done);
+    const total = Math.max(steps.length, 1);
+    const doneCount = doneSteps.length;
+    return {
+      steps,
+      orderedSteps: [...pendingSteps, ...doneSteps],
+      pendingSteps,
+      doneSteps,
+      doneCount,
+      total,
+      percent: Math.round((doneCount / total) * 100),
+      nextStep: pendingSteps[0] || steps[0]
+    };
+  }
+
+  function getStarterPhaseSummary(progress) {
+    const phaseDefs = [
+      { id: 'base', icon: '🏠', title: 'Základ', note: 'profily domácnosti', ids: ['profiles'] },
+      { id: 'daily', icon: '⚡', title: 'Denní provoz', note: 'HDO + nákupy', ids: ['hdo', 'shopping'] },
+      { id: 'records', icon: '🗂️', title: 'Evidence', note: 'auto, smlouvy, finance', ids: ['garage', 'contracts', 'finance'] }
+    ];
+    return phaseDefs.map((phase) => {
+      const steps = progress.steps.filter((step) => phase.ids.includes(step.id));
+      const doneCount = steps.filter((step) => step.done).length;
+      const firstPending = steps.find((step) => !step.done) || steps[0];
+      const total = Math.max(steps.length, 1);
+      return {
+        ...phase,
+        doneCount,
+        total,
+        percent: Math.round((doneCount / total) * 100),
+        firstPending,
+        done: doneCount >= total
+      };
+    });
+  }
+
+  function renderStarterPhaseStrip(progress) {
+    const phases = getStarterPhaseSummary(progress);
+    return `
+      <div class="starter-phase-grid" aria-label="Fáze prvního nastavení domácnosti">
+        ${phases.map((phase) => {
+          const isNext = !phase.done && phase.firstPending?.id === progress.nextStep?.id;
+          return `
+            <button class="starter-phase-card ${phase.done ? 'done' : ''} ${isNext ? 'is-next' : ''}" type="button" data-nav="${escapeHtml(phase.firstPending?.nav || 'settings')}" data-target-tab="${escapeHtml(phase.firstPending?.tab || 'household')}">
+              <span class="starter-phase-icon" aria-hidden="true">${escapeHtml(phase.done ? '✓' : phase.icon)}</span>
+              <span class="starter-phase-copy"><strong>${escapeHtml(phase.title)}</strong><em>${escapeHtml(isNext ? `Další: ${phase.firstPending?.title || phase.note}` : phase.note)}</em></span>
+              <span class="starter-phase-count">${isNext ? 'další' : `${phase.doneCount}/${phase.total}`}</span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  function renderStarterPriorityStrip(progress) {
+    const pending = progress.pendingSteps.slice(0, 3);
+    if (!pending.length) {
+      return '<div class="starter-priority-strip done"><span>✓ Základ domácnosti je připravený.</span></div>';
+    }
+    return `
+      <div class="starter-priority-strip" aria-label="Nejbližší doporučené kroky">
+        ${pending.map((step, index) => `
+          <button class="starter-priority-chip ${index === 0 ? 'is-next' : ''}" type="button" data-nav="${escapeHtml(step.nav)}" data-target-tab="${escapeHtml(step.tab)}">
+            <strong>${index + 1}</strong><span><b>${escapeHtml(step.title)}</b><em>${escapeHtml(index === 0 ? `Teď: ${step.note}` : step.note)}</em></span>
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function renderStarterSetupStep(step, nextStepId = '') {
+    const isNext = !step.done && step.id === nextStepId;
+    return `
+      <button class="starter-step-card ${step.done ? 'done' : ''} ${isNext ? 'is-next' : ''}" type="button" data-nav="${escapeHtml(step.nav)}" data-target-tab="${escapeHtml(step.tab)}">
+        <span class="starter-step-icon" aria-hidden="true">${escapeHtml(step.done ? '✓' : step.icon)}</span>
+        <span class="starter-step-copy"><strong>${escapeHtml(step.title)}</strong><em>${escapeHtml(step.note)}</em></span>
+        <span class="starter-step-status">${step.done ? 'hotovo' : isNext ? 'další' : 'nastavit'}</span>
+      </button>
+    `;
+  }
+
+  function renderStarterStateCard() {
+    if (!isRealHouseholdStarterState()) return '';
+    const signedIn = Boolean(state.cloud?.userId);
+    const householdReady = Boolean(state.cloud?.householdId);
+    const progress = getStarterSetupProgress();
+    const nextStep = progress.nextStep || progress.steps[0];
+    return `
+      <section class="card desktop-span-2 starter-state-card guided-starter-card">
+        <div class="card-header">
+          <div><h2>Rychlé nastavení domácnosti</h2><p>Ostrá domácnost je zatím skoro prázdná. Tady jsou první kroky, které ji hned udělají použitelnou.</p></div>
+          <span class="badge ${householdReady ? 'good' : signedIn ? 'warn' : ''}">${progress.doneCount}/${progress.total}</span>
+        </div>
+        <div class="starter-progress-head">
+          <div>
+            <strong>${progress.percent}% připraveno</strong>
+            <span>Další krok: ${escapeHtml(nextStep.title)}</span>
+          </div>
+          <button class="ghost-btn" type="button" data-nav="${escapeHtml(nextStep.nav)}" data-target-tab="${escapeHtml(nextStep.tab)}">Pokračovat</button>
+        </div>
+        <div class="starter-progress"><span style="width:${progress.percent}%"></span></div>
+        ${renderStarterPhaseStrip(progress)}
+        ${renderStarterPriorityStrip(progress)}
+        <div class="starter-step-grid">
+          ${progress.orderedSteps.map((step) => renderStarterSetupStep(step, progress.nextStep?.id)).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  function clockText(value) {
+    const date = toSafeDate(value, new Date());
+    if (!date || !Number.isFinite(date.getTime())) return '—:—';
+    return new Intl.DateTimeFormat('cs-CZ', { hour: '2-digit', minute: '2-digit' }).format(date);
+  }
+
+  function shortDateText(value) {
+    const date = toSafeDate(value, new Date());
+    if (!date || !Number.isFinite(date.getTime())) return '—';
+    return new Intl.DateTimeFormat('cs-CZ', { weekday: 'short', day: 'numeric', month: 'numeric' }).format(date);
+  }
+
+  function hdoWindowMatchesDate(item, date) {
+    const safeDate = toSafeDate(date, new Date());
+    if (!safeDate || !Number.isFinite(safeDate.getTime())) return false;
+    const days = sanitizeHdoDays(item?.days);
+    if (days.includes(safeDate.getDay())) return true;
+    const isHoliday = isCzechPublicHolidayDate(safeDate);
+    const hasWeekend = days.includes(0) || days.includes(6);
+    return isHoliday && hasWeekend;
+  }
+
+  function getHdoStatus(date) {
+    const safeDate = toSafeDate(date, new Date());
+    if (!safeDate || !Number.isFinite(safeDate.getTime())) {
+      return { active: false, label: 'není nastaveno', message: 'HDO se teď nepovedlo spočítat. Zkontroluj časová okna.' };
+    }
+    const day = safeDate.getDay();
+    const minutesNow = safeDate.getHours() * 60 + safeDate.getMinutes();
+    const enabled = getSafeHdoWindows().filter((item) => item.enabled && hdoWindowMatchesDate(item, safeDate) && timeToMinutes(item.start) !== null && timeToMinutes(item.end) !== null);
+    const active = enabled.find((item) => isTimeInWindow(minutesNow, item.start, item.end));
+    if (active) {
+      return {
+        active: true,
+        label: active.label,
+        message: `Právě běží ${active.label} (${hdoWindowTimeLabel(active)}).`
+      };
+    }
+    const next = findNextHdoWindow(safeDate);
+    if (!next) return { active: false, label: 'není nastaveno', message: 'Není nastavené žádné aktivní HDO okno.' };
+    return {
+      active: false,
+      label: next.item.label,
+      message: `Další nízký tarif: ${next.item.label} za ${humanDuration(next.diffMinutes)} (${hdoWindowTimeLabel(next.item)}).`
+    };
+  }
+
+  function isTimeInWindow(minutesNow, start, end) {
+    const startMinutes = timeToMinutes(start);
+    const endMinutes = timeToMinutes(end);
+    if (startMinutes === null || endMinutes === null) return false;
+    if (startMinutes === endMinutes) return true;
+    if (startMinutes < endMinutes) return minutesNow >= startMinutes && minutesNow < endMinutes;
+    return minutesNow >= startMinutes || minutesNow < endMinutes;
+  }
+
+  function timeToMinutes(value) {
+    const match = String(value || '').match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) return null;
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours > 23 || minutes > 59) return null;
+    return hours * 60 + minutes;
+  }
+
+  function sanitizeHdoDays(days) {
+    if (!Array.isArray(days)) return [];
+    return [...new Set(days.map((day) => Number(day)).filter((day) => Number.isInteger(day) && day >= 0 && day <= 6))].sort((a, b) => a - b);
+  }
+
+  function normalizeHdoWindowView(item) {
+    if (!item || typeof item !== 'object') return null;
+    const start = normalizeHdoTimeInput(item.start || item.start_time || item.from || '');
+    const end = normalizeHdoTimeInput(item.end || item.end_time || item.to || '');
+    return {
+      ...item,
+      label: normalizeText(item.label || item.title || 'HDO okno') || 'HDO okno',
+      start,
+      end,
+      days: sanitizeHdoDays(item.days),
+      enabled: item.enabled !== false && item.is_enabled !== false
+    };
+  }
+
+  function getSafeHdoWindows() {
+    return (Array.isArray(state.hdoWindows) ? state.hdoWindows : [])
+      .map(normalizeHdoWindowView)
+      .filter(Boolean);
+  }
+
+  function hdoWindowSortWeight(item) {
+    const days = sanitizeHdoDays(item?.days);
+    const hasWorkday = days.some((day) => day >= 1 && day <= 5);
+    const hasWeekend = days.some((day) => day === 0 || day === 6);
+    if (hasWorkday && !hasWeekend) return 0;
+    if (hasWorkday && hasWeekend) return 1;
+    if (hasWeekend) return 2;
+    return 3;
+  }
+
+  function sortHdoWindowsForOverview(rows = []) {
+    return [...rows].sort((a, b) => {
+      const groupDiff = hdoWindowSortWeight(a) - hdoWindowSortWeight(b);
+      if (groupDiff) return groupDiff;
+      const timeDiff = (timeToMinutes(a?.start) ?? 9999) - (timeToMinutes(b?.start) ?? 9999);
+      if (timeDiff) return timeDiff;
+      return String(a?.label || '').localeCompare(String(b?.label || ''), 'cs');
+    });
+  }
+
+  function hdoWindowTimeLabel(item) {
+    const start = item?.start || '—';
+    const end = item?.end || '—';
+    return `${start}–${end}`;
+  }
+
+  function findNextHdoWindow(date) {
+    const base = toSafeDate(date, new Date());
+    if (!base || !Number.isFinite(base.getTime())) return null;
+    const windows = getSafeHdoWindows().filter((item) => item.enabled && item.days.length);
+    if (!windows.length) return null;
+    const candidates = [];
+    windows.forEach((item) => {
+      const startMinutes = timeToMinutes(item.start);
+      if (startMinutes === null) return;
+      for (let offset = 0; offset <= 7; offset += 1) {
+        const candidate = new Date(base);
+        candidate.setDate(base.getDate() + offset);
+        if (!hdoWindowMatchesDate(item, candidate)) continue;
+        candidate.setHours(Math.floor(startMinutes / 60), startMinutes % 60, 0, 0);
+        const diffMinutes = Math.round((candidate.getTime() - base.getTime()) / 60000);
+        if (Number.isFinite(diffMinutes) && diffMinutes > 0) candidates.push({ item, diffMinutes });
+      }
+    });
+    return candidates.sort((a, b) => a.diffMinutes - b.diffMinutes)[0] || null;
+  }
+
+  function humanDuration(minutes) {
+    const safeMinutes = Number(minutes);
+    if (!Number.isFinite(safeMinutes) || safeMinutes < 0) return '—';
+    if (safeMinutes < 60) return `${Math.round(safeMinutes)} min`;
+    const hours = Math.floor(safeMinutes / 60);
+    const rest = Math.round(safeMinutes % 60);
+    if (hours < 24) return rest ? `${hours} h ${rest} min` : `${hours} h`;
+    const days = Math.floor(hours / 24);
+    const leftHours = hours % 24;
+    return leftHours ? `${days} d ${leftHours} h` : `${days} d`;
+  }
+
+  function daysLabel(days) {
+    const safeDays = sanitizeHdoDays(days);
+    if (!safeDays.length) return 'bez dnů';
+    const normalized = safeDays.join(',');
+    if (normalized === '0,1,2,3,4,5,6') return 'každý den';
+    if (normalized === '1,2,3,4,5') return 'po–pá';
+    if (normalized === '0,6') return 'víkend + svátky';
+    const names = ['ne', 'po', 'út', 'st', 'čt', 'pá', 'so'];
+    const base = safeDays.map((day) => names[day] || '?').join(', ');
+    return safeDays.includes(0) || safeDays.includes(6) ? `${base} + svátky` : base;
+  }
+
+  function frequencyLabel(value) {
+    return ({ monthly: 'měsíčně', yearly: 'ročně', once: 'jednorázově', other: 'jiné' }[value] || 'jiné');
+  }
+
+  function openFilesDb() {
+    return new Promise((resolve, reject) => {
+      if (!('indexedDB' in window)) {
+        reject(new Error('IndexedDB není dostupné'));
+        return;
+      }
+      const request = indexedDB.open(FILE_DB_NAME, 2);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(FILE_STORE_CONTRACTS)) {
+          db.createObjectStore(FILE_STORE_CONTRACTS, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(FILE_STORE_WARRANTIES)) {
+          db.createObjectStore(FILE_STORE_WARRANTIES, { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error('IndexedDB chyba'));
+    });
+  }
+
+  async function withFileStore(mode, callback) {
+    const db = await openFilesDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(FILE_STORE_CONTRACTS, mode);
+      const store = tx.objectStore(FILE_STORE_CONTRACTS);
+      let result;
+      try {
+        result = callback(store);
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      tx.oncomplete = () => {
+        db.close();
+        resolve(result);
+      };
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error || new Error('IndexedDB transakce selhala'));
+      };
+    });
+  }
+
+  async function putStoredContractFile(record) {
+    await withFileStore('readwrite', (store) => store.put(record));
+  }
+
+  async function getStoredContractFile(id) {
+    const db = await openFilesDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(FILE_STORE_CONTRACTS, 'readonly');
+      const request = tx.objectStore(FILE_STORE_CONTRACTS).get(id);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error || new Error('Soubor nejde načíst'));
+      tx.oncomplete = () => db.close();
+      tx.onerror = () => db.close();
+    });
+  }
+
+  async function deleteStoredContractFile(id) {
+    await withFileStore('readwrite', (store) => store.delete(id));
+  }
+
+  async function withNamedFileStore(storeName, mode, callback) {
+    const db = await openFilesDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, mode);
+      const store = tx.objectStore(storeName);
+      let result;
+      try {
+        result = callback(store);
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      tx.oncomplete = () => {
+        db.close();
+        resolve(result);
+      };
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error || new Error('IndexedDB transakce selhala'));
+      };
+    });
+  }
+
+  async function putStoredWarrantyFile(record) {
+    await withNamedFileStore(FILE_STORE_WARRANTIES, 'readwrite', (store) => store.put(record));
+  }
+
+  async function getStoredWarrantyFile(id) {
+    const db = await openFilesDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(FILE_STORE_WARRANTIES, 'readonly');
+      const request = tx.objectStore(FILE_STORE_WARRANTIES).get(id);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error || new Error('Soubor nejde načíst'));
+      tx.oncomplete = () => db.close();
+      tx.onerror = () => db.close();
+    });
+  }
+
+  async function deleteStoredWarrantyFile(id) {
+    await withNamedFileStore(FILE_STORE_WARRANTIES, 'readwrite', (store) => store.delete(id));
+  }
+
+  function sanitizeStorageFileName(name) {
+    const fallback = 'priloha';
+    const raw = String(name || fallback).trim() || fallback;
+    const parts = raw.split('.');
+    const ext = parts.length > 1 ? `.${parts.pop().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8)}` : '';
+    const base = parts.join('.') || fallback;
+    return `${normalizeKey(base).replace(/\s+/g, '-').slice(0, 80) || fallback}${ext}`;
+  }
+
+  async function ensureCloudContract(contract) {
+    if (!contract) return null;
+    if (contract.cloudId) return contract.cloudId;
+    if (!state.cloud?.householdId) return null;
+    const cloudContract = await cloudAddContract(contract);
+    if (!cloudContract?.id) return null;
+    contract.cloudId = cloudContract.id;
+    touchState();
+    saveState();
+    return contract.cloudId;
+  }
+
+  async function cloudUploadContractFile(contract, file) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const cloudContractId = await ensureCloudContract(contract);
+    if (!cloudContractId) return null;
+    const storagePath = `${state.cloud.householdId}/${cloudContractId}/${Date.now()}-${uid()}-${sanitizeStorageFileName(file.name)}`;
+    const { error: uploadError } = await client.storage
+      .from('contract-files')
+      .upload(storagePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type || 'application/octet-stream'
+      });
+    if (uploadError) {
+      showToast(uploadError.message || 'Přílohu se nepovedlo nahrát');
+      return null;
+    }
+
+    const { data, error } = await client
+      .from('contract_files')
+      .insert({
+        household_id: state.cloud.householdId,
+        contract_id: cloudContractId,
+        bucket_id: 'contract-files',
+        storage_path: storagePath,
+        file_name: file.name || 'příloha',
+        mime_type: file.type || null,
+        file_size: file.size || 0,
+        source: file.type && file.type.startsWith('image/') ? 'camera' : 'upload',
+        created_by: user.id
+      })
+      .select('id,household_id,contract_id,storage_path,file_name,mime_type,file_size,source,created_at')
+      .single();
+    if (error) {
+      await client.storage.from('contract-files').remove([storagePath]).catch?.(() => {});
+      showToast(error.message || 'Metadata přílohy se nepovedlo uložit');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return mapCloudContractFile(data, contract.id);
+  }
+
+  function mapCloudContractFile(item, localContractId = null) {
+    const contract = localContractId
+      ? state.contracts.find((entry) => entry.id === localContractId)
+      : state.contracts.find((entry) => entry.cloudId === item.contract_id);
+    if (!contract) return null;
+    const existing = state.contractFiles.find((file) => file.cloudId === item.id);
+    return {
+      id: existing?.id || `cloud-file-${item.id}`,
+      cloudId: item.id,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      contractId: contract.id,
+      cloudContractId: item.contract_id,
+      storagePath: item.storage_path,
+      bucketId: 'contract-files',
+      fileName: item.file_name || 'příloha',
+      fileType: item.mime_type || 'soubor',
+      size: item.file_size || 0,
+      source: item.source || 'upload',
+      createdAt: item.created_at || new Date().toISOString()
+    };
+  }
+
+  function isAllowedContractFile(file) {
+    if (!file) return false;
+    const name = String(file.name || '').toLowerCase();
+    const type = String(file.type || '').toLowerCase();
+    if (CONTRACT_FILE_ALLOWED_MIME.has(type)) return true;
+    return ['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'].some((ext) => name.endsWith(ext));
+  }
+
+  function contractFileValidationMessage(file) {
+    if (!file) return 'Soubor není dostupný';
+    if (file.size > CONTRACT_FILE_MAX_BYTES) return `${file.name || 'Soubor'} je větší než 15 MB`;
+    if (!isAllowedContractFile(file)) return `${file.name || 'Soubor'} není podporovaný typ. Použij PDF nebo fotku.`;
+    return '';
+  }
+
+  async function cloudLoadContractFiles(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client) { if (showMessage) showToast('Supabase knihovna není načtená'); return null; }
+    const user = await refreshCloudSession(false);
+    if (!user || !state.cloud?.householdId) return showToast('Nejdřív napoj domácnost na cloud');
+    const { data, error } = await client
+      .from('contract_files')
+      .select('id,household_id,contract_id,storage_path,file_name,mime_type,file_size,source,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .order('created_at', { ascending: false });
+    if (error) return showToast(error.message || 'Přílohy se nepovedlo načíst');
+    const cloudFiles = (data || []).map((item) => mapCloudContractFile(item)).filter(Boolean);
+    const localOnly = state.contractFiles.filter((file) => !file.cloudId);
+    state.contractFiles = [...localOnly, ...cloudFiles];
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast('Cloud přílohy načtené');
+  }
+
+  async function addContractFiles(form) {
+    const contractId = form.dataset.contractId;
+    const contract = state.contracts.find((item) => item.id === contractId);
+    const input = form.querySelector('input[type="file"]');
+    const files = [...(input?.files || [])];
+    if (!contract || !files.length) {
+      showToast('Vyber soubor');
+      return;
+    }
+    const useCloudStorage = cloudReady();
+    let added = 0;
+    let failed = 0;
+    for (const file of files) {
+      const validationMessage = contractFileValidationMessage(file);
+      if (validationMessage) {
+        failed += 1;
+        showToast(validationMessage);
+        continue;
+      }
+      if (useCloudStorage) {
+        const cloudFile = await cloudUploadContractFile(contract, file);
+        if (cloudFile) {
+          state.contractFiles = state.contractFiles.filter((entry) => entry.cloudId !== cloudFile.cloudId);
+          state.contractFiles.push(cloudFile);
+          added += 1;
+        } else {
+          failed += 1;
+        }
+        continue;
+      }
+      if (!('indexedDB' in window)) {
+        failed += 1;
+        showToast('Prohlížeč nepodporuje IndexedDB');
+        continue;
+      }
+      const id = `file-${uid()}`;
+      const createdAt = new Date().toISOString();
+      const meta = {
+        id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        contractId,
+        fileName: file.name || 'příloha',
+        fileType: file.type || 'soubor',
+        size: file.size || 0,
+        createdAt
+      };
+      await putStoredContractFile({ ...meta, blob: file });
+      state.contractFiles.push(meta);
+      added += 1;
+    }
+    activeContractId = contractId;
+    touchState();
+    saveState();
+    if (input) input.value = '';
+    render();
+    if (added && useCloudStorage) showToast(failed ? `Do cloudu nahráno ${added}, neprošlo ${failed}` : (added === 1 ? 'Příloha nahraná do cloudu' : `Do cloudu nahráno příloh: ${added}`));
+    else if (added) showToast(added === 1 ? 'Příloha uložená lokálně' : `Lokálně přidáno příloh: ${added}`);
+    else showToast('Přílohu se nepovedlo přidat');
+  }
+
+  async function cloudSyncLocalContractFiles(showMessage = true) {
+    if (!cloudReady()) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return 0;
+    }
+    const localFiles = state.contractFiles.filter((file) => !file.cloudId);
+    if (!localFiles.length) {
+      if (showMessage) showToast('Žádné lokální přílohy k odeslání');
+      return 0;
+    }
+    let uploaded = 0;
+    let missing = 0;
+    let failed = 0;
+    for (const meta of localFiles) {
+      const contract = state.contracts.find((item) => item.id === meta.contractId);
+      if (!contract) { failed += 1; continue; }
+      let stored = null;
+      try {
+        stored = await getStoredContractFile(meta.id);
+      } catch {
+        stored = null;
+      }
+      const blob = stored?.blob;
+      if (!blob) { missing += 1; continue; }
+      const fileName = meta.fileName || stored.fileName || 'priloha';
+      const fileType = meta.fileType || stored.fileType || blob.type || 'application/octet-stream';
+      const uploadFile = (typeof File !== 'undefined' && blob instanceof File) ? blob : new File([blob], fileName, { type: fileType });
+      const cloudFile = await cloudUploadContractFile(contract, uploadFile);
+      if (!cloudFile?.cloudId) { failed += 1; continue; }
+      state.contractFiles = state.contractFiles.filter((file) => file.id !== meta.id && file.cloudId !== cloudFile.cloudId);
+      state.contractFiles.push({ ...cloudFile, id: meta.id, createdAt: meta.createdAt || cloudFile.createdAt });
+      deleteStoredContractFile(meta.id).catch(() => {});
+      uploaded += 1;
+    }
+    if (uploaded) state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) {
+      const details = [uploaded ? `${uploaded} nahráno` : '', missing ? `${missing} nemá soubor v tomto prohlížeči` : '', failed ? `${failed} chyba` : ''].filter(Boolean).join(' · ');
+      showToast(details || 'Přílohy se nepodařilo dohnat');
+    }
+    return uploaded;
+  }
+
+  async function openCloudContractFile(meta, download = false) {
+    const client = getSupabaseClient();
+    if (!client || !meta?.storagePath) return showToast('Cloud příloha není dostupná');
+    const { data, error } = await client.storage
+      .from('contract-files')
+      .createSignedUrl(meta.storagePath, 300, download ? { download: meta.fileName || 'priloha' } : undefined);
+    if (error || !data?.signedUrl) {
+      showToast(error?.message || 'Dočasný odkaz nejde vytvořit');
+      return;
+    }
+    if (download) {
+      const link = document.createElement('a');
+      link.href = data.signedUrl;
+      link.download = meta.fileName || 'priloha';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      return;
+    }
+    showFilePreviewModal({ url: data.signedUrl, name: meta.fileName || 'Příloha smlouvy', type: meta.fileType || meta.mimeType || '', source: 'Smlouvy' });
+  }
+
+  async function openOrDownloadContractFile(id, openInNewTab = false) {
+    const meta = state.contractFiles.find((file) => file.id === id);
+    if (meta?.cloudId) {
+      await openCloudContractFile(meta, !openInNewTab);
+      return;
+    }
+    try {
+      const record = await getStoredContractFile(id);
+      if (!record?.blob) {
+        showToast('Soubor není v tomto prohlížeči dostupný');
+        return;
+      }
+      const url = URL.createObjectURL(record.blob);
+      if (openInNewTab) {
+        showFilePreviewModal({ url, objectUrl: url, name: meta?.fileName || record.fileName || 'Příloha smlouvy', type: meta?.fileType || record.fileType || record.blob.type || '', source: 'Smlouvy' });
+      } else {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = meta?.fileName || record.fileName || 'priloha';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+    } catch {
+      showToast('Soubor nejde otevřít');
+    }
+  }
+
+  async function deleteCloudContractFile(meta) {
+    const client = getSupabaseClient();
+    if (!client || !meta?.cloudId || !meta?.storagePath || !state.cloud?.householdId) return false;
+    const { error: dbError } = await client
+      .from('contract_files')
+      .delete()
+      .eq('id', meta.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (dbError) {
+      showToast(dbError.message || 'Metadata přílohy se nepovedlo smazat');
+      return false;
+    }
+    const { error: storageError } = await client.storage.from('contract-files').remove([meta.storagePath]);
+    if (storageError) showToast('Metadata smazaná, soubor ve Storage může zůstat k dočištění');
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function deleteContractFile(id) {
+    const meta = state.contractFiles.find((file) => file.id === id);
+    const ok = window.confirm(meta?.cloudId ? 'Smazat přílohu smlouvy z cloudu?' : 'Smazat přílohu smlouvy z tohoto zařízení?');
+    if (!ok) return;
+    if (meta?.cloudId) {
+      const deleted = await deleteCloudContractFile(meta);
+      if (!deleted) return;
+    } else {
+      deleteStoredContractFile(id).catch(() => {});
+    }
+    state.contractFiles = state.contractFiles.filter((file) => file.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Příloha smazána');
+  }
+
+
+  async function ensureCloudWarrantySnapshot() {
+    if (!cloudReady()) return false;
+    return cloudSaveHouseholdUiSettings(false);
+  }
+
+  function isAllowedWarrantyFile(file) {
+    if (!file) return false;
+    const name = String(file.name || '').toLowerCase();
+    const type = String(file.type || '').toLowerCase();
+    if (WARRANTY_FILE_ALLOWED_MIME.has(type)) return true;
+    return ['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'].some((ext) => name.endsWith(ext));
+  }
+
+  function warrantyFileValidationMessage(file) {
+    if (!file) return 'Soubor není dostupný';
+    if (file.size > WARRANTY_FILE_MAX_BYTES) return `${file.name || 'Soubor'} je větší než 15 MB`;
+    if (!isAllowedWarrantyFile(file)) return `${file.name || 'Soubor'} není podporovaný typ. Použij PDF nebo fotku.`;
+    return '';
+  }
+
+  function shouldCompressWarrantyImage(file) {
+    if (!file) return false;
+    const type = String(file.type || '').toLowerCase();
+    const name = String(file.name || '').toLowerCase();
+    if (!type.startsWith('image/')) return false;
+    if (type.includes('heic') || type.includes('heif') || name.endsWith('.heic') || name.endsWith('.heif')) return false;
+    return ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(type) || /\.(jpe?g|png|webp)$/i.test(name);
+  }
+
+  function warrantyCompressedFileName(name = 'uctenka') {
+    const clean = String(name || 'uctenka').replace(/\.[^.]+$/, '').replace(/[^a-z0-9-_]+/gi, '-').replace(/^-+|-+$/g, '') || 'uctenka';
+    return `${clean}-zmenseno.jpg`;
+  }
+
+  function loadWarrantyImage(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(image);
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Obrázek se nepovedlo načíst'));
+      };
+      image.src = url;
+    });
+  }
+
+  async function compressWarrantyImageFile(file) {
+    if (!shouldCompressWarrantyImage(file)) return file;
+    try {
+      const image = await loadWarrantyImage(file);
+      const width = image.naturalWidth || image.width || 0;
+      const height = image.naturalHeight || image.height || 0;
+      if (!width || !height) return file;
+      const scale = Math.min(1, WARRANTY_IMAGE_MAX_DIMENSION / Math.max(width, height));
+      const targetWidth = Math.max(1, Math.round(width * scale));
+      const targetHeight = Math.max(1, Math.round(height * scale));
+      if (scale >= 1 && file.size <= 900 * 1024) return file;
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const context = canvas.getContext('2d', { alpha: false });
+      if (!context) return file;
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, targetWidth, targetHeight);
+      context.drawImage(image, 0, 0, targetWidth, targetHeight);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', WARRANTY_IMAGE_JPEG_QUALITY));
+      if (!blob || !blob.size || blob.size >= file.size) return file;
+      return new File([blob], warrantyCompressedFileName(file.name), { type: 'image/jpeg', lastModified: file.lastModified || Date.now() });
+    } catch (error) {
+      console.warn('Warranty image compression failed', error);
+      return file;
+    }
+  }
+
+  async function prepareWarrantyFileForSave(file) {
+    return compressWarrantyImageFile(file);
+  }
+
+  async function cloudUploadWarrantyFile(warranty, file) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId || !warranty?.id) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    await ensureCloudWarrantySnapshot();
+    const storagePath = `${state.cloud.householdId}/${warranty.id}/${Date.now()}-${uid()}-${sanitizeStorageFileName(file.name)}`;
+    const { error: uploadError } = await client.storage
+      .from('warranty-files')
+      .upload(storagePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type || 'application/octet-stream'
+      });
+    if (uploadError) {
+      showToast(uploadError.message || 'Přílohu záruky se nepovedlo nahrát');
+      return null;
+    }
+    const { data, error } = await client
+      .from('household_warranty_files')
+      .insert({
+        household_id: state.cloud.householdId,
+        warranty_key: warranty.id,
+        bucket_id: 'warranty-files',
+        storage_path: storagePath,
+        file_name: file.name || 'příloha',
+        mime_type: file.type || null,
+        file_size: file.size || 0,
+        source: file.type && file.type.startsWith('image/') ? 'camera' : 'upload',
+        created_by: user.id
+      })
+      .select('id,household_id,warranty_key,storage_path,file_name,mime_type,file_size,source,created_at')
+      .single();
+    if (error) {
+      await client.storage.from('warranty-files').remove([storagePath]).catch?.(() => {});
+      showToast(error.message || 'Metadata přílohy záruky se nepovedlo uložit');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return mapCloudWarrantyFile(data);
+  }
+
+  function mapCloudWarrantyFile(item) {
+    const warranty = state.warranties.find((entry) => entry.id === item.warranty_key);
+    if (!warranty) return null;
+    const existing = state.warrantyFiles.find((file) => file.cloudId === item.id);
+    return {
+      id: existing?.id || `warranty-file-cloud-${item.id}`,
+      cloudId: item.id,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      warrantyId: warranty.id,
+      storagePath: item.storage_path,
+      bucketId: 'warranty-files',
+      fileName: item.file_name || 'příloha',
+      fileType: item.mime_type || 'soubor',
+      size: item.file_size || 0,
+      source: item.source || 'upload',
+      createdAt: item.created_at || new Date().toISOString()
+    };
+  }
+
+  async function cloudLoadWarrantyFiles(showMessage = false) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return false;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const { data, error } = await client
+      .from('household_warranty_files')
+      .select('id,household_id,warranty_key,storage_path,file_name,mime_type,file_size,source,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .order('created_at', { ascending: false });
+    if (error) {
+      if (showMessage) showToast(error.message || 'Přílohy záruk se nepovedlo načíst');
+      return false;
+    }
+    const cloudFiles = (data || []).map((item) => mapCloudWarrantyFile(item)).filter(Boolean);
+    const localOnly = (state.warrantyFiles || []).filter((file) => !file.cloudId);
+    state.warrantyFiles = [...localOnly, ...cloudFiles];
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    if (showMessage) {
+      render();
+      showToast('Cloud přílohy záruk načtené');
+    }
+    return true;
+  }
+
+  async function addWarrantyFilesToWarranty(warranty, files = []) {
+    if (!warranty || !files.length) return { added: 0, failed: 0 };
+    const useCloudStorage = cloudReady();
+    let added = 0;
+    let failed = 0;
+    for (const originalFile of files) {
+      const file = await prepareWarrantyFileForSave(originalFile);
+      const validationMessage = warrantyFileValidationMessage(file);
+      if (validationMessage) {
+        failed += 1;
+        showToast(validationMessage);
+        continue;
+      }
+      if (useCloudStorage) {
+        const cloudFile = await cloudUploadWarrantyFile(warranty, file);
+        if (cloudFile) {
+          state.warrantyFiles = state.warrantyFiles.filter((entry) => entry.cloudId !== cloudFile.cloudId);
+          state.warrantyFiles.push(cloudFile);
+          added += 1;
+        } else failed += 1;
+        continue;
+      }
+      if (!('indexedDB' in window)) {
+        failed += 1;
+        showToast('Prohlížeč nepodporuje IndexedDB');
+        continue;
+      }
+      const id = `warranty-file-${uid()}`;
+      const createdAt = new Date().toISOString();
+      const meta = {
+        id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        warrantyId: warranty.id,
+        fileName: file.name || 'příloha',
+        fileType: file.type || 'soubor',
+        size: file.size || 0,
+        createdAt
+      };
+      await putStoredWarrantyFile({ ...meta, blob: file });
+      state.warrantyFiles.push(meta);
+      added += 1;
+    }
+    return { added, failed };
+  }
+
+  async function addWarrantyFiles(form) {
+    const warrantyId = form.dataset.warrantyId;
+    const warranty = state.warranties.find((item) => item.id === warrantyId);
+    const input = form.querySelector('input[type="file"]');
+    const files = [...(input?.files || [])];
+    if (!warranty || !files.length) return showToast('Vyber soubor');
+    const { added, failed } = await addWarrantyFilesToWarranty(warranty, files);
+    touchState();
+    saveState();
+    if (input) input.value = '';
+    render();
+    if (added && cloudReady()) showToast(failed ? `Do cloudu nahráno ${added}, neprošlo ${failed}` : 'Příloha záruky nahraná do cloudu');
+    else if (added) showToast(added === 1 ? 'Příloha záruky uložená lokálně' : `Lokálně přidáno příloh: ${added}`);
+    else showToast('Přílohu se nepovedlo přidat');
+  }
+
+  async function cloudSyncLocalWarrantyFiles(showMessage = true) {
+    if (!cloudReady()) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return 0;
+    }
+    const localFiles = (state.warrantyFiles || []).filter((file) => !file.cloudId);
+    if (!localFiles.length) return 0;
+    let uploaded = 0;
+    let missing = 0;
+    let failed = 0;
+    for (const meta of localFiles) {
+      const warranty = state.warranties.find((item) => item.id === meta.warrantyId);
+      if (!warranty) { failed += 1; continue; }
+      let stored = null;
+      try { stored = await getStoredWarrantyFile(meta.id); } catch { stored = null; }
+      const blob = stored?.blob;
+      if (!blob) { missing += 1; continue; }
+      const fileName = meta.fileName || stored.fileName || 'priloha';
+      const fileType = meta.fileType || stored.fileType || blob.type || 'application/octet-stream';
+      const uploadFile = (typeof File !== 'undefined' && blob instanceof File) ? blob : new File([blob], fileName, { type: fileType });
+      const cloudFile = await cloudUploadWarrantyFile(warranty, uploadFile);
+      if (!cloudFile?.cloudId) { failed += 1; continue; }
+      state.warrantyFiles = state.warrantyFiles.filter((file) => file.id !== meta.id && file.cloudId !== cloudFile.cloudId);
+      state.warrantyFiles.push({ ...cloudFile, id: meta.id, createdAt: meta.createdAt || cloudFile.createdAt });
+      deleteStoredWarrantyFile(meta.id).catch(() => {});
+      uploaded += 1;
+    }
+    if (uploaded) state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    if (showMessage) {
+      render();
+      const details = [uploaded ? `${uploaded} nahráno` : '', missing ? `${missing} nemá soubor v tomto prohlížeči` : '', failed ? `${failed} chyba` : ''].filter(Boolean).join(' · ');
+      showToast(details || 'Přílohy záruk se nepodařilo dohnat');
+    }
+    return uploaded;
+  }
+
+  async function openCloudWarrantyFile(meta, download = false) {
+    const client = getSupabaseClient();
+    if (!client || !meta?.storagePath) return showToast('Cloud příloha není dostupná');
+    const { data, error } = await client.storage
+      .from('warranty-files')
+      .createSignedUrl(meta.storagePath, 300, download ? { download: meta.fileName || 'priloha' } : undefined);
+    if (error || !data?.signedUrl) return showToast(error?.message || 'Dočasný odkaz nejde vytvořit');
+    if (download) {
+      const link = document.createElement('a');
+      link.href = data.signedUrl;
+      link.download = meta.fileName || 'priloha';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      return;
+    }
+    showFilePreviewModal({ url: data.signedUrl, name: meta.fileName || 'Příloha záruky', type: meta.fileType || meta.mimeType || '', source: 'Záruky' });
+  }
+
+  async function openWarrantyFile(id) {
+    const meta = state.warrantyFiles.find((file) => file.id === id);
+    if (meta?.cloudId) return openCloudWarrantyFile(meta, false);
+    try {
+      const record = await getStoredWarrantyFile(id);
+      if (!record?.blob) return showToast('Soubor není v tomto prohlížeči dostupný');
+      const url = URL.createObjectURL(record.blob);
+      showFilePreviewModal({ url, objectUrl: url, name: meta?.fileName || record.fileName || 'Příloha záruky', type: meta?.fileType || record.fileType || record.blob.type || '', source: 'Záruky' });
+    } catch {
+      showToast('Soubor nejde otevřít');
+    }
+  }
+
+  async function deleteWarrantyFile(id) {
+    const meta = state.warrantyFiles.find((file) => file.id === id);
+    if (!meta) return;
+    const ok = window.confirm(meta.cloudId ? 'Smazat přílohu záruky z cloudu?' : 'Smazat přílohu záruky z tohoto zařízení?');
+    if (!ok) return;
+    if (meta.cloudId) {
+      const client = getSupabaseClient();
+      if (!client || !state.cloud?.householdId) return showToast('Cloud není dostupný');
+      const { error: dbError } = await client.from('household_warranty_files').delete().eq('id', meta.cloudId).eq('household_id', state.cloud.householdId);
+      if (dbError) return showToast(dbError.message || 'Metadata přílohy se nepovedlo smazat');
+      if (meta.storagePath) await client.storage.from('warranty-files').remove([meta.storagePath]).catch?.(() => {});
+      state.cloud.lastSyncAt = new Date().toISOString();
+    } else {
+      deleteStoredWarrantyFile(id).catch(() => {});
+    }
+    state.warrantyFiles = state.warrantyFiles.filter((file) => file.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Příloha záruky smazána');
+  }
+
+  function normalizeKey(value) {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  function detectCsvDelimiter(line) {
+    const candidates = [';', ',', '\t'];
+    let best = ';';
+    let bestCount = -1;
+    candidates.forEach((candidate) => {
+      const delimiter = candidate === '\t' ? '\t' : candidate;
+      const count = (String(line || '').match(new RegExp(delimiter === '\t' ? '\\t' : `\\${delimiter}`, 'g')) || []).length;
+      if (count > bestCount) {
+        best = candidate;
+        bestCount = count;
+      }
+    });
+    return best === '\t' ? '\t' : best;
+  }
+
+  function splitCsvRows(text, delimiter) {
+    const rows = [];
+    let row = [];
+    let cell = '';
+    let quote = false;
+    const source = String(text || '').replace(/^\uFEFF/, '');
+    for (let i = 0; i < source.length; i += 1) {
+      const char = source[i];
+      const next = source[i + 1];
+      if (char === '"') {
+        if (quote && next === '"') {
+          cell += '"';
+          i += 1;
+        } else {
+          quote = !quote;
+        }
+      } else if (char === delimiter && !quote) {
+        row.push(cell);
+        cell = '';
+      } else if ((char === '\n' || char === '\r') && !quote) {
+        if (char === '\r' && next === '\n') i += 1;
+        row.push(cell);
+        if (row.some((value) => String(value).trim() !== '')) rows.push(row);
+        row = [];
+        cell = '';
+      } else {
+        cell += char;
+      }
+    }
+    row.push(cell);
+    if (row.some((value) => String(value).trim() !== '')) rows.push(row);
+    return rows;
+  }
+
+  function csvHeaderScore(cells) {
+    return cells.map(normalizeKey).reduce((score, header) => {
+      if (/date|datum|data|time|cas|odometer|tachometer|mileage|km|volume|lit|fuel|palivo|cost|price|cena|vehicle|vozidlo|service|servis|expense|naklad|odo/.test(header)) return score + 1;
+      return score;
+    }, 0);
+  }
+
+  function detectCsvDelimiterFromText(text) {
+    const rawLines = String(text || '').split(/\r?\n/).filter((line) => line.trim() && !/^sep=/i.test(line.trim()));
+    const candidates = [';', ',', '\t'];
+    let best = ';';
+    let bestScore = -1;
+    rawLines.slice(0, 30).forEach((line) => {
+      candidates.forEach((candidate) => {
+        const delimiter = candidate === '\t' ? '\t' : candidate;
+        const count = (String(line || '').match(new RegExp(delimiter === '\t' ? '\\t' : `\\${delimiter}`, 'g')) || []).length;
+        const score = count + (csvHeaderScore(splitCsvRows(`${line}\n`, delimiter)[0] || []) * 4);
+        if (score > bestScore) {
+          best = candidate;
+          bestScore = score;
+        }
+      });
+    });
+    return best === '\t' ? '\t' : best;
+  }
+
+  function parseCsvTables(text) {
+    const raw = String(text || '').replace(/^\uFEFF/, '').replace(/^sep=(.)\s*\r?\n/i, '');
+    if (!raw.trim()) return [];
+    const delimiter = detectCsvDelimiterFromText(raw);
+    const sourceRows = splitCsvRows(raw, delimiter);
+    const tables = [];
+    let currentSection = 'default';
+    let headers = null;
+    let currentRows = [];
+    const flush = () => {
+      if (headers && currentRows.length) tables.push({ section: currentSection, rows: currentRows });
+      headers = null;
+      currentRows = [];
+    };
+    sourceRows.forEach((cells) => {
+      const first = normalizeText(cells[0]);
+      const marker = cells.length === 1 && /^##\s*/.test(first);
+      if (marker) {
+        flush();
+        currentSection = normalizeText(first.replace(/^##\s*/, '')) || 'default';
+        return;
+      }
+      if (!headers) {
+        if (csvHeaderScore(cells) > 0) headers = cells.map((header, index) => normalizeKey(header) || `col ${index}`);
+        return;
+      }
+      currentRows.push(Object.fromEntries(headers.map((header, index) => [header, normalizeText(cells[index])])));
+    });
+    flush();
+    return tables;
+  }
+
+  function parseCsv(text) {
+    return parseCsvTables(text).flatMap((table) => table.rows.map((row) => ({ ...row, __fuelioSection: table.section })));
+  }
+
+  function getRowValue(row, keys) {
+    const normalizedKeys = keys.map(normalizeKey);
+    for (const key of normalizedKeys) {
+      if (row[key] !== undefined && row[key] !== '') return row[key];
+    }
+    const found = Object.keys(row).find((rowKey) => normalizedKeys.some((key) => rowKey === key || rowKey.includes(key) || key.includes(rowKey)));
+    return found ? row[found] : '';
+  }
+
+  function parseCzNumber(value) {
+    if (value === undefined || value === null || value === '') return '';
+    let clean = String(value).trim().replace(/\s/g, '').replace(/Kč|CZK|EUR|€/gi, '');
+    if (clean.includes(',') && clean.includes('.')) clean = clean.replace(/\./g, '').replace(',', '.');
+    else clean = clean.replace(',', '.');
+    clean = clean.replace(/[^0-9.\-]/g, '');
+    const number = Number(clean);
+    return Number.isFinite(number) ? number : '';
+  }
+
+  function parseFuelioDate(value) {
+    const text = normalizeText(value);
+    if (!text) return '';
+    const iso = text.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+    if (iso) return `${iso[1]}-${iso[2].padStart(2, '0')}-${iso[3].padStart(2, '0')}`;
+    const cz = text.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})/);
+    if (cz) {
+      const year = cz[3].length === 2 ? `20${cz[3]}` : cz[3];
+      return `${year}-${cz[2].padStart(2, '0')}-${cz[1].padStart(2, '0')}`;
+    }
+    const us = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (us) {
+      const year = us[3].length === 2 ? `20${us[3]}` : us[3];
+      return `${year}-${us[1].padStart(2, '0')}-${us[2].padStart(2, '0')}`;
+    }
+    const parsed = new Date(text);
+    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+  }
+
+  function mapFuelioRows(text) {
+    const tables = parseCsvTables(text);
+    const vehicle = tables.find((table) => normalizeKey(table.section) === 'vehicle')?.rows?.[0] || null;
+    const defaultVehicleName = normalizeText(getRowValue(vehicle || {}, ['name', 'vehicle name', 'car', 'auto', 'vozidlo']));
+    const costCategoryTable = tables.find((table) => normalizeKey(table.section) === 'costcategories');
+    const costCategoryMap = new Map((costCategoryTable?.rows || []).map((row) => [String(getRowValue(row, ['costtypeid', 'cost type id', 'id'])), normalizeText(getRowValue(row, ['name', 'nazev']))]).filter(([id, name]) => id && name));
+    let sequence = 0;
+    const mapped = tables.flatMap((table) => {
+      const section = normalizeKey(table.section);
+      return table.rows.map((row) => {
+        let rowType = normalizeText(getRowValue(row, ['record type', 'entry type', 'type', 'category', 'kategorie', 'typ', 'zaznam', 'druh'])).toLowerCase();
+        if (/^\d+(\.\d+)?$/.test(rowType)) rowType = '';
+        const date = parseFuelioDate(getRowValue(row, ['date', 'data', 'datum', 'datetime', 'date time', 'time', 'timestamp', 'created at']));
+        const odometer = parseCzNumber(getRowValue(row, ['odometer', 'tachometer', 'mileage', 'kilometers', 'kilometres', 'stav tachometru', 'km stav', 'km', 'odo', 'odo km']));
+        const liters = parseCzNumber(getRowValue(row, ['liters', 'litres', 'fuel litres', 'fuel liters', 'liter', 'litr', 'litru', 'volume', 'fuel volume', 'quantity', 'amount fuel', 'mnozstvi', 'natankovano', 'palivo objem']));
+        const unitPrice = parseCzNumber(getRowValue(row, ['unit price', 'price per unit', 'price liter', 'price per litre', 'price per liter', 'cena za litr', 'cena l', 'volumeprice', 'volume price']));
+        const explicitTotal = parseCzNumber(getRowValue(row, ['total cost', 'total price', 'total', 'amount', 'cost', 'price', 'price optional', 'expense', 'cena celkem', 'celkova cena', 'celkem', 'castka', 'naklad']));
+        const price = explicitTotal || (liters && unitPrice ? Number((liters * unitPrice).toFixed(2)) : '');
+        const vehicleName = normalizeText(getRowValue(row, ['vehicle', 'vehicle name', 'car', 'auto', 'vozidlo', 'car name'])) || defaultVehicleName;
+        const costTypeId = String(getRowValue(row, ['costtypeid', 'cost type id', 'cost category', 'category id']));
+        const costCategory = costCategoryMap.get(costTypeId) || '';
+        let category = normalizeText(getRowValue(row, ['category', 'type', 'kategorie', 'typ', 'expense type', 'service type', 'tag', 'tags'])) || costCategory;
+        if (!/cost|expense|service|maintenance/.test(section) && /^\d+(\.\d+)?$/.test(category)) category = '';
+        const titleSource = normalizeText(getRowValue(row, ['costtitle', 'cost title', 'title', 'nazev', 'name']));
+        const note = normalizeText(getRowValue(row, ['note', 'notes', 'poznamka', 'description', 'comment', 'memo']));
+        const station = normalizeText(getRowValue(row, ['station', 'gas station', 'fuel station', 'cerpaci stanice', 'city', 'city optional', 'place', 'location', 'misto']));
+        const isCostSection = /cost|expense|service|maintenance/.test(section);
+        const title = titleSource || category || note || station || (rowType.includes('fuel') || liters ? 'Tankování z Fuelio' : 'Záznam z Fuelio');
+        const isServiceLike = isCostSection || /service|servis|expense|naklad|maintenance|udrzba|oprava|pneu|insurance|pojist|registrace|myti|parkovani/.test(rowType + ' ' + category + ' ' + title + ' ' + note);
+        const kind = liters ? 'fuel' : price && isServiceLike ? 'service' : price && !liters ? 'service' : 'ignored';
+        sequence += 1;
+        return { index: sequence, kind, date, odometer, liters, price, pricePerLiter: unitPrice || (liters && price ? Number((price / liters).toFixed(2)) : ''), vehicleName, title, note: [station, note].filter(Boolean).join(' · ') };
+      });
+    }).filter((row) => row.kind !== 'ignored' && row.date);
+    return mapped;
+  }
+
+  async function previewFuelioImport(form) {
+    const file = form.querySelector('input[type="file"]')?.files?.[0];
+    if (!file) {
+      showToast('Vyber CSV soubor');
+      return;
+    }
+    const text = await file.text();
+    const rows = mapFuelioRows(text);
+    if (!rows.length) {
+      fuelioPreview = null;
+      render();
+      showToast('V CSV jsem nenašel použitelná data');
+      return;
+    }
+    fuelioPreview = { fileName: file.name, rows };
+    render();
+    showToast('Náhled načten');
+  }
+
+  function fuelDuplicateExists(row, vehicleId) {
+    return state.fuel.some((item) => item.vehicleId === vehicleId && String(item.date) === String(row.date) && Number(item.odometer || 0) === Number(row.odometer || 0) && Number(item.liters || 0) === Number(row.liters || 0) && Number(item.price || 0) === Number(row.price || 0));
+  }
+
+  function serviceDuplicateExists(row, vehicleId) {
+    return state.services.some((item) => item.vehicleId === vehicleId && String(item.date) === String(row.date) && String(item.title || '') === String(row.title || '') && Number(item.price || 0) === Number(row.price || 0));
+  }
+
+  async function confirmFuelioImport(options = {}) {
+    const syncCloud = Boolean(options.syncCloud);
+    if (!fuelioPreview?.rows?.length) {
+      showToast('Nejdřív načti náhled');
+      return;
+    }
+    const vehicleByName = new Map(state.vehicles.map((vehicle) => [normalizeKey(vehicle.name), vehicle]));
+    let fallbackVehicle = state.vehicles.find((vehicle) => vehicle.id === garageVehicleId) || state.vehicles[0] || null;
+    if (!fallbackVehicle) {
+      fallbackVehicle = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name: 'Fuelio import', plate: '', fuelType: '', odometer: '', purchaseDate: '', purchasePrice: '', purchaseOdometer: '', ownershipStatus: 'owned', saleDate: '', salePrice: '', saleOdometer: '', technicalInspectionUntil: '', insuranceUntil: '', nextServiceKm: '', nextServiceDate: '', iconColor: 'blue', note: '' };
+      state.vehicles.push(fallbackVehicle);
+      rememberVehicleIconColor(fallbackVehicle);
+      vehicleByName.set(normalizeKey(fallbackVehicle.name), fallbackVehicle);
+    }
+
+    let importedFuel = 0;
+    let importedServices = 0;
+    let skipped = 0;
+    const importedIds = { fuel: [], services: [], vehicles: [] };
+
+    fuelioPreview.rows.forEach((row) => {
+      let vehicle = row.vehicleName ? vehicleByName.get(normalizeKey(row.vehicleName)) : fallbackVehicle;
+      if (!vehicle && row.vehicleName) {
+        vehicle = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name: row.vehicleName, plate: '', fuelType: '', odometer: row.odometer || '', purchaseDate: '', purchasePrice: '', purchaseOdometer: '', ownershipStatus: 'owned', saleDate: '', salePrice: '', saleOdometer: '', technicalInspectionUntil: '', insuranceUntil: '', nextServiceKm: '', nextServiceDate: '', iconColor: 'blue', note: '' };
+        state.vehicles.push(vehicle);
+        rememberVehicleIconColor(vehicle);
+        vehicleByName.set(normalizeKey(row.vehicleName), vehicle);
+        importedIds.vehicles.push(vehicle.id);
+      }
+      const vehicleId = vehicle?.id || fallbackVehicle.id;
+      if (row.kind === 'fuel') {
+        if (fuelDuplicateExists(row, vehicleId)) {
+          skipped += 1;
+          return;
+        }
+        const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), source: 'fuelio', vehicleId, date: row.date, odometer: row.odometer, liters: row.liters, price: row.price, pricePerLiter: row.pricePerLiter || '', note: row.note };
+        state.fuel.push(item);
+        importedIds.fuel.push(item.id);
+        if (row.odometer && Number(row.odometer) > Number(vehicle.odometer || 0)) vehicle.odometer = String(row.odometer);
+        importedFuel += 1;
+      }
+      if (row.kind === 'service') {
+        if (serviceDuplicateExists(row, vehicleId)) {
+          skipped += 1;
+          return;
+        }
+        const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), source: 'fuelio', vehicleId, date: row.date, odometer: row.odometer || '', title: row.title, price: row.price, note: row.note };
+        state.services.push(item);
+        importedIds.services.push(item.id);
+        importedServices += 1;
+      }
+    });
+
+    garageVehicleId = fallbackVehicle.id;
+    fuelioPreview = null;
+    touchState();
+    saveState();
+
+    if (syncCloud) {
+      const result = await cloudSyncGarageSubset(importedIds);
+      render();
+      showToast(`Fuelio import + cloud: ${importedFuel} tankování, ${importedServices} nákladů, ${skipped} duplicit · cloud ${result.fuel + result.services + result.vehicles} záznamů`);
+      return;
+    }
+
+    render();
+    showToast(`Fuelio import: ${importedFuel} tankování, ${importedServices} nákladů, ${skipped} duplicit`);
+  }
+
+
+  async function updateVehicle(vehicleId, data) {
+    const vehicle = state.vehicles.find((item) => item.id === vehicleId);
+    if (!vehicle) {
+      showToast('Auto se nepodařilo najít');
+      return;
+    }
+    vehicle.name = normalizeText(data.name) || vehicle.name;
+    vehicle.plate = normalizeText(data.plate);
+    vehicle.fuelType = normalizeText(data.fuelType);
+    vehicle.odometer = normalizeText(data.odometer);
+    vehicle.purchaseDate = normalizeText(data.purchaseDate);
+    vehicle.purchasePrice = normalizeText(data.purchasePrice);
+    vehicle.purchaseOdometer = normalizeText(data.purchaseOdometer);
+    vehicle.ownershipStatus = normalizeVehicleOwnershipStatus(data.ownershipStatus || vehicle.ownershipStatus);
+    vehicle.saleDate = normalizeText(data.saleDate);
+    vehicle.salePrice = normalizeText(data.salePrice);
+    vehicle.saleOdometer = normalizeText(data.saleOdometer);
+    vehicle.technicalInspectionUntil = normalizeText(data.technicalInspectionUntil);
+    vehicle.insuranceUntil = normalizeText(data.insuranceUntil);
+    vehicle.nextServiceKm = normalizeText(data.nextServiceKm);
+    vehicle.nextServiceDate = normalizeText(data.nextServiceDate);
+    vehicle.iconColor = normalizeVehicleIconColor(data.iconColor || vehicle.iconColor);
+    vehicle.note = normalizeText(data.note);
+    vehicle.updatedAt = new Date().toISOString();
+    applyVehicleTechnicalFields(vehicle, data);
+    rememberVehicleIconColor(vehicle);
+    touchState();
+    saveState();
+    const cloudSaved = await cloudUpdateVehicle(vehicle);
+    if (cloudReady() && cloudSaved) await cloudSaveHouseholdUiSettings(false);
+    render();
+    if (cloudReady()) {
+      if (cloudSaved) {
+        showToast(garageVehicleExtendedSchemaPending ? 'Údaje auta uloženy. Nová pole se pošlou do cloudu po spuštění DB migrace.' : 'Údaje auta uloženy v cloudu');
+      } else {
+        showToast('Údaje auta uloženy lokálně, cloud se teď nepovedl aktualizovat');
+      }
+    } else {
+      showToast('Údaje auta uloženy lokálně');
+    }
+  }
+
+
+  async function updateFuelLog(id, data) {
+    const item = state.fuel.find((entry) => entry.id === id);
+    if (!item) return showToast('Tankování nenalezeno');
+    item.date = normalizeText(data.date) || item.date;
+    item.odometer = normalizeText(data.odometer);
+    const fuelParts = normalizeFuelCostParts(data);
+    item.liters = fuelParts.liters;
+    item.price = fuelParts.price;
+    item.pricePerLiter = fuelParts.pricePerLiter;
+    item.note = normalizeText(data.note);
+    item.updatedAt = new Date().toISOString();
+    const ok = await cloudUpdateFuelLog(item);
+    if (!ok) return;
+    garageEditRecord = null;
+    garageModal = null;
+    touchState();
+    saveState();
+    render();
+    showToast(item.cloudId ? 'Tankování upraveno v cloudu' : 'Tankování upraveno lokálně');
+  }
+
+  async function updateServiceLog(id, data) {
+    const item = state.services.find((entry) => entry.id === id);
+    if (!item) return showToast('Servis nenalezen');
+    item.date = normalizeText(data.date) || item.date;
+    item.odometer = normalizeText(data.odometer);
+    item.title = normalizeText(data.title) || item.title;
+    item.price = decimalValue(data.price);
+    item.note = normalizeText(data.note);
+    item.updatedAt = new Date().toISOString();
+    const ok = await cloudUpdateServiceLog(item);
+    if (!ok) return;
+    garageEditRecord = null;
+    garageModal = null;
+    touchState();
+    saveState();
+    render();
+    showToast(item.cloudId ? 'Servis upraven v cloudu' : 'Servis upraven lokálně');
+  }
+
+
+  async function addShoppingFromForm(data, form) {
+    return getShoppingActions().addShoppingFromForm(data, form);
+  }
+
+
+  async function quickAddShoppingByName(name) {
+    return getShoppingActions().quickAddShoppingByName(name);
+  }
+
+
+  async function addShoppingListFromForm(data, form) {
+    return getShoppingActions().addShoppingListFromForm(data, form);
+  }
+
+
+  function setActiveShoppingList(id) {
+    return getShoppingActions().setActiveShoppingList(id);
+  }
+
+
+  function deleteShoppingList(id) {
+    return getShoppingActions().deleteShoppingList(id);
+  }
+
+
+  function promptAddShoppingList() {
+    return getShoppingActions().promptAddShoppingList();
+  }
+
+
+  function updateShoppingQuantity(id, delta) {
+    return getShoppingActions().updateShoppingQuantity(id, delta);
+  }
+
+
+  function deleteDoneShoppingBySwipe(id) {
+    return getShoppingActions().deleteDoneShoppingBySwipe(id);
+  }
+
+
+  async function cloudSyncLocalShoppingItems() {
+    return getShoppingActions().cloudSyncLocalShoppingItems();
+  }
+
+
+  async function cloudLoadShoppingData(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client) { if (showMessage) showToast('Supabase knihovna není načtená'); return null; }
+    const user = await refreshCloudSession(false);
+    if (!user || !state.cloud?.householdId) return showToast('Nejdřív vytvoř / napoj domácnost v cloudu');
+    const householdId = state.cloud.householdId;
+
+    const [unitsRes, categoriesRes, catalogRes, listsRes] = await Promise.all([
+      client.from('shopping_units').select('code,label,kind,sort_order').order('sort_order'),
+      client.from('shopping_categories').select('id,household_id,name,icon,sort_order').or(`household_id.is.null,household_id.eq.${householdId}`).order('sort_order'),
+      client.from('shopping_catalog_items').select('id,household_id,name,default_unit,category_id,shopping_categories(name)').or(`household_id.is.null,household_id.eq.${householdId}`).order('name'),
+      client.from('shopping_lists').select('id,name,status,created_at,updated_at').eq('household_id', householdId).eq('status', 'active').order('created_at', { ascending: true })
+    ]);
+
+    const firstError = unitsRes.error || categoriesRes.error || catalogRes.error || listsRes.error;
+    if (firstError) return showToast(firstError.message || 'Nákupy se nepovedlo načíst');
+
+    const cloudListsRaw = listsRes.data || [];
+    const existingByCloudId = new Map((state.shoppingLists || []).filter((list) => list.cloudId || list.cloudListId).map((list) => [list.cloudId || list.cloudListId, list]));
+    const existingByName = new Map((state.shoppingLists || []).map((list) => [normalizeKey(list.name), list]));
+    const cloudLists = cloudListsRaw.map((list, index) => {
+      const existing = existingByCloudId.get(list.id) || existingByName.get(normalizeKey(list.name));
+      return normalizeShoppingListRecord({
+        id: existing?.id || `shopping-list-cloud-${list.id}`,
+        cloudId: list.id,
+        cloudListId: list.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        name: list.name || `Seznam ${index + 1}`,
+        status: list.status || 'active',
+        createdAt: list.created_at || new Date().toISOString(),
+        updatedAt: list.updated_at || list.created_at || new Date().toISOString(),
+        sortOrder: index,
+        source: 'cloud'
+      }, index);
+    });
+    const cloudNameKeys = new Set(cloudLists.map((list) => normalizeKey(list.name)));
+    const localOnlyLists = (state.shoppingLists || []).filter((list) => !(list.cloudId || list.cloudListId) && !cloudNameKeys.has(normalizeKey(list.name)));
+    state.shoppingLists = normalizeShoppingLists([...localOnlyLists, ...cloudLists], state);
+    const cloudIdToLocalId = new Map(state.shoppingLists.filter((list) => list.cloudId || list.cloudListId).map((list) => [list.cloudId || list.cloudListId, list.id]));
+    const activeLocalList = state.shoppingLists.find((list) => list.id === state.activeShoppingListId);
+    const activeCloudListId = activeLocalList?.cloudId || activeLocalList?.cloudListId || cloudLists[0]?.cloudId || '';
+
+    state.shoppingCloud = {
+      units: unitsRes.data || [],
+      categories: categoriesRes.data || [],
+      catalog: (catalogRes.data || []).map((item) => ({ ...item, category_name: item.shopping_categories?.name || 'Ostatní' })),
+      activeListId: activeCloudListId,
+      loadedAt: new Date().toISOString()
+    };
+    markShoppingCatalogDirty();
+
+    if (!cloudLists.length) {
+      state.shopping = (state.shopping || []).filter((item) => !item.cloudId);
+      markShoppingRuntimeDirty();
+      state.cloud.lastSyncAt = new Date().toISOString();
+      touchState();
+      saveState();
+      render();
+      if (showMessage) showToast('V cloudu zatím není žádný nákupní seznam');
+      return true;
+    }
+
+    const cloudListIds = cloudLists.map((list) => list.cloudId).filter(Boolean);
+    const itemsRes = await client.from('shopping_list_items').select('id,list_id,catalog_item_id,name,quantity,unit,note,is_done,position,created_at').eq('household_id', householdId).in('list_id', cloudListIds).order('position').order('created_at');
+    if (itemsRes.error) return showToast(itemsRes.error.message || 'Položky nákupu se nepovedlo načíst');
+
+    const cloudItems = (itemsRes.data || []).map((item) => {
+      const catalogItem = findShoppingCatalogItem(item.name);
+      return {
+        id: state.shopping.find((local) => local.cloudId === item.id)?.id || uid(),
+        cloudId: item.id,
+        cloudListId: item.list_id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        listId: cloudIdToLocalId.get(item.list_id) || state.activeShoppingListId || '',
+        name: item.name,
+        quantity: item.quantity || 1,
+        unit: item.unit || 'ks',
+        note: item.note || '',
+        done: Boolean(item.is_done),
+        catalogItemId: item.catalog_item_id || '',
+        category: catalogItem?.kind || catalogItem?.category || 'Ostatní',
+        kind: catalogItem?.kind || catalogItem?.category || 'Ostatní'
+      };
+    });
+    const localOnly = state.shopping.filter((item) => !item.cloudId);
+    state.shopping = [...localOnly, ...cloudItems];
+    if (!state.shoppingLists.some((list) => list.id === state.activeShoppingListId)) state.activeShoppingListId = state.shoppingLists[0]?.id || '';
+
+    markShoppingRuntimeDirty();
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast('Cloud nákupy načtené');
+    return true;
+  }
+
+  async function cloudAddShoppingList(name) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const { data, error } = await client
+      .from('shopping_lists')
+      .insert({ household_id: state.cloud.householdId, name: normalizeText(name) || 'Nákup', status: 'active', created_by: user.id })
+      .select('id,name,status,created_at,updated_at')
+      .single();
+    if (error) {
+      showToast(error.message || 'Seznam se nepovedlo vytvořit v cloudu');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+
+  async function cloudArchiveShoppingList(list) {
+    const client = getSupabaseClient();
+    const cloudListId = list?.cloudId || list?.cloudListId || '';
+    if (!client || !cloudListId || !state.cloud?.householdId) return true;
+    const { error } = await client
+      .from('shopping_lists')
+      .update({ status: 'archived', updated_at: new Date().toISOString() })
+      .eq('id', cloudListId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Cloud seznam se nepovedlo smazat');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudFindOrCreateCatalogItem({ name, category, unit, catalogItem }) {
+    if (catalogItem?.id && !String(catalogItem.id).startsWith('default-') && catalogItem.source !== 'local') return catalogItem.id;
+    const client = getSupabaseClient();
+    const householdId = state.cloud?.householdId;
+    if (!client || !householdId) return '';
+
+    const { data: existing } = await client.from('shopping_catalog_items').select('id,name').eq('household_id', householdId).ilike('name', name).maybeSingle();
+    if (existing?.id) return existing.id;
+
+    let categoryId = '';
+    const cachedCategory = (state.shoppingCloud?.categories || []).find((item) => item.name === category);
+    if (cachedCategory?.id) categoryId = cachedCategory.id;
+    const { data, error } = await client.from('shopping_catalog_items').insert({ household_id: householdId, category_id: categoryId || null, name, default_unit: unit || 'ks', created_by: state.cloud.userId }).select('id').single();
+    if (error) {
+      showToast(error.message || 'Katalogovou položku se nepovedlo uložit');
+      return '';
+    }
+    state.shoppingCloud.catalog = [...(state.shoppingCloud?.catalog || []), { id: data.id, household_id: householdId, name, default_unit: unit || 'ks', category_name: category }];
+    markShoppingCatalogDirty();
+    return data.id;
+  }
+
+  async function cloudAddShoppingItem({ name, category, quantity, unit, note, catalogItem, list = null }) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const activeList = list || getActiveShoppingList();
+    let listId = activeList?.cloudId || activeList?.cloudListId || '';
+    if (!listId && activeList?.name) {
+      const cloudList = await cloudAddShoppingList(activeList.name);
+      if (cloudList?.id) {
+        activeList.cloudId = cloudList.id;
+        activeList.cloudListId = cloudList.id;
+        activeList.source = 'cloud';
+        state.shoppingCloud = { ...(state.shoppingCloud || {}), activeListId: cloudList.id };
+        markShoppingRuntimeDirty();
+        listId = cloudList.id;
+      }
+    }
+    if (!listId) return null;
+    const householdId = state.cloud.householdId;
+    const catalogItemId = await cloudFindOrCreateCatalogItem({ name, category, unit, catalogItem });
+    const { data, error } = await client.from('shopping_list_items').insert({
+      household_id: householdId,
+      list_id: listId,
+      catalog_item_id: catalogItemId || null,
+      name,
+      quantity,
+      unit,
+      note,
+      is_done: false,
+      added_by_profile_id: null,
+      created_by: state.cloud.userId
+    }).select('id,list_id,catalog_item_id').single();
+    if (error) {
+      showToast(error.message || 'Cloud položka se nepovedla uložit');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+
+  async function cloudUpdateShoppingItem(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client
+      .from('shopping_list_items')
+      .update({
+        is_done: Boolean(item.done),
+        done_at: item.done ? new Date().toISOString() : null,
+        quantity: item.quantity || 1,
+        unit: item.unit || 'ks',
+        note: item.note || null
+      })
+      .eq('id', item.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Cloud nákup se nepovedlo aktualizovat');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteShoppingItem(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client
+      .from('shopping_list_items')
+      .delete()
+      .eq('id', item.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Cloud nákup se nepovedlo smazat');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+
+  function fuelTypeToCloud(value) {
+    const key = normalizeKey(value || '');
+    if (key.includes('nafta') || key.includes('diesel')) return 'diesel';
+    if (key.includes('elektro') || key.includes('electric')) return 'electric';
+    if (key.includes('hybrid')) return 'hybrid';
+    if (key.includes('lpg')) return 'lpg';
+    if (key.includes('cng')) return 'cng';
+    if (key.includes('benzin') || key.includes('benzín') || key.includes('gasoline')) return 'gasoline';
+    return key ? 'other' : 'other';
+  }
+
+  function fuelTypeFromCloud(value) {
+    const map = { gasoline: 'benzín', diesel: 'nafta', lpg: 'LPG', cng: 'CNG', hybrid: 'hybrid', electric: 'elektro', other: 'jiné' };
+    return map[value] || value || '';
+  }
+
+  function serviceTypeToCloud(value) {
+    const key = normalizeKey(value || '');
+    if (key.includes('stk')) return 'stk';
+    if (key.includes('emise')) return 'emissions';
+    if (key.includes('pneu') || key.includes('tire')) return 'tires';
+    if (key.includes('pojist')) return 'insurance';
+    if (key.includes('oprav') || key.includes('repair')) return 'repair';
+    if (key.includes('servis') || key.includes('service')) return 'service';
+    return 'other';
+  }
+
+  function garageSourceHash(prefix, item) {
+    const vehicleMap = new Map((state.vehicles || []).map((entry) => [entry.id, entry]));
+    const vehicleKey = garageRecordVehicleKey(item.vehicleId, vehicleMap);
+    const dateKey = garageDateKey(item.date);
+    if (prefix === 'fuel') return ['fuel', vehicleKey, dateKey, garageNumberKey(item.odometer, 0), garageNumberKey(item.liters, 2)].map((part) => normalizeKey(part)).join('|').slice(0, 240);
+    return ['service', vehicleKey, dateKey, garageNumberKey(item.odometer, 0), garageNumberKey(item.price, 0), item.title || item.category || 'servis'].map((part) => normalizeKey(part)).join('|').slice(0, 240);
+  }
+
+  function isGarageVehicleExtendedSchemaError(error) {
+    const message = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+    return error?.code === 'PGRST204' || ((message.includes('schema cache') || message.includes('could not find')) && /(purchase_|sale_|ownership_status|technical_specs|ownership status|purchase date|sale date)/.test(message));
+  }
+
+  function markGarageVehicleExtendedSchemaPending() {
+    garageVehicleExtendedSchemaPending = true;
+    state.cloud = state.cloud && typeof state.cloud === 'object' ? state.cloud : {};
+    state.cloud.garageVehicleExtendedColumnsPending = true;
+  }
+
+  async function ensureCloudVehicle(vehicle) {
+    if (!vehicle) return null;
+    if (vehicle.cloudId) return vehicle.cloudId;
+    const cloudVehicle = await cloudAddVehicle(vehicle);
+    if (!cloudVehicle?.id) return null;
+    vehicle.cloudId = cloudVehicle.id;
+    touchState();
+    saveState();
+    return vehicle.cloudId;
+  }
+
+  function cloudVehiclePayload(vehicle, userId, options = {}) {
+    const includeExtendedFields = options.includeExtendedFields !== false;
+    const updateMode = options.mode === 'update';
+    const payload = updateMode ? { updated_by: userId } : {
+      household_id: state.cloud.householdId,
+      profile_id: null,
+      name: vehicle.name || 'Auto',
+      created_by: userId,
+      updated_by: userId
+    };
+
+    if (updateMode) {
+      payload.name = normalizeText(vehicle.name) || 'Auto';
+    }
+
+    assignGaragePayloadField(payload, 'plate_number', vehicle.plate, { updateMode });
+    const fuelType = fuelTypeToCloud(vehicle.fuelType);
+    if (!updateMode || normalizeText(vehicle.fuelType)) payload.fuel_type = fuelType;
+    assignGaragePayloadField(payload, 'current_odometer', vehicle.odometer, { type: 'number', updateMode });
+    assignGaragePayloadField(payload, 'stk_until', vehicle.technicalInspectionUntil, { updateMode });
+    assignGaragePayloadField(payload, 'insurance_until', vehicle.insuranceUntil, { updateMode });
+    assignGaragePayloadField(payload, 'next_service_odometer', vehicle.nextServiceKm, { type: 'number', updateMode });
+    assignGaragePayloadField(payload, 'next_service_date', vehicle.nextServiceDate, { updateMode });
+    assignGaragePayloadField(payload, 'note', vehicle.note, { updateMode });
+
+    if (includeExtendedFields) {
+      payload.ownership_status = vehicleOwnershipStatus(vehicle);
+      assignGaragePayloadField(payload, 'purchase_date', vehicle.purchaseDate, { updateMode });
+      assignGaragePayloadField(payload, 'purchase_price', vehicle.purchasePrice, { type: 'number', updateMode });
+      assignGaragePayloadField(payload, 'purchase_odometer', vehicle.purchaseOdometer, { type: 'number', updateMode });
+      assignGaragePayloadField(payload, 'sale_date', vehicle.saleDate, { updateMode });
+      assignGaragePayloadField(payload, 'sale_price', vehicle.salePrice, { type: 'number', updateMode });
+      assignGaragePayloadField(payload, 'sale_odometer', vehicle.saleOdometer, { type: 'number', updateMode });
+      if (!updateMode || garageHasTechnicalSpecs(vehicle)) payload.technical_specs = normalizeVehicleTechnicalSpecs(vehicle);
+    }
+    return payload;
+  }
+
+  async function cloudAddVehicle(vehicle) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const payload = cloudVehiclePayload(vehicle, user.id);
+    let { data, error } = await client.from('vehicles').insert(payload).select('id').single();
+    if (error && isGarageVehicleExtendedSchemaError(error)) {
+      markGarageVehicleExtendedSchemaPending();
+      const fallbackPayload = cloudVehiclePayload(vehicle, user.id, { includeExtendedFields: false });
+      ({ data, error } = await client.from('vehicles').insert(fallbackPayload).select('id').single());
+    }
+    if (error) {
+      showToast(error.message || 'Auto se nepovedlo uložit do cloudu');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudUpdateVehicle(vehicle) {
+    const client = getSupabaseClient();
+    if (!client || !vehicle?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const payload = cloudVehiclePayload(vehicle, user.id, { mode: 'update' });
+    let { error } = await client.from('vehicles').update(payload).eq('id', vehicle.cloudId).eq('household_id', state.cloud.householdId);
+    if (error && isGarageVehicleExtendedSchemaError(error)) {
+      markGarageVehicleExtendedSchemaPending();
+      const fallbackPayload = cloudVehiclePayload(vehicle, user.id, { includeExtendedFields: false, mode: 'update' });
+      ({ error } = await client.from('vehicles').update(fallbackPayload).eq('id', vehicle.cloudId).eq('household_id', state.cloud.householdId));
+      if (!error) return false;
+    }
+    if (error) {
+      showToast(error.message || 'Auto se nepovedlo aktualizovat v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteVehicle(vehicle) {
+    const client = getSupabaseClient();
+    if (!client || !vehicle?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('vehicles').delete().eq('id', vehicle.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Auto se nepovedlo smazat v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudAddFuelLog(item) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const vehicle = state.vehicles.find((entry) => entry.id === item.vehicleId);
+    const vehicleCloudId = await ensureCloudVehicle(vehicle);
+    if (!vehicleCloudId) return null;
+    const liters = item.liters === '' || item.liters === undefined ? null : Number(item.liters);
+    const totalPrice = item.price === '' || item.price === undefined ? null : Number(item.price);
+    const payload = {
+      household_id: state.cloud.householdId,
+      vehicle_id: vehicleCloudId,
+      profile_id: null,
+      date: item.date || todayISO(),
+      odometer: item.odometer === '' || item.odometer === undefined ? null : Number(item.odometer),
+      liters,
+      total_price: totalPrice,
+      price_per_liter: liters && totalPrice ? Number((totalPrice / liters).toFixed(2)) : null,
+      full_tank: true,
+      note: item.note || null,
+      source: item.source === 'fuelio' ? 'fuelio_import' : 'manual',
+      source_hash: garageSourceHash('fuel', item),
+      created_by: user.id,
+      updated_by: user.id
+    };
+    const { data, error } = await client.from('fuel_logs').insert(payload).select('id').single();
+    if (error) {
+      if (!String(error.message || '').toLowerCase().includes('duplicate')) showToast(error.message || 'Tankování se nepovedlo uložit do cloudu');
+      return null;
+    }
+    item.cloudId = data.id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudAddServiceLog(item) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const vehicle = state.vehicles.find((entry) => entry.id === item.vehicleId);
+    const vehicleCloudId = await ensureCloudVehicle(vehicle);
+    if (!vehicleCloudId) return null;
+    const payload = {
+      household_id: state.cloud.householdId,
+      vehicle_id: vehicleCloudId,
+      profile_id: null,
+      date: item.date || todayISO(),
+      odometer: item.odometer === '' || item.odometer === undefined ? null : Number(item.odometer),
+      type: serviceTypeToCloud(item.title),
+      title: item.title || 'Servis',
+      total_price: item.price === '' || item.price === undefined ? null : Number(item.price),
+      note: item.note || null,
+      source: item.source === 'fuelio' ? 'fuelio_import' : 'manual',
+      source_hash: garageSourceHash('service', item),
+      created_by: user.id,
+      updated_by: user.id
+    };
+    const { data, error } = await client.from('service_logs').insert(payload).select('id').single();
+    if (error) {
+      if (!String(error.message || '').toLowerCase().includes('duplicate')) showToast(error.message || 'Servis se nepovedlo uložit do cloudu');
+      return null;
+    }
+    item.cloudId = data.id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+
+  async function cloudUpdateFuelLog(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const liters = item.liters === '' || item.liters === undefined ? null : Number(item.liters);
+    const totalPrice = item.price === '' || item.price === undefined ? null : Number(item.price);
+    const payload = {
+      date: item.date || todayISO(),
+      odometer: item.odometer === '' || item.odometer === undefined ? null : Number(item.odometer),
+      liters,
+      total_price: totalPrice,
+      price_per_liter: liters && totalPrice ? Number((totalPrice / liters).toFixed(2)) : null,
+      note: item.note || null,
+      updated_by: user.id
+    };
+    const { error } = await client.from('fuel_logs').update(payload).eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Tankování se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudUpdateServiceLog(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const payload = {
+      date: item.date || todayISO(),
+      odometer: item.odometer === '' || item.odometer === undefined ? null : Number(item.odometer),
+      type: serviceTypeToCloud(item.title),
+      title: item.title || 'Servis',
+      total_price: item.price === '' || item.price === undefined ? null : Number(item.price),
+      note: item.note || null,
+      updated_by: user.id
+    };
+    const { error } = await client.from('service_logs').update(payload).eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Servis se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteGarageRecord(collection, item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const table = collection === 'fuel' ? 'fuel_logs' : collection === 'services' ? 'service_logs' : '';
+    if (!table) return true;
+    const { error } = await client.from(table).delete().eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Záznam se nepovedlo smazat v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadGarageData(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return showToast('Nejdřív napoj domácnost na cloud');
+    const user = await refreshCloudSession(false);
+    if (!user) { if (showMessage) showToast('Nejdřív se přihlas'); return null; }
+
+    const [{ data: vehicles, error: vehicleError }, { data: fuel, error: fuelError }, { data: services, error: serviceError }] = await Promise.all([
+      client.from('vehicles').select('*').eq('household_id', state.cloud.householdId).order('created_at', { ascending: true }),
+      client.from('fuel_logs').select('*').eq('household_id', state.cloud.householdId).order('date', { ascending: true }),
+      client.from('service_logs').select('*').eq('household_id', state.cloud.householdId).order('date', { ascending: true })
+    ]);
+    if (vehicleError || fuelError || serviceError) {
+      showToast(vehicleError?.message || fuelError?.message || serviceError?.message || 'Garáž se nepovedlo načíst');
+      return;
+    }
+
+    const existingByCloud = new Map(state.vehicles.filter((vehicle) => vehicle.cloudId).map((vehicle) => [vehicle.cloudId, vehicle]));
+    const cloudVehicles = (vehicles || []).map((vehicle) => {
+      const existing = existingByCloud.get(vehicle.id) || {};
+      const item = {
+        id: existing.id || uid(),
+        cloudId: vehicle.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: vehicle.created_at || existing.createdAt || new Date().toISOString(),
+        updatedAt: vehicle.updated_at || existing.updatedAt || vehicle.created_at || existing.createdAt || new Date().toISOString(),
+        name: keepExistingGarageValue(vehicle.name, existing.name || 'Auto') || 'Auto',
+        plate: keepExistingGarageValue(vehicle.plate_number, existing.plate),
+        fuelType: keepExistingGarageValue(fuelTypeFromCloud(vehicle.fuel_type), existing.fuelType),
+        odometer: keepExistingGarageValue(vehicle.current_odometer, existing.odometer),
+        purchaseDate: keepExistingGarageValue(vehicle.purchase_date, existing.purchaseDate),
+        purchasePrice: keepExistingGarageValue(vehicle.purchase_price, existing.purchasePrice),
+        ownershipStatus: vehicleOwnershipStatus({ ...existing, ownership_status: vehicle.ownership_status, is_archived: vehicle.is_archived, sale_date: vehicle.sale_date, sale_odometer: vehicle.sale_odometer, sale_price: vehicle.sale_price }),
+        purchaseOdometer: keepExistingGarageValue(vehicle.purchase_odometer, existing.purchaseOdometer),
+        saleDate: keepExistingGarageValue(vehicle.sale_date, existing.saleDate),
+        salePrice: keepExistingGarageValue(vehicle.sale_price, existing.salePrice),
+        saleOdometer: keepExistingGarageValue(vehicle.sale_odometer, existing.saleOdometer),
+        technicalInspectionUntil: keepExistingGarageValue(vehicle.stk_until, existing.technicalInspectionUntil),
+        insuranceUntil: keepExistingGarageValue(vehicle.insurance_until, existing.insuranceUntil),
+        nextServiceKm: keepExistingGarageValue(vehicle.next_service_odometer, existing.nextServiceKm),
+        nextServiceDate: keepExistingGarageValue(vehicle.next_service_date, existing.nextServiceDate),
+        iconColor: normalizeVehicleIconColor(existing.iconColor || vehicleIconColorFromSettings({ cloudId: vehicle.id, name: vehicle.name })),
+        note: keepExistingGarageValue(vehicle.note, existing.note),
+        technicalSpecs: keepExistingGarageObject(vehicle.technical_specs, existing.technicalSpecs)
+      };
+      applyVehicleTechnicalFields(item, Object.keys(item.technicalSpecs || {}).length ? { ...existing, ...item.technicalSpecs } : item);
+      return item;
+    });
+    const vehicleIdByCloud = new Map(cloudVehicles.map((vehicle) => [vehicle.cloudId, vehicle.id]));
+    const localVehicles = state.vehicles.filter((vehicle) => !vehicle.cloudId);
+    state.vehicles = [...localVehicles, ...cloudVehicles];
+    refreshVehicleIconColorSettings();
+
+    const localFuel = state.fuel.filter((item) => !item.cloudId);
+    state.fuel = [
+      ...localFuel,
+      ...(fuel || []).map((item) => ({
+        id: state.fuel.find((entry) => entry.cloudId === item.id)?.id || uid(),
+        cloudId: item.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        source: item.source === 'fuelio_import' ? 'fuelio' : 'cloud',
+        vehicleId: vehicleIdByCloud.get(item.vehicle_id) || '',
+        date: item.date || '',
+        odometer: item.odometer === null || item.odometer === undefined ? '' : String(item.odometer),
+        liters: item.liters === null || item.liters === undefined ? '' : Number(item.liters),
+        price: item.total_price === null || item.total_price === undefined ? '' : Number(item.total_price),
+        pricePerLiter: item.price_per_liter === null || item.price_per_liter === undefined ? '' : Number(item.price_per_liter),
+        note: item.note || ''
+      })).filter((item) => item.vehicleId)
+    ];
+
+    const localServices = state.services.filter((item) => !item.cloudId);
+    state.services = [
+      ...localServices,
+      ...(services || []).map((item) => ({
+        id: state.services.find((entry) => entry.cloudId === item.id)?.id || uid(),
+        cloudId: item.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        source: item.source === 'fuelio_import' ? 'fuelio' : 'cloud',
+        vehicleId: vehicleIdByCloud.get(item.vehicle_id) || '',
+        date: item.date || '',
+        odometer: item.odometer === null || item.odometer === undefined ? '' : String(item.odometer),
+        title: item.title || 'Servis',
+        price: item.total_price === null || item.total_price === undefined ? '' : Number(item.total_price),
+        note: item.note || ''
+      })).filter((item) => item.vehicleId)
+    ];
+
+    if (!garageVehicleId && state.vehicles.length) garageVehicleId = state.vehicles[0].id;
+    normalizeGarageRuntimeState({ persist: false });
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast('Cloud Garáž načtená');
+  }
+
+
+  async function cloudSyncGarageSubset(ids = {}) {
+    if (!state.cloud?.householdId) {
+      showToast('Nejdřív napoj domácnost na cloud');
+      return { vehicles: 0, fuel: 0, services: 0 };
+    }
+    const vehicleIds = new Set(ids.vehicles || []);
+    const fuelIds = new Set(ids.fuel || []);
+    const serviceIds = new Set(ids.services || []);
+    let vehicles = 0;
+    let fuel = 0;
+    let services = 0;
+
+    const records = [
+      ...state.fuel.filter((item) => fuelIds.has(item.id)),
+      ...state.services.filter((item) => serviceIds.has(item.id))
+    ];
+    records.forEach((record) => {
+      if (record.vehicleId) vehicleIds.add(record.vehicleId);
+    });
+
+    for (const vehicle of state.vehicles.filter((item) => vehicleIds.has(item.id))) {
+      if (!vehicle.cloudId) {
+        const cloudVehicle = await cloudAddVehicle(vehicle);
+        if (cloudVehicle?.id) {
+          vehicle.cloudId = cloudVehicle.id;
+          rememberVehicleIconColor(vehicle);
+          vehicles += 1;
+        }
+        continue;
+      }
+      if (garageVehicleHasBackupData(vehicle)) {
+        const ok = await cloudUpdateVehicle(vehicle);
+        if (ok) vehicles += 1;
+      }
+    }
+    for (const item of state.fuel.filter((entry) => fuelIds.has(entry.id))) {
+      if (!item.cloudId) {
+        const saved = await cloudAddFuelLog(item);
+        if (saved?.id) fuel += 1;
+      }
+    }
+    for (const item of state.services.filter((entry) => serviceIds.has(entry.id))) {
+      if (!item.cloudId) {
+        const saved = await cloudAddServiceLog(item);
+        if (saved?.id) services += 1;
+      }
+    }
+    refreshVehicleIconColorSettings();
+    touchState();
+    saveState();
+    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
+    return { vehicles, fuel, services };
+  }
+
+  async function cloudSyncLocalGarage() {
+    if (!state.cloud?.householdId) return showToast('Nejdřív napoj domácnost na cloud');
+    normalizeGarageRuntimeState({ persist: true });
+    let vehicles = 0;
+    let fuel = 0;
+    let services = 0;
+    for (const vehicle of state.vehicles) {
+      if (!vehicle.cloudId) {
+        const cloudVehicle = await cloudAddVehicle(vehicle);
+        if (cloudVehicle?.id) {
+          vehicle.cloudId = cloudVehicle.id;
+          rememberVehicleIconColor(vehicle);
+          vehicles += 1;
+        }
+        continue;
+      }
+      if (garageVehicleHasBackupData(vehicle)) {
+        const ok = await cloudUpdateVehicle(vehicle);
+        if (ok) vehicles += 1;
+      }
+    }
+    for (const item of state.fuel) {
+      if (!item.cloudId) {
+        const saved = await cloudAddFuelLog(item);
+        if (saved?.id) fuel += 1;
+      }
+    }
+    for (const item of state.services) {
+      if (!item.cloudId) {
+        const saved = await cloudAddServiceLog(item);
+        if (saved?.id) services += 1;
+      }
+    }
+    refreshVehicleIconColorSettings();
+    touchState();
+    saveState();
+    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
+    render();
+    const suffix = garageVehicleExtendedSchemaPending ? ' · nová pole čekají na Supabase migraci/schema reload' : '';
+    showToast(`Garáž zkontrolována: ${vehicles} aut, ${fuel} tankování, ${services} servisů${suffix}`);
+  }
+
+
+
+  function frequencyToCloud(value) {
+    const map = { monthly: 'monthly', yearly: 'yearly', once: 'one_time', one_time: 'one_time', quarterly: 'quarterly', other: 'other' };
+    return map[value] || 'monthly';
+  }
+
+  function frequencyFromCloud(value) {
+    const map = { monthly: 'monthly', yearly: 'yearly', one_time: 'once', quarterly: 'quarterly', other: 'other' };
+    return map[value] || 'monthly';
+  }
+
+  function contractTypeOptions(selected = '') {
+    return CONTRACT_TYPE_OPTIONS.map(([value, label]) => [value, label]);
+  }
+
+  function contractTypeLabel(value) {
+    const found = CONTRACT_TYPE_OPTIONS.find(([key]) => key === value);
+    return found ? found[1] : (value || 'typ neuveden');
+  }
+
+  function cloudContractPayload(contract, userId) {
+    return {
+      household_id: state.cloud.householdId,
+      profile_id: null,
+      title: contract.name,
+      type: contract.type || null,
+      provider: contract.provider || null,
+      contract_number: contract.number || null,
+      valid_from: contract.validFrom || null,
+      valid_until: contract.validTo || null,
+      amount: contract.amount === '' || contract.amount === null || contract.amount === undefined ? null : Number(contract.amount),
+      currency: 'CZK',
+      payment_frequency: frequencyToCloud(contract.frequency),
+      reminder_days: 30,
+      note: contract.note || null,
+      status: 'active',
+      created_by: userId || state.cloud.userId || null,
+      updated_by: userId || state.cloud.userId || null
+    };
+  }
+
+  async function cloudAddContract(contract) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    if (contract.cloudId) return { id: contract.cloudId };
+    const { data, error } = await client
+      .from('contracts')
+      .insert(cloudContractPayload(contract, user.id))
+      .select('id')
+      .single();
+    if (error) {
+      showToast(error.message || 'Smlouvu se nepovedlo uložit do cloudu');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudUpdateContract(contract) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId || !contract?.cloudId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const payload = cloudContractPayload(contract, user.id);
+    delete payload.household_id;
+    delete payload.profile_id;
+    delete payload.created_by;
+    const { error } = await client
+      .from('contracts')
+      .update(payload)
+      .eq('id', contract.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Smlouvu se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadContracts(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const user = await refreshCloudSession(false);
+    if (!user || !state.cloud?.householdId) return showToast('Nejdřív vytvoř / napoj domácnost v cloudu');
+    const { data, error } = await client
+      .from('contracts')
+      .select('id,title,type,provider,contract_number,valid_from,valid_until,amount,payment_frequency,note,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .order('valid_until', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false });
+    if (error) return showToast(error.message || 'Smlouvy se nepovedlo načíst');
+
+    const cloudContracts = (data || []).map((item) => {
+      const existing = state.contracts.find((contract) => contract.cloudId === item.id);
+      return {
+        id: existing?.id || uid(),
+        cloudId: item.id,
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        name: item.title || 'Smlouva',
+        type: item.type || '',
+        provider: item.provider || '',
+        number: item.contract_number || '',
+        validFrom: item.valid_from || '',
+        validTo: item.valid_until || '',
+        amount: item.amount === null || item.amount === undefined ? '' : Number(item.amount),
+        frequency: frequencyFromCloud(item.payment_frequency),
+        note: item.note || ''
+      };
+    });
+    const localOnly = state.contracts.filter((contract) => !contract.cloudId);
+    state.contracts = [...localOnly, ...cloudContracts];
+    if (!activeContractId && state.contracts.length) activeContractId = state.contracts[0].id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    await cloudLoadContractFiles(false);
+    if (showMessage) showToast('Cloud smlouvy načtené');
+  }
+
+  async function cloudSyncContractById(id) {
+    const contract = state.contracts.find((item) => item.id === id);
+    if (!contract) return;
+    if (contract.cloudId) {
+      const ok = await cloudUpdateContract(contract);
+      if (!ok) return;
+      showToast('Cloud smlouva aktualizovaná');
+    } else {
+      const cloudContract = await cloudAddContract(contract);
+      if (!cloudContract?.id) return;
+      contract.cloudId = cloudContract.id;
+      showToast('Smlouva odeslaná do cloudu');
+    }
+    touchState();
+    saveState();
+    render();
+  }
+
+  async function cloudSyncLocalContracts() {
+    const localContracts = state.contracts.filter((contract) => !contract.cloudId);
+    if (!state.cloud?.householdId) return showToast('Nejdřív napoj domácnost na cloud');
+    if (!localContracts.length) return showToast('Není co odeslat');
+    let synced = 0;
+    for (const contract of localContracts) {
+      const cloudContract = await cloudAddContract(contract);
+      if (cloudContract?.id) {
+        contract.cloudId = cloudContract.id;
+        synced += 1;
+      }
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(synced ? `Odesláno smluv: ${synced}` : 'Nic se nepovedlo odeslat');
+  }
+
+  async function cloudDeleteContract(contract) {
+    const client = getSupabaseClient();
+    if (!client || !contract?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client
+      .from('contracts')
+      .delete()
+      .eq('id', contract.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Cloud smlouvu se nepovedlo smazat');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+
+
+  function pad2(value) {
+    return String(value).padStart(2, '0');
+  }
+
+  function lastSundayIso(year, monthIndex) {
+    const date = new Date(Date.UTC(year, monthIndex + 1, 0));
+    date.setUTCDate(date.getUTCDate() - date.getUTCDay());
+    return date.toISOString().slice(0, 10);
+  }
+
+  function pragueOffsetForLocalDateTime(date, time = '00:00') {
+    const cleanDate = String(date || todayISO()).slice(0, 10);
+    const cleanTime = String(time || '00:00').slice(0, 5);
+    const year = Number(cleanDate.slice(0, 4));
+    if (!Number.isFinite(year)) return '+01:00';
+    const dstStart = lastSundayIso(year, 2);
+    const dstEnd = lastSundayIso(year, 9);
+    if (cleanDate > dstStart && cleanDate < dstEnd) return '+02:00';
+    if (cleanDate === dstStart && cleanTime >= '02:00') return '+02:00';
+    if (cleanDate === dstEnd && cleanTime < '03:00') return '+02:00';
+    return '+01:00';
+  }
+
+  function buildCalendarDateTime(date, time, fallbackTime = '00:00') {
+    const d = String(date || todayISO()).slice(0, 10);
+    const t = String(time || fallbackTime || '00:00').slice(0, 5);
+    return `${d}T${t}:00${pragueOffsetForLocalDateTime(d, t)}`;
+  }
+
+  function zonedDateTimeParts(value, timeZone = APP_TIME_ZONE) {
+    const date = toSafeDate(value);
+    if (!date) return { date: '', time: '' };
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23'
+    }).formatToParts(date).reduce((acc, part) => {
+      if (part.type !== 'literal') acc[part.type] = part.value;
+      return acc;
+    }, {});
+    return {
+      date: `${parts.year}-${parts.month}-${parts.day}`,
+      time: `${parts.hour}:${parts.minute}`
+    };
+  }
+
+  function splitCalendarDateTime(value, options = {}) {
+    if (!value) return { date: '', time: '' };
+    const text = String(value);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return { date: text, time: '' };
+    const hasExplicitZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(text);
+    if (hasExplicitZone) {
+      const parts = zonedDateTimeParts(text, APP_TIME_ZONE);
+      return { date: parts.date, time: options.allDay ? '' : parts.time };
+    }
+    return { date: text.slice(0, 10), time: options.allDay ? '' : (text.length >= 16 ? text.slice(11, 16) : '') };
+  }
+
+  function normalizeCalendarType(value) {
+    const map = { rodina: 'family', prace: 'event', domacnost: 'event', ostatni: 'other' };
+    const next = map[value] || value || 'event';
+    return ['event', 'shift', 'family', 'reminder', 'holiday', 'other'].includes(next) ? next : 'event';
+  }
+
+  function cloudCalendarPayload(event, userId, sourceId = null) {
+    const start = buildCalendarDateTime(event.date, event.time, '00:00');
+    const endDate = normalizeText(event.endDate) || event.date;
+    const end = event.endTime || event.endDate ? buildCalendarDateTime(endDate, event.endTime || event.time || '23:59', event.time || '00:00') : null;
+    return {
+      household_id: state.cloud.householdId,
+      source_id: sourceId || event.sourceId || null,
+      profile_id: event.profileId && String(event.profileId).startsWith('profile-') ? null : event.profileId || null,
+      title: event.title || 'Událost',
+      description: event.note || null,
+      location: event.location || null,
+      starts_at: start,
+      ends_at: end,
+      all_day: !event.time,
+      event_type: normalizeCalendarType(event.type),
+      status: 'confirmed',
+      visibility: 'household',
+      created_by: event.cloudId ? undefined : userId,
+      updated_by: userId
+    };
+  }
+
+  async function cloudLoadCalendarSources(showMessage = false) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return [];
+    }
+    const { data, error } = await client
+      .from('calendar_sources')
+      .select('id,household_id,profile_id,name,provider,provider_calendar_id,provider_connection_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .order('created_at', { ascending: true });
+    if (error) {
+      if (showMessage) showToast(error.message || 'Zdroje kalendáře se nepovedlo načíst');
+      return getCalendarSources();
+    }
+    const sources = (data || []).map(mapCalendarSource);
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      sources,
+      sourcesLoadedAt: new Date().toISOString()
+    };
+    touchState();
+    saveState();
+    if (showMessage) {
+      render();
+      showToast('Zdroje kalendáře načtené');
+    }
+    return sources;
+  }
+
+  async function ensureManualCalendarSource() {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    let sources = getCalendarSources();
+    let cached = sources.find((source) => source.provider === 'manual' && source.isEnabled !== false);
+    if (cached?.id) return cached.id;
+    if (!sources.length) sources = await cloudLoadCalendarSources(false);
+    cached = sources.find((source) => source.provider === 'manual' && source.isEnabled !== false);
+    if (cached?.id) return cached.id;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const { data: existing, error: existingError } = await client
+      .from('calendar_sources')
+      .select('id,household_id,profile_id,name,provider,provider_calendar_id,provider_connection_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .eq('provider', 'manual')
+      .limit(1);
+    if (existingError) {
+      showToast(existingError.message || 'Zdroj kalendáře se nepovedlo načíst');
+      return null;
+    }
+    if (existing?.[0]?.id) {
+      const source = mapCalendarSource(existing[0]);
+      state.calendarCloud = { ...(state.calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), [source]) };
+      return source.id;
+    }
+    const { data, error } = await client.from('calendar_sources').insert({
+      household_id: state.cloud.householdId,
+      name: 'Ruční kalendář',
+      provider: 'manual',
+      is_enabled: true,
+      sync_enabled: false,
+      created_by: user.id,
+      updated_by: user.id
+    }).select('id,household_id,profile_id,name,provider,provider_calendar_id,provider_connection_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at').single();
+    if (error) {
+      showToast(error.message || 'Zdroj kalendáře se nepovedlo vytvořit');
+      return null;
+    }
+    const source = mapCalendarSource(data);
+    state.calendarCloud = { ...(state.calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), [source]) };
+    return source.id;
+  }
+
+  function mergeCalendarSources(current = [], incoming = []) {
+    const map = new Map();
+    [...current, ...incoming].forEach((source) => {
+      const normalized = mapCalendarSource(source);
+      const key = String(normalized.id || normalized.cloudId || normalized.name);
+      map.set(key, normalized);
+    });
+    return [...map.values()].sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+  }
+
+  async function addCalendarSourceFromForm(data, form) {
+    const source = mapCalendarSource({
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      name: normalizeText(data.name),
+      provider: normalizeCalendarSourceProvider(data.provider),
+      providerCalendarId: normalizeText(data.providerCalendarId),
+      color: normalizeText(data.color),
+      isEnabled: true,
+      syncEnabled: normalizeCalendarSourceProvider(data.provider) === 'google',
+      note: normalizeText(data.note),
+      createdAt: new Date().toISOString()
+    });
+    if (!source.name) return showToast('Doplň název kalendáře');
+    const saved = await cloudAddCalendarSource(source);
+    if (saved?.id) {
+      source.id = saved.id;
+      source.cloudId = saved.id;
+    }
+    state.calendarCloud = { ...(state.calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), [source]) };
+    touchState();
+    saveState();
+    form.reset();
+    render();
+    const google = source.provider === 'google';
+    showToast(saved?.id ? (google ? 'Google zdroj připravený v cloudu' : 'Zdroj kalendáře uložen do cloudu') : 'Zdroj kalendáře uložen lokálně');
+  }
+
+  async function cloudAddCalendarSource(source) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const payload = {
+      household_id: state.cloud.householdId,
+      profile_id: source.profileId && String(source.profileId).startsWith('profile-') ? null : source.profileId || null,
+      name: source.name || 'Kalendář',
+      provider: normalizeCalendarSourceProvider(source.provider),
+      provider_calendar_id: source.providerCalendarId || null,
+      color: source.color || null,
+      is_enabled: source.isEnabled !== false,
+      sync_enabled: normalizeCalendarSourceProvider(source.provider) === 'google' ? source.syncEnabled !== false : Boolean(source.syncEnabled),
+      note: source.note || null,
+      created_by: user.id,
+      updated_by: user.id
+    };
+    const { data, error } = await client
+      .from('calendar_sources')
+      .insert(payload)
+      .select('id,household_id,profile_id,name,provider,provider_calendar_id,provider_connection_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at')
+      .single();
+    if (error) {
+      showToast(error.message || 'Zdroj kalendáře se nepovedlo uložit do cloudu');
+      return null;
+    }
+    return data;
+  }
+
+
+  async function cloudSyncLocalCalendarSources(showMessage = false) {
+    if (!cloudReady()) return 0;
+    const localSources = getCalendarSources().filter((source) => !source.cloudId);
+    if (!localSources.length) {
+      if (showMessage) showToast('Žádné lokální zdroje kalendáře k odeslání');
+      return 0;
+    }
+    let count = 0;
+    const savedSources = [];
+    for (const source of localSources) {
+      try {
+        const saved = await cloudAddCalendarSource(source);
+        if (saved?.id) {
+          source.id = saved.id;
+          source.cloudId = saved.id;
+          savedSources.push(mapCalendarSource(saved));
+          count += 1;
+        }
+      } catch (error) {
+        console.warn('Cloud calendar source sync failed', error);
+      }
+    }
+    state.calendarCloud = { ...(state.calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), savedSources) };
+    touchState();
+    saveState();
+    if (showMessage) showToast(`Odesláno zdrojů kalendáře: ${count}`);
+    return count;
+  }
+
+  function normalizeGoogleCalendarItem(item = {}) {
+    return {
+      id: String(item.id || item.calendarId || ''),
+      summary: item.summary || item.name || 'Google kalendář',
+      description: item.description || '',
+      primary: Boolean(item.primary),
+      accessRole: item.accessRole || item.access_role || '',
+      backgroundColor: item.backgroundColor || item.background_color || '',
+      foregroundColor: item.foregroundColor || item.foreground_color || '',
+      selected: Boolean(item.selected)
+    };
+  }
+
+
+  function rememberGoogleCalendarError(payload = {}) {
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      googleLastError: {
+        code: payload.code || payload.errorCode || '',
+        message: payload.error || payload.message || '',
+        at: new Date().toISOString(),
+        needsOAuthReconnect: Boolean(payload.needsOAuthReconnect || payload.needsGoogleLogin || payload.fallbackAvailable)
+      }
+    };
+    touchState();
+    saveState();
+  }
+
+  function googleCalendarNeedsOAuthReconnect(payload = {}) {
+    const code = String(payload.code || payload.errorCode || payload.reason || '').toLowerCase();
+    const message = String(payload.error || payload.message || '').toLowerCase();
+    return Boolean(payload.needsOAuthReconnect || payload.needsGoogleLogin || payload.fallbackAvailable)
+      || ['missing_provider_token', 'missing_google_token', 'google_token_missing', 'token_not_available', 'missing_calendar_scope', 'token_store_failed'].includes(code)
+      || message.includes('google token is not available')
+      || message.includes('chybí google token')
+      || message.includes('nepředalo kalendářový token');
+  }
+
+  function markGoogleCalendarMissingToken(message = 'Google účet je přihlášený, ale kalendářový token chybí.') {
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      googleConnection: {
+        ...(state.calendarCloud?.googleConnection || {}),
+        status: 'error',
+        tokenState: 'missing',
+        lastError: message
+      }
+    };
+    touchState();
+    saveState();
+  }
+
+  async function startGoogleCalendarOAuthReconnect(reason = '', { force = false } = {}) {
+    const attempted = sessionStorage.getItem(GOOGLE_CALENDAR_RECONNECT_FLAG) === '1';
+    if (attempted && !force) {
+      showToast('Automatické znovupřipojení už proběhlo. Další pokus spusť ručně tlačítkem Znovu připojit Google kalendář.');
+      return false;
+    }
+    sessionStorage.setItem(GOOGLE_CALENDAR_RECONNECT_FLAG, '1');
+    showToast(reason || 'Spouštím čisté znovupřipojení Google kalendáře.');
+    await googleCalendarStart({ cleanup: true });
+    return true;
+  }
+
+  async function readFunctionErrorMessage(error, fallback = 'Google backend zatím není připravený') {
+    if (!error) return fallback;
+    const context = error.context;
+    try {
+      if (context?.clone && typeof context.clone === 'function') {
+        const cloned = context.clone();
+        const body = await cloned.json().catch(() => null);
+        const message = body?.error || body?.message || body?.hint;
+        if (message) return message;
+      }
+      if (context?.json && typeof context.json === 'function') {
+        const body = await context.json().catch(() => null);
+        const message = body?.error || body?.message || body?.hint;
+        if (message) return message;
+      }
+      if (context?.text && typeof context.text === 'function') {
+        const text = await context.text().catch(() => '');
+        if (text) return text.slice(0, 220);
+      }
+    } catch (_) {
+      // Supabase FunctionsHttpError nemusí vždy dovolit přečíst body odpovědi.
+    }
+    return error.message || fallback;
+  }
+
+  async function invokeGoogleCalendarFunction(functionName, body = {}, showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client?.functions?.invoke) {
+      if (showMessage) showToast('Supabase funkce nejsou dostupné');
+      return null;
+    }
+    const user = await refreshCloudSession(false);
+    if (!user) {
+      if (showMessage) showToast('Nejdřív se přihlas');
+      return null;
+    }
+    let households = await cloudLoadHouseholds(false);
+    if (!households.length) {
+      resetLocalWorkspaceForCloudUser(user, { force: true });
+      const createdHouseholdId = await bootstrapCloudHousehold(false);
+      if (!createdHouseholdId) {
+        if (showMessage) showToast('Nejdřív vytvoř domácnost pro tento Google účet');
+        return null;
+      }
+      households = await cloudLoadHouseholds(false);
+    }
+    if (!cloudReady()) {
+      if (showMessage) showToast('Google účet zatím nemá aktivní domácnost');
+      return null;
+    }
+    const payload = {
+      householdId: state.cloud.householdId,
+      profileId: currentProfileId(),
+      ...body
+    };
+    try {
+      const { data, error } = await client.functions.invoke(functionName, { body: payload });
+      if (error || data?.error || data?.ok === false) {
+        const payloadError = data || {};
+        const message = payloadError?.error || payloadError?.message || await readFunctionErrorMessage(error, 'Google backend zatím není připravený');
+        console.warn(`${functionName} failed`, error || payloadError?.error || payloadError);
+        rememberGoogleCalendarError({ ...payloadError, error: message });
+        if (showMessage) showToast(message);
+        return null;
+      }
+      return data || {};
+    } catch (error) {
+      console.warn(`${functionName} failed`, error);
+      const message = await readFunctionErrorMessage(error, 'Google backend zatím není nasazený nebo nemá credentials');
+      if (showMessage) showToast(message);
+      return null;
+    }
+  }
+
+  async function googleCalendarStart(options = {}) {
+    const data = await invokeGoogleCalendarFunction('google-calendar-start', { returnTo: APP_PUBLIC_URL, cleanup: options.cleanup !== false }, true);
+    if (data?.connection) {
+      state.calendarCloud = { ...(state.calendarCloud || {}), googleConnection: data.connection, googleLastError: null };
+      touchState();
+      saveState();
+    }
+    if (data?.authUrl) {
+      window.location.href = data.authUrl;
+      return;
+    }
+    showToast('Nepřišla OAuth adresa. Zkontroluj Edge Function secrets.');
+  }
+
+  async function googleCalendarListCalendars(showMessage = true) {
+    const data = await invokeGoogleCalendarFunction('google-calendar-list-calendars', {}, showMessage);
+    if (!data) {
+      const lastError = state.calendarCloud?.googleLastError || {};
+      if (googleCalendarNeedsOAuthReconnect(lastError)) {
+        markGoogleCalendarMissingToken(lastError.message || lastError.error || 'Google účet je vidět, ale kalendářový token chybí.');
+        render();
+        if (showMessage) showToast('Kalendářový token chybí. Použij tlačítko Znovu připojit Google kalendář.');
+      }
+      return [];
+    }
+    const calendars = (data.calendars || data.items || []).map(normalizeGoogleCalendarItem).filter((calendar) => calendar.id);
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      googleConnection: data.connection ? { ...data.connection, tokenState: data.connection.tokenState || 'ready' } : state.calendarCloud?.googleConnection || null,
+      googleCalendars: calendars,
+      googleCalendarsLoadedAt: new Date().toISOString(),
+      googleLastError: null
+    };
+    touchState();
+    saveState();
+    sessionStorage.removeItem(GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG);
+    render();
+    if (showMessage) showToast(calendars.length ? `Načteno Google kalendářů: ${calendars.length}` : 'Google účet nemá dostupné kalendáře');
+    return calendars;
+  }
+
+  async function saveGoogleCalendarSourcesFromForm(form) {
+    if (!form) return;
+    const checkedIds = [...form.querySelectorAll('input[name="googleCalendarIds"]:checked')].map((input) => input.value);
+    if (!checkedIds.length) return showToast('Vyber aspoň jeden Google kalendář');
+    const calendars = googleCalendarItems().filter((calendar) => checkedIds.includes(calendar.id));
+    const data = await invokeGoogleCalendarFunction('google-calendar-save-sources', { calendars }, true);
+    if (!data) return;
+    const savedSources = (data.sources || []).map(mapCalendarSource);
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      sources: mergeCalendarSources(getCalendarSources(), savedSources),
+      googleConnection: data.connection || state.calendarCloud?.googleConnection || null
+    };
+    touchState();
+    saveState();
+    render();
+    showToast(savedSources.length ? `Uloženo Google kalendářů: ${savedSources.length}` : 'Výběr Google kalendářů uložen');
+  }
+
+  async function googleCalendarSync(sourceId = '') {
+    const cleanSourceId = normalizeText(sourceId);
+    let sources = getCalendarSources();
+    if (!sources.length && state.cloud?.householdId) sources = await cloudLoadCalendarSources(false);
+    const googleSources = sources.filter((source) => normalizeCalendarSourceProvider(source.provider) === 'google' && source.isEnabled !== false);
+    const body = {};
+
+    if (cleanSourceId) {
+      const source = getCalendarSource(cleanSourceId) || googleSources.find((item) => [item.id, item.cloudId].filter(Boolean).map(String).includes(cleanSourceId));
+      if (!source || normalizeCalendarSourceProvider(source.provider) !== 'google') return showToast('Google kalendář nenalezen');
+      body.sourceId = source.cloudId || source.id;
+      body.sourceIds = [source.cloudId || source.id].filter(Boolean);
+      body.calendarIds = [source.providerCalendarId].filter(Boolean);
+    } else if (googleSources.length) {
+      body.sourceIds = googleSources.map((source) => source.cloudId || source.id).filter(Boolean);
+      body.calendarIds = googleSources.map((source) => source.providerCalendarId).filter(Boolean);
+    }
+
+    const data = await invokeGoogleCalendarFunction('google-calendar-sync', body, true);
+    if (!data) return;
+    const syncedSources = (data.sources || []).map(mapCalendarSource);
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      sources: syncedSources.length ? mergeCalendarSources(getCalendarSources(), syncedSources) : getCalendarSources(),
+      googleConnection: data.connection || state.calendarCloud?.googleConnection || null,
+      googleLastSyncAt: new Date().toISOString()
+    };
+    await cloudLoadCalendar(false);
+    render();
+    showToast(`Google sync hotový${Number.isFinite(data.eventsUpserted) ? ` · ${data.eventsUpserted} událostí` : ''}`);
+  }
+
+  async function googleCalendarDisconnect() {
+    const data = await invokeGoogleCalendarFunction('google-calendar-disconnect', {}, true);
+    if (!data) return;
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      googleConnection: data.connection || { ...(state.calendarCloud?.googleConnection || {}), status: 'disconnected' },
+      googleCalendars: []
+    };
+    await cloudLoadCalendarSources(false);
+    render();
+    showToast('Google kalendář odpojený');
+  }
+
+  async function toggleCalendarSource(sourceId, enabled) {
+    const source = getCalendarSource(sourceId);
+    if (!source) return showToast('Zdroj kalendáře nenalezen');
+    const nextEnabled = enabled !== undefined ? enabled : source.isEnabled === false;
+    source.isEnabled = Boolean(nextEnabled);
+    const client = getSupabaseClient();
+    if (client && state.cloud?.householdId && source.cloudId) {
+      const user = await refreshCloudSession(false);
+      const { error } = await client
+        .from('calendar_sources')
+        .update({ is_enabled: source.isEnabled, updated_by: user?.id || undefined })
+        .eq('id', source.cloudId)
+        .eq('household_id', state.cloud.householdId);
+      if (error) {
+        showToast(error.message || 'Zdroj kalendáře se nepovedlo upravit');
+        return;
+      }
+    }
+    state.calendarCloud = { ...(state.calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), [source]) };
+    touchState();
+    saveState();
+    render();
+    showToast(source.isEnabled ? 'Kalendář zobrazen' : 'Kalendář skrytý');
+  }
+
+  async function deleteCalendarSource(sourceId) {
+    const source = getCalendarSource(sourceId);
+    if (!source) return showToast('Zdroj kalendáře nenalezen');
+    const label = source.name || 'kalendář';
+    const ok = window.confirm(`Odebrat kalendář „${label}“ a jeho události z Domácnost+?`);
+    if (!ok) return;
+
+    const sourceKeys = [source.id, source.cloudId].filter(Boolean).map(String);
+    const client = getSupabaseClient();
+    if (client && state.cloud?.householdId && source.cloudId) {
+      const { error: eventsError } = await client
+        .from('calendar_events')
+        .delete()
+        .eq('source_id', source.cloudId)
+        .eq('household_id', state.cloud.householdId);
+      if (eventsError) {
+        showToast(eventsError.message || 'Události kalendáře se nepovedlo odebrat');
+        return;
+      }
+      const { error } = await client
+        .from('calendar_sources')
+        .delete()
+        .eq('id', source.cloudId)
+        .eq('household_id', state.cloud.householdId);
+      if (error) {
+        showToast(error.message || 'Kalendář se nepovedlo odebrat');
+        return;
+      }
+    }
+
+    state.calendarCloud = {
+      ...(state.calendarCloud || {}),
+      sources: getCalendarSources().filter((item) => !sourceKeys.includes(String(item.id || '')) && !sourceKeys.includes(String(item.cloudId || ''))),
+      sourcesLoadedAt: new Date().toISOString()
+    };
+    state.calendar = (state.calendar || []).filter((event) => !sourceKeys.includes(String(event.sourceId || '')));
+    if (state.calendarCloud?.googleCalendars?.length && source.providerCalendarId) {
+      state.calendarCloud.googleCalendars = state.calendarCloud.googleCalendars.map((calendar) => String(calendar.id || '') === String(source.providerCalendarId) ? { ...calendar, selected: false } : calendar);
+    }
+    if (state.cloud) state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    showToast('Kalendář odebraný');
+  }
+
+  async function cloudAddCalendarEvent(event) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    let sourceId = event.sourceId || '';
+    let source = getCalendarSource(sourceId);
+    if (source && !source.cloudId) {
+      const savedSource = await cloudAddCalendarSource(source);
+      if (savedSource?.id) {
+        source.cloudId = savedSource.id;
+        source.id = savedSource.id;
+        sourceId = savedSource.id;
+        state.calendarCloud = { ...(state.calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), [source, mapCalendarSource(savedSource)]) };
+      }
+    }
+    source = getCalendarSource(sourceId);
+    if (source?.cloudId) sourceId = source.cloudId;
+    if (sourceId === 'manual' || !sourceId || !getCalendarSource(sourceId)) {
+      sourceId = await ensureManualCalendarSource();
+    }
+    const { data, error } = await client.from('calendar_events').insert(cloudCalendarPayload(event, user.id, sourceId)).select('id,source_id').single();
+    if (error) {
+      showToast(error.message || 'Událost se nepovedlo uložit do cloudu');
+      return null;
+    }
+    event.cloudId = data.id;
+    event.sourceId = data.source_id || sourceId || '';
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudDeleteCalendarEvent(event) {
+    const client = getSupabaseClient();
+    if (!client || !event?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('calendar_events').delete().eq('id', event.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Cloud událost se nepovedlo smazat');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadCalendar(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return false;
+    }
+    await cloudLoadCalendarSources(false);
+    const { data, error } = await client
+      .from('calendar_events')
+      .select('id,source_id,title,description,location,starts_at,ends_at,all_day,event_type,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .neq('status', 'cancelled')
+      .order('starts_at', { ascending: true });
+    if (error) {
+      showToast(error.message || 'Kalendář se nepovedlo načíst');
+      return false;
+    }
+    const localOnly = state.calendar.filter((event) => !event.cloudId);
+    const cloudItems = (data || []).map((item) => {
+      const start = splitCalendarDateTime(item.starts_at, { allDay: item.all_day });
+      const end = splitCalendarDateTime(item.ends_at, { allDay: item.all_day });
+      return {
+        id: state.calendar.find((event) => event.cloudId === item.id)?.id || `event-cloud-${item.id}`,
+        cloudId: item.id,
+        sourceId: item.source_id || '',
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: item.created_at || new Date().toISOString(),
+        title: item.title || 'Událost',
+        date: start.date,
+        time: item.all_day ? '' : start.time,
+        endDate: end.date && end.date !== start.date ? end.date : '',
+        endTime: item.all_day ? '' : end.time || '',
+        type: normalizeCalendarType(item.event_type),
+        location: item.location || '',
+        note: item.description || ''
+      };
+    });
+    state.calendar = [...cloudItems, ...localOnly];
+    state.calendarCloud = { ...(state.calendarCloud || {}), loadedAt: new Date().toISOString(), sourcesLoadedAt: state.calendarCloud?.sourcesLoadedAt || new Date().toISOString() };
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast('Cloud kalendář načten');
+    return true;
+  }
+
+  async function cloudSyncCalendarById(id) {
+    const event = state.calendar.find((entry) => entry.id === id);
+    if (!event) return;
+    await cloudAddCalendarEvent(event);
+    touchState();
+    saveState();
+    render();
+    showToast(event.cloudId ? 'Událost odeslána do cloudu' : 'Událost zůstala lokálně');
+  }
+
+  async function cloudSyncLocalCalendar() {
+    const local = state.calendar.filter((event) => !event.cloudId);
+    if (!local.length) return showToast('Žádné lokální události k odeslání');
+    let count = 0;
+    for (const event of local) {
+      const saved = await cloudAddCalendarEvent(event);
+      if (saved?.id) count += 1;
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(`Odesláno událostí: ${count}`);
+  }
+
+  async function addEventFromForm(data, form) {
+    const event = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      title: normalizeText(data.title),
+      date: normalizeText(data.date),
+      endDate: normalizeText(data.endDate),
+      time: normalizeText(data.time),
+      endTime: normalizeText(data.endTime),
+      type: normalizeCalendarType(data.type),
+      sourceId: normalizeText(data.sourceId) || 'manual',
+      location: normalizeText(data.location),
+      note: normalizeText(data.note)
+    };
+    if (!event.title || !event.date) return showToast('Doplň název a datum');
+    const saved = await cloudAddCalendarEvent(event);
+    if (saved?.id) event.cloudId = saved.id;
+    state.calendar.push(event);
+    touchState();
+    saveState();
+    form.reset();
+    render();
+    showToast(event.cloudId ? 'Událost uložena do cloudu' : 'Událost uložena lokálně');
+  }
+
+  async function deleteCalendarEvent(id) {
+    const event = state.calendar.find((entry) => entry.id === id);
+    if (!event) return;
+    const ok = await cloudDeleteCalendarEvent(event);
+    if (!ok) return;
+    state.calendar = state.calendar.filter((entry) => entry.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Událost smazána');
+  }
+
+  function cloudParcelPayload(pkg, userId) {
+    return {
+      household_id: state.cloud.householdId,
+      profile_id: pkg.profileId && String(pkg.profileId).startsWith('profile-') ? null : pkg.profileId || null,
+      title: pkg.title || pkg.note || carrierLabel(pkg.carrier) || 'Balík',
+      carrier: pkg.carrier || 'other',
+      tracking_number: pkg.tracking || '',
+      tracking_url: pkg.url || null,
+      status: parcelStatusToCloud(pkg.status),
+      expected_date: pkg.expectedDate || null,
+      pickup_place: pkg.pickupPlace || null,
+      note: pkg.note || null,
+      source: pkg.source || 'manual',
+      created_by: pkg.cloudId ? undefined : userId,
+      updated_by: userId
+    };
+  }
+
+  async function cloudAddParcel(pkg) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const { data, error } = await client.from('parcels').insert(cloudParcelPayload(pkg, user.id)).select('id').single();
+    if (error) {
+      showToast(error.message || 'Balík se nepovedlo uložit do cloudu');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudUpdateParcel(pkg) {
+    const client = getSupabaseClient();
+    if (!client || !pkg?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const payload = cloudParcelPayload(pkg, user.id);
+    delete payload.created_by;
+    const { error } = await client.from('parcels').update(payload).eq('id', pkg.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Balík se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteParcel(pkg) {
+    const client = getSupabaseClient();
+    if (!client || !pkg?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('parcels').delete().eq('id', pkg.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Cloud balík se nepovedlo smazat');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadParcels(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return;
+    }
+    const { data, error } = await client
+      .from('parcels')
+      .select('id,title,carrier,tracking_number,tracking_url,status,expected_date,pickup_place,note,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .order('created_at', { ascending: false });
+    if (error) {
+      showToast(error.message || 'Balíky se nepovedlo načíst');
+      return;
+    }
+    const localOnly = state.packages.filter((pkg) => !pkg.cloudId);
+    const cloudItems = (data || []).map((item) => ({
+      id: state.packages.find((pkg) => pkg.cloudId === item.id)?.id || `parcel-cloud-${item.id}`,
+      cloudId: item.id,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: item.created_at || new Date().toISOString(),
+      title: item.title || '',
+      carrier: item.carrier || 'other',
+      tracking: item.tracking_number || '',
+      url: item.tracking_url || '',
+      status: parcelStatusFromCloud(item.status),
+      expectedDate: item.expected_date || '',
+      pickupPlace: item.pickup_place || '',
+      note: item.note || ''
+    }));
+    state.packages = [...localOnly, ...cloudItems];
+    state.parcelsCloud = { ...(state.parcelsCloud || {}), loadedAt: new Date().toISOString() };
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(`Načteno balíků: ${cloudItems.length}`);
+  }
+
+  async function cloudSyncParcelById(id) {
+    const pkg = state.packages.find((item) => item.id === id);
+    if (!pkg) return;
+    const saved = pkg.cloudId ? await cloudUpdateParcel(pkg) : await cloudAddParcel(pkg);
+    if (saved?.id) pkg.cloudId = saved.id;
+    touchState();
+    saveState();
+    render();
+    showToast(pkg.cloudId ? 'Balík uložen do cloudu' : 'Balík se nepovedlo odeslat');
+  }
+
+  async function cloudSyncLocalParcels() {
+    const local = state.packages.filter((pkg) => !pkg.cloudId);
+    let synced = 0;
+    for (const pkg of local) {
+      const saved = await cloudAddParcel(pkg);
+      if (saved?.id) {
+        pkg.cloudId = saved.id;
+        synced += 1;
+      }
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(synced ? `Odesláno balíků: ${synced}` : 'Žádný balík se nepovedlo odeslat');
+  }
+
+  async function addPackageFromForm(data, form) {
+    const item = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      title: normalizeText(data.title) || normalizeText(data.note) || carrierLabel(data.carrier),
+      carrier: data.carrier || 'other',
+      tracking: normalizeText(data.tracking),
+      status: data.status || 'new',
+      url: normalizeText(data.url),
+      expectedDate: normalizeText(data.expectedDate),
+      pickupPlace: normalizeText(data.pickupPlace),
+      note: normalizeText(data.note),
+      source: 'manual'
+    };
+    const saved = await cloudAddParcel(item);
+    if (saved?.id) item.cloudId = saved.id;
+    state.packages.push(item);
+    touchState();
+    saveState();
+    form?.reset();
+    render();
+    showToast(item.cloudId ? 'Balík uložen do cloudu' : 'Balík uložen lokálně');
+  }
+
+  async function deletePackage(id) {
+    const item = state.packages.find((pkg) => pkg.id === id);
+    if (!item) return;
+    const ok = await cloudDeleteParcel(item);
+    if (!ok) return;
+    state.packages = state.packages.filter((pkg) => pkg.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Balík smazán');
+  }
+
+  function cloudHdoDaysToDb(days) {
+    const list = Array.isArray(days) ? days : [];
+    return list.map((day) => Number(day) === 0 ? 7 : Number(day)).filter((day) => day >= 1 && day <= 7);
+  }
+
+  function cloudHdoDaysFromDb(days) {
+    const list = Array.isArray(days) ? days : [];
+    return list.map((day) => Number(day) === 7 ? 0 : Number(day)).filter((day) => day >= 0 && day <= 6);
+  }
+
+  async function ensureCloudHdoSetting() {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    if (state.hdoCloud?.settingId) return state.hdoCloud.settingId;
+    const payload = {
+      household_id: state.cloud.householdId,
+      title: 'HDO / nízký tarif',
+      created_by: user.id,
+      updated_by: user.id
+    };
+    const { data, error } = await client
+      .from('hdo_settings')
+      .upsert(payload, { onConflict: 'household_id' })
+      .select('id')
+      .single();
+    if (error) {
+      showToast(error.message || 'Nastavení HDO se nepovedlo založit v cloudu');
+      return null;
+    }
+    state.hdoCloud = { ...(state.hdoCloud || {}), settingId: data.id, loadedAt: new Date().toISOString() };
+    return data.id;
+  }
+
+  function cloudHdoPayload(item, settingId, userId) {
+    return {
+      household_id: state.cloud.householdId,
+      setting_id: settingId,
+      label: item.label || null,
+      days: cloudHdoDaysToDb(item.days),
+      start_time: item.start || '00:00',
+      end_time: item.end || '00:00',
+      is_enabled: item.enabled !== false,
+      source: 'manual',
+      created_by: item.cloudId ? undefined : userId,
+      updated_by: userId
+    };
+  }
+
+  async function cloudAddHdoWindow(item) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const settingId = await ensureCloudHdoSetting();
+    if (!settingId) return null;
+    const payload = cloudHdoPayload(item, settingId, user.id);
+    const { data, error } = await client.from('hdo_windows').insert(payload).select('id').single();
+    if (error) {
+      showToast(error.message || 'HDO okno se nepovedlo uložit do cloudu');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudUpdateHdoWindow(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const settingId = await ensureCloudHdoSetting();
+    if (!settingId) return false;
+    const payload = cloudHdoPayload(item, settingId, user.id);
+    delete payload.created_by;
+    const { error } = await client.from('hdo_windows').update(payload).eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'HDO okno se nepovedlo aktualizovat v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteHdoWindow(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('hdo_windows').delete().eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'HDO okno se nepovedlo smazat z cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadHdoData(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return;
+    }
+    const { data: settings, error: settingsError } = await client
+      .from('hdo_settings')
+      .select('id,title,note')
+      .eq('household_id', state.cloud.householdId)
+      .maybeSingle();
+    if (settingsError) {
+      showToast(settingsError.message || 'HDO nastavení se nepovedlo načíst');
+      return;
+    }
+    if (settings?.id) {
+      state.hdoCloud = {
+        ...(state.hdoCloud || {}),
+        settingId: settings.id,
+        loadedAt: new Date().toISOString()
+      };
+    }
+    const { data, error } = await client
+      .from('hdo_windows')
+      .select('id,label,days,start_time,end_time,is_enabled')
+      .eq('household_id', state.cloud.householdId)
+      .order('start_time', { ascending: true });
+    if (error) {
+      showToast(error.message || 'HDO okna se nepovedlo načíst');
+      return;
+    }
+    const localOnly = state.hdoWindows.filter((item) => !item.cloudId);
+    const cloudItems = (data || []).map((item) => ({
+      id: `hdo-cloud-${item.id}`,
+      cloudId: item.id,
+      householdId: state.household.id,
+      profileId: currentProfileId(),
+      label: item.label || 'HDO okno',
+      start: String(item.start_time || '').slice(0, 5),
+      end: String(item.end_time || '').slice(0, 5),
+      days: cloudHdoDaysFromDb(item.days),
+      enabled: item.is_enabled !== false,
+      createdAt: new Date().toISOString()
+    }));
+    state.hdoWindows = [...cloudItems, ...localOnly];
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(`Načteno HDO oken: ${cloudItems.length}`);
+  }
+
+  async function cloudSyncHdoById(id) {
+    const item = state.hdoWindows.find((entry) => entry.id === id);
+    if (!item) return;
+    const saved = item.cloudId ? await cloudUpdateHdoWindow(item) : await cloudAddHdoWindow(item);
+    if (saved?.id) item.cloudId = saved.id;
+    touchState();
+    saveState();
+    render();
+    showToast(item.cloudId ? 'HDO uloženo do cloudu' : 'HDO se nepovedlo odeslat');
+  }
+
+  async function cloudSyncLocalHdo() {
+    const local = state.hdoWindows.filter((item) => !item.cloudId);
+    let synced = 0;
+    for (const item of local) {
+      const saved = await cloudAddHdoWindow(item);
+      if (saved?.id) {
+        item.cloudId = saved.id;
+        synced += 1;
+      }
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(synced ? `Odesláno HDO oken: ${synced}` : 'Žádné HDO se nepovedlo odeslat');
+  }
+
+  function normalizeHdoTimeInput(value) {
+    const raw = normalizeText(value).replace(/\s+/g, '');
+    if (!raw) return '';
+    const colon = raw.match(/^(\d{1,2}):(\d{1,2})$/);
+    if (colon) {
+      const h = Number(colon[1]);
+      const m = Number(colon[2]);
+      if (h >= 0 && h <= 23 && m >= 0 && m <= 59) return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length === 3 || digits.length === 4) {
+      const h = Number(digits.slice(0, -2));
+      const m = Number(digits.slice(-2));
+      if (h >= 0 && h <= 23 && m >= 0 && m <= 59) return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+    if (digits.length <= 2) {
+      const h = Number(digits);
+      if (h >= 0 && h <= 23) return `${String(h).padStart(2, '0')}:00`;
+    }
+    return '';
+  }
+
+  function formatHdoTimeInputLive(input, event = {}) {
+    if (!input) return;
+    const raw = String(input.value || '');
+    if (!raw) return;
+    if (raw.includes(':')) {
+      const [h = '', m = ''] = raw.split(':');
+      input.value = `${h.replace(/\D/g, '').slice(0, 2)}:${m.replace(/\D/g, '').slice(0, 2)}`;
+      return;
+    }
+    const digits = raw.replace(/\D/g, '').slice(0, 4);
+    if (!digits) {
+      input.value = '';
+      return;
+    }
+    if (digits.length === 2 && !String(event.inputType || '').startsWith('delete')) {
+      input.value = `${digits}:`;
+      return;
+    }
+    if (digits.length > 2) {
+      input.value = `${digits.slice(0, 2)}:${digits.slice(2, 4)}`;
+      return;
+    }
+    input.value = digits;
+  }
+
+  function normalizeHdoTimeInputOnBlur(input) {
+    if (!input) return;
+    const normalized = normalizeHdoTimeInput(input.value);
+    if (normalized) input.value = normalized;
+  }
+
+
+  async function addWarrantyFromForm(data, form) {
+    if (form?.dataset?.saving === 'true') {
+      showToast('Záruka se právě ukládá…');
+      return;
+    }
+    if (form) {
+      form.dataset.saving = 'true';
+      form.querySelectorAll('button[type="submit"]').forEach((button) => {
+        button.disabled = true;
+        button.dataset.originalText = button.textContent || '';
+        button.textContent = 'Ukládám…';
+      });
+    }
+    try {
+      const purchaseDate = normalizeText(data.purchaseDate) || todayISO();
+      const warrantyYears = normalizeWarrantyYears(data.warrantyYears || 2, purchaseDate);
+      const item = normalizeWarrantyItem({
+        id: uid(),
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: new Date().toISOString(),
+        name: data.name,
+        store: data.store,
+        price: data.price,
+        purchaseDate,
+        warrantyYears,
+        warrantyUntil: normalizeText(data.warrantyUntil) || addYearsIso(purchaseDate, warrantyYears),
+        status: data.status || 'active',
+        note: data.note
+      });
+      state.warranties = normalizeWarranties([...(state.warranties || []), item]);
+      let savedItem = state.warranties.find((entry) => entry.id === item.id) || item;
+      touchState();
+      saveState();
+      if (cloudReady()) {
+        try {
+          const saved = await cloudAddExtraItem('warranties', savedItem);
+          if (saved?.id) {
+            savedItem.cloudId = saved.id;
+            state.warranties = normalizeWarranties(state.warranties).map((entry) => entry.id === savedItem.id ? { ...entry, cloudId: saved.id } : entry);
+            savedItem = state.warranties.find((entry) => entry.id === item.id) || savedItem;
+            touchState();
+            saveState();
+          }
+        } catch (error) {
+          console.warn('Warranty cloud add failed', error);
+          showToast('Záruka je uložená lokálně, cloud se zkusí znovu automaticky');
+        }
+      }
+      const input = form?.querySelector?.('input[type="file"]');
+      const files = [...(input?.files || [])];
+      let fileResult = { added: 0, failed: 0 };
+      if (files.length) {
+        try {
+          fileResult = await addWarrantyFilesToWarranty(savedItem, files);
+        } catch (error) {
+          console.warn('Warranty file add failed', error);
+          showToast('Záruka je uložená, ale příloha se nepovedla přidat');
+          fileResult.failed += files.length;
+        }
+      }
+      touchState();
+      saveState();
+      if (cloudReady()) {
+        try {
+          await cloudSyncLocalWarrantyFiles(false);
+        } catch (error) {
+          console.warn('Warranty file follow-up sync failed', error);
+        }
+      }
+      clearWarrantyDraft();
+      form?.reset();
+      const purchase = form?.querySelector?.('[name="purchaseDate"]');
+      const years = form?.querySelector?.('[name="warrantyYears"]');
+      const until = form?.querySelector?.('[name="warrantyUntil"]');
+      if (purchase) purchase.value = todayISO();
+      if (years) years.value = '2';
+      if (until) until.value = addYearsIso(todayISO(), 2);
+      render();
+      if (files.length && fileResult.added) showToast(fileResult.failed ? 'Záruka uložená, část příloh se nepovedla' : 'Záruka a příloha uložená');
+      else showToast(files.length ? 'Záruka uložená, příloha se nepovedla' : 'Záruka uložena');
+    } finally {
+      if (form) {
+        delete form.dataset.saving;
+        form.querySelectorAll('button[type="submit"]').forEach((button) => {
+          button.disabled = false;
+          if (button.dataset.originalText) button.textContent = button.dataset.originalText;
+          delete button.dataset.originalText;
+        });
+      }
+    }
+  }
+
+  async function updateWarrantyFromForm(data, form) {
+    const id = form?.dataset?.id || '';
+    const existing = (state.warranties || []).find((item) => item.id === id);
+    if (!existing) return showToast('Záruka nenalezena');
+    const purchaseDate = normalizeText(data.purchaseDate) || existing.purchaseDate || todayISO();
+    const warrantyYears = normalizeWarrantyYears(data.warrantyYears || existing.warrantyYears || 2, purchaseDate);
+    const updated = normalizeWarrantyItem({
+      ...existing,
+      name: normalizeText(data.name) || existing.name,
+      store: normalizeText(data.store),
+      price: normalizeText(data.price),
+      purchaseDate,
+      warrantyYears,
+      warrantyUntil: normalizeText(data.warrantyUntil) || addYearsIso(purchaseDate, warrantyYears),
+      status: normalizeWarrantyStatus(data.status),
+      note: normalizeText(data.note),
+      updatedAt: new Date().toISOString()
+    });
+    state.warranties = normalizeWarranties(state.warranties).map((item) => item.id === id ? updated : item);
+    touchState();
+    saveState();
+    if (cloudReady()) {
+      const current = state.warranties.find((item) => item.id === id) || updated;
+      if (current.cloudId) await cloudUpdateExtraItem('warranties', current);
+      else {
+        const saved = await cloudAddExtraItem('warranties', current);
+        if (saved?.id) {
+          state.warranties = normalizeWarranties(state.warranties).map((item) => item.id === id ? { ...item, cloudId: saved.id } : item);
+          touchState();
+          saveState();
+        }
+      }
+    }
+    render();
+    showToast('Záruka upravena');
+  }
+
+  async function deleteWarranty(id) {
+    const before = (state.warranties || []).length;
+    const warranty = state.warranties.find((item) => item.id === id);
+    if (warranty?.cloudId) {
+      const ok = await cloudDeleteExtraItem('warranties', warranty);
+      if (!ok) return;
+    }
+    state.warranties = normalizeWarranties(state.warranties).filter((item) => item.id !== id);
+    if (state.warranties.length === before) return;
+    const files = (state.warrantyFiles || []).filter((file) => file.warrantyId === id);
+    for (const file of files) {
+      if (!file.cloudId) deleteStoredWarrantyFile(file.id).catch(() => {});
+    }
+    state.warrantyFiles = (state.warrantyFiles || []).filter((file) => file.warrantyId !== id);
+    touchState();
+    saveState();
+    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
+    render();
+    showToast('Záruka smazána');
+  }
+
+  async function addHdoWindowFromForm(data, form) {
+    const start = normalizeHdoTimeInput(data.start);
+    const end = normalizeHdoTimeInput(data.end);
+    if (!start || !end) return showToast('Zadej čas HDO jako 0600 nebo 06:00');
+    const item = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      label: normalizeText(data.label),
+      start,
+      end,
+      days: daysModeToArray(data.daysMode),
+      enabled: true
+    };
+    const saved = await cloudAddHdoWindow(item);
+    if (saved?.id) item.cloudId = saved.id;
+    state.hdoWindows.push(item);
+    touchState();
+    saveState();
+    form?.reset();
+    render();
+    showToast(item.cloudId ? 'HDO okno uloženo do cloudu' : 'HDO okno uloženo lokálně');
+  }
+
+  async function toggleHdoWindow(id) {
+    const item = state.hdoWindows.find((entry) => entry.id === id);
+    if (!item) return;
+    item.enabled = !item.enabled;
+    const ok = await cloudUpdateHdoWindow(item);
+    if (!ok) {
+      item.enabled = !item.enabled;
+      return;
+    }
+    touchState();
+    saveState();
+    render();
+  }
+
+  async function deleteHdoWindow(id) {
+    const item = state.hdoWindows.find((entry) => entry.id === id);
+    if (!item) return;
+    const ok = await cloudDeleteHdoWindow(item);
+    if (!ok) return;
+    state.hdoWindows = state.hdoWindows.filter((entry) => entry.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('HDO okno smazáno');
+  }
+
+
+  function wasteRepeatLabel(value) {
+    return ({ none: 'jednorázově', weekly: 'týdně', biweekly: 'každé 2 týdny', monthly: 'měsíčně', custom: 'vlastní opakování' })[value || 'none'] || 'jednorázově';
+  }
+
+  function cloudWastePayload(item, userId) {
+    return {
+      household_id: state.cloud.householdId,
+      title: item.type || 'Svoz odpadu',
+      pickup_date: item.date || todayISO(),
+      repeat_rule: item.repeatRule || 'none',
+      repeat_interval: item.repeatRule === 'biweekly' ? 2 : 1,
+      notify_before_hours: item.notifyBeforeHours === '' || item.notifyBeforeHours === undefined ? 12 : Number(item.notifyBeforeHours),
+      is_enabled: item.enabled !== false,
+      note: item.note || null,
+      created_by: item.cloudId ? undefined : userId,
+      updated_by: userId
+    };
+  }
+
+  async function cloudAddWaste(item) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const payload = cloudWastePayload(item, user.id);
+    const { data, error } = await client.from('waste_schedules').insert(payload).select('id').single();
+    if (error) {
+      showToast(error.message || 'Svoz se nepovedlo uložit do cloudu');
+      return null;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudUpdateWaste(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const payload = cloudWastePayload(item, user.id);
+    delete payload.created_by;
+    const { error } = await client.from('waste_schedules').update(payload).eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Svoz se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteWaste(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('waste_schedules').delete().eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Svoz se nepovedlo smazat z cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadWaste(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return;
+    }
+    const { data, error } = await client
+      .from('waste_schedules')
+      .select('id,title,pickup_date,repeat_rule,notify_before_hours,is_enabled,note')
+      .eq('household_id', state.cloud.householdId)
+      .order('pickup_date', { ascending: true });
+    if (error) {
+      showToast(error.message || 'Svoz odpadu se nepovedlo načíst');
+      return;
+    }
+    const localOnly = state.waste.filter((item) => !item.cloudId);
+    const cloudItems = (data || []).map((item) => ({
+      id: state.waste.find((entry) => entry.cloudId === item.id)?.id || `waste-cloud-${item.id}`,
+      cloudId: item.id,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      type: item.title || 'Svoz odpadu',
+      date: item.pickup_date || '',
+      repeatRule: item.repeat_rule || 'none',
+      notifyBeforeHours: item.notify_before_hours ?? 12,
+      enabled: item.is_enabled !== false,
+      note: item.note || ''
+    }));
+    state.waste = [...cloudItems, ...localOnly];
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(`Načteno svozů: ${cloudItems.length}`);
+  }
+
+  async function cloudSyncWasteById(id) {
+    const item = state.waste.find((entry) => entry.id === id);
+    if (!item) return;
+    const saved = item.cloudId ? await cloudUpdateWaste(item) : await cloudAddWaste(item);
+    if (saved?.id) item.cloudId = saved.id;
+    touchState();
+    saveState();
+    render();
+    showToast(item.cloudId ? 'Svoz uložen do cloudu' : 'Svoz se nepovedlo odeslat');
+  }
+
+  async function cloudSyncLocalWaste() {
+    const local = state.waste.filter((item) => !item.cloudId);
+    let synced = 0;
+    for (const item of local) {
+      const saved = await cloudAddWaste(item);
+      if (saved?.id) {
+        item.cloudId = saved.id;
+        synced += 1;
+      }
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(synced ? `Odesláno svozů: ${synced}` : 'Žádný svoz se nepovedlo odeslat');
+  }
+
+  async function addWasteFromForm(data, form) {
+    const item = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      type: normalizeText(data.type),
+      date: normalizeText(data.date),
+      repeatRule: data.repeatRule || 'none',
+      notifyBeforeHours: data.notifyBeforeHours === '' || data.notifyBeforeHours === undefined ? 12 : Number(data.notifyBeforeHours),
+      enabled: true,
+      note: normalizeText(data.note)
+    };
+    const saved = await cloudAddWaste(item);
+    if (saved?.id) item.cloudId = saved.id;
+    state.waste.push(item);
+    touchState();
+    saveState();
+    form?.reset();
+    render();
+    showToast(item.cloudId ? 'Svoz uložen do cloudu' : 'Svoz uložen lokálně');
+  }
+
+  async function deleteWaste(id) {
+    const item = state.waste.find((entry) => entry.id === id);
+    if (!item) return;
+    const ok = await cloudDeleteWaste(item);
+    if (!ok) return;
+    state.waste = state.waste.filter((entry) => entry.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Svoz smazán');
+  }
+
+
+  function normalizeTaskCategory(value) {
+    const valid = new Set(TASK_CATEGORY_OPTIONS.map(([key]) => key));
+    return valid.has(value) ? value : 'domacnost';
+  }
+
+  function normalizeTaskPriority(value) {
+    const valid = new Set(TASK_PRIORITY_OPTIONS.map(([key]) => key));
+    return valid.has(value) ? value : 'normal';
+  }
+
+  function taskCategoryLabel(value) {
+    return TASK_CATEGORY_OPTIONS.find(([key]) => key === value)?.[1] || 'Domácnost';
+  }
+
+  function taskPriorityLabel(value) {
+    return TASK_PRIORITY_OPTIONS.find(([key]) => key === value)?.[1] || 'Normální';
+  }
+
+  function cloudTaskPayload(task, userId) {
+    return {
+      household_id: state.cloud.householdId,
+      profile_id: null,
+      assigned_profile_id: null,
+      title: task.title || 'Úkol',
+      description: task.note || null,
+      category: normalizeTaskCategory(task.category),
+      priority: normalizeTaskPriority(task.priority),
+      status: task.done ? 'done' : 'open',
+      due_date: task.due || null,
+      due_at: null,
+      repeat_rule: 'none',
+      repeat_interval: 1,
+      notify_before_minutes: 60,
+      completed_at: task.done ? (task.completedAt || new Date().toISOString()) : null,
+      completed_by_profile_id: null,
+      created_by: userId,
+      updated_by: userId
+    };
+  }
+
+  async function cloudAddTask(task) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const { data, error } = await client.from('household_tasks').insert(cloudTaskPayload(task, user.id)).select('id').single();
+    if (error) {
+      showToast(error.message || 'Úkol se nepovedlo uložit do cloudu');
+      return null;
+    }
+    task.cloudId = data.id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudUpdateTask(task) {
+    const client = getSupabaseClient();
+    if (!client || !task?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const { error } = await client
+      .from('household_tasks')
+      .update(cloudTaskPayload(task, user.id))
+      .eq('id', task.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Úkol se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteTask(task) {
+    const client = getSupabaseClient();
+    if (!client || !task?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('household_tasks').delete().eq('id', task.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Úkol se nepovedlo smazat v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadTasks(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return false;
+    const { data, error } = await client
+      .from('household_tasks')
+      .select('*')
+      .eq('household_id', state.cloud.householdId)
+      .order('status', { ascending: false })
+      .order('due_date', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false });
+    if (error) {
+      showToast(error.message || 'Úkoly se nepovedlo načíst z cloudu');
+      return false;
+    }
+    const localOnly = state.homeTasks.filter((task) => !task.cloudId);
+    const cloudItems = (data || []).map((item) => ({
+      id: state.homeTasks.find((task) => task.cloudId === item.id)?.id || `task-cloud-${item.id}`,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      cloudId: item.id,
+      title: item.title,
+      due: item.due_date || '',
+      note: item.description || '',
+      category: normalizeTaskCategory(item.category),
+      priority: normalizeTaskPriority(item.priority),
+      done: item.status === 'done',
+      completedAt: item.completed_at || '',
+      createdAt: item.created_at || new Date().toISOString()
+    }));
+    state.homeTasks = [...cloudItems, ...localOnly];
+    state.tasksCloud = { ...(state.tasksCloud || {}), loadedAt: new Date().toISOString() };
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast('Cloud úkoly načteny');
+    return true;
+  }
+
+  async function cloudSyncTaskById(id) {
+    const task = state.homeTasks.find((entry) => entry.id === id);
+    if (!task) return;
+    const saved = task.cloudId ? await cloudUpdateTask(task) : await cloudAddTask(task);
+    if (!saved && !task.cloudId) return;
+    touchState();
+    saveState();
+    render();
+    showToast('Úkol odeslán do cloudu');
+  }
+
+  async function cloudSyncLocalTasks() {
+    const local = state.homeTasks.filter((task) => !task.cloudId);
+    if (!local.length) return showToast('Žádné lokální úkoly k odeslání');
+    let count = 0;
+    for (const task of local) {
+      const saved = await cloudAddTask(task);
+      if (saved?.id) count += 1;
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(`Odesláno úkolů: ${count}`);
+  }
+
+  async function addTaskFromForm(data, form) {
+    const task = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      title: normalizeText(data.title),
+      due: normalizeText(data.due),
+      note: normalizeText(data.note),
+      category: normalizeTaskCategory(data.category),
+      priority: normalizeTaskPriority(data.priority),
+      done: false
+    };
+    if (!task.title) return showToast('Doplň název úkolu');
+    const saved = await cloudAddTask(task);
+    if (saved?.id) task.cloudId = saved.id;
+    state.homeTasks.push(task);
+    touchState();
+    saveState();
+    form.reset();
+    render();
+    showToast(task.cloudId ? 'Úkol uložen do cloudu' : 'Úkol uložen lokálně');
+  }
+
+  async function toggleTaskDone(id) {
+    const task = state.homeTasks.find((entry) => entry.id === id);
+    if (!task) return;
+    task.done = !task.done;
+    task.completedAt = task.done ? new Date().toISOString() : '';
+    const ok = await cloudUpdateTask(task);
+    if (!ok) return;
+    touchState();
+    saveState();
+    render();
+  }
+
+  async function deleteTask(id) {
+    const task = state.homeTasks.find((entry) => entry.id === id);
+    if (!task) return;
+    const ok = await cloudDeleteTask(task);
+    if (!ok) return;
+    state.homeTasks = state.homeTasks.filter((entry) => entry.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Úkol smazán');
+  }
+
+  async function toggleShoppingDone(id) {
+    return getShoppingActions().toggleShoppingDone(id);
+  }
+
+
+  async function deleteShoppingItem(id) {
+    return getShoppingActions().deleteShoppingItem(id);
+  }
+
+
+  async function handleForm(form) {
+    const type = form.dataset.form;
+    const data = getFormData(form);
+    const handlers = {
+      'add-event': () => addEventFromForm(data, form),
+      'add-calendar-source': () => addCalendarSourceFromForm(data, form),
+      'google-calendar-save-sources': () => saveGoogleCalendarSourcesFromForm(form),
+      'add-package': () => addPackageFromForm(data, form),
+      'add-shopping': () => addShoppingFromForm(data, form),
+      'add-shopping-list': () => addShoppingListFromForm(data, form),
+      'add-coupon': () => addItem('coupons', { store: data.store, code: data.code, discount: data.discount, expiry: data.expiry, note: data.note, used: false }),
+      'update-coupon': () => updateCoupon(form.dataset.id, data),
+      'add-hdo': () => addHdoWindowFromForm(data, form),
+      'add-waste': () => addWasteFromForm(data, form),
+      'add-task': () => addTaskFromForm(data, form),
+      'add-note': () => addItem('notes', { text: data.text, createdAt: new Date().toISOString() }),
+      'add-device': () => addItem('devices', { name: data.name, type: data.type, address: data.address, note: data.note }),
+      'add-warranty': () => addWarrantyFromForm(data, form),
+      'edit-warranty': () => updateWarrantyFromForm(data, form),
+      'add-warranty-files': () => addWarrantyFiles(form),
+      'polish-holidays-year': () => {
+        state.polishShopClosures = normalizePolishShopState({ ...state.polishShopClosures, year: data.year });
+        touchState();
+        saveState();
+        render();
+      },
+      'add-vehicle': async () => {
+        const vehicle = {
+          id: uid(),
+          householdId: currentHouseholdId(),
+          profileId: currentProfileId(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          name: normalizeText(data.name),
+          plate: normalizeText(data.plate),
+          fuelType: normalizeText(data.fuelType),
+          odometer: normalizeText(data.odometer),
+          purchaseDate: normalizeText(data.purchaseDate),
+          purchasePrice: normalizeText(data.purchasePrice),
+          purchaseOdometer: normalizeText(data.purchaseOdometer),
+          ownershipStatus: normalizeVehicleOwnershipStatus(data.ownershipStatus),
+          saleDate: normalizeText(data.saleDate),
+          salePrice: normalizeText(data.salePrice),
+          saleOdometer: normalizeText(data.saleOdometer),
+          technicalInspectionUntil: normalizeText(data.technicalInspectionUntil),
+          insuranceUntil: normalizeText(data.insuranceUntil),
+          iconColor: normalizeVehicleIconColor(data.iconColor),
+          nextServiceKm: '',
+          nextServiceDate: '',
+          note: ''
+        };
+        applyVehicleTechnicalFields(vehicle, data);
+        const cloudVehicle = await cloudAddVehicle(vehicle);
+        if (cloudVehicle?.id) vehicle.cloudId = cloudVehicle.id;
+        state.vehicles.push(vehicle);
+        rememberVehicleIconColor(vehicle);
+        garageVehicleId = vehicle.id;
+        garageCalcVehicleId = vehicle.id;
+        garageTripCalcResult = null;
+        touchState();
+        saveState();
+        if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
+        form.reset();
+        render();
+        showToast(vehicle.cloudId ? 'Auto uloženo do cloudu' : 'Auto uloženo lokálně');
+      },
+      'update-vehicle': () => updateVehicle(form.dataset.vehicleId, data),
+      'garage-trip-calc': () => {
+        const distance = decimalValue(data.distance);
+        const consumption = decimalValue(data.consumption);
+        const fuelPrice = decimalValue(data.fuelPrice);
+        const liters = distance > 0 && consumption > 0 ? (distance * consumption) / 100 : 0;
+        garageCalcVehicleId = data.vehicleId || garageCalcVehicleId;
+        garageTripCalcResult = { vehicleId: garageCalcVehicleId, distance, consumption, fuelPrice, liters, total: liters * fuelPrice };
+        moduleTabs = { ...(moduleTabs || {}), garage: 'calculator' };
+        if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+        render();
+      },
+      'add-fuel': async () => {
+        const fuelParts = normalizeFuelCostParts(data);
+        const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), vehicleId: form.dataset.vehicleId, date: data.date, odometer: data.odometer, liters: fuelParts.liters, price: fuelParts.price, pricePerLiter: fuelParts.pricePerLiter, note: data.note };
+        const saved = await cloudAddFuelLog(item);
+        if (saved?.id) item.cloudId = saved.id;
+        state.fuel.push(item);
+        garageModal = null;
+        touchState();
+        saveState();
+        form.reset();
+        render();
+        showToast(item.cloudId ? 'Tankování uloženo do cloudu' : 'Tankování uloženo lokálně');
+      },
+      'add-service': async () => {
+        const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), vehicleId: form.dataset.vehicleId, date: data.date, odometer: data.odometer, title: data.title, price: decimalValue(data.price), note: data.note };
+        const saved = await cloudAddServiceLog(item);
+        if (saved?.id) item.cloudId = saved.id;
+        state.services.push(item);
+        garageModal = null;
+        touchState();
+        saveState();
+        form.reset();
+        render();
+        showToast(item.cloudId ? 'Servis uložen do cloudu' : 'Servis uložen lokálně');
+      },
+      'update-fuel': async () => updateFuelLog(form.dataset.id, data),
+      'update-service': async () => updateServiceLog(form.dataset.id, data),
+      'add-contract': async () => {
+        const contract = {
+          id: uid(),
+          householdId: currentHouseholdId(),
+          profileId: currentProfileId(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          name: normalizeText(data.name),
+          type: normalizeText(data.type),
+          provider: normalizeText(data.provider),
+          number: normalizeText(data.number),
+          validFrom: normalizeText(data.validFrom),
+          validTo: normalizeText(data.validTo),
+          amount: decimalValue(data.amount),
+          frequency: data.frequency,
+          note: normalizeText(data.note)
+        };
+        const cloudContract = await cloudAddContract(contract);
+        if (cloudContract?.id) contract.cloudId = cloudContract.id;
+        state.contracts.push(contract);
+        activeContractId = contract.id;
+        touchState();
+        saveState();
+        form.reset();
+        render();
+        showToast(contract.cloudId ? 'Smlouva uložena do cloudu' : 'Smlouva uložena lokálně');
+      },
+      'update-contract': async () => updateContract(form.dataset.contractId, data, form),
+      'add-contract-file': () => addContractFiles(form),
+      'fuelio-preview': () => previewFuelioImport(form),
+      'add-camera': () => addItem('cameras', { name: data.name, location: data.location, snapshotUrl: data.snapshotUrl, status: data.status, note: data.note }),
+      onboarding: () => completeOnboarding(data),
+      'onboarding-google-setup': () => completeGoogleOnboardingSetup(data),
+      'onboarding-login': () => loginExistingHouseholdFromOnboarding(data),
+      'household-settings': async () => {
+        state.household.name = normalizeText(data.householdName) || 'Domácnost';
+        touchState();
+        saveState();
+        await cloudSaveHouseholdUiSettings(false, true);
+        render();
+        showToast(state.cloud?.householdId ? 'Domácnost uložena do cloudu' : 'Domácnost uložena lokálně');
+      },
+      settings: async () => {
+        state.household.name = normalizeText(data.householdName) || 'Domácnost';
+        touchState();
+        saveState();
+        await cloudSaveHouseholdUiSettings(false, true);
+        render();
+        showToast('Nastavení uloženo');
+      },
+      'add-profile': () => addProfile(data.name, data.role),
+      'weather-settings': () => saveWeatherSettings(data, form),
+      'import-data': () => importData(data.json),
+      'cloud-login': () => cloudLogin(data.email, data.password),
+      'cloud-signup': () => cloudSignUp(data.email, data.password),
+      'delete-own-account': () => deleteOwnAccount(data.confirmText),
+      'cloud-create-household': () => cloudCreateHousehold(data.name, data.profileName),
+      'cloud-invite-member': () => cloudInviteMember(data.email, data.role),
+      'add-finance-account': () => addFinanceAccountFromForm(data, form),
+      'add-managed-finance-set': () => addManagedFinanceSetFromForm(data, form),
+      'add-finance': () => addFinanceFromForm(data, form),
+      'finance-month-filter': () => setFinanceMonth(data.month),
+      'add-subscription-person': () => addSubscriptionPersonFromForm(data, form),
+      'add-subscription': () => addSubscriptionFromForm(data, form),
+      'add-subscription-share': () => addSubscriptionShareFromForm(data, form),
+      'add-subscription-payment': () => addSubscriptionPaymentFromForm(data, form),
+      'subscription-month-filter': () => setSubscriptionMonth(data.month)
+    };
+    const handler = handlers[type];
+    if (handler) await handler();
+  }
+
+  async function completeOnboarding(data) {
+    const email = normalizeText(data.email).toLowerCase();
+    const password = String(data.password || '');
+    const passwordConfirm = String(data.passwordConfirm || '');
+
+    if (!email || !password) {
+      showToast('Vyplň e-mail a heslo pro rodinný účet');
+      return;
+    }
+    if (password.length < 6) {
+      showToast('Heslo musí mít aspoň 6 znaků');
+      return;
+    }
+    if (password !== passwordConfirm) {
+      showToast('Hesla se neshodují');
+      return;
+    }
+
+    const householdId = `household-${uid()}`;
+    const extraNames = normalizeText(data.profilesExtra)
+      .split(',')
+      .map((name) => normalizeText(name))
+      .filter(Boolean);
+    const names = [data.profilePrimary, data.profileSecondary]
+      .map(normalizeText)
+      .filter(Boolean)
+      .concat(extraNames);
+    const uniqueNames = [...new Set(names.length ? names : ['Já'])];
+
+    state.household = {
+      id: householdId,
+      name: normalizeText(data.householdName) || 'Moje domácnost',
+      isConfigured: true,
+      createdAt: new Date().toISOString()
+    };
+    state.profiles = uniqueNames.map((name, index) => createProfile(name, index === 0 ? 'owner' : 'member', householdId));
+    state.activeProfileId = state.profiles[0]?.id || '';
+    state.enabledModules = normalizeModuleList(data.modules);
+    state.settings.dashboardNote = DEFAULT_STATE.settings.dashboardNote;
+    state.settings.demoMode = false;
+    state.settings.bottomNavIds = normalizeBottomNavIds(DEFAULT_BOTTOM_NAV_IDS, state.enabledModules);
+    activeModule = 'home';
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
+    touchState();
+    saveState();
+
+    const cloudResult = await registerCloudHouseholdFromOnboarding(email, password);
+    if (cloudResult === 'existing-account') {
+      state = migrateState(mergeState(DEFAULT_STATE, {}));
+      markExistingAccount(email);
+      return;
+    }
+    render();
+    if (cloudResult === 'bootstrapped') showToast('Rodinný účet a cloudová domácnost vytvořeny');
+    else if (cloudResult === 'email-confirmation') showToast('Potvrď e-mail. Po potvrzení se domácnost automaticky napojí na cloud');
+    else showToast('Domácnost vytvořena, cloud se zkusí znovu po přihlášení');
+  }
+
+
+  async function completeGoogleOnboardingSetup(data) {
+    const user = await refreshCloudSession(false);
+    if (!user) return showToast('Google účet není přihlášený. Spusť registraci přes Google znovu.');
+
+    const householdId = `household-${uid()}`;
+    const extraNames = normalizeText(data.profilesExtra)
+      .split(',')
+      .map((name) => normalizeText(name))
+      .filter(Boolean);
+    const names = [data.profilePrimary, data.profileSecondary]
+      .map(normalizeText)
+      .filter(Boolean)
+      .concat(extraNames);
+    const uniqueNames = [...new Set(names.length ? names : [googleDisplayNameFromUser(user)])];
+
+    state.household = {
+      id: householdId,
+      name: normalizeText(data.householdName) || 'Moje domácnost',
+      isConfigured: true,
+      createdAt: new Date().toISOString()
+    };
+    state.profiles = uniqueNames.map((name, index) => createProfile(name, index === 0 ? 'owner' : 'member', householdId));
+    state.activeProfileId = state.profiles[0]?.id || '';
+    state.enabledModules = normalizeModuleList(data.modules);
+    state.settings.dashboardNote = DEFAULT_STATE.settings.dashboardNote;
+    state.settings.demoMode = false;
+    state.settings.bottomNavIds = normalizeBottomNavIds(DEFAULT_BOTTOM_NAV_IDS, state.enabledModules);
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      status: 'signed-in',
+      userId: user.id,
+      email: user.email || state.cloud?.email || ''
+    };
+    activeModule = 'home';
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
+    sessionStorage.removeItem(ONBOARDING_GOOGLE_INTENT_KEY);
+    touchState();
+    saveState();
+
+    const createdHouseholdId = await bootstrapCloudHousehold(false);
+    if (createdHouseholdId) {
+      await cloudLoadAllModules(false, { skipRealtimeSetup: true, silentWhenOffline: true });
+      onboardingMode = 'choice';
+      sessionStorage.removeItem('domacnostPlus.onboardingMode');
+      render();
+      showToast('Google účet a domácnost jsou připravené');
+      return;
+    }
+    render();
+    showToast('Domácnost je nastavená lokálně, cloud napojení půjde opravit v nastavení');
+  }
+
+  async function registerCloudHouseholdFromOnboarding(email, password) {
+    const client = getSupabaseClient();
+    if (!client) return 'local-only';
+    const { data, error } = await client.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: getAuthRedirectUrl(),
+        data: {
+          app_name: 'Domácnost+',
+          household_name: householdName(),
+          owner_profile_name: currentProfile()?.name || ''
+        }
+      }
+    });
+    if (error) {
+      if (isExistingAccountSignUpResponse(data, error)) return 'existing-account';
+      showToast(error.message || 'Registrace se nepovedla');
+      return 'local-only';
+    }
+    if (isExistingAccountSignUpResponse(data, null)) return 'existing-account';
+    const user = data?.user;
+    if (!data?.session || !user) {
+      state.cloud = {
+        ...(state.cloud || {}),
+        supabaseUrl: SUPABASE_URL,
+        provider: 'supabase',
+        status: 'email-confirmation',
+        userId: user?.id || '',
+        email
+      };
+      saveState();
+      return 'email-confirmation';
+    }
+    state.settings.demoMode = false;
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      status: 'signed-in',
+      userId: user.id,
+      email: user.email || email
+    };
+    saveState();
+    await bootstrapCloudHousehold(false);
+    return state.cloud?.householdId ? 'bootstrapped' : 'signed-in';
+  }
+
+  async function loginExistingHouseholdFromOnboarding(data) {
+    const email = normalizeText(data.email).toLowerCase();
+    const password = String(data.password || '');
+    if (!email || !password) return showToast('Vyplň e-mail a heslo');
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const { data: authData, error } = await client.auth.signInWithPassword({ email, password });
+    if (error) return showToast(error.message || 'Přihlášení se nepovedlo');
+    const user = authData?.user;
+    state.settings.demoMode = false;
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      status: 'signed-in',
+      userId: user?.id || '',
+      email: user?.email || email
+    };
+    saveState();
+    const households = await cloudLoadHouseholds(false);
+    const firstHousehold = pickBestCloudHousehold(households);
+    if (!firstHousehold) {
+      render();
+      showToast('Přihlášeno, ale účet zatím není v žádné domácnosti');
+      return;
+    }
+    state.cloud.householdId = firstHousehold.id;
+    state.household = {
+      id: firstHousehold.id,
+      name: firstHousehold.name || 'Domácnost',
+      isConfigured: true,
+      createdAt: firstHousehold.createdAt || new Date().toISOString()
+    };
+    await cloudLoadProfilesForCurrentHousehold();
+    await cloudLoadAllModules(false);
+    onboardingMode = 'choice';
+    sessionStorage.removeItem('domacnostPlus.onboardingMode');
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
+    activeModule = 'home';
+    touchState();
+    saveState();
+    render();
+    showToast('Domácnost načtena');
+  }
+
+  function startDemoHome() {
+    const demo = createDemoState();
+    state = migrateState(mergeState(DEFAULT_STATE, demo));
+    state.settings.demoMode = true;
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'demo',
+      status: 'demo',
+      userId: '',
+      email: '',
+      householdId: '',
+      lastSyncAt: '',
+      households: [],
+      invitations: []
+    };
+    onboardingMode = 'choice';
+    demoRuntimeActive = true;
+    sessionStorage.removeItem('domacnostPlus.onboardingMode');
+    sessionStorage.setItem(DEMO_SESSION_KEY, '1');
+    activeModule = 'home';
+    moduleTabs = {};
+    touchState();
+    render();
+    showToast('Spuštěná demo domácnost · změny se neukládají');
+  }
+
+  function exitDemoHome() {
+    demoRuntimeActive = false;
+    onboardingMode = 'choice';
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
+    sessionStorage.removeItem('domacnostPlus.onboardingMode');
+    localStorage.setItem('homeWeb.activeModule', 'home');
+    activeModule = 'home';
+    moduleTabs = {};
+    state = migrateState(mergeState(DEFAULT_STATE, {}));
+    applyVisualSettings();
+    render();
+    showToast('Demo ukončeno · můžeš se přihlásit nebo znovu spustit demo');
+  }
+
+  function createDemoState() {
+    const nowIso = new Date().toISOString();
+    const householdId = `demo-household-${uid()}`;
+    const petrId = `demo-profile-petr-${uid()}`;
+    const janaId = `demo-profile-jana-${uid()}`;
+    const elaId = `demo-profile-ela-${uid()}`;
+    const babickaId = `demo-profile-babicka-${uid()}`;
+    const carOctaviaId = `demo-car-octavia-${uid()}`;
+    const carCityId = `demo-car-city-${uid()}`;
+    const accountMain = `demo-account-main-${uid()}`;
+    const accountSavings = `demo-account-savings-${uid()}`;
+    const accountCash = `demo-account-cash-${uid()}`;
+    const accountHoliday = `demo-account-holiday-${uid()}`;
+    const accountGrandma = `demo-account-grandma-${uid()}`;
+    const accountGrandmaSavings = `demo-account-grandma-savings-${uid()}`;
+    const createdAt = '2024-02-12T08:30:00.000Z';
+    const addDays = (days) => {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      return date.toISOString().slice(0, 10);
+    };
+    const daysFromNow = addDays;
+    const daysAgo = (days) => addDays(-days);
+    const isoAt = (days, hour = 9, minute = 0) => {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      date.setHours(hour, minute, 0, 0);
+      return date.toISOString();
+    };
+    const make = (base) => ({ id: uid(), householdId, createdAt: isoAt(-Math.floor(Math.random() * 420), 8, 15), ...base });
+
+    const profiles = [
+      { id: petrId, householdId, name: 'Petr', color: 'blue', role: 'owner', createdAt },
+      { id: janaId, householdId, name: 'Jana', color: 'violet', role: 'admin', createdAt },
+      { id: elaId, householdId, name: 'Eliška', color: 'pink', role: 'member', createdAt: isoAt(-410) },
+      { id: babickaId, householdId, name: 'Babička', color: 'green', role: 'member', createdAt: isoAt(-360) }
+    ];
+
+    const calendar = [
+      make({ profileId: petrId, title: 'Dentální hygiena', date: daysFromNow(1), time: '09:30', endTime: '10:15', type: 'event', location: 'Ordinace', note: 'Vzít kartičku pojišťovny' }),
+      make({ profileId: janaId, title: 'Třídní schůzky', date: daysFromNow(3), time: '17:00', endTime: '18:00', type: 'family', location: 'Škola', note: 'Probrat školu v přírodě' }),
+      make({ profileId: petrId, title: 'Servis auta', date: daysFromNow(8), time: '08:00', endTime: '10:00', type: 'event', location: 'Autoservis', note: 'Oleje + filtry' }),
+      make({ profileId: janaId, title: 'Narozeniny mamky', date: daysFromNow(16), time: '15:00', type: 'family', location: 'U rodičů', note: 'Koupit kytku' }),
+      make({ profileId: petrId, title: 'Dovolená Beskydy', date: daysFromNow(42), time: '', type: 'holiday', location: 'Beskydy', note: 'Zarezervovaná chata' }),
+      make({ profileId: elaId, title: 'Kroužek keramika', date: daysFromNow(5), time: '16:00', endTime: '17:30', type: 'family', location: 'DDM', note: 'Zaplatit pololetí' }),
+      make({ profileId: babickaId, title: 'Kontrola u doktora', date: daysFromNow(11), time: '11:00', type: 'event', location: 'Poliklinika', note: 'Odvoz autem' })
+    ];
+    ['Kino', 'Výlet na hrad', 'Rodinný oběd', 'Kontrola komína', 'Revize kotle', 'Zubař Eliška', 'Návštěva', 'Platba pojistky', 'Školní besídka', 'Dovolená záloha', 'Veterina Rex', 'Servis kol'].forEach((title, index) => {
+      calendar.push(make({ profileId: index % 2 ? janaId : petrId, title, date: addDays(index * 6 - 70), time: index % 3 === 0 ? '09:00' : index % 3 === 1 ? '16:30' : '', type: index % 4 === 0 ? 'family' : 'event', location: index % 2 ? 'Město' : '', note: index % 2 ? 'Historická demo událost' : '' }));
+    });
+
+    const packages = [
+      make({ profileId: janaId, title: 'Boty z e-shopu', carrier: 'zasilkovna', tracking: 'Z1234567890', status: 'pickup', expectedDate: daysFromNow(0), pickupPlace: 'Z-BOX u obchodu', url: '', note: 'Vyzvednout dnes' }),
+      make({ profileId: petrId, title: 'Filtry do vysavače', carrier: 'ppl', tracking: 'PPL987654321', status: 'transit', expectedDate: daysFromNow(2), pickupPlace: '', url: '', note: 'Do garáže' }),
+      make({ profileId: janaId, title: 'Drogerie', carrier: 'balikovna', tracking: 'BVK452981736', status: 'new', expectedDate: daysFromNow(4), pickupPlace: 'Balíkovna Coop', url: '', note: 'Prací gel v akci' }),
+      make({ profileId: petrId, title: 'Náhradní filtr do auta', carrier: 'dpd', tracking: 'DPD778812450', status: 'delivered', expectedDate: daysAgo(7), pickupPlace: '', url: '', note: 'Doručeno minulý týden' }),
+      make({ profileId: janaId, title: 'Dárek pro Elišku', carrier: 'gls', tracking: 'GLS99881233', status: 'problem', expectedDate: daysFromNow(1), pickupPlace: '', url: '', note: 'Změna adresy' })
+    ];
+
+    const shoppingNames = [
+      ['Mléko', 2, 'l', 'Mléčné', false], ['Rohlíky', 12, 'ks', 'Pečivo', false], ['Banány', 1.5, 'kg', 'Ovoce a zelenina', false], ['Rajčata', 1, 'kg', 'Ovoce a zelenina', false], ['Kuřecí maso', 1.2, 'kg', 'Maso a uzeniny', false], ['Tablety do myčky', 1, 'bal', 'Drogerie', true], ['Toaletní papír', 1, 'bal', 'Drogerie', false], ['Granule Rex', 5, 'kg', 'Zvířata', false], ['Káva', 2, 'bal', 'Trvanlivé', true], ['Zelenina mražená', 3, 'bal', 'Mražené', true], ['Pytle na odpad', 1, 'role', 'Domácnost', false], ['Paralen', 1, 'bal', 'Lékárna', true]
+    ];
+    const shopping = shoppingNames.map(([name, quantity, unit, category, done], index) => make({ profileId: index % 2 ? janaId : petrId, name, quantity, unit, category, note: done ? 'Už koupeno v demo historii' : '', done, doneAt: done ? isoAt(-index, 18, 0) : '', createdAt: isoAt(-index * 2, 10, 0) }));
+    const shoppingStats = {};
+    ['Mléko','Rohlíky','Banány','Rajčata','Jogurt','Máslo','Tablety do myčky','Granule Rex','Káva','Toaletní papír','Kuřecí maso','Sýr plátkový'].forEach((name, index) => {
+      shoppingStats[normalizeKey(name)] = { name, unit: index % 3 === 0 ? 'ks' : index % 3 === 1 ? 'bal' : 'kg', category: index < 6 ? 'Potraviny' : 'Domácnost', count: 28 - index * 2, lastUsedAt: isoAt(-index, 12, 0) };
+    });
+
+    const hdoWindows = [
+      make({ profileId: petrId, start: '02:00', end: '06:00', days: [0,1,2,3,4,5,6], enabled: true, note: 'Noční nízký tarif' }),
+      make({ profileId: petrId, start: '13:00', end: '15:00', days: [1,2,3,4,5], enabled: true, note: 'Odpolední okno po–pá' }),
+      make({ profileId: petrId, start: '22:00', end: '23:30', days: [0,6], enabled: true, note: 'Víkendové dohřátí' })
+    ];
+
+    const waste = [
+      make({ profileId: petrId, type: 'Plast', date: daysFromNow(1), repeat: 'biweekly', notifyBeforeHours: 12, note: 'Večer vyvézt žlutou' }),
+      make({ profileId: petrId, type: 'Směsný odpad', date: daysFromNow(4), repeat: 'weekly', notifyBeforeHours: 12, note: '' }),
+      make({ profileId: janaId, type: 'Papír', date: daysFromNow(7), repeat: 'monthly', notifyBeforeHours: 24, note: 'Složit krabice v garáži' }),
+      make({ profileId: janaId, type: 'Bioodpad', date: daysFromNow(3), repeat: 'weekly', notifyBeforeHours: 8, note: 'Hnědá nádoba za bránou' }),
+      make({ profileId: petrId, type: 'Sklo', date: daysFromNow(18), repeat: 'monthly', notifyBeforeHours: 24, note: 'Odvézt tašku skla do kontejneru' })
+    ];
+
+    const homeTasks = [
+      make({ profileId: petrId, title: 'Vyměnit filtr digestoře', category: 'udrzba', priority: 'normal', due: daysFromNow(5), note: 'Filtr je ve skříni', done: false }),
+      make({ profileId: janaId, title: 'Objednat kadeřnici', category: 'ostatni', priority: 'low', due: daysFromNow(10), note: '', done: false }),
+      make({ profileId: petrId, title: 'Zaplatit zálohu dovolené', category: 'finance', priority: 'high', due: daysFromNow(2), note: 'Podklady v e-mailu', done: false }),
+      make({ profileId: janaId, title: 'Připravit věci na sběrný dvůr', category: 'domacnost', priority: 'normal', due: daysFromNow(9), note: 'Staré elektro + krabice', done: false }),
+      make({ profileId: petrId, title: 'Umýt auto', category: 'auto', priority: 'low', due: daysAgo(8), note: 'Hotovo minulý týden', done: true, doneAt: isoAt(-7, 18, 0) }),
+      make({ profileId: janaId, title: 'Vytřídit dětské oblečení', category: 'domacnost', priority: 'normal', due: daysAgo(20), note: 'Část šla na charitu', done: true, doneAt: isoAt(-18, 20, 0) })
+    ];
+    ['Zalít kytky', 'Objednat granule', 'Zkontrolovat pojistku auta', 'Vyčistit filtr sušičky', 'Záloha fotek na NAS', 'Vyměnit baterie v ovladači', 'Zkontrolovat lékárničku', 'Vyčistit odpad v koupelně'].forEach((title, index) => {
+      homeTasks.push(make({ profileId: index % 2 ? janaId : petrId, title, category: index % 3 === 0 ? 'udrzba' : index % 3 === 1 ? 'domacnost' : 'zdravi', priority: index % 5 === 0 ? 'high' : 'normal', due: addDays(index * 4 - 12), note: index % 2 ? 'Opakovaný demo úkol' : '', done: index < 3, doneAt: index < 3 ? isoAt(-index * 3, 19, 0) : '' }));
+    });
+
+    const devices = [
+      make({ profileId: petrId, name: 'Router', type: 'Síť', address: '192.168.1.1', note: 'Hlavní router v pracovně' }),
+      make({ profileId: petrId, name: 'NAS', type: 'Úložiště', address: '192.168.1.50', note: 'Zálohy fotek a dokumentů' }),
+      make({ profileId: petrId, name: 'Switch garáž', type: 'Síť', address: '192.168.1.12', note: 'Kamery + AP' }),
+      make({ profileId: janaId, name: 'Tablet v kuchyni', type: 'Dashboard', address: '192.168.1.80', note: 'Budoucí domácí panel' }),
+      make({ profileId: petrId, name: 'Tiskárna', type: 'Tisk', address: '192.168.1.45', note: 'Toner objednat při 15 %' })
+    ];
+
+    const warranties = [
+      make({ profileId: petrId, name: 'Pračka se sušičkou', store: 'Datart', category: 'Spotřebič', price: 14990, purchaseDate: daysAgo(220), warrantyUntil: addYearsIso(daysAgo(220), 2), status: 'active', note: 'Účtenka v e-mailu, řešit čištění filtru.' }),
+      make({ profileId: janaId, name: 'Telefon Jana', store: 'Alza', category: 'Elektronika', price: 11990, purchaseDate: daysAgo(540), warrantyUntil: addYearsIso(daysAgo(540), 3), status: 'active', note: 'Prodloužená záruka na 3 roky.' }),
+      make({ profileId: petrId, name: 'Robotický vysavač', store: 'Mall', category: 'Domácnost', price: 7990, purchaseDate: daysAgo(690), warrantyUntil: addYearsIso(daysAgo(690), 2), status: 'claim', note: 'Reklamace: hlučnější kartáč, číslo RMA-2026-042.' })
+    ];
+
+    const vehicles = [
+      make({ id: carOctaviaId, profileId: petrId, name: 'Škoda Octavia', brand: 'Škoda', model: 'Octavia', plate: '1AB 2345', fuelType: 'diesel', odometer: '184500', technicalInspectionUntil: daysFromNow(90), insuranceUntil: daysFromNow(45), nextServiceKm: '190000', nextServiceDate: daysFromNow(30), note: 'Rodinné auto' }),
+      make({ id: carCityId, profileId: janaId, name: 'Hyundai i20', brand: 'Hyundai', model: 'i20', plate: '2CD 9876', fuelType: 'gasoline', odometer: '76200', technicalInspectionUntil: daysFromNow(210), insuranceUntil: daysFromNow(160), nextServiceKm: '80000', nextServiceDate: daysFromNow(80), note: 'Městské auto' })
+    ];
+    const fuel = [];
+    for (let i = 0; i < 18; i += 1) {
+      const vehicleId = i % 3 === 0 ? carCityId : carOctaviaId;
+      const baseKm = vehicleId === carOctaviaId ? 176400 : 70500;
+      const liters = vehicleId === carOctaviaId ? 45 + (i % 5) * 1.7 : 32 + (i % 4) * 1.4;
+      fuel.push(make({ profileId: vehicleId === carOctaviaId ? petrId : janaId, vehicleId, date: daysAgo(20 + i * 18), odometer: String(baseKm + i * (vehicleId === carOctaviaId ? 460 : 310)), liters: Number(liters.toFixed(1)), price: Math.round(liters * (36 + (i % 4))), note: i % 4 === 0 ? 'Plná nádrž' : 'Běžné tankování' }));
+    }
+    const services = [
+      make({ profileId: petrId, vehicleId: carOctaviaId, date: daysAgo(60), title: 'Výměna oleje', price: 4200, note: 'Olej + filtry' }),
+      make({ profileId: petrId, vehicleId: carOctaviaId, date: daysAgo(190), title: 'Pneumatiky', price: 14800, note: 'Letní sada' }),
+      make({ profileId: janaId, vehicleId: carCityId, date: daysAgo(95), title: 'STK + emise', price: 2300, note: 'Bez závad' }),
+      make({ profileId: janaId, vehicleId: carCityId, date: daysAgo(35), title: 'Brzdy přední', price: 6200, note: 'Destičky + kotouče' })
+    ];
+
+    const contracts = [
+      make({ profileId: petrId, name: 'Pojištění auta Octavia', type: 'car_insurance', provider: 'Demo pojišťovna', number: 'AUTO-2026-001', validFrom: daysAgo(180), validTo: daysFromNow(45), amount: 8400, frequency: 'yearly', note: 'Navazuje na Garáž' }),
+      make({ profileId: janaId, name: 'Pojištění domácnosti', type: 'home_insurance', provider: 'Bezpečný domov', number: 'DOM-88421', validFrom: daysAgo(260), validTo: daysFromNow(70), amount: 3200, frequency: 'yearly', note: 'Hlídáno před výročím' }),
+      make({ profileId: petrId, name: 'Internet domácnost', type: 'internet', provider: 'DemoNet', number: 'NET-5544', validFrom: daysAgo(400), validTo: daysFromNow(120), amount: 599, frequency: 'monthly', note: 'Optika 1 Gb/s' }),
+      make({ profileId: petrId, name: 'Elektřina', type: 'electricity', provider: 'Energie Demo', number: 'EL-2025-77', validFrom: daysAgo(300), validTo: daysFromNow(22), amount: 3850, frequency: 'monthly', note: 'Brzy zkontrolovat ceník' }),
+      make({ profileId: janaId, name: 'Mobil Jana', type: 'mobile', provider: 'Operátor+', number: 'TEL-3312', validFrom: daysAgo(500), validTo: daysFromNow(300), amount: 649, frequency: 'monthly', note: '' }),
+      make({ profileId: petrId, name: 'Streamovací služba', type: 'subscription', provider: 'Stream Demo', number: 'SUB-908', validFrom: daysAgo(80), validTo: daysFromNow(285), amount: 239, frequency: 'monthly', note: 'Rodinný tarif' })
+    ];
+
+    const accountDefs = [
+      { id: accountMain, profileId: petrId, name: 'Domácí účet', accountType: 'bank', openingBalance: 24800, ownerLabel: 'Petr + Jana', note: 'Hlavní provoz domácnosti' },
+      { id: accountSavings, profileId: petrId, name: 'Rezerva / spoření', accountType: 'savings', openingBalance: 118000, ownerLabel: 'Domácnost', note: 'Peníze bokem' },
+      { id: accountCash, profileId: janaId, name: 'Hotovost doma', accountType: 'cash', openingBalance: 3600, ownerLabel: 'Domácnost', note: 'Obálka v šuplíku' },
+      { id: accountHoliday, profileId: janaId, name: 'Obálka dovolená', accountType: 'envelope', openingBalance: 18500, ownerLabel: 'Dovolená', note: 'Rezerva na léto' },
+      { id: accountGrandma, profileId: babickaId, name: 'Babička – u nás', accountType: 'person', openingBalance: 0, ownerLabel: 'Babička', note: 'Spravované peníze, které chodí na náš účet' },
+      { id: accountGrandmaSavings, profileId: babickaId, name: 'Babička – spoření', accountType: 'savings', openingBalance: 42000, ownerLabel: 'Babička', note: 'Peníze bokem pro babičku' }
+    ];
+    const financeAccounts = accountDefs.map((account) => make({ ...account, currentBalance: account.openingBalance, includeInTotal: true }));
+    const finance = [];
+    for (let month = 0; month < 14; month += 1) {
+      const base = month * 31;
+      finance.push(make({ profileId: petrId, type: 'income', title: 'Výplata Petr', amount: 42500 + (month % 3) * 1200, date: daysAgo(base + 7), category: 'salary', accountId: accountMain, paymentMethod: 'bank_transfer', note: month === 0 ? 'Aktuální měsíc' : '' }));
+      finance.push(make({ profileId: janaId, type: 'income', title: 'Výplata Jana', amount: 31800 + (month % 2) * 900, date: daysAgo(base + 9), category: 'salary', accountId: accountMain, paymentMethod: 'bank_transfer', note: '' }));
+      finance.push(make({ profileId: babickaId, type: 'income', title: 'Důchod babička', amount: 17480, date: daysAgo(base + 10), category: 'salary', accountId: accountGrandma, paymentMethod: 'bank_transfer', note: 'Připsáno na náš účet, vedeno odděleně' }));
+      finance.push(make({ profileId: babickaId, type: 'expense', title: 'Babička – nájem', amount: 6200, date: daysAgo(base + 11), category: 'housing', accountId: accountGrandma, paymentMethod: 'bank_transfer', note: 'Strženo za nájem' }));
+      finance.push(make({ profileId: babickaId, type: 'expense', title: 'Babička – energie', amount: 2800, date: daysAgo(base + 11), category: 'energy', accountId: accountGrandma, paymentMethod: 'bank_transfer', note: 'Záloha energie' }));
+      finance.push(make({ profileId: babickaId, type: 'expense', title: 'Babička – hotovost', amount: month % 2 ? 3000 : 2500, date: daysAgo(base + 13), category: 'other_expense', accountId: accountGrandma, paymentMethod: 'cash', note: 'Vybráno v hotovosti' }));
+      finance.push(make({ profileId: babickaId, type: 'transfer', title: 'Babička – bokem na spoření', amount: month % 3 === 0 ? 2000 : 1500, date: daysAgo(base + 15), category: 'other_expense', accountId: accountGrandma, transferAccountId: accountGrandmaSavings, paymentMethod: 'bank_transfer', note: 'Přesun na spořicí účet' }));
+      finance.push(make({ profileId: petrId, type: 'expense', title: 'Nájem / hypotéka', amount: 14500, date: daysAgo(base + 12), category: 'housing', accountId: accountMain, paymentMethod: 'bank_transfer', note: '' }));
+      finance.push(make({ profileId: janaId, type: 'expense', title: 'Potraviny', amount: 4200 + (month % 4) * 360, date: daysAgo(base + 3), category: 'groceries', accountId: accountMain, paymentMethod: 'card', note: 'Velký nákup' }));
+      finance.push(make({ profileId: petrId, type: 'expense', title: 'Energie', amount: 3850, date: daysAgo(base + 14), category: 'energy', accountId: accountMain, paymentMethod: 'direct_debit', note: '' }));
+      finance.push(make({ profileId: petrId, type: 'transfer', title: 'Přesun do rezervy', amount: month % 2 ? 4500 : 6000, date: daysAgo(base + 17), category: 'other_expense', accountId: accountMain, transferAccountId: accountSavings, paymentMethod: 'bank_transfer', note: 'Automaticky bokem' }));
+      if (month < 8) finance.push(make({ profileId: janaId, type: 'transfer', title: 'Dovolená obálka', amount: 2500, date: daysAgo(base + 19), category: 'other_expense', accountId: accountMain, transferAccountId: accountHoliday, paymentMethod: 'bank_transfer', note: 'Letní rezerva' }));
+    }
+    ['Lékárna', 'Kino', 'Restaurace', 'Školní výlet', 'Pojistka auto', 'Servis auta', 'Dárek narozeniny', 'Drogerie'].forEach((title, index) => {
+      finance.push(make({ profileId: index % 2 ? janaId : petrId, type: 'expense', title, amount: [680, 920, 1450, 1200, 8400, 4200, 1800, 760][index], date: addDays(index * -9 - 2), category: ['health','fun','restaurant','kids','contracts','car','other_expense','drugstore'][index], accountId: accountMain, paymentMethod: index % 2 ? 'card' : 'bank_transfer', note: index === 4 ? 'Roční platba' : '' }));
+    });
+
+    const coupons = [
+      make({ profileId: janaId, store: 'Drogerie', code: 'JARO15', discount: '15 %', expiry: daysFromNow(12), note: 'Použít na tablety do myčky', used: false }),
+      make({ profileId: petrId, store: 'Alza', code: 'DOPRAVA0', discount: 'doprava zdarma', expiry: daysFromNow(4), note: 'Na filtr do auta', used: false }),
+      make({ profileId: janaId, store: 'Lékárna', code: 'LETO10', discount: '10 %', expiry: daysFromNow(30), note: '', used: false }),
+      make({ profileId: petrId, store: 'Sport', code: 'BOTY20', discount: '20 %', expiry: daysAgo(9), note: 'Už použito', used: true })
+    ];
+
+    return {
+      meta: { schemaVersion: 80, appBuild: 202, mode: 'rich-demo-v202', createdAt, updatedAt: nowIso },
+      settings: {
+        ...DEFAULT_STATE.settings,
+        dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
+        bottomNavIds: ['home', 'calendar', 'shopping', 'homecare', 'finance'],
+        dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGET_IDS],
+        demoMode: true
+      },
+      household: { id: householdId, name: 'Demo domácnost Královi', isConfigured: true, createdAt },
+      profiles,
+      activeProfileId: petrId,
+      enabledModules: [...MANAGED_MODULE_IDS],
+      calendar,
+      packages,
+      coupons,
+      hdoWindows,
+      shopping,
+      shoppingCatalogCustom: [
+        make({ profileId: petrId, name: 'Granule Rex', defaultUnit: 'kg', category: 'Zvířata', source: 'household' }),
+        make({ profileId: janaId, name: 'Káva Guatemala', defaultUnit: 'bal', category: 'Trvanlivé', source: 'household' }),
+        make({ profileId: janaId, name: 'Jogurty Eliška', defaultUnit: 'ks', category: 'Mléčné', source: 'household' })
+      ],
+      shoppingStats,
+      hdoCloud: { settingId: '', loadedAt: '' },
+      shoppingCloud: { units: [], categories: [], catalog: [], activeListId: '', loadedAt: '' },
+      wasteCloud: { types: [], loadedAt: '' },
+      parcelsCloud: { loadedAt: '' },
+      tasksCloud: { loadedAt: '' },
+      calendarCloud: { sources: [], loadedAt: '', sourcesLoadedAt: '', googleConnection: null, googleCalendars: [], googleCalendarsLoadedAt: '', googleLastSyncAt: '' },
+      waste,
+      homeTasks,
+      notes: [
+        make({ profileId: petrId, text: 'V garáži dochází zimní směs do ostřikovačů.' }),
+        make({ profileId: janaId, text: 'Na příští týden domluvit návštěvu babičky.' }),
+        make({ profileId: petrId, text: 'Po výplatě zkontrolovat rezervu a obálku dovolená.' }),
+        make({ profileId: janaId, text: 'Koupit nové filtry do konvice, poslední je nasazený.' })
+      ],
+      devices,
+      warranties,
+      vehicles,
+      fuel,
+      services,
+      contracts,
+      contractFiles: [],
+      warrantyFiles: [],
+      cameras: [
+        make({ profileId: petrId, name: 'Vchod', location: 'Před domem', snapshotUrl: '', status: 'online', note: 'Demo kamera bez streamu' }),
+        make({ profileId: petrId, name: 'Garáž', location: 'Garáž', snapshotUrl: '', status: 'online', note: 'Snapshot se doplní později' }),
+        make({ profileId: janaId, name: 'Zahrada', location: 'Zadní část domu', snapshotUrl: '', status: 'offline', note: 'Výměna napájení' })
+      ],
+      financeAccounts,
+      finance,
+      financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: todayISO().slice(0, 7) },
+      householdExtrasCloud: { loadedAt: '' },
+      weather: makeDemoWeatherState(),
+      pwa: { installed: false, lastUpdateCheck: '', lastInstallPrompt: '', diagnostics: null },
+      cloud: { supabaseUrl: SUPABASE_URL, provider: 'demo', userId: '', email: '', householdId: '', lastSyncAt: '', status: 'demo', households: [], invitations: [] },
+      householdWorkspaces: {}
+    };
+  }
+  async function cloudAddProfile(profile) {
+    if (!cloudReady() || !profile) return null;
+    const client = getSupabaseClient();
+    if (!client) return null;
+    const user = await refreshCloudSession(false);
+    if (!user || !state.cloud?.householdId) return null;
+    const payload = {
+      household_id: state.cloud.householdId,
+      user_id: profile.userId || null,
+      name: normalizeText(profile.name) || 'Profil',
+      avatar_emoji: profile.avatarEmoji || '🙂',
+      color: profile.color || 'blue',
+      is_default: Boolean(profile.id && profile.id === state.activeProfileId),
+      is_archived: false,
+      created_by: user.id
+    };
+    const { data, error } = await client.from('profiles').insert(payload).select('id, created_at').single();
+    if (error) {
+      showToast(error.message || 'Profil se nepovedlo uložit do cloudu');
+      return null;
+    }
+    profile.cloudId = data.id;
+    profile.householdId = state.cloud.householdId;
+    state.cloud.profilesLoadedAt = new Date().toISOString();
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudArchiveProfile(profile) {
+    if (!profile?.cloudId || !cloudReady()) return true;
+    const client = getSupabaseClient();
+    if (!client) return true;
+    const { error } = await client
+      .from('profiles')
+      .update({ is_archived: true, updated_at: new Date().toISOString() })
+      .eq('id', profile.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Profil se nepovedlo smazat v cloudu');
+      return false;
+    }
+    state.cloud.profilesLoadedAt = new Date().toISOString();
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudSyncLocalProfiles(showMessage = false) {
+    if (!cloudReady()) return 0;
+    const localProfiles = (state.profiles || []).filter((profile) => !profile.cloudId);
+    if (!localProfiles.length) {
+      if (showMessage) showToast('Žádné lokální profily k odeslání');
+      return 0;
+    }
+    let count = 0;
+    for (const profile of localProfiles) {
+      try {
+        const saved = await cloudAddProfile(profile);
+        if (saved?.id) count += 1;
+      } catch (error) {
+        console.warn('Cloud profile sync failed', error);
+      }
+    }
+    touchState();
+    saveState();
+    if (showMessage) showToast(`Odesláno profilů: ${count}`);
+    return count;
+  }
+
+  async function addProfile(name, role = 'member') {
+    const cleanName = normalizeText(name);
+    if (!cleanName) return;
+    const profile = createProfile(cleanName, role === 'owner' ? 'owner' : 'member', currentHouseholdId());
+    const saved = await cloudAddProfile(profile);
+    if (saved?.id) profile.cloudId = saved.id;
+    state.profiles.push(profile);
+    state.activeProfileId = profile.id;
+    touchState();
+    saveState();
+    render();
+    showToast(profile.cloudId ? 'Profil přidán do cloudu' : 'Profil přidán lokálně');
+  }
+
+  function touchState() {
+    state.meta = { ...(state.meta || {}), schemaVersion: 80, appBuild: 202, mode: 'flat-package-v202', updatedAt: new Date().toISOString() };
+  }
+
+  async function addItem(collection, item) {
+    const normalized = Object.fromEntries(Object.entries(item).map(([key, value]) => [key, typeof value === 'string' ? normalizeText(value) : value]));
+    if (!state[collection]) state[collection] = [];
+    const record = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      ...normalized
+    };
+    const saved = await cloudAddExtraItem(collection, record);
+    if (saved?.id) record.cloudId = saved.id;
+    state[collection].push(record);
+    touchState();
+    saveState();
+    render();
+    showToast(record.cloudId ? 'Uloženo do cloudu' : 'Uloženo lokálně');
+  }
+
+  async function updateCoupon(id, data) {
+    const coupon = state.coupons.find((item) => item.id === id);
+    if (!coupon) return showToast('Slevový kód nenalezen');
+    coupon.store = normalizeText(data.store) || coupon.store || 'Obchod';
+    coupon.code = normalizeText(data.code) || coupon.code || '';
+    coupon.discount = normalizeText(data.discount);
+    coupon.expiry = normalizeText(data.expiry);
+    coupon.note = normalizeText(data.note);
+    coupon.updatedAt = new Date().toISOString();
+    const ok = await cloudUpdateExtraItem('coupons', coupon);
+    if (!ok) return;
+    couponEditId = '';
+    touchState();
+    saveState();
+    render();
+    showToast(coupon.cloudId ? 'Kód upraven v cloudu' : 'Kód upraven lokálně');
+  }
+
+  async function updateContract(id, data, form) {
+    const contract = state.contracts.find((item) => item.id === id);
+    if (!contract) return showToast('Smlouva nenalezena');
+    contract.name = normalizeText(data.name) || contract.name;
+    contract.type = normalizeText(data.type) || 'other';
+    contract.provider = normalizeText(data.provider);
+    contract.number = normalizeText(data.number);
+    contract.validFrom = normalizeText(data.validFrom);
+    contract.validTo = normalizeText(data.validTo);
+    contract.amount = decimalValue(data.amount);
+    contract.frequency = data.frequency || 'monthly';
+    contract.note = normalizeText(data.note);
+    contract.updatedAt = new Date().toISOString();
+    const ok = await cloudUpdateContract(contract);
+    if (!ok) return;
+    touchState();
+    saveState();
+    render();
+    showToast(contract.cloudId ? 'Smlouva upravena v cloudu' : 'Smlouva upravena lokálně');
+  }
+
+  function decimalValue(value) {
+    if (value === undefined || value === null || value === '') return '';
+    const parsed = Number(String(value).replace(',', '.'));
+    return Number.isFinite(parsed) ? parsed : '';
+  }
+
+  function roundFuelNumber(value, decimals = 2) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return '';
+    return Number(parsed.toFixed(decimals));
+  }
+
+  function normalizeFuelCostParts(data = {}) {
+    let liters = decimalValue(data.liters);
+    let price = decimalValue(data.price);
+    let pricePerLiter = decimalValue(data.pricePerLiter);
+    if ((liters === '' || liters === 0) && price !== '' && pricePerLiter) liters = roundFuelNumber(Number(price) / Number(pricePerLiter), 2);
+    if ((price === '' || price === 0) && liters !== '' && pricePerLiter !== '') price = roundFuelNumber(Number(liters) * Number(pricePerLiter), 2);
+    if ((pricePerLiter === '' || pricePerLiter === 0) && liters && price !== '') pricePerLiter = roundFuelNumber(Number(price) / Number(liters), 2);
+    return { liters, price, pricePerLiter };
+  }
+
+  function fuelPricePerLiter(item = {}) {
+    if (item.pricePerLiter !== '' && item.pricePerLiter !== undefined && item.pricePerLiter !== null) return decimalValue(item.pricePerLiter);
+    const liters = decimalValue(item.liters);
+    const price = decimalValue(item.price);
+    if (!liters || price === '') return '';
+    return roundFuelNumber(Number(price) / Number(liters), 2);
+  }
+
+  function formatFuelPricePerLiter(value) {
+    const parsed = decimalValue(value);
+    if (parsed === '') return '';
+    return `${Number(parsed).toFixed(2).replace('.', ',')} Kč/l`;
+  }
+
+  function fillFuelFormCalculation(form, changedInput = null) {
+    if (!form || !form.matches('form[data-form="add-fuel"], form[data-form="update-fuel"]')) return;
+    const fields = {
+      liters: form.querySelector('[name="liters"]'),
+      price: form.querySelector('[name="price"]'),
+      pricePerLiter: form.querySelector('[name="pricePerLiter"]')
+    };
+    if (!fields.liters || !fields.price || !fields.pricePerLiter) return;
+    if (changedInput) changedInput.dataset.autoFuelValue = 'false';
+    const valueOf = (input) => decimalValue(input?.value);
+    const setAuto = (input, value, decimals = 2) => {
+      if (!input || value === '' || !Number.isFinite(Number(value))) return;
+      if (input.value && input.dataset.autoFuelValue !== 'true') return;
+      input.value = Number(value).toFixed(decimals).replace(/\.?0+$/, '');
+      input.dataset.autoFuelValue = 'true';
+    };
+    const liters = valueOf(fields.liters);
+    const price = valueOf(fields.price);
+    const pricePerLiter = valueOf(fields.pricePerLiter);
+    if (liters && price !== '') setAuto(fields.pricePerLiter, Number(price) / Number(liters), 2);
+    if (liters && pricePerLiter !== '') setAuto(fields.price, Number(liters) * Number(pricePerLiter), 2);
+    if (price !== '' && pricePerLiter) setAuto(fields.liters, Number(price) / Number(pricePerLiter), 2);
+  }
+
+  function openGarageDetailPanel(target = '') {
+    const normalized = target === 'vehicle-settings' ? 'vehicle-settings' : target === 'add-service' ? 'add-service' : target === 'add-fuel' ? 'add-fuel' : '';
+    if (!normalized) return;
+    if (normalized === 'add-fuel' || normalized === 'add-service') {
+      const vehicle = state.vehicles.find((item) => item.id === garageVehicleId) || state.vehicles[0];
+      if (!vehicle) return showToast('Nejdřív vyber auto');
+      garageModal = { type: normalized, vehicleId: vehicle.id };
+      render();
+      return;
+    }
+    const settings = document.querySelector('[data-garage-detail="vehicle-settings"]');
+    if (settings) settings.open = true;
+    settings?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    settings?.querySelector('input, select, textarea')?.focus({ preventScroll: true });
+  }
+
+  function daysModeToArray(mode) {
+    if (mode === 'workdays') return [1, 2, 3, 4, 5];
+    if (mode === 'weekend') return [6, 0];
+    return [1, 2, 3, 4, 5, 6, 0];
+  }
+
+
+  function financeCategoryOptions() {
+    return FINANCE_CATEGORY_OPTIONS.map(([key, label]) => [key, label]);
+  }
+
+  function financeCategoryLabel(value) {
+    return FINANCE_CATEGORY_OPTIONS.find(([key]) => key === value)?.[1] || value || 'Ostatní';
+  }
+
+  function financeAccountTypeOptions() {
+    return [['cash', 'Hotovost'], ['bank', 'Běžný účet'], ['savings', 'Spoření'], ['envelope', 'Obálka / rezerva'], ['person', 'Osoba / spravované peníze'], ['debt', 'Dluh / vyrovnání'], ['other', 'Jiné']];
+  }
+
+  function financeAccountTypeLabel(value) {
+    return financeAccountTypeOptions().find(([key]) => key === value)?.[1] || 'Jiné';
+  }
+
+  function financeAccountIcon(value) {
+    return { cash: '💵', bank: '🏦', savings: '🐷', envelope: '✉️', person: '👤', debt: '🧾', other: '💰' }[value] || '💰';
+  }
+
+  function financeAccountsSorted() {
+    return [...(state.financeAccounts || [])].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'cs'));
+  }
+
+  function financeAccountById(id) {
+    return (state.financeAccounts || []).find((account) => account.id === id || account.cloudId === id) || null;
+  }
+
+  function financeAccountOptions(includeEmpty = true) {
+    const options = financeAccountsSorted().map((account) => [account.id, `${financeAccountIcon(account.accountType)} ${account.name}`]);
+    return includeEmpty ? [['', 'Bez účtu / jen záznam'], ...options] : [['', 'Nevybráno'], ...options];
+  }
+
+  function financeManagedGroups(balances = financeAccountBalances()) {
+    const map = new Map();
+    (state.financeAccounts || []).forEach((account) => {
+      const explicitOwner = normalizeText(account.ownerLabel);
+      const isManagedType = ['person', 'savings', 'envelope', 'debt'].includes(account.accountType);
+      if (!explicitOwner && !isManagedType) return;
+      const label = explicitOwner || financeAccountTypeLabel(account.accountType);
+      if (!map.has(label)) map.set(label, { label, accounts: [], total: 0 });
+      const row = map.get(label);
+      row.accounts.push(account);
+      row.total += Number(balances[account.id] || 0);
+    });
+    return [...map.values()].sort((a, b) => Math.abs(b.total) - Math.abs(a.total) || a.label.localeCompare(b.label, 'cs'));
+  }
+
+  function financeCategoryType(value) {
+    return FINANCE_CATEGORY_OPTIONS.find(([key]) => key === value)?.[2] || 'expense';
+  }
+
+  function financePaymentLabel(value) {
+    const map = { cash: 'hotově', card: 'kartou', bank_transfer: 'převod', direct_debit: 'inkaso', other: 'jiné' };
+    return map[value] || 'jiné';
+  }
+
+  function financeSelectedMonth() {
+    const stored = state.financeCloud?.monthFilter;
+    return /^\d{4}-\d{2}$/.test(String(stored || '')) ? stored : todayISO().slice(0, 7);
+  }
+
+  function financeMonthLabel(month) {
+    const safeMonth = /^\d{4}-\d{2}$/.test(String(month || '')) ? month : todayISO().slice(0, 7);
+    const [year, monthIndex] = safeMonth.split('-').map(Number);
+    return new Intl.DateTimeFormat('cs-CZ', { month: 'long', year: 'numeric' }).format(new Date(year, monthIndex - 1, 1));
+  }
+
+  function setFinanceMonth(month) {
+    if (!/^\d{4}-\d{2}$/.test(String(month || ''))) return showToast('Vyber platný měsíc');
+    state.financeCloud = { ...(state.financeCloud || {}), monthFilter: month };
+    touchState();
+    saveState();
+    render();
+  }
+
+  function shiftFinanceMonth(delta) {
+    const month = financeSelectedMonth();
+    const [year, monthIndex] = month.split('-').map(Number);
+    const date = new Date(year, monthIndex - 1 + delta, 1);
+    const next = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    setFinanceMonth(next);
+  }
+
+  function financeMonthSummary(month = financeSelectedMonth()) {
+    return (state.finance || []).reduce((acc, item) => {
+      if (String(item.date || '').slice(0, 7) !== month) return acc;
+      const amount = Number(item.amount || 0);
+      if (item.type === 'income') acc.income += amount;
+      else if (item.type === 'expense') acc.expense += amount;
+      acc.balance = acc.income - acc.expense;
+      return acc;
+    }, { income: 0, expense: 0, balance: 0 });
+  }
+
+  function financeCategoryBreakdown(month = financeSelectedMonth()) {
+    const map = new Map();
+    (state.finance || []).forEach((item) => {
+      if (String(item.date || '').slice(0, 7) !== month || item.type === 'transfer') return;
+      const key = `${item.type}:${item.category || 'other'}`;
+      const current = map.get(key) || { key, type: item.type, category: item.category || 'other', label: financeCategoryLabel(item.category), amount: 0, count: 0 };
+      current.amount += Number(item.amount || 0);
+      current.count += 1;
+      map.set(key, current);
+    });
+    return [...map.values()].sort((a, b) => b.amount - a.amount);
+  }
+
+  function financeAccountMonthSummary(month = financeSelectedMonth()) {
+    const map = new Map();
+    const ensure = (account) => {
+      if (!account) return null;
+      const key = account.id;
+      if (!map.has(key)) map.set(key, { key, label: `${financeAccountIcon(account.accountType)} ${account.name}`, income: 0, expense: 0, transferIn: 0, transferOut: 0, net: 0 });
+      return map.get(key);
+    };
+    (state.finance || []).forEach((item) => {
+      if (String(item.date || '').slice(0, 7) !== month) return;
+      const amount = Number(item.amount || 0);
+      const account = financeAccountById(item.accountId);
+      const target = financeAccountById(item.transferAccountId);
+      if (item.type === 'income') { const row = ensure(account); if (row) { row.income += amount; row.net += amount; } }
+      if (item.type === 'expense') { const row = ensure(account); if (row) { row.expense += amount; row.net -= amount; } }
+      if (item.type === 'transfer') {
+        const from = ensure(account);
+        const to = ensure(target);
+        if (from) { from.transferOut += amount; from.net -= amount; }
+        if (to) { to.transferIn += amount; to.net += amount; }
+      }
+    });
+    return [...map.values()].sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
+  }
+
+  function financeAccountBalances() {
+    const balances = {};
+    (state.financeAccounts || []).forEach((account) => {
+      balances[account.id] = Number(account.openingBalance || 0);
+      if (account.cloudId) balances[account.cloudId] = balances[account.id];
+    });
+    (state.finance || []).forEach((item) => {
+      const amount = Number(item.amount || 0);
+      if (!amount) return;
+      const account = financeAccountById(item.accountId);
+      const target = financeAccountById(item.transferAccountId);
+      if (item.type === 'income' && account) balances[account.id] = (balances[account.id] || 0) + amount;
+      if (item.type === 'expense' && account) balances[account.id] = (balances[account.id] || 0) - amount;
+      if (item.type === 'transfer') {
+        if (account) balances[account.id] = (balances[account.id] || 0) - amount;
+        if (target) balances[target.id] = (balances[target.id] || 0) + amount;
+      }
+    });
+    return balances;
+  }
+
+  function cloudFinanceAccountPayload(account, userId) {
+    return {
+      household_id: state.cloud.householdId,
+      profile_id: null,
+      name: account.name,
+      account_type: ['cash', 'bank', 'savings', 'envelope', 'person', 'debt', 'other'].includes(account.accountType) ? account.accountType : 'other',
+      owner_label: account.ownerLabel || null,
+      currency: 'CZK',
+      opening_balance: Number(account.openingBalance || 0),
+      current_balance: Number(financeAccountBalances()[account.id] || account.openingBalance || 0),
+      include_in_total: account.includeInTotal !== false,
+      is_archived: false,
+      note: account.note || null,
+      created_by: userId,
+      updated_by: userId
+    };
+  }
+
+  async function cloudAddFinanceAccount(account) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    const { data, error } = await client.from('finance_accounts').insert(cloudFinanceAccountPayload(account, user.id)).select('id').single();
+    if (error) {
+      showToast(error.message || 'Účet se nepovedlo uložit do cloudu');
+      return null;
+    }
+    account.cloudId = data.id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  function cloudFinancePayload(item, userId) {
+    const account = financeAccountById(item.accountId);
+    const target = financeAccountById(item.transferAccountId);
+    return {
+      household_id: state.cloud.householdId,
+      profile_id: null,
+      category_id: null,
+      account_id: account?.cloudId || null,
+      transfer_account_id: target?.cloudId || null,
+      type: item.type === 'transfer' ? 'transfer' : item.type === 'income' ? 'income' : 'expense',
+      title: item.title || financeCategoryLabel(item.category),
+      amount: Number(item.amount || 0),
+      currency: 'CZK',
+      transaction_date: item.date || todayISO(),
+      payment_method: ['cash', 'card', 'bank_transfer', 'direct_debit', 'other'].includes(item.paymentMethod) ? item.paymentMethod : 'other',
+      is_recurring: false,
+      recurring_rule: 'none',
+      note: item.note || null,
+      source: 'manual',
+      created_by: userId,
+      updated_by: userId
+    };
+  }
+
+  async function cloudAddFinance(item) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return null;
+    const user = await refreshCloudSession(false);
+    if (!user) return null;
+    if (item.accountId) {
+      const account = financeAccountById(item.accountId);
+      if (account && !account.cloudId) await cloudAddFinanceAccount(account);
+    }
+    if (item.transferAccountId) {
+      const target = financeAccountById(item.transferAccountId);
+      if (target && !target.cloudId) await cloudAddFinanceAccount(target);
+    }
+    const { data, error } = await client.from('finance_transactions').insert(cloudFinancePayload(item, user.id)).select('id').single();
+    if (error) {
+      showToast(error.message || 'Finance se nepovedlo uložit do cloudu');
+      return null;
+    }
+    item.cloudId = data.id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudLoadFinance(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return false;
+    const { data: accountData, error: accountError } = await client
+      .from('finance_accounts')
+      .select('id,name,account_type,owner_label,opening_balance,include_in_total,note,created_at')
+      .eq('household_id', state.cloud.householdId)
+      .eq('is_archived', false)
+      .order('name', { ascending: true });
+    if (accountError) {
+      showToast(accountError.message || 'Finanční účty se nepovedlo načíst z cloudu');
+      return false;
+    }
+    const localAccounts = (state.financeAccounts || []).filter((item) => !item.cloudId);
+    const cloudAccounts = (accountData || []).map((item) => ({
+      id: state.financeAccounts.find((entry) => entry.cloudId === item.id)?.id || `finance-account-cloud-${item.id}`,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      cloudId: item.id,
+      name: item.name || 'Účet',
+      accountType: item.account_type || 'other',
+      ownerLabel: item.owner_label || '',
+      openingBalance: Number(item.opening_balance || 0),
+      includeInTotal: item.include_in_total !== false,
+      note: item.note || '',
+      createdAt: item.created_at || new Date().toISOString()
+    }));
+    state.financeAccounts = [...cloudAccounts, ...localAccounts];
+    const cloudAccountById = Object.fromEntries(state.financeAccounts.filter((account) => account.cloudId).map((account) => [account.cloudId, account]));
+
+    const { data, error } = await client
+      .from('finance_transactions')
+      .select('id,type,title,amount,transaction_date,payment_method,note,created_at,account_id,transfer_account_id')
+      .eq('household_id', state.cloud.householdId)
+      .order('transaction_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    if (error) {
+      showToast(error.message || 'Finance se nepovedlo načíst z cloudu');
+      return false;
+    }
+    const localOnly = (state.finance || []).filter((item) => !item.cloudId);
+    const cloudItems = (data || []).map((item) => ({
+      id: state.finance.find((entry) => entry.cloudId === item.id)?.id || `finance-cloud-${item.id}`,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      cloudId: item.id,
+      type: item.type === 'transfer' || item.transfer_account_id ? 'transfer' : item.type || 'expense',
+      title: item.title || 'Záznam',
+      amount: item.amount === null || item.amount === undefined ? 0 : Number(item.amount),
+      date: item.transaction_date || todayISO(),
+      paymentMethod: item.payment_method || 'other',
+      accountId: cloudAccountById[item.account_id]?.id || '',
+      transferAccountId: cloudAccountById[item.transfer_account_id]?.id || '',
+      category: item.type === 'income' ? 'other_income' : 'other_expense',
+      note: item.note || '',
+      createdAt: item.created_at || new Date().toISOString()
+    }));
+    state.finance = [...cloudItems, ...localOnly];
+    state.financeCloud = { ...(state.financeCloud || {}), accountsLoadedAt: new Date().toISOString(), loadedAt: new Date().toISOString() };
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast('Cloud finance načtené');
+    return true;
+  }
+
+  async function cloudDeleteFinance(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('finance_transactions').delete().eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Záznam se nepovedlo smazat v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteFinanceAccount(account) {
+    const client = getSupabaseClient();
+    if (!client || !account?.cloudId || !state.cloud?.householdId) return true;
+    const { error } = await client.from('finance_accounts').update({ is_archived: true }).eq('id', account.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Účet se nepovedlo archivovat v cloudu');
+      return false;
+    }
+    return true;
+  }
+
+  async function addFinanceAccountFromForm(data, form) {
+    const account = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      name: normalizeText(data.name),
+      accountType: normalizeText(data.accountType) || 'other',
+      ownerLabel: normalizeText(data.ownerLabel),
+      openingBalance: decimalValue(data.openingBalance) || 0,
+      includeInTotal: data.includeInTotal !== 'no',
+      note: normalizeText(data.note)
+    };
+    if (!account.name) return showToast('Doplň název účtu');
+    const saved = await cloudAddFinanceAccount(account);
+    if (saved?.id) account.cloudId = saved.id;
+    state.financeAccounts.push(account);
+    touchState();
+    saveState();
+    form.reset();
+    render();
+    showToast(account.cloudId ? 'Účet uložen do cloudu' : 'Účet uložen lokálně');
+  }
+
+  async function addManagedFinanceSetFromForm(data, form) {
+    const ownerName = normalizeText(data.ownerName);
+    if (!ownerName) return showToast('Doplň název osoby nebo obálky');
+    const includeInTotal = data.includeInTotal !== 'no';
+    const existingNames = new Set((state.financeAccounts || []).map((account) => normalizeText(account.name).toLowerCase()));
+    const mainName = normalizeText(data.mainAccountName) || `${ownerName} – u mě`;
+    const reserveName = normalizeText(data.reserveAccountName) || `${ownerName} – bokem`;
+    const drafts = [
+      { name: mainName, accountType: 'person', openingBalance: decimalValue(data.mainOpeningBalance) || 0, note: 'Hlavní spravovaný zůstatek' },
+      { name: reserveName, accountType: 'savings', openingBalance: decimalValue(data.reserveOpeningBalance) || 0, note: 'Peníze bokem / spoření' }
+    ].filter((draft) => draft.name && !existingNames.has(draft.name.toLowerCase()));
+    if (!drafts.length) return showToast('Tyhle účty už existují');
+    let cloudCount = 0;
+    for (const draft of drafts) {
+      const account = {
+        id: uid(),
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: new Date().toISOString(),
+        name: draft.name,
+        accountType: draft.accountType,
+        ownerLabel: ownerName,
+        openingBalance: draft.openingBalance,
+        includeInTotal,
+        note: draft.note
+      };
+      const saved = await cloudAddFinanceAccount(account);
+      if (saved?.id) {
+        account.cloudId = saved.id;
+        cloudCount += 1;
+      }
+      state.financeAccounts.push(account);
+    }
+    touchState();
+    saveState();
+    form.reset();
+    render();
+    showToast(cloudCount ? `Založeno účtů: ${drafts.length}, v cloudu: ${cloudCount}` : `Založeno účtů: ${drafts.length}`);
+  }
+
+  function fillFinanceTemplate(template) {
+    const form = document.querySelector('[data-form="add-finance"]');
+    if (!form) return;
+    const accounts = financeAccountsSorted();
+    const primary = accounts[0]?.id || '';
+    const secondary = accounts.find((account) => account.id !== primary && ['savings', 'envelope', 'person'].includes(account.accountType))?.id || accounts.find((account) => account.id !== primary)?.id || '';
+    const templates = {
+      salary: { type: 'income', title: 'Výplata', category: 'salary', paymentMethod: 'bank_transfer', accountId: primary },
+      rent: { type: 'expense', title: 'Nájem', category: 'housing', paymentMethod: 'bank_transfer', accountId: primary },
+      energy: { type: 'expense', title: 'Energie', category: 'energy', paymentMethod: 'direct_debit', accountId: primary },
+      cash: { type: 'expense', title: 'Výběr hotově', category: 'other_expense', paymentMethod: 'cash', accountId: primary },
+      savings: { type: 'transfer', title: 'Přesun na spoření', category: 'other_expense', paymentMethod: 'bank_transfer', accountId: primary, transferAccountId: secondary }
+    };
+    const values = templates[template];
+    if (!values) return;
+    Object.entries(values).forEach(([name, value]) => {
+      const field = form.elements[name];
+      if (field) field.value = value || '';
+    });
+    if (form.elements.date) form.elements.date.value = todayISO();
+    if (form.elements.amount) form.elements.amount.focus();
+    showToast('Šablona vyplněná, doplň částku');
+  }
+
+  async function addFinanceFromForm(data, form) {
+    let type = data.type === 'income' ? 'income' : data.type === 'transfer' ? 'transfer' : 'expense';
+    const accountId = normalizeText(data.accountId);
+    const transferAccountId = normalizeText(data.transferAccountId);
+    if (type === 'transfer' && (!accountId || !transferAccountId || accountId === transferAccountId)) {
+      return showToast('U přesunu vyber dva různé účty');
+    }
+    const category = normalizeText(data.category) || (type === 'income' ? 'other_income' : 'other_expense');
+    const item = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      type,
+      title: normalizeText(data.title) || (type === 'transfer' ? 'Přesun' : financeCategoryLabel(category)),
+      amount: decimalValue(data.amount),
+      date: normalizeText(data.date) || todayISO(),
+      category,
+      accountId,
+      transferAccountId: type === 'transfer' ? transferAccountId : '',
+      paymentMethod: normalizeText(data.paymentMethod) || 'other',
+      note: normalizeText(data.note)
+    };
+    if (!item.title || !Number(item.amount)) return showToast('Doplň název a částku');
+    const saved = await cloudAddFinance(item);
+    if (saved?.id) item.cloudId = saved.id;
+    state.finance.push(item);
+    touchState();
+    saveState();
+    form.reset();
+    render();
+    showToast(item.cloudId ? 'Finance uloženy do cloudu' : 'Finance uloženy lokálně');
+  }
+
+  async function cloudSyncFinanceAccountById(id) {
+    const account = state.financeAccounts.find((entry) => entry.id === id);
+    if (!account) return;
+    const saved = await cloudAddFinanceAccount(account);
+    if (!saved?.id) return;
+    touchState();
+    saveState();
+    render();
+    showToast('Účet odeslán do cloudu');
+  }
+
+  async function cloudSyncLocalFinanceAccounts() {
+    const local = (state.financeAccounts || []).filter((item) => !item.cloudId);
+    if (!local.length) return showToast('Žádné lokální účty k odeslání');
+    let count = 0;
+    for (const account of local) {
+      const saved = await cloudAddFinanceAccount(account);
+      if (saved?.id) count += 1;
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(`Odesláno finančních účtů: ${count}`);
+  }
+
+  async function cloudSyncFinanceById(id) {
+    const item = state.finance.find((entry) => entry.id === id);
+    if (!item) return;
+    const saved = await cloudAddFinance(item);
+    if (!saved?.id) return;
+    touchState();
+    saveState();
+    render();
+    showToast('Záznam odeslán do cloudu');
+  }
+
+  async function cloudSyncLocalFinance() {
+    const local = (state.finance || []).filter((item) => !item.cloudId);
+    if (!local.length) return showToast('Žádné lokální finance k odeslání');
+    let count = 0;
+    for (const item of local) {
+      const saved = await cloudAddFinance(item);
+      if (saved?.id) count += 1;
+    }
+    touchState();
+    saveState();
+    render();
+    showToast(`Odesláno finančních záznamů: ${count}`);
+  }
+
+  async function deleteFinanceTransaction(id) {
+    const item = state.finance.find((entry) => entry.id === id);
+    if (!item) return;
+    const ok = await cloudDeleteFinance(item);
+    if (!ok) return;
+    state.finance = state.finance.filter((entry) => entry.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Záznam smazán');
+  }
+
+  async function deleteFinanceAccount(id) {
+    const account = state.financeAccounts.find((entry) => entry.id === id);
+    if (!account) return;
+    if ((state.finance || []).some((item) => item.accountId === id || item.transferAccountId === id)) {
+      showToast('Účet má pohyby. Nejdřív smaž nebo přesuň záznamy.');
+      return;
+    }
+    const ok = await cloudDeleteFinanceAccount(account);
+    if (!ok) return;
+    state.financeAccounts = state.financeAccounts.filter((entry) => entry.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Účet smazán');
+  }
+
+
+
+
+  function cloudReady() {
+    return Boolean(state.cloud?.userId && state.cloud?.householdId && state.cloud?.provider === 'supabase');
+  }
+
+
+  function realtimeStatusLabel(status = state.cloud?.realtimeStatus) {
+    return REALTIME_STATUS_LABELS[String(status || 'offline').toLowerCase()] || String(status || 'vypnuto');
+  }
+
+  function cloudAutosyncStatusLabel(status = state.cloud?.autosyncStatus) {
+    if (state.cloud?.autoSyncEnabled === false) return AUTOSYNC_STATUS_LABELS.disabled;
+    return AUTOSYNC_STATUS_LABELS[String(status || 'idle').toLowerCase()] || String(status || 'čeká');
+  }
+
+  function cloudLocalPendingCount(items = null) {
+    try {
+      const rows = items || getCloudSyncOverviewItems();
+      return rows.reduce((sum, item) => sum + Number(item.local || 0), 0);
+    } catch {
+      return 0;
+    }
+  }
+
+  function scheduleCloudAutosync(source = 'save') {
+    if (!cloudReady() || isDemoOnlyState()) return;
+    if (state.cloud?.autoSyncEnabled === false) return;
+    if (cloudAutosyncRunning || cloudRealtimeReloading || suppressToastDepth > 0) return;
+    const pending = cloudLocalPendingCount();
+    state.cloud.localPendingCount = pending;
+    if (!pending) return;
+    if (Date.now() - cloudAutosyncLastAttempt < 6500) return;
+    if (cloudAutosyncTimer) window.clearTimeout(cloudAutosyncTimer);
+    state.cloud.autosyncStatus = 'pending';
+    state.cloud.autosyncSource = source;
+    persistStateSnapshot();
+    cloudAutosyncTimer = window.setTimeout(() => {
+      cloudAutosyncTimer = null;
+      runCloudAutosyncNow(false);
+    }, 2600);
+  }
+
+  async function runCloudAutosyncNow(showMessage = true) {
+    if (!cloudReady()) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return false;
+    }
+    if (isDemoOnlyState()) return false;
+    if (cloudAutosyncTimer) {
+      window.clearTimeout(cloudAutosyncTimer);
+      cloudAutosyncTimer = null;
+    }
+    const before = cloudLocalPendingCount();
+    state.cloud.localPendingCount = before;
+    if (!before) {
+      state.cloud.autosyncStatus = 'done';
+      state.cloud.lastAutosyncAt = new Date().toISOString();
+      persistStateSnapshot();
+      if (showMessage) showToast('Cloud je aktuální');
+      render();
+      return true;
+    }
+    cloudAutosyncRunning = true;
+    cloudAutosyncLastAttempt = Date.now();
+    state.cloud.autosyncStatus = 'syncing';
+    persistStateSnapshot();
+    render();
+    try {
+      await withMutedToasts(async () => {
+        await cloudSyncLocalPendingData(false);
+        await cloudLoadAllModules(false, { skipRealtimeSetup: true, silentWhenOffline: true });
+      });
+      const after = cloudLocalPendingCount();
+      state.cloud = {
+        ...(state.cloud || {}),
+        autosyncStatus: after ? 'blocked' : 'done',
+        lastAutosyncAt: new Date().toISOString(),
+        localPendingCount: after,
+        lastAutosyncError: ''
+      };
+      touchState();
+      persistStateSnapshot();
+      render();
+      if (showMessage) showToast(after ? `Cloud sync hotový, ${after} položek chce ruční kontrolu` : 'Lokální záznamy jsou v cloudu');
+      return !after;
+    } catch (error) {
+      console.warn('Cloud autosync failed', error);
+      state.cloud = {
+        ...(state.cloud || {}),
+        autosyncStatus: 'error',
+        lastAutosyncError: error?.message || 'Autosync selhal',
+        localPendingCount: cloudLocalPendingCount()
+      };
+      persistStateSnapshot();
+      render();
+      if (showMessage) showToast('Automatická synchronizace se nepovedla');
+      return false;
+    } finally {
+      cloudAutosyncRunning = false;
+    }
+  }
+
+  function setCloudAutosyncEnabled(enabled) {
+    state.cloud = {
+      ...(state.cloud || {}),
+      autoSyncEnabled: Boolean(enabled),
+      autosyncStatus: enabled ? 'idle' : 'disabled'
+    };
+    touchState();
+    saveState();
+    render();
+    showToast(enabled ? 'Autosync zapnutý' : 'Autosync vypnutý');
+    if (enabled) scheduleCloudAutosync('manual-toggle');
+  }
+
+  function disposeCloudRealtime() {
+    if (cloudRealtimeReloadTimer) {
+      window.clearTimeout(cloudRealtimeReloadTimer);
+      cloudRealtimeReloadTimer = null;
+    }
+    const client = supabaseClientInstance;
+    if (cloudRealtimeChannel && client?.removeChannel) {
+      try { client.removeChannel(cloudRealtimeChannel); } catch (error) { console.warn('Realtime remove failed', error); }
+    }
+    cloudRealtimeChannel = null;
+    cloudRealtimeHouseholdId = '';
+    cloudRealtimeReloading = false;
+  }
+
+  function scheduleCloudRealtimeRefresh(source = 'cloud') {
+    if (!cloudReady() || isDemoOnlyState()) return;
+    if (cloudRealtimeReloadTimer) window.clearTimeout(cloudRealtimeReloadTimer);
+    state.cloud = {
+      ...(state.cloud || {}),
+      realtimeStatus: 'refreshing',
+      realtimeSource: source,
+      lastRealtimeAt: new Date().toISOString()
+    };
+    saveState();
+    cloudRealtimeReloadTimer = window.setTimeout(async () => {
+      if (cloudRealtimeReloading || !cloudReady() || isDemoOnlyState()) return;
+      cloudRealtimeReloading = true;
+      try {
+        await withMutedToasts(() => cloudLoadAllModules(false, { skipRealtimeSetup: true }));
+        state.cloud = {
+          ...(state.cloud || {}),
+          realtimeStatus: 'online',
+          realtimeSource: source,
+          lastRealtimeAt: new Date().toISOString()
+        };
+        touchState();
+        saveState();
+        render();
+      } catch (error) {
+        console.warn('Realtime cloud refresh failed', error);
+        state.cloud = { ...(state.cloud || {}), realtimeStatus: 'channel_error' };
+        saveState();
+      } finally {
+        cloudRealtimeReloading = false;
+        cloudRealtimeReloadTimer = null;
+      }
+    }, 1200);
+  }
+
+  function setupCloudRealtimeSubscriptions(force = false) {
+    if (!cloudReady() || isDemoOnlyState()) {
+      disposeCloudRealtime();
+      return false;
+    }
+    const client = getSupabaseClient();
+    if (!client?.channel) {
+      state.cloud = { ...(state.cloud || {}), realtimeStatus: 'unsupported' };
+      saveState();
+      return false;
+    }
+    const householdId = state.cloud.householdId;
+    if (!force && cloudRealtimeChannel && cloudRealtimeHouseholdId === householdId) return true;
+    disposeCloudRealtime();
+    cloudRealtimeHouseholdId = householdId;
+    state.cloud = { ...(state.cloud || {}), realtimeStatus: 'connecting' };
+    const channel = client.channel(`domacnost-plus-household-${householdId}`);
+    REALTIME_CLOUD_TABLES.forEach((table) => {
+      channel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table, filter: `household_id=eq.${householdId}` },
+        (payload) => scheduleCloudRealtimeRefresh(payload?.table || table)
+      );
+    });
+    cloudRealtimeChannel = channel;
+    channel.subscribe((status) => {
+      const key = String(status || '').toLowerCase();
+      state.cloud = {
+        ...(state.cloud || {}),
+        realtimeStatus: key === 'subscribed' ? 'online' : key,
+        realtimeStartedAt: key === 'subscribed' ? new Date().toISOString() : state.cloud?.realtimeStartedAt || ''
+      };
+      saveState();
+      const realtimeBadge = document.querySelector('[data-cloud-realtime-status]');
+      if (realtimeBadge) realtimeBadge.textContent = realtimeStatusLabel();
+    });
+    return true;
+  }
+
+  async function withMutedToasts(callback) {
+    suppressToastDepth += 1;
+    try {
+      return await callback();
+    } finally {
+      suppressToastDepth = Math.max(0, suppressToastDepth - 1);
+    }
+  }
+
+  function extraCloudConfig(collection) {
+    return CLOUD_EXTRA_COLLECTIONS[collection] || null;
+  }
+
+  async function cloudAddExtraItem(collection, item) {
+    const config = extraCloudConfig(collection);
+    if (!config || !cloudReady()) return null;
+    const client = getSupabaseClient();
+    if (!client) return null;
+    const user = await refreshCloudSession(false);
+    if (!user || !state.cloud?.householdId) return null;
+    const payload = config.payload(item, user.id);
+    const { data, error } = await client
+      .from(config.table)
+      .insert(payload)
+      .select('id')
+      .single();
+    if (error) {
+      showToast(error.message || 'Záznam se nepovedlo uložit do cloudu');
+      return null;
+    }
+    item.cloudId = data.id;
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return data;
+  }
+
+  async function cloudUpdateExtraItem(collection, item) {
+    const config = extraCloudConfig(collection);
+    if (!config || !cloudReady() || !item?.cloudId) return true;
+    const client = getSupabaseClient();
+    if (!client) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const payload = config.payload(item, user.id);
+    delete payload.created_by;
+    const { error } = await client
+      .from(config.table)
+      .update(payload)
+      .eq('id', item.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Záznam se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudDeleteExtraItem(collection, item) {
+    const config = extraCloudConfig(collection);
+    if (!config || !item?.cloudId || !cloudReady()) return true;
+    const client = getSupabaseClient();
+    if (!client) return true;
+    const { error } = await client
+      .from(config.table)
+      .delete()
+      .eq('id', item.cloudId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Záznam se nepovedlo smazat z cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLoadExtraCollection(collection, showMessage = false) {
+    const config = extraCloudConfig(collection);
+    if (!config || !cloudReady()) return false;
+    const client = getSupabaseClient();
+    if (!client) return false;
+    let query = client
+      .from(config.table)
+      .select(config.select)
+      .eq('household_id', state.cloud.householdId);
+    if (config.order) query = query.order(config.order.column, { ascending: config.order.ascending });
+    const { data, error } = await query;
+    if (error) {
+      if (showMessage) showToast(error.message || 'Cloud data se nepovedlo načíst');
+      return false;
+    }
+    const localOnly = (state[collection] || []).filter((item) => !item.cloudId);
+    const cloudItems = (data || []).map((item) => config.map(item));
+    state[collection] = [...cloudItems, ...localOnly];
+    state.householdExtrasCloud = { ...(state.householdExtrasCloud || {}), loadedAt: new Date().toISOString() };
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    if (showMessage) showToast('Cloud data načtená');
+    return true;
+  }
+
+  async function cloudLoadExtraCollections(showMessage = false) {
+    if (!cloudReady()) return false;
+    let count = 0;
+    for (const collection of Object.keys(CLOUD_EXTRA_COLLECTIONS)) {
+      try {
+        const ok = await cloudLoadExtraCollection(collection, false);
+        if (ok) count += 1;
+      } catch (error) {
+        console.warn('Cloud extra load failed', collection, error);
+      }
+    }
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(`Cloud drobné moduly načtené: ${count}/${Object.keys(CLOUD_EXTRA_COLLECTIONS).length}`);
+    return true;
+  }
+
+  async function cloudSyncLocalExtraCollections(showMessage = true) {
+    if (!cloudReady()) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return 0;
+    }
+    let synced = 0;
+    for (const collection of Object.keys(CLOUD_EXTRA_COLLECTIONS)) {
+      const items = state[collection] || [];
+      for (const item of items) {
+        try {
+          if (item.cloudId) {
+            const ok = await cloudUpdateExtraItem(collection, item);
+            if (ok) synced += 1;
+          } else {
+            const saved = await cloudAddExtraItem(collection, item);
+            if (saved?.id) synced += 1;
+          }
+        } catch (error) {
+          console.warn('Cloud extra sync failed', collection, error);
+        }
+      }
+    }
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(synced ? `Odesláno drobných záznamů: ${synced}` : 'Žádné lokální drobné záznamy k odeslání');
+    return synced;
+  }
+
+  async function cloudLoadUserVisualSettings(showMessage = false) {
+    const client = getSupabaseClient();
+    if (!client) return false;
+    const userId = state.cloud?.userId;
+    if (!userId) return false;
+    const { data, error } = await client
+      .from('user_app_settings')
+      .select('settings, updated_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) {
+      if (showMessage) showToast(error.message || 'Vzhled účtu se nepovedlo načíst');
+      return false;
+    }
+    if (data?.settings && mergeVisualSettings(data.settings)) {
+      state.cloud = { ...(state.cloud || {}), userVisualSettingsLoadedAt: data.updated_at || new Date().toISOString() };
+      saveLocalVisualSettings();
+      touchState();
+      saveState();
+      render();
+    }
+    return true;
+  }
+
+  async function cloudSaveUserVisualSettings(showMessage = false) {
+    const client = getSupabaseClient();
+    if (!client) return false;
+    const userId = state.cloud?.userId;
+    if (!userId) return false;
+    const settings = getVisualSettingsSnapshot();
+    const { error } = await client
+      .from('user_app_settings')
+      .upsert({ user_id: userId, settings, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    if (error) {
+      if (showMessage) showToast(error.message || 'Vzhled účtu se nepovedlo uložit');
+      return false;
+    }
+    state.cloud = { ...(state.cloud || {}), userVisualSettingsLoadedAt: new Date().toISOString() };
+    saveState();
+    if (showMessage) showToast('Vzhled uložen na účet');
+    return true;
+  }
+
+  async function cloudSyncLocalPendingData(showMessage = true) {
+    return withDeferredRender(async () => {
+      if (!cloudReady()) {
+        if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+        return;
+      }
+      const syncers = [
+        () => cloudSaveUserVisualSettings(false),
+        cloudSyncLocalProfiles,
+        cloudSyncLocalShoppingItems,
+        cloudSyncLocalContracts,
+        cloudSyncLocalContractFiles,
+        cloudSyncLocalWarrantyFiles,
+        cloudSyncLocalGarage,
+        cloudSyncLocalHdo,
+        cloudSyncLocalWaste,
+        cloudSyncLocalTasks,
+        cloudSyncLocalParcels,
+        cloudSyncLocalCalendarSources,
+        cloudSyncLocalCalendar,
+        cloudSyncLocalFinanceAccounts,
+        cloudSyncLocalFinance,
+        () => cloudSaveHouseholdUiSettings(false),
+        () => cloudSyncLocalExtraCollections(false)
+      ];
+      await withMutedToasts(async () => {
+        for (const syncer of syncers) {
+          try {
+            await syncer();
+          } catch (error) {
+            console.warn('Cloud pending sync failed', error);
+          }
+        }
+      });
+      if (showMessage) await withMutedToasts(() => cloudLoadAllModules(false));
+      setupCloudRealtimeSubscriptions(false);
+      state.cloud.lastSyncAt = new Date().toISOString();
+      touchState();
+      saveState();
+      render();
+      if (showMessage) showToast('Lokální záznamy byly zkontrolované a cloud je načtený');
+    });
+  }
+
+  async function cloudWarmStartLoad(showMessage = false, force = false) {
+    return withDeferredRender(async () => {
+      if ((cloudWarmStartDone && !force) || isDemoOnlyState()) return;
+      const user = await refreshCloudSession(false);
+      if (!user) return;
+      cloudWarmStartDone = true;
+      await cloudLoadUserVisualSettings(false);
+      const households = await cloudLoadHouseholds(false);
+      if (!state.cloud?.householdId && households.length) {
+        const preferredHousehold = pickBestCloudHousehold(households);
+        state.cloud.householdId = preferredHousehold.id;
+        state.household = { ...(state.household || {}), id: preferredHousehold.id, name: preferredHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
+      }
+      if (!state.cloud?.householdId && state.household?.isConfigured) {
+        await bootstrapCloudHousehold(false);
+      }
+      if (!state.cloud?.householdId) return;
+      await cloudLoadProfilesForCurrentHousehold();
+      await cloudSyncLocalPendingData(false);
+      await cloudLoadAllModules(false);
+      if (showMessage) showToast('Cloud domácnost načtená');
+    });
+  }
+
+  async function cloudLoadAllModules(showMessage = true, options = {}) {
+    return withDeferredRender(async () => {
+      if (!state.cloud?.userId || !state.cloud?.householdId) {
+        if (!options.silentWhenOffline) showToast('Nejdřív napoj domácnost na cloud');
+        return;
+      }
+      const loaders = [
+        cloudLoadUserVisualSettings,
+        cloudLoadHouseholdUiSettings,
+        cloudLoadProfilesForCurrentHousehold,
+        cloudLoadShoppingData,
+        cloudLoadContracts,
+        cloudLoadGarageData,
+        cloudLoadHdoData,
+        cloudLoadWaste,
+        cloudLoadTasks,
+        cloudLoadParcels,
+        cloudLoadCalendarSources,
+        cloudLoadCalendar,
+        cloudLoadContractFiles,
+        cloudLoadExtraCollections,
+        cloudLoadWarrantyFiles,
+        cloudLoadFinance
+      ];
+      let ok = 0;
+      for (const loader of loaders) {
+        try {
+          await loader(false);
+          ok += 1;
+        } catch (error) {
+          console.warn('Cloud load module failed', error);
+        }
+      }
+      state.cloud.lastSyncAt = new Date().toISOString();
+      touchState();
+      saveState();
+      render();
+      if (!options.skipRealtimeSetup) setupCloudRealtimeSubscriptions(false);
+      if (showMessage) showToast(`Cloud načten: ${ok}/${loaders.length} částí`);
+    });
+  }
+
+  function setAppTheme(value) {
+    visualSettingsDrawerOpen = true;
+    state.settings.theme = normalizeAppTheme(value);
+    persistVisualSettings(false);
+    render();
+    showToast(state.settings.theme === 'dark' ? 'Tmavý vzhled uložen' : 'Světlý vzhled uložen');
+  }
+
+  function setIconTheme(value) {
+    visualSettingsDrawerOpen = true;
+    state.settings.iconTheme = normalizeIconTheme(value);
+    preloadAssetIconTheme(state.settings.iconTheme);
+    persistVisualSettings(false);
+    render();
+    showToast(`Styl ikon: ${getOptionLabel(ICON_THEME_OPTIONS, state.settings.iconTheme)}`);
+  }
+
+  function setColorScheme(value) {
+    visualSettingsDrawerOpen = true;
+    state.settings.colorScheme = normalizeColorScheme(value);
+    persistVisualSettings(false);
+    render();
+    showToast(`Barevné schéma: ${getOptionLabel(COLOR_SCHEME_OPTIONS, state.settings.colorScheme)}`);
+  }
+
+  function handleAction(button) {
+    const action = button.dataset.action;
+    if (action === 'open-overview') {
+      if ((button.dataset.overview || '') === 'calendar') {
+        activeOverview = null;
+        activeModule = 'calendar';
+        moduleTabs = { ...(moduleTabs || {}), calendar: 'overview' };
+        if (!isDemoOnlyState()) {
+          localStorage.setItem('homeWeb.activeModule', activeModule);
+          localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+        }
+        render();
+        keepActiveNavCentered('smooth');
+        keepActiveSectionTabsCentered('smooth');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      openOverview(button.dataset.overview || 'homecare');
+      return;
+    }
+    if (action === 'close-overview') {
+      closeOverview();
+      return;
+    }
+    if (action === 'close-modal') {
+      garageModal = null;
+      calendarDetailEventId = null;
+      activeWarrantyDetailId = null;
+      shoppingDoneModalOpen = false;
+      garageEditRecord = null;
+      closeFilePreviewModal();
+      render();
+      return;
+    }
+    if (action === 'set-section-tab') {
+      setModuleTab(button.dataset.area || activeModule, button.dataset.tab || 'main');
+      return;
+    }
+    if (action === 'home-hero-edit-done') {
+      homeHeroEditMode = false;
+      render();
+      return;
+    }
+    if (action === 'home-hero-move-left') {
+      moveHomeHeroItem(button.dataset.id, -1);
+      return;
+    }
+    if (action === 'home-hero-move-right') {
+      moveHomeHeroItem(button.dataset.id, 1);
+      return;
+    }
+    if (action === 'onboarding-mode') {
+      onboardingMode = button.dataset.mode || 'choice';
+      if (onboardingMode === 'choice') sessionStorage.removeItem('domacnostPlus.onboardingMode');
+      else sessionStorage.setItem('domacnostPlus.onboardingMode', onboardingMode);
+      render();
+      return;
+    }
+    if (action === 'start-demo') {
+      startDemoHome();
+      return;
+    }
+    if (action === 'exit-demo') {
+      exitDemoHome();
+      return;
+    }
+    if (action === 'toggle-theme') {
+      setAppTheme(state.settings.theme === 'dark' ? 'light' : 'dark');
+      return;
+    }
+    if (action === 'set-app-theme') {
+      setAppTheme(button.dataset.themeValue);
+      return;
+    }
+    if (action === 'set-icon-theme') {
+      setIconTheme(button.dataset.iconTheme);
+      return;
+    }
+    if (action === 'set-color-scheme') {
+      setColorScheme(button.dataset.colorScheme);
+      return;
+    }
+    if (action === 'garage-apply-vehicle-preset') {
+      fillVehicleFormFromPreset(button);
+      return;
+    }
+    if (action === 'delete') {
+      if (button.dataset.collection === 'shopping') {
+        deleteShoppingItem(button.dataset.id);
+        return;
+      }
+      deleteItem(button.dataset.collection, button.dataset.id);
+      return;
+    }
+    if (action === 'toggle-done') {
+      if (button.dataset.collection === 'shopping') {
+        toggleShoppingDone(button.dataset.id);
+        return;
+      }
+      toggleBoolean(button.dataset.collection, button.dataset.id, 'done');
+      return;
+    }
+    if (action === 'toggle-enabled') {
+      toggleBoolean(button.dataset.collection, button.dataset.id, 'enabled');
+      return;
+    }
+    if (action === 'toggle-hdo') {
+      toggleHdoWindow(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-hdo') {
+      deleteHdoWindow(button.dataset.id);
+      return;
+    }
+    if (action === 'toggle-used') {
+      toggleBoolean('coupons', button.dataset.id, 'used');
+      return;
+    }
+    if (action === 'toggle-coupon-edit') {
+      couponEditId = couponEditId === button.dataset.id ? '' : (button.dataset.id || '');
+      render();
+      return;
+    }
+    if (action === 'copy') {
+      copyText(button.dataset.value || '');
+      return;
+    }
+    if (action === 'package-status') {
+      const pkg = state.packages.find((item) => item.id === button.dataset.id);
+      if (pkg) {
+        pkg.status = button.dataset.status;
+        cloudUpdateParcel(pkg).then(() => {
+          touchState();
+          saveState();
+          render();
+        });
+      }
+      return;
+    }
+    if (action === 'cloud-load-all') {
+      cloudLoadAllModules(true);
+      return;
+    }
+    if (action === 'cloud-load-extras') {
+      cloudLoadExtraCollections(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-extras') {
+      cloudSyncLocalExtraCollections(true).then(() => cloudLoadExtraCollections(false));
+      return;
+    }
+    if (action === 'cloud-sync-pending') {
+      cloudSyncLocalPendingData(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-profiles') {
+      cloudSyncLocalProfiles(true).then(() => cloudLoadProfilesForCurrentHousehold());
+      return;
+    }
+    if (action === 'cloud-run-autosync-now') {
+      runCloudAutosyncNow(true);
+      return;
+    }
+    if (action === 'cloud-toggle-autosync') {
+      setCloudAutosyncEnabled(state.cloud?.autoSyncEnabled === false);
+      return;
+    }
+    if (action === 'cloud-oauth-google') {
+      cloudOAuthSignIn('google', button.dataset.intent || 'login');
+      return;
+    }
+    if (action === 'google-calendar-start') {
+      googleCalendarStart({ cleanup: true });
+      return;
+    }
+    if (action === 'google-calendar-reconnect') {
+      sessionStorage.removeItem(GOOGLE_CALENDAR_RECONNECT_FLAG);
+      startGoogleCalendarOAuthReconnect('Čistím staré pokusy a spouštím nové připojení Google kalendáře.', { force: true });
+      return;
+    }
+    if (action === 'google-calendar-list-calendars') {
+      googleCalendarListCalendars(true);
+      return;
+    }
+    if (action === 'google-calendar-sync') {
+      googleCalendarSync(button.dataset.sourceId || '');
+      return;
+    }
+    if (action === 'google-calendar-disconnect') {
+      googleCalendarDisconnect();
+      return;
+    }
+    if (action === 'cloud-load-calendar') {
+      cloudLoadCalendar(true);
+      return;
+    }
+    if (action === 'cloud-load-calendar-sources') {
+      cloudLoadCalendarSources(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-calendar-sources') {
+      cloudSyncLocalCalendarSources(true);
+      return;
+    }
+    if (action === 'calendar-toggle-source') {
+      toggleCalendarSource(button.dataset.sourceId, button.dataset.enabled === 'true');
+      return;
+    }
+    if (action === 'calendar-delete-source') {
+      deleteCalendarSource(button.dataset.sourceId);
+      return;
+    }
+    if (action === 'cloud-sync-local-calendar') {
+      cloudSyncLocalCalendar();
+      return;
+    }
+    if (action === 'cloud-sync-calendar') {
+      cloudSyncCalendarById(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-calendar') {
+      calendarDetailEventId = null;
+      deleteCalendarEvent(button.dataset.id);
+      return;
+    }
+    if (action === 'calendar-month-prev' || action === 'calendar-month-next' || action === 'calendar-month-today') {
+      if (action === 'calendar-month-prev') calendarViewMonth = shiftCalendarMonth(calendarViewMonth, -1);
+      if (action === 'calendar-month-next') calendarViewMonth = shiftCalendarMonth(calendarViewMonth, 1);
+      if (action === 'calendar-month-today') calendarViewMonth = todayISO().slice(0, 7);
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.calendarViewMonth', calendarViewMonth);
+      render();
+      return;
+    }
+    if (action === 'calendar-event-detail') {
+      calendarDetailEventId = button.dataset.id || '';
+      render();
+      return;
+    }
+    if (action === 'cloud-load-parcels') {
+      cloudLoadParcels(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-parcels') {
+      cloudSyncLocalParcels();
+      return;
+    }
+    if (action === 'cloud-sync-parcel') {
+      cloudSyncParcelById(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-package') {
+      deletePackage(button.dataset.id);
+      return;
+    }
+    if (action === 'set-profile') {
+      setActiveProfile(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-profile') {
+      deleteProfile(button.dataset.id);
+      return;
+    }
+    if (action === 'toggle-module') {
+      toggleModule(button.dataset.id);
+      return;
+    }
+    if (action === 'toggle-bottom-nav') {
+      toggleBottomNav(button.dataset.id);
+      return;
+    }
+    if (action === 'toggle-dashboard-widget') {
+      toggleDashboardWidget(button.dataset.id);
+      return;
+    }
+    if (action === 'toggle-home-hero-item') {
+      toggleHomeHeroItem(button.dataset.id);
+      return;
+    }
+    if (action === 'home-hero-reset') {
+      resetHomeHeroItems();
+      return;
+    }
+    if (action === 'dashboard-reset-widgets') {
+      resetDashboardWidgets();
+      return;
+    }
+    if (action === 'weather-refresh') {
+      ensureWeatherFresh(true).then(() => {
+        const error = normalizeWeatherState(state.weather).error;
+        showToast(error || 'Počasí obnoveno');
+      });
+      return;
+    }
+    if (action === 'soft-ui-reset') {
+      localStorage.removeItem('homeWeb.activeModule');
+      localStorage.removeItem('domacnostPlus.moduleTabs');
+      activeModule = 'home';
+      moduleTabs = {};
+      render();
+      showToast('UI stav vyčištěný');
+      return;
+    }
+    if (action === 'garage-ui-repair' || action === 'garage-dedupe-now') {
+      const beforeFuel = (state.fuel || []).length;
+      const beforeServices = (state.services || []).length;
+      const beforeVehicles = (state.vehicles || []).length;
+      normalizeGarageRuntimeState({ persist: true });
+      garageEditRecord = null;
+      garageModal = null;
+      moduleTabs = { ...(moduleTabs || {}), garage: 'overview' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      touchState();
+      saveState();
+      render();
+      const removed = Math.max(0, beforeFuel - (state.fuel || []).length) + Math.max(0, beforeServices - (state.services || []).length) + Math.max(0, beforeVehicles - (state.vehicles || []).length);
+      showToast(removed ? `Duplicity v Garáži opravené: ${removed} odstraněno ze zobrazení` : 'Garáž zkontrolovaná, duplicity se nenašly');
+      return;
+    }
+    if (action === 'open-warranty-detail') {
+      activeWarrantyDetailId = button.dataset.id || '';
+      render();
+      return;
+    }
+    if (action === 'delete-warranty') {
+      deleteWarranty(button.dataset.id);
+      activeWarrantyDetailId = null;
+      return;
+    }
+    if (action === 'open-warranty-file') {
+      openWarrantyFile(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-warranty-file') {
+      deleteWarrantyFile(button.dataset.id);
+      return;
+    }
+    if (action === 'open-garage-detail') {
+      openGarageDetailPanel(button.dataset.garageTarget || '');
+      return;
+    }
+    if (action === 'garage-select-overview-vehicle') {
+      garageVehicleId = button.dataset.id || garageVehicleId;
+      garageStatsVehicleId = garageVehicleId;
+      moduleTabs = { ...(moduleTabs || {}), garage: 'overview' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      render();
+      return;
+    }
+    if (action === 'select-vehicle') {
+      garageVehicleId = button.dataset.id;
+      garageStatsVehicleId = garageVehicleId;
+      garageEditRecord = null;
+      activeOverview = null;
+      activeModule = 'garage';
+      if (!isDemoOnlyState()) localStorage.setItem('homeWeb.activeModule', activeModule);
+      moduleTabs = { ...(moduleTabs || {}), garage: 'detail' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      const garageTarget = button.dataset.garageTarget || '';
+      render();
+      keepActiveSectionTabsCentered('smooth');
+      if (garageTarget) window.setTimeout(() => openGarageDetailPanel(garageTarget), 60);
+      return;
+    }
+    if (action === 'select-contract') {
+      activeContractId = button.dataset.id;
+      moduleTabs = { ...(moduleTabs || {}), contracts: 'detail' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      render();
+      keepActiveSectionTabsCentered('smooth');
+      return;
+    }
+    if (action === 'open-contract-file') {
+      openOrDownloadContractFile(button.dataset.id, true);
+      return;
+    }
+    if (action === 'download-contract-file') {
+      openOrDownloadContractFile(button.dataset.id, false);
+      return;
+    }
+    if (action === 'delete-contract-file') {
+      deleteContractFile(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-load-contract-files') {
+      cloudLoadContractFiles(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-contract-files') {
+      cloudSyncLocalContractFiles(true).then(() => cloudLoadContractFiles(false));
+      return;
+    }
+    if (action === 'confirm-fuelio-import') {
+      confirmFuelioImport({ syncCloud: cloudReady() });
+      return;
+    }
+    if (action === 'edit-garage-record') {
+      const collection = button.dataset.collection;
+      const id = button.dataset.id;
+      const item = collection === 'fuel' ? state.fuel.find((entry) => entry.id === id) : state.services.find((entry) => entry.id === id);
+      if (!item) return showToast('Záznam nenalezen');
+      garageVehicleId = item.vehicleId || garageVehicleId;
+      garageEditRecord = null;
+      garageModal = { type: collection === 'fuel' ? 'edit-fuel' : 'edit-service', vehicleId: item.vehicleId || garageVehicleId, recordId: id };
+      render();
+      return;
+    }
+    if (action === 'cancel-garage-edit') {
+      garageEditRecord = null;
+      garageModal = null;
+      render();
+      return;
+    }
+    if (action === 'clear-fuelio-preview') {
+      fuelioPreview = null;
+      render();
+      showToast('Náhled zrušen');
+      return;
+    }
+    if (action === 'delete-vehicle') {
+      deleteVehicle(button.dataset.id);
+      return;
+    }
+    if (action === 'polish-holidays-refresh') {
+      refreshPolishShopHolidaysOnline();
+      return;
+    }
+    if (action === 'cloud-bootstrap') {
+      bootstrapCloudHousehold();
+      return;
+    }
+    if (action === 'cloud-load-households') {
+      cloudLoadHouseholds(true);
+      return;
+    }
+    if (action === 'cloud-load-invitations') {
+      cloudLoadInvitations(true);
+      return;
+    }
+    if (action === 'cloud-accept-invitation') {
+      cloudAcceptInvitation(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-switch-household') {
+      cloudSwitchHousehold(button.dataset.id, button.dataset.name);
+      return;
+    }
+    if (action === 'cloud-archive-household') {
+      cloudArchiveHouseholdForCurrentUser(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-load-shopping') {
+      cloudLoadShoppingData(true);
+      return;
+    }
+    if (action === 'set-shopping-list') {
+      setActiveShoppingList(button.dataset.id || '');
+      return;
+    }
+    if (action === 'prompt-add-shopping-list') {
+      promptAddShoppingList();
+      return;
+    }
+    if (action === 'delete-shopping-list') {
+      deleteShoppingList(button.dataset.id || '');
+      return;
+    }
+    if (action === 'quick-add-shopping') {
+      quickAddShoppingByName(button.dataset.name || '');
+      return;
+    }
+    if (action === 'shopping-qty-toggle') {
+      getShoppingActions().toggleQuantityEditor(button.dataset.id || '');
+      return;
+    }
+    if (action === 'shopping-qty-inc') {
+      updateShoppingQuantity(button.dataset.id || '', 1);
+      return;
+    }
+    if (action === 'shopping-qty-dec') {
+      updateShoppingQuantity(button.dataset.id || '', -1);
+      return;
+    }
+    if (action === 'open-shopping-done-modal') {
+      getShoppingActions().setDoneModalOpen(true);
+      return;
+    }
+    if (action === 'close-shopping-done-modal') {
+      getShoppingActions().setDoneModalOpen(false);
+      return;
+    }
+    if (action === 'cloud-sync-local-shopping') {
+      cloudSyncLocalShoppingItems();
+      return;
+    }
+    if (action === 'cloud-load-contracts') {
+      cloudLoadContracts(true);
+      return;
+    }
+    if (action === 'cloud-sync-contract') {
+      cloudSyncContractById(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-sync-local-contracts') {
+      cloudSyncLocalContracts();
+      return;
+    }
+    if (action === 'cloud-load-garage') {
+      cloudLoadGarageData(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-garage') {
+      cloudSyncLocalGarage();
+      return;
+    }
+    if (action === 'cloud-load-hdo') {
+      cloudLoadHdoData(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-hdo') {
+      cloudSyncLocalHdo();
+      return;
+    }
+    if (action === 'cloud-sync-hdo') {
+      cloudSyncHdoById(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-load-waste') {
+      cloudLoadWaste(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-waste') {
+      cloudSyncLocalWaste();
+      return;
+    }
+    if (action === 'cloud-sync-waste') {
+      cloudSyncWasteById(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-waste') {
+      deleteWaste(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-load-tasks') {
+      cloudLoadTasks(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-tasks') {
+      cloudSyncLocalTasks();
+      return;
+    }
+    if (action === 'cloud-sync-task') {
+      cloudSyncTaskById(button.dataset.id);
+      return;
+    }
+    if (action === 'task-toggle') {
+      toggleTaskDone(button.dataset.id);
+      return;
+    }
+    if (action === 'task-delete') {
+      deleteTask(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-sync-vehicle') {
+      const vehicle = state.vehicles.find((item) => item.id === button.dataset.id);
+      if (!vehicle) return;
+      ensureCloudVehicle(vehicle).then(() => cloudUpdateVehicle(vehicle)).then((ok) => {
+        if (!ok) return;
+        touchState();
+        saveState();
+        render();
+        showToast('Auto odesláno do cloudu');
+      });
+      return;
+    }
+    if (action === 'cloud-sync-finance-account') {
+      cloudSyncFinanceAccountById(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-sync-local-finance-accounts') {
+      cloudSyncLocalFinanceAccounts();
+      return;
+    }
+    if (action === 'delete-finance-account') {
+      deleteFinanceAccount(button.dataset.id);
+      return;
+    }
+    if (action === 'cloud-load-finance') {
+      cloudLoadFinance(true);
+      return;
+    }
+    if (action === 'cloud-sync-local-finance') {
+      cloudSyncLocalFinance();
+      return;
+    }
+    if (action === 'cloud-sync-finance') {
+      cloudSyncFinanceById(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-finance') {
+      deleteFinanceTransaction(button.dataset.id);
+      return;
+    }
+    if (action === 'finance-month-prev') {
+      shiftFinanceMonth(-1);
+      return;
+    }
+    if (action === 'finance-month-current') {
+      setFinanceMonth(todayISO().slice(0, 7));
+      return;
+    }
+    if (action === 'finance-month-next') {
+      shiftFinanceMonth(1);
+      return;
+    }
+    if (action === 'finance-template') {
+      fillFinanceTemplate(button.dataset.template);
+      return;
+    }
+    if (action === 'subscription-month-prev') {
+      shiftSubscriptionMonth(-1);
+      return;
+    }
+    if (action === 'subscription-month-current') {
+      setSubscriptionMonth(todayISO().slice(0, 7));
+      return;
+    }
+    if (action === 'subscription-month-next') {
+      shiftSubscriptionMonth(1);
+      return;
+    }
+    if (action === 'subscription-filter') {
+      setSubscriptionPaymentFilter(button.dataset.filter || 'all');
+      return;
+    }
+    if (action === 'subscription-toggle-paid') {
+      toggleSubscriptionPaid(button.dataset.subscriptionId, button.dataset.personId, button.dataset.month || subscriptionSelectedMonth());
+      return;
+    }
+    if (action === 'delete-subscription') {
+      deleteSubscription(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-subscription-person') {
+      deleteSubscriptionPerson(button.dataset.id);
+      return;
+    }
+    if (action === 'delete-subscription-share') {
+      deleteSubscriptionShare(button.dataset.subscriptionId, button.dataset.personId);
+      return;
+    }
+    if (action === 'delete-subscription-payment') {
+      deleteSubscriptionPayment(button.dataset.id);
+      return;
+    }
+    if (action === 'subscription-toggle-service') {
+      toggleSubscriptionService(button.dataset.id);
+      return;
+    }
+    if (action === 'pwa-install') {
+      promptInstallApp();
+      return;
+    }
+    if (action === 'pwa-run-diagnostics') {
+      runPwaDiagnostics();
+      return;
+    }
+    if (action === 'pwa-clear-cache') {
+      clearPwaCacheAndReload();
+      return;
+    }
+    if (action === 'pwa-check-update') {
+      checkForAppUpdate(true);
+      return;
+    }
+    if (action === 'pwa-apply-update') {
+      applyAppUpdate();
+      return;
+    }
+    if (action === 'cloud-check-confirmation') {
+      cloudCheckEmailConfirmation();
+      return;
+    }
+    if (action === 'cloud-resend-confirmation') {
+      cloudResendConfirmation();
+      return;
+    }
+    if (action === 'cloud-refresh-session') {
+      refreshCloudSession(true).then(() => setupCloudRealtimeSubscriptions(true));
+      return;
+    }
+    if (action === 'cloud-start-realtime') {
+      const ok = setupCloudRealtimeSubscriptions(true);
+      showToast(ok ? 'Živá synchronizace zapnutá' : 'Realtime zatím nejde zapnout');
+      render();
+      return;
+    }
+    if (action === 'cloud-oauth-signin') {
+      cloudOAuthSignIn(button.dataset.provider || 'google', button.dataset.intent || 'login');
+      return;
+    }
+    if (action === 'cloud-logout') {
+      cloudLogout();
+      return;
+    }
+    if (action === 'export-data') {
+      exportData();
+      return;
+    }
+    if (action === 'reset-data') {
+      resetData();
+    }
+  }
+
+
+
+  function isEditableTarget(target) {
+    return Boolean(target?.closest?.('input, textarea, select, [contenteditable="true"], .selectable-text'));
+  }
+
+  function installAppLikeTouchGuards() {
+    let lastTouchEnd = 0;
+    const preventGesture = (event) => event.preventDefault();
+    document.addEventListener('gesturestart', preventGesture, { passive: false });
+    document.addEventListener('gesturechange', preventGesture, { passive: false });
+    document.addEventListener('gestureend', preventGesture, { passive: false });
+    document.addEventListener('touchmove', (event) => {
+      if (event.touches && event.touches.length > 1 && !isEditableTarget(event.target)) event.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchend', (event) => {
+      const current = Date.now();
+      if (current - lastTouchEnd <= 300 && !isEditableTarget(event.target)) event.preventDefault();
+      lastTouchEnd = current;
+    }, { passive: false });
+  }
+
+  function addDiagnostic(checks, label, status, message) {
+    checks.push({ label, status, message });
+  }
+
+  function loadImageInfo(src) {
+    return new Promise((resolve) => {
+      if (!src) {
+        resolve({ ok: false, width: 0, height: 0, message: 'Chybí cesta' });
+        return;
+      }
+      const image = new Image();
+      const timer = window.setTimeout(() => {
+        image.onload = null;
+        image.onerror = null;
+        resolve({ ok: false, width: 0, height: 0, message: 'Timeout načtení' });
+      }, 6000);
+      image.onload = () => {
+        window.clearTimeout(timer);
+        resolve({ ok: true, width: image.naturalWidth || image.width, height: image.naturalHeight || image.height, message: 'OK' });
+      };
+      image.onerror = () => {
+        window.clearTimeout(timer);
+        resolve({ ok: false, width: 0, height: 0, message: 'Obrázek se nenačetl' });
+      };
+      image.src = src;
+    });
+  }
+
+  async function verifyIcon(checks, label, src, expectedWidth = 0) {
+    const info = await loadImageInfo(src);
+    if (!info.ok) {
+      addDiagnostic(checks, label, 'bad', `${info.message}: ${src}`);
+      return;
+    }
+    const sizeText = `${info.width}×${info.height}`;
+    if (expectedWidth && (info.width < expectedWidth || info.height < expectedWidth)) {
+      addDiagnostic(checks, label, 'warn', `Načteno, ale malé: ${sizeText}`);
+      return;
+    }
+    addDiagnostic(checks, label, 'ok', `Načteno ${sizeText}`);
+  }
+
+  async function runPwaDiagnostics() {
+    showToast('Spouštím PWA diagnostiku');
+    const checks = [];
+    const pwa = getPwaStatus();
+
+    addDiagnostic(checks, 'HTTPS / Vercel', pwa.secure && !pwa.fileMode ? 'ok' : 'warn', pwa.fileMode ? 'Otevřeno jako lokální ZIP; instalace nebude spolehlivá.' : `Protokol: ${pwa.protocol}`);
+    addDiagnostic(checks, 'Standalone režim', pwa.standalone ? 'ok' : 'warn', pwa.standalone ? 'Aplikace běží jako nainstalovaná.' : 'Aplikace zatím běží v prohlížeči.');
+    addDiagnostic(checks, 'Service worker podpora', pwa.swSupported ? 'ok' : 'bad', pwa.swSupported ? 'Prohlížeč service worker podporuje.' : 'Service worker není dostupný.');
+    addDiagnostic(checks, 'Service worker řízení stránky', pwa.swControlled ? 'ok' : 'warn', pwa.swControlled ? 'Aktivní service worker řídí stránku.' : 'Po prvním načtení může být potřeba stránku obnovit.');
+    addDiagnostic(checks, 'Instalační prompt', pwa.canPrompt ? 'ok' : (pwa.ios ? 'warn' : 'warn'), pwa.canPrompt ? 'Chrome nabízí instalaci tlačítkem.' : (pwa.ios ? 'Na iPhonu se používá Sdílet → Přidat na plochu.' : 'Prohlížeč zatím neposlal instalační prompt.'));
+
+    const manifestLink = document.querySelector('link[rel="manifest"]');
+    if (!manifestLink) {
+      addDiagnostic(checks, 'Manifest odkaz', 'bad', 'V HTML chybí link rel="manifest".');
+    } else {
+      const manifestUrl = new URL(manifestLink.getAttribute('href'), location.href).href;
+      addDiagnostic(checks, 'Manifest odkaz', 'ok', manifestUrl);
+      try {
+        const response = await fetch(manifestUrl, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const manifest = await response.json();
+        addDiagnostic(checks, 'Manifest načtení', 'ok', `${manifest.name || 'bez názvu'} / ${manifest.display || 'bez display'}`);
+        addDiagnostic(checks, 'Manifest display', manifest.display === 'standalone' ? 'ok' : 'warn', `display: ${manifest.display || 'neuvedeno'}`);
+        const icons = Array.isArray(manifest.icons) ? manifest.icons : [];
+        const has192 = icons.some((icon) => String(icon.sizes || '').includes('192x192'));
+        const has512 = icons.some((icon) => String(icon.sizes || '').includes('512x512'));
+        const hasMaskable = icons.some((icon) => String(icon.purpose || '').includes('maskable'));
+        addDiagnostic(checks, 'Manifest ikony', has192 && has512 ? 'ok' : 'bad', `${icons.length} ikon, 192: ${has192 ? 'ano' : 'ne'}, 512: ${has512 ? 'ano' : 'ne'}, maskable: ${hasMaskable ? 'ano' : 'ne'}`);
+        const icon512 = icons.find((icon) => String(icon.sizes || '').includes('512x512') && !String(icon.purpose || '').includes('maskable')) || icons.find((icon) => String(icon.sizes || '').includes('512x512'));
+        const icon192 = icons.find((icon) => String(icon.sizes || '').includes('192x192') && !String(icon.purpose || '').includes('maskable')) || icons.find((icon) => String(icon.sizes || '').includes('192x192'));
+        if (icon192?.src) await verifyIcon(checks, 'Manifest 192 ikona', new URL(icon192.src, manifestUrl).href, 192);
+        if (icon512?.src) await verifyIcon(checks, 'Manifest 512 ikona', new URL(icon512.src, manifestUrl).href, 512);
+      } catch (error) {
+        addDiagnostic(checks, 'Manifest načtení', 'bad', error?.message || 'Manifest se nepodařilo načíst.');
+      }
+    }
+
+    const appleLinks = Array.from(document.querySelectorAll('link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]'));
+    addDiagnostic(checks, 'Apple touch odkazy', appleLinks.length >= 2 ? 'ok' : 'warn', `${appleLinks.length} odkazů v HTML`);
+    const apple180 = appleLinks.find((link) => link.getAttribute('sizes') === '180x180') || appleLinks[0];
+    if (apple180) await verifyIcon(checks, 'Apple touch ikona', new URL(apple180.getAttribute('href'), location.href).href, 120);
+    await verifyIcon(checks, 'Apple touch ikona v icons', new URL('./icons/apple-touch-icon.png', location.href).href, 120);
+    await verifyIcon(checks, 'Favicon v icons', new URL('./icons/favicon.ico', location.href).href, 16);
+
+    state.pwa = {
+      ...(state.pwa || {}),
+      diagnostics: {
+        checkedAt: new Date().toISOString(),
+        appVersion: APP_VERSION,
+        pageUrl: location.href,
+        checks
+      }
+    };
+    saveState();
+    render();
+    const bad = checks.filter((item) => item.status === 'bad').length;
+    const warn = checks.filter((item) => item.status === 'warn').length;
+    showToast(bad ? `Diagnostika našla ${bad} chyb` : warn ? `Diagnostika hotová, ${warn} upozornění` : 'Diagnostika OK');
+  }
+
+  async function clearPwaCacheAndReload() {
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter((key) => key.includes('domacnost-plus')).map((key) => caches.delete(key)));
+      }
+      if (serviceWorkerRegistration) await serviceWorkerRegistration.update();
+      showToast('Cache vyčištěná, načítám znovu');
+      window.setTimeout(() => window.location.reload(), 500);
+    } catch {
+      showToast('Cache se nepovedlo vyčistit');
+    }
+  }
+
+  async function promptInstallApp() {
+    if (!deferredInstallPrompt) {
+      showToast('Instalace se teď nabízí přes menu prohlížeče');
+      return;
+    }
+    deferredInstallPrompt.prompt();
+    try {
+      const choice = await deferredInstallPrompt.userChoice;
+      if (choice?.outcome === 'accepted') {
+        state.pwa = { ...(state.pwa || {}), installed: true, lastInstallPrompt: new Date().toISOString() };
+        saveState();
+        showToast('Instalace potvrzena');
+      }
+    } catch {
+      showToast('Instalaci se nepovedlo spustit');
+    }
+    deferredInstallPrompt = null;
+    render();
+  }
+
+  async function checkForAppUpdate(showMessage = false) {
+    if (!serviceWorkerRegistration) {
+      if (showMessage) showToast('Service worker zatím není připravený');
+      return;
+    }
+    try {
+      await serviceWorkerRegistration.update();
+      state.pwa = { ...(state.pwa || {}), lastUpdateCheck: new Date().toISOString() };
+      saveState();
+      if (showMessage) showToast(pwaUpdateAvailable ? 'Je dostupná nová verze' : 'Update zkontrolován');
+      render();
+    } catch {
+      if (showMessage) showToast('Update se nepovedlo zkontrolovat');
+    }
+  }
+
+  function markUpdateAvailable(worker) {
+    pendingServiceWorker = worker || pendingServiceWorker;
+    pwaUpdateAvailable = true;
+    render();
+    showToast('Je dostupná nová verze aplikace');
+  }
+
+  function applyAppUpdate() {
+    if (pendingServiceWorker) {
+      pendingServiceWorker.postMessage({ type: 'SKIP_WAITING' });
+      showToast('Aktualizuji aplikaci');
+      return;
+    }
+    window.location.reload();
+  }
+
+  function setupInstallAndUpdateFlow() {
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      state.pwa = { ...(state.pwa || {}), lastInstallPrompt: new Date().toISOString() };
+      saveState();
+      render();
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      state.pwa = { ...(state.pwa || {}), installed: true };
+      saveState();
+      showToast('Domácnost+ je nainstalovaná');
+      render();
+    });
+  }
+
+  function registerServiceWorker() {
+    if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').then((registration) => {
+        serviceWorkerRegistration = registration;
+        if (registration.waiting && navigator.serviceWorker.controller) markUpdateAvailable(registration.waiting);
+        registration.addEventListener('updatefound', () => {
+          const worker = registration.installing;
+          if (!worker) return;
+          worker.addEventListener('statechange', () => {
+            if (worker.state === 'installed' && navigator.serviceWorker.controller) markUpdateAvailable(worker);
+          });
+        });
+      }).catch(() => {});
+    });
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
+  }
+
+  async function refreshCloudSession(showMessage = false) {
+    const client = getSupabaseClient();
+    if (!client) {
+      if (showMessage) showToast('Supabase knihovna není načtená');
+      return null;
+    }
+    const { data, error } = await client.auth.getUser();
+    try {
+      const sessionResult = await client.auth.getSession?.();
+      const token = sessionResult?.data?.session?.access_token;
+      if (token && client.realtime?.setAuth) client.realtime.setAuth(token);
+    } catch (sessionError) {
+      console.warn('Realtime auth refresh failed', sessionError);
+    }
+    if (error || !data?.user) {
+      resetSignedOutAppState();
+      saveState();
+      if (showMessage) showToast('Nejsi přihlášený');
+      render();
+      return null;
+    }
+    const previousUserId = state.cloud?.userId || '';
+    if (previousUserId && previousUserId !== data.user.id) {
+      resetLocalWorkspaceForCloudUser(data.user, { previousUserId, force: true });
+    }
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      status: 'signed-in',
+      userId: data.user.id,
+      email: data.user.email || ''
+    };
+    saveState();
+    if (showMessage) showToast('Stav účtu obnoven');
+    render();
+    return data.user;
+  }
+
+  async function cloudLogin(email, password) {
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const { data, error } = await client.auth.signInWithPassword({ email: normalizeText(email), password: String(password || '') });
+    if (error) return showToast(error.message || 'Přihlášení se nepovedlo');
+    const user = data?.user;
+    state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, provider: 'supabase', status: 'signed-in', userId: user?.id || '', email: user?.email || normalizeText(email) };
+    saveState();
+    await cloudWarmStartLoad(false, true);
+    render();
+    showToast('Přihlášeno a cloud domácnost načtená');
+  }
+
+  async function cloudSignUp(email, password) {
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const { data, error } = await client.auth.signUp({
+      email: normalizeText(email),
+      password: String(password || ''),
+      options: {
+        emailRedirectTo: getAuthRedirectUrl(),
+        data: { app_name: 'Domácnost+' }
+      }
+    });
+    if (error) {
+      if (isExistingAccountSignUpResponse(data, error)) return markExistingAccount(email);
+      return showToast(error.message || 'Registrace se nepovedla');
+    }
+    if (isExistingAccountSignUpResponse(data, null)) return markExistingAccount(email);
+    const user = data?.user;
+    if (user) {
+      state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, provider: 'supabase', status: data.session ? 'signed-in' : 'email-confirmation', userId: user.id, email: user.email || normalizeText(email) };
+      saveState();
+      if (data.session && state.household?.isConfigured && !state.cloud?.householdId) {
+        await bootstrapCloudHousehold(false);
+        await cloudLoadAllModules(false, { skipRealtimeSetup: true, silentWhenOffline: true });
+      }
+      render();
+    }
+    showToast(data.session ? 'Účet vytvořený a domácnost napojená na cloud' : 'Zkontroluj e-mail pro potvrzení');
+  }
+
+
+
+  async function cloudResendConfirmation() {
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const email = normalizeText(state.cloud?.email || window.prompt('E-mail pro ověření') || '').toLowerCase();
+    if (!email) return showToast('Doplň e-mail');
+    const { error } = await client.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: getAuthRedirectUrl() }
+    });
+    if (error) return showToast(error.message || 'E-mail se nepovedlo odeslat');
+    state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, provider: 'supabase', status: 'email-confirmation', email };
+    saveState();
+    render();
+    showToast('Ověřovací e-mail znovu odeslán');
+  }
+
+  async function cloudCheckEmailConfirmation() {
+    const user = await refreshCloudSession(false);
+    if (!user) {
+      showToast('Zatím nejsi přihlášený. Zkus kliknout na odkaz v e-mailu nebo se přihlásit heslem.');
+      return;
+    }
+    state.cloud = { ...(state.cloud || {}), status: 'signed-in', userId: user.id, email: user.email || state.cloud?.email || '' };
+    const households = await cloudLoadHouseholds(false);
+    if (households.length && !state.cloud.householdId) {
+      const preferredHousehold = pickBestCloudHousehold(households);
+      state.cloud.householdId = preferredHousehold.id;
+      state.household = { ...(state.household || {}), id: preferredHousehold.id, name: preferredHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
+    }
+    if (state.household?.isConfigured && !state.cloud.householdId) {
+      await bootstrapCloudHousehold(false);
+    }
+    if (state.cloud.householdId) {
+      await cloudLoadProfilesForCurrentHousehold();
+      await cloudLoadAllModules(false);
+    }
+    onboardingMode = state.household?.isConfigured ? 'choice' : 'account';
+    sessionStorage.removeItem('domacnostPlus.onboardingMode');
+    touchState();
+    saveState();
+    render();
+    showToast('E-mail je ověřený a účet je přihlášený');
+  }
+
+  function googleDisplayNameFromUser(user) {
+    const meta = user?.user_metadata || {};
+    return normalizeText(meta.full_name || meta.name || user?.email?.split('@')?.[0] || 'Já') || 'Já';
+  }
+
+  function captureCurrentHouseholdWorkspace() {
+    const snapshot = {
+      savedAt: new Date().toISOString(),
+      household: structuredCloneSafe(state.household || {}),
+      profiles: structuredCloneSafe(state.profiles || []),
+      activeProfileId: state.activeProfileId || '',
+      enabledModules: structuredCloneSafe(state.enabledModules || []),
+      settings: {
+        bottomNavIds: structuredCloneSafe(state.settings?.bottomNavIds || []),
+        homeHeroItems: structuredCloneSafe(state.settings?.homeHeroItems || []),
+        dashboardWidgets: structuredCloneSafe(state.settings?.dashboardWidgets || []),
+        theme: state.settings?.theme || 'light'
+      },
+      collections: {}
+    };
+    getCollectionNames().forEach((collection) => {
+      snapshot.collections[collection] = structuredCloneSafe(state[collection] || []);
+    });
+    return snapshot;
+  }
+
+  function resetCloudModuleCachesForUserSwitch() {
+    state.shoppingCloud = structuredCloneSafe(DEFAULT_STATE.shoppingCloud);
+    state.hdoCloud = structuredCloneSafe(DEFAULT_STATE.hdoCloud);
+    state.wasteCloud = structuredCloneSafe(DEFAULT_STATE.wasteCloud);
+    state.parcelsCloud = structuredCloneSafe(DEFAULT_STATE.parcelsCloud);
+    state.tasksCloud = structuredCloneSafe(DEFAULT_STATE.tasksCloud);
+    state.calendarCloud = structuredCloneSafe(DEFAULT_STATE.calendarCloud);
+    state.financeCloud = structuredCloneSafe(DEFAULT_STATE.financeCloud);
+    state.householdExtrasCloud = structuredCloneSafe(DEFAULT_STATE.householdExtrasCloud);
+  }
+
+  function resetLocalWorkspaceForCloudUser(user, options = {}) {
+    const force = options.force === true;
+    const previousUserId = options.previousUserId || state.cloud?.userId || '';
+    const nextUserId = user?.id || '';
+    if (!force && (!nextUserId || previousUserId === nextUserId)) return false;
+
+    if (previousUserId && previousUserId !== nextUserId && !isDemoOnlyState()) {
+      state.householdWorkspaces = {
+        ...(state.householdWorkspaces || {}),
+        [previousUserId]: captureCurrentHouseholdWorkspace()
+      };
+    }
+
+    const now = new Date().toISOString();
+    const localHouseholdId = `household-${uid()}`;
+    const profile = createProfile(googleDisplayNameFromUser(user), 'owner', localHouseholdId);
+    state.household = {
+      id: localHouseholdId,
+      name: 'Moje domácnost',
+      isConfigured: true,
+      createdAt: now
+    };
+    state.profiles = [profile];
+    state.activeProfileId = profile.id;
+    getCollectionNames().forEach((collection) => {
+      state[collection] = [];
+    });
+    resetCloudModuleCachesForUserSwitch();
+    state.settings = {
+      ...(state.settings || {}),
+      demoMode: false,
+      cloudEnabled: true,
+      dashboardWidgets: [],
+      homeHeroItems: [],
+      bottomNavIds: normalizeBottomNavIds(state.settings?.bottomNavIds || DEFAULT_BOTTOM_NAV_IDS, state.enabledModules)
+    };
+    state.enabledModules = normalizeModuleList(state.enabledModules?.length ? state.enabledModules : MANAGED_MODULE_IDS);
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      status: 'signed-in',
+      userId: nextUserId,
+      email: user?.email || '',
+      householdId: '',
+      households: [],
+      invitations: [],
+      profilesLoadedAt: '',
+      lastSyncAt: '',
+      lastRealtimeAt: '',
+      lastAutosyncAt: '',
+      localPendingCount: 0,
+      autosyncStatus: 'idle',
+      realtimeStatus: 'offline'
+    };
+    return true;
+  }
+
+  function ensureLocalHouseholdForGoogleAuth(user) {
+    if (!state.household?.isConfigured) {
+      state.household = {
+        ...(state.household || {}),
+        id: state.household?.id || `household-${uid()}`,
+        name: state.household?.name || 'Moje domácnost',
+        isConfigured: true,
+        createdAt: state.household?.createdAt || new Date().toISOString()
+      };
+    }
+    if (!Array.isArray(state.profiles) || !state.profiles.length) {
+      const profile = createProfile(googleDisplayNameFromUser(user), 'owner', state.household.id);
+      state.profiles = [profile];
+      state.activeProfileId = profile.id;
+    }
+    state.settings.demoMode = false;
+    state.enabledModules = normalizeModuleList(state.enabledModules?.length ? state.enabledModules : MANAGED_MODULE_IDS);
+    state.settings.bottomNavIds = normalizeBottomNavIds(state.settings.bottomNavIds || DEFAULT_BOTTOM_NAV_IDS, state.enabledModules);
+  }
+
+  async function handleGoogleAuthReturn() {
+    await new Promise((resolve) => window.setTimeout(resolve, 650));
+    const user = await refreshCloudSession(false);
+    if (!user) {
+      showToast('Google přihlášení se nevrátilo do aplikace. Zkontroluj Supabase Auth Google provider.');
+      return;
+    }
+
+    const intent = sessionStorage.getItem(ONBOARDING_GOOGLE_INTENT_KEY) || 'login';
+    if (intent === 'register') {
+      resetLocalWorkspaceForCloudUser(user, { force: true });
+      state.household = {
+        ...(state.household || {}),
+        id: state.household?.id || `household-${uid()}`,
+        name: '',
+        isConfigured: false,
+        createdAt: state.household?.createdAt || new Date().toISOString()
+      };
+      state.profiles = [createProfile(googleDisplayNameFromUser(user), 'owner', state.household.id)];
+      state.activeProfileId = state.profiles[0]?.id || '';
+      state.settings.demoMode = false;
+      onboardingMode = 'google-setup';
+      sessionStorage.setItem('domacnostPlus.onboardingMode', 'google-setup');
+      sessionStorage.removeItem(DEMO_SESSION_KEY);
+      touchState();
+      saveState();
+      clearAuthReturnUrl(true);
+      render();
+      showToast('Google účet je přihlášený. Dokonči nastavení domácnosti.');
+      return;
+    }
+
+    ensureLocalHouseholdForGoogleAuth(user);
+    saveState();
+    const households = await cloudLoadHouseholds(false);
+    if (!households.length) {
+      onboardingMode = 'google-setup';
+      sessionStorage.setItem('domacnostPlus.onboardingMode', 'google-setup');
+      sessionStorage.removeItem(DEMO_SESSION_KEY);
+      clearAuthReturnUrl(true);
+      render();
+      showToast('Google účet zatím nemá domácnost. Dokonči nastavení domácnosti.');
+      return;
+    } else if (!state.cloud?.householdId) {
+      const preferredHousehold = pickBestCloudHousehold(households);
+      state.cloud.householdId = preferredHousehold.id;
+      state.household = { ...(state.household || {}), id: preferredHousehold.id, name: preferredHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
+    }
+    if (state.cloud?.householdId) {
+      await cloudLoadProfilesForCurrentHousehold();
+      await cloudLoadAllModules(false, { skipRealtimeSetup: true, silentWhenOffline: true });
+      activeModule = 'home';
+    }
+    onboardingMode = 'choice';
+    sessionStorage.removeItem('domacnostPlus.onboardingMode');
+    sessionStorage.removeItem(ONBOARDING_GOOGLE_INTENT_KEY);
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
+    touchState();
+    saveState();
+    render();
+    showToast('Přihlášeno přes Google');
+  }
+
+  function isAuthReturnUrl() {
+    const search = new URLSearchParams(window.location.search || '');
+    if (search.get('auth') === 'confirmed') return true;
+    if (search.get('auth') === 'google') return true;
+    if (search.has('code') && search.has('state')) return true;
+    if (search.get('type') === 'signup') return true;
+    const hash = window.location.hash || '';
+    return hash.includes('access_token=') || hash.includes('refresh_token=') || hash.includes('type=signup');
+  }
+
+  function hasGoogleCalendarReturnUrl() {
+    const params = new URLSearchParams(window.location.search || '');
+    return params.has('googleCalendar');
+  }
+
+  function clearAuthReturnUrl(force = false) {
+    if (!force && !isAuthReturnUrl() && !hasGoogleCalendarReturnUrl()) return;
+    const clean = `${window.location.origin}${window.location.pathname}`;
+    window.history.replaceState({}, document.title, clean);
+  }
+
+  async function handleInitialAuthReturn() {
+    if (hasGoogleCalendarReturnUrl()) {
+      const params = new URLSearchParams(window.location.search || '');
+      const result = params.get('googleCalendar');
+      activeModule = 'calendar';
+      moduleTabs = { ...(moduleTabs || {}), calendar: 'sources' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      render();
+      const reason = params.get('reason') || '';
+      if (result === 'connected') {
+        const alreadyAutoLoaded = sessionStorage.getItem(GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG) === '1';
+        if (!alreadyAutoLoaded) {
+          sessionStorage.setItem(GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG, '1');
+          showToast('Google účet připojený. Jednou zkusím načíst kalendáře.');
+          await googleCalendarListCalendars(false);
+        } else {
+          showToast('Google callback už byl zpracovaný. Další načtení spusť ručně.');
+        }
+      } else if (result === 'error') {
+        rememberGoogleCalendarError({ code: reason || 'google_calendar_callback_error', error: reason === 'token_store_failed' ? 'Token exchange proběhl, ale uložení tokenu přes serverové RPC selhalo. Zkontroluj SQL RPC migraci, GOOGLE_TOKEN_ENCRYPTION_KEY_BASE64 a service role práva.' : 'Google připojení se nepovedlo. Zkontroluj redirect_uri, scopes a Edge Function secrets.' });
+        showToast(reason === 'token_store_failed' ? 'Google token se nepovedlo uložit. Zkontroluj Supabase secrets.' : 'Google připojení se nepovedlo.');
+      }
+      clearAuthReturnUrl(true);
+      return;
+    }
+    if (!isAuthReturnUrl()) return;
+    const search = new URLSearchParams(window.location.search || '');
+    if (search.get('auth') === 'google' || (search.has('code') && search.has('state'))) {
+      await handleGoogleAuthReturn();
+      clearAuthReturnUrl(true);
+      return;
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 450));
+    await cloudCheckEmailConfirmation();
+    clearAuthReturnUrl();
+  }
+
+  function scoreCloudHouseholdCandidate(item) {
+    if (!item) return 0;
+    let score = 0;
+    const activeId = state.cloud?.householdId || '';
+    const localName = normalizeText(state.household?.name || state.settings?.householdName || '').toLowerCase();
+    const candidateName = normalizeText(item.name || '').toLowerCase();
+    if (item.id && item.id === activeId) score += 10000;
+    if (candidateName && localName && candidateName === localName) score += 800;
+    if (item.role === 'owner') score += 300;
+    if (item.status === 'active') score += 100;
+    const created = Date.parse(item.createdAt || '');
+    if (Number.isFinite(created)) score += Math.min(250, Math.max(0, created / 100000000000));
+    return score;
+  }
+
+  function pickBestCloudHousehold(households = []) {
+    return [...households].sort((a, b) => scoreCloudHouseholdCandidate(b) - scoreCloudHouseholdCandidate(a))[0] || null;
+  }
+
+  function hasMultipleCloudHouseholds() {
+    return Array.isArray(state.cloud?.households) && state.cloud.households.length > 1;
+  }
+
+  async function cloudLoadHouseholds(showMessage = false) {
+    const client = getSupabaseClient();
+    if (!client) { if (showMessage) showToast('Supabase knihovna není načtená'); return []; }
+    const user = await refreshCloudSession(false);
+    if (!user) { if (showMessage) showToast('Nejdřív se přihlas'); return []; }
+    const { data, error } = await client
+      .from('household_members')
+      .select('household_id, role, status, households(id, name, timezone, dashboard_layout, weather_location, created_at)')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: true });
+    if (error) { if (showMessage) showToast(error.message || 'Domácnosti se nepovedlo načíst'); return []; }
+    const households = (data || []).map((row) => ({
+      id: row.household_id,
+      role: row.role || 'member',
+      status: row.status || 'active',
+      name: row.households?.name || 'Domácnost',
+      timezone: row.households?.timezone || 'Europe/Prague',
+      dashboardLayout: row.households?.dashboard_layout || {},
+      weatherLocation: row.households?.weather_location || {},
+      createdAt: row.households?.created_at || ''
+    })).filter((item) => item.id);
+    state.cloud = { ...(state.cloud || {}), households, lastSyncAt: new Date().toISOString() };
+    const currentCloudHouseholdValid = households.some((item) => item.id === state.cloud.householdId);
+    if (state.cloud.householdId && !currentCloudHouseholdValid) {
+      state.cloud.householdId = '';
+      state.cloud.profilesLoadedAt = '';
+      resetCloudModuleCachesForUserSwitch();
+    }
+    if (!households.length) {
+      state.cloud.householdId = '';
+      state.household = { ...(state.household || {}), isConfigured: Boolean(state.household?.isConfigured) };
+      touchState();
+      saveState();
+      render();
+      if (showMessage) showToast('Tenhle účet zatím nemá žádnou domácnost');
+      return [];
+    }
+    if (!state.cloud.householdId) {
+      const preferredHousehold = pickBestCloudHousehold(households);
+      state.cloud.householdId = preferredHousehold.id;
+      state.household = { ...(state.household || {}), id: preferredHousehold.id, name: preferredHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
+    }
+    const activeHousehold = households.find((item) => item.id === state.cloud.householdId);
+    if (activeHousehold) {
+      state.household = { ...(state.household || {}), id: activeHousehold.id, name: activeHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
+      applyCloudHouseholdUiSettings(activeHousehold);
+    }
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(`Načteno domácností: ${households.length}`);
+    return households;
+  }
+
+  function applyCloudHouseholdUiSettings(household) {
+    if (!household) return;
+    const layout = household.dashboardLayout || household.dashboard_layout || {};
+    const weatherLocation = household.weatherLocation || household.weather_location || {};
+    if (Array.isArray(layout.widgets)) state.settings.dashboardWidgets = normalizeDashboardWidgetIds(layout.widgets);
+    else if (Array.isArray(layout.dashboardWidgets)) state.settings.dashboardWidgets = normalizeDashboardWidgetIds(layout.dashboardWidgets);
+    if (Array.isArray(layout.heroItems)) state.settings.homeHeroItems = normalizeHomeHeroIds(layout.heroItems);
+    else if (Array.isArray(layout.homeHeroItems)) state.settings.homeHeroItems = normalizeHomeHeroIds(layout.homeHeroItems);
+    if (layout.vehicleIconColors && typeof layout.vehicleIconColors === 'object') {
+      state.settings.vehicleIconColors = normalizeVehicleIconColorMap(layout.vehicleIconColors);
+      (state.vehicles || []).forEach((vehicle) => {
+        vehicle.iconColor = normalizeVehicleIconColor(vehicle.iconColor || vehicleIconColorFromSettings(vehicle));
+      });
+    }
+    if (Array.isArray(layout.warranties) && !(state.warranties || []).length) {
+      state.warranties = normalizeWarranties(layout.warranties);
+    }
+    if (Array.isArray(layout.subscriptions)) state.subscriptions = layout.subscriptions.map(normalizeSubscriptionService);
+    if (Array.isArray(layout.subscriptionPeople)) state.subscriptionPeople = layout.subscriptionPeople.map(normalizeSubscriptionPerson);
+    if (Array.isArray(layout.subscriptionPayments)) state.subscriptionPayments = layout.subscriptionPayments.map(normalizeSubscriptionPayment).filter((payment) => payment.subscriptionId && payment.personId && payment.amount > 0);
+    if (Array.isArray(layout.subscriptions) || Array.isArray(layout.subscriptionPeople) || Array.isArray(layout.subscriptionPayments)) {
+      state.subscriptionsCloud = { ...(state.subscriptionsCloud || {}), loadedAt: new Date().toISOString() };
+    }
+    if (layout.subscriptionSettings && typeof layout.subscriptionSettings === 'object') {
+      if (/^\d{4}-\d{2}$/.test(String(layout.subscriptionSettings.month || ''))) state.settings.subscriptionMonth = String(layout.subscriptionSettings.month);
+      if (['all', 'unpaid', 'debtors'].includes(layout.subscriptionSettings.paymentFilter)) state.settings.subscriptionPaymentFilter = layout.subscriptionSettings.paymentFilter;
+    }
+    if (weatherLocation && typeof weatherLocation === 'object' && Object.keys(weatherLocation).length) {
+      state.weather = {
+        ...normalizeWeatherState(state.weather),
+        location: normalizeWeatherLocation(weatherLocation),
+        source: normalizeWeatherSource(weatherLocation.source || weatherLocation.provider || state.weather?.source)
+      };
+    }
+  }
+
+  function householdUiPayload() {
+    return {
+      dashboard_layout: {
+        widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
+        heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
+        vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
+        warrantyBackupCount: normalizeWarranties(state.warranties).length,
+        subscriptionPeople: getSubscriptionPeople(),
+        subscriptions: getSubscriptionServices(),
+        subscriptionPayments: getSubscriptionPayments(),
+        subscriptionSettings: {
+          month: subscriptionSelectedMonth(),
+          paymentFilter: subscriptionPaymentFilter()
+        },
+        updatedAt: new Date().toISOString(),
+        appBuild: 202
+      },
+      weather_location: {
+        ...normalizeWeatherLocation(state.weather?.location),
+        source: normalizeWeatherSource(state.weather?.source)
+      }
+    };
+  }
+
+  async function cloudSaveHouseholdUiSettings(showMessage = false, includeName = false) {
+    if (!cloudReady()) return false;
+    const client = getSupabaseClient();
+    if (!client) return false;
+    const { error } = await client
+      .from('households')
+      .update(includeName ? { ...householdUiPayload(), name: householdName() } : householdUiPayload())
+      .eq('id', state.cloud.householdId);
+    if (error) {
+      if (showMessage) showToast(error.message || 'Nastavení hlavní obrazovky se nepovedlo uložit do cloudu');
+      return false;
+    }
+    const syncedAt = new Date().toISOString();
+    state.cloud.lastSyncAt = syncedAt;
+    state.subscriptionsCloud = { ...(state.subscriptionsCloud || {}), loadedAt: syncedAt, pendingAt: '' };
+    saveState();
+    if (showMessage) showToast('Nastavení hlavní obrazovky uloženo do cloudu');
+    return true;
+  }
+
+  async function cloudLoadHouseholdUiSettings(showMessage = false) {
+    if (!cloudReady()) return false;
+    const client = getSupabaseClient();
+    if (!client) return false;
+    const { data, error } = await client
+      .from('households')
+      .select('id, name, dashboard_layout, weather_location')
+      .eq('id', state.cloud.householdId)
+      .single();
+    if (error) {
+      if (showMessage) showToast(error.message || 'Nastavení domácnosti se nepovedlo načíst');
+      return false;
+    }
+    if (data) {
+      state.household.name = data.name || state.household.name || 'Domácnost';
+      applyCloudHouseholdUiSettings(data);
+      state.cloud.lastSyncAt = new Date().toISOString();
+      touchState();
+      saveState();
+      render();
+    }
+    if (showMessage) showToast('Nastavení hlavní obrazovky načtené');
+    return true;
+  }
+
+  function currentWorkspaceKey() {
+    return state.cloud?.householdId || state.household?.id || 'local';
+  }
+
+  function saveHouseholdWorkspace() {
+    const key = currentWorkspaceKey();
+    if (!key) return;
+    state.householdWorkspaces = state.householdWorkspaces || {};
+    const snapshot = {
+      household: structuredCloneSafe(state.household),
+      profiles: structuredCloneSafe(state.profiles),
+      activeProfileId: state.activeProfileId,
+      collections: {}
+    };
+    getCollectionNames().forEach((collection) => {
+      snapshot.collections[collection] = structuredCloneSafe(state[collection] || []);
+    });
+    state.householdWorkspaces[key] = snapshot;
+  }
+
+  function restoreHouseholdWorkspace(key, cloudName = 'Domácnost') {
+    const snapshot = state.householdWorkspaces?.[key];
+    if (snapshot) {
+      state.household = structuredCloneSafe(snapshot.household || state.household);
+      state.profiles = structuredCloneSafe(snapshot.profiles || []);
+      state.activeProfileId = snapshot.activeProfileId || state.profiles[0]?.id || '';
+      getCollectionNames().forEach((collection) => {
+        state[collection] = structuredCloneSafe(snapshot.collections?.[collection] || []);
+      });
+    } else {
+      state.household = {
+        id: `household-${key}`,
+        name: cloudName || 'Domácnost',
+        isConfigured: true,
+        createdAt: new Date().toISOString()
+      };
+      state.profiles = [createProfile(currentProfile()?.name || 'Já', 'owner', state.household.id)];
+      state.activeProfileId = state.profiles[0]?.id || '';
+      getCollectionNames().forEach((collection) => { state[collection] = []; });
+      state.shoppingStats = {};
+    }
+  }
+
+  async function cloudSwitchHousehold(householdId, name = 'Domácnost') {
+    if (!householdId || householdId === state.cloud?.householdId) return;
+    const ok = window.confirm(`Přepnout na domácnost „${name || 'Domácnost'}“? Lokální pohled aktuální domácnosti se uloží odděleně.`);
+    if (!ok) return;
+    saveHouseholdWorkspace();
+    state.cloud.householdId = householdId;
+    restoreHouseholdWorkspace(householdId, name);
+    state.household.name = name || state.household.name || 'Domácnost';
+    state.cloud.lastSyncAt = new Date().toISOString();
+    activeModule = 'home';
+    touchState();
+    saveState();
+    render();
+    await cloudLoadAllModules(false);
+    showToast('Domácnost přepnuta');
+  }
+
+  async function cloudCreateHousehold(name, profileName) {
+    const cleanName = normalizeText(name) || 'Nová domácnost';
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const user = await refreshCloudSession(false);
+    if (!user) return showToast('Nejdřív se přihlas');
+    saveHouseholdWorkspace();
+    const { data: household, error: householdError } = await client
+      .from('households')
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 195, schema_version: 80, created_by: user.id, ...householdUiPayload() })
+      .select('id, name')
+      .single();
+    if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
+    const { error: memberError } = await client.from('household_members').insert({
+      household_id: household.id,
+      user_id: user.id,
+      role: 'owner',
+      status: 'active',
+      display_name: normalizeText(profileName) || currentProfile()?.name || user.email || 'Owner',
+      joined_at: new Date().toISOString()
+    });
+    if (memberError) return showToast(memberError.message || 'Člen domácnosti se nepovedl vytvořit');
+    state.cloud.householdId = household.id;
+    restoreHouseholdWorkspace(household.id, household.name);
+    state.household.name = household.name;
+    const cleanProfileName = normalizeText(profileName) || currentProfile()?.name || 'Já';
+    state.profiles = [createProfile(cleanProfileName, 'owner', state.household.id)];
+    state.activeProfileId = state.profiles[0].id;
+    await client.from('profiles').insert({ household_id: household.id, user_id: user.id, name: cleanProfileName, is_default: true, created_by: user.id });
+    await cloudLoadHouseholds(false);
+    setupCloudRealtimeSubscriptions(true);
+    touchState();
+    saveState();
+    render();
+    showToast('Nová domácnost vytvořena');
+  }
+
+  async function cloudArchiveHouseholdForCurrentUser(householdId) {
+    const cleanId = normalizeText(householdId);
+    if (!cleanId) return;
+    if (cleanId === state.cloud?.householdId) {
+      showToast('Aktivní domácnost nejdřív přepni na jinou, pak ji můžeš skrýt');
+      return;
+    }
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const user = await refreshCloudSession(false);
+    if (!user) return showToast('Nejdřív se přihlas');
+    const ok = window.confirm('Skrýt tuhle domácnost z mého účtu? Data v databázi se nemažou, jen se ukončí tvoje aktivní členství.');
+    if (!ok) return;
+    const { error } = await client
+      .from('household_members')
+      .update({ status: 'archived', updated_at: new Date().toISOString() })
+      .eq('household_id', cleanId)
+      .eq('user_id', user.id);
+    if (error) return showToast(error.message || 'Domácnost se nepovedlo skrýt');
+    state.cloud.households = (state.cloud.households || []).filter((item) => item.id !== cleanId);
+    touchState();
+    saveState();
+    render();
+    showToast('Domácnost skrytá z aktivního seznamu');
+  }
+
+  async function cloudInviteMember(email, role = 'member') {
+    const cleanEmail = normalizeText(email).toLowerCase();
+    if (!cleanEmail || !state.cloud?.householdId) return showToast('Doplň e-mail a napoj domácnost na cloud');
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const user = await refreshCloudSession(false);
+    if (!user) return showToast('Nejdřív se přihlas');
+    const payload = {
+      household_id: state.cloud.householdId,
+      email: cleanEmail,
+      role: ['admin', 'member', 'read_only'].includes(role) ? role : 'member',
+      status: 'pending',
+      invited_by: user.id,
+      expires_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString()
+    };
+    const { data, error } = await client.from('household_invitations').insert(payload).select('id, household_id, email, role, status, expires_at, created_at').single();
+    if (error) return showToast(error.message || 'Pozvánku se nepovedlo vytvořit');
+    state.cloud.invitations = [...(state.cloud.invitations || []).filter((item) => item.id !== data.id), mapCloudInvitation(data)];
+    touchState();
+    saveState();
+    render();
+    showToast('Pozvánka vytvořena');
+  }
+
+  function mapCloudInvitation(item) {
+    return {
+      id: item.id,
+      householdId: item.household_id,
+      email: item.email,
+      role: item.role,
+      status: item.status,
+      expiresAt: item.expires_at,
+      createdAt: item.created_at,
+      cloudId: item.id
+    };
+  }
+
+  async function cloudLoadInvitations(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client) { if (showMessage) showToast('Supabase knihovna není načtená'); return []; }
+    const user = await refreshCloudSession(false);
+    if (!user) { if (showMessage) showToast('Nejdřív se přihlas'); return []; }
+    const { data, error } = await client
+      .from('household_invitations')
+      .select('id, household_id, email, role, status, expires_at, created_at')
+      .in('status', ['pending', 'expired'])
+      .order('created_at', { ascending: false });
+    if (error) { if (showMessage) showToast(error.message || 'Pozvánky se nepovedlo načíst'); return []; }
+    state.cloud.invitations = (data || []).map(mapCloudInvitation);
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(`Načteno pozvánek: ${state.cloud.invitations.length}`);
+    return state.cloud.invitations;
+  }
+
+  async function cloudAcceptInvitation(invitationId) {
+    if (!invitationId) return;
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const user = await refreshCloudSession(false);
+    if (!user) return showToast('Nejdřív se přihlas');
+    const displayName = currentProfile()?.name || user.email || 'Člen domácnosti';
+    const { data: householdId, error } = await client.rpc('accept_household_invitation', {
+      invitation_id: invitationId,
+      member_display_name: displayName
+    });
+    if (error) return showToast(error.message || 'Pozvánku se nepovedlo přijmout');
+    await cloudLoadHouseholds(false);
+    const accepted = state.cloud.invitations?.find((item) => item.id === invitationId);
+    saveHouseholdWorkspace();
+    state.cloud.householdId = householdId;
+    restoreHouseholdWorkspace(householdId, accepted?.householdName || 'Sdílená domácnost');
+    state.cloud.lastSyncAt = new Date().toISOString();
+    await cloudLoadProfilesForCurrentHousehold();
+    await cloudLoadAllModules(false);
+    await cloudLoadInvitations(false);
+    activeModule = 'home';
+    touchState();
+    saveState();
+    render();
+    showToast('Pozvánka přijata');
+  }
+
+
+  async function cloudLoadProfilesForCurrentHousehold() {
+    const client = getSupabaseClient();
+    if (!client || !state.cloud?.householdId) return false;
+    const previousActive = state.profiles?.find((profile) => profile.id === state.activeProfileId) || null;
+    const { data, error } = await client
+      .from('profiles')
+      .select('id, name, user_id, avatar_emoji, color, is_default, created_at')
+      .eq('household_id', state.cloud.householdId)
+      .eq('is_archived', false)
+      .order('created_at', { ascending: true });
+    if (error) return false;
+    if (!data?.length) return false;
+    state.profiles = data.map((profile, index) => ({
+      id: profile.id,
+      cloudId: profile.id,
+      householdId: state.cloud.householdId,
+      name: profile.name || `Profil ${index + 1}`,
+      avatarEmoji: profile.avatar_emoji || '🙂',
+      color: profile.color || ['blue', 'green', 'violet', 'orange'][index % 4],
+      role: profile.user_id === state.cloud.userId ? 'member' : 'member',
+      userId: profile.user_id || '',
+      isDefault: Boolean(profile.is_default),
+      createdAt: profile.created_at || new Date().toISOString()
+    }));
+    const preserved = state.profiles.find((profile) => profile.cloudId && profile.cloudId === previousActive?.cloudId)
+      || state.profiles.find((profile) => normalizeText(profile.name).toLowerCase() === normalizeText(previousActive?.name).toLowerCase())
+      || state.profiles.find((profile) => profile.isDefault)
+      || state.profiles[0];
+    state.activeProfileId = preserved?.id || '';
+    state.cloud.profilesLoadedAt = new Date().toISOString();
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
+  async function cloudLogout() {
+    disposeCloudRealtime();
+    const client = getSupabaseClient();
+    if (client) await client.auth.signOut().catch(() => {});
+    resetSignedOutAppState();
+    saveState();
+    applyVisualSettings();
+    render();
+    showToast('Odhlášeno');
+  }
+
+  async function bootstrapCloudHousehold(showMessage = true) {
+    const client = getSupabaseClient();
+    if (!client) { if (showMessage) showToast('Supabase knihovna není načtená'); return null; }
+    const user = await refreshCloudSession(false);
+    if (!user) { if (showMessage) showToast('Nejdřív se přihlas'); return null; }
+
+    const existingHouseholdId = state.cloud?.householdId;
+    let cloudHouseholdId = existingHouseholdId || '';
+
+    const households = await cloudLoadHouseholds(false);
+    if (cloudHouseholdId && !households.some((item) => item.id === cloudHouseholdId)) {
+      cloudHouseholdId = '';
+      state.cloud.householdId = '';
+    }
+    if (!cloudHouseholdId) {
+      const preferredHousehold = pickBestCloudHousehold(households);
+      if (preferredHousehold?.id) {
+        cloudHouseholdId = preferredHousehold.id;
+        state.household = { ...(state.household || {}), id: preferredHousehold.id, name: preferredHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
+        applyCloudHouseholdUiSettings(preferredHousehold);
+      }
+    }
+
+    if (!cloudHouseholdId) {
+      const { data: household, error: householdError } = await client
+        .from('households')
+        .insert({
+          name: householdName(),
+          timezone: 'Europe/Prague',
+          app_build: 195,
+          schema_version: 80,
+          created_by: user.id,
+          ...householdUiPayload()
+        })
+        .select('id')
+        .single();
+      if (householdError) { if (showMessage) showToast(householdError.message || 'Domácnost se nepovedla vytvořit'); return null; }
+      cloudHouseholdId = household.id;
+
+      const { error: memberError } = await client.from('household_members').insert({
+        household_id: cloudHouseholdId,
+        user_id: user.id,
+        role: 'owner',
+        status: 'active',
+        display_name: currentProfile()?.name || user.email || 'Owner',
+        joined_at: new Date().toISOString()
+      });
+      if (memberError) { if (showMessage) showToast(memberError.message || 'Člen domácnosti se nepovedl vytvořit'); return null; }
+    }
+
+    const profilesPayload = state.profiles.map((profile, index) => ({
+      household_id: cloudHouseholdId,
+      user_id: index === 0 ? user.id : null,
+      name: profile.name,
+      avatar_emoji: profile.avatarEmoji || '🙂',
+      is_default: profile.id === state.activeProfileId,
+      is_archived: false,
+      created_by: user.id
+    }));
+
+    if (profilesPayload.length) {
+      const { error: profileError } = await client.from('profiles').insert(profilesPayload);
+      if (profileError && !String(profileError.message || '').includes('duplicate')) {
+        if (showMessage) showToast(profileError.message || 'Profily se nepovedly uložit');
+        return null;
+      }
+    }
+
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      status: 'bootstrapped',
+      userId: user.id,
+      email: user.email || '',
+      householdId: cloudHouseholdId,
+      lastSyncAt: new Date().toISOString()
+    };
+    setupCloudRealtimeSubscriptions(true);
+    saveState();
+    render();
+    if (showMessage) showToast('Domácnost je v cloudu');
+    return cloudHouseholdId;
+  }
+
+  function setActiveProfile(id) {
+    if (!state.profiles.some((profile) => profile.id === id)) return;
+    state.activeProfileId = id;
+    saveState();
+    render();
+  }
+
+  async function deleteProfile(id) {
+    if (state.profiles.length <= 1) {
+      showToast('Poslední profil nejde smazat');
+      return;
+    }
+    const profile = state.profiles.find((item) => item.id === id);
+    if (!profile) return;
+    const confirmed = window.confirm(`Smazat profil ${profile.name}? Data z modulů zůstanou uložená, jen už nebudou patřit aktivnímu profilu.`);
+    if (!confirmed) return;
+    const ok = await cloudArchiveProfile(profile);
+    if (!ok) return;
+    state.profiles = state.profiles.filter((item) => item.id !== id);
+    if (state.activeProfileId === id) state.activeProfileId = state.profiles[0]?.id || '';
+    touchState();
+    saveState();
+    render();
+    showToast(profile.cloudId ? 'Profil smazán v cloudu' : 'Profil smazán');
+  }
+
+  function toggleModule(moduleId) {
+    if (!MANAGED_MODULE_IDS.includes(moduleId)) return;
+    const enabled = new Set(normalizeModuleList(state.enabledModules));
+    if (enabled.has(moduleId)) enabled.delete(moduleId);
+    else enabled.add(moduleId);
+    state.enabledModules = [...enabled];
+    state.settings.bottomNavIds = normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules);
+    if (!isModuleEnabled(activeModule)) activeModule = 'home';
+    saveState();
+    render();
+  }
+
+  function toggleBottomNav(moduleId) {
+    const candidates = getNavCandidateIds(state.enabledModules);
+    if (!candidates.includes(moduleId)) return;
+
+    const selected = new Set(normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules));
+    if (selected.has(moduleId)) {
+      if (selected.size <= Math.min(BOTTOM_NAV_MIN, candidates.length)) {
+        showToast(`Nech aspoň ${BOTTOM_NAV_MIN} položky + Více`);
+        return;
+      }
+      selected.delete(moduleId);
+    } else {
+      if (selected.size >= BOTTOM_NAV_MAX) {
+        showToast(`Maximum je ${BOTTOM_NAV_MAX} položek + Více`);
+        return;
+      }
+      selected.add(moduleId);
+    }
+
+    state.settings.bottomNavIds = normalizeBottomNavIds([...selected], state.enabledModules);
+    saveState();
+    render();
+  }
+
+
+  function toggleDashboardWidget(widgetId) {
+    if (!DASHBOARD_WIDGETS.some((widget) => widget.id === widgetId)) return;
+    const selected = new Set(normalizeDashboardWidgetIds(state.settings?.dashboardWidgets));
+    if (selected.has(widgetId)) {
+      if (selected.size <= 1) {
+        showToast('Na hlavní obrazovce nech aspoň jednu kartu');
+        return;
+      }
+      selected.delete(widgetId);
+    } else {
+      selected.add(widgetId);
+    }
+    state.settings.dashboardWidgets = normalizeDashboardWidgetIds([...selected]);
+    touchState();
+    saveState();
+    cloudSaveHouseholdUiSettings(false);
+    render();
+  }
+
+  function resetDashboardWidgets() {
+    state.settings.dashboardWidgets = [...DEFAULT_DASHBOARD_WIDGET_IDS];
+    touchState();
+    saveState();
+    cloudSaveHouseholdUiSettings(false);
+    render();
+    showToast('Home vyčištěná');
+  }
+
+  function toggleHomeHeroItem(itemId) {
+    if (!HOME_HERO_ITEMS.some((item) => item.id === itemId)) return;
+    const selected = new Set(normalizeHomeHeroIds(state.settings?.homeHeroItems));
+    if (selected.has(itemId)) {
+      selected.delete(itemId);
+    } else {
+      if (selected.size >= HOME_HERO_MAX) return showToast(`V horním panelu nech nejvýš ${HOME_HERO_MAX} položek`);
+      selected.add(itemId);
+    }
+    state.settings.homeHeroItems = normalizeHomeHeroIds([...selected]);
+    touchState();
+    saveState();
+    cloudSaveHouseholdUiSettings(false);
+    render();
+  }
+
+  function resetHomeHeroItems() {
+    state.settings.homeHeroItems = [...DEFAULT_HOME_HERO_IDS];
+    touchState();
+    saveState();
+    cloudSaveHouseholdUiSettings(false);
+    render();
+    showToast('Panely na Home vyčištěné');
+  }
+
+  async function deleteItem(collection, id) {
+    if (!collection || !Array.isArray(state[collection])) return;
+    if (collection === 'fuel' || collection === 'services') {
+      const record = state[collection].find((item) => item.id === id);
+      const ok = await cloudDeleteGarageRecord(collection, record);
+      if (!ok) return;
+    }
+    if (collection === 'contracts') {
+      const contract = state.contracts.find((item) => item.id === id);
+      const ok = await cloudDeleteContract(contract);
+      if (!ok) return;
+      const files = state.contractFiles.filter((file) => file.contractId === id);
+      files.forEach((file) => deleteStoredContractFile(file.id).catch(() => {}));
+      state.contractFiles = state.contractFiles.filter((file) => file.contractId !== id);
+      if (activeContractId === id) activeContractId = state.contracts.find((contract) => contract.id !== id)?.id || null;
+    }
+    if (extraCloudConfig(collection)) {
+      const item = state[collection].find((entry) => entry.id === id);
+      const ok = await cloudDeleteExtraItem(collection, item);
+      if (!ok) return;
+    }
+    state[collection] = state[collection].filter((item) => item.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Smazáno');
+  }
+
+  async function toggleBoolean(collection, id, key) {
+    const item = state[collection]?.find((entry) => entry.id === id);
+    if (!item) return;
+    item[key] = !item[key];
+    const ok = await cloudUpdateExtraItem(collection, item);
+    if (!ok) {
+      item[key] = !item[key];
+      return;
+    }
+    touchState();
+    saveState();
+    render();
+  }
+
+  async function deleteVehicle(id) {
+    const vehicle = state.vehicles.find((item) => item.id === id);
+    if (!vehicle) return showToast('Auto nenalezeno');
+    const fuelCount = state.fuel.filter((item) => item.vehicleId === id).length;
+    const serviceCount = state.services.filter((item) => item.vehicleId === id).length;
+    const message = `Opravdu smazat auto "${vehicle.name || 'Auto'}"?\n\nSmaže se i ${fuelCount} tankování a ${serviceCount} servisních/nákladových záznamů.`;
+    if (typeof window !== 'undefined' && typeof window.confirm === 'function' && !window.confirm(message)) return;
+    const ok = await cloudDeleteVehicle(vehicle);
+    if (!ok) return;
+    state.vehicles = state.vehicles.filter((entry) => entry.id !== id);
+    state.fuel = state.fuel.filter((item) => item.vehicleId !== id);
+    state.services = state.services.filter((item) => item.vehicleId !== id);
+    if (garageVehicleId === id) garageVehicleId = state.vehicles[0]?.id || null;
+    touchState();
+    saveState();
+    render();
+    showToast('Auto smazáno');
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Zkopírováno');
+    } catch {
+      const area = document.createElement('textarea');
+      area.value = text;
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand('copy');
+      area.remove();
+      showToast('Zkopírováno');
+    }
+  }
+
+  function exportData() {
+    const payload = JSON.stringify({ version: APP_VERSION, exportedAt: new Date().toISOString(), state }, null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `domacnost-plus-v0-1-202-${todayISO()}.json`; 
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showToast('Export vytvořen');
+  }
+
+  function importData(json) {
+    const parsed = safeParse(json, null);
+    if (!parsed || !parsed.state) {
+      showToast('Import se nepovedl');
+      return;
+    }
+    state = migrateState(mergeState(DEFAULT_STATE, parsed.state));
+    markShoppingRuntimeDirty();
+    saveState();
+    render();
+    showToast('Import hotový');
+  }
+
+  function resetData() {
+    const ok = window.confirm('Opravdu smazat všechna offline data Domácnost+ v tomto prohlížeči?');
+    if (!ok) return;
+    state = migrateState(structuredCloneSafe(DEFAULT_STATE));
+    markShoppingRuntimeDirty();
+    garageVehicleId = null;
+    activeModule = 'home';
+    localStorage.removeItem(STORAGE_KEY);
+    saveState();
+    render();
+    sessionStorage.removeItem('domacnostPlus.onboardingMode');
+    showToast('Data resetována');
+  }
+
+  function showToast(text) {
+    if (suppressToastDepth > 0) return;
+    const toast = document.getElementById('copy-toast');
+    if (!toast) return;
+    toast.textContent = text;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    if (garageModal || calendarDetailEventId || activeWarrantyDetailId || filePreviewModal || shoppingDoneModalOpen) {
+      garageModal = null;
+      calendarDetailEventId = null;
+      activeWarrantyDetailId = null;
+      shoppingDoneModalOpen = false;
+      garageEditRecord = null;
+      closeFilePreviewModal();
+      render();
+      return;
+    }
+    if (activeOverview) closeOverview();
+  });
+
+  app.addEventListener('pointerdown', (event) => {
+    const card = event.target.closest('.station-summary-item[data-home-hero-id]');
+    if (!card || event.target.closest('[data-action]')) return;
+    homeHeroLongPressPointer = { x: event.clientX, y: event.clientY, id: card.dataset.homeHeroId };
+    clearTimeout(homeHeroLongPressTimer);
+    homeHeroLongPressTimer = setTimeout(() => {
+      if (!homeHeroLongPressPointer) return;
+      setHomeHeroEditMode(true);
+      homeHeroLongPressPointer = null;
+    }, 650);
+  });
+
+  app.addEventListener('pointermove', (event) => {
+    if (!homeHeroLongPressPointer) return;
+    const dx = Math.abs(event.clientX - homeHeroLongPressPointer.x);
+    const dy = Math.abs(event.clientY - homeHeroLongPressPointer.y);
+    if (dx > 12 || dy > 12) clearHomeHeroLongPress();
+  });
+
+  app.addEventListener('pointerup', clearHomeHeroLongPress);
+  app.addEventListener('pointercancel', clearHomeHeroLongPress);
+  app.addEventListener('contextmenu', (event) => {
+    if (event.target.closest('.station-summary-item[data-home-hero-id]')) event.preventDefault();
+  });
+
+
+  app.addEventListener('pointerdown', (event) => {
+    const row = event.target.closest('.shopping-listonic-item.done[data-shopping-row-id]');
+    if (!row || event.target.closest('[data-action]')) return;
+    shoppingSwipeStart = { id: row.dataset.shoppingRowId, x: event.clientX, y: event.clientY };
+  });
+
+  app.addEventListener('pointerup', (event) => {
+    if (!shoppingSwipeStart) return;
+    const start = shoppingSwipeStart;
+    shoppingSwipeStart = null;
+    const dx = event.clientX - start.x;
+    const dy = Math.abs(event.clientY - start.y);
+    if (dx < -58 && dy < 45) deleteDoneShoppingBySwipe(start.id);
+  });
+
+  app.addEventListener('pointercancel', () => {
+    shoppingSwipeStart = null;
+  });
+
+
+  document.addEventListener('toggle', (event) => {
+    const details = event.target;
+    if (!(details instanceof HTMLDetailsElement)) return;
+    if (details.matches('.settings-visual-details')) visualSettingsDrawerOpen = details.open;
+  }, true);
+
+  app.addEventListener('click', (event) => {
+    const backdrop = event.target.closest('[data-overview-backdrop]');
+    if (backdrop && !event.target.closest('[data-overview-panel]')) {
+      closeOverview();
+      return;
+    }
+    const modalBackdrop = event.target.closest('[data-modal-backdrop]');
+    if (modalBackdrop && !event.target.closest('.app-modal')) {
+      garageModal = null;
+      calendarDetailEventId = null;
+      activeWarrantyDetailId = null;
+      shoppingDoneModalOpen = false;
+      garageEditRecord = null;
+      closeFilePreviewModal();
+      render();
+      return;
+    }
+
+    const nav = event.target.closest('[data-nav]');
+    if (nav) {
+      activeOverview = null;
+      activeModule = nav.dataset.nav;
+      if (nav.dataset.targetTab) {
+        moduleTabs = { ...(moduleTabs || {}), [activeModule]: nav.dataset.targetTab };
+        if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      }
+      render();
+      keepActiveNavCentered('smooth');
+      keepActiveSectionTabsCentered('smooth');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    const action = event.target.closest('[data-action]');
+    if (action) {
+      try {
+        handleAction(action);
+      } catch (error) {
+        console.error('Action failed', action.dataset.action, error);
+        showToast('Akce se nepovedla. Zkus obnovit aplikaci.');
+      }
+    }
+  });
+
+  app.addEventListener('submit', (event) => {
+    event.preventDefault();
+    Promise.resolve(handleForm(event.target)).catch((error) => {
+      console.error('Form failed', event.target?.dataset?.form, error);
+      showToast('Formulář se nepovedlo uložit.');
+    });
+  });
+
+  app.addEventListener('change', (event) => {
+    const warrantyForm = event.target.closest('form[data-form="add-warranty"], form[data-form="edit-warranty"]');
+    if (warrantyForm) {
+      const warrantyYears = event.target.closest('select[name="warrantyYears"]');
+      if (warrantyYears) {
+        const until = warrantyForm.querySelector('[name="warrantyUntil"]');
+        const purchase = warrantyForm.querySelector('[name="purchaseDate"]');
+        if (until) {
+          until.value = addYearsIso(purchase?.value || todayISO(), Number(warrantyYears.value || 2));
+          until.dataset.autoWarranty = 'true';
+        }
+      }
+      saveWarrantyDraftFromForm(warrantyForm);
+    }
+    const profileSwitch = event.target.closest('[data-profile-switch]');
+    if (profileSwitch) {
+      setActiveProfile(profileSwitch.value);
+      return;
+    }
+    const garageOverviewVehicle = event.target.closest('[data-garage-overview-vehicle]');
+    if (garageOverviewVehicle) {
+      garageVehicleId = garageOverviewVehicle.value || garageVehicleId;
+      garageStatsVehicleId = garageVehicleId;
+      moduleTabs = { ...(moduleTabs || {}), garage: 'overview' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      render();
+      return;
+    }
+    const garagePresetStep = event.target.closest('[data-garage-preset-step]');
+    if (garagePresetStep) {
+      const form = garagePresetStep.closest('form');
+      if (garagePresetStep.dataset.garagePresetStep === 'brand') fillGaragePresetModelOptions(form);
+      if (garagePresetStep.dataset.garagePresetStep === 'model') fillGaragePresetEngineOptions(form);
+      return;
+    }
+    const garageHistoryFilter = event.target.closest('[data-garage-history-filter]');
+    if (garageHistoryFilter) {
+      if (garageHistoryFilter.dataset.garageHistoryFilter === 'year') garageHistoryYearFilter = garageHistoryFilter.value || 'all';
+      if (garageHistoryFilter.dataset.garageHistoryFilter === 'type') garageHistoryTypeFilter = garageHistoryFilter.value || 'all';
+      garageEditRecord = null;
+      render();
+      return;
+    }
+    const garageCalcVehicle = event.target.closest('[data-garage-calc-vehicle]');
+    if (garageCalcVehicle) {
+      garageCalcVehicleId = garageCalcVehicle.value || '';
+      garageTripCalcResult = null;
+      moduleTabs = { ...(moduleTabs || {}), garage: 'calculator' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      render();
+      return;
+    }
+    const garageStatsFilter = event.target.closest('[data-garage-stats-filter]');
+    if (garageStatsFilter) {
+      if (garageStatsFilter.dataset.garageStatsFilter === 'vehicle') garageStatsVehicleId = garageStatsFilter.value || '';
+      if (garageStatsFilter.dataset.garageStatsFilter === 'period') garageStatsPeriodFilter = garageStatsFilter.value || 'last12';
+      if (garageStatsFilter.dataset.garageStatsFilter === 'type') garageStatsTypeFilter = garageStatsFilter.value || 'all';
+      moduleTabs = { ...(moduleTabs || {}), garage: 'stats' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      render();
+      return;
+    }
+  });
+
+  app.addEventListener('input', (event) => {
+    const hdoTimeInput = event.target.closest('[data-hdo-time-input]');
+    if (hdoTimeInput) formatHdoTimeInputLive(hdoTimeInput, event);
+    const fuelCalcInput = event.target.closest('[data-fuel-calc]');
+    if (fuelCalcInput) fillFuelFormCalculation(fuelCalcInput.form, fuelCalcInput);
+    const warrantyForm = event.target.closest('form[data-form="add-warranty"], form[data-form="edit-warranty"]');
+    if (warrantyForm) {
+      if (event.target.matches('input[name="purchaseDate"]')) {
+        const until = warrantyForm.querySelector('[name="warrantyUntil"]');
+        const years = Number(warrantyForm.querySelector('[name="warrantyYears"]')?.value || 2);
+        if (until && (!until.value || until.dataset.autoWarranty !== 'false')) {
+          until.value = addYearsIso(event.target.value || todayISO(), years || 2);
+          until.dataset.autoWarranty = 'true';
+        }
+      }
+      if (event.target.matches('select[name="warrantyYears"]')) {
+        const until = warrantyForm.querySelector('[name="warrantyUntil"]');
+        const purchase = warrantyForm.querySelector('[name="purchaseDate"]');
+        if (until) {
+          until.value = addYearsIso(purchase?.value || todayISO(), Number(event.target.value || 2));
+          until.dataset.autoWarranty = 'true';
+        }
+      }
+      if (event.target.matches('input[name="warrantyUntil"]')) event.target.dataset.autoWarranty = 'false';
+      saveWarrantyDraftFromForm(warrantyForm);
+    }
+  });
+
+  app.addEventListener('focusout', (event) => {
+    const hdoTimeInput = event.target.closest('[data-hdo-time-input]');
+    if (hdoTimeInput) normalizeHdoTimeInputOnBlur(hdoTimeInput);
+  });
+
+  setInterval(() => {
+    now = new Date();
+    document.querySelectorAll('.hero-time').forEach((node) => { node.textContent = clockText(now); });
+    document.querySelectorAll('.hero-date').forEach((node) => { node.textContent = formatDateTime(now); });
+    const clock = document.querySelector('.clock-card strong');
+    const date = document.querySelector('.clock-card span');
+    if (clock) clock.textContent = clockText(now);
+    if (date) date.textContent = shortDateText(now);
+  }, 30000);
+
+  setupInstallAndUpdateFlow();
+  registerServiceWorker();
+  installAppLikeTouchGuards();
+
+  render();
+  scheduleMartinPrivateShoppingRestore();
+  cloudWarmStartLoad(false).catch((error) => console.warn('Cloud warm start failed', error));
+  handleInitialAuthReturn().catch((error) => console.warn('Auth return handling failed', error));
+
+  } catch (error) {
+    console.error('Domácnost+ boot failed', error);
+    renderBootFallback(error);
+  }
+
+  function renderBootFallback(error) {
+    const root = document.getElementById('app');
+    if (!root) return;
+    const message = escapeBootText(error?.message || error?.reason || String(error || 'Neznámá chyba při spuštění'));
+    root.innerHTML = `
+      <div class="boot-fallback-screen">
+        <section class="boot-fallback-card">
+          <div class="brand-mark big logo-mark">🏠</div>
+          <span class="badge">Domácnost+ v.0.1_202</span>
+          <h1>Aplikace se nespustila čistě</h1>
+          <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
+          <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
+          <div class="form-actions">
+            <button class="primary-btn" type="button" data-boot-action="reload">Obnovit aplikaci</button>
+            <button class="ghost-btn" type="button" data-boot-action="soft-reset">Vyčistit rozhraní a obnovit</button>
+          </div>
+          <p class="small-muted">Soft reset nemaže data domácnosti. Smaže jen aktivní záložku/modul a staré dočasné nastavení UI.</p>
+        </section>
+      </div>
+    `;
+    root.querySelector('[data-boot-action="reload"]')?.addEventListener('click', () => window.location.reload());
+    root.querySelector('[data-boot-action="soft-reset"]')?.addEventListener('click', async () => {
+      try {
+        window.localStorage?.removeItem('homeWeb.activeModule');
+        window.localStorage?.removeItem('domacnostPlus.moduleTabs');
+        window.sessionStorage?.removeItem('domacnostPlus.onboardingMode');
+      } catch {}
+      try {
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.filter((key) => key.startsWith('domacnost-plus-')).map((key) => caches.delete(key)));
+        }
+      } catch {}
+      window.location.reload();
+    });
+  }
+
+  function escapeBootText(value) {
+    return String(value || '').replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
+  }
+})();

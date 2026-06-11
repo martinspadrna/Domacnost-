@@ -1,0 +1,190 @@
+(function () {
+  'use strict';
+
+  function createRenderer(deps) {
+    const getState = deps.getState || (() => ({}));
+    const escapeHtml = deps.escapeHtml || ((value) => String(value ?? ''));
+    const defaultCatalogCount = Number(deps.defaultCatalogCount || 0);
+
+    function splitShoppingItems(items) {
+      const openItems = [];
+      const doneItems = [];
+      (items || []).forEach((item) => {
+        if (item?.done) doneItems.push(item);
+        else openItems.push(item);
+      });
+      return { openItems, doneItems };
+    }
+
+    function renderShopping() {
+      deps.ensureShoppingListsReady();
+      const state = getState();
+      const viewState = deps.getShoppingViewState ? deps.getShoppingViewState() : {};
+      const activeShoppingTab = deps.getModuleTab('shopping', 'list');
+      const isShoppingListTab = activeShoppingTab === 'list';
+      const isShoppingCatalogTab = activeShoppingTab === 'catalog';
+      const isShoppingCouponsTab = activeShoppingTab === 'coupons';
+      const lists = deps.getShoppingLists();
+      const activeListId = deps.getActiveShoppingListId();
+      const activeList = lists.find((list) => list.id === activeListId) || lists[0] || null;
+      const listStats = deps.buildShoppingListStats(lists);
+      const activeStats = listStats.get(activeListId) || { total: 0, open: 0, done: 0 };
+      const needsActiveItems = isShoppingListTab || viewState.doneModalOpen;
+      const activeItems = needsActiveItems ? deps.shoppingItemsForList(activeListId) : [];
+      const { openItems, doneItems } = splitShoppingItems(activeItems);
+      const groupedOpen = isShoppingListTab ? deps.groupShoppingItemsByKind(openItems) : [];
+      const groupedDone = viewState.doneModalOpen ? deps.groupShoppingItemsByKind(doneItems) : [];
+      const cloudReady = Boolean(state.cloud?.userId && state.cloud?.householdId);
+      const units = isShoppingListTab ? deps.getShoppingUnits() : [];
+      const categories = isShoppingListTab ? deps.getShoppingCategories() : [];
+      const needsCatalog = isShoppingListTab || isShoppingCatalogTab;
+      const catalog = needsCatalog ? deps.getShoppingCatalog() : [];
+      const catalogSuggestions = isShoppingListTab ? deps.getShoppingDatalistItems(catalog, 90) : [];
+      const customCatalogCount = (state.shoppingCatalogCustom || []).length;
+      const catalogCount = catalog.length || ((state.shoppingCloud?.catalog?.length || defaultCatalogCount) + customCatalogCount);
+      const ownCatalogCount = isShoppingCatalogTab ? catalog.filter((item) => item.householdId || item.source === 'local').length : customCatalogCount;
+      const couponsCount = Array.isArray(state.coupons) ? state.coupons.length : 0;
+      const coupons = isShoppingCouponsTab ? [...state.coupons].sort((a, b) => String(a.expiry || '9999').localeCompare(String(b.expiry || '9999'))) : [];
+      const localOnlyShoppingCount = isShoppingListTab ? activeItems.filter((item) => !item.cloudId).length : 0;
+      const progress = activeStats.total ? Math.round((activeStats.done / activeStats.total) * 100) : 0;
+      const addButtonDisabled = !activeListId ? 'disabled title="Nejdřív vytvoř nákupní seznam přes plus"' : '';
+
+      const listPanel = isShoppingListTab ? `
+        <section class="card desktop-span-2 shopping-panel panel-list listonic-panel">
+          <div class="card-header">
+            <div><h2>${escapeHtml(activeList?.name || 'Nákupní seznam')}</h2><p>Více seznamů podle obchodů nebo situace. Položky se řadí podle druhu, ať se v krámě nelítá sem a tam.</p></div>
+            <span class="badge ${cloudReady ? 'good' : ''}">${cloudReady ? 'cloud nákupy' : 'lokálně'}</span>
+          </div>
+
+          <div class="shopping-list-switcher">
+            ${lists.map((list) => {
+              const stat = listStats.get(list.id) || { total: 0, open: 0 };
+              return `<button class="shopping-list-chip ${list.id === activeListId ? 'active' : ''}" type="button" data-action="set-shopping-list" data-id="${escapeHtml(list.id)}"><strong>${escapeHtml(list.name)}</strong><span>${stat.open ? `${stat.open} koupit` : 'hotovo'} · ${stat.total}</span></button>`;
+            }).join('')}
+            <button class="shopping-list-chip shopping-list-add-chip" type="button" data-action="prompt-add-shopping-list" aria-label="Přidat nákupní seznam"><strong>＋</strong><span>nový seznam</span></button>
+          </div>
+          ${activeListId ? `<div class="shopping-list-tools"><button class="ghost-btn danger-outline-btn" type="button" data-action="delete-shopping-list" data-id="${escapeHtml(activeListId)}" ${lists.length <= 1 ? 'disabled title="Poslední seznam nejde smazat"' : ''}>Smazat seznam</button></div>` : ''}
+
+          <div class="shopping-progress-card"><div><strong>${activeStats.open ? `${activeStats.open} koupit` : 'Nákup hotový'}</strong><span>${activeStats.done} hotovo · ${activeStats.total} celkem · ${escapeHtml(activeList?.name || 'seznam')}</span></div><div class="shopping-progress"><span style="width:${progress}%"></span></div></div>
+
+          <form data-form="add-shopping" class="listonic-add-form">
+            <datalist id="shoppingCatalogList">
+              ${catalogSuggestions.map((item) => `<option value="${escapeHtml(item.name)}"></option>`).join('')}
+            </datalist>
+            <div class="form-grid four">
+              <div class="field"><label>Položka</label><input class="input" name="name" list="shoppingCatalogList" placeholder="rohlíky / aviváž / kapsle" required ${!activeListId ? 'disabled' : ''}></div>
+              ${deps.selectField('Druh výrobku', 'kind', categories.map(([name]) => [name, `${deps.shoppingKindIcon(name)} ${name}`]), 'Ostatní')}
+              ${deps.field('Množství', 'quantity', 'number', '1')}
+              ${deps.selectField('Jednotka', 'unit', units, 'ks')}
+              ${deps.field('Poznámka', 'note', 'text', 'volitelné')}
+            </div>
+            <div class="form-actions">
+              <button class="primary-btn" type="submit" ${addButtonDisabled}>Přidat do ${escapeHtml(activeList?.name || 'seznamu')}</button>
+              ${cloudReady ? `<button class="ghost-btn" type="button" data-action="cloud-load-shopping">Načíst cloud nákupy</button>` : ''}
+              ${cloudReady && localOnlyShoppingCount ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-shopping">Odeslat lokální (${localOnlyShoppingCount})</button>` : ''}
+            </div>
+          </form>
+
+          <div class="hint-box">Klikni na množství u položky a zobrazí se + / − pro rychlou úpravu počtu.</div>
+          <div style="height:14px"></div>
+          ${openItems.length ? `<div class="shopping-grouped-list">${groupedOpen.map(renderShoppingGroup).join('')}</div>` : deps.renderEmptyCta({ icon: '🛒', title: activeListId ? 'Nákup je prázdný' : 'Zatím není žádný seznam', text: activeListId ? 'Přidej položku z katalogu nebo vlastní položku domácnosti.' : 'Vytvoř první nákupní seznam přes plus nahoře.', nav: 'shopping', tab: 'list', label: activeListId ? 'Přidat položku' : 'Přidat seznam' })}
+          ${doneItems.length ? `<button class="shopping-done-open-card" type="button" data-action="open-shopping-done-modal"><span>✓ Hotovo</span><strong>${doneItems.length} položek</strong><em>Otevřít přehled koupených</em></button>` : ''}
+        </section>` : '';
+
+      const catalogPanel = isShoppingCatalogTab ? `
+        <section class="card shopping-panel panel-catalog">
+          <div class="card-header"><div><h2>Katalog domácnosti</h2><p>Katalog je nově podle tvých Listonic seznamů. Druh výrobku slouží pro řazení v obchodě.</p></div><span class="badge">${ownCatalogCount ? `${ownCatalogCount} vlastních` : 'základ'}</span></div>
+          <div class="list compact-list shopping-catalog-list">
+            ${catalog.map((item) => deps.renderShoppingCatalogItem(item, activeList)).join('')}
+          </div>
+        </section>` : '';
+
+      const couponsPanel = isShoppingCouponsTab ? `
+        <section class="card shopping-panel panel-coupons">
+          <div class="card-header"><div><h2>Slevové kódy</h2><p>Kupóny a kódy, které nechceš zapomenout. V online domácnosti jsou sdílené pro všechny členy.</p></div><span class="badge ${coupons.some((item) => item.cloudId) ? 'good' : ''}">${coupons.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span></div>
+          <details class="action-details compact-edit-details coupon-add-details">
+            <summary><span>Přidat nový kód</span><em>obchod, kód, platnost</em></summary>
+            <form data-form="add-coupon" class="compact-form">
+              <div class="form-grid two">
+                ${deps.field('Obchod / služba', 'store', 'text', 'Alza / Temu / Allegro', true)}
+                ${deps.field('Kód', 'code', 'text', 'SLEVA10', true)}
+                ${deps.field('Sleva', 'discount', 'text', '10 % / 200 Kč')}
+                ${deps.field('Platnost do', 'expiry', 'date', '')}
+                ${deps.field('Poznámka', 'note', 'text', 'volitelné')}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Uložit kód</button></div>
+            </form>
+          </details>
+          <div style="height:14px"></div>
+          ${coupons.length ? `<div class="list">${coupons.map(deps.renderCouponItem).join('')}</div>` : deps.renderEmpty('Zatím nemáš uložený žádný slevový kód.')}
+        </section>` : '';
+
+      return `
+      ${deps.renderSectionTabs('shopping', [
+        { id: 'list', label: 'Seznamy', icon: '🛒', count: activeStats.open },
+        { id: 'catalog', label: 'Katalog', icon: '📚', count: catalogCount },
+        { id: 'coupons', label: 'Kódy', icon: '🏷️', count: couponsCount }
+      ], 'list')}
+      <div class="grid two module-tabbed shopping-tab-${activeShoppingTab}">
+        ${listPanel}
+        ${catalogPanel}
+        ${couponsPanel}
+      </div>
+      ${viewState.doneModalOpen ? renderShoppingDoneModal(groupedDone, doneItems, activeList) : ''}
+    `;
+    }
+
+    function renderShoppingDoneModal(groupedDone, doneItems, activeList) {
+      return `
+      <div class="modal-backdrop shopping-done-modal-backdrop" data-modal-backdrop role="dialog" aria-modal="true">
+        <section class="modal-card app-modal shopping-done-modal">
+          <div class="modal-head">
+            <div><h2>Hotovo</h2><p>${escapeHtml(activeList?.name || 'Nákupní seznam')} · ${doneItems.length} položek</p></div>
+            <button class="ghost-btn" type="button" data-action="close-shopping-done-modal">Zavřít</button>
+          </div>
+          <div class="hint-box">Položku můžeš vrátit zpátky tlačítkem fajfky. Na mobilu ji posuň doleva a nabídne se smazání.</div>
+          <div class="shopping-grouped-list shopping-listonic-done">${groupedDone.map(renderShoppingGroup).join('')}</div>
+        </section>
+      </div>
+    `;
+    }
+
+    function renderShoppingGroup(group) {
+      return `
+      <section class="shopping-kind-group">
+        <div class="shopping-kind-heading"><span>${escapeHtml(group.icon)}</span><strong>${escapeHtml(group.kind)}</strong><em>${group.items.length}</em></div>
+        <div class="list shopping-listonic-list">${group.items.map(renderShoppingItem).join('')}</div>
+      </section>
+    `;
+    }
+
+    function renderShoppingItem(item) {
+      const viewState = deps.getShoppingViewState ? deps.getShoppingViewState() : {};
+      const amount = [item.quantity || item.amount || 1, item.unit || 'ks'].filter(Boolean).join(' ');
+      const kind = deps.shoppingKindLabel(item);
+      const isQuantityEditing = viewState.quantityEditId === item.id && !item.done;
+      return `
+      <div class="item shopping-listonic-item ${item.done ? 'done' : ''}" data-shopping-row-id="${escapeHtml(item.id)}">
+        <button class="shopping-check-btn ${item.done ? 'checked' : ''}" type="button" data-action="toggle-done" data-collection="shopping" data-id="${escapeHtml(item.id)}" aria-label="${item.done ? 'Vrátit položku' : 'Označit jako koupené'}">
+          ${item.done ? '✓' : ''}
+        </button>
+        <div class="shopping-listonic-copy">
+          <div class="item-title">${escapeHtml(item.name)}</div>
+          <div class="item-meta">${escapeHtml(kind)}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ''}${item.done ? ' · posuň doleva pro smazání' : ''}</div>
+        </div>
+        <div class="shopping-quantity-wrap ${isQuantityEditing ? 'editing' : ''}">
+          ${isQuantityEditing ? `<button class="ghost-btn shopping-qty-btn" type="button" data-action="shopping-qty-dec" data-id="${escapeHtml(item.id)}">−</button>` : ''}
+          <button class="badge shopping-amount-pill" type="button" data-action="shopping-qty-toggle" data-id="${escapeHtml(item.id)}">${escapeHtml(amount)}</button>
+          ${isQuantityEditing ? `<button class="ghost-btn shopping-qty-btn" type="button" data-action="shopping-qty-inc" data-id="${escapeHtml(item.id)}">+</button>` : ''}
+        </div>
+        <span class="shopping-row-kind-icon" title="${escapeHtml(kind)}" aria-hidden="true">${escapeHtml(deps.shoppingKindIcon(kind))}</span>
+        <button class="danger-btn mini-danger-btn" type="button" data-action="delete" data-collection="shopping" data-id="${escapeHtml(item.id)}" aria-label="Smazat ${escapeHtml(item.name)}">×</button>
+      </div>
+    `;
+    }
+
+    return { renderShopping };
+  }
+
+  window.DomacnostShoppingRender = { createRenderer };
+})();

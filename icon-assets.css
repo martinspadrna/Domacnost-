@@ -1,0 +1,117 @@
+/* Domácnost+ v.0.1_202 – oddělené styly asset ikon */
+/* Domácnost+ v.0.1_189 – lehké asset ikony bez IMG a bez těžkého inline CSS */
+.theme-asset-icon-slot {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  transform: none !important;
+  will-change: auto !important;
+  backface-visibility: visible !important;
+  contain: layout paint;
+}
+
+.theme-asset-icon-slot *,
+.theme-asset-icon-surface,
+.theme-asset-mini-icon,
+.visual-asset-icon-inner {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  will-change: auto !important;
+  backface-visibility: visible !important;
+}
+
+.theme-asset-icon-surface,
+.theme-asset-mini-icon,
+.visual-asset-icon-inner {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+  position: relative !important;
+  overflow: visible !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.theme-asset-icon-surface::before,
+.theme-asset-mini-icon::before,
+.visual-asset-icon-inner::before {
+  content: "" !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+  background-image: var(--asset-icon-url) !important;
+  background-size: contain !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: none !important;
+  filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.12));
+}
+
+.theme-asset-icon-slot[data-icon-theme-asset="clay-3d"] .theme-asset-icon-surface::before,
+.theme-asset-icon-slot[data-icon-theme-asset="clay-3d"] .theme-asset-mini-icon::before,
+.theme-asset-icon-slot[data-icon-theme-asset="clay-3d"] .visual-asset-icon-inner::before {
+  filter: drop-shadow(0 3px 8px rgba(86, 58, 33, 0.14));
+}
+
+.theme-asset-icon-image {
+  display: none !important;
+}
+
+.nav-item .nav-icon.theme-asset-icon-slot,
+.mini-module-icon-nav.theme-asset-icon-slot {
+  width: 36px !important;
+  height: 36px !important;
+}
+
+.module-illustration-slot-nav.theme-asset-icon-slot {
+  width: 30px !important;
+  height: 30px !important;
+}
+
+.module-illustration-slot-card.theme-asset-icon-slot,
+.module-card-illustration-slot.theme-asset-icon-slot,
+.module-status-icon.theme-asset-icon-slot {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.module-illustration-slot-picker.theme-asset-icon-slot,
+.module-toggle-icon-slot.theme-asset-icon-slot,
+.switch-row-icon.theme-asset-icon-slot,
+.check-icon.theme-asset-icon-slot {
+  width: 42px !important;
+  height: 42px !important;
+}
+
+.module-illustration-slot-tab.theme-asset-icon-slot,
+.section-tab-icon-slot.theme-asset-icon-slot {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+.visual-asset-icon.theme-asset-icon-slot {
+  width: 34px !important;
+  height: 34px !important;
+}
+
+@media (max-width: 640px) {
+  .module-illustration-slot-card.theme-asset-icon-slot,
+  .module-card-illustration-slot.theme-asset-icon-slot,
+  .module-status-icon.theme-asset-icon-slot {
+    width: 48px !important;
+    height: 48px !important;
+  }
+}
