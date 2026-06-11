@@ -74,6 +74,19 @@
         }
       }
 
+      const existingItem = (store.shopping || []).find((item) => item.listId === listId && !item.done && normalizeKey(item.name) === normalizeKey(name) && normalizeKey(item.unit) === normalizeKey(unit) && normalizeKey(item.note) === normalizeKey(note));
+      if (existingItem) {
+        existingItem.quantity = sanitizeShoppingQuantity((Number(existingItem.quantity || 1) || 1) + quantity, unit);
+        existingItem.kind = kind;
+        existingItem.category = category;
+        if (catalogItem?.id && !existingItem.catalogItemId) existingItem.catalogItemId = catalogItem.id;
+        deps.trackShoppingUsage?.(name, unit, category);
+        if (cloudReady && deps.cloudUpdateShoppingItem) await deps.cloudUpdateShoppingItem(existingItem);
+        persist('full');
+        form?.reset?.();
+        return showToast('Položka už byla v seznamu, navýšil jsem množství');
+      }
+
       const localItem = {
         id: uid(),
         householdId: deps.currentHouseholdId?.() || '',
@@ -126,6 +139,15 @@
       const name = normalizeText(data.name);
       if (!name) return showToast('Zadej název seznamu');
       store.shoppingLists = Array.isArray(store.shoppingLists) ? store.shoppingLists : [];
+      const existingList = store.shoppingLists.find((list) => normalizeKey(list.name) === normalizeKey(name));
+      if (existingList) {
+        store.activeShoppingListId = existingList.id;
+        deps.clearShoppingOverlayArtifacts?.();
+        deps.closeShoppingTransientUi?.();
+        persist('request');
+        form?.reset?.();
+        return showToast(`Seznam ${name} už existuje, otevřel jsem ho`);
+      }
       const id = `shopping-list-${uid()}`;
       const timestamp = new Date().toISOString();
       const record = {
@@ -278,6 +300,7 @@
           syncedItems += 1;
         }
       }
+      deps.dedupeShoppingData?.(store);
       persist('full');
       showToast((syncedLists || syncedItems) ? `Cloud nákupy: ${syncedLists} seznamů, ${syncedItems} položek` : 'Nic se nepovedlo odeslat');
     }

@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_209';
+  const APP_VERSION = 'Domácnost+ v.0.1_210';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -685,8 +685,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 81,
-      appBuild: 209,
-      mode: 'shopping-cloud-v209',
+      appBuild: 210,
+      mode: 'shopping-cloud-v210',
       createdAt: '',
       updatedAt: ''
     },
@@ -1562,8 +1562,8 @@
 
     migrated.meta = {
       schemaVersion: 81,
-      appBuild: 209,
-      mode: 'shopping-cloud-v209',
+      appBuild: 210,
+      mode: 'shopping-cloud-v210',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1675,6 +1675,7 @@
 
     if (!migrated.shoppingLists.some((list) => list.id === migrated.activeShoppingListId)) migrated.activeShoppingListId = migrated.shoppingLists[0]?.id || '';
     migrated.shopping = (migrated.shopping || []).map((item) => normalizeShoppingItemRecord(item, migrated.activeShoppingListId || migrated.shoppingLists[0]?.id || ''));
+    dedupeShoppingData(migrated);
     migrated.shoppingSeedVersion = 201;
 
     const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
@@ -4811,7 +4812,8 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_209', note: 'Home ikonky opravené systémově: kritické ikony panelů se vykreslují přímo přes PNG podle zvoleného icon packu a CSS background slot zůstává jen mimo Home.' },
+      { title: 'Domácnost+ v.0.1_210', note: 'Kontrola a ochrana proti duplicitám v Nákupy: balíček nemá duplicitní výchozí katalog ani privátní restore seznamy, aplikace nově deduplikuje seznamy/položky při migraci a cloud načtení a nové duplicitní položky místo vytvoření navýší množství.' },
+      { title: 'Domácnost+ v.0.1_210', note: 'Home ikonky opravené systémově: kritické ikony panelů se vykreslují přímo přes PNG podle zvoleného icon packu a CSS background slot zůstává jen mimo Home.' },
       { title: 'Domácnost+ v.0.1_207', note: 'Hotfix Home ikon: panelové ikonky na hlavní obrazovce znovu respektují zvolený icon pack. SVG/glass render zůstává jen jako nouzový fallback, když asset chybí.' },
       { title: 'Domácnost+ v.0.1_206', note: 'Hotfix Home panelů: ikonky na hlavní obrazovce se nově vykreslují přes stabilní inline SVG/glass render místo problematického CSS background slotu. Spodní lišta a ikonové sady zůstávají beze změny.' },
       { title: 'Domácnost+ v.0.1_205', note: 'Hotfix Home ikon a Nákupů: asset ikony se vykreslují přes stabilnější CSS pseudo-slot, přepnutí i stejného seznamu čistí overlay stavy, plus/minus u množství je větší, ks se drží jen po celých kusech a katalog umí položky odebrat.' },
@@ -5640,16 +5642,100 @@
     };
   }
 
+
+  function dedupeShoppingCatalogCustom(data = state) {
+    const source = Array.isArray(data.shoppingCatalogCustom) ? data.shoppingCatalogCustom : [];
+    const byName = new Map();
+    let removed = 0;
+    source.forEach((item) => {
+      const key = normalizeKey(item?.name);
+      if (!key) return;
+      if (byName.has(key)) { removed += 1; return; }
+      byName.set(key, item);
+    });
+    data.shoppingCatalogCustom = [...byName.values()];
+    data.shoppingCatalogHidden = [...new Set((Array.isArray(data.shoppingCatalogHidden) ? data.shoppingCatalogHidden : []).map((value) => normalizeKey(value)).filter(Boolean))];
+    return removed;
+  }
+
+  function dedupeShoppingData(data = state) {
+    if (!data) return { lists: 0, items: 0, catalog: 0 };
+    const result = { lists: 0, items: 0, catalog: dedupeShoppingCatalogCustom(data) };
+    data.shoppingLists = normalizeShoppingLists(data.shoppingLists || [], data);
+
+    const keptLists = [];
+    const byName = new Map();
+    const idRemap = new Map();
+    data.shoppingLists.forEach((list) => {
+      const nameKey = normalizeKey(list?.name);
+      const fallbackKey = normalizeKey(list?.id);
+      const key = nameKey || fallbackKey;
+      if (!key) return;
+      const existing = byName.get(key);
+      if (!existing) {
+        byName.set(key, list);
+        keptLists.push(list);
+        return;
+      }
+      result.lists += 1;
+      if (list.id && existing.id && list.id !== existing.id) idRemap.set(list.id, existing.id);
+      const incomingCloudId = list.cloudId || list.cloudListId || '';
+      if (incomingCloudId && !(existing.cloudId || existing.cloudListId)) {
+        existing.cloudId = incomingCloudId;
+        existing.cloudListId = incomingCloudId;
+        existing.source = 'cloud';
+      }
+      if (!existing.createdAt && list.createdAt) existing.createdAt = list.createdAt;
+      if (list.updatedAt && (!existing.updatedAt || String(list.updatedAt) > String(existing.updatedAt))) existing.updatedAt = list.updatedAt;
+    });
+    data.shoppingLists = keptLists.map((list, index) => ({ ...list, sortOrder: index }));
+
+    const fallbackListId = data.activeShoppingListId || data.shoppingLists[0]?.id || '';
+    const validListIds = new Set(data.shoppingLists.map((list) => list.id));
+    const normalizedItems = (Array.isArray(data.shopping) ? data.shopping : [])
+      .filter((item) => item && typeof item === 'object')
+      .map((item) => {
+        const remappedListId = idRemap.get(item.listId) || item.listId || fallbackListId;
+        return normalizeShoppingItemRecord({ ...item, listId: remappedListId }, remappedListId);
+      })
+      .filter((item) => item.name && (!validListIds.size || validListIds.has(item.listId)));
+
+    const byItem = new Map();
+    const keptItems = [];
+    normalizedItems.forEach((item) => {
+      const cloudKey = item.cloudId ? `cloud:${item.cloudId}` : '';
+      const contentKey = `${item.listId || ''}|${normalizeKey(item.name)}|${normalizeKey(item.unit)}|${normalizeKey(item.note)}|${item.done ? 'done' : 'todo'}`;
+      const existing = (cloudKey && byItem.get(cloudKey)) || byItem.get(contentKey);
+      if (!existing) {
+        keptItems.push(item);
+        if (cloudKey) byItem.set(cloudKey, item);
+        byItem.set(contentKey, item);
+        return;
+      }
+      result.items += 1;
+      if (!existing.cloudId && item.cloudId) existing.cloudId = item.cloudId;
+      if (!existing.cloudListId && item.cloudListId) existing.cloudListId = item.cloudListId;
+      if (!existing.catalogItemId && item.catalogItemId) existing.catalogItemId = item.catalogItemId;
+      if (!existing.createdAt && item.createdAt) existing.createdAt = item.createdAt;
+      if (!existing.doneAt && item.doneAt) existing.doneAt = item.doneAt;
+    });
+    data.shopping = keptItems;
+    if (!data.shoppingLists.some((list) => list.id === data.activeShoppingListId)) data.activeShoppingListId = data.shoppingLists[0]?.id || '';
+    if (result.lists || result.items || result.catalog) data.shoppingDedupedAt = new Date().toISOString();
+    return result;
+  }
+
   function seedDefaultShoppingLists(migrated) {
     migrated.shoppingLists = normalizeShoppingLists(migrated.shoppingLists, migrated);
     if (!migrated.shoppingLists.some((list) => list.id === migrated.activeShoppingListId)) migrated.activeShoppingListId = migrated.shoppingLists[0]?.id || '';
     migrated.shopping = (migrated.shopping || []).map((item) => normalizeShoppingItemRecord(item, migrated.activeShoppingListId || migrated.shoppingLists[0]?.id || ''));
+    dedupeShoppingData(migrated);
     migrated.shoppingSeedVersion = 201;
   }
 
   let martinPrivateShoppingRestorePromise = null;
   const MARTIN_PRIVATE_RESTORE_CUTOFF_MS = Date.parse('2026-06-11T00:00:00+02:00');
-  const MARTIN_PRIVATE_RESTORE_VERSION = 205;
+  const MARTIN_PRIVATE_RESTORE_VERSION = 210;
 
   function isMartinPrivateShoppingRestoreTarget(data = state) {
     if (Number(data.shoppingPrivateRestoreVersion || 0) >= MARTIN_PRIVATE_RESTORE_VERSION) return false;
@@ -5693,7 +5779,7 @@
         createdAt: timestamp,
         updatedAt: timestamp,
         sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v209'
+        source: 'martin-private-restore-v210'
       });
       existingListNames.add(nameKey);
       existingListIds.add(list.id);
@@ -5715,7 +5801,7 @@
         householdId: data.household?.id || '',
         profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
         createdAt: timestamp,
-        source: 'martin-private-restore-v209'
+        source: 'martin-private-restore-v210'
       }));
 
     data.shopping = [...data.shopping, ...restoredItems];
@@ -5730,7 +5816,7 @@
     martinPrivateShoppingRestorePromise = new Promise((resolve) => {
       const run = async () => {
         try {
-          const response = await fetch('./martin-shopping-restore-v209.json', { cache: 'force-cache' });
+          const response = await fetch('./martin-shopping-restore-v210.json', { cache: 'force-cache' });
           if (!response.ok) throw new Error(`restore ${response.status}`);
           const payload = await response.json();
           const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
@@ -5957,6 +6043,7 @@
       cloudArchiveShoppingList,
       cloudDeleteShoppingCatalogItem,
       cloudEnsureShoppingList,
+      dedupeShoppingData,
       getShoppingCatalog,
       closeShoppingTransientUi,
       clearShoppingOverlayArtifacts,
@@ -11622,10 +11709,19 @@
     const activeLocalList = state.shoppingLists.find((list) => list.id === state.activeShoppingListId);
     const activeCloudListId = activeLocalList?.cloudId || activeLocalList?.cloudListId || cloudLists[0]?.cloudId || '';
 
+    const cloudCatalogByName = new Map();
+    (catalogRes.data || []).forEach((item) => {
+      const mappedItem = { ...item, category_name: item.shopping_categories?.name || 'Ostatní' };
+      const key = normalizeKey(mappedItem.name);
+      if (!key) return;
+      const existing = cloudCatalogByName.get(key);
+      if (!existing || (mappedItem.household_id && !existing.household_id)) cloudCatalogByName.set(key, mappedItem);
+    });
+
     state.shoppingCloud = {
       units: unitsRes.data || [],
       categories: categoriesRes.data || [],
-      catalog: (catalogRes.data || []).map((item) => ({ ...item, category_name: item.shopping_categories?.name || 'Ostatní' })),
+      catalog: [...cloudCatalogByName.values()],
       activeListId: activeCloudListId,
       loadedAt: new Date().toISOString()
     };
@@ -11668,6 +11764,7 @@
     });
     const localOnly = state.shopping.filter((item) => !item.cloudId);
     state.shopping = [...localOnly, ...cloudItems];
+    dedupeShoppingData(state);
     if (!state.shoppingLists.some((list) => list.id === state.activeShoppingListId)) state.activeShoppingListId = state.shoppingLists[0]?.id || '';
 
     markShoppingRuntimeDirty();
@@ -14813,7 +14910,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 81, appBuild: 209, mode: 'rich-demo-v209', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 81, appBuild: 210, mode: 'rich-demo-v210', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -14956,7 +15053,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 81, appBuild: 209, mode: 'shopping-cloud-v209', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 81, appBuild: 210, mode: 'shopping-cloud-v210', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -17595,7 +17692,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 209
+        appBuild: 210
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -18185,7 +18282,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-209-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-210-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -18479,7 +18576,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_209</span>
+          <span class="badge">Domácnost+ v.0.1_210</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

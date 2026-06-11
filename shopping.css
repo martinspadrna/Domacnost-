@@ -1,4 +1,4 @@
-/* Domácnost+ v.0.1_209 – oddělené styly modulu Nákupy */
+/* Domácnost+ v.0.1_210 – oddělené styly modulu Nákupy */
 /* Domácnost+ v.0.1_178 – nákupní seznamy podle Listonicu */
 .shopping-list-switcher {
   display: flex;
@@ -301,7 +301,7 @@ body:not(.overview-open) .shopping-done-modal-backdrop {
   display: none !important;
 }
 
-/* Domácnost+ v.0.1_209 – větší ovládání množství a katalogové mazání */
+/* Domácnost+ v.0.1_210 – větší ovládání množství a katalogové mazání */
 .shopping-quantity-wrap {
   gap: 9px;
 }
