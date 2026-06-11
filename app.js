@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_203';
+  const APP_VERSION = 'Domácnost+ v.0.1_204';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -663,6 +663,7 @@
   const ASSET_ICON_IDS = ['home', 'calendar', 'weather', 'packages', 'shopping', 'homecare', 'garage', 'contracts', 'cameras', 'finance', 'subscriptions', 'settings', 'coupons', 'hdo', 'waste', 'tasks', 'notes', 'devices', 'warranties', 'polishHolidays', 'more'];
   const ASSET_ICON_MODULE_IDS = new Set(ASSET_ICON_IDS);
   const ASSET_ICON_THEMES = {
+    'ios': { surface: 'soft', pathPrefix: './icons/module-icons/' },
     'duotone-fresh': { surface: 'dark', pathPrefix: './icons/icon-themes/duotone-fresh/' },
     'sticker-ui': { surface: 'dark', pathPrefix: './icons/icon-themes/sticker-ui/' },
     'clay-3d': { surface: 'clay', pathPrefix: './icons/icon-themes/clay-3d/' },
@@ -684,8 +685,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 80,
-      appBuild: 203,
-      mode: 'flat-package-v203',
+      appBuild: 204,
+      mode: 'flat-package-v204',
       createdAt: '',
       updatedAt: ''
     },
@@ -1050,6 +1051,8 @@
   let renderDeferredPending = false;
   let renderInProgress = false;
   let renderFrameRequest = 0;
+  let cloudWarmStartTimer = null;
+  let bootCloudMaintenanceTimer = null;
 
   const app = document.getElementById('app');
   applyVisualSettings();
@@ -1546,8 +1549,8 @@
 
     migrated.meta = {
       schemaVersion: 80,
-      appBuild: 203,
-      mode: 'flat-package-v203',
+      appBuild: 204,
+      mode: 'flat-package-v204',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2101,6 +2104,42 @@
       finish();
       throw error;
     }
+  }
+
+  function runWhenMainThreadFree(callback, options = {}) {
+    const delay = Number(options.delay || 0);
+    const timeout = Number(options.timeout || 2200);
+    const start = () => {
+      const run = () => {
+        try { callback(); }
+        catch (error) { console.warn('Deferred app task failed', error); }
+      };
+      if ('requestIdleCallback' in window) window.requestIdleCallback(run, { timeout });
+      else window.setTimeout(run, 24);
+    };
+    if (delay > 0) return window.setTimeout(start, delay);
+    start();
+    return 0;
+  }
+
+  function yieldToMainThread() {
+    return new Promise((resolve) => window.setTimeout(resolve, 0));
+  }
+
+  function scheduleBootCloudWarmStart() {
+    if (cloudWarmStartTimer || isDemoOnlyState()) return;
+    cloudWarmStartTimer = runWhenMainThreadFree(() => {
+      cloudWarmStartTimer = null;
+      cloudWarmStartLoad(false).catch((error) => console.warn('Cloud warm start failed', error));
+    }, { delay: 1800, timeout: 4200 });
+  }
+
+  function scheduleBootCloudMaintenance() {
+    if (bootCloudMaintenanceTimer || !cloudReady() || isDemoOnlyState()) return;
+    bootCloudMaintenanceTimer = runWhenMainThreadFree(() => {
+      bootCloudMaintenanceTimer = null;
+      scheduleCloudAutosync('boot-idle');
+    }, { delay: 12000, timeout: 6000 });
   }
 
   function requestRender() {
@@ -3697,9 +3736,29 @@
   }
 
   function preloadAssetIconTheme(themeId = state.settings?.iconTheme || 'ios') {
-    // v0.1_201: ikonky se dál načítají lazy přes CSS background podle reálně vykreslených slotů.
-    // Nepřednačítáme celý pack na startu, aby se iPhone/PWA zbytečně nedusil.
-    return normalizeIconTheme(themeId);
+    const normalized = normalizeIconTheme(themeId);
+    const theme = ASSET_ICON_THEMES[normalized];
+    if (!theme?.pathPrefix || typeof window.Image !== 'function') return normalized;
+    const cacheKey = `theme:${normalized}`;
+    if (ASSET_ICON_PRELOAD_CACHE.has(cacheKey)) return normalized;
+    ASSET_ICON_PRELOAD_CACHE.add(cacheKey);
+    const urls = ASSET_ICON_IDS.map((id) => `${theme.pathPrefix}${id}.png`);
+    runWhenMainThreadFree(() => {
+      let index = 0;
+      const warmNext = () => {
+        const src = urls[index++];
+        if (!src) return;
+        try {
+          const img = new window.Image();
+          img.decoding = 'async';
+          img.loading = 'lazy';
+          img.src = src;
+        } catch {}
+        window.setTimeout(warmNext, 90);
+      };
+      warmNext();
+    }, { delay: 1400, timeout: 5000 });
+    return normalized;
   }
 
   function rememberIconHtml(key, html) {
@@ -4716,6 +4775,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_204', note: 'Hotfix klikání, výkonu a mizení ikon po startu: cloud warm start a soukromý restore běží odloženě, cloud načítání pouští hlavní vlákno mezi moduly a iOS Soft ikony se vykreslují přes PNG assety.' },
       { title: 'Domácnost+ v.0.1_203', note: 'Hotfix startu po v202: opravené pořadí inicializace visual settings cache, aby aplikace nepadala na lastVisualSettingsSignature před inicializací. Přidaný VM boot smoke test proti podobným startovacím chybám.' },
       { title: 'Domácnost+ v.0.1_202', note: 'Plochý ZIP: v kořeni jsou runtime soubory aplikace a zdrojové soubory, jediná složka je icons/ s instalačními ikonami, modulovými ikonami a ikonovými sadami; přepsané cesty v HTML, manifestu, SW, JS i CSS.' },
       { title: 'Domácnost+ v.0.1_201', note: 'Čistý ZIP: odstraněné nepotřebné setup SQL/MD soubory a env example ze Supabase složky, runtime PWA assety, Edge Functions, ikony a soukromý restore zůstávají.' },
@@ -5550,7 +5610,7 @@
 
   let martinPrivateShoppingRestorePromise = null;
   const MARTIN_PRIVATE_RESTORE_CUTOFF_MS = Date.parse('2026-06-11T00:00:00+02:00');
-  const MARTIN_PRIVATE_RESTORE_VERSION = 201;
+  const MARTIN_PRIVATE_RESTORE_VERSION = 204;
 
   function isMartinPrivateShoppingRestoreTarget(data = state) {
     if (Number(data.shoppingPrivateRestoreVersion || 0) >= MARTIN_PRIVATE_RESTORE_VERSION) return false;
@@ -5594,7 +5654,7 @@
         createdAt: timestamp,
         updatedAt: timestamp,
         sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v201'
+        source: 'martin-private-restore-v204'
       });
       existingListNames.add(nameKey);
       existingListIds.add(list.id);
@@ -5616,7 +5676,7 @@
         householdId: data.household?.id || '',
         profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
         createdAt: timestamp,
-        source: 'martin-private-restore-v201'
+        source: 'martin-private-restore-v204'
       }));
 
     data.shopping = [...data.shopping, ...restoredItems];
@@ -5631,7 +5691,7 @@
     martinPrivateShoppingRestorePromise = new Promise((resolve) => {
       const run = async () => {
         try {
-          const response = await fetch('./martin-shopping-restore-v203.json', { cache: 'force-cache' });
+          const response = await fetch('./martin-shopping-restore-v204.json', { cache: 'force-cache' });
           if (!response.ok) throw new Error(`restore ${response.status}`);
           const payload = await response.json();
           const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
@@ -5646,8 +5706,8 @@
           resolve(false);
         }
       };
-      if ('requestIdleCallback' in window) window.requestIdleCallback(run, { timeout: 1200 });
-      else window.setTimeout(run, 0);
+      if ('requestIdleCallback' in window) window.requestIdleCallback(run, { timeout: 1800 });
+      else window.setTimeout(run, 900);
     });
     return martinPrivateShoppingRestorePromise;
   }
@@ -9368,7 +9428,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 203))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 204))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -14655,7 +14715,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 80, appBuild: 203, mode: 'rich-demo-v203', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 80, appBuild: 204, mode: 'rich-demo-v204', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -14798,7 +14858,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 80, appBuild: 203, mode: 'flat-package-v203', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 80, appBuild: 204, mode: 'flat-package-v204', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -15889,6 +15949,7 @@
       await withMutedToasts(async () => {
         for (const syncer of syncers) {
           try {
+            await yieldToMainThread();
             await syncer();
           } catch (error) {
             console.warn('Cloud pending sync failed', error);
@@ -15923,8 +15984,8 @@
       }
       if (!state.cloud?.householdId) return;
       await cloudLoadProfilesForCurrentHousehold();
-      await cloudSyncLocalPendingData(false);
-      await cloudLoadAllModules(false);
+      await cloudLoadAllModules(false, { bootWarmStart: true });
+      scheduleBootCloudMaintenance();
       if (showMessage) showToast('Cloud domácnost načtená');
     });
   }
@@ -15956,6 +16017,7 @@
       let ok = 0;
       for (const loader of loaders) {
         try {
+          await yieldToMainThread();
           await loader(false);
           ok += 1;
         } catch (error) {
@@ -15965,7 +16027,7 @@
       state.cloud.lastSyncAt = new Date().toISOString();
       touchState();
       saveState();
-      render();
+      requestRender();
       if (!options.skipRealtimeSetup) setupCloudRealtimeSubscriptions(false);
       if (showMessage) showToast(`Cloud načten: ${ok}/${loaders.length} částí`);
     });
@@ -17431,7 +17493,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 203
+        appBuild: 204
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -17554,7 +17616,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 195, schema_version: 80, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 204, schema_version: 80, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -17767,7 +17829,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 195,
+          app_build: 204,
           schema_version: 80,
           created_by: user.id,
           ...householdUiPayload()
@@ -18021,7 +18083,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-203-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-204-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -18298,8 +18360,8 @@
   installAppLikeTouchGuards();
 
   render();
-  scheduleMartinPrivateShoppingRestore();
-  cloudWarmStartLoad(false).catch((error) => console.warn('Cloud warm start failed', error));
+  runWhenMainThreadFree(() => scheduleMartinPrivateShoppingRestore(), { delay: 900, timeout: 2400 });
+  scheduleBootCloudWarmStart();
   handleInitialAuthReturn().catch((error) => console.warn('Auth return handling failed', error));
 
   } catch (error) {
@@ -18315,7 +18377,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_203</span>
+          <span class="badge">Domácnost+ v.0.1_204</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
