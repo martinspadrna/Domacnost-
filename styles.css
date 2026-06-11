@@ -13432,3 +13432,126 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 .theme-asset-icon-slot[data-icon-theme-asset="clay-3d"] .theme-asset-icon-image {
   filter: drop-shadow(0 3px 8px rgba(86, 58, 33, 0.14));
 }
+
+
+/* Domácnost+ v.0.1_184 – Nákupy: počet kusů, hotovo modal, plus seznam */
+.shopping-list-switcher {
+  align-items: stretch;
+}
+
+.shopping-list-add-chip {
+  min-width: 74px;
+  justify-content: center;
+  border-style: dashed !important;
+}
+
+.shopping-list-add-chip strong {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.shopping-quantity-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.shopping-amount-pill {
+  border: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.shopping-quantity-wrap.editing {
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+.shopping-qty-btn {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 999px;
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.shopping-done-open-card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  align-items: center;
+  text-align: left;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.72);
+  box-shadow: 0 10px 30px rgba(15,23,42,0.08), inset 0 0 0 1px rgba(255,255,255,0.8);
+  color: inherit;
+  cursor: pointer;
+}
+
+.shopping-done-open-card span {
+  font-weight: 900;
+}
+
+.shopping-done-open-card strong {
+  justify-self: end;
+  font-size: .92rem;
+}
+
+.shopping-done-open-card em {
+  grid-column: 1 / -1;
+  font-style: normal;
+  color: var(--muted);
+  font-size: .86rem;
+}
+
+.shopping-done-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  background: rgba(15, 23, 42, 0.32);
+  backdrop-filter: blur(16px);
+}
+
+.shopping-done-modal {
+  width: min(760px, 100%);
+  max-height: min(82vh, 780px);
+  overflow: auto;
+  border-radius: 28px 28px 22px 22px;
+}
+
+.shopping-done-modal .shopping-listonic-item.done {
+  touch-action: pan-y;
+}
+
+@media (min-width: 820px) {
+  .shopping-done-modal-backdrop {
+    align-items: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .shopping-listonic-item {
+    gap: 8px;
+  }
+  .shopping-quantity-wrap.editing {
+    order: 3;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
