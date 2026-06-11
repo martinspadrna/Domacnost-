@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_208';
+  const APP_VERSION = 'Domácnost+ v.0.1_209';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -685,8 +685,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 81,
-      appBuild: 208,
-      mode: 'shopping-cloud-v208',
+      appBuild: 209,
+      mode: 'shopping-cloud-v209',
       createdAt: '',
       updatedAt: ''
     },
@@ -1066,6 +1066,18 @@
     if (!app || app.getAttribute?.('data-boot-ok') === '1') return;
     renderBootFallback(event.reason || 'Nezachycená chyba při spuštění');
   });
+
+  document.addEventListener?.('error', (event) => {
+    const image = event.target;
+    if (!image?.classList?.contains('station-summary-img-icon-image')) return;
+    image.closest?.('.station-summary-img-icon')?.classList?.add('is-missing');
+  }, true);
+
+  document.addEventListener?.('load', (event) => {
+    const image = event.target;
+    if (!image?.classList?.contains('station-summary-img-icon-image')) return;
+    image.closest?.('.station-summary-img-icon')?.classList?.remove('is-missing');
+  }, true);
 
   function createSafeStorage(storage, label = 'storage') {
     const memory = new Map();
@@ -1550,8 +1562,8 @@
 
     migrated.meta = {
       schemaVersion: 81,
-      appBuild: 208,
-      mode: 'shopping-cloud-v208',
+      appBuild: 209,
+      mode: 'shopping-cloud-v209',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -3358,16 +3370,22 @@
     const density = options.density || 'small';
     const label = options.label || '';
     const size = density === 'large' ? 'home-lg' : 'home-sm';
-    const assetHtml = renderAssetThemeIcon(id, {
-      size,
-      baseClass: 'station-summary-icon',
-      innerClass: 'theme-asset-icon',
-      slotClass: 'station-summary-illustration-slot station-summary-home-asset-icon',
-      extraClass: 'station-summary-pack-icon',
-      label
-    });
-    if (assetHtml) return assetHtml;
+    const config = getAssetThemeIconConfig(id, state.settings?.iconTheme || 'ios');
+    const fallbackSvg = getHomePanelFallbackIcon(id, size);
+    if (config?.src) {
+      const iconId = escapeHtml(String(config.iconId));
+      const themeId = escapeHtml(String(config.themeId));
+      const src = escapeHtml(String(config.src));
+      return `<span class="station-summary-icon station-summary-illustration-slot station-summary-pack-icon station-summary-img-icon station-summary-img-icon-${escapeHtml(String(size))}" data-icon-id="${iconId}" data-icon-theme-asset="${themeId}" aria-hidden="true"><img class="station-summary-img-icon-image" src="${src}" width="72" height="72" alt="" loading="eager" decoding="async"><span class="station-summary-img-icon-fallback">${fallbackSvg}</span></span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
+    }
     return `${renderGlassIcon(getHomeIconKind(id), { size, extraClass: 'station-summary-icon station-summary-illustration-slot station-summary-svg-icon station-summary-pack-fallback' })}${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
+  }
+
+  function getHomePanelFallbackIcon(id, size = 'home-sm') {
+    return renderGlassIcon(getHomeIconKind(id), {
+      size,
+      extraClass: 'station-summary-svg-icon station-summary-pack-fallback'
+    });
   }
 
   function setHomeHeroEditMode(enabled) {
@@ -4793,7 +4811,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_208', note: 'Nákupy cloud-first: nákupní seznamy i položky se při přihlášené domácnosti ukládají online/autosyncem, kusové množství zůstává celé a přepnutí seznamu tvrdě čistí světlý overlay stav.' },
+      { title: 'Domácnost+ v.0.1_209', note: 'Home ikonky opravené systémově: kritické ikony panelů se vykreslují přímo přes PNG podle zvoleného icon packu a CSS background slot zůstává jen mimo Home.' },
       { title: 'Domácnost+ v.0.1_207', note: 'Hotfix Home ikon: panelové ikonky na hlavní obrazovce znovu respektují zvolený icon pack. SVG/glass render zůstává jen jako nouzový fallback, když asset chybí.' },
       { title: 'Domácnost+ v.0.1_206', note: 'Hotfix Home panelů: ikonky na hlavní obrazovce se nově vykreslují přes stabilní inline SVG/glass render místo problematického CSS background slotu. Spodní lišta a ikonové sady zůstávají beze změny.' },
       { title: 'Domácnost+ v.0.1_205', note: 'Hotfix Home ikon a Nákupů: asset ikony se vykreslují přes stabilnější CSS pseudo-slot, přepnutí i stejného seznamu čistí overlay stavy, plus/minus u množství je větší, ks se drží jen po celých kusech a katalog umí položky odebrat.' },
@@ -5675,7 +5693,7 @@
         createdAt: timestamp,
         updatedAt: timestamp,
         sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v208'
+        source: 'martin-private-restore-v209'
       });
       existingListNames.add(nameKey);
       existingListIds.add(list.id);
@@ -5697,7 +5715,7 @@
         householdId: data.household?.id || '',
         profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
         createdAt: timestamp,
-        source: 'martin-private-restore-v208'
+        source: 'martin-private-restore-v209'
       }));
 
     data.shopping = [...data.shopping, ...restoredItems];
@@ -5712,7 +5730,7 @@
     martinPrivateShoppingRestorePromise = new Promise((resolve) => {
       const run = async () => {
         try {
-          const response = await fetch('./martin-shopping-restore-v208.json', { cache: 'force-cache' });
+          const response = await fetch('./martin-shopping-restore-v209.json', { cache: 'force-cache' });
           if (!response.ok) throw new Error(`restore ${response.status}`);
           const payload = await response.json();
           const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
@@ -14795,7 +14813,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 81, appBuild: 208, mode: 'rich-demo-v208', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 81, appBuild: 209, mode: 'rich-demo-v209', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -14938,7 +14956,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 81, appBuild: 208, mode: 'shopping-cloud-v208', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 81, appBuild: 209, mode: 'shopping-cloud-v209', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -17577,7 +17595,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 208
+        appBuild: 209
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -18167,7 +18185,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-208-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-209-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -18461,7 +18479,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_208</span>
+          <span class="badge">Domácnost+ v.0.1_209</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

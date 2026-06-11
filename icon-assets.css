@@ -1,4 +1,4 @@
-/* Domácnost+ v.0.1_208 – oddělené styly asset ikon */
+/* Domácnost+ v.0.1_209 – oddělené styly asset ikon */
 /* Domácnost+ v.0.1_189 – lehké asset ikony bez IMG a bez těžkého inline CSS */
 .theme-asset-icon-slot {
   display: inline-flex !important;
@@ -16,7 +16,7 @@
 }
 
 
-/* v0.1_208 – robustní vykreslení asset ikon přes pseudo-element slotu.
+/* v0.1_209 – robustní vykreslení asset ikon přes pseudo-element slotu.
    Na iOS/Safari je to stabilnější než spoléhat jen na vnořený surface. */
 .theme-asset-icon-slot::before {
   content: "" !important;
@@ -148,7 +148,7 @@
 }
 
 
-/* Domácnost+ v0.1_208 – Home panel asset fallback.
+/* Domácnost+ v0.1_209 – Home panel asset fallback.
    Kdyby se někde na Home ještě použil asset slot, nesmí mít nulovou velikost. */
 .home-minimal-hero .station-summary-item .station-summary-icon.theme-asset-icon-slot,
 .station-summary-item .station-summary-icon.theme-asset-icon-slot {
@@ -179,6 +179,84 @@
 @media (max-width: 560px) {
   .home-minimal-hero .station-summary-item .station-summary-icon.theme-asset-icon-slot,
   .station-summary-item .station-summary-icon.theme-asset-icon-slot {
+    width: 50px !important;
+    height: 50px !important;
+    min-width: 50px !important;
+    min-height: 50px !important;
+    flex-basis: 50px !important;
+  }
+}
+
+/* Domácnost+ v.0.1_209 – Home panel ikony jsou kritická UI vrstva.
+   Nepoužívají CSS custom-property background slot, ale přímý PNG img podle zvoleného packu.
+   Důvod: na Safari/PWA se pseudo background slot uměl ztratit, zatímco spodní lišta zůstala viditelná. */
+.home-minimal-hero .station-summary-img-icon,
+.station-summary-item .station-summary-img-icon {
+  display: inline-grid !important;
+  place-items: center !important;
+  position: relative !important;
+  width: 68px !important;
+  height: 68px !important;
+  min-width: 68px !important;
+  min-height: 68px !important;
+  flex: 0 0 68px !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  contain: layout paint !important;
+}
+
+.home-minimal-hero .station-summary-img-icon::before,
+.station-summary-item .station-summary-img-icon::before {
+  display: none !important;
+  content: none !important;
+}
+
+.station-summary-img-icon-image {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.14));
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.station-summary-img-icon-fallback {
+  display: none !important;
+  position: absolute !important;
+  inset: 0 !important;
+  place-items: center !important;
+  pointer-events: none !important;
+}
+
+.station-summary-img-icon.is-missing .station-summary-img-icon-image {
+  display: none !important;
+}
+
+.station-summary-img-icon.is-missing .station-summary-img-icon-fallback {
+  display: grid !important;
+}
+
+.station-summary-count-5 .station-summary-img-icon,
+.station-summary-count-6 .station-summary-img-icon,
+.station-summary-count-7 .station-summary-img-icon,
+.station-summary-count-8 .station-summary-img-icon {
+  width: 60px !important;
+  height: 60px !important;
+  min-width: 60px !important;
+  min-height: 60px !important;
+  flex-basis: 60px !important;
+}
+
+@media (max-width: 560px) {
+  .home-minimal-hero .station-summary-img-icon,
+  .station-summary-item .station-summary-img-icon {
     width: 50px !important;
     height: 50px !important;
     min-width: 50px !important;
