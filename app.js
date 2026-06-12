@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_215';
+  const APP_VERSION = 'Domácnost+ v.0.1_217';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -695,8 +695,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 215,
-      mode: 'cloud-settings-profile-fix-v215',
+      appBuild: 217,
+      mode: 'home-layout-safe-area-v217',
       createdAt: '',
       updatedAt: ''
     },
@@ -1584,8 +1584,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 215,
-      mode: 'cloud-settings-profile-fix-v215',
+      appBuild: 217,
+      mode: 'home-layout-safe-area-v217',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1859,10 +1859,11 @@
   }
 
   function profileDedupeKey(profile = {}) {
+    const householdId = normalizeText(profile.householdId || profile.household_id || state.household?.id || state.cloud?.householdId || '');
+    const name = normalizeKey(profile.name || profile.displayName || '');
+    if (name) return `household:${householdId || 'current'}:name:${name}`;
     const userId = normalizeText(profile.userId || profile.user_id || '');
     if (userId) return `user:${userId}`;
-    const name = normalizeKey(profile.name || profile.displayName || '');
-    if (name) return `name:${name}`;
     const cloudId = normalizeText(profile.cloudId || '');
     if (cloudId) return `cloud:${cloudId}`;
     return `id:${profile.id || uid()}`;
@@ -4947,6 +4948,8 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_217', note: 'Home layout hotfix: spodní lišta je ukotvená dole hned při prvním vykreslení v PWA/Safari a hlavní Home panel dostal zpět ušetřené místo, takže čas, počasí i dlaždice mohou být vyšší.' },
+      { title: 'Domácnost+ v.0.1_216', note: 'Stabilizační build: opravené slučování finance šablon podle updatedAt mezi mobilem a PC, jistější pending marker šablon, jemnější autosync mimo první klikání a silnější deduplikace profilů podle názvu.' },
       { title: 'Domácnost+ v.0.1_215', note: 'Cloud settings hotfix: odstraněné volání neexistující user_app_settings tabulky, vzhled a finance šablony se ukládají přes household dashboard_layout, profily se deduplikují v zobrazení i při syncu.' },
       { title: 'Domácnost+ v.0.1_214', note: 'Finance kontrast hotfix: tmavší a čitelnější formuláře, editace účtů a přehledové finanční panely, aby na světlém glass pozadí nezanikaly hodnoty ani popisky.' },
       { title: 'Domácnost+ v.0.1_213', note: 'Finance redesign: cloud-first ochrana při úpravě pohybů mezi měsíci, přehledný dashboard se zůstatkem / příjmy / výdaji / rozdílem, filtry pohybů, kopírování plateb do více měsíců a online záloha šablon přes domácí UI nastavení.' },
@@ -5873,7 +5876,7 @@
 
   let martinPrivateShoppingRestorePromise = null;
   const MARTIN_PRIVATE_RESTORE_CUTOFF_MS = Date.parse('2026-06-11T00:00:00+02:00');
-  const MARTIN_PRIVATE_RESTORE_VERSION = 210;
+  const MARTIN_PRIVATE_RESTORE_VERSION = 217;
 
   function isMartinPrivateShoppingRestoreTarget(data = state) {
     if (Number(data.shoppingPrivateRestoreVersion || 0) >= MARTIN_PRIVATE_RESTORE_VERSION) return false;
@@ -5917,7 +5920,7 @@
         createdAt: timestamp,
         updatedAt: timestamp,
         sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v215'
+        source: 'martin-private-restore-v217'
       });
       existingListNames.add(nameKey);
       existingListIds.add(list.id);
@@ -5939,7 +5942,7 @@
         householdId: data.household?.id || '',
         profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
         createdAt: timestamp,
-        source: 'martin-private-restore-v215'
+        source: 'martin-private-restore-v217'
       }));
 
     data.shopping = [...data.shopping, ...restoredItems];
@@ -5954,7 +5957,7 @@
     martinPrivateShoppingRestorePromise = new Promise((resolve) => {
       const run = async () => {
         try {
-          const response = await fetch('./martin-shopping-restore-v215.json', { cache: 'force-cache' });
+          const response = await fetch('./martin-shopping-restore-v217.json', { cache: 'force-cache' });
           if (!response.ok) throw new Error(`restore ${response.status}`);
           const payload = await response.json();
           const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
@@ -8756,10 +8759,10 @@
       }
       const existingTime = Date.parse(existing.updatedAt || existing.createdAt || '') || 0;
       const nextTime = Date.parse(normalized.updatedAt || normalized.createdAt || '') || 0;
-      const shouldReplace = preferLocal && source === 'local'
-        ? true
-        : (!preferLocal && source === 'cloud' && nextTime >= existingTime)
-          || (source === existing._source && nextTime >= existingTime);
+      const nextIsNewer = nextTime >= existingTime;
+      const shouldReplace = preferLocal
+        ? source === 'local' || (existing._source !== 'local' && nextIsNewer)
+        : nextIsNewer;
       if (shouldReplace) byId.set(key, { ...normalized, _source: source });
     };
     normalizeFinanceTemplates(cloudTemplates).forEach((template) => put(template, 'cloud'));
@@ -9935,7 +9938,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 215))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 217))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -15332,7 +15335,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 215, mode: 'rich-demo-v215', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 217, mode: 'rich-demo-v217', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15490,7 +15493,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 215, mode: 'cloud-settings-profile-fix-v215', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 217, mode: 'home-layout-safe-area-v217', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -16171,9 +16174,11 @@
 
   function persistFinanceTemplatesState() {
     touchState();
-    saveState();
     if (cloudReady()) {
       state.financeCloud = { ...(state.financeCloud || {}), templatesPendingAt: new Date().toISOString() };
+    }
+    saveState();
+    if (cloudReady()) {
       cloudSaveHouseholdUiSettings(false)
         .then((ok) => {
           if (ok) {
@@ -16181,7 +16186,10 @@
             persistStateSnapshot();
           }
         })
-        .catch((error) => console.warn('Finance template autosync failed', error));
+        .catch((error) => {
+          persistStateSnapshot();
+          console.warn('Finance template autosync failed', error);
+        });
     }
   }
 
@@ -16637,10 +16645,20 @@
     state.cloud.autosyncStatus = 'pending';
     state.cloud.autosyncSource = source;
     persistStateSnapshot();
-    cloudAutosyncTimer = window.setTimeout(() => {
+    const quietMs = source === 'save' ? 2200 : 2800;
+    const baseDelay = source === 'save' ? 4200 : 7600;
+    const attemptAutosync = () => {
+      const elapsed = Date.now() - lastUserInteractionAt;
+      if (elapsed < quietMs) {
+        cloudAutosyncTimer = window.setTimeout(attemptAutosync, Math.max(500, quietMs - elapsed + 220));
+        return;
+      }
       cloudAutosyncTimer = null;
-      runCloudAutosyncNow(false);
-    }, 2600);
+      runWhenMainThreadFree(() => {
+        runCloudAutosyncNow(false).catch((error) => console.warn('Cloud autosync deferred run failed', error));
+      }, { timeout: 10000 });
+    };
+    cloudAutosyncTimer = window.setTimeout(attemptAutosync, baseDelay);
   }
 
   async function runCloudAutosyncNow(showMessage = true) {
@@ -16660,14 +16678,14 @@
       state.cloud.lastAutosyncAt = new Date().toISOString();
       persistStateSnapshot();
       if (showMessage) showToast('Cloud je aktuální');
-      render();
+      requestRender();
       return true;
     }
     cloudAutosyncRunning = true;
     cloudAutosyncLastAttempt = Date.now();
     state.cloud.autosyncStatus = 'syncing';
     persistStateSnapshot();
-    render();
+    requestRender();
     try {
       await withMutedToasts(async () => {
         await cloudSyncLocalPendingData(false);
@@ -16683,7 +16701,7 @@
       };
       touchState();
       persistStateSnapshot();
-      render();
+      requestRender();
       if (showMessage) showToast(after ? `Cloud sync hotový, ${after} položek chce ruční kontrolu` : 'Lokální záznamy jsou v cloudu');
       return !after;
     } catch (error) {
@@ -16695,7 +16713,7 @@
         localPendingCount: cloudLocalPendingCount()
       };
       persistStateSnapshot();
-      render();
+      requestRender();
       if (showMessage) showToast('Automatická synchronizace se nepovedla');
       return false;
     } finally {
@@ -18681,7 +18699,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 215
+        appBuild: 217
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19017,8 +19035,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 205,
-          schema_version: 80,
+          app_build: 217,
+          schema_version: 84,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -19271,7 +19289,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-215-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-217-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -19419,7 +19437,7 @@
         if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       }
       render();
-      scheduleLazyCloudLoadForModule(activeModule, { delay: 2600, quietMs: 1700 });
+      scheduleLazyCloudLoadForModule(activeModule, { delay: 3400, quietMs: 2200 });
       keepActiveNavCentered('smooth');
       keepActiveSectionTabsCentered('smooth');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -19574,7 +19592,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_215</span>
+          <span class="badge">Domácnost+ v.0.1_217</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

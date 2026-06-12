@@ -13208,7 +13208,7 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   }
 }
 
-/* Domácnost+ v.0.1_215 – Finance redesign */
+/* Domácnost+ v.0.1_216 – Finance redesign */
 .finance-dashboard-card {
   overflow: hidden;
 }
@@ -13356,7 +13356,7 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   }
 }
 
-/* Domácnost+ v.0.1_215 – Finance kontrast hotfix */
+/* Domácnost+ v.0.1_216 – Finance kontrast hotfix */
 .finance-panel,
 .finance-dashboard-card {
   background: linear-gradient(180deg, rgba(248, 250, 252, 0.90), rgba(241, 245, 249, 0.80));
@@ -13468,3 +13468,54 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 [data-theme="dark"] .finance-panel .inline-note {
   color: rgba(203, 213, 225, 0.88);
 }
+
+
+/* Domácnost+ v.0.1_217 – iPhone/PWA Home safe-area hotfix */
+:root {
+  --app-vh: 100svh;
+  --nav-bottom-lock: max(8px, env(safe-area-inset-bottom, 0px));
+  --home-nav-reserve-bottom: max(0px, calc(env(safe-area-inset-bottom, 0px) - 22px));
+}
+
+@media (max-width: 720px) {
+  :root {
+    --nav-bottom-lock: max(0px, calc(env(safe-area-inset-bottom, 0px) - 34px));
+  }
+}
+
+.nav-shell {
+  bottom: var(--nav-bottom-lock) !important;
+  transform: translate3d(-50%, 0, 0) !important;
+}
+
+.app-shell.home-app-shell {
+  height: var(--app-vh) !important;
+  min-height: var(--app-vh) !important;
+  padding-bottom: calc(var(--nav-height) + var(--home-nav-reserve-bottom) + 6px) !important;
+}
+
+.app-shell.home-app-shell .home-clean-frame,
+.app-shell.home-app-shell .home-clean-frame main {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.app-shell.home-app-shell .home-minimal-hero .station-hero-main,
+.app-shell.home-app-shell .home-minimal-hero .hero-clock-row,
+.app-shell.home-app-shell .home-minimal-hero .station-summary {
+  gap: 9px !important;
+}
+
+.app-shell.home-app-shell .home-hero-count-5 .station-hero-main,
+.app-shell.home-app-shell .home-hero-count-6 .station-hero-main,
+.app-shell.home-app-shell .home-hero-count-7 .station-hero-main,
+.app-shell.home-app-shell .home-hero-count-8 .station-hero-main {
+  grid-template-rows: minmax(0, 1.04fr) repeat(4, minmax(0, 1fr)) !important;
+}
+
+@media (max-width: 420px) {
+  .app-shell.home-app-shell {
+    padding-bottom: calc(var(--nav-height) + var(--home-nav-reserve-bottom) + 4px) !important;
+  }
+}
+
