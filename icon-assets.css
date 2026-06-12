@@ -1,4 +1,4 @@
-/* Domácnost+ v.0.1_214 – oddělené styly asset ikon */
+/* Domácnost+ v.0.1_215 – oddělené styly asset ikon */
 /* Domácnost+ v.0.1_189 – lehké asset ikony bez IMG a bez těžkého inline CSS */
 .theme-asset-icon-slot {
   display: inline-flex !important;
@@ -187,7 +187,7 @@
   }
 }
 
-/* Domácnost+ v.0.1_214 – Home panel ikony jsou kritická UI vrstva.
+/* Domácnost+ v.0.1_215 – Home panel ikony jsou kritická UI vrstva.
    Nepoužívají CSS custom-property background slot, ale přímý PNG img podle zvoleného packu.
    Důvod: na Safari/PWA se pseudo background slot uměl ztratit, zatímco spodní lišta zůstala viditelná. */
 .home-minimal-hero .station-summary-img-icon,

@@ -13208,7 +13208,7 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   }
 }
 
-/* Domácnost+ v.0.1_214 – Finance redesign */
+/* Domácnost+ v.0.1_215 – Finance redesign */
 .finance-dashboard-card {
   overflow: hidden;
 }
@@ -13356,7 +13356,7 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   }
 }
 
-/* Domácnost+ v.0.1_214 – Finance kontrast hotfix */
+/* Domácnost+ v.0.1_215 – Finance kontrast hotfix */
 .finance-panel,
 .finance-dashboard-card {
   background: linear-gradient(180deg, rgba(248, 250, 252, 0.90), rgba(241, 245, 249, 0.80));

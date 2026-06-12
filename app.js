@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_214';
+  const APP_VERSION = 'Domácnost+ v.0.1_215';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -695,8 +695,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 214,
-      mode: 'finance-contrast-hotfix-v214',
+      appBuild: 215,
+      mode: 'cloud-settings-profile-fix-v215',
       createdAt: '',
       updatedAt: ''
     },
@@ -1584,8 +1584,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 214,
-      mode: 'finance-contrast-hotfix-v214',
+      appBuild: 215,
+      mode: 'cloud-settings-profile-fix-v215',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1627,6 +1627,7 @@
       role: profile.role || (index === 0 ? 'owner' : 'member'),
       createdAt: profile.createdAt || timestamp
     }));
+    migrated.profiles = dedupeProfiles(migrated.profiles, { activeProfileId: migrated.activeProfileId });
 
     if (!migrated.profiles.some((profile) => profile.id === migrated.activeProfileId)) {
       migrated.activeProfileId = migrated.profiles[0]?.id || '';
@@ -1855,6 +1856,78 @@
       role,
       createdAt: new Date().toISOString()
     };
+  }
+
+  function profileDedupeKey(profile = {}) {
+    const userId = normalizeText(profile.userId || profile.user_id || '');
+    if (userId) return `user:${userId}`;
+    const name = normalizeKey(profile.name || profile.displayName || '');
+    if (name) return `name:${name}`;
+    const cloudId = normalizeText(profile.cloudId || '');
+    if (cloudId) return `cloud:${cloudId}`;
+    return `id:${profile.id || uid()}`;
+  }
+
+  function profileDedupeScore(profile = {}, activeProfileId = '') {
+    let score = 0;
+    if (String(profile.id || '') === String(activeProfileId || '')) score += 100;
+    if (profile.cloudId || (profile.id && !String(profile.id).startsWith('profile-'))) score += 40;
+    if (profile.userId && profile.userId === state.cloud?.userId) score += 30;
+    if (profile.isDefault) score += 20;
+    if (profile.role === 'owner') score += 10;
+    if (profile.createdAt) score += 1;
+    return score;
+  }
+
+  function dedupeProfiles(profiles = [], options = {}) {
+    const activeProfileId = options.activeProfileId || state.activeProfileId || '';
+    const byKey = new Map();
+    const order = [];
+    (Array.isArray(profiles) ? profiles : []).forEach((profile, index) => {
+      if (!profile) return;
+      const normalized = {
+        ...profile,
+        id: profile.id || profile.cloudId || `profile-${uid()}`,
+        householdId: profile.householdId || currentHouseholdId?.(false) || state.household?.id || '',
+        name: normalizeText(profile.name || profile.displayName) || `Profil ${index + 1}`,
+        role: profile.role || (index === 0 ? 'owner' : 'member'),
+        color: profile.color || ['blue', 'green', 'violet', 'orange'][index % 4],
+        createdAt: profile.createdAt || new Date().toISOString()
+      };
+      const key = profileDedupeKey(normalized);
+      const existing = byKey.get(key);
+      if (!existing) {
+        byKey.set(key, normalized);
+        order.push(key);
+        return;
+      }
+      const keepNext = profileDedupeScore(normalized, activeProfileId) > profileDedupeScore(existing, activeProfileId);
+      const primary = keepNext ? normalized : existing;
+      const secondary = keepNext ? existing : normalized;
+      byKey.set(key, {
+        ...secondary,
+        ...primary,
+        cloudId: primary.cloudId || secondary.cloudId || '',
+        userId: primary.userId || secondary.userId || '',
+        role: primary.role === 'owner' || secondary.role === 'owner' ? 'owner' : (primary.role || secondary.role || 'member'),
+        isDefault: Boolean(primary.isDefault || secondary.isDefault)
+      });
+    });
+    return order.map((key) => byKey.get(key)).filter(Boolean);
+  }
+
+  function dedupeProfilesState() {
+    const beforeActive = state.activeProfileId;
+    const activeProfile = (state.profiles || []).find((profile) => profile.id === beforeActive) || null;
+    state.profiles = dedupeProfiles(state.profiles || [], { activeProfileId: beforeActive });
+    if (!state.profiles.some((profile) => profile.id === state.activeProfileId)) {
+      const preserved = state.profiles.find((profile) => activeProfile?.cloudId && profile.cloudId === activeProfile.cloudId)
+        || state.profiles.find((profile) => normalizeKey(profile.name) === normalizeKey(activeProfile?.name))
+        || state.profiles.find((profile) => profile.isDefault)
+        || state.profiles[0];
+      state.activeProfileId = preserved?.id || '';
+    }
+    return state.profiles;
   }
 
   function getCollectionNames() {
@@ -4874,6 +4947,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_215', note: 'Cloud settings hotfix: odstraněné volání neexistující user_app_settings tabulky, vzhled a finance šablony se ukládají přes household dashboard_layout, profily se deduplikují v zobrazení i při syncu.' },
       { title: 'Domácnost+ v.0.1_214', note: 'Finance kontrast hotfix: tmavší a čitelnější formuláře, editace účtů a přehledové finanční panely, aby na světlém glass pozadí nezanikaly hodnoty ani popisky.' },
       { title: 'Domácnost+ v.0.1_213', note: 'Finance redesign: cloud-first ochrana při úpravě pohybů mezi měsíci, přehledný dashboard se zůstatkem / příjmy / výdaji / rozdílem, filtry pohybů, kopírování plateb do více měsíců a online záloha šablon přes domácí UI nastavení.' },
       { title: 'Domácnost+ v.0.1_210', note: 'Kontrola a ochrana proti duplicitám v Nákupy: balíček nemá duplicitní výchozí katalog ani privátní restore seznamy, aplikace nově deduplikuje seznamy/položky při migraci a cloud načtení a nové duplicitní položky místo vytvoření navýší množství.' },
@@ -5843,7 +5917,7 @@
         createdAt: timestamp,
         updatedAt: timestamp,
         sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v214'
+        source: 'martin-private-restore-v215'
       });
       existingListNames.add(nameKey);
       existingListIds.add(list.id);
@@ -5865,7 +5939,7 @@
         householdId: data.household?.id || '',
         profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
         createdAt: timestamp,
-        source: 'martin-private-restore-v214'
+        source: 'martin-private-restore-v215'
       }));
 
     data.shopping = [...data.shopping, ...restoredItems];
@@ -5880,7 +5954,7 @@
     martinPrivateShoppingRestorePromise = new Promise((resolve) => {
       const run = async () => {
         try {
-          const response = await fetch('./martin-shopping-restore-v214.json', { cache: 'force-cache' });
+          const response = await fetch('./martin-shopping-restore-v215.json', { cache: 'force-cache' });
           if (!response.ok) throw new Error(`restore ${response.status}`);
           const payload = await response.json();
           const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
@@ -8669,6 +8743,30 @@
     return [...byId.values()];
   }
 
+  function mergeFinanceTemplates(localTemplates = [], cloudTemplates = [], options = {}) {
+    const preferLocal = options.preferLocal === true;
+    const byId = new Map();
+    const put = (template, source) => {
+      const normalized = normalizeFinanceTemplate(template);
+      const key = String(normalized.id || normalizeKey(normalized.name));
+      const existing = byId.get(key);
+      if (!existing) {
+        byId.set(key, { ...normalized, _source: source });
+        return;
+      }
+      const existingTime = Date.parse(existing.updatedAt || existing.createdAt || '') || 0;
+      const nextTime = Date.parse(normalized.updatedAt || normalized.createdAt || '') || 0;
+      const shouldReplace = preferLocal && source === 'local'
+        ? true
+        : (!preferLocal && source === 'cloud' && nextTime >= existingTime)
+          || (source === existing._source && nextTime >= existingTime);
+      if (shouldReplace) byId.set(key, { ...normalized, _source: source });
+    };
+    normalizeFinanceTemplates(cloudTemplates).forEach((template) => put(template, 'cloud'));
+    normalizeFinanceTemplates(localTemplates).forEach((template) => put(template, 'local'));
+    return [...byId.values()].map(({ _source, ...template }) => template);
+  }
+
   function financeTemplateDefinitions() {
     const map = new Map();
     DEFAULT_FINANCE_TEMPLATES.map((template) => normalizeFinanceTemplate(template)).forEach((template) => map.set(String(template.id), template));
@@ -9837,7 +9935,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 214))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 215))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -15234,7 +15332,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 214, mode: 'rich-demo-v214', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 215, mode: 'rich-demo-v215', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15342,8 +15440,12 @@
 
   async function cloudSyncLocalProfiles(showMessage = false) {
     if (!cloudReady()) return 0;
-    const localProfiles = (state.profiles || []).filter((profile) => !profile.cloudId);
+    dedupeProfilesState();
+    const existingKeys = new Set((state.profiles || []).filter((profile) => profile.cloudId).map(profileDedupeKey));
+    const localProfiles = (state.profiles || []).filter((profile) => !profile.cloudId && !existingKeys.has(profileDedupeKey(profile)));
     if (!localProfiles.length) {
+      touchState();
+      saveState();
       if (showMessage) showToast('Žádné lokální profily k odeslání');
       return 0;
     }
@@ -15356,6 +15458,7 @@
         console.warn('Cloud profile sync failed', error);
       }
     }
+    dedupeProfilesState();
     touchState();
     saveState();
     if (showMessage) showToast(`Odesláno profilů: ${count}`);
@@ -15365,6 +15468,16 @@
   async function addProfile(name, role = 'member') {
     const cleanName = normalizeText(name);
     if (!cleanName) return;
+    const existing = (state.profiles || []).find((profile) => normalizeKey(profile.name) === normalizeKey(cleanName));
+    if (existing) {
+      state.activeProfileId = existing.id;
+      dedupeProfilesState();
+      touchState();
+      saveState();
+      render();
+      showToast('Profil už existuje, přepnul jsem na něj');
+      return;
+    }
     const profile = createProfile(cleanName, role === 'owner' ? 'owner' : 'member', currentHouseholdId());
     const saved = await cloudAddProfile(profile);
     if (saved?.id) profile.cloudId = saved.id;
@@ -15377,7 +15490,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 214, mode: 'finance-contrast-hotfix-v214', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 215, mode: 'cloud-settings-profile-fix-v215', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -16841,46 +16954,16 @@
   }
 
   async function cloudLoadUserVisualSettings(showMessage = false) {
-    const client = getSupabaseClient();
-    if (!client) return false;
-    const userId = state.cloud?.userId;
-    if (!userId) return false;
-    const { data, error } = await client
-      .from('user_app_settings')
-      .select('settings, updated_at')
-      .eq('user_id', userId)
-      .maybeSingle();
-    if (error) {
-      if (showMessage) showToast(error.message || 'Vzhled účtu se nepovedlo načíst');
-      return false;
-    }
-    if (data?.settings && mergeVisualSettings(data.settings)) {
-      state.cloud = { ...(state.cloud || {}), userVisualSettingsLoadedAt: data.updated_at || new Date().toISOString() };
-      saveLocalVisualSettings();
-      touchState();
-      saveState();
-      render();
-    }
-    return true;
+    // user_app_settings tabulka v aktuální Supabase DB neexistuje.
+    // Vzhled se proto synchronizuje přes existující households.dashboard_layout.visualSettings.
+    if (showMessage && !cloudReady()) showToast('Vzhled je uložený lokálně, cloud domácnost není připravená');
+    return false;
   }
 
   async function cloudSaveUserVisualSettings(showMessage = false) {
-    const client = getSupabaseClient();
-    if (!client) return false;
-    const userId = state.cloud?.userId;
-    if (!userId) return false;
-    const settings = getVisualSettingsSnapshot();
-    const { error } = await client
-      .from('user_app_settings')
-      .upsert({ user_id: userId, settings, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
-    if (error) {
-      if (showMessage) showToast(error.message || 'Vzhled účtu se nepovedlo uložit');
-      return false;
-    }
-    state.cloud = { ...(state.cloud || {}), userVisualSettingsLoadedAt: new Date().toISOString() };
-    saveState();
-    if (showMessage) showToast('Vzhled uložen na účet');
-    return true;
+    // Bez user_app_settings tabulky ukládáme vizuální nastavení do existujícího households.dashboard_layout.
+    if (!cloudReady()) return false;
+    return cloudSaveHouseholdUiSettings(showMessage);
   }
 
   async function cloudSyncLocalPendingData(showMessage = true) {
@@ -16890,7 +16973,6 @@
         return;
       }
       const syncers = [
-        () => cloudSaveUserVisualSettings(false),
         cloudSyncLocalProfiles,
         cloudSyncLocalShoppingItems,
         cloudSyncLocalContracts,
@@ -18326,6 +18408,7 @@
       state.profiles = [profile];
       state.activeProfileId = profile.id;
     }
+    dedupeProfilesState();
     state.settings.demoMode = false;
     state.enabledModules = normalizeModuleList(state.enabledModules?.length ? state.enabledModules : MANAGED_MODULE_IDS);
     state.settings.bottomNavIds = normalizeBottomNavIds(state.settings.bottomNavIds || DEFAULT_BOTTOM_NAV_IDS, state.enabledModules);
@@ -18557,8 +18640,11 @@
       if (/^\d{4}-\d{2}$/.test(String(layout.subscriptionSettings.month || ''))) state.settings.subscriptionMonth = String(layout.subscriptionSettings.month);
       if (['all', 'unpaid', 'debtors'].includes(layout.subscriptionSettings.paymentFilter)) state.settings.subscriptionPaymentFilter = layout.subscriptionSettings.paymentFilter;
     }
+    if (layout.visualSettings && typeof layout.visualSettings === 'object') {
+      if (mergeVisualSettings(layout.visualSettings)) saveLocalVisualSettings();
+    }
     if (Array.isArray(layout.financeTemplates)) {
-      state.financeTemplates = normalizeFinanceTemplates(layout.financeTemplates);
+      state.financeTemplates = mergeFinanceTemplates(state.financeTemplates || [], layout.financeTemplates, { preferLocal: Boolean(state.financeCloud?.templatesPendingAt) });
       state.financeCloud = { ...(state.financeCloud || {}), templatesLoadedAt: new Date().toISOString() };
     }
     if (layout.financeSettings && typeof layout.financeSettings === 'object') {
@@ -18580,6 +18666,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
+        visualSettings: getVisualSettingsSnapshot(),
         warrantyBackupCount: normalizeWarranties(state.warranties).length,
         subscriptionPeople: getSubscriptionPeople(),
         subscriptions: getSubscriptionServices(),
@@ -18594,7 +18681,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 214
+        appBuild: 215
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -18868,7 +18955,7 @@
       .order('created_at', { ascending: true });
     if (error) return false;
     if (!data?.length) return false;
-    state.profiles = data.map((profile, index) => ({
+    state.profiles = dedupeProfiles(data.map((profile, index) => ({
       id: profile.id,
       cloudId: profile.id,
       householdId: state.cloud.householdId,
@@ -18879,7 +18966,7 @@
       userId: profile.user_id || '',
       isDefault: Boolean(profile.is_default),
       createdAt: profile.created_at || new Date().toISOString()
-    }));
+    })), { activeProfileId: state.activeProfileId });
     const preserved = state.profiles.find((profile) => profile.cloudId && profile.cloudId === previousActive?.cloudId)
       || state.profiles.find((profile) => normalizeText(profile.name).toLowerCase() === normalizeText(previousActive?.name).toLowerCase())
       || state.profiles.find((profile) => profile.isDefault)
@@ -19184,7 +19271,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-214-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-215-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -19487,7 +19574,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_214</span>
+          <span class="badge">Domácnost+ v.0.1_215</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
