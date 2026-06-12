@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_217';
+  const APP_VERSION = 'Domácnost+ v.0.1_218';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -695,8 +695,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 217,
-      mode: 'home-layout-safe-area-v217',
+      appBuild: 218,
+      mode: 'finance-stability-nav-v218',
       createdAt: '',
       updatedAt: ''
     },
@@ -1584,8 +1584,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 217,
-      mode: 'home-layout-safe-area-v217',
+      appBuild: 218,
+      mode: 'finance-stability-nav-v218',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -4948,6 +4948,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_218', note: 'Stabilizační build: spodní lišta je na iPhone/PWA ukotvená níž už při prvním vykreslení, Finance ukazují účty jako samostatné panely, šablony nemají nechtěný červený stín a přidání pohybu posílá cloud uložení na pozadí.' },
       { title: 'Domácnost+ v.0.1_217', note: 'Home layout hotfix: spodní lišta je ukotvená dole hned při prvním vykreslení v PWA/Safari a hlavní Home panel dostal zpět ušetřené místo, takže čas, počasí i dlaždice mohou být vyšší.' },
       { title: 'Domácnost+ v.0.1_216', note: 'Stabilizační build: opravené slučování finance šablon podle updatedAt mezi mobilem a PC, jistější pending marker šablon, jemnější autosync mimo první klikání a silnější deduplikace profilů podle názvu.' },
       { title: 'Domácnost+ v.0.1_215', note: 'Cloud settings hotfix: odstraněné volání neexistující user_app_settings tabulky, vzhled a finance šablony se ukládají přes household dashboard_layout, profily se deduplikují v zobrazení i při syncu.' },
@@ -5876,7 +5877,7 @@
 
   let martinPrivateShoppingRestorePromise = null;
   const MARTIN_PRIVATE_RESTORE_CUTOFF_MS = Date.parse('2026-06-11T00:00:00+02:00');
-  const MARTIN_PRIVATE_RESTORE_VERSION = 217;
+  const MARTIN_PRIVATE_RESTORE_VERSION = 218;
 
   function isMartinPrivateShoppingRestoreTarget(data = state) {
     if (Number(data.shoppingPrivateRestoreVersion || 0) >= MARTIN_PRIVATE_RESTORE_VERSION) return false;
@@ -5920,7 +5921,7 @@
         createdAt: timestamp,
         updatedAt: timestamp,
         sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v217'
+        source: 'martin-private-restore-v218'
       });
       existingListNames.add(nameKey);
       existingListIds.add(list.id);
@@ -5942,7 +5943,7 @@
         householdId: data.household?.id || '',
         profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
         createdAt: timestamp,
-        source: 'martin-private-restore-v217'
+        source: 'martin-private-restore-v218'
       }));
 
     data.shopping = [...data.shopping, ...restoredItems];
@@ -5957,7 +5958,7 @@
     martinPrivateShoppingRestorePromise = new Promise((resolve) => {
       const run = async () => {
         try {
-          const response = await fetch('./martin-shopping-restore-v217.json', { cache: 'force-cache' });
+          const response = await fetch('./martin-shopping-restore-v218.json', { cache: 'force-cache' });
           if (!response.ok) throw new Error(`restore ${response.status}`);
           const payload = await response.json();
           const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
@@ -8818,7 +8819,7 @@
         <div class="quick-add-head"><strong>Šablony plateb</strong><span>Klikneš, formulář se vyplní a jen upravíš částku/datum. Šablony se dají i upravit, aby nevznikaly duplicity.</span></div>
         <div class="quick-chip-row">
           ${templates.map((template) => `
-            <span class="finance-template-chip-wrap">
+            <span class="finance-template-chip-wrap ${template.system ? 'is-system' : 'is-custom'}">
               <button class="quick-chip" type="button" data-action="finance-template" data-template="${escapeHtml(template.id)}">${escapeHtml(template.icon || '💳')} <span>${escapeHtml(template.name)}</span></button>
               <button class="tiny-ghost-btn" type="button" data-action="edit-finance-template" data-id="${escapeHtml(template.id)}" aria-label="Upravit šablonu ${escapeHtml(template.name)}">✎</button>
               ${template.system ? '' : `<button class="tiny-danger-btn" type="button" data-action="delete-finance-template" data-id="${escapeHtml(template.id)}" aria-label="Smazat šablonu ${escapeHtml(template.name)}">×</button>`}
@@ -8960,6 +8961,28 @@
     `;
   }
 
+
+  function renderFinanceAccountBalanceCards(accounts = financeAccountsSorted(), balances = financeAccountBalances()) {
+    const visibleAccounts = accounts.filter(Boolean);
+    if (!visibleAccounts.length) {
+      return renderEmptyCta({ icon: '🏦', title: 'Zatím tu není žádný účet', text: 'Přidej banku, hotovost, spoření nebo obálku. Přehled pak ukáže každý účet zvlášť.', nav: 'finance', tab: 'accounts', label: 'Přidat účet' });
+    }
+    return `
+      <div class="finance-account-balance-grid" aria-label="Zůstatky podle účtů">
+        ${visibleAccounts.map((account) => {
+          const balance = Number(balances[account.id] || 0);
+          const tone = balance < 0 ? 'bad' : account.includeInTotal === false ? 'muted' : 'good';
+          return `<article class="finance-account-balance-card ${tone}">
+            <div class="finance-account-balance-top"><span>${financeAccountIcon(account.accountType)}</span><em>${escapeHtml(financeAccountTypeLabel(account.accountType))}</em></div>
+            <strong>${escapeHtml(account.name)}</strong>
+            <b>${formatCurrency(balance)}</b>
+            <small>${account.ownerLabel ? escapeHtml(account.ownerLabel) : account.includeInTotal === false ? 'mimo celkový součet' : 'započítaný účet'}</small>
+          </article>`;
+        }).join('')}
+      </div>
+    `;
+  }
+
   function renderFinance() {
     const items = [...(state.finance || [])].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     const accounts = financeAccountsSorted();
@@ -8971,7 +8994,6 @@
     const expenseItems = visibleMonthItems.filter((item) => item.type === 'expense').sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0));
     const summary = financeMonthSummary(selectedMonth);
     const balances = financeAccountBalances();
-    const totalBalance = accounts.reduce((sum, account) => account.includeInTotal === false ? sum : sum + (balances[account.id] || 0), 0);
     const localOnly = items.filter((item) => !item.cloudId || item.syncStatus).length;
     const localAccounts = accounts.filter((account) => !account.cloudId || account.syncStatus).length;
     const categoryRows = financeCategoryBreakdown(selectedMonth);
@@ -8990,10 +9012,8 @@
       ], 'summary')}
       <div class="grid two module-tabbed finance-tab-${activeFinanceTab}" data-tab-area="finance">
         <section class="card desktop-span-2 finance-panel panel-summary finance-dashboard-card">
-          <div class="finance-hero-card">
-            <div><span class="eyebrow">Celkový zůstatek</span><strong>${formatCurrency(totalBalance)}</strong><p>${escapeHtml(financeMonthLabel(selectedMonth))} · ${escapeHtml(cloudNote)}</p></div>
-            <span class="badge ${state.cloud?.householdId && !localOnly && !localAccounts ? 'good' : localOnly || localAccounts ? 'warn' : ''}">${state.cloud?.householdId ? 'cloud-first' : 'lokálně'}</span>
-          </div>
+          <div class="card-header finance-overview-head"><div><h2>Účty zvlášť</h2><p>${escapeHtml(financeMonthLabel(selectedMonth))} · ${escapeHtml(cloudNote)}</p></div><span class="badge ${state.cloud?.householdId && !localOnly && !localAccounts ? 'good' : localOnly || localAccounts ? 'warn' : ''}">${state.cloud?.householdId ? 'cloud-first' : 'lokálně'}</span></div>
+          ${renderFinanceAccountBalanceCards(accounts, balances)}
           <div class="finance-kpi-row">
             <div class="finance-kpi income"><span>Příjmy</span><strong>${formatCurrency(summary.income)}</strong></div>
             <div class="finance-kpi expense"><span>Výdaje</span><strong>${formatCurrency(summary.expense)}</strong></div>
@@ -9938,7 +9958,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 217))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 218))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -14916,6 +14936,27 @@
     if (handler) await handler();
   }
 
+
+  async function guardedHandleForm(form) {
+    if (!form || form.dataset.busy === 'true') return;
+    form.dataset.busy = 'true';
+    const submitButtons = [...form.querySelectorAll('button[type="submit"]')];
+    submitButtons.forEach((button) => { button.disabled = true; button.dataset.busySubmit = 'true'; });
+    try {
+      await handleForm(form);
+    } finally {
+      window.setTimeout(() => {
+        form.dataset.busy = 'false';
+        submitButtons.forEach((button) => {
+          if (button.dataset.busySubmit === 'true') {
+            button.disabled = false;
+            delete button.dataset.busySubmit;
+          }
+        });
+      }, 240);
+    }
+  }
+
   async function completeOnboarding(data) {
     const email = normalizeText(data.email).toLowerCase();
     const password = String(data.password || '');
@@ -15335,7 +15376,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 217, mode: 'rich-demo-v217', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 218, mode: 'rich-demo-v218', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15493,7 +15534,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 217, mode: 'home-layout-safe-area-v217', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 218, mode: 'finance-stability-nav-v218', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -16358,6 +16399,38 @@
     schedule(() => document.querySelector('[data-form="update-finance-account"]')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }));
   }
 
+
+  function queueFinanceCloudAdd(item) {
+    if (!cloudReady() || !item) return;
+    window.setTimeout(async () => {
+      try {
+        const saved = await cloudAddFinance(item);
+        if (saved?.id) {
+          item.cloudId = saved.id;
+          item.syncStatus = '';
+          clearFinanceCloudPendingIfClean();
+          touchState();
+          saveState();
+          requestRender();
+          showToast('Finance uloženy do cloudu');
+          return;
+        }
+        item.syncStatus = 'pending_add';
+        markFinanceCloudPending('add-finance-failed');
+        persistStateSnapshot();
+        requestRender();
+        showToast('Finance zůstaly lokálně a čekají na cloud');
+      } catch (error) {
+        console.warn('Finance background cloud add failed', error);
+        item.syncStatus = 'pending_add';
+        markFinanceCloudPending('add-finance-failed');
+        persistStateSnapshot();
+        requestRender();
+        showToast('Finance zůstaly lokálně a čekají na cloud');
+      }
+    }, 80);
+  }
+
   async function addFinanceFromForm(data, form) {
     let type = data.type === 'income' ? 'income' : data.type === 'transfer' ? 'transfer' : 'expense';
     const accountId = normalizeText(data.accountId);
@@ -16390,22 +16463,10 @@
     form.reset();
     render();
     if (cloudReady()) {
-      const saved = await cloudAddFinance(item);
-      if (saved?.id) {
-        item.cloudId = saved.id;
-        item.syncStatus = '';
-        clearFinanceCloudPendingIfClean();
-        touchState();
-        saveState();
-        requestRender();
-        showToast('Finance uloženy do cloudu');
-        return;
-      }
       item.syncStatus = 'pending_add';
-      markFinanceCloudPending('add-finance-failed');
       persistStateSnapshot();
-      requestRender();
-      showToast('Finance zůstaly lokálně a čekají na cloud');
+      queueFinanceCloudAdd(item);
+      showToast('Pohyb přidaný, cloud se doposílá na pozadí');
       return;
     }
     showToast('Finance uloženy lokálně');
@@ -18699,7 +18760,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 217
+        appBuild: 218
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19035,7 +19096,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 217,
+          app_build: 218,
           schema_version: 84,
           created_by: user.id,
           ...householdUiPayload()
@@ -19289,7 +19350,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-217-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-218-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -19457,7 +19518,7 @@
 
   app.addEventListener('submit', (event) => {
     event.preventDefault();
-    Promise.resolve(handleForm(event.target)).catch((error) => {
+    Promise.resolve(guardedHandleForm(event.target)).catch((error) => {
       console.error('Form failed', event.target?.dataset?.form, error);
       showToast('Formulář se nepovedlo uložit.');
     });
@@ -19592,7 +19653,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_217</span>
+          <span class="badge">Domácnost+ v.0.1_218</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

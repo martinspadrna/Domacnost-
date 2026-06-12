@@ -13519,3 +13519,193 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   }
 }
 
+
+/* Domácnost+ v.0.1_218 – Finance stabilizace + iPhone/PWA spodní lišta */
+:root {
+  --nav-bottom-lock: 0px;
+  --home-nav-reserve-bottom: 0px;
+}
+
+@media (max-width: 720px) {
+  .nav-shell {
+    bottom: var(--nav-bottom-lock) !important;
+    transform: translate3d(-50%, 0, 0) !important;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 720px) {
+    :root {
+      --nav-bottom-lock: -24px;
+      --home-nav-reserve-bottom: 0px;
+    }
+
+    .app-shell {
+      padding-bottom: calc(var(--nav-height) + 2px) !important;
+    }
+
+    .app-shell.home-app-shell {
+      padding-bottom: calc(var(--nav-height) + 2px) !important;
+    }
+
+    .home-hero-count-0.home-minimal-hero,
+    .home-hero-count-1.home-minimal-hero,
+    .home-hero-count-2.home-minimal-hero,
+    .home-hero-count-3.home-minimal-hero,
+    .home-hero-count-4.home-minimal-hero,
+    .home-hero-count-5.home-minimal-hero,
+    .home-hero-count-6.home-minimal-hero,
+    .home-hero-count-7.home-minimal-hero,
+    .home-hero-count-8.home-minimal-hero {
+      height: calc(var(--app-vh) - var(--nav-height) + 6px) !important;
+      max-height: calc(var(--app-vh) - var(--nav-height) + 6px) !important;
+    }
+  }
+}
+
+.finance-overview-head {
+  margin-bottom: 12px;
+}
+
+.finance-account-balance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 10px;
+  margin: 2px 0 14px;
+}
+
+.finance-account-balance-card {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  padding: 13px;
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255,255,255,.66), rgba(255,255,255,.36));
+  border: 1px solid rgba(255,255,255,.58);
+  box-shadow: inset 0 0 0 1px rgba(148,163,184,.12), 0 12px 28px rgba(15,23,42,.08);
+}
+
+[data-theme="dark"] .finance-account-balance-card {
+  background: linear-gradient(145deg, rgba(30,41,59,.72), rgba(15,23,42,.46));
+  border-color: rgba(148,163,184,.18);
+}
+
+.finance-account-balance-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 800;
+}
+
+.finance-account-balance-top span {
+  font-size: 1.25rem;
+}
+
+.finance-account-balance-card strong,
+.finance-account-balance-card small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.finance-account-balance-card strong {
+  font-size: .98rem;
+}
+
+.finance-account-balance-card b {
+  font-size: clamp(1.18rem, 4.2vw, 1.55rem);
+  line-height: 1;
+}
+
+.finance-account-balance-card.good b {
+  color: #16a34a;
+}
+
+.finance-account-balance-card.bad b {
+  color: #e11d48;
+}
+
+.finance-account-balance-card.muted b {
+  color: var(--muted);
+}
+
+.finance-account-balance-card small {
+  color: var(--muted);
+  font-size: .74rem;
+  font-weight: 800;
+}
+
+.finance-template-panel .quick-chip-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  overflow: visible;
+  padding-bottom: 0;
+}
+
+.finance-template-chip-wrap {
+  min-width: 0;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.finance-template-chip-wrap.is-custom {
+  grid-template-columns: minmax(0, 1fr) 42px 34px;
+}
+
+.finance-template-chip-wrap .quick-chip {
+  min-width: 0 !important;
+  max-width: none !important;
+  width: 100%;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.finance-template-chip-wrap .quick-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.finance-template-panel .tiny-ghost-btn,
+.finance-template-panel .tiny-danger-btn {
+  min-width: 0;
+  width: 100%;
+  height: 42px;
+  padding: 0;
+  border-radius: 16px;
+  box-shadow: inset 0 0 0 1px rgba(148,163,184,.24);
+}
+
+.finance-template-panel .tiny-danger-btn {
+  background: rgba(148, 163, 184, 0.14);
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px rgba(148,163,184,.22);
+}
+
+.finance-template-panel .tiny-danger-btn:active,
+.finance-template-panel .tiny-danger-btn:focus-visible {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ef4444;
+}
+
+@media (max-width: 480px) {
+  .finance-account-balance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .finance-template-panel .quick-chip-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+form[data-busy="true"] button[type="submit"] {
+  opacity: .72;
+  pointer-events: none;
+}
