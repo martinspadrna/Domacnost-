@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_211';
+  const APP_VERSION = 'Domácnost+ v.0.1_212';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -694,9 +694,9 @@
   const VISUAL_SETTINGS_STORAGE_KEY = 'domacnostPlus.visualSettings.v1';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 82,
-      appBuild: 211,
-      mode: 'finance-templates-v211',
+      schemaVersion: 83,
+      appBuild: 212,
+      mode: 'finance-template-edit-autosync-v212',
       createdAt: '',
       updatedAt: ''
     },
@@ -1031,6 +1031,7 @@
   let couponEditId = '';
   let financeEditId = '';
   let financeAccountEditId = '';
+  let financeTemplateEditId = '';
   let shoppingQuantityEditId = '';
   let shoppingDoneModalOpen = false;
   let shoppingSwipeStart = null;
@@ -1068,6 +1069,11 @@
   let cloudWarmStartTimer = null;
   let bootCloudMaintenanceTimer = null;
   let bootBackgroundCloudLoadTimer = null;
+  let googleCalendarAutoSyncTimer = null;
+  let googleCalendarAutoSyncRunning = false;
+  let lastUserInteractionAt = Date.now();
+  const UI_INTERACTION_QUIET_MS = 1400;
+  const GOOGLE_CALENDAR_AUTO_SYNC_MAX_AGE_MS = 2 * 60 * 60 * 1000;
   const lazyModuleCloudLoads = new Map();
 
   const app = document.getElementById('app');
@@ -1576,9 +1582,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 82,
-      appBuild: 211,
-      mode: 'finance-templates-v211',
+      schemaVersion: 83,
+      appBuild: 212,
+      mode: 'finance-template-edit-autosync-v212',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2153,6 +2159,20 @@
     return 0;
   }
 
+  function runWhenUiQuiet(callback, options = {}) {
+    const delay = Number(options.delay || 0);
+    const quietMs = Number(options.quietMs || UI_INTERACTION_QUIET_MS);
+    const timeout = Number(options.timeout || 4200);
+    const attempt = () => {
+      const elapsed = Date.now() - lastUserInteractionAt;
+      if (elapsed < quietMs) {
+        return window.setTimeout(attempt, Math.max(80, quietMs - elapsed + 80));
+      }
+      return runWhenMainThreadFree(callback, { timeout });
+    };
+    return window.setTimeout(attempt, Math.max(0, delay));
+  }
+
   function yieldToMainThread() {
     return new Promise((resolve) => window.setTimeout(resolve, 0));
   }
@@ -2162,7 +2182,7 @@
     cloudWarmStartTimer = runWhenMainThreadFree(() => {
       cloudWarmStartTimer = null;
       cloudWarmStartLoad(false).catch((error) => console.warn('Cloud warm start failed', error));
-    }, { delay: 5200, timeout: 9000 });
+    }, { delay: 6200, timeout: 9000 });
   }
 
   function scheduleBootCloudMaintenance() {
@@ -2170,7 +2190,7 @@
     bootCloudMaintenanceTimer = runWhenMainThreadFree(() => {
       bootCloudMaintenanceTimer = null;
       scheduleCloudAutosync('boot-idle');
-    }, { delay: 18000, timeout: 9000 });
+    }, { delay: 32000, timeout: 9000 });
   }
 
   function scheduleBootBackgroundCloudLoad() {
@@ -2178,7 +2198,7 @@
     bootBackgroundCloudLoadTimer = runWhenMainThreadFree(() => {
       bootBackgroundCloudLoadTimer = null;
       cloudBackgroundLoadAllModules(false).catch((error) => console.warn('Background cloud load failed', error));
-    }, { delay: 9000, timeout: 15000 });
+    }, { delay: 18000, timeout: 15000 });
   }
 
   function scheduleLazyCloudLoadForModule(moduleId, options = {}) {
@@ -2186,15 +2206,16 @@
     if (!id || id === 'home' || id === MORE_MODULE.id || !cloudReady() || isDemoOnlyState()) return;
     if (lazyModuleCloudLoads.get(id) === 'loaded' || lazyModuleCloudLoads.get(id) === 'loading') return;
     lazyModuleCloudLoads.set(id, 'loading');
-    runWhenMainThreadFree(async () => {
+    runWhenUiQuiet(async () => {
       try {
         await cloudLoadModuleForNav(id, false);
         lazyModuleCloudLoads.set(id, 'loaded');
+        if (id === 'calendar') scheduleGoogleCalendarAutoSync('calendar-open', { delay: 1800 });
       } catch (error) {
         lazyModuleCloudLoads.delete(id);
         console.warn('Lazy module cloud load failed', id, error);
       }
-    }, { delay: Number(options.delay || 240), timeout: 6000 });
+    }, { delay: Number(options.delay || 2200), quietMs: Number(options.quietMs || 1500), timeout: 7000 });
   }
 
   function requestRender() {
@@ -4852,7 +4873,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_211', note: 'Výkonový build: start už netahá všechny cloud moduly najednou, Nákupy odklikávají položky optimisticky hned v UI a Finance mají úpravu pohybů/účtů + vlastní šablony opakovaných plateb.' },
+      { title: 'Domácnost+ v.0.1_212', note: 'Stabilizační build: po prvním kliknutí se cloud dočítá až při klidném UI, Finance umí upravovat i existující šablony bez duplicit a Google kalendáře mají tichý automatický sync po startu / otevření kalendáře.' },
       { title: 'Domácnost+ v.0.1_210', note: 'Kontrola a ochrana proti duplicitám v Nákupy: balíček nemá duplicitní výchozí katalog ani privátní restore seznamy, aplikace nově deduplikuje seznamy/položky při migraci a cloud načtení a nové duplicitní položky místo vytvoření navýší množství.' },
       { title: 'Domácnost+ v.0.1_209', note: 'Home ikonky opravené systémově: kritické ikony panelů se vykreslují přímo přes PNG podle zvoleného icon packu a CSS background slot zůstává jen mimo Home.' },
       { title: 'Domácnost+ v.0.1_207', note: 'Hotfix Home ikon: panelové ikonky na hlavní obrazovce znovu respektují zvolený icon pack. SVG/glass render zůstává jen jako nouzový fallback, když asset chybí.' },
@@ -5820,7 +5841,7 @@
         createdAt: timestamp,
         updatedAt: timestamp,
         sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v211'
+        source: 'martin-private-restore-v212'
       });
       existingListNames.add(nameKey);
       existingListIds.add(list.id);
@@ -5842,7 +5863,7 @@
         householdId: data.household?.id || '',
         profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
         createdAt: timestamp,
-        source: 'martin-private-restore-v211'
+        source: 'martin-private-restore-v212'
       }));
 
     data.shopping = [...data.shopping, ...restoredItems];
@@ -5857,7 +5878,7 @@
     martinPrivateShoppingRestorePromise = new Promise((resolve) => {
       const run = async () => {
         try {
-          const response = await fetch('./martin-shopping-restore-v211.json', { cache: 'force-cache' });
+          const response = await fetch('./martin-shopping-restore-v212.json', { cache: 'force-cache' });
           if (!response.ok) throw new Error(`restore ${response.status}`);
           const payload = await response.json();
           const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
@@ -8633,20 +8654,24 @@
   }
 
   function normalizeFinanceTemplates(templates = []) {
-    const seen = new Set();
-    return (Array.isArray(templates) ? templates : [])
+    const byId = new Map();
+    const byContent = new Set();
+    (Array.isArray(templates) ? templates : [])
       .map((template) => normalizeFinanceTemplate(template))
-      .filter((template) => {
-        const key = normalizeKey(`${template.name}|${template.title}|${template.type}|${template.amount}|${template.category}|${template.accountId}|${template.transferAccountId}`);
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
+      .forEach((template) => {
+        const contentKey = normalizeKey(`${template.name}|${template.title}|${template.type}|${template.amount}|${template.category}|${template.accountId}|${template.transferAccountId}|${template.note}`);
+        if (!template.id && byContent.has(contentKey)) return;
+        byContent.add(contentKey);
+        byId.set(String(template.id || contentKey), template);
       });
+    return [...byId.values()];
   }
 
   function financeTemplateDefinitions() {
-    const custom = normalizeFinanceTemplates(state.financeTemplates || []);
-    return [...DEFAULT_FINANCE_TEMPLATES.map((template) => normalizeFinanceTemplate(template)), ...custom];
+    const map = new Map();
+    DEFAULT_FINANCE_TEMPLATES.map((template) => normalizeFinanceTemplate(template)).forEach((template) => map.set(String(template.id), template));
+    normalizeFinanceTemplates(state.financeTemplates || []).forEach((template) => map.set(String(template.id), { ...template, system: false }));
+    return [...map.values()];
   }
 
   function financeTemplateById(id) {
@@ -8670,36 +8695,55 @@
   function renderFinanceTemplatePanel(accounts = financeAccountsSorted()) {
     const templates = financeTemplateDefinitions();
     const customTemplates = normalizeFinanceTemplates(state.financeTemplates || []);
+    const editTemplate = financeTemplateEditId ? financeTemplateById(financeTemplateEditId) : null;
+    const formTemplate = editTemplate || normalizeFinanceTemplate({
+      id: '',
+      name: '',
+      icon: '💳',
+      type: 'expense',
+      title: '',
+      amount: '',
+      category: 'housing',
+      paymentMethod: 'bank_transfer',
+      accountId: accounts[0]?.id || '',
+      transferAccountId: '',
+      note: ''
+    });
+    const isTemplateEdit = Boolean(editTemplate);
     return `
       <div class="quick-add-panel finance-template-panel">
-        <div class="quick-add-head"><strong>Šablony plateb</strong><span>Klikneš, formulář se vyplní a jen upravíš částku/datum.</span></div>
+        <div class="quick-add-head"><strong>Šablony plateb</strong><span>Klikneš, formulář se vyplní a jen upravíš částku/datum. Šablony se dají i upravit, aby nevznikaly duplicity.</span></div>
         <div class="quick-chip-row">
           ${templates.map((template) => `
             <span class="finance-template-chip-wrap">
               <button class="quick-chip" type="button" data-action="finance-template" data-template="${escapeHtml(template.id)}">${escapeHtml(template.icon || '💳')} <span>${escapeHtml(template.name)}</span></button>
+              <button class="tiny-ghost-btn" type="button" data-action="edit-finance-template" data-id="${escapeHtml(template.id)}" aria-label="Upravit šablonu ${escapeHtml(template.name)}">✎</button>
               ${template.system ? '' : `<button class="tiny-danger-btn" type="button" data-action="delete-finance-template" data-id="${escapeHtml(template.id)}" aria-label="Smazat šablonu ${escapeHtml(template.name)}">×</button>`}
             </span>
           `).join('')}
         </div>
-        <details class="action-details compact-edit-details finance-template-details">
-          <summary><span>Vytvořit vlastní šablonu</span><em>nájem, elektřina, plyn, pojistky...</em></summary>
-          <form data-form="add-finance-template" class="compact-form">
+        <details class="action-details compact-edit-details finance-template-details" ${isTemplateEdit ? 'open' : ''}>
+          <summary><span>${isTemplateEdit ? 'Upravit šablonu' : 'Vytvořit vlastní šablonu'}</span><em>${isTemplateEdit ? escapeHtml(formTemplate.name) : 'nájem, elektřina, plyn, pojistky...'}</em></summary>
+          <form data-form="${isTemplateEdit ? 'update-finance-template' : 'add-finance-template'}" ${isTemplateEdit ? `data-id="${escapeHtml(formTemplate.id)}"` : ''} class="compact-form">
             <div class="form-grid two">
-              ${field('Název šablony', 'name', 'text', 'např. Nájem / Elektřina / Plyn', true)}
-              ${field('Ikona', 'icon', 'text', '🏠', false, '💳')}
-              ${selectField('Typ', 'type', [['expense', 'Výdaj'], ['income', 'Příjem'], ['transfer', 'Přesun mezi účty']], 'expense')}
-              ${selectField('Účet', 'accountId', financeAccountOptions(true), accounts[0]?.id || '')}
-              ${selectField('Cílový účet u přesunu', 'transferAccountId', financeAccountOptions(false), '')}
-              ${field('Název pohybu', 'title', 'text', 'např. Nájem', true)}
-              ${field('Částka', 'amount', 'number', 'volitelné')}
-              ${selectField('Kategorie', 'category', financeCategoryOptions(), 'housing')}
-              ${selectField('Platba', 'paymentMethod', [['card', 'Kartou'], ['cash', 'Hotově'], ['bank_transfer', 'Převod'], ['direct_debit', 'Inkaso'], ['other', 'Jiné']], 'bank_transfer')}
-              ${field('Poznámka', 'note', 'text', 'volitelné')}
+              ${field('Název šablony', 'name', 'text', 'např. Nájem / Elektřina / Plyn', true, formTemplate.name || '')}
+              ${field('Ikona', 'icon', 'text', '🏠', false, formTemplate.icon || '💳')}
+              ${selectField('Typ', 'type', [['expense', 'Výdaj'], ['income', 'Příjem'], ['transfer', 'Přesun mezi účty']], formTemplate.type || 'expense')}
+              ${selectField('Účet', 'accountId', financeAccountOptions(true), financeTemplateAccountFallback(formTemplate, accounts))}
+              ${selectField('Cílový účet u přesunu', 'transferAccountId', financeAccountOptions(false), financeTemplateTransferFallback(formTemplate, accounts, financeTemplateAccountFallback(formTemplate, accounts)))}
+              ${field('Název pohybu', 'title', 'text', 'např. Nájem', true, formTemplate.title || '')}
+              ${field('Částka', 'amount', 'number', 'volitelné', false, formTemplate.amount ?? '')}
+              ${selectField('Kategorie', 'category', financeCategoryOptions(), formTemplate.category || 'housing')}
+              ${selectField('Platba', 'paymentMethod', [['card', 'Kartou'], ['cash', 'Hotově'], ['bank_transfer', 'Převod'], ['direct_debit', 'Inkaso'], ['other', 'Jiné']], formTemplate.paymentMethod || 'bank_transfer')}
+              ${field('Poznámka', 'note', 'text', 'volitelné', false, formTemplate.note || '')}
             </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Uložit šablonu</button></div>
+            <div class="form-actions">
+              <button class="primary-btn" type="submit">${isTemplateEdit ? 'Uložit úpravu šablony' : 'Uložit šablonu'}</button>
+              ${isTemplateEdit ? '<button class="ghost-btn" type="button" data-action="finance-template-edit-cancel">Zrušit úpravu</button>' : ''}
+            </div>
           </form>
         </details>
-        ${customTemplates.length ? `<div class="inline-note">Vlastních šablon: ${customTemplates.length}. Šablony jsou zatím lokální pro tuto domácnost/export, bez zásahu do DB.</div>` : ''}
+        ${customTemplates.length ? `<div class="inline-note">Vlastních/upravených šablon: ${customTemplates.length}. Šablony jsou zatím lokální pro tuto domácnost/export, bez zásahu do DB.</div>` : ''}
       </div>
     `;
   }
@@ -12887,6 +12931,9 @@
     };
     touchState();
     saveState();
+    if (sources.some((source) => normalizeCalendarSourceProvider(source.provider) === 'google')) {
+      scheduleGoogleCalendarAutoSync('sources-loaded', { delay: showMessage ? 1800 : 9000 });
+    }
     if (showMessage) {
       render();
       showToast('Zdroje kalendáře načtené');
@@ -13175,6 +13222,47 @@
     }
   }
 
+
+  function googleCalendarSourceSyncMs(source = {}) {
+    const raw = source.lastSyncedAt || source.last_synced_at || state.calendarCloud?.googleLastSyncAt || '';
+    const ms = raw ? Date.parse(raw) : 0;
+    return Number.isFinite(ms) ? ms : 0;
+  }
+
+  function googleCalendarAutoSyncNeeded(sources = getCalendarSources()) {
+    const googleSources = (sources || []).filter((source) => normalizeCalendarSourceProvider(source.provider) === 'google' && source.isEnabled !== false);
+    if (!googleSources.length) return false;
+    const connection = googleCalendarConnection();
+    const status = String(connection?.status || '').toLowerCase();
+    const tokenState = String(connection?.tokenState || '').toLowerCase();
+    if (status === 'connected' && tokenState === 'missing') return false;
+    const nowMs = Date.now();
+    return googleSources.some((source) => {
+      const syncedMs = googleCalendarSourceSyncMs(source);
+      return !syncedMs || nowMs - syncedMs > GOOGLE_CALENDAR_AUTO_SYNC_MAX_AGE_MS;
+    });
+  }
+
+  function scheduleGoogleCalendarAutoSync(reason = 'auto', options = {}) {
+    if (googleCalendarAutoSyncTimer || googleCalendarAutoSyncRunning || !cloudReady() || isDemoOnlyState()) return;
+    googleCalendarAutoSyncTimer = runWhenUiQuiet(async () => {
+      googleCalendarAutoSyncTimer = null;
+      if (googleCalendarAutoSyncRunning || !cloudReady() || isDemoOnlyState()) return;
+      googleCalendarAutoSyncRunning = true;
+      try {
+        let sources = getCalendarSources();
+        if (!sources.length || options.forceLoadSources) sources = await cloudLoadCalendarSources(false);
+        if (options.force || googleCalendarAutoSyncNeeded(sources)) {
+          await googleCalendarSync('', { showMessage: false, auto: true, reason });
+        }
+      } catch (error) {
+        console.warn('Google Calendar auto sync failed', reason, error);
+      } finally {
+        googleCalendarAutoSyncRunning = false;
+      }
+    }, { delay: Number(options.delay || 12000), quietMs: Number(options.quietMs || 2200), timeout: Number(options.timeout || 12000) });
+  }
+
   async function googleCalendarStart(options = {}) {
     const data = await invokeGoogleCalendarFunction('google-calendar-start', { returnTo: APP_PUBLIC_URL, cleanup: options.cleanup !== false }, true);
     if (data?.connection) {
@@ -13232,10 +13320,12 @@
     touchState();
     saveState();
     render();
+    scheduleGoogleCalendarAutoSync('sources-saved', { delay: 1800, force: true });
     showToast(savedSources.length ? `Uloženo Google kalendářů: ${savedSources.length}` : 'Výběr Google kalendářů uložen');
   }
 
-  async function googleCalendarSync(sourceId = '') {
+  async function googleCalendarSync(sourceId = '', options = {}) {
+    const showMessage = options.showMessage !== false;
     const cleanSourceId = normalizeText(sourceId);
     let sources = getCalendarSources();
     if (!sources.length && state.cloud?.householdId) sources = await cloudLoadCalendarSources(false);
@@ -13244,7 +13334,7 @@
 
     if (cleanSourceId) {
       const source = getCalendarSource(cleanSourceId) || googleSources.find((item) => [item.id, item.cloudId].filter(Boolean).map(String).includes(cleanSourceId));
-      if (!source || normalizeCalendarSourceProvider(source.provider) !== 'google') return showToast('Google kalendář nenalezen');
+      if (!source || normalizeCalendarSourceProvider(source.provider) !== 'google') { if (showMessage) showToast('Google kalendář nenalezen'); return false; }
       body.sourceId = source.cloudId || source.id;
       body.sourceIds = [source.cloudId || source.id].filter(Boolean);
       body.calendarIds = [source.providerCalendarId].filter(Boolean);
@@ -13253,8 +13343,8 @@
       body.calendarIds = googleSources.map((source) => source.providerCalendarId).filter(Boolean);
     }
 
-    const data = await invokeGoogleCalendarFunction('google-calendar-sync', body, true);
-    if (!data) return;
+    const data = await invokeGoogleCalendarFunction('google-calendar-sync', body, showMessage);
+    if (!data) return false;
     const syncedSources = (data.sources || []).map(mapCalendarSource);
     state.calendarCloud = {
       ...(state.calendarCloud || {}),
@@ -13263,8 +13353,9 @@
       googleLastSyncAt: new Date().toISOString()
     };
     await cloudLoadCalendar(false);
-    render();
-    showToast(`Google sync hotový${Number.isFinite(data.eventsUpserted) ? ` · ${data.eventsUpserted} událostí` : ''}`);
+    requestRender();
+    if (showMessage) showToast(`Google sync hotový${Number.isFinite(data.eventsUpserted) ? ` · ${data.eventsUpserted} událostí` : ''}`);
+    return true;
   }
 
   async function googleCalendarDisconnect() {
@@ -14638,6 +14729,7 @@
       'update-finance-account': () => updateFinanceAccountFromForm(form.dataset.id, data, form),
       'add-managed-finance-set': () => addManagedFinanceSetFromForm(data, form),
       'add-finance-template': () => addFinanceTemplateFromForm(data, form),
+      'update-finance-template': () => updateFinanceTemplateFromForm(form.dataset.id, data, form),
       'add-finance': () => addFinanceFromForm(data, form),
       'update-finance': () => updateFinanceFromForm(form.dataset.id, data, form),
       'finance-month-filter': () => setFinanceMonth(data.month),
@@ -15070,7 +15162,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 82, appBuild: 211, mode: 'rich-demo-v211', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 83, appBuild: 212, mode: 'rich-demo-v212', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15213,7 +15305,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 82, appBuild: 211, mode: 'finance-templates-v211', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 83, appBuild: 212, mode: 'finance-template-edit-autosync-v212', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -15815,11 +15907,13 @@
     showToast('Šablona vyplněná, můžeš upravit a uložit');
   }
 
-  function financeTemplateFromFormData(data = {}, nameOverride = '') {
+  function financeTemplateFromFormData(data = {}, nameOverride = '', idOverride = '') {
     const type = data.type === 'income' ? 'income' : data.type === 'transfer' ? 'transfer' : 'expense';
     const category = normalizeText(data.category) || (type === 'income' ? 'other_income' : 'other_expense');
+    const existingId = normalizeText(idOverride || data.id);
+    const existingByName = !existingId ? financeTemplateDefinitions().find((template) => normalizeKey(template.name) === normalizeKey(nameOverride || data.name || data.title)) : null;
     return normalizeFinanceTemplate({
-      id: `finance-template-${uid()}`,
+      id: existingId || existingByName?.id || `finance-template-${uid()}`,
       householdId: currentHouseholdId(),
       profileId: currentProfileId(),
       createdAt: new Date().toISOString(),
@@ -15838,15 +15932,53 @@
     });
   }
 
+  function upsertFinanceTemplate(template) {
+    const normalized = normalizeFinanceTemplate({ ...template, system: false, updatedAt: new Date().toISOString() });
+    const current = normalizeFinanceTemplates(state.financeTemplates || []);
+    const indexById = current.findIndex((item) => String(item.id) === String(normalized.id));
+    if (indexById >= 0) current[indexById] = { ...current[indexById], ...normalized, system: false };
+    else {
+      const indexByName = current.findIndex((item) => normalizeKey(item.name) === normalizeKey(normalized.name));
+      if (indexByName >= 0) current[indexByName] = { ...current[indexByName], ...normalized, id: current[indexByName].id, system: false };
+      else current.push(normalized);
+    }
+    state.financeTemplates = normalizeFinanceTemplates(current);
+    return normalized;
+  }
+
   function addFinanceTemplateFromForm(data, form) {
     const template = financeTemplateFromFormData(data);
     if (!template.name || !template.title) return showToast('Doplň název šablony a pohybu');
-    state.financeTemplates = normalizeFinanceTemplates([...(state.financeTemplates || []), template]);
+    upsertFinanceTemplate(template);
+    financeTemplateEditId = '';
     touchState();
     saveState();
     form?.reset?.();
     render();
     showToast(`Šablona ${template.name} uložená`);
+  }
+
+  function updateFinanceTemplateFromForm(id, data, form) {
+    const existing = financeTemplateById(id);
+    if (!existing) return showToast('Šablona nenalezená');
+    const template = financeTemplateFromFormData(data, data.name || existing.name, existing.id);
+    if (!template.name || !template.title) return showToast('Doplň název šablony a pohybu');
+    upsertFinanceTemplate({ ...existing, ...template, id: existing.id, createdAt: existing.createdAt || new Date().toISOString(), system: false });
+    financeTemplateEditId = '';
+    touchState();
+    saveState();
+    form?.reset?.();
+    render();
+    showToast(`Šablona ${template.name} upravená`);
+  }
+
+  function editFinanceTemplate(id) {
+    const template = financeTemplateById(id);
+    if (!template) return showToast('Šablona nenalezená');
+    financeTemplateEditId = template.id;
+    moduleTabs = { ...(moduleTabs || {}), finance: 'add' };
+    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    render();
   }
 
   function saveFinanceTemplateFromVisibleForm(form) {
@@ -15855,19 +15987,22 @@
     const defaultName = normalizeText(data.title) || 'Nová šablona';
     const name = normalizeText(window.prompt('Název šablony', defaultName));
     if (!name) return;
-    const template = financeTemplateFromFormData(data, name);
-    state.financeTemplates = normalizeFinanceTemplates([...(state.financeTemplates || []), template]);
+    const existing = financeTemplateDefinitions().find((template) => normalizeKey(template.name) === normalizeKey(name));
+    const template = financeTemplateFromFormData(data, name, existing?.id || '');
+    upsertFinanceTemplate(template);
+    financeTemplateEditId = '';
     touchState();
     saveState();
     render();
-    showToast(`Šablona ${template.name} uložená`);
+    showToast(existing ? `Šablona ${template.name} upravená` : `Šablona ${template.name} uložená`);
   }
 
   function deleteFinanceTemplate(id) {
     const template = (state.financeTemplates || []).find((item) => item.id === id);
     if (!template) return;
     if (!window.confirm(`Smazat šablonu ${template.name}?`)) return;
-    state.financeTemplates = (state.financeTemplates || []).filter((item) => item.id !== id);
+    state.financeTemplates = (state.financeTemplates || []).filter((item) => String(item.id) !== String(id));
+    if (financeTemplateEditId === id) financeTemplateEditId = '';
     touchState();
     saveState();
     render();
@@ -16544,12 +16679,14 @@
       requestRender();
       scheduleBootBackgroundCloudLoad();
       scheduleBootCloudMaintenance();
+      scheduleGoogleCalendarAutoSync('boot', { delay: 26000 });
       if (showMessage) showToast('Cloud domácnost připravená, data se dočítají na pozadí');
     });
   }
 
-  async function cloudLoadModuleForNav(moduleId, showMessage = false) {
+  async function cloudLoadModuleForNav(moduleId, showMessage = false, options = {}) {
     if (!state.cloud?.userId || !state.cloud?.householdId) return false;
+    const renderAfter = options.renderAfter !== false;
     const map = {
       calendar: [cloudLoadCalendarSources, cloudLoadCalendar],
       packages: [cloudLoadParcels],
@@ -16581,7 +16718,7 @@
           }
         }
       });
-      requestRender();
+      if (renderAfter) requestRender();
       if (showMessage) showToast(`Modul načten z cloudu: ${ok}/${loaders.length}`);
       return ok > 0;
     });
@@ -16594,7 +16731,7 @@
     for (const moduleId of moduleOrder) {
       await yieldToMainThread();
       try {
-        const loaded = await cloudLoadModuleForNav(moduleId, false);
+        const loaded = await cloudLoadModuleForNav(moduleId, false, { renderAfter: false });
         if (loaded) ok += 1;
       } catch (error) {
         console.warn('Background module load failed', moduleId, error);
@@ -16605,6 +16742,8 @@
     state.cloud.lastSyncAt = new Date().toISOString();
     touchState();
     saveState();
+    requestRender();
+    scheduleGoogleCalendarAutoSync('background-load', { delay: 6000 });
     if (showMessage) showToast(`Cloud pozadí načteno: ${ok}/${moduleOrder.length}`);
     return true;
   }
@@ -17295,6 +17434,15 @@
     }
     if (action === 'finance-save-form-template') {
       saveFinanceTemplateFromVisibleForm(button.closest('form'));
+      return;
+    }
+    if (action === 'edit-finance-template') {
+      editFinanceTemplate(button.dataset.id);
+      return;
+    }
+    if (action === 'finance-template-edit-cancel') {
+      financeTemplateEditId = '';
+      render();
       return;
     }
     if (action === 'delete-finance-template') {
@@ -18142,7 +18290,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 211
+        appBuild: 212
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -18732,7 +18880,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-211-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-212-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -18839,6 +18987,13 @@
   });
 
 
+  document.addEventListener('pointerdown', () => {
+    lastUserInteractionAt = Date.now();
+  }, { passive: true });
+  document.addEventListener('keydown', () => {
+    lastUserInteractionAt = Date.now();
+  }, { passive: true });
+
   document.addEventListener('toggle', (event) => {
     const details = event.target;
     if (!(details instanceof HTMLDetailsElement)) return;
@@ -18865,6 +19020,7 @@
 
     const nav = event.target.closest('[data-nav]');
     if (nav) {
+      lastUserInteractionAt = Date.now();
       activeOverview = null;
       activeModule = nav.dataset.nav;
       if (nav.dataset.targetTab) {
@@ -18872,7 +19028,7 @@
         if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       }
       render();
-      scheduleLazyCloudLoadForModule(activeModule);
+      scheduleLazyCloudLoadForModule(activeModule, { delay: 2600, quietMs: 1700 });
       keepActiveNavCentered('smooth');
       keepActiveSectionTabsCentered('smooth');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -19027,7 +19183,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_211</span>
+          <span class="badge">Domácnost+ v.0.1_212</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
