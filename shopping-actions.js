@@ -20,9 +20,14 @@
 
     function persist(renderMode = 'full') {
       deps.touchState?.();
+      if (renderMode === 'request') {
+        deps.requestRender?.();
+        const defer = (typeof window !== 'undefined' && window.setTimeout) ? window.setTimeout.bind(window) : setTimeout;
+        defer(() => deps.saveState?.(), 0);
+        return;
+      }
       deps.saveState?.();
-      if (renderMode === 'request') deps.requestRender?.();
-      else deps.render?.();
+      deps.render?.();
     }
 
     function activeList() {
@@ -313,13 +318,14 @@
       const previousDoneAt = item.doneAt || '';
       item.done = !item.done;
       item.doneAt = item.done ? new Date().toISOString() : '';
+      persist('request');
       const ok = await deps.cloudUpdateShoppingItem?.(item);
       if (ok === false) {
         item.done = previousDone;
         item.doneAt = previousDoneAt;
-        return;
+        persist('request');
+        showToast('Cloud úprava se nepovedla, změnu jsem vrátil');
       }
-      persist('full');
     }
 
     async function deleteShoppingItem(id) {

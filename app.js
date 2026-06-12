@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_210';
+  const APP_VERSION = 'Domácnost+ v.0.1_211';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -163,6 +163,16 @@
     ['subscription', 'Předplatné', 'expense'],
     ['contracts', 'Smlouvy / pojistky', 'expense'],
     ['other_expense', 'Ostatní výdaj', 'expense']
+  ];
+
+  const DEFAULT_FINANCE_TEMPLATES = [
+    { id: 'salary', icon: '💼', name: 'Výplata', type: 'income', title: 'Výplata', category: 'salary', paymentMethod: 'bank_transfer', amount: '', note: '', system: true },
+    { id: 'rent', icon: '🏠', name: 'Nájem', type: 'expense', title: 'Nájem', category: 'housing', paymentMethod: 'bank_transfer', amount: '', note: '', system: true },
+    { id: 'electricity', icon: '⚡', name: 'Elektřina', type: 'expense', title: 'Elektřina', category: 'energy', paymentMethod: 'direct_debit', amount: '', note: '', system: true },
+    { id: 'gas', icon: '🔥', name: 'Plyn', type: 'expense', title: 'Plyn', category: 'energy', paymentMethod: 'direct_debit', amount: '', note: '', system: true },
+    { id: 'water', icon: '💧', name: 'Voda', type: 'expense', title: 'Voda', category: 'housing', paymentMethod: 'direct_debit', amount: '', note: '', system: true },
+    { id: 'cash', icon: '💵', name: 'Výběr hotově', type: 'expense', title: 'Výběr hotově', category: 'other_expense', paymentMethod: 'cash', amount: '', note: '', system: true },
+    { id: 'savings', icon: '🏦', name: 'Na spoření', type: 'transfer', title: 'Přesun na spoření', category: 'other_expense', paymentMethod: 'bank_transfer', amount: '', note: '', system: true }
   ];
 
   const SUBSCRIPTION_SERVICE_OPTIONS = [
@@ -684,9 +694,9 @@
   const VISUAL_SETTINGS_STORAGE_KEY = 'domacnostPlus.visualSettings.v1';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 81,
-      appBuild: 210,
-      mode: 'shopping-cloud-v210',
+      schemaVersion: 82,
+      appBuild: 211,
+      mode: 'finance-templates-v211',
       createdAt: '',
       updatedAt: ''
     },
@@ -741,6 +751,7 @@
     cameras: [],
     finance: [],
     financeAccounts: [],
+    financeTemplates: [],
     subscriptions: [],
     subscriptionPeople: [],
     subscriptionPayments: [],
@@ -1018,6 +1029,8 @@
   let activeWarrantyDetailId = null;
   let visualSettingsDrawerOpen = false;
   let couponEditId = '';
+  let financeEditId = '';
+  let financeAccountEditId = '';
   let shoppingQuantityEditId = '';
   let shoppingDoneModalOpen = false;
   let shoppingSwipeStart = null;
@@ -1054,6 +1067,8 @@
   let renderFrameRequest = 0;
   let cloudWarmStartTimer = null;
   let bootCloudMaintenanceTimer = null;
+  let bootBackgroundCloudLoadTimer = null;
+  const lazyModuleCloudLoads = new Map();
 
   const app = document.getElementById('app');
   applyVisualSettings();
@@ -1561,9 +1576,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 81,
-      appBuild: 210,
-      mode: 'shopping-cloud-v210',
+      schemaVersion: 82,
+      appBuild: 211,
+      mode: 'finance-templates-v211',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1677,6 +1692,7 @@
     migrated.shopping = (migrated.shopping || []).map((item) => normalizeShoppingItemRecord(item, migrated.activeShoppingListId || migrated.shoppingLists[0]?.id || ''));
     dedupeShoppingData(migrated);
     migrated.shoppingSeedVersion = 201;
+    migrated.financeTemplates = normalizeFinanceTemplates(migrated.financeTemplates);
 
     const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
     migrated.vehicles = migrated.vehicles.map((vehicle) => {
@@ -2146,7 +2162,7 @@
     cloudWarmStartTimer = runWhenMainThreadFree(() => {
       cloudWarmStartTimer = null;
       cloudWarmStartLoad(false).catch((error) => console.warn('Cloud warm start failed', error));
-    }, { delay: 1800, timeout: 4200 });
+    }, { delay: 5200, timeout: 9000 });
   }
 
   function scheduleBootCloudMaintenance() {
@@ -2154,7 +2170,31 @@
     bootCloudMaintenanceTimer = runWhenMainThreadFree(() => {
       bootCloudMaintenanceTimer = null;
       scheduleCloudAutosync('boot-idle');
-    }, { delay: 12000, timeout: 6000 });
+    }, { delay: 18000, timeout: 9000 });
+  }
+
+  function scheduleBootBackgroundCloudLoad() {
+    if (bootBackgroundCloudLoadTimer || !cloudReady() || isDemoOnlyState()) return;
+    bootBackgroundCloudLoadTimer = runWhenMainThreadFree(() => {
+      bootBackgroundCloudLoadTimer = null;
+      cloudBackgroundLoadAllModules(false).catch((error) => console.warn('Background cloud load failed', error));
+    }, { delay: 9000, timeout: 15000 });
+  }
+
+  function scheduleLazyCloudLoadForModule(moduleId, options = {}) {
+    const id = String(moduleId || '');
+    if (!id || id === 'home' || id === MORE_MODULE.id || !cloudReady() || isDemoOnlyState()) return;
+    if (lazyModuleCloudLoads.get(id) === 'loaded' || lazyModuleCloudLoads.get(id) === 'loading') return;
+    lazyModuleCloudLoads.set(id, 'loading');
+    runWhenMainThreadFree(async () => {
+      try {
+        await cloudLoadModuleForNav(id, false);
+        lazyModuleCloudLoads.set(id, 'loaded');
+      } catch (error) {
+        lazyModuleCloudLoads.delete(id);
+        console.warn('Lazy module cloud load failed', id, error);
+      }
+    }, { delay: Number(options.delay || 240), timeout: 6000 });
   }
 
   function requestRender() {
@@ -4812,8 +4852,9 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_211', note: 'Výkonový build: start už netahá všechny cloud moduly najednou, Nákupy odklikávají položky optimisticky hned v UI a Finance mají úpravu pohybů/účtů + vlastní šablony opakovaných plateb.' },
       { title: 'Domácnost+ v.0.1_210', note: 'Kontrola a ochrana proti duplicitám v Nákupy: balíček nemá duplicitní výchozí katalog ani privátní restore seznamy, aplikace nově deduplikuje seznamy/položky při migraci a cloud načtení a nové duplicitní položky místo vytvoření navýší množství.' },
-      { title: 'Domácnost+ v.0.1_210', note: 'Home ikonky opravené systémově: kritické ikony panelů se vykreslují přímo přes PNG podle zvoleného icon packu a CSS background slot zůstává jen mimo Home.' },
+      { title: 'Domácnost+ v.0.1_209', note: 'Home ikonky opravené systémově: kritické ikony panelů se vykreslují přímo přes PNG podle zvoleného icon packu a CSS background slot zůstává jen mimo Home.' },
       { title: 'Domácnost+ v.0.1_207', note: 'Hotfix Home ikon: panelové ikonky na hlavní obrazovce znovu respektují zvolený icon pack. SVG/glass render zůstává jen jako nouzový fallback, když asset chybí.' },
       { title: 'Domácnost+ v.0.1_206', note: 'Hotfix Home panelů: ikonky na hlavní obrazovce se nově vykreslují přes stabilní inline SVG/glass render místo problematického CSS background slotu. Spodní lišta a ikonové sady zůstávají beze změny.' },
       { title: 'Domácnost+ v.0.1_205', note: 'Hotfix Home ikon a Nákupů: asset ikony se vykreslují přes stabilnější CSS pseudo-slot, přepnutí i stejného seznamu čistí overlay stavy, plus/minus u množství je větší, ks se drží jen po celých kusech a katalog umí položky odebrat.' },
@@ -5779,7 +5820,7 @@
         createdAt: timestamp,
         updatedAt: timestamp,
         sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v210'
+        source: 'martin-private-restore-v211'
       });
       existingListNames.add(nameKey);
       existingListIds.add(list.id);
@@ -5801,7 +5842,7 @@
         householdId: data.household?.id || '',
         profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
         createdAt: timestamp,
-        source: 'martin-private-restore-v210'
+        source: 'martin-private-restore-v211'
       }));
 
     data.shopping = [...data.shopping, ...restoredItems];
@@ -5816,7 +5857,7 @@
     martinPrivateShoppingRestorePromise = new Promise((resolve) => {
       const run = async () => {
         try {
-          const response = await fetch('./martin-shopping-restore-v210.json', { cache: 'force-cache' });
+          const response = await fetch('./martin-shopping-restore-v211.json', { cache: 'force-cache' });
           if (!response.ok) throw new Error(`restore ${response.status}`);
           const payload = await response.json();
           const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
@@ -8566,6 +8607,152 @@
   }
 
 
+
+  function normalizeFinanceTemplate(template = {}) {
+    const id = normalizeText(template.id) || `finance-template-${uid()}`;
+    const type = template.type === 'income' ? 'income' : template.type === 'transfer' ? 'transfer' : 'expense';
+    const category = normalizeText(template.category) || (type === 'income' ? 'other_income' : 'other_expense');
+    return {
+      id,
+      householdId: template.householdId || currentHouseholdId(),
+      profileId: template.profileId || currentProfileId(),
+      createdAt: template.createdAt || new Date().toISOString(),
+      updatedAt: template.updatedAt || template.createdAt || new Date().toISOString(),
+      icon: normalizeText(template.icon) || '💳',
+      name: normalizeText(template.name || template.title) || 'Šablona platby',
+      type,
+      title: normalizeText(template.title) || financeCategoryLabel(category),
+      amount: template.amount === '' || template.amount === null || template.amount === undefined ? '' : decimalValue(template.amount),
+      category,
+      paymentMethod: normalizeText(template.paymentMethod) || 'bank_transfer',
+      accountId: normalizeText(template.accountId),
+      transferAccountId: type === 'transfer' ? normalizeText(template.transferAccountId) : '',
+      note: normalizeText(template.note),
+      system: Boolean(template.system)
+    };
+  }
+
+  function normalizeFinanceTemplates(templates = []) {
+    const seen = new Set();
+    return (Array.isArray(templates) ? templates : [])
+      .map((template) => normalizeFinanceTemplate(template))
+      .filter((template) => {
+        const key = normalizeKey(`${template.name}|${template.title}|${template.type}|${template.amount}|${template.category}|${template.accountId}|${template.transferAccountId}`);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }
+
+  function financeTemplateDefinitions() {
+    const custom = normalizeFinanceTemplates(state.financeTemplates || []);
+    return [...DEFAULT_FINANCE_TEMPLATES.map((template) => normalizeFinanceTemplate(template)), ...custom];
+  }
+
+  function financeTemplateById(id) {
+    const key = String(id || '');
+    return financeTemplateDefinitions().find((template) => String(template.id) === key) || null;
+  }
+
+  function financeTemplateAccountFallback(template, accounts = financeAccountsSorted()) {
+    if (template.accountId && accounts.some((account) => account.id === template.accountId)) return template.accountId;
+    return accounts[0]?.id || '';
+  }
+
+  function financeTemplateTransferFallback(template, accounts = financeAccountsSorted(), accountId = '') {
+    if (template.transferAccountId && accounts.some((account) => account.id === template.transferAccountId)) return template.transferAccountId;
+    if (template.id === 'savings' || template.type === 'transfer') {
+      return accounts.find((account) => account.id !== accountId && ['savings', 'envelope', 'person'].includes(account.accountType))?.id || accounts.find((account) => account.id !== accountId)?.id || '';
+    }
+    return '';
+  }
+
+  function renderFinanceTemplatePanel(accounts = financeAccountsSorted()) {
+    const templates = financeTemplateDefinitions();
+    const customTemplates = normalizeFinanceTemplates(state.financeTemplates || []);
+    return `
+      <div class="quick-add-panel finance-template-panel">
+        <div class="quick-add-head"><strong>Šablony plateb</strong><span>Klikneš, formulář se vyplní a jen upravíš částku/datum.</span></div>
+        <div class="quick-chip-row">
+          ${templates.map((template) => `
+            <span class="finance-template-chip-wrap">
+              <button class="quick-chip" type="button" data-action="finance-template" data-template="${escapeHtml(template.id)}">${escapeHtml(template.icon || '💳')} <span>${escapeHtml(template.name)}</span></button>
+              ${template.system ? '' : `<button class="tiny-danger-btn" type="button" data-action="delete-finance-template" data-id="${escapeHtml(template.id)}" aria-label="Smazat šablonu ${escapeHtml(template.name)}">×</button>`}
+            </span>
+          `).join('')}
+        </div>
+        <details class="action-details compact-edit-details finance-template-details">
+          <summary><span>Vytvořit vlastní šablonu</span><em>nájem, elektřina, plyn, pojistky...</em></summary>
+          <form data-form="add-finance-template" class="compact-form">
+            <div class="form-grid two">
+              ${field('Název šablony', 'name', 'text', 'např. Nájem / Elektřina / Plyn', true)}
+              ${field('Ikona', 'icon', 'text', '🏠', false, '💳')}
+              ${selectField('Typ', 'type', [['expense', 'Výdaj'], ['income', 'Příjem'], ['transfer', 'Přesun mezi účty']], 'expense')}
+              ${selectField('Účet', 'accountId', financeAccountOptions(true), accounts[0]?.id || '')}
+              ${selectField('Cílový účet u přesunu', 'transferAccountId', financeAccountOptions(false), '')}
+              ${field('Název pohybu', 'title', 'text', 'např. Nájem', true)}
+              ${field('Částka', 'amount', 'number', 'volitelné')}
+              ${selectField('Kategorie', 'category', financeCategoryOptions(), 'housing')}
+              ${selectField('Platba', 'paymentMethod', [['card', 'Kartou'], ['cash', 'Hotově'], ['bank_transfer', 'Převod'], ['direct_debit', 'Inkaso'], ['other', 'Jiné']], 'bank_transfer')}
+              ${field('Poznámka', 'note', 'text', 'volitelné')}
+            </div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Uložit šablonu</button></div>
+          </form>
+        </details>
+        ${customTemplates.length ? `<div class="inline-note">Vlastních šablon: ${customTemplates.length}. Šablony jsou zatím lokální pro tuto domácnost/export, bez zásahu do DB.</div>` : ''}
+      </div>
+    `;
+  }
+
+  function renderFinanceTransactionForm(item = null) {
+    const isEdit = Boolean(item);
+    const accounts = financeAccountsSorted();
+    const type = item?.type === 'income' ? 'income' : item?.type === 'transfer' ? 'transfer' : 'expense';
+    const category = item?.category || (type === 'income' ? 'other_income' : 'groceries');
+    return `
+      <form data-form="${isEdit ? 'update-finance' : 'add-finance'}" ${isEdit ? `data-id="${escapeHtml(item.id)}"` : ''} class="compact-form spaced-form">
+        <div class="form-grid two">
+          ${selectField('Typ', 'type', [['expense', 'Výdaj'], ['income', 'Příjem'], ['transfer', 'Přesun mezi účty']], type)}
+          ${selectField('Účet', 'accountId', financeAccountOptions(true), item?.accountId || accounts[0]?.id || '')}
+          ${selectField('Cílový účet u přesunu', 'transferAccountId', financeAccountOptions(false), item?.transferAccountId || '')}
+          ${field('Název', 'title', 'text', 'např. výplata / energie / výběr', true, item?.title || '')}
+          ${field('Částka', 'amount', 'number', 'např. 1250', true, item?.amount ?? '')}
+          ${field('Datum', 'date', 'date', '', false, item?.date || todayISO())}
+          ${selectField('Kategorie', 'category', financeCategoryOptions(), category)}
+          ${selectField('Platba', 'paymentMethod', [['card', 'Kartou'], ['cash', 'Hotově'], ['bank_transfer', 'Převod'], ['direct_debit', 'Inkaso'], ['other', 'Jiné']], item?.paymentMethod || 'bank_transfer')}
+          ${field('Poznámka', 'note', 'text', 'volitelné', false, item?.note || '')}
+        </div>
+        <div class="form-actions">
+          <button class="primary-btn" type="submit">${isEdit ? 'Uložit úpravu' : 'Přidat pohyb'}</button>
+          <button class="ghost-btn" type="button" data-action="finance-save-form-template">Uložit jako šablonu</button>
+          ${isEdit ? '<button class="ghost-btn" type="button" data-action="finance-edit-cancel">Zrušit úpravu</button>' : ''}
+          ${!isEdit && state.cloud?.householdId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-finance">Odeslat lokální pohyby</button>` : ''}
+        </div>
+      </form>
+    `;
+  }
+
+  function renderFinanceAccountForm(account = null) {
+    const isEdit = Boolean(account);
+    return `
+      <form data-form="${isEdit ? 'update-finance-account' : 'add-finance-account'}" ${isEdit ? `data-id="${escapeHtml(account.id)}"` : ''} class="compact-form">
+        <div class="form-grid two">
+          ${field('Název účtu', 'name', 'text', 'např. Tchyně – u mě', true, account?.name || '')}
+          ${selectField('Typ účtu', 'accountType', financeAccountTypeOptions(), account?.accountType || 'person')}
+          ${field('Počáteční zůstatek', 'openingBalance', 'number', 'např. 0', false, account?.openingBalance ?? '')}
+          ${field('Vlastník / poznámka', 'ownerLabel', 'text', 'např. tchyně', false, account?.ownerLabel || '')}
+          ${selectField('Započítat do celku', 'includeInTotal', [['yes', 'Ano'], ['no', 'Ne']], account?.includeInTotal === false ? 'no' : 'yes')}
+          ${field('Poznámka', 'note', 'text', 'volitelné', false, account?.note || '')}
+        </div>
+        <div class="form-actions">
+          <button class="primary-btn" type="submit">${isEdit ? 'Uložit účet' : 'Přidat účet'}</button>
+          ${isEdit ? '<button class="ghost-btn" type="button" data-action="finance-account-edit-cancel">Zrušit úpravu</button>' : ''}
+        </div>
+      </form>
+    `;
+  }
+
+
   function renderFinance() {
     const items = [...(state.finance || [])].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     const accounts = financeAccountsSorted();
@@ -8579,7 +8766,9 @@
     const categoryRows = financeCategoryBreakdown(selectedMonth);
     const accountRows = financeAccountMonthSummary(selectedMonth);
     const managedRows = financeManagedGroups(balances);
-    const activeFinanceTab = getModuleTab('finance', 'summary');
+    const editingFinanceItem = (state.finance || []).find((item) => item.id === financeEditId) || null;
+    const editingFinanceAccount = (state.financeAccounts || []).find((account) => account.id === financeAccountEditId) || null;
+    const activeFinanceTab = getModuleTab('finance', editingFinanceItem ? 'add' : 'summary');
     return `
       ${renderSectionTabs('finance', [
         { id: 'summary', label: 'Přehled', icon: '💰', count: visibleItems.length },
@@ -8612,23 +8801,14 @@
         <section class="card finance-panel panel-accounts">
           <div class="card-header"><div><h2>Účty / peněženky</h2><p>Každý účet má vlastní zůstatek. Může to být banka, hotovost, spoření, obálka nebo osoba.</p></div><span class="badge">${accounts.length}</span></div>
           ${accounts.length ? `<div class="list compact-list">${accounts.map((account) => renderFinanceAccount(account, balances)).join('')}</div>` : renderEmptyCta({ icon: '🏦', title: 'Nejdřív přidej účet', text: 'Účet může být banka, hotovost, spoření, obálka nebo spravované peníze pro někoho dalšího.', nav: 'finance', tab: 'accounts', label: 'Přidat účet' })}
-          <details class="action-details compact-edit-details finance-form-drawer">
+          ${editingFinanceAccount ? `<div class="inline-edit-card"><h3>Upravit účet</h3>${renderFinanceAccountForm(editingFinanceAccount)}</div>` : ''}
+          <details class="action-details compact-edit-details finance-form-drawer" ${editingFinanceAccount ? '' : ''}>
             <summary><span>Přidat účet / peněženku</span><em>banka, hotovost, obálka nebo osoba</em></summary>
-            <form data-form="add-finance-account" class="compact-form">
-              <div class="form-grid two">
-                ${field('Název účtu', 'name', 'text', 'např. Tchyně – u mě', true)}
-                ${selectField('Typ účtu', 'accountType', financeAccountTypeOptions(), 'person')}
-                ${field('Počáteční zůstatek', 'openingBalance', 'number', 'např. 0')}
-                ${field('Vlastník / poznámka', 'ownerLabel', 'text', 'např. tchyně')}
-                ${selectField('Započítat do celku', 'includeInTotal', [['yes', 'Ano'], ['no', 'Ne']], 'yes')}
-                ${field('Poznámka', 'note', 'text', 'volitelné')}
-              </div>
-              <div class="form-actions">
-                <button class="primary-btn" type="submit">Přidat účet</button>
-                ${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-finance">Načíst cloud finance</button>' : ''}
-                ${state.cloud?.householdId && localAccounts ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-finance-accounts">Odeslat účty (${localAccounts})</button>` : ''}
-              </div>
-            </form>
+            ${renderFinanceAccountForm(null)}
+            <div class="form-actions cloud-inline-actions">
+              ${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-finance">Načíst cloud finance</button>' : ''}
+              ${state.cloud?.householdId && localAccounts ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-finance-accounts">Odeslat účty (${localAccounts})</button>` : ''}
+            </div>
           </details>
         </section>
 
@@ -8652,34 +8832,9 @@
         </section>
 
         <section class="card finance-panel panel-add">
-          <div class="card-header"><div><h2>Přidat pohyb</h2><p>Příjem, výdaj nebo přesun mezi účty. Přesun je vhodný pro peníze bokem na spoření.</p></div></div>
-          <div class="quick-add-panel">
-            <div class="quick-add-head"><strong>Rychlé šablony</strong><span>Vyplní formulář, částku jen doplníš.</span></div>
-            <div class="quick-chip-row">
-              <button class="quick-chip" type="button" data-action="finance-template" data-template="salary">💼 <span>Výplata</span></button>
-              <button class="quick-chip" type="button" data-action="finance-template" data-template="rent">🏠 <span>Nájem</span></button>
-              <button class="quick-chip" type="button" data-action="finance-template" data-template="energy">⚡ <span>Energie</span></button>
-              <button class="quick-chip" type="button" data-action="finance-template" data-template="cash">💵 <span>Výběr</span></button>
-              <button class="quick-chip" type="button" data-action="finance-template" data-template="savings">🏦 <span>Na spoření</span></button>
-            </div>
-          </div>
-          <form data-form="add-finance" class="compact-form spaced-form">
-            <div class="form-grid two">
-              ${selectField('Typ', 'type', [['expense', 'Výdaj'], ['income', 'Příjem'], ['transfer', 'Přesun mezi účty']], 'expense')}
-              ${selectField('Účet', 'accountId', financeAccountOptions(true), accounts[0]?.id || '')}
-              ${selectField('Cílový účet u přesunu', 'transferAccountId', financeAccountOptions(false), '')}
-              ${field('Název', 'title', 'text', 'např. výplata / energie / výběr', true)}
-              ${field('Částka', 'amount', 'number', 'např. 1250', true)}
-              ${field('Datum', 'date', 'date', '', false, todayISO())}
-              ${selectField('Kategorie', 'category', financeCategoryOptions(), 'groceries')}
-              ${selectField('Platba', 'paymentMethod', [['card', 'Kartou'], ['cash', 'Hotově'], ['bank_transfer', 'Převod'], ['direct_debit', 'Inkaso'], ['other', 'Jiné']], 'bank_transfer')}
-              ${field('Poznámka', 'note', 'text', 'volitelné')}
-            </div>
-            <div class="form-actions">
-              <button class="primary-btn" type="submit">Přidat pohyb</button>
-              ${state.cloud?.householdId && localOnly ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-finance">Odeslat pohyby (${localOnly})</button>` : ''}
-            </div>
-          </form>
+          <div class="card-header"><div><h2>${editingFinanceItem ? 'Upravit pohyb' : 'Přidat pohyb'}</h2><p>Příjem, výdaj nebo přesun mezi účty. Šablony jsou rychlé pro opakované platby.</p></div>${editingFinanceItem ? '<span class="badge warn">úprava</span>' : ''}</div>
+          ${renderFinanceTemplatePanel(accounts)}
+          ${renderFinanceTransactionForm(editingFinanceItem)}
           <div class="inline-note">Pro spravované peníze můžeš mít účty třeba „Babička – u mě“ a „Babička – spoření“. Přesuny pak nepočítají jako výdaj domácnosti, ale jako pohyb mezi účty.</div>
         </section>
 
@@ -8705,6 +8860,7 @@
         </div>
         <div class="item-meta">${escapeHtml(financeAccountTypeLabel(account.accountType))}${account.ownerLabel ? ` · ${escapeHtml(account.ownerLabel)}` : ''}${account.includeInTotal === false ? ' · mimo celkový součet' : ''}${account.note ? ` · ${escapeHtml(account.note)}` : ''}${account.cloudId ? ' · cloud' : ' · lokálně'}</div>
         <div class="item-actions">
+          <button class="ghost-btn" type="button" data-action="finance-account-edit" data-id="${escapeHtml(account.id)}">Upravit</button>
           ${state.cloud?.householdId && !account.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-finance-account" data-id="${account.id}">Odeslat</button>` : ''}
           <button class="danger-btn" type="button" data-action="delete-finance-account" data-id="${account.id}">Smazat</button>
         </div>
@@ -8725,6 +8881,7 @@
         </div>
         <div class="item-meta">${formatDate(item.date)} · ${isTransfer ? 'Přesun' : escapeHtml(financeCategoryLabel(item.category))}${account ? ` · ${escapeHtml(account.name)}` : ''}${target ? ` → ${escapeHtml(target.name)}` : ''} · ${escapeHtml(financePaymentLabel(item.paymentMethod))}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
         <div class="item-actions">
+          <button class="ghost-btn" type="button" data-action="finance-edit" data-id="${escapeHtml(item.id)}">Upravit</button>
           ${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-finance" data-id="${item.id}">Odeslat</button>` : ''}
           <button class="danger-btn" type="button" data-action="delete-finance" data-id="${item.id}">Smazat</button>
         </div>
@@ -14478,8 +14635,11 @@
       'cloud-create-household': () => cloudCreateHousehold(data.name, data.profileName),
       'cloud-invite-member': () => cloudInviteMember(data.email, data.role),
       'add-finance-account': () => addFinanceAccountFromForm(data, form),
+      'update-finance-account': () => updateFinanceAccountFromForm(form.dataset.id, data, form),
       'add-managed-finance-set': () => addManagedFinanceSetFromForm(data, form),
+      'add-finance-template': () => addFinanceTemplateFromForm(data, form),
       'add-finance': () => addFinanceFromForm(data, form),
+      'update-finance': () => updateFinanceFromForm(form.dataset.id, data, form),
       'finance-month-filter': () => setFinanceMonth(data.month),
       'add-subscription-person': () => addSubscriptionPersonFromForm(data, form),
       'add-subscription': () => addSubscriptionFromForm(data, form),
@@ -14910,7 +15070,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 81, appBuild: 210, mode: 'rich-demo-v210', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 82, appBuild: 211, mode: 'rich-demo-v211', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15053,7 +15213,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 81, appBuild: 210, mode: 'shopping-cloud-v210', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 82, appBuild: 211, mode: 'finance-templates-v211', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -15384,6 +15544,22 @@
     return data;
   }
 
+  async function cloudUpdateFinanceAccount(account) {
+    const client = getSupabaseClient();
+    if (!client || !account?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    const payload = cloudFinanceAccountPayload(account, user.id);
+    delete payload.created_by;
+    const { error } = await client.from('finance_accounts').update(payload).eq('id', account.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Účet se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
   function cloudFinancePayload(item, userId) {
     const account = financeAccountById(item.accountId);
     const target = financeAccountById(item.transferAccountId);
@@ -15429,6 +15605,30 @@
     item.cloudId = data.id;
     state.cloud.lastSyncAt = new Date().toISOString();
     return data;
+  }
+
+  async function cloudUpdateFinance(item) {
+    const client = getSupabaseClient();
+    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
+    const user = await refreshCloudSession(false);
+    if (!user) return false;
+    if (item.accountId) {
+      const account = financeAccountById(item.accountId);
+      if (account && !account.cloudId) await cloudAddFinanceAccount(account);
+    }
+    if (item.transferAccountId) {
+      const target = financeAccountById(item.transferAccountId);
+      if (target && !target.cloudId) await cloudAddFinanceAccount(target);
+    }
+    const payload = cloudFinancePayload(item, user.id);
+    delete payload.created_by;
+    const { error } = await client.from('finance_transactions').update(payload).eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Finance se nepovedlo upravit v cloudu');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
   }
 
   async function cloudLoadFinance(showMessage = true) {
@@ -15584,28 +15784,118 @@
     showToast(cloudCount ? `Založeno účtů: ${drafts.length}, v cloudu: ${cloudCount}` : `Založeno účtů: ${drafts.length}`);
   }
 
-  function fillFinanceTemplate(template) {
+  function fillFinanceTemplate(templateId) {
+    financeEditId = '';
+    moduleTabs = { ...(moduleTabs || {}), finance: 'add' };
+    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    render();
     const form = document.querySelector('[data-form="add-finance"]');
     if (!form) return;
     const accounts = financeAccountsSorted();
-    const primary = accounts[0]?.id || '';
-    const secondary = accounts.find((account) => account.id !== primary && ['savings', 'envelope', 'person'].includes(account.accountType))?.id || accounts.find((account) => account.id !== primary)?.id || '';
-    const templates = {
-      salary: { type: 'income', title: 'Výplata', category: 'salary', paymentMethod: 'bank_transfer', accountId: primary },
-      rent: { type: 'expense', title: 'Nájem', category: 'housing', paymentMethod: 'bank_transfer', accountId: primary },
-      energy: { type: 'expense', title: 'Energie', category: 'energy', paymentMethod: 'direct_debit', accountId: primary },
-      cash: { type: 'expense', title: 'Výběr hotově', category: 'other_expense', paymentMethod: 'cash', accountId: primary },
-      savings: { type: 'transfer', title: 'Přesun na spoření', category: 'other_expense', paymentMethod: 'bank_transfer', accountId: primary, transferAccountId: secondary }
+    const template = financeTemplateById(templateId);
+    if (!template) return;
+    const accountId = financeTemplateAccountFallback(template, accounts);
+    const transferAccountId = financeTemplateTransferFallback(template, accounts, accountId);
+    const values = {
+      type: template.type,
+      title: template.title,
+      amount: template.amount || '',
+      category: template.category,
+      paymentMethod: template.paymentMethod,
+      accountId,
+      transferAccountId,
+      note: template.note || ''
     };
-    const values = templates[template];
-    if (!values) return;
     Object.entries(values).forEach(([name, value]) => {
-      const field = form.elements[name];
-      if (field) field.value = value || '';
+      const input = form.elements[name];
+      if (input) input.value = value || '';
     });
     if (form.elements.date) form.elements.date.value = todayISO();
     if (form.elements.amount) form.elements.amount.focus();
-    showToast('Šablona vyplněná, doplň částku');
+    showToast('Šablona vyplněná, můžeš upravit a uložit');
+  }
+
+  function financeTemplateFromFormData(data = {}, nameOverride = '') {
+    const type = data.type === 'income' ? 'income' : data.type === 'transfer' ? 'transfer' : 'expense';
+    const category = normalizeText(data.category) || (type === 'income' ? 'other_income' : 'other_expense');
+    return normalizeFinanceTemplate({
+      id: `finance-template-${uid()}`,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      icon: normalizeText(data.icon) || (type === 'income' ? '➕' : type === 'transfer' ? '↔️' : '💳'),
+      name: normalizeText(nameOverride || data.name || data.title) || 'Šablona platby',
+      type,
+      title: normalizeText(data.title) || financeCategoryLabel(category),
+      amount: data.amount === '' ? '' : decimalValue(data.amount),
+      category,
+      paymentMethod: normalizeText(data.paymentMethod) || 'bank_transfer',
+      accountId: normalizeText(data.accountId),
+      transferAccountId: type === 'transfer' ? normalizeText(data.transferAccountId) : '',
+      note: normalizeText(data.note),
+      system: false
+    });
+  }
+
+  function addFinanceTemplateFromForm(data, form) {
+    const template = financeTemplateFromFormData(data);
+    if (!template.name || !template.title) return showToast('Doplň název šablony a pohybu');
+    state.financeTemplates = normalizeFinanceTemplates([...(state.financeTemplates || []), template]);
+    touchState();
+    saveState();
+    form?.reset?.();
+    render();
+    showToast(`Šablona ${template.name} uložená`);
+  }
+
+  function saveFinanceTemplateFromVisibleForm(form) {
+    if (!form) return showToast('Formulář se nepovedlo najít');
+    const data = getFormData(form);
+    const defaultName = normalizeText(data.title) || 'Nová šablona';
+    const name = normalizeText(window.prompt('Název šablony', defaultName));
+    if (!name) return;
+    const template = financeTemplateFromFormData(data, name);
+    state.financeTemplates = normalizeFinanceTemplates([...(state.financeTemplates || []), template]);
+    touchState();
+    saveState();
+    render();
+    showToast(`Šablona ${template.name} uložená`);
+  }
+
+  function deleteFinanceTemplate(id) {
+    const template = (state.financeTemplates || []).find((item) => item.id === id);
+    if (!template) return;
+    if (!window.confirm(`Smazat šablonu ${template.name}?`)) return;
+    state.financeTemplates = (state.financeTemplates || []).filter((item) => item.id !== id);
+    touchState();
+    saveState();
+    render();
+    showToast('Šablona smazaná');
+  }
+
+  function setFinanceEdit(id) {
+    const item = (state.finance || []).find((entry) => entry.id === id);
+    if (!item) return;
+    financeEditId = id;
+    moduleTabs = { ...(moduleTabs || {}), finance: 'add' };
+    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    render();
+    keepActiveSectionTabsCentered('smooth');
+    const schedule = window.requestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
+    schedule(() => document.querySelector('[data-form="update-finance"]')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }));
+  }
+
+  function setFinanceAccountEdit(id) {
+    const account = (state.financeAccounts || []).find((entry) => entry.id === id);
+    if (!account) return;
+    financeAccountEditId = id;
+    moduleTabs = { ...(moduleTabs || {}), finance: 'accounts' };
+    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    render();
+    keepActiveSectionTabsCentered('smooth');
+    const schedule = window.requestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
+    schedule(() => document.querySelector('[data-form="update-finance-account"]')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }));
   }
 
   async function addFinanceFromForm(data, form) {
@@ -15640,6 +15930,74 @@
     form.reset();
     render();
     showToast(item.cloudId ? 'Finance uloženy do cloudu' : 'Finance uloženy lokálně');
+  }
+
+  function financeItemFromFormData(data, base = {}) {
+    const type = data.type === 'income' ? 'income' : data.type === 'transfer' ? 'transfer' : 'expense';
+    const accountId = normalizeText(data.accountId);
+    const transferAccountId = normalizeText(data.transferAccountId);
+    const category = normalizeText(data.category) || (type === 'income' ? 'other_income' : 'other_expense');
+    return {
+      ...base,
+      householdId: base.householdId || currentHouseholdId(),
+      profileId: base.profileId || currentProfileId(),
+      updatedAt: new Date().toISOString(),
+      type,
+      title: normalizeText(data.title) || (type === 'transfer' ? 'Přesun' : financeCategoryLabel(category)),
+      amount: decimalValue(data.amount),
+      date: normalizeText(data.date) || todayISO(),
+      category,
+      accountId,
+      transferAccountId: type === 'transfer' ? transferAccountId : '',
+      paymentMethod: normalizeText(data.paymentMethod) || 'other',
+      note: normalizeText(data.note)
+    };
+  }
+
+  async function updateFinanceFromForm(id, data, form) {
+    const index = (state.finance || []).findIndex((entry) => entry.id === id);
+    if (index < 0) return showToast('Záznam se nepovedlo najít');
+    const current = state.finance[index];
+    const next = financeItemFromFormData(data, current);
+    if (next.type === 'transfer' && (!next.accountId || !next.transferAccountId || next.accountId === next.transferAccountId)) {
+      return showToast('U přesunu vyber dva různé účty');
+    }
+    if (!next.title || !Number(next.amount)) return showToast('Doplň název a částku');
+    const ok = await cloudUpdateFinance(next);
+    if (!ok) return;
+    state.finance[index] = next;
+    financeEditId = '';
+    touchState();
+    saveState();
+    form?.reset?.();
+    render();
+    showToast(next.cloudId ? 'Pohyb upraven v cloudu' : 'Pohyb upraven lokálně');
+  }
+
+  async function updateFinanceAccountFromForm(id, data, form) {
+    const index = (state.financeAccounts || []).findIndex((entry) => entry.id === id);
+    if (index < 0) return showToast('Účet se nepovedlo najít');
+    const current = state.financeAccounts[index];
+    const next = {
+      ...current,
+      updatedAt: new Date().toISOString(),
+      name: normalizeText(data.name),
+      accountType: normalizeText(data.accountType) || 'other',
+      ownerLabel: normalizeText(data.ownerLabel),
+      openingBalance: decimalValue(data.openingBalance) || 0,
+      includeInTotal: data.includeInTotal !== 'no',
+      note: normalizeText(data.note)
+    };
+    if (!next.name) return showToast('Doplň název účtu');
+    const ok = await cloudUpdateFinanceAccount(next);
+    if (!ok) return;
+    state.financeAccounts[index] = next;
+    financeAccountEditId = '';
+    touchState();
+    saveState();
+    form?.reset?.();
+    render();
+    showToast(next.cloudId ? 'Účet upraven v cloudu' : 'Účet upraven lokálně');
   }
 
   async function cloudSyncFinanceAccountById(id) {
@@ -16168,6 +16526,7 @@
       if (!user) return;
       cloudWarmStartDone = true;
       await cloudLoadUserVisualSettings(false);
+      await yieldToMainThread();
       const households = await cloudLoadHouseholds(false);
       if (!state.cloud?.householdId && households.length) {
         const preferredHousehold = pickBestCloudHousehold(households);
@@ -16178,11 +16537,76 @@
         await bootstrapCloudHousehold(false);
       }
       if (!state.cloud?.householdId) return;
+      await yieldToMainThread();
+      await cloudLoadHouseholdUiSettings(false);
+      await yieldToMainThread();
       await cloudLoadProfilesForCurrentHousehold();
-      await cloudLoadAllModules(false, { bootWarmStart: true });
+      requestRender();
+      scheduleBootBackgroundCloudLoad();
       scheduleBootCloudMaintenance();
-      if (showMessage) showToast('Cloud domácnost načtená');
+      if (showMessage) showToast('Cloud domácnost připravená, data se dočítají na pozadí');
     });
+  }
+
+  async function cloudLoadModuleForNav(moduleId, showMessage = false) {
+    if (!state.cloud?.userId || !state.cloud?.householdId) return false;
+    const map = {
+      calendar: [cloudLoadCalendarSources, cloudLoadCalendar],
+      packages: [cloudLoadParcels],
+      shopping: [cloudLoadShoppingData],
+      homecare: [cloudLoadHdoData, cloudLoadWaste, cloudLoadTasks, cloudLoadExtraCollections, cloudLoadWarrantyFiles],
+      garage: [cloudLoadGarageData],
+      contracts: [cloudLoadContracts, cloudLoadContractFiles],
+      finance: [cloudLoadFinance],
+      subscriptions: [cloudLoadExtraCollections],
+      notes: [cloudLoadExtraCollections],
+      devices: [cloudLoadExtraCollections],
+      cameras: [cloudLoadExtraCollections],
+      coupons: [cloudLoadExtraCollections],
+      warranties: [cloudLoadWarrantyFiles],
+      weather: []
+    };
+    const loaders = map[moduleId] || [];
+    if (!loaders.length) return false;
+    return withDeferredRender(async () => {
+      let ok = 0;
+      await withMutedToasts(async () => {
+        for (const loader of loaders) {
+          await yieldToMainThread();
+          try {
+            await loader(false);
+            ok += 1;
+          } catch (error) {
+            console.warn('Lazy cloud module failed', moduleId, error);
+          }
+        }
+      });
+      requestRender();
+      if (showMessage) showToast(`Modul načten z cloudu: ${ok}/${loaders.length}`);
+      return ok > 0;
+    });
+  }
+
+  async function cloudBackgroundLoadAllModules(showMessage = false) {
+    if (!state.cloud?.userId || !state.cloud?.householdId) return false;
+    const moduleOrder = ['shopping', 'calendar', 'finance', 'packages', 'homecare', 'garage', 'contracts', 'subscriptions'];
+    let ok = 0;
+    for (const moduleId of moduleOrder) {
+      await yieldToMainThread();
+      try {
+        const loaded = await cloudLoadModuleForNav(moduleId, false);
+        if (loaded) ok += 1;
+      } catch (error) {
+        console.warn('Background module load failed', moduleId, error);
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 120));
+    }
+    setupCloudRealtimeSubscriptions(false);
+    state.cloud.lastSyncAt = new Date().toISOString();
+    touchState();
+    saveState();
+    if (showMessage) showToast(`Cloud pozadí načteno: ${ok}/${moduleOrder.length}`);
+    return true;
   }
 
   async function cloudLoadAllModules(showMessage = true, options = {}) {
@@ -16831,6 +17255,15 @@
       });
       return;
     }
+    if (action === 'finance-account-edit') {
+      setFinanceAccountEdit(button.dataset.id);
+      return;
+    }
+    if (action === 'finance-account-edit-cancel') {
+      financeAccountEditId = '';
+      render();
+      return;
+    }
     if (action === 'cloud-sync-finance-account') {
       cloudSyncFinanceAccountById(button.dataset.id);
       return;
@@ -16849,6 +17282,23 @@
     }
     if (action === 'cloud-sync-local-finance') {
       cloudSyncLocalFinance();
+      return;
+    }
+    if (action === 'finance-edit') {
+      setFinanceEdit(button.dataset.id);
+      return;
+    }
+    if (action === 'finance-edit-cancel') {
+      financeEditId = '';
+      render();
+      return;
+    }
+    if (action === 'finance-save-form-template') {
+      saveFinanceTemplateFromVisibleForm(button.closest('form'));
+      return;
+    }
+    if (action === 'delete-finance-template') {
+      deleteFinanceTemplate(button.dataset.id);
       return;
     }
     if (action === 'cloud-sync-finance') {
@@ -17692,7 +18142,7 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 210
+        appBuild: 211
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -18282,7 +18732,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-210-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-211-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -18422,6 +18872,7 @@
         if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       }
       render();
+      scheduleLazyCloudLoadForModule(activeModule);
       keepActiveNavCentered('smooth');
       keepActiveSectionTabsCentered('smooth');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -18559,7 +19010,7 @@
   installAppLikeTouchGuards();
 
   render();
-  runWhenMainThreadFree(() => scheduleMartinPrivateShoppingRestore(), { delay: 900, timeout: 2400 });
+  runWhenMainThreadFree(() => scheduleMartinPrivateShoppingRestore(), { delay: 3600, timeout: 7000 });
   scheduleBootCloudWarmStart();
   handleInitialAuthReturn().catch((error) => console.warn('Auth return handling failed', error));
 
@@ -18576,7 +19027,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_210</span>
+          <span class="badge">Domácnost+ v.0.1_211</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
