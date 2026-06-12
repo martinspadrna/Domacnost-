@@ -13208,7 +13208,7 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   }
 }
 
-/* Domácnost+ v.0.1_213 – Finance redesign */
+/* Domácnost+ v.0.1_214 – Finance redesign */
 .finance-dashboard-card {
   overflow: hidden;
 }
@@ -13354,4 +13354,117 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   .finance-split-overview {
     grid-template-columns: 1fr;
   }
+}
+
+/* Domácnost+ v.0.1_214 – Finance kontrast hotfix */
+.finance-panel,
+.finance-dashboard-card {
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.90), rgba(241, 245, 249, 0.80));
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: 0 14px 38px rgba(15, 23, 42, 0.10);
+}
+.finance-hero-card,
+.finance-kpi,
+.finance-split-card,
+.inline-edit-card,
+.finance-template-panel,
+.finance-copy-panel,
+.finance-form-drawer[open],
+.finance-panel .compact-edit-details[open] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(239, 246, 255, 0.78));
+  border-color: rgba(148, 163, 184, 0.34);
+  color: #0f172a;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.56);
+}
+.finance-panel .item,
+.finance-panel .compact-item,
+.finance-movement-list .item {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+.finance-panel .field label,
+.finance-panel .card-header p,
+.finance-hero-card .eyebrow,
+.finance-hero-card p,
+.finance-kpi span,
+.finance-split-head span,
+.finance-panel .item-meta,
+.finance-panel .inline-note {
+  color: rgba(51, 65, 85, 0.92);
+}
+.finance-panel .input,
+.finance-panel .select,
+.finance-panel .textarea,
+.inline-edit-card .input,
+.inline-edit-card .select,
+.inline-edit-card .textarea,
+.finance-template-panel .input,
+.finance-template-panel .select,
+.finance-template-panel .textarea {
+  background: rgba(255, 255, 255, 0.96);
+  color: #0f172a;
+  border-color: rgba(100, 116, 139, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 5px 14px rgba(15, 23, 42, 0.05);
+}
+.finance-panel .input::placeholder,
+.finance-panel .textarea::placeholder {
+  color: rgba(71, 85, 105, 0.58);
+}
+.finance-panel .input:focus,
+.finance-panel .select:focus,
+.finance-panel .textarea:focus {
+  background: #ffffff;
+  border-color: rgba(37, 99, 235, 0.62);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14), 0 10px 26px rgba(15, 23, 42, 0.08);
+}
+.finance-panel .select option {
+  color: #0f172a;
+  background: #ffffff;
+}
+.finance-panel .badge {
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(148, 163, 184, 0.22);
+}
+[data-theme="dark"] .finance-panel,
+[data-theme="dark"] .finance-dashboard-card {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.84));
+  border-color: rgba(148, 163, 184, 0.24);
+}
+[data-theme="dark"] .finance-hero-card,
+[data-theme="dark"] .finance-kpi,
+[data-theme="dark"] .finance-split-card,
+[data-theme="dark"] .inline-edit-card,
+[data-theme="dark"] .finance-template-panel,
+[data-theme="dark"] .finance-copy-panel,
+[data-theme="dark"] .finance-form-drawer[open],
+[data-theme="dark"] .finance-panel .compact-edit-details[open],
+[data-theme="dark"] .finance-panel .item,
+[data-theme="dark"] .finance-panel .compact-item {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.82));
+  color: rgba(248, 250, 252, 0.96);
+  border-color: rgba(148, 163, 184, 0.24);
+}
+[data-theme="dark"] .finance-panel .input,
+[data-theme="dark"] .finance-panel .select,
+[data-theme="dark"] .finance-panel .textarea,
+[data-theme="dark"] .inline-edit-card .input,
+[data-theme="dark"] .inline-edit-card .select,
+[data-theme="dark"] .inline-edit-card .textarea,
+[data-theme="dark"] .finance-template-panel .input,
+[data-theme="dark"] .finance-template-panel .select,
+[data-theme="dark"] .finance-template-panel .textarea {
+  background: rgba(15, 23, 42, 0.92);
+  color: rgba(248, 250, 252, 0.96);
+  border-color: rgba(148, 163, 184, 0.34);
+}
+[data-theme="dark"] .finance-panel .field label,
+[data-theme="dark"] .finance-panel .card-header p,
+[data-theme="dark"] .finance-hero-card .eyebrow,
+[data-theme="dark"] .finance-hero-card p,
+[data-theme="dark"] .finance-kpi span,
+[data-theme="dark"] .finance-split-head span,
+[data-theme="dark"] .finance-panel .item-meta,
+[data-theme="dark"] .finance-panel .inline-note {
+  color: rgba(203, 213, 225, 0.88);
 }

@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_213';
+  const APP_VERSION = 'Domácnost+ v.0.1_214';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -695,8 +695,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 213,
-      mode: 'finance-redesign-cloud-first-v213',
+      appBuild: 214,
+      mode: 'finance-contrast-hotfix-v214',
       createdAt: '',
       updatedAt: ''
     },
@@ -1584,8 +1584,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 213,
-      mode: 'finance-redesign-cloud-first-v213',
+      appBuild: 214,
+      mode: 'finance-contrast-hotfix-v214',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -4874,6 +4874,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_214', note: 'Finance kontrast hotfix: tmavší a čitelnější formuláře, editace účtů a přehledové finanční panely, aby na světlém glass pozadí nezanikaly hodnoty ani popisky.' },
       { title: 'Domácnost+ v.0.1_213', note: 'Finance redesign: cloud-first ochrana při úpravě pohybů mezi měsíci, přehledný dashboard se zůstatkem / příjmy / výdaji / rozdílem, filtry pohybů, kopírování plateb do více měsíců a online záloha šablon přes domácí UI nastavení.' },
       { title: 'Domácnost+ v.0.1_210', note: 'Kontrola a ochrana proti duplicitám v Nákupy: balíček nemá duplicitní výchozí katalog ani privátní restore seznamy, aplikace nově deduplikuje seznamy/položky při migraci a cloud načtení a nové duplicitní položky místo vytvoření navýší množství.' },
       { title: 'Domácnost+ v.0.1_209', note: 'Home ikonky opravené systémově: kritické ikony panelů se vykreslují přímo přes PNG podle zvoleného icon packu a CSS background slot zůstává jen mimo Home.' },
@@ -5842,7 +5843,7 @@
         createdAt: timestamp,
         updatedAt: timestamp,
         sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v213'
+        source: 'martin-private-restore-v214'
       });
       existingListNames.add(nameKey);
       existingListIds.add(list.id);
@@ -5864,7 +5865,7 @@
         householdId: data.household?.id || '',
         profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
         createdAt: timestamp,
-        source: 'martin-private-restore-v213'
+        source: 'martin-private-restore-v214'
       }));
 
     data.shopping = [...data.shopping, ...restoredItems];
@@ -5879,7 +5880,7 @@
     martinPrivateShoppingRestorePromise = new Promise((resolve) => {
       const run = async () => {
         try {
-          const response = await fetch('./martin-shopping-restore-v213.json', { cache: 'force-cache' });
+          const response = await fetch('./martin-shopping-restore-v214.json', { cache: 'force-cache' });
           if (!response.ok) throw new Error(`restore ${response.status}`);
           const payload = await response.json();
           const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
@@ -9836,7 +9837,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 208))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 214))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -15233,7 +15234,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 213, mode: 'rich-demo-v213', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 214, mode: 'rich-demo-v214', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15376,7 +15377,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 213, mode: 'finance-redesign-cloud-first-v213', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 214, mode: 'finance-contrast-hotfix-v214', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -18593,7 +18594,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 213
+        appBuild: 214
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19183,7 +19184,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-213-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-214-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -19486,7 +19487,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_213</span>
+          <span class="badge">Domácnost+ v.0.1_214</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
