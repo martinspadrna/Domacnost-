@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_212';
+  const APP_VERSION = 'Domácnost+ v.0.1_213';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -694,9 +694,9 @@
   const VISUAL_SETTINGS_STORAGE_KEY = 'domacnostPlus.visualSettings.v1';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 83,
-      appBuild: 212,
-      mode: 'finance-template-edit-autosync-v212',
+      schemaVersion: 84,
+      appBuild: 213,
+      mode: 'finance-redesign-cloud-first-v213',
       createdAt: '',
       updatedAt: ''
     },
@@ -755,7 +755,7 @@
     subscriptions: [],
     subscriptionPeople: [],
     subscriptionPayments: [],
-    financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: '' },
+    financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: '', typeFilter: 'all' },
     subscriptionsCloud: { loadedAt: '' },
     householdExtrasCloud: { loadedAt: '' },
     weather: {
@@ -1032,6 +1032,7 @@
   let financeEditId = '';
   let financeAccountEditId = '';
   let financeTemplateEditId = '';
+  let financeCopyId = '';
   let shoppingQuantityEditId = '';
   let shoppingDoneModalOpen = false;
   let shoppingSwipeStart = null;
@@ -1582,9 +1583,9 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
 
     migrated.meta = {
-      schemaVersion: 83,
-      appBuild: 212,
-      mode: 'finance-template-edit-autosync-v212',
+      schemaVersion: 84,
+      appBuild: 213,
+      mode: 'finance-redesign-cloud-first-v213',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -4873,7 +4874,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_212', note: 'Stabilizační build: po prvním kliknutí se cloud dočítá až při klidném UI, Finance umí upravovat i existující šablony bez duplicit a Google kalendáře mají tichý automatický sync po startu / otevření kalendáře.' },
+      { title: 'Domácnost+ v.0.1_213', note: 'Finance redesign: cloud-first ochrana při úpravě pohybů mezi měsíci, přehledný dashboard se zůstatkem / příjmy / výdaji / rozdílem, filtry pohybů, kopírování plateb do více měsíců a online záloha šablon přes domácí UI nastavení.' },
       { title: 'Domácnost+ v.0.1_210', note: 'Kontrola a ochrana proti duplicitám v Nákupy: balíček nemá duplicitní výchozí katalog ani privátní restore seznamy, aplikace nově deduplikuje seznamy/položky při migraci a cloud načtení a nové duplicitní položky místo vytvoření navýší množství.' },
       { title: 'Domácnost+ v.0.1_209', note: 'Home ikonky opravené systémově: kritické ikony panelů se vykreslují přímo přes PNG podle zvoleného icon packu a CSS background slot zůstává jen mimo Home.' },
       { title: 'Domácnost+ v.0.1_207', note: 'Hotfix Home ikon: panelové ikonky na hlavní obrazovce znovu respektují zvolený icon pack. SVG/glass render zůstává jen jako nouzový fallback, když asset chybí.' },
@@ -5841,7 +5842,7 @@
         createdAt: timestamp,
         updatedAt: timestamp,
         sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v212'
+        source: 'martin-private-restore-v213'
       });
       existingListNames.add(nameKey);
       existingListIds.add(list.id);
@@ -5863,7 +5864,7 @@
         householdId: data.household?.id || '',
         profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
         createdAt: timestamp,
-        source: 'martin-private-restore-v212'
+        source: 'martin-private-restore-v213'
       }));
 
     data.shopping = [...data.shopping, ...restoredItems];
@@ -5878,7 +5879,7 @@
     martinPrivateShoppingRestorePromise = new Promise((resolve) => {
       const run = async () => {
         try {
-          const response = await fetch('./martin-shopping-restore-v212.json', { cache: 'force-cache' });
+          const response = await fetch('./martin-shopping-restore-v213.json', { cache: 'force-cache' });
           if (!response.ok) throw new Error(`restore ${response.status}`);
           const payload = await response.json();
           const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
@@ -8797,49 +8798,113 @@
   }
 
 
+  function renderFinanceCopyPanel() {
+    const source = financeCopyId ? (state.finance || []).find((item) => item.id === financeCopyId) : null;
+    if (!source) return '';
+    const sourceDate = parseDateValue(source.date) || new Date();
+    const nextDate = new Date(sourceDate.getFullYear(), sourceDate.getMonth() + 1, sourceDate.getDate());
+    const firstMonth = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+    return `
+      <section class="card finance-panel panel-add finance-copy-panel">
+        <div class="card-header"><div><h2>Kopírovat pohyb do dalších měsíců</h2><p>${escapeHtml(source.title)} · ${formatCurrency(source.amount)} · ${formatDate(source.date)}</p></div><span class="badge">kopie</span></div>
+        <form data-form="copy-finance" data-id="${escapeHtml(source.id)}" class="compact-form">
+          <div class="form-grid two">
+            ${field('První měsíc', 'firstMonth', 'month', '', true, firstMonth)}
+            ${field('Počet měsíců', 'count', 'number', 'např. 6', true, '1')}
+            ${field('Den v měsíci', 'day', 'number', '1–31', false, String(sourceDate.getDate()))}
+            ${field('Poznámka ke kopiím', 'noteSuffix', 'text', 'volitelné')}
+          </div>
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">Vytvořit kopie</button>
+            <button class="ghost-btn" type="button" data-action="finance-copy-cancel">Zrušit</button>
+          </div>
+        </form>
+      </section>
+    `;
+  }
+
+  function renderFinanceMonthToolbar(selectedMonth, typeFilter) {
+    const filters = [
+      ['all', 'Vše'],
+      ['income', 'Příjmy'],
+      ['expense', 'Výdaje'],
+      ['transfer', 'Přesuny']
+    ];
+    return `
+      <div class="finance-toolbar">
+        <form data-form="finance-month-filter" class="compact-filter-form finance-month-form">
+          <div class="form-grid two">
+            ${field('Měsíc přehledu', 'month', 'month', '', false, selectedMonth)}
+            <div class="field"><label>Rychlý posun</label><div class="item-actions"><button class="ghost-btn" type="button" data-action="finance-month-prev">Předchozí</button><button class="ghost-btn" type="button" data-action="finance-month-current">Aktuální</button><button class="ghost-btn" type="button" data-action="finance-month-next">Další</button></div></div>
+          </div>
+          <div class="form-actions"><button class="ghost-btn" type="submit">Zobrazit měsíc</button></div>
+        </form>
+        <div class="finance-filter-chips" role="group" aria-label="Filtr pohybů">
+          ${filters.map(([id, label]) => `<button class="quick-chip ${typeFilter === id ? 'active' : ''}" type="button" data-action="finance-filter" data-filter="${id}">${escapeHtml(label)}</button>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderFinanceSplitOverview(incomeItems, expenseItems) {
+    const renderMiniRows = (rows, emptyText) => rows.length
+      ? rows.slice(0, 8).map((item) => `<div class="finance-mini-row"><span>${escapeHtml(item.title)}</span><strong>${formatCurrency(item.amount)}</strong></div>`).join('')
+      : `<div class="inline-note compact-note">${escapeHtml(emptyText)}</div>`;
+    return `
+      <div class="finance-split-overview">
+        <section class="finance-split-card income"><div class="finance-split-head"><strong>Příjmy</strong><span>${incomeItems.length}×</span></div>${renderMiniRows(incomeItems, 'Žádné příjmy v měsíci.')}</section>
+        <section class="finance-split-card expense"><div class="finance-split-head"><strong>Výdaje</strong><span>${expenseItems.length}×</span></div>${renderMiniRows(expenseItems, 'Žádné výdaje v měsíci.')}</section>
+      </div>
+    `;
+  }
+
   function renderFinance() {
     const items = [...(state.finance || [])].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     const accounts = financeAccountsSorted();
     const selectedMonth = financeSelectedMonth();
-    const visibleItems = items.filter((item) => String(item.date || '').slice(0, 7) === selectedMonth);
+    const typeFilter = financeTypeFilter();
+    const visibleMonthItems = items.filter((item) => String(item.date || '').slice(0, 7) === selectedMonth);
+    const visibleItems = filterFinanceItemsByType(visibleMonthItems, typeFilter);
+    const incomeItems = visibleMonthItems.filter((item) => item.type === 'income').sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0));
+    const expenseItems = visibleMonthItems.filter((item) => item.type === 'expense').sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0));
     const summary = financeMonthSummary(selectedMonth);
     const balances = financeAccountBalances();
     const totalBalance = accounts.reduce((sum, account) => account.includeInTotal === false ? sum : sum + (balances[account.id] || 0), 0);
-    const localOnly = items.filter((item) => !item.cloudId).length;
-    const localAccounts = accounts.filter((account) => !account.cloudId).length;
+    const localOnly = items.filter((item) => !item.cloudId || item.syncStatus).length;
+    const localAccounts = accounts.filter((account) => !account.cloudId || account.syncStatus).length;
     const categoryRows = financeCategoryBreakdown(selectedMonth);
     const accountRows = financeAccountMonthSummary(selectedMonth);
     const managedRows = financeManagedGroups(balances);
     const editingFinanceItem = (state.finance || []).find((item) => item.id === financeEditId) || null;
     const editingFinanceAccount = (state.financeAccounts || []).find((account) => account.id === financeAccountEditId) || null;
-    const activeFinanceTab = getModuleTab('finance', editingFinanceItem ? 'add' : 'summary');
+    const activeFinanceTab = getModuleTab('finance', editingFinanceItem || financeCopyId ? 'add' : 'summary');
+    const cloudNote = state.cloud?.householdId ? (localOnly || localAccounts ? `čeká na cloud: ${localOnly + localAccounts}` : 'online záloha OK') : 'lokální režim';
     return `
       ${renderSectionTabs('finance', [
-        { id: 'summary', label: 'Přehled', icon: '💰', count: visibleItems.length },
+        { id: 'summary', label: 'Přehled', icon: '💰', count: visibleMonthItems.length },
         { id: 'accounts', label: 'Účty', icon: '🏦', count: accounts.length },
         { id: 'add', label: 'Přidat', icon: '➕' },
         { id: 'analysis', label: 'Souhrny', icon: '📊' }
       ], 'summary')}
       <div class="grid two module-tabbed finance-tab-${activeFinanceTab}" data-tab-area="finance">
-        <section class="card desktop-span-2 finance-panel panel-summary">
-          <div class="card-header">
-            <div><h2>Finance</h2><p>Obecný přehled příjmů, výdajů, zůstatků, peněženek, spoření i peněz spravovaných pro někoho dalšího.</p></div>
-            <span class="badge ${items.some((item) => item.cloudId) || accounts.some((item) => item.cloudId) ? 'good' : ''}">${items.some((item) => item.cloudId) || accounts.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
+        <section class="card desktop-span-2 finance-panel panel-summary finance-dashboard-card">
+          <div class="finance-hero-card">
+            <div><span class="eyebrow">Celkový zůstatek</span><strong>${formatCurrency(totalBalance)}</strong><p>${escapeHtml(financeMonthLabel(selectedMonth))} · ${escapeHtml(cloudNote)}</p></div>
+            <span class="badge ${state.cloud?.householdId && !localOnly && !localAccounts ? 'good' : localOnly || localAccounts ? 'warn' : ''}">${state.cloud?.householdId ? 'cloud-first' : 'lokálně'}</span>
           </div>
-          <div class="kpi-grid compact-kpi-grid">
-            <div class="kpi"><strong>${formatCurrency(summary.income)}</strong><span>Příjmy za ${escapeHtml(financeMonthLabel(selectedMonth))}</span></div>
-            <div class="kpi"><strong>${formatCurrency(summary.expense)}</strong><span>Výdaje za ${escapeHtml(financeMonthLabel(selectedMonth))}</span></div>
-            <div class="kpi"><strong>${formatCurrency(summary.balance)}</strong><span>Rozdíl měsíce</span></div>
-            <div class="kpi"><strong>${formatCurrency(totalBalance)}</strong><span>Zůstatek účtů</span></div>
+          <div class="finance-kpi-row">
+            <div class="finance-kpi income"><span>Příjmy</span><strong>${formatCurrency(summary.income)}</strong></div>
+            <div class="finance-kpi expense"><span>Výdaje</span><strong>${formatCurrency(summary.expense)}</strong></div>
+            <div class="finance-kpi ${summary.balance >= 0 ? 'income' : 'expense'}"><span>Rozdíl</span><strong>${formatCurrency(summary.balance)}</strong></div>
           </div>
-          <form data-form="finance-month-filter" class="compact-filter-form">
-            <div class="form-grid two">
-              ${field('Měsíc přehledu', 'month', 'month', '', false, selectedMonth)}
-              <div class="field"><label>Rychlý posun</label><div class="item-actions"><button class="ghost-btn" type="button" data-action="finance-month-prev">Předchozí</button><button class="ghost-btn" type="button" data-action="finance-month-current">Aktuální</button><button class="ghost-btn" type="button" data-action="finance-month-next">Další</button></div></div>
-            </div>
-            <div class="form-actions"><button class="ghost-btn" type="submit">Zobrazit měsíc</button></div>
-          </form>
-          ${visibleItems.length ? `<div class="list compact-list">${visibleItems.slice(0, 18).map(renderFinanceItem).join('')}</div>` : renderEmptyCta({ icon: '💰', title: 'Měsíc je bez pohybů', text: 'Přidej příjem, výdaj nebo přesun mezi účty. Přehled se začne počítat automaticky.', nav: 'finance', tab: 'add', label: 'Přidat pohyb' })}
+          ${renderFinanceMonthToolbar(selectedMonth, typeFilter)}
+          ${renderFinanceSplitOverview(incomeItems, expenseItems)}
+          <div class="card-header finance-list-head"><div><h2>Pohyby na účtu</h2><p>${escapeHtml(typeFilter === 'all' ? 'Všechny pohyby' : typeFilter === 'income' ? 'Jen příjmy' : typeFilter === 'expense' ? 'Jen výdaje' : 'Jen přesuny')} za ${escapeHtml(financeMonthLabel(selectedMonth))}</p></div><span class="badge">${visibleItems.length}</span></div>
+          ${visibleItems.length ? `<div class="list compact-list finance-movement-list">${visibleItems.slice(0, 80).map(renderFinanceItem).join('')}</div>` : renderEmptyCta({ icon: '💰', title: 'Měsíc je bez pohybů', text: 'Přidej příjem, výdaj nebo přesun mezi účty. Přehled se začne počítat automaticky.', nav: 'finance', tab: 'add', label: 'Přidat pohyb' })}
+          <div class="form-actions cloud-inline-actions">
+            ${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-finance">Načíst cloud finance</button>' : ''}
+            ${state.cloud?.householdId && (localOnly || localAccounts) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-finance-all">Odeslat čekající finance (${localOnly + localAccounts})</button>` : ''}
+          </div>
         </section>
 
         <section class="card finance-panel panel-accounts">
@@ -8875,11 +8940,12 @@
           </details>
         </section>
 
+        ${renderFinanceCopyPanel()}
         <section class="card finance-panel panel-add">
           <div class="card-header"><div><h2>${editingFinanceItem ? 'Upravit pohyb' : 'Přidat pohyb'}</h2><p>Příjem, výdaj nebo přesun mezi účty. Šablony jsou rychlé pro opakované platby.</p></div>${editingFinanceItem ? '<span class="badge warn">úprava</span>' : ''}</div>
           ${renderFinanceTemplatePanel(accounts)}
           ${renderFinanceTransactionForm(editingFinanceItem)}
-          <div class="inline-note">Pro spravované peníze můžeš mít účty třeba „Babička – u mě“ a „Babička – spoření“. Přesuny pak nepočítají jako výdaj domácnosti, ale jako pohyb mezi účty.</div>
+          <div class="inline-note">Finance jsou cloud-first: při přihlášené domácnosti se účty a pohyby ukládají do Supabase. Když cloud zrovna nejde, záznam zůstane lokálně označený jako čekající a dá se později odeslat.</div>
         </section>
 
         <section class="card finance-panel panel-analysis">
@@ -8917,17 +8983,19 @@
     const isTransfer = item.type === 'transfer';
     const account = financeAccountById(item.accountId);
     const target = financeAccountById(item.transferAccountId);
+    const syncLabel = item.syncStatus ? ' · čeká na cloud' : item.cloudId ? ' · cloud' : ' · lokálně';
     return `
-      <div class="item">
+      <div class="item finance-item ${isIncome ? 'is-income' : isTransfer ? 'is-transfer' : 'is-expense'}">
         <div class="item-top">
           <div class="item-title">${isTransfer ? '↔️' : isIncome ? '➕' : '➖'} ${escapeHtml(item.title)}</div>
           <span class="badge ${isIncome || isTransfer ? 'good' : 'warn'}">${formatCurrency(item.amount)}</span>
         </div>
-        <div class="item-meta">${formatDate(item.date)} · ${isTransfer ? 'Přesun' : escapeHtml(financeCategoryLabel(item.category))}${account ? ` · ${escapeHtml(account.name)}` : ''}${target ? ` → ${escapeHtml(target.name)}` : ''} · ${escapeHtml(financePaymentLabel(item.paymentMethod))}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
+        <div class="item-meta">${formatDate(item.date)} · ${isTransfer ? 'Přesun' : escapeHtml(financeCategoryLabel(item.category))}${account ? ` · ${escapeHtml(account.name)}` : ''}${target ? ` → ${escapeHtml(target.name)}` : ''} · ${escapeHtml(financePaymentLabel(item.paymentMethod))}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${syncLabel}</div>
         <div class="item-actions">
           <button class="ghost-btn" type="button" data-action="finance-edit" data-id="${escapeHtml(item.id)}">Upravit</button>
-          ${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-finance" data-id="${item.id}">Odeslat</button>` : ''}
-          <button class="danger-btn" type="button" data-action="delete-finance" data-id="${item.id}">Smazat</button>
+          <button class="ghost-btn" type="button" data-action="finance-copy" data-id="${escapeHtml(item.id)}">Kopírovat</button>
+          ${state.cloud?.householdId && (!item.cloudId || item.syncStatus) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-finance" data-id="${escapeHtml(item.id)}">Odeslat</button>` : ''}
+          <button class="danger-btn" type="button" data-action="delete-finance" data-id="${escapeHtml(item.id)}">Smazat</button>
         </div>
       </div>
     `;
@@ -12340,6 +12408,7 @@
       return null;
     }
     item.cloudId = data.id;
+    item.syncStatus = '';
     state.cloud.lastSyncAt = new Date().toISOString();
     return data;
   }
@@ -12373,6 +12442,7 @@
       return null;
     }
     item.cloudId = data.id;
+    item.syncStatus = '';
     state.cloud.lastSyncAt = new Date().toISOString();
     return data;
   }
@@ -14732,6 +14802,7 @@
       'update-finance-template': () => updateFinanceTemplateFromForm(form.dataset.id, data, form),
       'add-finance': () => addFinanceFromForm(data, form),
       'update-finance': () => updateFinanceFromForm(form.dataset.id, data, form),
+      'copy-finance': () => copyFinanceToMonths(form.dataset.id, data, form),
       'finance-month-filter': () => setFinanceMonth(data.month),
       'add-subscription-person': () => addSubscriptionPersonFromForm(data, form),
       'add-subscription': () => addSubscriptionFromForm(data, form),
@@ -15162,7 +15233,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 83, appBuild: 212, mode: 'rich-demo-v212', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 213, mode: 'rich-demo-v213', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15214,7 +15285,7 @@
       ],
       financeAccounts,
       finance,
-      financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: todayISO().slice(0, 7) },
+      financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: todayISO().slice(0, 7), typeFilter: 'all' },
       householdExtrasCloud: { loadedAt: '' },
       weather: makeDemoWeatherState(),
       pwa: { installed: false, lastUpdateCheck: '', lastInstallPrompt: '', diagnostics: null },
@@ -15305,7 +15376,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 83, appBuild: 212, mode: 'finance-template-edit-autosync-v212', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 213, mode: 'finance-redesign-cloud-first-v213', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -15506,6 +15577,52 @@
     return map[value] || 'jiné';
   }
 
+  function financeTypeFilter() {
+    const value = normalizeText(state.financeCloud?.typeFilter || 'all');
+    return ['all', 'income', 'expense', 'transfer'].includes(value) ? value : 'all';
+  }
+
+  function filterFinanceItemsByType(items = [], filter = financeTypeFilter()) {
+    const safe = ['income', 'expense', 'transfer'].includes(filter) ? filter : 'all';
+    return safe === 'all' ? items : items.filter((item) => item.type === safe);
+  }
+
+  function setFinanceTypeFilter(filter = 'all') {
+    const safe = ['all', 'income', 'expense', 'transfer'].includes(filter) ? filter : 'all';
+    state.financeCloud = { ...(state.financeCloud || {}), typeFilter: safe };
+    touchState();
+    saveState();
+    render();
+  }
+
+  function addMonthsToFinanceDate(dateValue, monthOffset = 1, preferredDay = 0) {
+    const base = parseDateValue(dateValue) || new Date();
+    const day = Math.min(31, Math.max(1, Number(preferredDay || base.getDate() || 1)));
+    const target = new Date(base.getFullYear(), base.getMonth() + Number(monthOffset || 0), 1);
+    const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+    target.setDate(Math.min(day, lastDay));
+    return target.toISOString().slice(0, 10);
+  }
+
+  function dateInFinanceMonth(monthKey, day = 1) {
+    const safeMonth = /^\d{4}-\d{2}$/.test(String(monthKey || '')) ? String(monthKey) : todayISO().slice(0, 7);
+    const [year, month] = safeMonth.split('-').map(Number);
+    const lastDay = new Date(year, month, 0).getDate();
+    return `${safeMonth}-${String(Math.min(Math.max(1, Number(day || 1)), lastDay)).padStart(2, '0')}`;
+  }
+
+  function financeCloudPendingCount() {
+    return (state.finance || []).filter((item) => !item.cloudId || item.syncStatus).length + (state.financeAccounts || []).filter((item) => !item.cloudId || item.syncStatus).length;
+  }
+
+  function markFinanceCloudPending(reason = 'finance') {
+    state.financeCloud = { ...(state.financeCloud || {}), pendingAt: new Date().toISOString(), pendingReason: reason };
+  }
+
+  function clearFinanceCloudPendingIfClean() {
+    if (!financeCloudPendingCount()) state.financeCloud = { ...(state.financeCloud || {}), pendingAt: '', pendingReason: '' };
+  }
+
   function financeSelectedMonth() {
     const stored = state.financeCloud?.monthFilter;
     return /^\d{4}-\d{2}$/.test(String(stored || '')) ? stored : todayISO().slice(0, 7);
@@ -15632,6 +15749,7 @@
       return null;
     }
     account.cloudId = data.id;
+    account.syncStatus = '';
     state.cloud.lastSyncAt = new Date().toISOString();
     return data;
   }
@@ -15695,6 +15813,7 @@
       return null;
     }
     item.cloudId = data.id;
+    item.syncStatus = '';
     state.cloud.lastSyncAt = new Date().toISOString();
     return data;
   }
@@ -15736,8 +15855,9 @@
       showToast(accountError.message || 'Finanční účty se nepovedlo načíst z cloudu');
       return false;
     }
-    const localAccounts = (state.financeAccounts || []).filter((item) => !item.cloudId);
-    const cloudAccounts = (accountData || []).map((item) => ({
+    const localAccounts = (state.financeAccounts || []).filter((item) => !item.cloudId || item.syncStatus);
+    const pendingAccountCloudIds = new Set(localAccounts.map((item) => item.cloudId).filter(Boolean));
+    const cloudAccounts = (accountData || []).filter((item) => !pendingAccountCloudIds.has(item.id)).map((item) => ({
       id: state.financeAccounts.find((entry) => entry.cloudId === item.id)?.id || `finance-account-cloud-${item.id}`,
       householdId: currentHouseholdId(),
       profileId: currentProfileId(),
@@ -15763,8 +15883,9 @@
       showToast(error.message || 'Finance se nepovedlo načíst z cloudu');
       return false;
     }
-    const localOnly = (state.finance || []).filter((item) => !item.cloudId);
-    const cloudItems = (data || []).map((item) => ({
+    const localOnly = (state.finance || []).filter((item) => !item.cloudId || item.syncStatus);
+    const pendingFinanceCloudIds = new Set(localOnly.map((item) => item.cloudId).filter(Boolean));
+    const cloudItems = (data || []).filter((item) => !pendingFinanceCloudIds.has(item.id)).map((item) => ({
       id: state.finance.find((entry) => entry.cloudId === item.id)?.id || `finance-cloud-${item.id}`,
       householdId: currentHouseholdId(),
       profileId: currentProfileId(),
@@ -15782,6 +15903,7 @@
     }));
     state.finance = [...cloudItems, ...localOnly];
     state.financeCloud = { ...(state.financeCloud || {}), accountsLoadedAt: new Date().toISOString(), loadedAt: new Date().toISOString() };
+    clearFinanceCloudPendingIfClean();
     touchState();
     saveState();
     render();
@@ -15878,6 +16000,7 @@
 
   function fillFinanceTemplate(templateId) {
     financeEditId = '';
+    financeCopyId = '';
     moduleTabs = { ...(moduleTabs || {}), finance: 'add' };
     if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
     render();
@@ -15932,6 +16055,22 @@
     });
   }
 
+  function persistFinanceTemplatesState() {
+    touchState();
+    saveState();
+    if (cloudReady()) {
+      state.financeCloud = { ...(state.financeCloud || {}), templatesPendingAt: new Date().toISOString() };
+      cloudSaveHouseholdUiSettings(false)
+        .then((ok) => {
+          if (ok) {
+            state.financeCloud = { ...(state.financeCloud || {}), templatesPendingAt: '', templatesLoadedAt: new Date().toISOString() };
+            persistStateSnapshot();
+          }
+        })
+        .catch((error) => console.warn('Finance template autosync failed', error));
+    }
+  }
+
   function upsertFinanceTemplate(template) {
     const normalized = normalizeFinanceTemplate({ ...template, system: false, updatedAt: new Date().toISOString() });
     const current = normalizeFinanceTemplates(state.financeTemplates || []);
@@ -15951,8 +16090,7 @@
     if (!template.name || !template.title) return showToast('Doplň název šablony a pohybu');
     upsertFinanceTemplate(template);
     financeTemplateEditId = '';
-    touchState();
-    saveState();
+    persistFinanceTemplatesState();
     form?.reset?.();
     render();
     showToast(`Šablona ${template.name} uložená`);
@@ -15965,8 +16103,7 @@
     if (!template.name || !template.title) return showToast('Doplň název šablony a pohybu');
     upsertFinanceTemplate({ ...existing, ...template, id: existing.id, createdAt: existing.createdAt || new Date().toISOString(), system: false });
     financeTemplateEditId = '';
-    touchState();
-    saveState();
+    persistFinanceTemplatesState();
     form?.reset?.();
     render();
     showToast(`Šablona ${template.name} upravená`);
@@ -15991,8 +16128,7 @@
     const template = financeTemplateFromFormData(data, name, existing?.id || '');
     upsertFinanceTemplate(template);
     financeTemplateEditId = '';
-    touchState();
-    saveState();
+    persistFinanceTemplatesState();
     render();
     showToast(existing ? `Šablona ${template.name} upravená` : `Šablona ${template.name} uložená`);
   }
@@ -16003,16 +16139,83 @@
     if (!window.confirm(`Smazat šablonu ${template.name}?`)) return;
     state.financeTemplates = (state.financeTemplates || []).filter((item) => String(item.id) !== String(id));
     if (financeTemplateEditId === id) financeTemplateEditId = '';
-    touchState();
-    saveState();
+    persistFinanceTemplatesState();
     render();
     showToast('Šablona smazaná');
+  }
+
+  function setFinanceCopy(id) {
+    const item = (state.finance || []).find((entry) => entry.id === id);
+    if (!item) return showToast('Pohyb se nepovedlo najít');
+    financeCopyId = id;
+    financeEditId = '';
+    moduleTabs = { ...(moduleTabs || {}), finance: 'add' };
+    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    render();
+    keepActiveSectionTabsCentered('smooth');
+    const schedule = window.requestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
+    schedule(() => document.querySelector('[data-form="copy-finance"]')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }));
+  }
+
+  async function copyFinanceToMonths(id, data, form) {
+    const source = (state.finance || []).find((entry) => entry.id === id);
+    if (!source) return showToast('Původní pohyb se nepovedlo najít');
+    const firstMonth = /^\d{4}-\d{2}$/.test(String(data.firstMonth || '')) ? String(data.firstMonth) : todayISO().slice(0, 7);
+    const count = Math.min(36, Math.max(1, Math.floor(Number(data.count || 1))));
+    const sourceDate = parseDateValue(source.date) || new Date();
+    const day = Math.min(31, Math.max(1, Math.floor(Number(data.day || sourceDate.getDate() || 1))));
+    const noteSuffix = normalizeText(data.noteSuffix);
+    const [firstYear, firstMonthIndex] = firstMonth.split('-').map(Number);
+    const copies = [];
+    for (let index = 0; index < count; index += 1) {
+      const monthDate = new Date(firstYear, firstMonthIndex - 1 + index, 1);
+      const monthKey = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}`;
+      const copy = {
+        ...source,
+        id: uid(),
+        cloudId: '',
+        syncStatus: '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        date: dateInFinanceMonth(monthKey, day),
+        note: [source.note, noteSuffix].filter(Boolean).join(' · ')
+      };
+      copies.push(copy);
+    }
+    state.finance.push(...copies);
+    state.financeCloud = { ...(state.financeCloud || {}), monthFilter: firstMonth };
+    financeCopyId = '';
+    if (cloudReady()) markFinanceCloudPending('copy-finance');
+    touchState();
+    saveState();
+    form?.reset?.();
+    render();
+    let cloudCount = 0;
+    if (cloudReady()) {
+      for (const item of copies) {
+        const saved = await cloudAddFinance(item);
+        if (saved?.id) {
+          item.cloudId = saved.id;
+          item.syncStatus = '';
+          cloudCount += 1;
+        } else {
+          item.syncStatus = 'pending_add';
+        }
+        await yieldToMainThread();
+      }
+      clearFinanceCloudPendingIfClean();
+      touchState();
+      saveState();
+      requestRender();
+    }
+    showToast(cloudReady() ? `Vytvořeno kopií: ${copies.length}, cloud: ${cloudCount}` : `Vytvořeno kopií: ${copies.length}`);
   }
 
   function setFinanceEdit(id) {
     const item = (state.finance || []).find((entry) => entry.id === id);
     if (!item) return;
     financeEditId = id;
+    financeCopyId = '';
     moduleTabs = { ...(moduleTabs || {}), finance: 'add' };
     if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
     render();
@@ -16057,14 +16260,33 @@
       note: normalizeText(data.note)
     };
     if (!item.title || !Number(item.amount)) return showToast('Doplň název a částku');
-    const saved = await cloudAddFinance(item);
-    if (saved?.id) item.cloudId = saved.id;
     state.finance.push(item);
+    state.financeCloud = { ...(state.financeCloud || {}), monthFilter: String(item.date || todayISO()).slice(0, 7) };
+    if (cloudReady()) markFinanceCloudPending('add-finance');
     touchState();
     saveState();
     form.reset();
     render();
-    showToast(item.cloudId ? 'Finance uloženy do cloudu' : 'Finance uloženy lokálně');
+    if (cloudReady()) {
+      const saved = await cloudAddFinance(item);
+      if (saved?.id) {
+        item.cloudId = saved.id;
+        item.syncStatus = '';
+        clearFinanceCloudPendingIfClean();
+        touchState();
+        saveState();
+        requestRender();
+        showToast('Finance uloženy do cloudu');
+        return;
+      }
+      item.syncStatus = 'pending_add';
+      markFinanceCloudPending('add-finance-failed');
+      persistStateSnapshot();
+      requestRender();
+      showToast('Finance zůstaly lokálně a čekají na cloud');
+      return;
+    }
+    showToast('Finance uloženy lokálně');
   }
 
   function financeItemFromFormData(data, base = {}) {
@@ -16098,15 +16320,53 @@
       return showToast('U přesunu vyber dva různé účty');
     }
     if (!next.title || !Number(next.amount)) return showToast('Doplň název a částku');
-    const ok = await cloudUpdateFinance(next);
-    if (!ok) return;
     state.finance[index] = next;
+    state.financeCloud = { ...(state.financeCloud || {}), monthFilter: String(next.date || todayISO()).slice(0, 7) };
     financeEditId = '';
+    if (cloudReady() && next.cloudId) {
+      next.syncStatus = 'pending_update';
+      markFinanceCloudPending('update-finance');
+    }
     touchState();
     saveState();
     form?.reset?.();
     render();
-    showToast(next.cloudId ? 'Pohyb upraven v cloudu' : 'Pohyb upraven lokálně');
+    if (cloudReady() && next.cloudId) {
+      const ok = await cloudUpdateFinance(next);
+      if (ok) {
+        next.syncStatus = '';
+        clearFinanceCloudPendingIfClean();
+        touchState();
+        saveState();
+        requestRender();
+        showToast('Pohyb upraven v cloudu');
+      } else {
+        next.syncStatus = 'pending_update';
+        markFinanceCloudPending('update-finance-failed');
+        persistStateSnapshot();
+        requestRender();
+        showToast('Pohyb upraven lokálně, čeká na cloud');
+      }
+      return;
+    }
+    if (cloudReady() && !next.cloudId) {
+      const saved = await cloudAddFinance(next);
+      if (saved?.id) {
+        next.cloudId = saved.id;
+        next.syncStatus = '';
+        clearFinanceCloudPendingIfClean();
+        touchState();
+        saveState();
+        requestRender();
+        showToast('Pohyb uložen do cloudu');
+        return;
+      }
+      next.syncStatus = 'pending_add';
+      markFinanceCloudPending('update-finance-local');
+      persistStateSnapshot();
+      requestRender();
+    }
+    showToast(next.cloudId ? 'Pohyb upraven' : 'Pohyb upraven lokálně');
   }
 
   async function updateFinanceAccountFromForm(id, data, form) {
@@ -16147,12 +16407,12 @@
   }
 
   async function cloudSyncLocalFinanceAccounts() {
-    const local = (state.financeAccounts || []).filter((item) => !item.cloudId);
+    const local = (state.financeAccounts || []).filter((item) => !item.cloudId || item.syncStatus);
     if (!local.length) return showToast('Žádné lokální účty k odeslání');
     let count = 0;
     for (const account of local) {
-      const saved = await cloudAddFinanceAccount(account);
-      if (saved?.id) count += 1;
+      const ok = account.cloudId ? await cloudUpdateFinanceAccount(account) : await cloudAddFinanceAccount(account);
+      if (ok?.id || ok === true) { account.syncStatus = ''; count += 1; }
     }
     touchState();
     saveState();
@@ -16163,8 +16423,10 @@
   async function cloudSyncFinanceById(id) {
     const item = state.finance.find((entry) => entry.id === id);
     if (!item) return;
-    const saved = await cloudAddFinance(item);
-    if (!saved?.id) return;
+    const ok = item.cloudId ? await cloudUpdateFinance(item) : await cloudAddFinance(item);
+    if (!ok?.id && ok !== true) return;
+    item.syncStatus = '';
+    clearFinanceCloudPendingIfClean();
     touchState();
     saveState();
     render();
@@ -16172,17 +16434,27 @@
   }
 
   async function cloudSyncLocalFinance() {
-    const local = (state.finance || []).filter((item) => !item.cloudId);
+    const local = (state.finance || []).filter((item) => !item.cloudId || item.syncStatus);
     if (!local.length) return showToast('Žádné lokální finance k odeslání');
     let count = 0;
     for (const item of local) {
-      const saved = await cloudAddFinance(item);
-      if (saved?.id) count += 1;
+      const ok = item.cloudId ? await cloudUpdateFinance(item) : await cloudAddFinance(item);
+      if (ok?.id || ok === true) {
+        item.syncStatus = '';
+        count += 1;
+      }
+      await yieldToMainThread();
     }
+    clearFinanceCloudPendingIfClean();
     touchState();
     saveState();
     render();
     showToast(`Odesláno finančních záznamů: ${count}`);
+  }
+
+  async function cloudSyncAllFinance() {
+    await cloudSyncLocalFinanceAccounts();
+    await cloudSyncLocalFinance();
   }
 
   async function deleteFinanceTransaction(id) {
@@ -16449,6 +16721,7 @@
       return null;
     }
     item.cloudId = data.id;
+    item.syncStatus = '';
     state.cloud.lastSyncAt = new Date().toISOString();
     return data;
   }
@@ -17423,8 +17696,21 @@
       cloudSyncLocalFinance();
       return;
     }
+    if (action === 'cloud-sync-local-finance-all') {
+      cloudSyncAllFinance();
+      return;
+    }
     if (action === 'finance-edit') {
       setFinanceEdit(button.dataset.id);
+      return;
+    }
+    if (action === 'finance-copy') {
+      setFinanceCopy(button.dataset.id);
+      return;
+    }
+    if (action === 'finance-copy-cancel') {
+      financeCopyId = '';
+      render();
       return;
     }
     if (action === 'finance-edit-cancel') {
@@ -17455,6 +17741,10 @@
     }
     if (action === 'delete-finance') {
       deleteFinanceTransaction(button.dataset.id);
+      return;
+    }
+    if (action === 'finance-filter') {
+      setFinanceTypeFilter(button.dataset.filter || 'all');
       return;
     }
     if (action === 'finance-month-prev') {
@@ -18266,6 +18556,14 @@
       if (/^\d{4}-\d{2}$/.test(String(layout.subscriptionSettings.month || ''))) state.settings.subscriptionMonth = String(layout.subscriptionSettings.month);
       if (['all', 'unpaid', 'debtors'].includes(layout.subscriptionSettings.paymentFilter)) state.settings.subscriptionPaymentFilter = layout.subscriptionSettings.paymentFilter;
     }
+    if (Array.isArray(layout.financeTemplates)) {
+      state.financeTemplates = normalizeFinanceTemplates(layout.financeTemplates);
+      state.financeCloud = { ...(state.financeCloud || {}), templatesLoadedAt: new Date().toISOString() };
+    }
+    if (layout.financeSettings && typeof layout.financeSettings === 'object') {
+      if (/^\d{4}-\d{2}$/.test(String(layout.financeSettings.month || ''))) state.financeCloud = { ...(state.financeCloud || {}), monthFilter: String(layout.financeSettings.month) };
+      if (['all', 'income', 'expense', 'transfer'].includes(layout.financeSettings.typeFilter)) state.financeCloud = { ...(state.financeCloud || {}), typeFilter: layout.financeSettings.typeFilter };
+    }
     if (weatherLocation && typeof weatherLocation === 'object' && Object.keys(weatherLocation).length) {
       state.weather = {
         ...normalizeWeatherState(state.weather),
@@ -18289,8 +18587,13 @@
           month: subscriptionSelectedMonth(),
           paymentFilter: subscriptionPaymentFilter()
         },
+        financeTemplates: normalizeFinanceTemplates(state.financeTemplates || []),
+        financeSettings: {
+          month: financeSelectedMonth(),
+          typeFilter: financeTypeFilter()
+        },
         updatedAt: new Date().toISOString(),
-        appBuild: 212
+        appBuild: 213
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -18413,7 +18716,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 205, schema_version: 81, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 213, schema_version: 84, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -18880,7 +19183,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-212-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-213-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -19183,7 +19486,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_212</span>
+          <span class="badge">Domácnost+ v.0.1_213</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
