@@ -13711,7 +13711,7 @@ form[data-busy="true"] button[type="submit"] {
 }
 
 
-/* Domácnost+ v.0.1_219 – hotfix spodní lišty po v218
+/* Domácnost+ v.0.1_220 – hotfix spodní lišty po v218
    v218 ji na iOS posouval moc nízko záporným bottomem. Tady ji držíme dole,
    ale nikdy ji nepouštíme pod spodní hranu displeje / home indicator. */
 :root {
@@ -13774,5 +13774,96 @@ form[data-busy="true"] button[type="submit"] {
       height: calc(var(--app-vh) - var(--nav-height) - 18px) !important;
       max-height: calc(var(--app-vh) - var(--nav-height) - 18px) !important;
     }
+  }
+}
+
+/* Domácnost+ v.0.1_220 – stabilní spodní lišta + plynulé přejetí aktivní volby */
+:root {
+  --nav-bottom-lock: 2px;
+  --home-nav-reserve-bottom: 0px;
+}
+
+@media (max-width: 720px) {
+  .nav-shell {
+    bottom: var(--nav-bottom-lock) !important;
+    transform: translate3d(-50%, 0, 0) !important;
+    will-change: transform;
+  }
+
+  .app-shell.home-app-shell {
+    padding-top: max(18px, calc(env(safe-area-inset-top, 0px) + 1px)) !important;
+    padding-bottom: calc(var(--nav-height) + 10px) !important;
+  }
+
+  .app-shell.home-app-shell .home-page-head {
+    margin-top: -6px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .app-shell.home-app-shell .home-hero-count-0.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-1.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-2.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-3.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-4.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-5.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-6.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-7.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-8.home-minimal-hero {
+    height: calc(var(--app-vh) - var(--nav-height) - 10px) !important;
+    max-height: calc(var(--app-vh) - var(--nav-height) - 10px) !important;
+  }
+}
+
+.nav-scroll {
+  isolation: isolate !important;
+}
+
+.nav-active-runner {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 0;
+  width: 0;
+  border-radius: 22px;
+  pointer-events: none;
+  background: linear-gradient(135deg, var(--primary, #3574f0), var(--primary-2, #64a7ff));
+  box-shadow: 0 16px 34px rgba(47, 115, 255, .34), inset 0 1px 0 rgba(255,255,255,.36);
+  transform: translate3d(0, 0, 0);
+  transition: transform .42s cubic-bezier(.22, 1, .36, 1), width .42s cubic-bezier(.22, 1, .36, 1), opacity .2s ease;
+}
+
+.nav-item {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.nav-item.active {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.nav-item .nav-icon,
+.nav-item .nav-icon.mini-module-icon,
+.nav-item .nav-icon.module-illustration-slot {
+  transition: transform .26s cubic-bezier(.22, 1, .36, 1), filter .26s ease, width .26s ease, height .26s ease, color .26s ease !important;
+}
+
+.nav-scroll.nav-is-moving .nav-item.nav-sweep {
+  color: rgba(238, 244, 255, .96) !important;
+}
+
+.nav-scroll.nav-is-moving .nav-item.nav-sweep .nav-icon,
+.nav-scroll.nav-is-moving .nav-item.nav-sweep .nav-icon.mini-module-icon,
+.nav-scroll.nav-is-moving .nav-item.nav-sweep .nav-icon.module-illustration-slot {
+  transform: translateY(-2px) scale(1.12) !important;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,.18));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-active-runner,
+  .nav-item,
+  .nav-item .nav-icon,
+  .nav-item .nav-icon.mini-module-icon,
+  .nav-item .nav-icon.module-illustration-slot {
+    transition: none !important;
   }
 }

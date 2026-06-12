@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_219';
+  const APP_VERSION = 'Domácnost+ v.0.1_220';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -695,8 +695,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 219,
-      mode: 'nav-hotfix-v219',
+      appBuild: 220,
+      mode: 'nav-motion-v220',
       createdAt: '',
       updatedAt: ''
     },
@@ -1010,6 +1010,7 @@
   let demoRuntimeActive = false;
   let activeModule = 'home';
   let activeOverview = null;
+  let pendingNavMotion = null;
   let moduleTabs = isStoredDemoState(state) ? {} : (safeParse(localStorage.getItem('domacnostPlus.moduleTabs'), {}) || {});
   let garageVehicleId = null;
   let garageHistoryYearFilter = 'all';
@@ -1584,8 +1585,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 219,
-      mode: 'nav-hotfix-v219',
+      appBuild: 220,
+      mode: 'nav-motion-v220',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2064,6 +2065,11 @@
     return activeModule === MORE_MODULE.id || !selectedIds.includes(activeModule);
   }
 
+  function getActiveBottomNavId(moduleId = activeModule) {
+    const bottomIds = new Set(getBottomNavModules().map((module) => module.id));
+    return bottomIds.has(moduleId) ? moduleId : MORE_MODULE.id;
+  }
+
   function isModuleEnabled(moduleId) {
     return moduleId === 'home' || moduleId === 'settings' || moduleId === 'weather' || normalizeModuleList(state.enabledModules).includes(moduleId);
   }
@@ -2330,6 +2336,12 @@
 
         const active = selectableModules.find((module) => module.id === activeModule) || visibleModules[0];
         const bottomNavModules = getBottomNavModules();
+        const activeBottomNavId = getActiveBottomNavId(activeModule);
+        const activeBottomNavIndex = Math.max(0, bottomNavModules.findIndex((module) => module.id === activeBottomNavId));
+        const navMotion = pendingNavMotion && pendingNavMotion.toId === activeBottomNavId ? pendingNavMotion : null;
+        const navMotionFromIndex = navMotion ? Math.max(0, bottomNavModules.findIndex((module) => module.id === navMotion.fromId)) : activeBottomNavIndex;
+        const navSweepStart = navMotion ? Math.min(navMotionFromIndex, activeBottomNavIndex) : -1;
+        const navSweepEnd = navMotion ? Math.max(navMotionFromIndex, activeBottomNavIndex) : -1;
         const isHomeModule = active.id === 'home';
         app?.classList?.toggle('home-app-shell', isHomeModule);
         const pageTitle = isHomeModule ? householdName() : active.label;
@@ -2350,11 +2362,13 @@
           </div>
 
           <nav class="nav-shell" aria-label="Hlavní navigace">
-            <div class="nav-scroll">
-              ${bottomNavModules.map((module) => {
-                const isActive = module.id === MORE_MODULE.id ? isMoreNavActive() : module.id === activeModule;
+            <div class="nav-scroll" data-nav-count="${bottomNavModules.length}">
+              <span class="nav-active-runner" aria-hidden="true"></span>
+              ${bottomNavModules.map((module, index) => {
+                const isActive = module.id === activeBottomNavId;
+                const isSweeping = navMotion && index >= navSweepStart && index <= navSweepEnd && !isActive;
                 return `
-                  <button class="nav-item ${isActive ? 'active' : ''}" type="button" data-nav="${module.id}">
+                  <button class="nav-item ${isActive ? 'active' : ''} ${isSweeping ? 'nav-sweep' : ''}" type="button" data-nav="${module.id}">
                     ${renderMiniModuleIcon(module.id, { size: 'nav', slotClass: 'nav-icon', label: module.label })}
                     <span>${escapeHtml(module.label)}</span>
                   </button>
@@ -2369,6 +2383,7 @@
 
         if (app) app.setAttribute?.('data-boot-ok', '1');
         promoteActiveContentBeforeForms();
+        syncNavMotion(navMotion, navMotionFromIndex, activeBottomNavIndex);
         keepActiveNavCentered();
         keepActiveSectionTabsCentered();
       }
@@ -2414,6 +2429,38 @@
   function safeAnimationFrame(callback) {
     const frame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
     frame(callback);
+  }
+
+  function placeNavRunner(runner, item, animate = false) {
+    if (!runner || !item) return;
+    runner.style.transition = animate ? '' : 'none';
+    runner.style.width = `${Math.max(0, item.offsetWidth)}px`;
+    runner.style.transform = `translate3d(${Math.max(0, item.offsetLeft)}px, 0, 0)`;
+    if (!animate) {
+      runner.offsetHeight;
+      runner.style.transition = '';
+    }
+  }
+
+  function syncNavMotion(motion, fromIndex = 0, toIndex = 0) {
+    safeAnimationFrame(() => {
+      const navScroll = document.querySelector('.nav-scroll');
+      const runner = navScroll?.querySelector('.nav-active-runner');
+      const items = Array.from(navScroll?.querySelectorAll('.nav-item') || []);
+      const activeItem = items[toIndex] || navScroll?.querySelector('.nav-item.active');
+      if (!navScroll || !runner || !activeItem) return;
+      const fromItem = items[fromIndex] || activeItem;
+      placeNavRunner(runner, motion ? fromItem : activeItem, false);
+      if (motion) {
+        navScroll.classList.add('nav-is-moving');
+        safeAnimationFrame(() => placeNavRunner(runner, activeItem, true));
+        window.setTimeout(() => {
+          document.querySelector('.nav-scroll')?.classList.remove('nav-is-moving');
+          document.querySelectorAll('.nav-item.nav-sweep').forEach((item) => item.classList.remove('nav-sweep'));
+          if (pendingNavMotion === motion) pendingNavMotion = null;
+        }, 520);
+      }
+    });
   }
 
   function keepActiveNavCentered(behavior = 'auto') {
@@ -4948,6 +4995,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_220', note: 'Home/nav hotfix: spodní lišta má stabilní startovní pozici bez poskoku po prvním kliknutí, název domácnosti i dashboard jsou posunuté lehce výš a aktivní volba ve spodní liště nově plynule přejíždí mezi ikonami.' },
       { title: 'Domácnost+ v.0.1_219', note: 'Hotfix po v218: spodní lišta už se na iPhone/PWA neposouvá pod spodní hranu displeje, drží bezpečný malý odstup od home indicatoru a Home výška je vrácená do stabilního rozsahu.' },
       { title: 'Domácnost+ v.0.1_218', note: 'Stabilizační build: spodní lišta je na iPhone/PWA ukotvená níž už při prvním vykreslení, Finance ukazují účty jako samostatné panely, šablony nemají nechtěný červený stín a přidání pohybu posílá cloud uložení na pozadí.' },
       { title: 'Domácnost+ v.0.1_217', note: 'Home layout hotfix: spodní lišta je ukotvená dole hned při prvním vykreslení v PWA/Safari a hlavní Home panel dostal zpět ušetřené místo, takže čas, počasí i dlaždice mohou být vyšší.' },
@@ -5922,7 +5970,7 @@
         createdAt: timestamp,
         updatedAt: timestamp,
         sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v219'
+        source: 'martin-private-restore-v220'
       });
       existingListNames.add(nameKey);
       existingListIds.add(list.id);
@@ -5944,7 +5992,7 @@
         householdId: data.household?.id || '',
         profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
         createdAt: timestamp,
-        source: 'martin-private-restore-v219'
+        source: 'martin-private-restore-v220'
       }));
 
     data.shopping = [...data.shopping, ...restoredItems];
@@ -5959,7 +6007,7 @@
     martinPrivateShoppingRestorePromise = new Promise((resolve) => {
       const run = async () => {
         try {
-          const response = await fetch('./martin-shopping-restore-v219.json', { cache: 'force-cache' });
+          const response = await fetch('./martin-shopping-restore-v220.json', { cache: 'force-cache' });
           if (!response.ok) throw new Error(`restore ${response.status}`);
           const payload = await response.json();
           const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
@@ -15377,7 +15425,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 219, mode: 'rich-demo-v219', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 220, mode: 'rich-demo-v220', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15535,7 +15583,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 219, mode: 'nav-hotfix-v219', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 220, mode: 'nav-motion-v220', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -18761,7 +18809,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 219
+        appBuild: 220
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19351,7 +19399,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-219-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-220-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -19492,8 +19540,14 @@
     const nav = event.target.closest('[data-nav]');
     if (nav) {
       lastUserInteractionAt = Date.now();
+      const previousBottomNavId = getActiveBottomNavId(activeModule);
+      const nextModule = nav.dataset.nav;
+      const nextBottomNavId = getActiveBottomNavId(nextModule);
+      pendingNavMotion = previousBottomNavId !== nextBottomNavId
+        ? { fromId: previousBottomNavId, toId: nextBottomNavId, createdAt: Date.now() }
+        : null;
       activeOverview = null;
-      activeModule = nav.dataset.nav;
+      activeModule = nextModule;
       if (nav.dataset.targetTab) {
         moduleTabs = { ...(moduleTabs || {}), [activeModule]: nav.dataset.targetTab };
         if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
@@ -19654,7 +19708,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_219</span>
+          <span class="badge">Domácnost+ v.0.1_220</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
