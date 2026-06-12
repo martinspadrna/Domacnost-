@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_218';
+  const APP_VERSION = 'Domácnost+ v.0.1_219';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -695,8 +695,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 218,
-      mode: 'finance-stability-nav-v218',
+      appBuild: 219,
+      mode: 'nav-hotfix-v219',
       createdAt: '',
       updatedAt: ''
     },
@@ -1584,8 +1584,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 218,
-      mode: 'finance-stability-nav-v218',
+      appBuild: 219,
+      mode: 'nav-hotfix-v219',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -4948,6 +4948,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_219', note: 'Hotfix po v218: spodní lišta už se na iPhone/PWA neposouvá pod spodní hranu displeje, drží bezpečný malý odstup od home indicatoru a Home výška je vrácená do stabilního rozsahu.' },
       { title: 'Domácnost+ v.0.1_218', note: 'Stabilizační build: spodní lišta je na iPhone/PWA ukotvená níž už při prvním vykreslení, Finance ukazují účty jako samostatné panely, šablony nemají nechtěný červený stín a přidání pohybu posílá cloud uložení na pozadí.' },
       { title: 'Domácnost+ v.0.1_217', note: 'Home layout hotfix: spodní lišta je ukotvená dole hned při prvním vykreslení v PWA/Safari a hlavní Home panel dostal zpět ušetřené místo, takže čas, počasí i dlaždice mohou být vyšší.' },
       { title: 'Domácnost+ v.0.1_216', note: 'Stabilizační build: opravené slučování finance šablon podle updatedAt mezi mobilem a PC, jistější pending marker šablon, jemnější autosync mimo první klikání a silnější deduplikace profilů podle názvu.' },
@@ -5877,7 +5878,7 @@
 
   let martinPrivateShoppingRestorePromise = null;
   const MARTIN_PRIVATE_RESTORE_CUTOFF_MS = Date.parse('2026-06-11T00:00:00+02:00');
-  const MARTIN_PRIVATE_RESTORE_VERSION = 218;
+  const MARTIN_PRIVATE_RESTORE_VERSION = 219;
 
   function isMartinPrivateShoppingRestoreTarget(data = state) {
     if (Number(data.shoppingPrivateRestoreVersion || 0) >= MARTIN_PRIVATE_RESTORE_VERSION) return false;
@@ -5921,7 +5922,7 @@
         createdAt: timestamp,
         updatedAt: timestamp,
         sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v218'
+        source: 'martin-private-restore-v219'
       });
       existingListNames.add(nameKey);
       existingListIds.add(list.id);
@@ -5943,7 +5944,7 @@
         householdId: data.household?.id || '',
         profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
         createdAt: timestamp,
-        source: 'martin-private-restore-v218'
+        source: 'martin-private-restore-v219'
       }));
 
     data.shopping = [...data.shopping, ...restoredItems];
@@ -5958,7 +5959,7 @@
     martinPrivateShoppingRestorePromise = new Promise((resolve) => {
       const run = async () => {
         try {
-          const response = await fetch('./martin-shopping-restore-v218.json', { cache: 'force-cache' });
+          const response = await fetch('./martin-shopping-restore-v219.json', { cache: 'force-cache' });
           if (!response.ok) throw new Error(`restore ${response.status}`);
           const payload = await response.json();
           const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
@@ -9958,7 +9959,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 218))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 219))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -15376,7 +15377,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 218, mode: 'rich-demo-v218', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 219, mode: 'rich-demo-v219', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15534,7 +15535,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 218, mode: 'finance-stability-nav-v218', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 219, mode: 'nav-hotfix-v219', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -18760,7 +18761,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 218
+        appBuild: 219
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19096,7 +19097,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 218,
+          app_build: 219,
           schema_version: 84,
           created_by: user.id,
           ...householdUiPayload()
@@ -19350,7 +19351,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-218-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-219-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -19653,7 +19654,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_218</span>
+          <span class="badge">Domácnost+ v.0.1_219</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

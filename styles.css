@@ -13709,3 +13709,70 @@ form[data-busy="true"] button[type="submit"] {
   opacity: .72;
   pointer-events: none;
 }
+
+
+/* Domácnost+ v.0.1_219 – hotfix spodní lišty po v218
+   v218 ji na iOS posouval moc nízko záporným bottomem. Tady ji držíme dole,
+   ale nikdy ji nepouštíme pod spodní hranu displeje / home indicator. */
+:root {
+  --nav-bottom-lock: max(6px, calc(env(safe-area-inset-bottom, 0px) - 30px));
+  --home-nav-reserve-bottom: 0px;
+}
+
+@media (max-width: 720px) {
+  .nav-shell {
+    bottom: var(--nav-bottom-lock) !important;
+    transform: translate3d(-50%, 0, 0) !important;
+    max-height: calc(100svh - 12px);
+  }
+
+  .app-shell,
+  .app-shell.home-app-shell {
+    padding-bottom: calc(var(--nav-height) + 12px) !important;
+  }
+
+  .home-hero-count-0.home-minimal-hero,
+  .home-hero-count-1.home-minimal-hero,
+  .home-hero-count-2.home-minimal-hero,
+  .home-hero-count-3.home-minimal-hero,
+  .home-hero-count-4.home-minimal-hero,
+  .home-hero-count-5.home-minimal-hero,
+  .home-hero-count-6.home-minimal-hero,
+  .home-hero-count-7.home-minimal-hero,
+  .home-hero-count-8.home-minimal-hero {
+    height: calc(var(--app-vh) - var(--nav-height) - 18px) !important;
+    max-height: calc(var(--app-vh) - var(--nav-height) - 18px) !important;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 720px) {
+    :root {
+      --nav-bottom-lock: max(6px, calc(env(safe-area-inset-bottom, 0px) - 30px));
+      --home-nav-reserve-bottom: 0px;
+    }
+
+    .nav-shell {
+      bottom: var(--nav-bottom-lock) !important;
+      transform: translate3d(-50%, 0, 0) !important;
+    }
+
+    .app-shell,
+    .app-shell.home-app-shell {
+      padding-bottom: calc(var(--nav-height) + 12px) !important;
+    }
+
+    .home-hero-count-0.home-minimal-hero,
+    .home-hero-count-1.home-minimal-hero,
+    .home-hero-count-2.home-minimal-hero,
+    .home-hero-count-3.home-minimal-hero,
+    .home-hero-count-4.home-minimal-hero,
+    .home-hero-count-5.home-minimal-hero,
+    .home-hero-count-6.home-minimal-hero,
+    .home-hero-count-7.home-minimal-hero,
+    .home-hero-count-8.home-minimal-hero {
+      height: calc(var(--app-vh) - var(--nav-height) - 18px) !important;
+      max-height: calc(var(--app-vh) - var(--nav-height) - 18px) !important;
+    }
+  }
+}
