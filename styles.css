@@ -14193,3 +14193,115 @@ form[data-busy="true"] button[type="submit"] {
     grid-template-columns: 1fr;
   }
 }
+
+/* Domácnost+ v.0.1_224 – čistý build + finální doladění Home/nav po v223
+   - název domácnosti nesmí být oříznutý nahoře,
+   - spodní lišta má držet stabilní výšku a nižší iOS pozici,
+   - animace aktivní položky má přejet pomaleji a plynuleji. */
+:root {
+  --nav-bottom-lock: 0px;
+  --nav-motion-duration: 1.15s;
+  --nav-motion-ease: cubic-bezier(.18, .88, .18, 1);
+}
+
+@media (max-width: 720px) {
+  .nav-shell {
+    bottom: var(--nav-bottom-lock) !important;
+    height: 88px !important;
+    min-height: 88px !important;
+    max-height: 88px !important;
+    padding: 8px !important;
+    transform: translate3d(-50%, 0, 0) !important;
+    overflow: hidden !important;
+    contain: layout paint !important;
+  }
+
+  .nav-scroll {
+    height: 100% !important;
+    min-height: 0 !important;
+    align-items: stretch !important;
+  }
+
+  .nav-item {
+    height: 100% !important;
+    min-height: 0 !important;
+    padding-block: 5px !important;
+    transform: none !important;
+  }
+
+  .nav-item.active {
+    transform: none !important;
+  }
+
+  .app-shell.home-app-shell {
+    padding-top: max(16px, calc(env(safe-area-inset-top, 0px) + 0px)) !important;
+    padding-bottom: calc(88px + 12px) !important;
+  }
+
+  .app-shell.home-app-shell .home-page-head,
+  .home-clean-frame .home-page-head,
+  .home-page-head {
+    margin-top: -7px !important;
+    margin-bottom: 4px !important;
+    min-height: 42px !important;
+    padding-top: 2px !important;
+    overflow: visible !important;
+  }
+
+  .app-shell.home-app-shell .home-page-head .page-title,
+  .home-clean-frame .home-page-head .page-title {
+    line-height: 1.12 !important;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+    overflow: hidden !important;
+  }
+
+  .app-shell.home-app-shell .home-hero-count-5 .station-hero-main,
+  .app-shell.home-app-shell .home-hero-count-6 .station-hero-main,
+  .app-shell.home-app-shell .home-hero-count-7 .station-hero-main,
+  .app-shell.home-app-shell .home-hero-count-8 .station-hero-main {
+    gap: 7px !important;
+    grid-template-rows: minmax(96px, 1.02fr) repeat(4, minmax(78px, 1fr)) !important;
+  }
+
+  .nav-active-runner {
+    transition:
+      transform var(--nav-motion-duration) var(--nav-motion-ease),
+      width var(--nav-motion-duration) var(--nav-motion-ease),
+      opacity .32s ease !important;
+  }
+
+  .nav-item .nav-icon,
+  .nav-item .nav-icon.mini-module-icon,
+  .nav-item .nav-icon.module-illustration-slot {
+    transition:
+      transform .82s var(--nav-motion-ease),
+      filter .82s ease,
+      width .82s ease,
+      height .82s ease,
+      color .82s ease !important;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 720px) {
+    :root {
+      --nav-bottom-lock: -14px;
+    }
+  }
+}
+
+@media (max-width: 390px) {
+  .app-shell.home-app-shell .home-hero-count-0.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-1.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-2.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-3.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-4.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-5.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-6.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-7.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-8.home-minimal-hero {
+    height: clamp(500px, calc(var(--app-vh) - 244px), 606px) !important;
+    max-height: clamp(500px, calc(var(--app-vh) - 244px), 606px) !important;
+  }
+}

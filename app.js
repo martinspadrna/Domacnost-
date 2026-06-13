@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_223';
+  const APP_VERSION = 'Domácnost+ v.0.1_224';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -695,8 +695,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 223,
-      mode: 'nav-layout-v223',
+      appBuild: 224,
+      mode: 'nav-layout-v224',
       createdAt: '',
       updatedAt: ''
     },
@@ -1588,8 +1588,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 223,
-      mode: 'nav-layout-v223',
+      appBuild: 224,
+      mode: 'nav-layout-v224',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1620,7 +1620,7 @@
 
     migrated.profiles = Array.isArray(migrated.profiles) ? migrated.profiles : [];
     if (!migrated.profiles.length && migrated.household.isConfigured) {
-      migrated.profiles = [createProfile(options.fromLegacy ? 'Martin' : 'Já', 'owner', migrated.household.id)];
+      migrated.profiles = [createProfile('Já', 'owner', migrated.household.id)];
     }
 
     migrated.profiles = migrated.profiles.map((profile, index) => ({
@@ -2461,7 +2461,7 @@
           document.querySelector('.nav-scroll')?.classList.remove('nav-is-moving');
           document.querySelectorAll('.nav-item.nav-sweep').forEach((item) => item.classList.remove('nav-sweep'));
           if (pendingNavMotion === motion) pendingNavMotion = null;
-        }, 860);
+        }, 1380);
       }
     });
   }
@@ -3118,7 +3118,7 @@
 
             <section class="card flat">
               <form data-form="${isGoogleSetup ? 'onboarding-google-setup' : 'onboarding'}" class="stack-form">
-                ${field('Název domácnosti', 'householdName', 'text', 'Špadrnovi / Doma / Byt', true)}
+                ${field('Název domácnosti', 'householdName', 'text', 'Doma / Rodina / Byt', true)}
                 ${isGoogleSetup ? `<input type="hidden" name="email" value="${escapeHtml(email)}">` : field('E-mail vlastníka', 'email', 'email', 'email@domena.cz', true)}
                 ${isGoogleSetup ? '' : `
                   <div class="form-grid two">
@@ -4998,6 +4998,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_224', note: 'Čistý distribuční ZIP bez soukromého restore nákupů, nákupy zůstávají jen přes aktivní domácnost/cloud, opravený ořez názvu domácnosti a zpomalenější přejezd spodní navigace.' },
       { title: 'Domácnost+ v.0.1_223', note: 'Finance UI: všechny šablony plateb jdou smazat včetně výchozích, šablony jsou kompaktněji po třech, přehledové panely jsou vedle sebe, měsícový filtr drží šířku a pohyby mají přehlednější ikonky.' },
       { title: 'Domácnost+ v.0.1_222', note: 'Nákupy pro sdílenou domácnost: přidaný viditelný cloud stav, ruční Obnovit, šetrné automatické obnovení při otevření Nákupů/návratu do appky a přidávání položek už nečeká na cloud zápis v hlavním UI toku.' },
       { title: 'Domácnost+ v.0.1_221', note: 'Home/nav hotfix: spodní lišta má jemnější iOS pozici bez skoku po prvním kliknutí, název domácnosti je posunutý výš, Home panely jsou znovu kompaktnější a aktivní jezdec ve spodní liště se pohybuje pomaleji.' },
@@ -5020,11 +5021,11 @@
       { title: 'Domácnost+ v.0.1_200', note: 'Checkpoint refactor: hotová série 196–200. Nákupy mají oddělené utils, render i actions, Nastavení má audit cloud/lokál a render už zbytečně nepřepisuje vizuální dataset ani ikonové HTML pořád dokola.' },
       { title: 'Domácnost+ v.0.1_195', note: 'Hlavní render Nákupů je vytažený do assets/js/shopping-render.js, app.js je kratší a aktivní seznam se při renderu dělí na koupené/nekoupené jedním průchodem.' },
       { title: 'Domácnost+ v.0.1_194', note: 'Katalogová logika Nákupů je v assets/js/shopping-utils.js, včetně runtime cache katalogu, jednotek, druhů, chytrých návrhů a statistik seznamů.' },
-      { title: 'Domácnost+ v.0.1_192', note: 'Druhá stabilizace Nákupů: méně opakované normalizace, méně výpočtů při renderu, aktivní záložka renderuje jen svůj panel a nové domácnosti nedostávají Martinův restore podle jména samotného.' },
+      { title: 'Domácnost+ v.0.1_192', note: 'Druhá stabilizace Nákupů: méně opakované normalizace, méně výpočtů při renderu, aktivní záložka renderuje jen svůj panel a nové domácnosti nedostávají žádná soukromá data podle jména profilu.' },
       { title: 'Domácnost+ v.0.1_191', note: 'Stabilizace výkonu po refactoru: service worker už na startu nepřednačítá celé ikonové sady, cloudové načítání dávkuje překreslení a Nákupy nerenderují skryté panely zbytečně.' },
       { title: 'Domácnost+ v.0.1_190', note: 'Hotfix: opravený překlep v názvu normalizační funkce pro klíče, který shazoval část aplikace po startu. Přidaná kontrola na starý název funkce a chybějící DEFAULT konstanty.' },
       { title: 'Domácnost+ v.0.1_180', note: 'Hotfix: doplněná chybějící konstanta DEFAULT_BOTTOM_NAV_IDS a přidaná statická kontrola DEFAULT konstant, aby Nákupy ani start aplikace nepadaly na chybějící výchozí hodnotě.' },
-      { title: 'Domácnost+ v.0.1_179', note: 'Hotfix: oprava pádu Nákupů kvůli chybějící konstantě DEFAULT_SHOPPING_LISTS. Doplněné jsou výchozí seznamy Polsko, Penny, JIP a Martínek a katalog podle Listonic screenů.' },
+      { title: 'Domácnost+ v.0.1_179', note: 'Hotfix: oprava pádu Nákupů kvůli chybějící konstantě DEFAULT_SHOPPING_LISTS a stabilizace startu nákupního modulu.' },
       { title: 'Domácnost+ v.0.1_163', note: 'Vzhled aplikace: barevná schémata jsou zúžená na Modrá a Royal, sada ikon zůstává jen iOS Soft kvůli čistému a sjednocenému UI.' },
       { title: 'Domácnost+ v.0.1_162', note: 'Záruky: přidání je nahoře a v základu zabalené, formulář má ochranu proti dvojitému uložení a fotky účtenek se před uložením automaticky komprimují.' },
       { title: 'Domácnost+ v.0.1_151', note: 'Hotovo: Garáž má stabilnější přidání auta, kalkulačka cesty používá mobilně bezpečná desetinná pole a po změně auta spolehlivě předvyplní spotřebu i poslední cenu paliva.' },
@@ -5930,109 +5931,8 @@
     migrated.shoppingSeedVersion = 201;
   }
 
-  let martinPrivateShoppingRestorePromise = null;
-  const MARTIN_PRIVATE_RESTORE_CUTOFF_MS = Date.parse('2026-06-11T00:00:00+02:00');
-  const MARTIN_PRIVATE_RESTORE_VERSION = 219;
-
-  function isMartinPrivateShoppingRestoreTarget(data = state) {
-    if (Number(data.shoppingPrivateRestoreVersion || 0) >= MARTIN_PRIVATE_RESTORE_VERSION) return false;
-    if (!data?.household?.isConfigured) return false;
-
-    // Soukromý restore je jen záchrana starší Martinovy domácnosti.
-    // Nově založená domácnost nesmí dostat osobní seznamy jen proto, že se profil jmenuje Martin.
-    const createdAtText = data.household?.createdAt || data.meta?.createdAt || '';
-    const createdAtMs = createdAtText ? Date.parse(createdAtText) : 0;
-    if (createdAtMs && createdAtMs > MARTIN_PRIVATE_RESTORE_CUTOFF_MS) return false;
-
-    const existingListNames = new Set((data.shoppingLists || []).map((list) => normalizeKey(list.name)));
-    const alreadyHasMartinLists = ['polsko', 'penny', 'jip', 'martinek'].some((name) => existingListNames.has(name));
-    if (alreadyHasMartinLists) return true;
-
-    const profileText = (data.profiles || []).map((profile) => profile.name || profile.displayName || '').join(' ');
-    const cloudText = [data.cloud?.email, data.household?.name, data.settings?.householdName].filter(Boolean).join(' ');
-    const combined = normalizeKey(`${profileText} ${cloudText}`);
-    const looksLikeMartin = combined.includes('martin') || combined.includes('spadrna') || combined.includes('spadrno') || combined.includes('spadrnova');
-    return looksLikeMartin && (!createdAtMs || createdAtMs <= MARTIN_PRIVATE_RESTORE_CUTOFF_MS);
-  }
-
-  function applyMartinPrivateShoppingRestorePayload(data, payload) {
-    if (!payload?.lists?.length || !Array.isArray(payload.items)) return false;
-    if (!isMartinPrivateShoppingRestoreTarget(data)) return false;
-
-    const timestamp = new Date().toISOString();
-    data.shoppingLists = normalizeShoppingLists(data.shoppingLists || [], data);
-    data.shopping = Array.isArray(data.shopping) ? data.shopping : [];
-
-    const existingListNames = new Set(data.shoppingLists.map((list) => normalizeKey(list.name)));
-    const existingListIds = new Set(data.shoppingLists.map((list) => list.id));
-
-    payload.lists.forEach((list, index) => {
-      const nameKey = normalizeKey(list.name);
-      if (existingListNames.has(nameKey) || existingListIds.has(list.id)) return;
-      data.shoppingLists.push({
-        ...list,
-        householdId: data.household?.id || '',
-        profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v223'
-      });
-      existingListNames.add(nameKey);
-      existingListIds.add(list.id);
-    });
-
-    const validListIds = new Set(data.shoppingLists.map((list) => list.id));
-    const existingItemKeys = new Set(data.shopping.map((item) => `${item.listId || ''}|${normalizeKey(item.name)}`));
-
-    const restoredItems = payload.items
-      .filter((item) => validListIds.has(item.listId))
-      .filter((item) => {
-        const key = `${item.listId}|${normalizeKey(item.name)}`;
-        if (existingItemKeys.has(key)) return false;
-        existingItemKeys.add(key);
-        return true;
-      })
-      .map((item) => ({
-        ...item,
-        householdId: data.household?.id || '',
-        profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
-        createdAt: timestamp,
-        source: 'martin-private-restore-v223'
-      }));
-
-    data.shopping = [...data.shopping, ...restoredItems];
-    if (!data.activeShoppingListId || !validListIds.has(data.activeShoppingListId)) data.activeShoppingListId = data.shoppingLists[0]?.id || '';
-    data.shoppingPrivateRestoreVersion = MARTIN_PRIVATE_RESTORE_VERSION;
-    markShoppingRuntimeDirty();
-    return Boolean(restoredItems.length || payload.lists.length);
-  }
-
-  function scheduleMartinPrivateShoppingRestore() {
-    if (martinPrivateShoppingRestorePromise || !isMartinPrivateShoppingRestoreTarget(state)) return martinPrivateShoppingRestorePromise;
-    martinPrivateShoppingRestorePromise = new Promise((resolve) => {
-      const run = async () => {
-        try {
-          const response = await fetch('./martin-shopping-restore-v223.json', { cache: 'force-cache' });
-          if (!response.ok) throw new Error(`restore ${response.status}`);
-          const payload = await response.json();
-          const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
-          if (changed) {
-            touchState();
-            saveState();
-            render();
-          }
-          resolve(changed);
-        } catch (error) {
-          console.warn('Martin shopping restore skipped', error);
-          resolve(false);
-        }
-      };
-      if ('requestIdleCallback' in window) window.requestIdleCallback(run, { timeout: 1800 });
-      else window.setTimeout(run, 900);
-    });
-    return martinPrivateShoppingRestorePromise;
-  }
+  // v0.1_224: distribuční build už neobsahuje soukromý restore nákupů.
+  // Nákupní seznamy a katalog jsou sdílené výhradně přes aktivní domácnost/cloud.
 
   function markShoppingCatalogDirty() {
     if (shoppingToolkitInstance) shoppingToolkitInstance.markCatalogDirty();
@@ -6044,7 +5944,6 @@
   }
 
   function ensureShoppingListsReady(force = false) {
-    scheduleMartinPrivateShoppingRestore();
     if (!force && shoppingRuntimeReady) {
       const lists = Array.isArray(state.shoppingLists) ? state.shoppingLists : [];
       if (!lists.some((list) => list.id === state.activeShoppingListId)) state.activeShoppingListId = lists[0]?.id || '';
@@ -10033,7 +9932,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 223))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 224))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -15527,7 +15426,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 223, mode: 'rich-demo-v223', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 224, mode: 'rich-demo-v224', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15685,7 +15584,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 223, mode: 'nav-layout-v223', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 224, mode: 'nav-layout-v224', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -18942,7 +18841,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 223
+        appBuild: 224
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19532,7 +19431,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-223-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-224-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -19838,7 +19737,6 @@
   installAppLikeTouchGuards();
 
   render();
-  runWhenMainThreadFree(() => scheduleMartinPrivateShoppingRestore(), { delay: 3600, timeout: 7000 });
   scheduleBootCloudWarmStart();
   handleInitialAuthReturn().catch((error) => console.warn('Auth return handling failed', error));
 
@@ -19855,7 +19753,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_223</span>
+          <span class="badge">Domácnost+ v.0.1_224</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'domacnost-plus-v0-1-223';
+const CACHE_NAME = 'domacnost-plus-v0-1-224';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -11,7 +11,6 @@ const APP_ASSETS = [
   './app.js',
   './sw.js',
   './manifest.webmanifest',
-  './martin-shopping-restore-v223.json',
   './icons/favicon.ico',
   './icons/apple-touch-icon.png',
   './icons/apple-touch-icon-precomposed.png',
@@ -37,14 +36,12 @@ const CORE_FALLBACKS = {
   '/shopping.css': './shopping.css',
   '/shopping-utils.js': './shopping-utils.js',
   '/shopping-render.js': './shopping-render.js',
-  '/shopping-actions.js': './shopping-actions.js',
-  '/martin-shopping-restore-v223.json': './martin-shopping-restore-v223.json'
+  '/shopping-actions.js': './shopping-actions.js'
 };
 
 const RUNTIME_CACHE_PATHS = [
   '/icons/icon-themes/',
-  '/icons/module-icons/',
-  '/martin-shopping-restore-v223.json'
+  '/icons/module-icons/'
 ];
 
 self.addEventListener('install', (event) => {
