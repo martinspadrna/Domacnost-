@@ -14477,7 +14477,7 @@ form[data-busy="true"] button[type="submit"] {
   }
 }
 
-/* Domácnost+ v.0.1_231 – finance/Home/nav stabilizace po reálném iPhone testu
+/* Domácnost+ v.0.1_232 – finance/Home/nav stabilizace po reálném iPhone testu
    - spodní lišta nesmí být po startu vysoká ani oříznutá,
    - běžný render uvnitř Financí nesmí rozblikávat aktivní jezdec,
    - Home karty se natahují jen dolů, horní pozice a název domácnosti zůstávají stabilní,
@@ -14725,7 +14725,7 @@ form[data-busy="true"] button[type="submit"] {
 }
 
 
-/* Domácnost+ v.0.1_231 – hotfix centrování spodní lišty + finance overflow/icon mapping */
+/* Domácnost+ v.0.1_232 – hotfix centrování spodní lišty + finance overflow/icon mapping */
 :root {
   --nav-visual-height-v230: 78px;
   --nav-inner-height-v230: 62px;
@@ -14874,7 +14874,7 @@ form[data-busy="true"] button[type="submit"] {
   }
 }
 
-/* Domácnost+ v.0.1_231 – profilová spodní lišta: Domů vlevo, Více vpravo, 2–4 volitelné ikony uprostřed */
+/* Domácnost+ v.0.1_232 – profilová spodní lišta: Domů vlevo, Více vpravo, 2–4 volitelné ikony uprostřed */
 .nav-picker-fixed {
   cursor: default !important;
   opacity: .92;
@@ -14903,7 +14903,7 @@ form[data-busy="true"] button[type="submit"] {
 }
 
 
-/* Domácnost+ v.0.1_231 – navigace bez replay animace + PL svátky filtr nedělí */
+/* Domácnost+ v.0.1_232 – navigace bez replay animace + PL svátky filtr nedělí */
 .nav-scroll.nav-no-motion .nav-item.nav-sweep .nav-icon,
 .nav-scroll.nav-no-motion .nav-item.nav-sweep .nav-icon.mini-module-icon,
 .nav-scroll.nav-no-motion .nav-item.nav-sweep .nav-icon.module-illustration-slot {
@@ -14936,15 +14936,15 @@ form[data-busy="true"] button[type="submit"] {
 }
 
 
-/* Domácnost+ v.0.1_231 – finální stabilizace Home / spodní lišty / PL svátků
+/* Domácnost+ v.0.1_232 – finální stabilizace Home / spodní lišty / PL svátků
    - Home: čas a počasí jsou pevné, pod nimi až 10 volitelných panelů.
    - Volitelné Home panely jsou nižší a grid podporuje 2 sloupce × 5 řádků.
    - Spodní lišta drží stabilní centrování a aktivní jezdec nezačíná vizuálně z Domů.
    - PL svátky na Home ukazují nejbližší důležitý den, ne rotaci vzdálených omezení. */
 :root {
-  --nav-visual-height-v231: 76px;
-  --nav-inner-height-v231: 60px;
-  --nav-bottom-gap-v231: 0px;
+  --nav-visual-height-v232: 76px;
+  --nav-inner-height-v232: 60px;
+  --nav-bottom-gap-v232: 0px;
   --nav-vv-shift: 0px;
   --nav-motion-duration: 2.35s;
   --nav-motion-ease: cubic-bezier(.12, .76, .14, 1);
@@ -14955,12 +14955,12 @@ form[data-busy="true"] button[type="submit"] {
     position: fixed !important;
     left: 50% !important;
     right: auto !important;
-    bottom: var(--nav-bottom-gap-v231) !important;
+    bottom: var(--nav-bottom-gap-v232) !important;
     width: calc(100vw - 32px) !important;
     max-width: min(620px, calc(100vw - 32px)) !important;
-    height: var(--nav-visual-height-v231) !important;
-    min-height: var(--nav-visual-height-v231) !important;
-    max-height: var(--nav-visual-height-v231) !important;
+    height: var(--nav-visual-height-v232) !important;
+    min-height: var(--nav-visual-height-v232) !important;
+    max-height: var(--nav-visual-height-v232) !important;
     margin: 0 !important;
     padding: 7px 8px !important;
     border-radius: 28px !important;
@@ -14970,17 +14970,17 @@ form[data-busy="true"] button[type="submit"] {
   }
 
   .nav-scroll {
-    height: var(--nav-inner-height-v231) !important;
-    min-height: var(--nav-inner-height-v231) !important;
-    max-height: var(--nav-inner-height-v231) !important;
+    height: var(--nav-inner-height-v232) !important;
+    min-height: var(--nav-inner-height-v232) !important;
+    max-height: var(--nav-inner-height-v232) !important;
     overflow: hidden !important;
     scroll-behavior: auto !important;
   }
 
   .nav-item {
-    height: var(--nav-inner-height-v231) !important;
-    min-height: var(--nav-inner-height-v231) !important;
-    max-height: var(--nav-inner-height-v231) !important;
+    height: var(--nav-inner-height-v232) !important;
+    min-height: var(--nav-inner-height-v232) !important;
+    max-height: var(--nav-inner-height-v232) !important;
     padding: 4px 5px !important;
     transform: none !important;
   }
@@ -15006,7 +15006,7 @@ form[data-busy="true"] button[type="submit"] {
 
   .app-shell,
   .app-shell.home-app-shell {
-    padding-bottom: calc(var(--nav-visual-height-v231) + 18px) !important;
+    padding-bottom: calc(var(--nav-visual-height-v232) + 18px) !important;
   }
 
   .app-shell.home-app-shell .home-page-head,
@@ -15204,5 +15204,121 @@ form[data-busy="true"] button[type="submit"] {
   .home-hero-count-9 .station-hero-main,
   .home-hero-count-10 .station-hero-main {
     grid-template-rows: minmax(86px, 112px) minmax(0, 1fr) !important;
+  }
+}
+
+/* Domácnost+ v0.1_232 – zařízení / síťový inventář */
+.panel-devices .glass-subcard,
+.device-discovery-panel {
+  border: 1px solid rgba(255,255,255,.42);
+  background: rgba(255,255,255,.52);
+  border-radius: 24px;
+  padding: 14px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, .08);
+  margin: 14px 0;
+}
+[data-theme="dark"] .panel-devices .glass-subcard,
+[data-theme="dark"] .device-discovery-panel {
+  background: rgba(15,23,42,.46);
+  border-color: rgba(255,255,255,.14);
+}
+.device-form-grid,
+.device-scan-grid {
+  align-items: end;
+}
+.form-grid.three.device-scan-grid {
+  grid-template-columns: minmax(0, 1.4fr) minmax(84px, .55fr) minmax(84px, .55fr);
+}
+.device-list {
+  display: grid;
+  gap: 12px;
+}
+.device-card {
+  padding: 14px;
+  border-radius: 24px;
+}
+.device-card-main {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.device-card-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  font-size: 1.45rem;
+  background: linear-gradient(145deg, rgba(255,255,255,.82), rgba(255,255,255,.42));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 12px 24px rgba(14, 165, 233, .12);
+}
+[data-theme="dark"] .device-card-icon {
+  background: linear-gradient(145deg, rgba(30,41,59,.92), rgba(15,23,42,.68));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 12px 24px rgba(0,0,0,.22);
+}
+.device-card-body {
+  min-width: 0;
+}
+.device-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.device-link-badge {
+  text-decoration: none;
+}
+.device-note {
+  margin-top: 8px;
+}
+.device-edit-details {
+  margin-top: 10px;
+}
+.device-add-details summary,
+.device-edit-details summary {
+  cursor: pointer;
+}
+.device-discovery-results {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.device-discovery-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.48);
+  border: 1px solid rgba(255,255,255,.34);
+}
+.device-discovery-result > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.device-discovery-result span {
+  color: var(--muted);
+  font-size: .82rem;
+}
+@media (max-width: 620px) {
+  .form-grid.three.device-scan-grid {
+    grid-template-columns: 1fr 78px 78px;
+  }
+  .device-card-main {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 10px;
+  }
+  .device-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 16px;
+    font-size: 1.25rem;
+  }
+  .device-discovery-result {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_231';
+  const APP_VERSION = 'Domácnost+ v.0.1_232';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -672,6 +672,29 @@
     ['isometric-micro', 'Isometric Micro', 'Drobnější prostorové ikonky s technickým detailem.']
   ];
 
+  const DEVICE_NOTE_META_PREFIX = '__DOMPLUS_DEVICE_META__:';
+  const DEVICE_TYPE_OPTIONS = [
+    ['router', 'Router / modem'],
+    ['switch', 'Switch / síť'],
+    ['nas', 'NAS / úložiště'],
+    ['camera', 'Kamera'],
+    ['tablet', 'Tablet / dashboard'],
+    ['printer', 'Tiskárna'],
+    ['appliance', 'Spotřebič'],
+    ['heating', 'Topení / kotel'],
+    ['smart-home', 'Smart home'],
+    ['other', 'Jiné']
+  ];
+  const DEVICE_STATUS_OPTIONS = [
+    ['active', 'Aktivní'],
+    ['watch', 'Hlídat'],
+    ['service', 'Servis'],
+    ['offline', 'Offline'],
+    ['archived', 'Archiv']
+  ];
+  const DEVICE_DISCOVERY_COMMON_HOSTS = [1, 2, 10, 11, 20, 50, 80, 100, 101, 102, 110, 150, 200, 240, 254];
+  const DEVICE_DISCOVERY_MAX_RANGE = 64;
+
   const ASSET_ICON_IDS = ['home', 'calendar', 'weather', 'packages', 'shopping', 'homecare', 'garage', 'contracts', 'cameras', 'finance', 'subscriptions', 'settings', 'coupons', 'hdo', 'waste', 'tasks', 'notes', 'devices', 'warranties', 'polishHolidays', 'more'];
   const ASSET_ICON_MODULE_IDS = new Set(ASSET_ICON_IDS);
   const ASSET_ICON_THEMES = {
@@ -697,8 +720,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 231,
-      mode: 'profile-nav-layout-v231',
+      appBuild: 232,
+      mode: 'devices-inventory-v232',
       createdAt: '',
       updatedAt: ''
     },
@@ -762,6 +785,7 @@
     financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: '', typeFilter: 'all' },
     subscriptionsCloud: { loadedAt: '' },
     householdExtrasCloud: { loadedAt: '' },
+    deviceDiscovery: { subnet: '192.168.1', from: 1, to: 254, scanning: false, results: [], scannedAt: '', error: '' },
     weather: {
       location: { ...WEATHER_DEFAULT_LOCATION },
       current: null,
@@ -904,12 +928,12 @@
         name: item.name || 'Zařízení',
         type: item.type || null,
         address: item.address || null,
-        note: item.note || null,
-        status: item.status || 'active',
+        note: serializeDeviceNote(item),
+        status: normalizeDeviceStatus(item.status),
         created_by: item.cloudId ? undefined : userId,
         updated_by: userId
       }),
-      map: (item) => ({
+      map: (item) => normalizeDeviceItem({
         id: state.devices.find((entry) => entry.cloudId === item.id)?.id || `device-cloud-${item.id}`,
         cloudId: item.id,
         householdId: currentHouseholdId(),
@@ -1628,8 +1652,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 231,
-      mode: 'profile-nav-layout-v231',
+      appBuild: 232,
+      mode: 'devices-inventory-v232',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1692,6 +1716,7 @@
     migrated.cloud.lastAutosyncAt = migrated.cloud?.lastAutosyncAt || '';
     migrated.cloud.profilesLoadedAt = migrated.cloud?.profilesLoadedAt || '';
     migrated.cloud.localPendingCount = Number(migrated.cloud?.localPendingCount || 0);
+    migrated.deviceDiscovery = normalizeDeviceDiscoveryState(migrated.deviceDiscovery);
     migrated.weather = normalizeWeatherState(migrated.weather);
     migrated.polishShopClosures = normalizePolishShopState(migrated.polishShopClosures);
     if (previousAppBuild < 82 && migrated.weather.source === 'open-meteo') {
@@ -1746,6 +1771,7 @@
     dedupeShoppingData(migrated);
     migrated.shoppingSeedVersion = 201;
     migrated.financeTemplates = normalizeFinanceTemplates(migrated.financeTemplates);
+    migrated.devices = (migrated.devices || []).map((device) => normalizeDeviceItem(device));
 
     const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
     migrated.vehicles = migrated.vehicles.map((vehicle) => {
@@ -5189,7 +5215,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_231', note: 'Hotfix Home a spodní navigace: čas a počasí jsou zamknuté, Home má až 10 volitelných panelů pod nimi, PL svátky na Home už nerotují na vzdálené omezení typu březnová sobota a aktivní jezdec spodní lišty drží poslední reálnou pozici.' },
+      { title: 'Domácnost+ v.0.1_232', note: 'Hotfix Home a spodní navigace: čas a počasí jsou zamknuté, Home má až 10 volitelných panelů pod nimi, PL svátky na Home už nerotují na vzdálené omezení typu březnová sobota a aktivní jezdec spodní lišty drží poslední reálnou pozici.' },
       { title: 'Domácnost+ v.0.1_227', note: 'Hotfix spodní navigace a Financí: lišta je znovu centrovaná bez ujíždění doleva, finance měsíc/datum jsou stažené do šířky karty a ikonky pohybů se párují podle použitých/odpovídajících šablon.' },
       { title: 'Domácnost+ v.0.1_226', note: 'Finance/Home/nav stabilizace: spodní lišta je nižší a kompaktnější bez blikání při běžném renderu, Home karty jsou natažené dolů bez posunu názvu domácnosti, finance datum/měsíc nepřetékají a pohyby dostaly ikonky ve stylu šablon.' },
       { title: 'Domácnost+ v.0.1_225', note: 'Hotfix iPhone/PWA layoutu: stabilnější spodní lišta bez ořezu, přesnější rezerva Home dashboardu, finance měsícový filtr bez přetékání a bez tlačítka Zobrazit měsíc, animace spodní lišty jen při skutečném kliknutí na spodní navigaci.' },
@@ -5201,6 +5227,7 @@
       { title: 'Domácnost+ v.0.1_219', note: 'Hotfix po v218: spodní lišta už se na iPhone/PWA neposouvá pod spodní hranu displeje, drží bezpečný malý odstup od home indicatoru a Home výška je vrácená do stabilního rozsahu.' },
       { title: 'Domácnost+ v.0.1_218', note: 'Stabilizační build: spodní lišta je na iPhone/PWA ukotvená níž už při prvním vykreslení, Finance ukazují účty jako samostatné panely, šablony nemají nechtěný červený stín a přidání pohybu posílá cloud uložení na pozadí.' },
       { title: 'Domácnost+ v.0.1_217', note: 'Home layout hotfix: spodní lišta je ukotvená dole hned při prvním vykreslení v PWA/Safari a hlavní Home panel dostal zpět ušetřené místo, takže čas, počasí i dlaždice mohou být vyšší.' },
+      { title: 'Domácnost+ v.0.1_232', note: 'Domácnost / Zařízení dotažené jako praktický inventář: detail zařízení, místnost, výrobce/model, IP/MAC, administrace, záruka, údržba, editace a orientační hledání zařízení v lokální síti bez DB změn.' },
       { title: 'Domácnost+ v.0.1_216', note: 'Stabilizační build: opravené slučování finance šablon podle updatedAt mezi mobilem a PC, jistější pending marker šablon, jemnější autosync mimo první klikání a silnější deduplikace profilů podle názvu.' },
       { title: 'Domácnost+ v.0.1_229', note: 'Spodní navigace má pevně Domů vlevo a Více vpravo; prostřední 2–4 ikony jsou nastavitelné podle aktivního profilu a ukládají se do cloudového dashboard_layout.profileUiSettings.' },
       { title: 'Domácnost+ v.0.1_215', note: 'Cloud settings hotfix: odstraněné volání neexistující user_app_settings tabulky, vzhled a finance šablony se ukládají přes household dashboard_layout, profily se deduplikují v zobrazení i při syncu.' },
@@ -6809,6 +6836,355 @@
     }
   }
 
+  function normalizeDeviceType(value) {
+    const key = normalizeText(value || '').toLowerCase();
+    if (DEVICE_TYPE_OPTIONS.some(([id]) => id === key)) return key;
+    const aliases = {
+      sit: 'switch', 'síť': 'switch', wifi: 'router', modem: 'router', router: 'router', nas: 'nas', tiskarna: 'printer', 'tiskárna': 'printer', kamera: 'camera', tablet: 'tablet', spotrebic: 'appliance', 'spotřebič': 'appliance', kotel: 'heating'
+    };
+    const normalized = normalizeKey(value || '');
+    return aliases[normalized] || aliases[key] || (key ? 'other' : 'other');
+  }
+
+  function deviceTypeLabel(value) {
+    const key = normalizeDeviceType(value);
+    return DEVICE_TYPE_OPTIONS.find(([id]) => id === key)?.[1] || 'Zařízení';
+  }
+
+  function normalizeDeviceStatus(value) {
+    const key = normalizeText(value || '').toLowerCase();
+    return DEVICE_STATUS_OPTIONS.some(([id]) => id === key) ? key : 'active';
+  }
+
+  function deviceStatusLabel(value) {
+    const key = normalizeDeviceStatus(value);
+    return DEVICE_STATUS_OPTIONS.find(([id]) => id === key)?.[1] || 'Aktivní';
+  }
+
+  function deviceStatusBadgeClass(value) {
+    const key = normalizeDeviceStatus(value);
+    if (key === 'active') return 'good';
+    if (key === 'watch' || key === 'service') return 'warn';
+    if (key === 'offline' || key === 'archived') return 'muted';
+    return '';
+  }
+
+  function deviceIcon(value) {
+    const key = normalizeDeviceType(value);
+    return ({ router: '📶', switch: '🔀', nas: '💾', camera: '📹', tablet: '📱', printer: '🖨️', appliance: '🔌', heating: '🔥', 'smart-home': '🏠', other: '🔧' })[key] || '🔌';
+  }
+
+  function parseDeviceNote(rawNote = '') {
+    const raw = String(rawNote || '');
+    if (!raw.startsWith(DEVICE_NOTE_META_PREFIX)) return { note: raw, meta: {} };
+    const parsed = safeParse(raw.slice(DEVICE_NOTE_META_PREFIX.length), null);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { note: '', meta: {} };
+    const { note = '', ...meta } = parsed;
+    return { note: normalizeText(note), meta };
+  }
+
+  function normalizeDeviceDiscoveryState(input = {}) {
+    const fallback = DEFAULT_STATE?.deviceDiscovery || { subnet: '192.168.1', from: 1, to: 254, scanning: false, results: [], scannedAt: '', error: '' };
+    const subnet = normalizeSubnetPrefix(input.subnet || fallback.subnet || '192.168.1');
+    const from = clampNumber(input.from, 1, 254, 1);
+    const to = clampNumber(input.to, from, 254, Math.min(254, Math.max(from, Number(input.to || 254))));
+    return {
+      subnet,
+      from,
+      to,
+      scanning: false,
+      results: Array.isArray(input.results) ? input.results.slice(0, 40).map(normalizeDeviceDiscoveryResult).filter(Boolean) : [],
+      scannedAt: input.scannedAt || '',
+      error: input.error || ''
+    };
+  }
+
+  function normalizeSubnetPrefix(value) {
+    const parts = String(value || '').trim().replace(/\.$/, '').split('.').map((part) => Number(part));
+    if (parts.length >= 3 && parts.slice(0, 3).every((part) => Number.isInteger(part) && part >= 0 && part <= 255)) return parts.slice(0, 3).join('.');
+    return '192.168.1';
+  }
+
+  function clampNumber(value, min, max, fallback) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.max(min, Math.min(max, Math.round(number)));
+  }
+
+  function normalizeDeviceDiscoveryResult(input = {}) {
+    const ip = normalizeText(input.ip || '');
+    if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) return null;
+    return {
+      ip,
+      url: normalizeText(input.url || `http://${ip}`),
+      status: input.status || 'found',
+      label: normalizeText(input.label || 'Možné webové rozhraní'),
+      checkedAt: input.checkedAt || new Date().toISOString()
+    };
+  }
+
+  function normalizeDeviceItem(item = {}) {
+    const parsed = parseDeviceNote(item.note || '');
+    const meta = parsed.meta || {};
+    const device = {
+      id: item.id || `device-${uid()}`,
+      householdId: item.householdId || currentHouseholdId(),
+      profileId: item.profileId || currentProfileId(),
+      cloudId: item.cloudId || '',
+      createdAt: item.createdAt || new Date().toISOString(),
+      updatedAt: item.updatedAt || '',
+      name: normalizeText(item.name || meta.name || 'Zařízení'),
+      type: normalizeDeviceType(item.type || meta.type || 'other'),
+      address: normalizeText(item.address || meta.address || meta.ip || ''),
+      room: normalizeText(item.room || meta.room || ''),
+      brand: normalizeText(item.brand || meta.brand || ''),
+      model: normalizeText(item.model || meta.model || ''),
+      serial: normalizeText(item.serial || meta.serial || ''),
+      mac: normalizeText(item.mac || meta.mac || ''),
+      adminUrl: normalizeText(item.adminUrl || meta.adminUrl || ''),
+      purchaseDate: normalizeText(item.purchaseDate || meta.purchaseDate || ''),
+      warrantyUntil: normalizeText(item.warrantyUntil || meta.warrantyUntil || ''),
+      lastService: normalizeText(item.lastService || meta.lastService || ''),
+      nextService: normalizeText(item.nextService || meta.nextService || ''),
+      maintenance: normalizeText(item.maintenance || meta.maintenance || ''),
+      owner: normalizeText(item.owner || meta.owner || ''),
+      note: normalizeText(item.noteText || item.plainNote || parsed.note || ''),
+      status: normalizeDeviceStatus(item.status || meta.status || 'active'),
+      discovered: Boolean(item.discovered || meta.discovered)
+    };
+    if (device.adminUrl && !/^https?:\/\//i.test(device.adminUrl)) device.adminUrl = `http://${device.adminUrl}`;
+    if (!device.adminUrl && device.address && /^\d{1,3}(\.\d{1,3}){3}$/.test(device.address)) device.adminUrl = `http://${device.address}`;
+    return device;
+  }
+
+  function serializeDeviceNote(item = {}) {
+    const device = normalizeDeviceItem(item);
+    const meta = {
+      note: device.note || '',
+      room: device.room || '',
+      brand: device.brand || '',
+      model: device.model || '',
+      serial: device.serial || '',
+      mac: device.mac || '',
+      adminUrl: device.adminUrl || '',
+      purchaseDate: device.purchaseDate || '',
+      warrantyUntil: device.warrantyUntil || '',
+      lastService: device.lastService || '',
+      nextService: device.nextService || '',
+      maintenance: device.maintenance || '',
+      owner: device.owner || '',
+      discovered: Boolean(device.discovered)
+    };
+    const hasExtended = Object.entries(meta).some(([key, value]) => key !== 'note' && Boolean(value));
+    return hasExtended ? `${DEVICE_NOTE_META_PREFIX}${JSON.stringify(meta)}` : (device.note || null);
+  }
+
+  function deviceFromFormData(data = {}) {
+    const address = normalizeText(data.address || data.ip || '');
+    return normalizeDeviceItem({
+      name: data.name,
+      type: data.type,
+      address,
+      room: data.room,
+      brand: data.brand,
+      model: data.model,
+      serial: data.serial,
+      mac: data.mac,
+      adminUrl: data.adminUrl,
+      purchaseDate: data.purchaseDate,
+      warrantyUntil: data.warrantyUntil,
+      lastService: data.lastService,
+      nextService: data.nextService,
+      maintenance: data.maintenance,
+      owner: data.owner,
+      note: data.note,
+      status: data.status || 'active'
+    });
+  }
+
+  async function addDeviceFromForm(data, form) {
+    const device = deviceFromFormData(data);
+    if (!device.name || device.name === 'Zařízení') return showToast('Zadej název zařízení');
+    await addItem('devices', device);
+    form?.reset();
+  }
+
+  async function updateDeviceFromForm(id, data, form) {
+    const device = state.devices.find((item) => item.id === id);
+    if (!device) return showToast('Zařízení nenalezeno');
+    Object.assign(device, deviceFromFormData(data), { id: device.id, cloudId: device.cloudId || '', createdAt: device.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() });
+    const ok = await cloudUpdateExtraItem('devices', device);
+    if (!ok) return;
+    touchState();
+    saveState();
+    render();
+    showToast(device.cloudId ? 'Zařízení upravené v cloudu' : 'Zařízení upravené lokálně');
+  }
+
+  function deviceWarrantyBadge(device) {
+    if (!device.warrantyUntil) return '';
+    const days = daysUntil(device.warrantyUntil);
+    const cls = days < 0 ? 'muted' : days <= 45 ? 'warn' : 'good';
+    const text = days < 0 ? 'záruka prošla' : `záruka ${formatDate(device.warrantyUntil)}`;
+    return `<span class="badge ${cls}">${escapeHtml(text)}</span>`;
+  }
+
+  function renderDeviceFormFields(device = {}) {
+    const d = normalizeDeviceItem(device);
+    return `
+      <div class="form-grid two device-form-grid">
+        ${field('Název', 'name', 'text', 'Router / NAS / kamera', true, d.name === 'Zařízení' ? '' : d.name)}
+        ${selectField('Typ', 'type', DEVICE_TYPE_OPTIONS, d.type)}
+        ${field('Místnost / umístění', 'room', 'text', 'pracovna / půda / garáž', false, d.room)}
+        ${selectField('Stav', 'status', DEVICE_STATUS_OPTIONS, d.status)}
+        ${field('Výrobce', 'brand', 'text', 'TP-Link / Synology / Canon', false, d.brand)}
+        ${field('Model', 'model', 'text', 'Archer AX55 / DS220+', false, d.model)}
+        ${field('IP / adresa', 'address', 'text', '192.168.1.1', false, d.address)}
+        ${field('MAC', 'mac', 'text', 'AA:BB:CC:DD:EE:FF', false, d.mac)}
+        ${field('Odkaz do administrace', 'adminUrl', 'text', 'http://192.168.1.1', false, d.adminUrl)}
+        ${field('Sériové číslo', 'serial', 'text', '', false, d.serial)}
+        ${field('Datum koupě', 'purchaseDate', 'date', '', false, d.purchaseDate)}
+        ${field('Záruka do', 'warrantyUntil', 'date', '', false, d.warrantyUntil)}
+        ${field('Poslední údržba', 'lastService', 'date', '', false, d.lastService)}
+        ${field('Další údržba', 'nextService', 'date', '', false, d.nextService)}
+        ${field('Co hlídat', 'maintenance', 'text', 'filtr / baterka / firmware', false, d.maintenance)}
+        ${field('Kdo řeší', 'owner', 'text', 'Martin / Lucie', false, d.owner)}
+      </div>
+      <div class="form-grid">
+        ${field('Poznámka', 'note', 'text', 'bez hesel, jen praktická poznámka', false, d.note)}
+      </div>
+    `;
+  }
+
+  function renderDeviceCard(device) {
+    const d = normalizeDeviceItem(device);
+    const details = [d.room, d.address, d.brand || d.model ? `${d.brand} ${d.model}`.trim() : '', d.mac ? `MAC ${d.mac}` : '', d.cloudId ? 'cloud' : 'lokálně'].filter(Boolean).join(' · ');
+    return `
+      <article class="device-card item">
+        <div class="device-card-main">
+          <div class="device-card-icon" aria-hidden="true">${escapeHtml(deviceIcon(d.type))}</div>
+          <div class="device-card-body">
+            <div class="item-top"><div class="item-title">${escapeHtml(d.name)}</div><span class="badge ${deviceStatusBadgeClass(d.status)}">${escapeHtml(deviceStatusLabel(d.status))}</span></div>
+            <div class="item-meta">${escapeHtml(details || 'bez detailů')}</div>
+            <div class="device-chip-row">
+              <span class="badge">${escapeHtml(deviceTypeLabel(d.type))}</span>
+              ${d.nextService ? `<span class="badge ${daysUntil(d.nextService) <= 14 ? 'warn' : ''}">údržba ${formatDate(d.nextService)}</span>` : ''}
+              ${deviceWarrantyBadge(d)}
+              ${d.adminUrl ? `<a class="badge device-link-badge" href="${escapeHtml(d.adminUrl)}" target="_blank" rel="noopener">administrace</a>` : ''}
+            </div>
+            ${d.maintenance || d.note ? `<div class="inline-note compact-note device-note">${escapeHtml([d.maintenance, d.note].filter(Boolean).join(' · '))}</div>` : ''}
+          </div>
+        </div>
+        <details class="compact-edit-details device-edit-details">
+          <summary><span>Upravit detail</span><em>${escapeHtml(d.address || d.room || 'zařízení')}</em></summary>
+          <form data-form="update-device" data-id="${escapeHtml(d.id)}">
+            ${renderDeviceFormFields(d)}
+            <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button><button class="danger-btn" type="button" data-action="delete" data-collection="devices" data-id="${escapeHtml(d.id)}">Smazat</button></div>
+          </form>
+        </details>
+      </article>
+    `;
+  }
+
+  function renderDeviceDiscoveryPanel() {
+    state.deviceDiscovery = normalizeDeviceDiscoveryState(state.deviceDiscovery);
+    const discovery = state.deviceDiscovery;
+    const hasResults = discovery.results.length > 0;
+    return `
+      <section class="device-discovery-panel glass-subcard">
+        <div class="card-header small"><div><h3>Najít zařízení v síti</h3><p>Orientační hledání webových rozhraní v lokální síti. Prohlížeč neumí ARP/ping, takže je to bezpečný best-effort scan přes HTTP.</p></div><span class="badge ${discovery.scanning ? 'warn' : ''}">${discovery.scanning ? 'hledám' : 'volitelné'}</span></div>
+        <div class="form-grid three device-scan-grid">
+          ${field('Podsíť', 'deviceSubnet', 'text', '192.168.1', false, discovery.subnet)}
+          ${field('Od', 'deviceFrom', 'number', '1', false, discovery.from)}
+          ${field('Do', 'deviceTo', 'number', '254', false, discovery.to)}
+        </div>
+        <div class="form-actions compact-actions">
+          <button class="ghost-btn" type="button" data-action="device-scan-common">Rychlé hledání</button>
+          <button class="ghost-btn" type="button" data-action="device-scan-range">Hledat rozsah</button>
+          ${hasResults ? '<button class="ghost-btn" type="button" data-action="device-scan-clear">Vyčistit nálezy</button>' : ''}
+        </div>
+        <div class="inline-note compact-note">Pozn.: z webové/PWA appky nejde spolehlivě skenovat celou LAN jako z Windows programu. Když prohlížeč lokální HTTP blokne, zadej IP ručně nebo otevři appku lokálně v domácí síti.</div>
+        ${discovery.error ? `<div class="inline-note warn-note">${escapeHtml(discovery.error)}</div>` : ''}
+        ${hasResults ? `<div class="device-discovery-results">${discovery.results.map((result) => `
+          <div class="device-discovery-result">
+            <div><strong>${escapeHtml(result.ip)}</strong><span>${escapeHtml(result.label || 'Možné zařízení')}</span></div>
+            <div class="form-actions compact-actions"><a class="ghost-btn" href="${escapeHtml(result.url)}" target="_blank" rel="noopener">Otevřít</a><button class="primary-btn" type="button" data-action="device-add-discovered" data-ip="${escapeHtml(result.ip)}" data-url="${escapeHtml(result.url)}">Přidat</button></div>
+          </div>
+        `).join('')}</div>` : ''}
+      </section>
+    `;
+  }
+
+  function readDeviceDiscoveryInputs(button) {
+    const panel = button.closest('.device-discovery-panel') || document;
+    const subnet = normalizeSubnetPrefix(panel.querySelector('[name="deviceSubnet"]')?.value || state.deviceDiscovery?.subnet || '192.168.1');
+    const from = clampNumber(panel.querySelector('[name="deviceFrom"]')?.value, 1, 254, 1);
+    const to = clampNumber(panel.querySelector('[name="deviceTo"]')?.value, from, 254, 254);
+    return { subnet, from, to };
+  }
+
+  async function scanDeviceHost(ip, timeoutMs = 1100) {
+    const urls = [`http://${ip}/favicon.ico`, `http://${ip}/`];
+    for (const url of urls) {
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        await fetch(url, { mode: 'no-cors', cache: 'no-store', signal: controller.signal });
+        window.clearTimeout(timer);
+        return normalizeDeviceDiscoveryResult({ ip, url: `http://${ip}`, label: 'Odpovědělo webové rozhraní' });
+      } catch (_) {
+        window.clearTimeout(timer);
+      }
+      await yieldToMainThread();
+    }
+    return null;
+  }
+
+  async function scanDeviceNetwork(button, mode = 'common') {
+    if (state.deviceDiscovery?.scanning) return showToast('Hledání už běží');
+    const { subnet, from, to } = readDeviceDiscoveryInputs(button);
+    const hostSet = mode === 'common'
+      ? DEVICE_DISCOVERY_COMMON_HOSTS.filter((host) => host >= from && host <= to)
+      : Array.from({ length: Math.min(DEVICE_DISCOVERY_MAX_RANGE, to - from + 1) }, (_, index) => from + index);
+    if (!hostSet.length) return showToast('Zadej rozsah IP adres');
+    state.deviceDiscovery = normalizeDeviceDiscoveryState({ ...state.deviceDiscovery, subnet, from, to, scanning: true, error: '', results: state.deviceDiscovery?.results || [] });
+    render();
+    showToast(mode === 'common' ? 'Zkouším běžné adresy v síti' : `Zkouším prvních ${hostSet.length} adres rozsahu`);
+    const existing = new Map((state.deviceDiscovery.results || []).map((item) => [item.ip, item]));
+    let found = 0;
+    for (const host of hostSet) {
+      const ip = `${subnet}.${host}`;
+      if ((state.devices || []).some((device) => normalizeDeviceItem(device).address === ip)) continue;
+      const result = await scanDeviceHost(ip);
+      if (result) {
+        existing.set(result.ip, result);
+        found += 1;
+      }
+      await yieldToMainThread();
+    }
+    state.deviceDiscovery = normalizeDeviceDiscoveryState({ subnet, from, to, scanning: false, results: [...existing.values()].slice(-40).reverse(), scannedAt: new Date().toISOString(), error: found ? '' : 'Nic se nepodařilo ověřit. To může být normální — iOS/Safari často blokuje lokální HTTP scan z PWA.' });
+    touchState();
+    saveState();
+    render();
+    showToast(found ? `Nalezeno možných zařízení: ${found}` : 'Automatické hledání nic nepotvrdilo');
+  }
+
+  async function addDiscoveredDevice(button) {
+    const ip = normalizeText(button.dataset.ip || '');
+    if (!ip) return;
+    const url = normalizeText(button.dataset.url || `http://${ip}`);
+    const exists = (state.devices || []).some((device) => normalizeDeviceItem(device).address === ip);
+    if (exists) return showToast('Tohle zařízení už v seznamu je');
+    await addItem('devices', normalizeDeviceItem({ name: `Zařízení ${ip}`, type: 'other', address: ip, adminUrl: url, status: 'watch', note: 'Nalezeno orientačním hledáním v síti', discovered: true }));
+  }
+
+  function clearDeviceDiscovery() {
+    state.deviceDiscovery = normalizeDeviceDiscoveryState({ ...state.deviceDiscovery, results: [], error: '', scanning: false, scannedAt: '' });
+    touchState();
+    saveState();
+    render();
+  }
+
   function renderHomecare() {
     const hdo = getHdoStatus(now);
     const tasks = [...state.homeTasks].sort((a, b) => Number(a.done) - Number(b.done));
@@ -6914,24 +7290,17 @@
         ${renderPolishHolidaysPanel()}
 
         <section class="card homecare-panel panel-devices">
-          <div class="card-header"><div><h2>Domácí zařízení / síť</h2><p>Routery, NAS, kamery, tablety a další věci doma. V online domácnosti jsou sdílené.</p></div><span class="badge ${devices.some((item) => item.cloudId) ? 'good' : ''}">${devices.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span></div>
-          <form data-form="add-device">
-            <div class="form-grid two">
-              ${field('Název', 'name', 'text', 'WD My Cloud / router / kamera', true)}
-              ${field('Typ', 'type', 'text', 'síť / TV / kamera')}
-              ${field('IP / adresa', 'address', 'text', '192.168.1.10')}
-              ${field('Poznámka', 'note', 'text', 'volitelné')}
-            </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat zařízení</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud zařízení</button>' : ''}${state.cloud?.householdId && devices.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální zařízení (${devices.filter((item) => !item.cloudId).length})</button>` : ''}</div>
-          </form>
+          <div class="card-header"><div><h2>Domácí zařízení / síť</h2><p>Inventář domácí techniky, IP adresy, záruky, údržba a rychlé odkazy do administrace. V online domácnosti je sdílený.</p></div><span class="badge ${devices.some((item) => item.cloudId) ? 'good' : ''}">${devices.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span></div>
+          ${renderDeviceDiscoveryPanel()}
+          <details class="compact-edit-details device-add-details" open>
+            <summary><span>Přidat zařízení</span><em>síť / spotřebič / údržba</em></summary>
+            <form data-form="add-device">
+              ${renderDeviceFormFields()}
+              <div class="form-actions"><button class="primary-btn" type="submit">Přidat zařízení</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud zařízení</button>' : ''}${state.cloud?.householdId && devices.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální zařízení (${devices.filter((item) => !item.cloudId).length})</button>` : ''}</div>
+            </form>
+          </details>
           <div style="height:14px"></div>
-          ${devices.length ? `<div class="list">${devices.map((device) => `
-            <div class="item">
-              <div class="item-top"><div class="item-title">${escapeHtml(device.name)}</div><span class="badge">${escapeHtml(device.type || 'zařízení')}</span></div>
-              <div class="item-meta">${escapeHtml(device.address || 'bez adresy')}${device.note ? ` · ${escapeHtml(device.note)}` : ''}${device.cloudId ? ' · cloud' : ' · lokálně'}</div>
-              <div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="devices" data-id="${device.id}">Smazat</button></div>
-            </div>
-          `).join('')}</div>` : renderEmptyCta({ icon: '🔌', title: 'Zařízení jsou prázdná', text: 'Přidej router, kotel, spotřebič nebo jiné domácí zařízení.', nav: 'homecare', tab: 'devices', label: 'Přidat zařízení' })}
+          ${devices.length ? `<div class="device-list">${devices.map(renderDeviceCard).join('')}</div>` : renderEmptyCta({ icon: '🔌', title: 'Zařízení jsou prázdná', text: 'Přidej router, kotel, spotřebič nebo jiné domácí zařízení. Pak uvidíš IP, záruku a údržbu v jednom přehledu.', nav: 'homecare', tab: 'devices', label: 'Přidat zařízení' })}
         </section>
       </div>
     `;
@@ -10138,7 +10507,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 231))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 232))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -15037,7 +15406,8 @@
       'add-waste': () => addWasteFromForm(data, form),
       'add-task': () => addTaskFromForm(data, form),
       'add-note': () => addItem('notes', { text: data.text, createdAt: new Date().toISOString() }),
-      'add-device': () => addItem('devices', { name: data.name, type: data.type, address: data.address, note: data.note }),
+      'add-device': () => addDeviceFromForm(data, form),
+      'update-device': () => updateDeviceFromForm(form.dataset.id, data, form),
       'add-warranty': () => addWarrantyFromForm(data, form),
       'edit-warranty': () => updateWarrantyFromForm(data, form),
       'add-warranty-files': () => addWarrantyFiles(form),
@@ -15643,7 +16013,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 231, mode: 'rich-demo-v231', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 232, mode: 'rich-demo-v232', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15801,7 +16171,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 231, mode: 'profile-nav-layout-v231', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 232, mode: 'devices-inventory-v232', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -17730,6 +18100,18 @@
       cloudSyncLocalExtraCollections(true).then(() => cloudLoadExtraCollections(false));
       return;
     }
+    if (action === 'device-scan-common' || action === 'device-scan-range') {
+      scanDeviceNetwork(button, action === 'device-scan-range' ? 'range' : 'common');
+      return;
+    }
+    if (action === 'device-add-discovered') {
+      addDiscoveredDevice(button);
+      return;
+    }
+    if (action === 'device-scan-clear') {
+      clearDeviceDiscovery();
+      return;
+    }
     if (action === 'cloud-sync-pending') {
       cloudSyncLocalPendingData(true);
       return;
@@ -19102,7 +19484,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 231
+        appBuild: 232
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19692,7 +20074,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-231-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-232-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20037,7 +20419,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_231</span>
+          <span class="badge">Domácnost+ v.0.1_232</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
