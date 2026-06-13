@@ -2447,7 +2447,6 @@ button {
 .homecare-tab-tasks .homecare-panel:not(.panel-tasks),
 .homecare-tab-warranties .homecare-panel:not(.panel-warranties),
 .homecare-tab-polish-holidays .homecare-panel:not(.panel-polish-holidays),
-.homecare-tab-devices .homecare-panel:not(.panel-devices),
 .shopping-tab-list .shopping-panel:not(.panel-list),
 .shopping-tab-catalog .shopping-panel:not(.panel-catalog),
 .shopping-tab-coupons .shopping-panel:not(.panel-coupons),
@@ -15207,9 +15206,68 @@ form[data-busy="true"] button[type="submit"] {
   }
 }
 
-/* Domácnost+ v0.1_232 – zařízení / síťový inventář */
-.panel-devices .glass-subcard,
-.device-discovery-panel {
+/* Domácnost+ v0.1_233 – spodní lišta bez visualViewport skoku + Kamery */
+:root {
+  --nav-visual-height-v233: 76px;
+  --nav-inner-height-v233: 62px;
+  --nav-bottom-gap-v233: max(0px, calc(env(safe-area-inset-bottom, 0px) - 30px));
+  --nav-motion-duration: 2.2s;
+  --nav-motion-ease: cubic-bezier(.14, .78, .16, 1);
+}
+
+body {
+  padding-bottom: calc(var(--nav-visual-height-v233) + var(--nav-bottom-gap-v233) + 18px) !important;
+}
+
+.nav-shell {
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: var(--nav-bottom-gap-v233) !important;
+  width: min(calc(100vw - 20px), 540px) !important;
+  height: var(--nav-visual-height-v233) !important;
+  min-height: var(--nav-visual-height-v233) !important;
+  max-height: var(--nav-visual-height-v233) !important;
+  transform: translate3d(-50%, 0, 0) !important;
+  transform-origin: center bottom !important;
+  overflow: visible !important;
+}
+
+.nav-scroll {
+  height: var(--nav-inner-height-v233) !important;
+  min-height: var(--nav-inner-height-v233) !important;
+  max-height: var(--nav-inner-height-v233) !important;
+  overflow: hidden !important;
+}
+
+.nav-item {
+  height: var(--nav-inner-height-v233) !important;
+  min-height: var(--nav-inner-height-v233) !important;
+  max-height: var(--nav-inner-height-v233) !important;
+}
+
+.app-frame {
+  padding-bottom: calc(var(--nav-visual-height-v233) + var(--nav-bottom-gap-v233) + 18px) !important;
+}
+
+.cameras-tab-overview .cameras-panel:not(.panel-overview),
+.cameras-tab-add .cameras-panel:not(.panel-add),
+.cameras-tab-discovery .cameras-panel:not(.panel-discovery),
+.cameras-tab-help .cameras-panel:not(.panel-help) {
+  display: none !important;
+}
+
+.camera-form-grid,
+.camera-scan-grid {
+  align-items: end;
+}
+
+.form-grid.three.camera-scan-grid {
+  grid-template-columns: minmax(0, 1.4fr) minmax(84px, .55fr) minmax(84px, .55fr);
+}
+
+.camera-discovery-panel,
+.cameras-panel .glass-subcard {
   border: 1px solid rgba(255,255,255,.42);
   background: rgba(255,255,255,.52);
   border-radius: 24px;
@@ -15217,74 +15275,43 @@ form[data-busy="true"] button[type="submit"] {
   box-shadow: 0 14px 34px rgba(15, 23, 42, .08);
   margin: 14px 0;
 }
-[data-theme="dark"] .panel-devices .glass-subcard,
-[data-theme="dark"] .device-discovery-panel {
+
+[data-theme="dark"] .camera-discovery-panel,
+[data-theme="dark"] .cameras-panel .glass-subcard {
   background: rgba(15,23,42,.46);
   border-color: rgba(255,255,255,.14);
 }
-.device-form-grid,
-.device-scan-grid {
-  align-items: end;
+
+.camera-preview video,
+.camera-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 0;
 }
-.form-grid.three.device-scan-grid {
-  grid-template-columns: minmax(0, 1.4fr) minmax(84px, .55fr) minmax(84px, .55fr);
-}
-.device-list {
-  display: grid;
-  gap: 12px;
-}
-.device-card {
-  padding: 14px;
-  border-radius: 24px;
-}
-.device-card-main {
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-}
-.device-card-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 18px;
-  display: grid;
-  place-items: center;
-  font-size: 1.45rem;
-  background: linear-gradient(145deg, rgba(255,255,255,.82), rgba(255,255,255,.42));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 12px 24px rgba(14, 165, 233, .12);
-}
-[data-theme="dark"] .device-card-icon {
-  background: linear-gradient(145deg, rgba(30,41,59,.92), rgba(15,23,42,.68));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 12px 24px rgba(0,0,0,.22);
-}
-.device-card-body {
-  min-width: 0;
-}
-.device-chip-row {
+
+.camera-chip-row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 8px;
 }
-.device-link-badge {
-  text-decoration: none;
-}
-.device-note {
+
+.camera-note {
   margin-top: 8px;
 }
-.device-edit-details {
+
+.camera-edit-details {
   margin-top: 10px;
 }
-.device-add-details summary,
-.device-edit-details summary {
-  cursor: pointer;
-}
-.device-discovery-results {
+
+.camera-discovery-results {
   display: grid;
   gap: 8px;
   margin-top: 12px;
 }
-.device-discovery-result {
+
+.camera-discovery-result {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -15294,31 +15321,29 @@ form[data-busy="true"] button[type="submit"] {
   background: rgba(255,255,255,.48);
   border: 1px solid rgba(255,255,255,.34);
 }
-.device-discovery-result > div:first-child {
+
+.camera-discovery-result > div:first-child {
   min-width: 0;
   display: grid;
   gap: 2px;
 }
-.device-discovery-result span {
+
+.camera-discovery-result span {
   color: var(--muted);
   font-size: .82rem;
 }
+
 @media (max-width: 620px) {
-  .form-grid.three.device-scan-grid {
+  .form-grid.three.camera-scan-grid {
     grid-template-columns: 1fr 78px 78px;
   }
-  .device-card-main {
-    grid-template-columns: 44px minmax(0, 1fr);
-    gap: 10px;
-  }
-  .device-card-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 16px;
-    font-size: 1.25rem;
-  }
-  .device-discovery-result {
+  .camera-discovery-result {
     align-items: stretch;
     flex-direction: column;
   }
+}
+
+.camera-link-badge,
+.device-link-badge {
+  text-decoration: none;
 }

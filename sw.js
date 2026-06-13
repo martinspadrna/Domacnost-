@@ -1,4 +1,4 @@
-const CACHE_NAME = 'domacnost-plus-v0-1-232';
+const CACHE_NAME = 'domacnost-plus-v0-1-233';
 const APP_ASSETS = [
   './',
   './index.html',

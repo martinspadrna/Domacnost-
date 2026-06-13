@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_232';
+  const APP_VERSION = 'Domácnost+ v.0.1_233';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -517,7 +517,6 @@
     { id: 'waste', label: 'Odpad', icon: '♻️', overview: 'waste', metric: (ctx) => ctx.wasteSoon.length, text: () => 'svoz do 7 dnů' },
     { id: 'tasks', label: 'Úkoly', icon: '✅', overview: 'tasks', metric: (ctx) => ctx.openTasks.length, text: () => 'otevřené úkoly' },
     { id: 'notes', label: 'Poznámky', icon: '📝', nav: 'homecare', tab: 'tasks', metric: () => state.notes.length, text: () => 'poznámky' },
-    { id: 'devices', label: 'Zařízení', icon: '🔌', nav: 'homecare', tab: 'devices', metric: () => state.devices.length, text: () => 'zařízení' },
     { id: 'warranties', label: 'Záruky', icon: '🧾', nav: 'homecare', tab: 'warranties', metric: () => state.warranties.filter((item) => item.status !== 'archived').length, text: () => 'záruky' },
     { id: 'polishHolidays', label: 'PL svátky', icon: '🇵🇱', nav: 'homecare', tab: 'polish-holidays', metric: () => polishShopHeroMetric(), text: () => polishShopHeroText() },
     { id: 'garage', label: 'Garáž', icon: '🚗', overview: 'garage', metric: () => state.vehicles.length, text: () => garageCountLabel(state.vehicles.length) },
@@ -672,30 +671,34 @@
     ['isometric-micro', 'Isometric Micro', 'Drobnější prostorové ikonky s technickým detailem.']
   ];
 
-  const DEVICE_NOTE_META_PREFIX = '__DOMPLUS_DEVICE_META__:';
-  const DEVICE_TYPE_OPTIONS = [
-    ['router', 'Router / modem'],
-    ['switch', 'Switch / síť'],
-    ['nas', 'NAS / úložiště'],
-    ['camera', 'Kamera'],
-    ['tablet', 'Tablet / dashboard'],
-    ['printer', 'Tiskárna'],
-    ['appliance', 'Spotřebič'],
-    ['heating', 'Topení / kotel'],
-    ['smart-home', 'Smart home'],
-    ['other', 'Jiné']
+  const CAMERA_NOTE_META_PREFIX = '__DOMPLUS_CAMERA_META__:';
+  const CAMERA_VENDOR_OPTIONS = [
+    ['tapo', 'TP-Link Tapo'],
+    ['hikvision', 'Hikvision'],
+    ['dahua', 'Dahua'],
+    ['reolink', 'Reolink'],
+    ['ezviz', 'EZVIZ'],
+    ['unifi', 'UniFi Protect'],
+    ['generic', 'Obecná IP kamera']
   ];
-  const DEVICE_STATUS_OPTIONS = [
-    ['active', 'Aktivní'],
-    ['watch', 'Hlídat'],
-    ['service', 'Servis'],
+  const CAMERA_STREAM_TYPE_OPTIONS = [
+    ['snapshot', 'Snapshot / obrázek'],
+    ['mjpeg', 'MJPEG náhled'],
+    ['hls', 'HLS video'],
+    ['rtsp', 'RTSP uložený odkaz'],
+    ['onvif', 'ONVIF / NVR'],
+    ['app', 'Jen odkaz do aplikace']
+  ];
+  const CAMERA_STATUS_OPTIONS = [
+    ['online', 'Online'],
+    ['unknown', 'Nevím'],
     ['offline', 'Offline'],
-    ['archived', 'Archiv']
+    ['private', 'Jen lokální síť/VPN']
   ];
-  const DEVICE_DISCOVERY_COMMON_HOSTS = [1, 2, 10, 11, 20, 50, 80, 100, 101, 102, 110, 150, 200, 240, 254];
-  const DEVICE_DISCOVERY_MAX_RANGE = 64;
+  const CAMERA_DISCOVERY_COMMON_HOSTS = [1, 2, 10, 11, 20, 50, 80, 88, 100, 101, 102, 110, 120, 150, 200, 254];
+  const CAMERA_DISCOVERY_MAX_RANGE = 64;
 
-  const ASSET_ICON_IDS = ['home', 'calendar', 'weather', 'packages', 'shopping', 'homecare', 'garage', 'contracts', 'cameras', 'finance', 'subscriptions', 'settings', 'coupons', 'hdo', 'waste', 'tasks', 'notes', 'devices', 'warranties', 'polishHolidays', 'more'];
+  const ASSET_ICON_IDS = ['home', 'calendar', 'weather', 'packages', 'shopping', 'homecare', 'garage', 'contracts', 'cameras', 'finance', 'subscriptions', 'settings', 'coupons', 'hdo', 'waste', 'tasks', 'notes', 'warranties', 'polishHolidays', 'more'];
   const ASSET_ICON_MODULE_IDS = new Set(ASSET_ICON_IDS);
   const ASSET_ICON_THEMES = {
     'ios': { surface: 'soft', pathPrefix: './icons/module-icons/' },
@@ -720,8 +723,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 232,
-      mode: 'devices-inventory-v232',
+      appBuild: 233,
+      mode: 'cameras-foundation-v233',
       createdAt: '',
       updatedAt: ''
     },
@@ -776,6 +779,7 @@
     contracts: [],
     contractFiles: [],
     cameras: [],
+    cameraDiscovery: { subnet: '192.168.1', from: 1, to: 254, scanning: false, results: [], scannedAt: '', error: '' },
     finance: [],
     financeAccounts: [],
     financeTemplates: [],
@@ -918,50 +922,25 @@
         status: item.status || 'active'
       })
     },
-    devices: {
-      table: 'household_devices',
-      select: 'id,name,type,address,note,status,created_at',
-      order: { column: 'created_at', ascending: false },
-      payload: (item, userId) => ({
-        household_id: state.cloud.householdId,
-        profile_id: null,
-        name: item.name || 'Zařízení',
-        type: item.type || null,
-        address: item.address || null,
-        note: serializeDeviceNote(item),
-        status: normalizeDeviceStatus(item.status),
-        created_by: item.cloudId ? undefined : userId,
-        updated_by: userId
-      }),
-      map: (item) => normalizeDeviceItem({
-        id: state.devices.find((entry) => entry.cloudId === item.id)?.id || `device-cloud-${item.id}`,
-        cloudId: item.id,
-        householdId: currentHouseholdId(),
-        profileId: currentProfileId(),
-        createdAt: item.created_at || new Date().toISOString(),
-        name: item.name || 'Zařízení',
-        type: item.type || '',
-        address: item.address || '',
-        note: item.note || '',
-        status: item.status || 'active'
-      })
-    },
     cameras: {
       table: 'camera_feeds',
       select: 'id,name,location,snapshot_url,status,note,created_at',
       order: { column: 'created_at', ascending: false },
-      payload: (item, userId) => ({
-        household_id: state.cloud.householdId,
-        profile_id: null,
-        name: item.name || 'Kamera',
-        location: item.location || null,
-        snapshot_url: item.snapshotUrl || null,
-        status: item.status || 'offline',
-        note: item.note || null,
-        created_by: item.cloudId ? undefined : userId,
-        updated_by: userId
-      }),
-      map: (item) => ({
+      payload: (item, userId) => {
+        const camera = normalizeCameraItem(item);
+        return {
+          household_id: state.cloud.householdId,
+          profile_id: null,
+          name: camera.name || 'Kamera',
+          location: camera.location || null,
+          snapshot_url: camera.snapshotUrl || null,
+          status: camera.status || 'unknown',
+          note: serializeCameraNote(camera),
+          created_by: item.cloudId ? undefined : userId,
+          updated_by: userId
+        };
+      },
+      map: (item) => normalizeCameraItem({
         id: state.cameras.find((entry) => entry.cloudId === item.id)?.id || `camera-cloud-${item.id}`,
         cloudId: item.id,
         householdId: currentHouseholdId(),
@@ -970,7 +949,7 @@
         name: item.name || 'Kamera',
         location: item.location || '',
         snapshotUrl: item.snapshot_url || '',
-        status: item.status || 'offline',
+        status: item.status || 'unknown',
         note: item.note || ''
       })
     }
@@ -999,7 +978,6 @@
     'finance_accounts',
     'finance_transactions',
     'household_notes',
-    'household_devices',
     'camera_feeds',
     'household_coupons',
     'household_warranties',
@@ -1652,8 +1630,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 232,
-      mode: 'devices-inventory-v232',
+      appBuild: 233,
+      mode: 'cameras-foundation-v233',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1716,7 +1694,7 @@
     migrated.cloud.lastAutosyncAt = migrated.cloud?.lastAutosyncAt || '';
     migrated.cloud.profilesLoadedAt = migrated.cloud?.profilesLoadedAt || '';
     migrated.cloud.localPendingCount = Number(migrated.cloud?.localPendingCount || 0);
-    migrated.deviceDiscovery = normalizeDeviceDiscoveryState(migrated.deviceDiscovery);
+    migrated.cameraDiscovery = normalizeCameraDiscoveryState(migrated.cameraDiscovery);
     migrated.weather = normalizeWeatherState(migrated.weather);
     migrated.polishShopClosures = normalizePolishShopState(migrated.polishShopClosures);
     if (previousAppBuild < 82 && migrated.weather.source === 'open-meteo') {
@@ -1771,7 +1749,7 @@
     dedupeShoppingData(migrated);
     migrated.shoppingSeedVersion = 201;
     migrated.financeTemplates = normalizeFinanceTemplates(migrated.financeTemplates);
-    migrated.devices = (migrated.devices || []).map((device) => normalizeDeviceItem(device));
+    migrated.cameras = (migrated.cameras || []).map((camera) => normalizeCameraItem(camera));
 
     const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
     migrated.vehicles = migrated.vehicles.map((vehicle) => {
@@ -2004,7 +1982,7 @@
   }
 
   function getCollectionNames() {
-    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingLists', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'notes', 'devices', 'warranties', 'warrantyFiles', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'cameras', 'finance', 'financeAccounts', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
+    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingLists', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'notes', 'warranties', 'warrantyFiles', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'cameras', 'finance', 'financeAccounts', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
   }
 
   function normalizeModuleList(value) {
@@ -3500,10 +3478,10 @@
       calendar: 'Kalendář umí více zdrojů. Google Calendar je připravený přes bezpečný backend, ne přes tokeny ve frontendu.',
       packages: 'Základ pro sledování balíků. Teď ručně, později automatika přes backend.',
       shopping: 'Sdílený nákupní seznam s katalogem položek, jednotkami a cloudovým oddělením domácností.',
-      homecare: 'HDO, odpad, poznámky, úkoly a domácí zařízení na jednom místě.',
+      homecare: 'HDO, odpad, poznámky, úkoly, záruky a polské svátky na jednom místě.',
       garage: 'Auta v domácnosti, tankování, servis a základní přehled spotřeby.',
       contracts: 'Evidence smluv a pojistek s hlídáním platnosti.',
-      cameras: 'Přehled kamer. Metadata karet se sdílí cloudově, streamy později bezpečně přes lokální síť/VPN.',
+      cameras: 'Přehled kamer Tapo/Hikvision a dalších. Metadata se sdílí cloudově, streamy bezpečně přes lokální síť/VPN nebo vlastní proxy.',
       finance: 'Jednoduchý přehled příjmů a výdajů domácnosti s cloudovým oddělením podle householdId.',
       subscriptions: 'Předplatné, sdílení streamovacích služeb, platby lidí a kontrola dluhů/přeplatků.',
       settings: 'Domácnost, profily, zapnuté moduly, export/import a reset offline prototypu.',
@@ -3659,7 +3637,7 @@
     ensureWeatherFresh(false);
     normalizeGarageRuntimeState({ persist: false });
     const weather = normalizeWeatherState(state.weather);
-    const dashboardContext = { hdo, todayEvents, upcomingEvents, calendarPanelEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, weather, notes: state.notes, devices: state.devices, cameras: state.cameras, coupons: state.coupons, contracts: state.contracts };
+    const dashboardContext = { hdo, todayEvents, upcomingEvents, calendarPanelEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, weather, notes: state.notes, cameras: state.cameras, coupons: state.coupons, contracts: state.contracts };
     const selectedHeroItems = normalizeHomeHeroIds(state.settings?.homeHeroItems);
     const heroCount = selectedHeroItems.length;
 
@@ -3901,12 +3879,6 @@
       const notes = state.notes || [];
       const currentNote = homeCycleItem(notes, 45);
       return { ...base, metric: notes.length, text: currentNote ? firstTitle(currentNote, 'Poznámka') : 'Žádné poznámky', detail: currentNote?.text ? normalizeText(currentNote.text).slice(0, 48) : 'Rychlé domácí poznámky', live: notes.length > 1, tone: notes.length ? 'good' : 'neutral' };
-    }
-    if (id === 'devices') {
-      const devices = state.devices || [];
-      const active = devices.filter((device) => device.status !== 'offline' && device.status !== 'archived').length;
-      const currentDevice = homeCycleItem(devices, 45);
-      return { ...base, metric: devices.length, text: currentDevice ? firstTitle(currentDevice, 'Zařízení') : 'Žádné zařízení', detail: devices.length ? `${active} aktivní / ${devices.length} celkem` : 'Přidej domácí zařízení', live: devices.length > 1, tone: devices.length ? 'good' : 'neutral' };
     }
     if (id === 'warranties') {
       const warranties = (state.warranties || [])
@@ -4932,7 +4904,6 @@
       { nav: 'finance', tab: 'summary', icon: '💰', label: 'Finance', items: state.finance || [], loadedAt: state.financeCloud?.loadedAt },
       { nav: 'subscriptions', tab: 'overview', icon: '🎬', label: 'Předplatné', items: [...(state.subscriptions || []), ...(state.subscriptionPeople || []), ...(state.subscriptionPayments || [])], loadedAt: state.subscriptionsCloud?.loadedAt, cloudSynced: Boolean(state.subscriptionsCloud?.loadedAt && cloudReady()) },
       { nav: 'homecare', tab: 'tasks', icon: '📝', label: 'Poznámky', items: state.notes || [], loadedAt: state.householdExtrasCloud?.loadedAt },
-      { nav: 'homecare', tab: 'devices', icon: '🔌', label: 'Zařízení', items: state.devices || [], loadedAt: state.householdExtrasCloud?.loadedAt },
       { nav: 'homecare', tab: 'warranties', icon: '🧾', label: 'Záruky', items: state.warranties || [], loadedAt: state.householdExtrasCloud?.loadedAt },
       { nav: 'cameras', tab: 'overview', icon: '📹', label: 'Kamery', items: state.cameras || [], loadedAt: state.householdExtrasCloud?.loadedAt },
       { nav: 'shopping', tab: 'coupons', icon: '🏷️', label: 'Slevové kódy', items: state.coupons || [], loadedAt: state.householdExtrasCloud?.loadedAt }
@@ -4955,7 +4926,7 @@
     const overall = total ? Math.round((totalCloud / total) * 100) : (cloudReady ? 100 : 0);
     const autosyncEnabled = state.cloud?.autoSyncEnabled !== false;
     const autosyncStatus = cloudAutosyncStatusLabel();
-    const featuredCloudLabels = ['Profily', 'Nákupy', 'Smlouvy', 'Přílohy smluv', 'Přílohy záruk', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář', 'Finance', 'Předplatné', 'Poznámky', 'Zařízení', 'Kamery', 'Slevové kódy'];
+    const featuredCloudLabels = ['Profily', 'Nákupy', 'Smlouvy', 'Přílohy smluv', 'Přílohy záruk', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář', 'Finance', 'Předplatné', 'Poznámky', 'Kamery', 'Slevové kódy'];
     const compactItems = mode === 'dashboard' ? items.filter((item) => item.total || featuredCloudLabels.includes(item.label)).slice(0, 14) : items;
     return `
       <section class="card desktop-span-2 cloud-sync-overview-card">
@@ -5215,7 +5186,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_232', note: 'Hotfix Home a spodní navigace: čas a počasí jsou zamknuté, Home má až 10 volitelných panelů pod nimi, PL svátky na Home už nerotují na vzdálené omezení typu březnová sobota a aktivní jezdec spodní lišty drží poslední reálnou pozici.' },
+      { title: 'Domácnost+ v.0.1_233', note: 'Odstraněný modul Zařízení z UI a cloudu, rozpracovaný modul Kamery pro Tapo/Hikvision/IP kamery s detailem, snapshot/proxy/RTSP evidencí, orientačním hledáním v síti a stabilnějším ukotvením spodní lišty.' },
       { title: 'Domácnost+ v.0.1_227', note: 'Hotfix spodní navigace a Financí: lišta je znovu centrovaná bez ujíždění doleva, finance měsíc/datum jsou stažené do šířky karty a ikonky pohybů se párují podle použitých/odpovídajících šablon.' },
       { title: 'Domácnost+ v.0.1_226', note: 'Finance/Home/nav stabilizace: spodní lišta je nižší a kompaktnější bez blikání při běžném renderu, Home karty jsou natažené dolů bez posunu názvu domácnosti, finance datum/měsíc nepřetékají a pohyby dostaly ikonky ve stylu šablon.' },
       { title: 'Domácnost+ v.0.1_225', note: 'Hotfix iPhone/PWA layoutu: stabilnější spodní lišta bez ořezu, přesnější rezerva Home dashboardu, finance měsícový filtr bez přetékání a bez tlačítka Zobrazit měsíc, animace spodní lišty jen při skutečném kliknutí na spodní navigaci.' },
@@ -5227,7 +5198,7 @@
       { title: 'Domácnost+ v.0.1_219', note: 'Hotfix po v218: spodní lišta už se na iPhone/PWA neposouvá pod spodní hranu displeje, drží bezpečný malý odstup od home indicatoru a Home výška je vrácená do stabilního rozsahu.' },
       { title: 'Domácnost+ v.0.1_218', note: 'Stabilizační build: spodní lišta je na iPhone/PWA ukotvená níž už při prvním vykreslení, Finance ukazují účty jako samostatné panely, šablony nemají nechtěný červený stín a přidání pohybu posílá cloud uložení na pozadí.' },
       { title: 'Domácnost+ v.0.1_217', note: 'Home layout hotfix: spodní lišta je ukotvená dole hned při prvním vykreslení v PWA/Safari a hlavní Home panel dostal zpět ušetřené místo, takže čas, počasí i dlaždice mohou být vyšší.' },
-      { title: 'Domácnost+ v.0.1_232', note: 'Domácnost / Zařízení dotažené jako praktický inventář: detail zařízení, místnost, výrobce/model, IP/MAC, administrace, záruka, údržba, editace a orientační hledání zařízení v lokální síti bez DB změn.' },
+      { title: 'Domácnost+ v.0.1_232', note: 'Domácnost / Zařízení bylo krátce rozšířené jako inventář. Modul je od v233 odstraněný z UI, protože směr se přesouvá na Kamery.' },
       { title: 'Domácnost+ v.0.1_216', note: 'Stabilizační build: opravené slučování finance šablon podle updatedAt mezi mobilem a PC, jistější pending marker šablon, jemnější autosync mimo první klikání a silnější deduplikace profilů podle názvu.' },
       { title: 'Domácnost+ v.0.1_229', note: 'Spodní navigace má pevně Domů vlevo a Více vpravo; prostřední 2–4 ikony jsou nastavitelné podle aktivního profilu a ukládají se do cloudového dashboard_layout.profileUiSettings.' },
       { title: 'Domácnost+ v.0.1_215', note: 'Cloud settings hotfix: odstraněné volání neexistující user_app_settings tabulky, vzhled a finance šablony se ukládají přes household dashboard_layout, profily se deduplikují v zobrazení i při syncu.' },
@@ -6836,69 +6807,6 @@
     }
   }
 
-  function normalizeDeviceType(value) {
-    const key = normalizeText(value || '').toLowerCase();
-    if (DEVICE_TYPE_OPTIONS.some(([id]) => id === key)) return key;
-    const aliases = {
-      sit: 'switch', 'síť': 'switch', wifi: 'router', modem: 'router', router: 'router', nas: 'nas', tiskarna: 'printer', 'tiskárna': 'printer', kamera: 'camera', tablet: 'tablet', spotrebic: 'appliance', 'spotřebič': 'appliance', kotel: 'heating'
-    };
-    const normalized = normalizeKey(value || '');
-    return aliases[normalized] || aliases[key] || (key ? 'other' : 'other');
-  }
-
-  function deviceTypeLabel(value) {
-    const key = normalizeDeviceType(value);
-    return DEVICE_TYPE_OPTIONS.find(([id]) => id === key)?.[1] || 'Zařízení';
-  }
-
-  function normalizeDeviceStatus(value) {
-    const key = normalizeText(value || '').toLowerCase();
-    return DEVICE_STATUS_OPTIONS.some(([id]) => id === key) ? key : 'active';
-  }
-
-  function deviceStatusLabel(value) {
-    const key = normalizeDeviceStatus(value);
-    return DEVICE_STATUS_OPTIONS.find(([id]) => id === key)?.[1] || 'Aktivní';
-  }
-
-  function deviceStatusBadgeClass(value) {
-    const key = normalizeDeviceStatus(value);
-    if (key === 'active') return 'good';
-    if (key === 'watch' || key === 'service') return 'warn';
-    if (key === 'offline' || key === 'archived') return 'muted';
-    return '';
-  }
-
-  function deviceIcon(value) {
-    const key = normalizeDeviceType(value);
-    return ({ router: '📶', switch: '🔀', nas: '💾', camera: '📹', tablet: '📱', printer: '🖨️', appliance: '🔌', heating: '🔥', 'smart-home': '🏠', other: '🔧' })[key] || '🔌';
-  }
-
-  function parseDeviceNote(rawNote = '') {
-    const raw = String(rawNote || '');
-    if (!raw.startsWith(DEVICE_NOTE_META_PREFIX)) return { note: raw, meta: {} };
-    const parsed = safeParse(raw.slice(DEVICE_NOTE_META_PREFIX.length), null);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { note: '', meta: {} };
-    const { note = '', ...meta } = parsed;
-    return { note: normalizeText(note), meta };
-  }
-
-  function normalizeDeviceDiscoveryState(input = {}) {
-    const fallback = DEFAULT_STATE?.deviceDiscovery || { subnet: '192.168.1', from: 1, to: 254, scanning: false, results: [], scannedAt: '', error: '' };
-    const subnet = normalizeSubnetPrefix(input.subnet || fallback.subnet || '192.168.1');
-    const from = clampNumber(input.from, 1, 254, 1);
-    const to = clampNumber(input.to, from, 254, Math.min(254, Math.max(from, Number(input.to || 254))));
-    return {
-      subnet,
-      from,
-      to,
-      scanning: false,
-      results: Array.isArray(input.results) ? input.results.slice(0, 40).map(normalizeDeviceDiscoveryResult).filter(Boolean) : [],
-      scannedAt: input.scannedAt || '',
-      error: input.error || ''
-    };
-  }
-
   function normalizeSubnetPrefix(value) {
     const parts = String(value || '').trim().replace(/\.$/, '').split('.').map((part) => Number(part));
     if (parts.length >= 3 && parts.slice(0, 3).every((part) => Number.isInteger(part) && part >= 0 && part <= 255)) return parts.slice(0, 3).join('.');
@@ -6911,289 +6819,16 @@
     return Math.max(min, Math.min(max, Math.round(number)));
   }
 
-  function normalizeDeviceDiscoveryResult(input = {}) {
-    const ip = normalizeText(input.ip || '');
-    if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) return null;
-    return {
-      ip,
-      url: normalizeText(input.url || `http://${ip}`),
-      status: input.status || 'found',
-      label: normalizeText(input.label || 'Možné webové rozhraní'),
-      checkedAt: input.checkedAt || new Date().toISOString()
-    };
-  }
-
-  function normalizeDeviceItem(item = {}) {
-    const parsed = parseDeviceNote(item.note || '');
-    const meta = parsed.meta || {};
-    const device = {
-      id: item.id || `device-${uid()}`,
-      householdId: item.householdId || currentHouseholdId(),
-      profileId: item.profileId || currentProfileId(),
-      cloudId: item.cloudId || '',
-      createdAt: item.createdAt || new Date().toISOString(),
-      updatedAt: item.updatedAt || '',
-      name: normalizeText(item.name || meta.name || 'Zařízení'),
-      type: normalizeDeviceType(item.type || meta.type || 'other'),
-      address: normalizeText(item.address || meta.address || meta.ip || ''),
-      room: normalizeText(item.room || meta.room || ''),
-      brand: normalizeText(item.brand || meta.brand || ''),
-      model: normalizeText(item.model || meta.model || ''),
-      serial: normalizeText(item.serial || meta.serial || ''),
-      mac: normalizeText(item.mac || meta.mac || ''),
-      adminUrl: normalizeText(item.adminUrl || meta.adminUrl || ''),
-      purchaseDate: normalizeText(item.purchaseDate || meta.purchaseDate || ''),
-      warrantyUntil: normalizeText(item.warrantyUntil || meta.warrantyUntil || ''),
-      lastService: normalizeText(item.lastService || meta.lastService || ''),
-      nextService: normalizeText(item.nextService || meta.nextService || ''),
-      maintenance: normalizeText(item.maintenance || meta.maintenance || ''),
-      owner: normalizeText(item.owner || meta.owner || ''),
-      note: normalizeText(item.noteText || item.plainNote || parsed.note || ''),
-      status: normalizeDeviceStatus(item.status || meta.status || 'active'),
-      discovered: Boolean(item.discovered || meta.discovered)
-    };
-    if (device.adminUrl && !/^https?:\/\//i.test(device.adminUrl)) device.adminUrl = `http://${device.adminUrl}`;
-    if (!device.adminUrl && device.address && /^\d{1,3}(\.\d{1,3}){3}$/.test(device.address)) device.adminUrl = `http://${device.address}`;
-    return device;
-  }
-
-  function serializeDeviceNote(item = {}) {
-    const device = normalizeDeviceItem(item);
-    const meta = {
-      note: device.note || '',
-      room: device.room || '',
-      brand: device.brand || '',
-      model: device.model || '',
-      serial: device.serial || '',
-      mac: device.mac || '',
-      adminUrl: device.adminUrl || '',
-      purchaseDate: device.purchaseDate || '',
-      warrantyUntil: device.warrantyUntil || '',
-      lastService: device.lastService || '',
-      nextService: device.nextService || '',
-      maintenance: device.maintenance || '',
-      owner: device.owner || '',
-      discovered: Boolean(device.discovered)
-    };
-    const hasExtended = Object.entries(meta).some(([key, value]) => key !== 'note' && Boolean(value));
-    return hasExtended ? `${DEVICE_NOTE_META_PREFIX}${JSON.stringify(meta)}` : (device.note || null);
-  }
-
-  function deviceFromFormData(data = {}) {
-    const address = normalizeText(data.address || data.ip || '');
-    return normalizeDeviceItem({
-      name: data.name,
-      type: data.type,
-      address,
-      room: data.room,
-      brand: data.brand,
-      model: data.model,
-      serial: data.serial,
-      mac: data.mac,
-      adminUrl: data.adminUrl,
-      purchaseDate: data.purchaseDate,
-      warrantyUntil: data.warrantyUntil,
-      lastService: data.lastService,
-      nextService: data.nextService,
-      maintenance: data.maintenance,
-      owner: data.owner,
-      note: data.note,
-      status: data.status || 'active'
-    });
-  }
-
-  async function addDeviceFromForm(data, form) {
-    const device = deviceFromFormData(data);
-    if (!device.name || device.name === 'Zařízení') return showToast('Zadej název zařízení');
-    await addItem('devices', device);
-    form?.reset();
-  }
-
-  async function updateDeviceFromForm(id, data, form) {
-    const device = state.devices.find((item) => item.id === id);
-    if (!device) return showToast('Zařízení nenalezeno');
-    Object.assign(device, deviceFromFormData(data), { id: device.id, cloudId: device.cloudId || '', createdAt: device.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() });
-    const ok = await cloudUpdateExtraItem('devices', device);
-    if (!ok) return;
-    touchState();
-    saveState();
-    render();
-    showToast(device.cloudId ? 'Zařízení upravené v cloudu' : 'Zařízení upravené lokálně');
-  }
-
-  function deviceWarrantyBadge(device) {
-    if (!device.warrantyUntil) return '';
-    const days = daysUntil(device.warrantyUntil);
-    const cls = days < 0 ? 'muted' : days <= 45 ? 'warn' : 'good';
-    const text = days < 0 ? 'záruka prošla' : `záruka ${formatDate(device.warrantyUntil)}`;
-    return `<span class="badge ${cls}">${escapeHtml(text)}</span>`;
-  }
-
-  function renderDeviceFormFields(device = {}) {
-    const d = normalizeDeviceItem(device);
-    return `
-      <div class="form-grid two device-form-grid">
-        ${field('Název', 'name', 'text', 'Router / NAS / kamera', true, d.name === 'Zařízení' ? '' : d.name)}
-        ${selectField('Typ', 'type', DEVICE_TYPE_OPTIONS, d.type)}
-        ${field('Místnost / umístění', 'room', 'text', 'pracovna / půda / garáž', false, d.room)}
-        ${selectField('Stav', 'status', DEVICE_STATUS_OPTIONS, d.status)}
-        ${field('Výrobce', 'brand', 'text', 'TP-Link / Synology / Canon', false, d.brand)}
-        ${field('Model', 'model', 'text', 'Archer AX55 / DS220+', false, d.model)}
-        ${field('IP / adresa', 'address', 'text', '192.168.1.1', false, d.address)}
-        ${field('MAC', 'mac', 'text', 'AA:BB:CC:DD:EE:FF', false, d.mac)}
-        ${field('Odkaz do administrace', 'adminUrl', 'text', 'http://192.168.1.1', false, d.adminUrl)}
-        ${field('Sériové číslo', 'serial', 'text', '', false, d.serial)}
-        ${field('Datum koupě', 'purchaseDate', 'date', '', false, d.purchaseDate)}
-        ${field('Záruka do', 'warrantyUntil', 'date', '', false, d.warrantyUntil)}
-        ${field('Poslední údržba', 'lastService', 'date', '', false, d.lastService)}
-        ${field('Další údržba', 'nextService', 'date', '', false, d.nextService)}
-        ${field('Co hlídat', 'maintenance', 'text', 'filtr / baterka / firmware', false, d.maintenance)}
-        ${field('Kdo řeší', 'owner', 'text', 'Martin / Lucie', false, d.owner)}
-      </div>
-      <div class="form-grid">
-        ${field('Poznámka', 'note', 'text', 'bez hesel, jen praktická poznámka', false, d.note)}
-      </div>
-    `;
-  }
-
-  function renderDeviceCard(device) {
-    const d = normalizeDeviceItem(device);
-    const details = [d.room, d.address, d.brand || d.model ? `${d.brand} ${d.model}`.trim() : '', d.mac ? `MAC ${d.mac}` : '', d.cloudId ? 'cloud' : 'lokálně'].filter(Boolean).join(' · ');
-    return `
-      <article class="device-card item">
-        <div class="device-card-main">
-          <div class="device-card-icon" aria-hidden="true">${escapeHtml(deviceIcon(d.type))}</div>
-          <div class="device-card-body">
-            <div class="item-top"><div class="item-title">${escapeHtml(d.name)}</div><span class="badge ${deviceStatusBadgeClass(d.status)}">${escapeHtml(deviceStatusLabel(d.status))}</span></div>
-            <div class="item-meta">${escapeHtml(details || 'bez detailů')}</div>
-            <div class="device-chip-row">
-              <span class="badge">${escapeHtml(deviceTypeLabel(d.type))}</span>
-              ${d.nextService ? `<span class="badge ${daysUntil(d.nextService) <= 14 ? 'warn' : ''}">údržba ${formatDate(d.nextService)}</span>` : ''}
-              ${deviceWarrantyBadge(d)}
-              ${d.adminUrl ? `<a class="badge device-link-badge" href="${escapeHtml(d.adminUrl)}" target="_blank" rel="noopener">administrace</a>` : ''}
-            </div>
-            ${d.maintenance || d.note ? `<div class="inline-note compact-note device-note">${escapeHtml([d.maintenance, d.note].filter(Boolean).join(' · '))}</div>` : ''}
-          </div>
-        </div>
-        <details class="compact-edit-details device-edit-details">
-          <summary><span>Upravit detail</span><em>${escapeHtml(d.address || d.room || 'zařízení')}</em></summary>
-          <form data-form="update-device" data-id="${escapeHtml(d.id)}">
-            ${renderDeviceFormFields(d)}
-            <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button><button class="danger-btn" type="button" data-action="delete" data-collection="devices" data-id="${escapeHtml(d.id)}">Smazat</button></div>
-          </form>
-        </details>
-      </article>
-    `;
-  }
-
-  function renderDeviceDiscoveryPanel() {
-    state.deviceDiscovery = normalizeDeviceDiscoveryState(state.deviceDiscovery);
-    const discovery = state.deviceDiscovery;
-    const hasResults = discovery.results.length > 0;
-    return `
-      <section class="device-discovery-panel glass-subcard">
-        <div class="card-header small"><div><h3>Najít zařízení v síti</h3><p>Orientační hledání webových rozhraní v lokální síti. Prohlížeč neumí ARP/ping, takže je to bezpečný best-effort scan přes HTTP.</p></div><span class="badge ${discovery.scanning ? 'warn' : ''}">${discovery.scanning ? 'hledám' : 'volitelné'}</span></div>
-        <div class="form-grid three device-scan-grid">
-          ${field('Podsíť', 'deviceSubnet', 'text', '192.168.1', false, discovery.subnet)}
-          ${field('Od', 'deviceFrom', 'number', '1', false, discovery.from)}
-          ${field('Do', 'deviceTo', 'number', '254', false, discovery.to)}
-        </div>
-        <div class="form-actions compact-actions">
-          <button class="ghost-btn" type="button" data-action="device-scan-common">Rychlé hledání</button>
-          <button class="ghost-btn" type="button" data-action="device-scan-range">Hledat rozsah</button>
-          ${hasResults ? '<button class="ghost-btn" type="button" data-action="device-scan-clear">Vyčistit nálezy</button>' : ''}
-        </div>
-        <div class="inline-note compact-note">Pozn.: z webové/PWA appky nejde spolehlivě skenovat celou LAN jako z Windows programu. Když prohlížeč lokální HTTP blokne, zadej IP ručně nebo otevři appku lokálně v domácí síti.</div>
-        ${discovery.error ? `<div class="inline-note warn-note">${escapeHtml(discovery.error)}</div>` : ''}
-        ${hasResults ? `<div class="device-discovery-results">${discovery.results.map((result) => `
-          <div class="device-discovery-result">
-            <div><strong>${escapeHtml(result.ip)}</strong><span>${escapeHtml(result.label || 'Možné zařízení')}</span></div>
-            <div class="form-actions compact-actions"><a class="ghost-btn" href="${escapeHtml(result.url)}" target="_blank" rel="noopener">Otevřít</a><button class="primary-btn" type="button" data-action="device-add-discovered" data-ip="${escapeHtml(result.ip)}" data-url="${escapeHtml(result.url)}">Přidat</button></div>
-          </div>
-        `).join('')}</div>` : ''}
-      </section>
-    `;
-  }
-
-  function readDeviceDiscoveryInputs(button) {
-    const panel = button.closest('.device-discovery-panel') || document;
-    const subnet = normalizeSubnetPrefix(panel.querySelector('[name="deviceSubnet"]')?.value || state.deviceDiscovery?.subnet || '192.168.1');
-    const from = clampNumber(panel.querySelector('[name="deviceFrom"]')?.value, 1, 254, 1);
-    const to = clampNumber(panel.querySelector('[name="deviceTo"]')?.value, from, 254, 254);
-    return { subnet, from, to };
-  }
-
-  async function scanDeviceHost(ip, timeoutMs = 1100) {
-    const urls = [`http://${ip}/favicon.ico`, `http://${ip}/`];
-    for (const url of urls) {
-      const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        await fetch(url, { mode: 'no-cors', cache: 'no-store', signal: controller.signal });
-        window.clearTimeout(timer);
-        return normalizeDeviceDiscoveryResult({ ip, url: `http://${ip}`, label: 'Odpovědělo webové rozhraní' });
-      } catch (_) {
-        window.clearTimeout(timer);
-      }
-      await yieldToMainThread();
-    }
-    return null;
-  }
-
-  async function scanDeviceNetwork(button, mode = 'common') {
-    if (state.deviceDiscovery?.scanning) return showToast('Hledání už běží');
-    const { subnet, from, to } = readDeviceDiscoveryInputs(button);
-    const hostSet = mode === 'common'
-      ? DEVICE_DISCOVERY_COMMON_HOSTS.filter((host) => host >= from && host <= to)
-      : Array.from({ length: Math.min(DEVICE_DISCOVERY_MAX_RANGE, to - from + 1) }, (_, index) => from + index);
-    if (!hostSet.length) return showToast('Zadej rozsah IP adres');
-    state.deviceDiscovery = normalizeDeviceDiscoveryState({ ...state.deviceDiscovery, subnet, from, to, scanning: true, error: '', results: state.deviceDiscovery?.results || [] });
-    render();
-    showToast(mode === 'common' ? 'Zkouším běžné adresy v síti' : `Zkouším prvních ${hostSet.length} adres rozsahu`);
-    const existing = new Map((state.deviceDiscovery.results || []).map((item) => [item.ip, item]));
-    let found = 0;
-    for (const host of hostSet) {
-      const ip = `${subnet}.${host}`;
-      if ((state.devices || []).some((device) => normalizeDeviceItem(device).address === ip)) continue;
-      const result = await scanDeviceHost(ip);
-      if (result) {
-        existing.set(result.ip, result);
-        found += 1;
-      }
-      await yieldToMainThread();
-    }
-    state.deviceDiscovery = normalizeDeviceDiscoveryState({ subnet, from, to, scanning: false, results: [...existing.values()].slice(-40).reverse(), scannedAt: new Date().toISOString(), error: found ? '' : 'Nic se nepodařilo ověřit. To může být normální — iOS/Safari často blokuje lokální HTTP scan z PWA.' });
-    touchState();
-    saveState();
-    render();
-    showToast(found ? `Nalezeno možných zařízení: ${found}` : 'Automatické hledání nic nepotvrdilo');
-  }
-
-  async function addDiscoveredDevice(button) {
-    const ip = normalizeText(button.dataset.ip || '');
-    if (!ip) return;
-    const url = normalizeText(button.dataset.url || `http://${ip}`);
-    const exists = (state.devices || []).some((device) => normalizeDeviceItem(device).address === ip);
-    if (exists) return showToast('Tohle zařízení už v seznamu je');
-    await addItem('devices', normalizeDeviceItem({ name: `Zařízení ${ip}`, type: 'other', address: ip, adminUrl: url, status: 'watch', note: 'Nalezeno orientačním hledáním v síti', discovered: true }));
-  }
-
-  function clearDeviceDiscovery() {
-    state.deviceDiscovery = normalizeDeviceDiscoveryState({ ...state.deviceDiscovery, results: [], error: '', scanning: false, scannedAt: '' });
-    touchState();
-    saveState();
-    render();
-  }
-
   function renderHomecare() {
     const hdo = getHdoStatus(now);
     const tasks = [...state.homeTasks].sort((a, b) => Number(a.done) - Number(b.done));
     const waste = [...state.waste].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
     const notes = [...state.notes].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
-    const devices = [...state.devices].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
     const warranties = sortedWarranties();
     const polishShopCount = buildPolishShopCalendarYear(polishShopSelectedYear()).filter((entry) => entry.status === 'closed').length;
-    const activeHomecareTab = getModuleTab('homecare', 'hdo');
+    const homecareTabs = ['hdo', 'waste', 'tasks', 'warranties', 'polish-holidays'];
+    const storedHomecareTab = getModuleTab('homecare', 'hdo');
+    const activeHomecareTab = homecareTabs.includes(storedHomecareTab) ? storedHomecareTab : 'hdo';
 
     return `
       ${renderSectionTabs('homecare', [
@@ -7201,8 +6836,7 @@
         { id: 'waste', label: 'Odpad', icon: '♻️', count: waste.length },
         { id: 'tasks', label: 'Úkoly', icon: '✅', count: tasks.filter((task) => !task.done).length },
         { id: 'warranties', label: 'Záruky', icon: '🧾', count: warranties.length },
-        { id: 'polish-holidays', label: 'Svátky PL', icon: '🇵🇱', count: polishShopCount },
-        { id: 'devices', label: 'Zařízení', icon: '📡', count: devices.length }
+        { id: 'polish-holidays', label: 'Svátky PL', icon: '🇵🇱', count: polishShopCount }
       ], 'hdo')}
       <div class="grid two module-tabbed homecare-tab-${activeHomecareTab}">
         <section class="card homecare-panel panel-hdo">
@@ -7289,19 +6923,6 @@
 
         ${renderPolishHolidaysPanel()}
 
-        <section class="card homecare-panel panel-devices">
-          <div class="card-header"><div><h2>Domácí zařízení / síť</h2><p>Inventář domácí techniky, IP adresy, záruky, údržba a rychlé odkazy do administrace. V online domácnosti je sdílený.</p></div><span class="badge ${devices.some((item) => item.cloudId) ? 'good' : ''}">${devices.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span></div>
-          ${renderDeviceDiscoveryPanel()}
-          <details class="compact-edit-details device-add-details" open>
-            <summary><span>Přidat zařízení</span><em>síť / spotřebič / údržba</em></summary>
-            <form data-form="add-device">
-              ${renderDeviceFormFields()}
-              <div class="form-actions"><button class="primary-btn" type="submit">Přidat zařízení</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud zařízení</button>' : ''}${state.cloud?.householdId && devices.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální zařízení (${devices.filter((item) => !item.cloudId).length})</button>` : ''}</div>
-            </form>
-          </details>
-          <div style="height:14px"></div>
-          ${devices.length ? `<div class="device-list">${devices.map(renderDeviceCard).join('')}</div>` : renderEmptyCta({ icon: '🔌', title: 'Zařízení jsou prázdná', text: 'Přidej router, kotel, spotřebič nebo jiné domácí zařízení. Pak uvidíš IP, záruku a údržbu v jednom přehledu.', nav: 'homecare', tab: 'devices', label: 'Přidat zařízení' })}
-        </section>
       </div>
     `;
   }
@@ -9190,52 +8811,394 @@
     return state.contractFiles.filter((file) => file.contractId === contractId).length;
   }
 
+  function parseCameraNote(rawNote = '') {
+    const raw = String(rawNote || '');
+    if (!raw.startsWith(CAMERA_NOTE_META_PREFIX)) return { note: raw, meta: {} };
+    const parsed = safeParse(raw.slice(CAMERA_NOTE_META_PREFIX.length), null);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { note: '', meta: {} };
+    const { note = '', ...meta } = parsed;
+    return { note: normalizeText(note), meta };
+  }
+
+  function normalizeCameraVendor(value) {
+    const key = normalizeKey(value || 'generic');
+    if (CAMERA_VENDOR_OPTIONS.some(([id]) => id === key)) return key;
+    if (key.includes('tplink') || key.includes('tp-link')) return 'tapo';
+    if (key.includes('hik')) return 'hikvision';
+    if (key.includes('dahua')) return 'dahua';
+    if (key.includes('reolink')) return 'reolink';
+    if (key.includes('ezviz')) return 'ezviz';
+    if (key.includes('unifi') || key.includes('ubiquiti')) return 'unifi';
+    return 'generic';
+  }
+
+  function normalizeCameraStreamType(value) {
+    const key = normalizeKey(value || 'snapshot');
+    return CAMERA_STREAM_TYPE_OPTIONS.some(([id]) => id === key) ? key : 'snapshot';
+  }
+
+  function normalizeCameraStatus(value) {
+    const key = normalizeKey(value || 'unknown');
+    return CAMERA_STATUS_OPTIONS.some(([id]) => id === key) ? key : 'unknown';
+  }
+
+  function cameraVendorLabel(value) {
+    const key = normalizeCameraVendor(value);
+    return CAMERA_VENDOR_OPTIONS.find(([id]) => id === key)?.[1] || 'Obecná IP kamera';
+  }
+
+  function cameraStreamTypeLabel(value) {
+    const key = normalizeCameraStreamType(value);
+    return CAMERA_STREAM_TYPE_OPTIONS.find(([id]) => id === key)?.[1] || 'Snapshot';
+  }
+
+  function cameraStatusBadgeClass(value) {
+    const key = normalizeCameraStatus(value);
+    if (key === 'online') return 'good';
+    if (key === 'private' || key === 'unknown') return 'warn';
+    if (key === 'offline') return 'bad';
+    return '';
+  }
+
+  function normalizeCameraUrl(value = '') {
+    const text = normalizeText(value || '');
+    if (!text) return '';
+    if (/^(https?|rtsp):\/\//i.test(text)) return text;
+    if (/^\d{1,3}(\.\d{1,3}){3}/.test(text)) return `http://${text}`;
+    return text;
+  }
+
+  function normalizeCameraItem(item = {}) {
+    const parsed = parseCameraNote(item.note || '');
+    const meta = parsed.meta || {};
+    const camera = {
+      id: item.id || `camera-${uid()}`,
+      householdId: item.householdId || currentHouseholdId(),
+      profileId: item.profileId || currentProfileId(),
+      cloudId: item.cloudId || '',
+      createdAt: item.createdAt || new Date().toISOString(),
+      updatedAt: item.updatedAt || '',
+      name: normalizeText(item.name || meta.name || 'Kamera'),
+      location: normalizeText(item.location || meta.location || ''),
+      vendor: normalizeCameraVendor(item.vendor || meta.vendor || 'generic'),
+      model: normalizeText(item.model || meta.model || ''),
+      ip: normalizeText(item.ip || meta.ip || ''),
+      adminUrl: normalizeCameraUrl(item.adminUrl || meta.adminUrl || ''),
+      snapshotUrl: normalizeCameraUrl(item.snapshotUrl || meta.snapshotUrl || ''),
+      streamUrl: normalizeCameraUrl(item.streamUrl || meta.streamUrl || ''),
+      streamType: normalizeCameraStreamType(item.streamType || meta.streamType || (item.snapshotUrl ? 'snapshot' : 'app')),
+      onvifPort: normalizeText(item.onvifPort || meta.onvifPort || ''),
+      usernameHint: normalizeText(item.usernameHint || meta.usernameHint || ''),
+      status: normalizeCameraStatus(item.status || meta.status || 'unknown'),
+      note: normalizeText(item.noteText || item.plainNote || parsed.note || '')
+    };
+    if (!camera.adminUrl && camera.ip) camera.adminUrl = `http://${camera.ip}`;
+    return camera;
+  }
+
+  function serializeCameraNote(item = {}) {
+    const camera = normalizeCameraItem(item);
+    const meta = {
+      note: camera.note || '',
+      vendor: camera.vendor || 'generic',
+      model: camera.model || '',
+      ip: camera.ip || '',
+      adminUrl: camera.adminUrl || '',
+      streamUrl: camera.streamUrl || '',
+      streamType: camera.streamType || 'snapshot',
+      onvifPort: camera.onvifPort || '',
+      usernameHint: camera.usernameHint || ''
+    };
+    const hasExtended = Object.entries(meta).some(([key, value]) => key !== 'note' && Boolean(value) && value !== 'generic' && value !== 'snapshot');
+    return hasExtended ? `${CAMERA_NOTE_META_PREFIX}${JSON.stringify(meta)}` : (camera.note || null);
+  }
+
+  function cameraFromFormData(data = {}) {
+    return normalizeCameraItem({
+      name: data.name,
+      location: data.location,
+      vendor: data.vendor,
+      model: data.model,
+      ip: data.ip,
+      adminUrl: data.adminUrl,
+      snapshotUrl: data.snapshotUrl,
+      streamUrl: data.streamUrl,
+      streamType: data.streamType,
+      onvifPort: data.onvifPort,
+      usernameHint: data.usernameHint,
+      status: data.status,
+      note: data.note
+    });
+  }
+
+  async function addCameraFromForm(data, form) {
+    const camera = cameraFromFormData(data);
+    if (!camera.name || camera.name === 'Kamera') return showToast('Zadej název kamery');
+    await addItem('cameras', camera);
+    form?.reset();
+  }
+
+  async function updateCameraFromForm(id, data, form) {
+    const camera = state.cameras.find((item) => item.id === id);
+    if (!camera) return showToast('Kamera nenalezena');
+    Object.assign(camera, cameraFromFormData(data), { id: camera.id, cloudId: camera.cloudId || '', createdAt: camera.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() });
+    const ok = await cloudUpdateExtraItem('cameras', camera);
+    if (!ok) return;
+    touchState();
+    saveState();
+    render();
+    showToast(camera.cloudId ? 'Kamera upravená v cloudu' : 'Kamera upravená lokálně');
+  }
+
+  function renderCameraFormFields(camera = {}) {
+    const c = normalizeCameraItem(camera);
+    return `
+      <div class="form-grid two camera-form-grid">
+        ${field('Název', 'name', 'text', 'Vchod / garáž / zahrada', true, c.name === 'Kamera' ? '' : c.name)}
+        ${field('Umístění', 'location', 'text', 'venku / chodba / garáž', false, c.location)}
+        ${selectField('Značka / systém', 'vendor', CAMERA_VENDOR_OPTIONS, c.vendor)}
+        ${field('Model', 'model', 'text', 'C320WS / DS-2CD...', false, c.model)}
+        ${field('IP adresa', 'ip', 'text', '192.168.1.50', false, c.ip)}
+        ${field('Administrace', 'adminUrl', 'text', 'http://192.168.1.50', false, c.adminUrl)}
+        ${selectField('Typ náhledu', 'streamType', CAMERA_STREAM_TYPE_OPTIONS, c.streamType)}
+        ${selectField('Stav', 'status', CAMERA_STATUS_OPTIONS, c.status)}
+        ${field('Snapshot / MJPEG / HLS URL', 'snapshotUrl', 'text', 'http://.../snapshot.jpg nebo HLS playlist', false, c.snapshotUrl)}
+        ${field('RTSP / ONVIF / proxy URL', 'streamUrl', 'text', 'rtsp://... nebo https://go2rtc...', false, c.streamUrl)}
+        ${field('ONVIF port', 'onvifPort', 'text', '80 / 8899 / 8000', false, c.onvifPort)}
+        ${field('Uživatel / poznámka k účtu', 'usernameHint', 'text', 'bez hesla', false, c.usernameHint)}
+      </div>
+      <div class="form-grid">
+        ${field('Poznámka', 'note', 'text', 'např. jen přes VPN, heslo v trezoru', false, c.note)}
+      </div>
+    `;
+  }
+
+  function normalizeCameraDiscoveryState(input = {}) {
+    const fallback = DEFAULT_STATE?.cameraDiscovery || { subnet: '192.168.1', from: 1, to: 254, scanning: false, results: [], scannedAt: '', error: '' };
+    const subnet = normalizeSubnetPrefix(input.subnet || fallback.subnet || '192.168.1');
+    const from = clampNumber(input.from, 1, 254, 1);
+    const to = clampNumber(input.to, from, 254, Math.min(254, Math.max(from, Number(input.to || 254))));
+    return {
+      subnet,
+      from,
+      to,
+      scanning: false,
+      results: Array.isArray(input.results) ? input.results.slice(0, 40).map(normalizeCameraDiscoveryResult).filter(Boolean) : [],
+      scannedAt: input.scannedAt || '',
+      error: input.error || ''
+    };
+  }
+
+  function normalizeCameraDiscoveryResult(input = {}) {
+    const ip = normalizeText(input.ip || '');
+    if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) return null;
+    return {
+      ip,
+      url: normalizeCameraUrl(input.url || `http://${ip}`),
+      vendor: normalizeCameraVendor(input.vendor || 'generic'),
+      label: normalizeText(input.label || 'Možné webové rozhraní kamery'),
+      checkedAt: input.checkedAt || new Date().toISOString()
+    };
+  }
+
+  function renderCameraDiscoveryPanel() {
+    state.cameraDiscovery = normalizeCameraDiscoveryState(state.cameraDiscovery);
+    const discovery = state.cameraDiscovery;
+    const hasResults = discovery.results.length > 0;
+    return `
+      <section class="camera-discovery-panel glass-subcard">
+        <div class="card-header small"><div><h3>Najít kamery v síti</h3><p>Orientační hledání webových rozhraní Tapo/Hikvision/Dahua a dalších IP kamer. Prohlížeč neumí ARP ani ping, takže je to bezpečný best-effort scan.</p></div><span class="badge ${discovery.scanning ? 'warn' : ''}">${discovery.scanning ? 'hledám' : 'volitelné'}</span></div>
+        <div class="form-grid three camera-scan-grid">
+          ${field('Podsíť', 'cameraSubnet', 'text', '192.168.1', false, discovery.subnet)}
+          ${field('Od', 'cameraFrom', 'number', '1', false, discovery.from)}
+          ${field('Do', 'cameraTo', 'number', '254', false, discovery.to)}
+        </div>
+        <div class="form-actions compact-actions">
+          <button class="ghost-btn" type="button" data-action="camera-scan-common">Rychlé hledání</button>
+          <button class="ghost-btn" type="button" data-action="camera-scan-range">Hledat rozsah</button>
+          ${hasResults ? '<button class="ghost-btn" type="button" data-action="camera-scan-clear">Vyčistit nálezy</button>' : ''}
+        </div>
+        <div class="inline-note compact-note">Pozn.: iPhone/Safari může lokální HTTP dotazy blokovat. Když se nic nenajde, není to chyba kamery — zadej IP ručně nebo použij router/NVR seznam zařízení.</div>
+        ${discovery.error ? `<div class="inline-note warn-note">${escapeHtml(discovery.error)}</div>` : ''}
+        ${hasResults ? `<div class="camera-discovery-results">${discovery.results.map((result) => `
+          <div class="camera-discovery-result">
+            <div><strong>${escapeHtml(result.ip)}</strong><span>${escapeHtml(result.label || 'Možná kamera')}</span></div>
+            <div class="form-actions compact-actions"><a class="ghost-btn" href="${escapeHtml(result.url)}" target="_blank" rel="noopener">Otevřít</a><button class="primary-btn" type="button" data-action="camera-add-discovered" data-ip="${escapeHtml(result.ip)}" data-url="${escapeHtml(result.url)}" data-vendor="${escapeHtml(result.vendor)}">Přidat kameru</button></div>
+          </div>
+        `).join('')}</div>` : ''}
+      </section>
+    `;
+  }
+
+  function readCameraDiscoveryInputs(button) {
+    const panel = button.closest('.camera-discovery-panel') || document;
+    const subnet = normalizeSubnetPrefix(panel.querySelector('[name="cameraSubnet"]')?.value || state.cameraDiscovery?.subnet || '192.168.1');
+    const from = clampNumber(panel.querySelector('[name="cameraFrom"]')?.value, 1, 254, 1);
+    const to = clampNumber(panel.querySelector('[name="cameraTo"]')?.value, from, 254, 254);
+    return { subnet, from, to };
+  }
+
+  async function scanCameraHost(ip, timeoutMs = 1150) {
+    const probes = [
+      { url: `http://${ip}/`, label: 'Odpovědělo webové rozhraní', vendor: 'generic' },
+      { url: `http://${ip}/doc/page/login.asp`, label: 'Možná Hikvision kamera/NVR', vendor: 'hikvision' },
+      { url: `http://${ip}/ISAPI/System/deviceInfo`, label: 'Možné Hikvision ISAPI', vendor: 'hikvision' },
+      { url: `http://${ip}/favicon.ico`, label: 'Možné webové rozhraní', vendor: 'generic' }
+    ];
+    for (const probe of probes) {
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        await fetch(probe.url, { mode: 'no-cors', cache: 'no-store', signal: controller.signal });
+        window.clearTimeout(timer);
+        return normalizeCameraDiscoveryResult({ ip, url: `http://${ip}`, label: probe.label, vendor: probe.vendor });
+      } catch (_) {
+        window.clearTimeout(timer);
+      }
+      await yieldToMainThread();
+    }
+    return null;
+  }
+
+  async function scanCameraNetwork(button, mode = 'common') {
+    if (state.cameraDiscovery?.scanning) return showToast('Hledání už běží');
+    const { subnet, from, to } = readCameraDiscoveryInputs(button);
+    const hostSet = mode === 'common'
+      ? CAMERA_DISCOVERY_COMMON_HOSTS.filter((host) => host >= from && host <= to)
+      : Array.from({ length: Math.min(CAMERA_DISCOVERY_MAX_RANGE, to - from + 1) }, (_, index) => from + index);
+    if (!hostSet.length) return showToast('Zadej rozsah IP adres');
+    state.cameraDiscovery = normalizeCameraDiscoveryState({ ...state.cameraDiscovery, subnet, from, to, scanning: true, error: '', results: state.cameraDiscovery?.results || [] });
+    render();
+    showToast(mode === 'common' ? 'Zkouším běžné adresy kamer' : `Zkouším prvních ${hostSet.length} adres rozsahu`);
+    const existing = new Map((state.cameraDiscovery.results || []).map((item) => [item.ip, item]));
+    let found = 0;
+    for (const host of hostSet) {
+      const ip = `${subnet}.${host}`;
+      if ((state.cameras || []).some((camera) => normalizeCameraItem(camera).ip === ip)) continue;
+      const result = await scanCameraHost(ip);
+      if (result) {
+        existing.set(result.ip, result);
+        found += 1;
+      }
+      await yieldToMainThread();
+    }
+    state.cameraDiscovery = normalizeCameraDiscoveryState({ subnet, from, to, scanning: false, results: [...existing.values()].slice(-40).reverse(), scannedAt: new Date().toISOString(), error: found ? '' : 'Nic se nepodařilo ověřit. To je u PWA normální — lokální HTTP scan může blokovat Safari nebo kamera.' });
+    touchState();
+    saveState();
+    render();
+    showToast(found ? `Nalezeno možných kamer: ${found}` : 'Automatické hledání nic nepotvrdilo');
+  }
+
+  async function addDiscoveredCamera(button) {
+    const ip = normalizeText(button.dataset.ip || '');
+    if (!ip) return;
+    const url = normalizeCameraUrl(button.dataset.url || `http://${ip}`);
+    const vendor = normalizeCameraVendor(button.dataset.vendor || 'generic');
+    const exists = (state.cameras || []).some((camera) => normalizeCameraItem(camera).ip === ip);
+    if (exists) return showToast('Tahle kamera už v seznamu je');
+    await addItem('cameras', normalizeCameraItem({ name: `Kamera ${ip}`, vendor, ip, adminUrl: url, status: 'unknown', streamType: 'app', note: 'Nalezeno orientačním hledáním v síti. Doplň snapshot/RTSP/ONVIF podle konkrétní kamery.' }));
+  }
+
+  function clearCameraDiscovery() {
+    state.cameraDiscovery = normalizeCameraDiscoveryState({ ...state.cameraDiscovery, results: [], error: '', scanning: false, scannedAt: '' });
+    touchState();
+    saveState();
+    render();
+  }
+
+  function cameraConnectHint(camera = {}) {
+    const c = normalizeCameraItem(camera);
+    if (c.vendor === 'tapo') return 'Tapo: v appce zapni RTSP/ONVIF účet, v Domácnost+ ulož lokální IP a ideálně snapshot/proxy URL. Heslo sem nepiš.';
+    if (c.vendor === 'hikvision') return 'Hikvision: pro web/NVR použij lokální administraci, pro živý náhled ideálně HLS/WebRTC/MJPEG přes go2rtc/Frigate/Home Assistant.';
+    if (c.streamType === 'rtsp') return 'RTSP prohlížeč přímo nepřehraje. Použij lokální převod na HLS/WebRTC/MJPEG přes bezpečnou proxy nebo VPN.';
+    return 'Pro živý náhled je nejstabilnější snapshot/MJPEG/HLS URL dostupná jen v lokální síti nebo přes VPN.';
+  }
+
+  function renderCameraPreview(camera) {
+    const c = normalizeCameraItem(camera);
+    const previewUrl = c.snapshotUrl || (['mjpeg', 'hls'].includes(c.streamType) ? c.streamUrl : '');
+    if (previewUrl && (c.streamType === 'snapshot' || c.streamType === 'mjpeg')) {
+      return `<img src="${escapeHtml(previewUrl)}" alt="Náhled kamery ${escapeHtml(c.name)}" loading="lazy" onerror="this.replaceWith(document.createTextNode('Náhled nejde načíst'))">`;
+    }
+    if (previewUrl && c.streamType === 'hls') {
+      return `<video src="${escapeHtml(previewUrl)}" muted playsinline controls preload="metadata"></video>`;
+    }
+    return `<div>📹<br>${escapeHtml(c.name)}</div>`;
+  }
+
   function renderCameras() {
+    state.cameraDiscovery = normalizeCameraDiscoveryState(state.cameraDiscovery);
+    state.cameras = (state.cameras || []).map(normalizeCameraItem);
     const cameras = state.cameras;
-    const onlineCount = cameras.filter((camera) => camera.status === 'online').length;
+    const onlineCount = cameras.filter((camera) => normalizeCameraStatus(camera.status) === 'online').length;
     const activeCamerasTab = getModuleTab('cameras', 'overview');
     return `
       ${renderSectionTabs('cameras', [
         { id: 'overview', label: 'Přehled', icon: '📷', count: cameras.length },
-        { id: 'add', label: 'Přidat', icon: '➕' }
+        { id: 'add', label: 'Přidat', icon: '➕' },
+        { id: 'discovery', label: 'Najít v síti', icon: '📡' },
+        { id: 'help', label: 'Napojení', icon: '🧩' }
       ], 'overview')}
       <div class="grid two module-tabbed cameras-tab-${activeCamerasTab}" data-tab-area="cameras">
         <section class="card desktop-span-2 cameras-panel panel-overview">
-          <div class="card-header"><div><h2>Přehled kamer</h2><p>Rychlý grid kamer. Metadata karet jsou v online domácnosti sdílená, streamy později bezpečně přes lokální síť/VPN.</p></div><span class="badge ${onlineCount ? 'good' : ''}">${onlineCount}/${cameras.length} online</span></div><div class="form-actions compact-actions">${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud kamery</button>' : ''}${state.cloud?.householdId && cameras.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální kamery (${cameras.filter((item) => !item.cloudId).length})</button>` : ''}</div>
-          ${cameras.length ? `<div class="grid two compact-camera-grid">${cameras.map(renderCameraCard).join('')}</div>` : renderEmptyCta({ icon: '📷', title: 'Kamery jsou prázdné', text: 'Přidej kartu kamery nebo snapshot URL. Streamy půjdou později bezpečně přes lokální síť/VPN.', nav: 'cameras', tab: 'add', label: 'Přidat kameru' })}
+          <div class="card-header"><div><h2>Přehled kamer</h2><p>Kamery jsou evidence + bezpečný náhled. Tapo/Hikvision a další držím přes IP, administraci, snapshot/proxy URL a poznámky bez hesel.</p></div><span class="badge ${onlineCount ? 'good' : ''}">${onlineCount}/${cameras.length} online</span></div><div class="form-actions compact-actions">${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud kamery</button>' : ''}${state.cloud?.householdId && cameras.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální kamery (${cameras.filter((item) => !item.cloudId).length})</button>` : ''}</div>
+          ${cameras.length ? `<div class="grid two compact-camera-grid">${cameras.map(renderCameraCard).join('')}</div>` : renderEmptyCta({ icon: '📷', title: 'Kamery jsou prázdné', text: 'Přidej Tapo, Hikvision nebo jinou IP kameru. Nejdřív stačí IP/adresa, později doplníš snapshot nebo proxy stream.', nav: 'cameras', tab: 'add', label: 'Přidat kameru' })}
         </section>
 
         <section class="card cameras-panel panel-add">
-          <div class="card-header"><div><h2>Přidat kameru</h2><p>Teď jen karta/snapshot. Streamy později lokálně přes HA/Frigate/go2rtc/VPN, ne veřejně přes cloud.</p></div></div>
+          <div class="card-header"><div><h2>Přidat kameru</h2><p>Bezpečně: neukládej sem heslo. Ulož IP, administraci, typ streamu a případně URL na lokální snapshot/proxy.</p></div></div>
           <form data-form="add-camera" class="compact-form">
-            <div class="form-grid two">
-              ${field('Název', 'name', 'text', 'Vchod / garáž / zahrada', true)}
-              ${field('Umístění', 'location', 'text', 'venku / chodba')}
-              ${field('Snapshot URL', 'snapshotUrl', 'url', 'volitelné')}
-              ${selectField('Stav', 'status', [['online', 'Online'], ['offline', 'Offline'], ['unknown', 'Nevím']])}
-              ${field('Poznámka', 'note', 'text', 'volitelné')}
-            </div>
+            ${renderCameraFormFields()}
             <div class="form-actions"><button class="primary-btn" type="submit">Přidat kameru</button></div>
           </form>
-          <div class="inline-note compact-note">Pozor na HTTPS/mixed-content: když poběží aplikace přes HTTPS a kamera jen přes HTTP, prohlížeč může náhled blokovat.</div>
+          <div class="inline-note compact-note">HTTPS/mixed-content: když aplikace běží přes HTTPS a kamera jen přes HTTP, prohlížeč může náhled blokovat. Nejčistší bude později lokální proxy přes Home Assistant/Frigate/go2rtc/VPN.</div>
+        </section>
+
+        <section class="card desktop-span-2 cameras-panel panel-discovery">
+          <div class="card-header"><div><h2>Najít kamery v síti</h2><p>Rychlé orientační hledání webových rozhraní. Není to plnohodnotný síťový scanner, ale pomůže najít IP kandidáty.</p></div></div>
+          ${renderCameraDiscoveryPanel()}
+        </section>
+
+        <section class="card desktop-span-2 cameras-panel panel-help">
+          <div class="card-header"><div><h2>Jak napojit Tapo / Hikvision</h2><p>Nejbezpečnější směr bez veřejného port forwardingu.</p></div><span class="badge warn">bez hesel v appce</span></div>
+          <div class="grid two">
+            <div class="glass-subcard"><h3>TP-Link Tapo</h3><p>V Tapo aplikaci zapni lokální RTSP/ONVIF účet, zapiš IP kamery a do Domácnost+ dej jen URL/nápovědu. Heslo nech v trezoru.</p></div>
+            <div class="glass-subcard"><h3>Hikvision / NVR</h3><p>Ulož IP/NVR administraci. Živý náhled přes prohlížeč řeš radši převodem na HLS/WebRTC/MJPEG, ne přímým RTSP.</p></div>
+            <div class="glass-subcard"><h3>Proč ne přímo RTSP?</h3><p>Safari/Chrome RTSP přímo nepřehrají. Domácnost+ ho zatím umí evidovat, ale pro živý náhled je potřeba proxy: go2rtc, Frigate nebo Home Assistant.</p></div>
+            <div class="glass-subcard"><h3>Vzdálený přístup</h3><p>Nedávej kamery veřejně přes port forwarding. Lepší je VPN/Tailscale/WireGuard nebo bezpečný backend/proxy v lokální síti.</p></div>
+          </div>
         </section>
       </div>
     `;
   }
 
   function renderCameraCard(camera) {
+    const c = normalizeCameraItem(camera);
+    const details = [c.location || 'bez umístění', cameraVendorLabel(c.vendor), c.ip, c.model, c.cloudId ? 'cloud' : 'lokálně'].filter(Boolean).join(' · ');
     return `
-      <div class="item compact-item camera-card">
+      <article class="item compact-item camera-card">
         <div class="camera-preview">
-          ${camera.snapshotUrl ? `<img src="${escapeHtml(camera.snapshotUrl)}" alt="Náhled kamery ${escapeHtml(camera.name)}" loading="lazy" onerror="this.replaceWith(document.createTextNode('Náhled nejde načíst'))">` : `<div>📹<br>${escapeHtml(camera.name)}</div>`}
+          ${renderCameraPreview(c)}
         </div>
-        <div class="item-top" style="margin-top:10px;"><div class="item-title">${escapeHtml(camera.name)}</div><span class="badge ${camera.status === 'online' ? 'good' : camera.status === 'offline' ? 'bad' : ''}">${escapeHtml(camera.status || 'unknown')}</span></div>
-        <div class="item-meta">${escapeHtml(camera.location || 'bez umístění')}${camera.note ? ` · ${escapeHtml(camera.note)}` : ''}</div>
-        <div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="cameras" data-id="${camera.id}">Smazat</button></div>
-      </div>
+        <div class="item-top" style="margin-top:10px;"><div class="item-title">${escapeHtml(c.name)}</div><span class="badge ${cameraStatusBadgeClass(c.status)}">${escapeHtml(CAMERA_STATUS_OPTIONS.find(([id]) => id === c.status)?.[1] || c.status)}</span></div>
+        <div class="item-meta">${escapeHtml(details)}</div>
+        <div class="camera-chip-row">
+          <span class="badge">${escapeHtml(cameraStreamTypeLabel(c.streamType))}</span>
+          ${c.adminUrl ? `<a class="badge camera-link-badge" href="${escapeHtml(c.adminUrl)}" target="_blank" rel="noopener">administrace</a>` : ''}
+          ${c.streamUrl ? `<span class="badge">stream uložen</span>` : ''}
+          ${c.usernameHint ? `<span class="badge">účet: ${escapeHtml(c.usernameHint)}</span>` : ''}
+        </div>
+        <div class="inline-note compact-note camera-note">${escapeHtml(cameraConnectHint(c))}${c.note ? ` · ${escapeHtml(c.note)}` : ''}</div>
+        <details class="compact-edit-details camera-edit-details">
+          <summary><span>Upravit detail</span><em>${escapeHtml(c.ip || c.location || cameraVendorLabel(c.vendor))}</em></summary>
+          <form data-form="update-camera" data-id="${escapeHtml(c.id)}">
+            ${renderCameraFormFields(c)}
+            <div class="form-actions"><button class="primary-btn" type="submit">Uložit kameru</button><button class="danger-btn" type="button" data-action="delete" data-collection="cameras" data-id="${escapeHtml(c.id)}">Smazat</button></div>
+          </form>
+        </details>
+      </article>
     `;
   }
-
 
 
   function normalizeFinanceTemplate(template = {}) {
@@ -10507,7 +10470,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 232))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 233))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -15406,8 +15369,6 @@
       'add-waste': () => addWasteFromForm(data, form),
       'add-task': () => addTaskFromForm(data, form),
       'add-note': () => addItem('notes', { text: data.text, createdAt: new Date().toISOString() }),
-      'add-device': () => addDeviceFromForm(data, form),
-      'update-device': () => updateDeviceFromForm(form.dataset.id, data, form),
       'add-warranty': () => addWarrantyFromForm(data, form),
       'edit-warranty': () => updateWarrantyFromForm(data, form),
       'add-warranty-files': () => addWarrantyFiles(form),
@@ -15526,7 +15487,8 @@
       'update-contract': async () => updateContract(form.dataset.contractId, data, form),
       'add-contract-file': () => addContractFiles(form),
       'fuelio-preview': () => previewFuelioImport(form),
-      'add-camera': () => addItem('cameras', { name: data.name, location: data.location, snapshotUrl: data.snapshotUrl, status: data.status, note: data.note }),
+      'add-camera': () => addCameraFromForm(data, form),
+      'update-camera': () => updateCameraFromForm(form.dataset.id, data, form),
       onboarding: () => completeOnboarding(data),
       'onboarding-google-setup': () => completeGoogleOnboardingSetup(data),
       'onboarding-login': () => loginExistingHouseholdFromOnboarding(data),
@@ -16013,7 +15975,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 232, mode: 'rich-demo-v232', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 233, mode: 'rich-demo-v233', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -16171,7 +16133,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 232, mode: 'devices-inventory-v232', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 233, mode: 'cameras-foundation-v233', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -17830,7 +17792,6 @@
       finance: [cloudLoadFinance],
       subscriptions: [cloudLoadExtraCollections],
       notes: [cloudLoadExtraCollections],
-      devices: [cloudLoadExtraCollections],
       cameras: [cloudLoadExtraCollections],
       coupons: [cloudLoadExtraCollections],
       warranties: [cloudLoadWarrantyFiles],
@@ -18100,16 +18061,16 @@
       cloudSyncLocalExtraCollections(true).then(() => cloudLoadExtraCollections(false));
       return;
     }
-    if (action === 'device-scan-common' || action === 'device-scan-range') {
-      scanDeviceNetwork(button, action === 'device-scan-range' ? 'range' : 'common');
+    if (action === 'camera-scan-common' || action === 'camera-scan-range') {
+      scanCameraNetwork(button, action === 'camera-scan-range' ? 'range' : 'common');
       return;
     }
-    if (action === 'device-add-discovered') {
-      addDiscoveredDevice(button);
+    if (action === 'camera-add-discovered') {
+      addDiscoveredCamera(button);
       return;
     }
-    if (action === 'device-scan-clear') {
-      clearDeviceDiscovery();
+    if (action === 'camera-scan-clear') {
+      clearCameraDiscovery();
       return;
     }
     if (action === 'cloud-sync-pending') {
@@ -19484,7 +19445,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 232
+        appBuild: 233
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -20074,7 +20035,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-232-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-233-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20233,7 +20194,7 @@
       lastUserInteractionAt = Date.now();
       const navFromBottomBar = Boolean(nav.closest('.nav-shell'));
       const navSnapshot = navFromBottomBar ? readNavRunnerSnapshot() : null;
-      const previousBottomNavId = navFromBottomBar ? (navRunnerCurrentBottomId || navSnapshot?.id || currentRenderedBottomNavId(activeModule)) : getActiveBottomNavId(activeModule);
+      const previousBottomNavId = navFromBottomBar ? (navSnapshot?.id || currentRenderedBottomNavId(activeModule)) : getActiveBottomNavId(activeModule);
       const nextModule = nav.dataset.nav;
       const nextBottomNavId = getActiveBottomNavId(nextModule);
       pendingNavMotion = navFromBottomBar && previousBottomNavId !== nextBottomNavId
@@ -20419,7 +20380,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_232</span>
+          <span class="badge">Domácnost+ v.0.1_233</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
