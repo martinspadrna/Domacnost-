@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_225';
+  const APP_VERSION = 'Domácnost+ v.0.1_226';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -695,8 +695,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 225,
-      mode: 'nav-layout-v225',
+      appBuild: 226,
+      mode: 'nav-layout-v226',
       createdAt: '',
       updatedAt: ''
     },
@@ -1588,8 +1588,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 225,
-      mode: 'nav-layout-v225',
+      appBuild: 226,
+      mode: 'nav-layout-v226',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2453,18 +2453,21 @@
       const activeItem = items[toIndex] || navScroll?.querySelector('.nav-item.active');
       if (!navScroll || !runner || !activeItem) return;
       const fromItem = items[fromIndex] || activeItem;
-      navScroll.classList.remove('nav-runner-ready');
-      placeNavRunner(runner, motion ? fromItem : activeItem, false);
-      navScroll.classList.add('nav-runner-ready');
-      if (motion) {
-        navScroll.classList.add('nav-is-moving');
-        safeAnimationFrame(() => placeNavRunner(runner, activeItem, true));
-        window.setTimeout(() => {
-          document.querySelector('.nav-scroll')?.classList.remove('nav-is-moving');
-          document.querySelectorAll('.nav-item.nav-sweep').forEach((item) => item.classList.remove('nav-sweep'));
-          if (pendingNavMotion === motion) pendingNavMotion = null;
-        }, 1760);
+      if (!motion) {
+        navScroll.classList.remove('nav-is-moving');
+        navScroll.classList.add('nav-runner-ready');
+        placeNavRunner(runner, activeItem, false);
+        return;
       }
+      navScroll.classList.remove('nav-runner-ready');
+      placeNavRunner(runner, fromItem, false);
+      navScroll.classList.add('nav-runner-ready', 'nav-is-moving');
+      safeAnimationFrame(() => placeNavRunner(runner, activeItem, true));
+      window.setTimeout(() => {
+        document.querySelector('.nav-scroll')?.classList.remove('nav-is-moving');
+        document.querySelectorAll('.nav-item.nav-sweep').forEach((item) => item.classList.remove('nav-sweep'));
+        if (pendingNavMotion === motion) pendingNavMotion = null;
+      }, 2260);
     });
   }
 
@@ -5000,6 +5003,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_226', note: 'Finance/Home/nav stabilizace: spodní lišta je nižší a kompaktnější bez blikání při běžném renderu, Home karty jsou natažené dolů bez posunu názvu domácnosti, finance datum/měsíc nepřetékají a pohyby dostaly ikonky ve stylu šablon.' },
       { title: 'Domácnost+ v.0.1_225', note: 'Hotfix iPhone/PWA layoutu: stabilnější spodní lišta bez ořezu, přesnější rezerva Home dashboardu, finance měsícový filtr bez přetékání a bez tlačítka Zobrazit měsíc, animace spodní lišty jen při skutečném kliknutí na spodní navigaci.' },
       { title: 'Domácnost+ v.0.1_224', note: 'Čistý distribuční ZIP bez soukromého restore nákupů, nákupy zůstávají jen přes aktivní domácnost/cloud, opravený ořez názvu domácnosti a zpomalenější přejezd spodní navigace.' },
       { title: 'Domácnost+ v.0.1_223', note: 'Finance UI: všechny šablony plateb jdou smazat včetně výchozích, šablony jsou kompaktněji po třech, přehledové panely jsou vedle sebe, měsícový filtr drží šířku a pohyby mají přehlednější ikonky.' },
@@ -8919,7 +8923,10 @@
 
   function renderFinanceSplitOverview(incomeItems, expenseItems) {
     const renderMiniRows = (rows, emptyText) => rows.length
-      ? rows.slice(0, 8).map((item) => `<div class="finance-mini-row"><span>${escapeHtml(item.title)}</span><strong>${formatCurrency(item.amount)}</strong></div>`).join('')
+      ? rows.slice(0, 8).map((item) => {
+          const icon = item.type === 'transfer' ? '↔️' : financeCategoryIcon(item.category);
+          return `<div class="finance-mini-row"><span class="finance-mini-title"><span class="finance-mini-icon" aria-hidden="true">${escapeHtml(icon)}</span><span>${escapeHtml(item.title)}</span></span><strong>${formatCurrency(item.amount)}</strong></div>`;
+        }).join('')
       : `<div class="inline-note compact-note">${escapeHtml(emptyText)}</div>`;
     return `
       <div class="finance-split-overview">
@@ -9080,7 +9087,7 @@
       <div class="item finance-item ${isIncome ? 'is-income' : isTransfer ? 'is-transfer' : 'is-expense'}">
         <div class="item-top finance-item-top">
           <div class="finance-item-title-wrap">
-            <span class="finance-movement-icon" aria-hidden="true">${escapeHtml(movementIcon)}</span>
+            <span class="finance-movement-icon finance-template-like-icon" aria-hidden="true">${escapeHtml(movementIcon)}</span>
             <div class="finance-item-title-text">
               <div class="item-title">${escapeHtml(item.title)}</div>
               <div class="finance-item-subicons"><span>${escapeHtml(paymentIcon)}</span>${account ? `<span>${financeAccountIcon(account.accountType)}</span>` : ''}${target ? `<span>→ ${financeAccountIcon(target.accountType)}</span>` : ''}</div>
@@ -9934,7 +9941,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 225))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 226))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -15428,7 +15435,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 225, mode: 'rich-demo-v225', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 226, mode: 'rich-demo-v226', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15586,7 +15593,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 225, mode: 'nav-layout-v225', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 226, mode: 'nav-layout-v226', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -18843,7 +18850,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 225
+        appBuild: 226
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19433,7 +19440,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-225-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-226-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -19761,7 +19768,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_225</span>
+          <span class="badge">Domácnost+ v.0.1_226</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
