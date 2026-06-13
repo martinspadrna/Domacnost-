@@ -15523,7 +15523,7 @@ body {
 }
 
 
-/* v0.1_235: Zápisník bez výchozích sekcí + AI výlety */
+/* v0.1_236: Zápisník bez typu stránky Výlet + volitelný AI blok výletu */
 .trip-ai-card {
   display: grid;
   gap: 10px;

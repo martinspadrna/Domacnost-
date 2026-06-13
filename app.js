@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_235';
+  const APP_VERSION = 'Domácnost+ v.0.1_236';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -723,8 +723,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 235,
-      mode: 'notebook-trip-ai-v235',
+      appBuild: 236,
+      mode: 'notebook-trip-ai-v236',
       createdAt: '',
       updatedAt: ''
     },
@@ -1630,8 +1630,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 235,
-      mode: 'notebook-trip-ai-v235',
+      appBuild: 236,
+      mode: 'notebook-trip-ai-v236',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5187,7 +5187,8 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_235', note: 'Zápisník je bez výchozích sekcí. Přidaný typ stránky Výlet, tlačítko AI doplnit výlet a Edge Function trip-ai-enrich pro dohledání otevírací doby, vstupného, cesty, počasí, webu a parkování.' },
+      { title: 'Domácnost+ v.0.1_236', note: 'Zápisník už nepoužívá typ stránky Výlet. Sekce si vytváří uživatel sám a AI doplnění výletu je volitelný blok uvnitř libovolné stránky.' },
+      { title: 'Domácnost+ v.0.1_236', note: 'Zápisník je bez výchozích sekcí. Přidané AI doplnění výletu a Edge Function trip-ai-enrich pro dohledání otevírací doby, vstupného, cesty, počasí, webu a parkování.' },
       { title: 'Domácnost+ v.0.1_234', note: 'Zápisník: Úkoly a Poznámky jsou sloučené do jednoho modulu/panelu. Přidané stránky ve stylu OneNote se sekcemi, textem, checklisty a převodem bodu na úkol bez DB změn.' },
       { title: 'Domácnost+ v.0.1_227', note: 'Hotfix spodní navigace a Financí: lišta je znovu centrovaná bez ujíždění doleva, finance měsíc/datum jsou stažené do šířky karty a ikonky pohybů se párují podle použitých/odpovídajících šablon.' },
       { title: 'Domácnost+ v.0.1_226', note: 'Finance/Home/nav stabilizace: spodní lišta je nižší a kompaktnější bez blikání při běžném renderu, Home karty jsou natažené dolů bez posunu názvu domácnosti, finance datum/měsíc nepřetékají a pohyby dostaly ikonky ve stylu šablon.' },
@@ -6822,12 +6823,9 @@
   }
 
   const NOTEBOOK_NOTE_PREFIX = 'DPLUS_NOTEBOOK_V1:';
-  const NOTEBOOK_PAGE_KIND_OPTIONS = [
-    ['note', 'Poznámka'],
-    ['trip', 'Výlet']
-  ];
 
   function normalizeNotebookPageKind(value) {
+    // Zůstává jen kvůli zpětné kompatibilitě se stránkami vytvořenými ve v236.
     return value === 'trip' ? 'trip' : 'note';
   }
 
@@ -6954,18 +6952,13 @@
     const title = normalizeText(data.title);
     if (!section) return showToast('Doplň sekci');
     if (!title) return showToast('Doplň název stránky');
-    const kind = normalizeNotebookPageKind(data.kind);
     const page = {
       section,
-      kind,
+      kind: 'note',
       title,
       body: normalizeText(data.body),
       items: notebookChecklistFromText(data.items),
-      trip: kind === 'trip' ? normalizeTripMeta({
-        place: normalizeText(data.tripPlace) || title,
-        date: normalizeText(data.tripDate),
-        startLocation: normalizeText(data.tripStartLocation)
-      }) : normalizeTripMeta({}),
+      trip: normalizeTripMeta({}),
       createdAt: new Date().toISOString()
     };
     await addItem('notes', { text: serializeNotebookPage(page), status: 'active' });
@@ -6978,6 +6971,21 @@
     if (!page || !text) return showToast('Doplň bod seznamu');
     page.items.push({ id: uid(), text, done: false, createdAt: new Date().toISOString() });
     await saveNotebookPage(page, true);
+  }
+
+  async function updateNotebookTripFromForm(data, form) {
+    const page = notebookPages().find((entry) => entry.id === form?.dataset?.pageId);
+    if (!page) return showToast('Stránka se nenašla');
+    const trip = normalizeTripMeta(page.trip || {});
+    page.trip = normalizeTripMeta({
+      ...trip,
+      place: normalizeText(data.tripPlace) || page.title,
+      date: normalizeText(data.tripDate),
+      startLocation: normalizeText(data.tripStartLocation),
+      website: normalizeText(data.tripWebsite) || trip.website
+    });
+    await saveNotebookPage(page, true);
+    showToast('Údaje k výletu uložené');
   }
 
   async function toggleNotebookItem(pageId, itemId) {
@@ -7062,32 +7070,41 @@
   }
 
   function renderTripInfo(page) {
-    if (page.kind !== 'trip') return '';
     const trip = normalizeTripMeta(page.trip || {});
     const rows = tripAiRows(trip);
     const canUseAi = cloudReady();
     const loading = page.tripAiStatus === 'loading';
     return `
-      <div class="trip-ai-card">
+      <details class="compact-edit-details trip-ai-card" ${rows.length || trip.date ? 'open' : ''}>
+        <summary><span>AI výlet</span><em>${trip.date ? escapeHtml(formatDate(trip.date)) : 'volitelné doplnění stránky'}</em></summary>
         <div class="trip-ai-head">
           <div>
-            <strong>Výlet</strong>
-            <span>${escapeHtml(trip.place || page.title)}${trip.date ? ` · ${escapeHtml(formatDate(trip.date))}` : ''}</span>
+            <strong>${escapeHtml(trip.place || page.title)}</strong>
+            <span>Vyplň místo a datum jen u stránky, kde chceš dohledat výlet.</span>
           </div>
           ${canUseAi ? `<button class="primary-btn small-btn" type="button" data-action="notebook-trip-ai" data-page-id="${escapeHtml(page.id)}" ${loading ? 'disabled' : ''}>${loading ? 'Doplňuji…' : 'AI doplnit výlet'}</button>` : '<span class="badge">nejdřív online účet</span>'}
         </div>
+        <form data-form="update-notebook-trip" data-page-id="${escapeHtml(page.id)}" class="compact-form trip-ai-form">
+          <div class="form-grid three">
+            ${field('Místo', 'tripPlace', 'text', 'např. Zoo Dvůr Králové', false, trip.place || page.title)}
+            ${field('Datum', 'tripDate', 'date', '', false, trip.date || '')}
+            ${field('Start cesty', 'tripStartLocation', 'text', 'např. Domov / Hostinné', false, trip.startLocation || '')}
+            ${field('Web', 'tripWebsite', 'url', 'https://...', false, trip.website || '')}
+          </div>
+          <div class="form-actions"><button class="ghost-btn small-btn" type="submit">Uložit údaje</button></div>
+        </form>
         ${rows.length ? `<div class="trip-ai-grid">${rows.map(([label, value]) => `
           <div class="trip-ai-row"><span>${escapeHtml(label)}</span><strong>${label === 'Web' && /^https?:\/\//i.test(String(value)) ? `<a href="${escapeHtml(value)}" target="_blank" rel="noopener noreferrer">${escapeHtml(value)}</a>` : escapeHtml(value)}</strong></div>
-        `).join('')}</div>` : '<div class="inline-note compact-note">Vyplň místo a datum, potom může AI doplnit otevírací dobu, vstupné, cestu, počasí a parkování.</div>'}
+        `).join('')}</div>` : '<div class="inline-note compact-note">Tady můžeš u libovolné stránky zapnout AI doplnění výletu. Sekce zůstává čistě tvoje — třeba Výlety, Dovolená nebo Polsko.</div>'}
         ${trip.verifiedAt ? `<div class="item-meta">Ověřeno: ${escapeHtml(formatDateTime(trip.verifiedAt))}</div>` : ''}
         ${trip.sources?.length ? `<details class="compact-edit-details trip-ai-sources"><summary><span>Zdroje</span><em>${trip.sources.length}</em></summary><div class="list compact-list">${trip.sources.map((source) => `<a class="item trip-source-link" href="${escapeHtml(source.url || '#')}" target="_blank" rel="noopener noreferrer"><div class="item-title">${escapeHtml(source.title || source.url)}</div>${source.url ? `<div class="item-meta">${escapeHtml(source.url)}</div>` : ''}</a>`).join('')}</div></details>` : ''}
-      </div>
+      </details>
     `;
   }
 
   async function enrichNotebookTrip(pageId) {
     const page = notebookPages().find((entry) => entry.id === pageId);
-    if (!page || page.kind !== 'trip') return showToast('Tohle není stránka typu Výlet');
+    if (!page) return showToast('Stránka se nenašla');
     const client = getSupabaseClient();
     if (!client?.functions?.invoke) return showToast('Supabase funkce nejsou dostupné');
     const user = await refreshCloudSession(false);
@@ -7134,7 +7151,7 @@
 
   function renderNotebookPage(page) {
     const trip = normalizeTripMeta(page.trip || {});
-    const badge = page.kind === 'trip' ? 'výlet' : 'stránka';
+    const badge = 'stránka';
     return `
       <article class="notebook-page item" id="notebook-page-${escapeHtml(page.id)}">
         <div class="item-top">
@@ -7144,7 +7161,7 @@
           </div>
           <span class="badge ${page.cloudId ? 'good' : ''}">${page.cloudId ? 'cloud' : 'lokálně'}</span>
         </div>
-        ${page.kind === 'trip' ? renderTripInfo({ ...page, trip }) : ''}
+        ${renderTripInfo({ ...page, trip })}
         ${page.body ? `<div class="notebook-body">${escapeHtml(page.body)}</div>` : ''}
         <div class="item-meta">${escapeHtml(notebookPageSummary(page))}</div>
         ${page.items.length ? `<div class="notebook-checklist">${page.items.map((item) => `
@@ -7256,18 +7273,14 @@
                   <div class="form-grid two">
                     ${field('Sekce', 'section', 'text', 'např. Výlety', true)}
                     ${field('Název stránky', 'title', 'text', 'např. Zoo Dvůr Králové', true)}
-                    ${selectField('Typ stránky', 'kind', NOTEBOOK_PAGE_KIND_OPTIONS, 'note')}
-                    ${field('Místo výletu', 'tripPlace', 'text', 'např. Zoo Dvůr Králové')}
-                    ${field('Datum výletu', 'tripDate', 'date', '')}
-                    ${field('Start cesty', 'tripStartLocation', 'text', 'např. Domov / Hostinné')}
                   </div>
-                  <div class="inline-note compact-note">Pole výletu se použijí jen u typu Výlet. AI doplnění běží bezpečně přes Supabase Edge Function, ne přímo z frontendu.</div>
+                  <div class="inline-note compact-note">Sekce jsou čistě tvoje. Když si uděláš sekci Výlety, jednotlivé výlety zakládej jako stránky a AI doplnění zapneš až uvnitř konkrétní stránky.</div>
                   <div class="field"><label>Text stránky</label><textarea class="textarea" name="body" placeholder="Poznámka, odkazy, parkování, co vzít s sebou..."></textarea></div>
                   <div class="field"><label>Checklist / nápady</label><textarea class="textarea" name="items" placeholder="Zoo Dvůr Králové&#10;Karpacz&#10;Stezka korunami stromů"></textarea></div>
                   <div class="form-actions"><button class="primary-btn" type="submit">Přidat stránku</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud zápisník</button>' : ''}${state.cloud?.householdId && notes.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální stránky (${notes.filter((item) => !item.cloudId).length})</button>` : ''}</div>
                 </form>
               </details>
-              ${notebookPages().length ? `<div class="notebook-pages">${notebookPages().map((page) => renderNotebookPage(page).replace('notebook-page item', `notebook-page item" id="notebook-page-${escapeHtml(page.id)}`)).join('')}</div>` : renderEmptyCta({ icon: '🗒️', title: 'Zápisník je prázdný', text: 'Vytvoř první vlastní sekci a stránku. Appka už nepřidává žádné výchozí sekce.', nav: 'homecare', tab: 'tasks', label: 'Přidat stránku' })}
+              ${notebookPages().length ? `<div class="notebook-pages">${notebookPages().map((page) => renderNotebookPage(page)).join('')}</div>` : renderEmptyCta({ icon: '🗒️', title: 'Zápisník je prázdný', text: 'Vytvoř první vlastní sekci a stránku. Appka už nepřidává žádné výchozí sekce.', nav: 'homecare', tab: 'tasks', label: 'Přidat stránku' })}
               ${legacyQuickNotes().length ? `<details class="compact-edit-details legacy-notes"><summary><span>Starší rychlé poznámky</span><em>${legacyQuickNotes().length}</em></summary><div class="list">${legacyQuickNotes().map((note) => `<div class="item"><div class="item-top"><div class="item-title">${escapeHtml(note.text)}</div><span class="badge ${note.cloudId ? 'good' : ''}">${note.cloudId ? 'cloud' : 'lokálně'}</span></div><div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="notes" data-id="${escapeHtml(note.id)}">Smazat</button></div></div>`).join('')}</div></details>` : ''}
             </div>
           </div>
@@ -10845,7 +10858,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 235))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 236))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -15745,6 +15758,7 @@
       'add-task': () => addTaskFromForm(data, form),
       'add-notebook-page': () => addNotebookPageFromForm(data, form),
       'add-notebook-item': () => addNotebookItemFromForm(data, form),
+      'update-notebook-trip': () => updateNotebookTripFromForm(data, form),
       'add-note': () => addItem('notes', { text: data.text, createdAt: new Date().toISOString() }),
       'add-warranty': () => addWarrantyFromForm(data, form),
       'edit-warranty': () => updateWarrantyFromForm(data, form),
@@ -16352,7 +16366,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 235, mode: 'rich-demo-v235', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 236, mode: 'rich-demo-v236', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -16510,7 +16524,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 235, mode: 'notebook-trip-ai-v235', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 236, mode: 'notebook-trip-ai-v236', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -19843,7 +19857,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 235
+        appBuild: 236
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -20433,7 +20447,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-235-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-236-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20785,7 +20799,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_235</span>
+          <span class="badge">Domácnost+ v.0.1_236</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
