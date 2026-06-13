@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_230';
+  const APP_VERSION = 'Domácnost+ v.0.1_231';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -527,7 +527,7 @@
     { id: 'cameras', label: 'Kamery', icon: '📹', nav: 'cameras', tab: 'overview', metric: () => state.cameras.length, text: () => 'kamery' }
   ];
   const DEFAULT_HOME_HERO_IDS = [];
-  const HOME_HERO_MAX = 8;
+  const HOME_HERO_MAX = 10;
   const POLISH_SHOP_HOLIDAY_API = 'https://date.nager.at/api/v3/PublicHolidays';
   const POLISH_SHOP_YEAR_MIN = 2025;
   const POLISH_SHOP_YEAR_MAX = 2032;
@@ -697,8 +697,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 230,
-      mode: 'profile-nav-layout-v230',
+      appBuild: 231,
+      mode: 'profile-nav-layout-v231',
       createdAt: '',
       updatedAt: ''
     },
@@ -1016,6 +1016,7 @@
   let activeOverview = null;
   let pendingNavMotion = null;
   let lastRenderedBottomNavId = 'home';
+  let navRunnerCurrentBottomId = 'home';
   let polishShopAutoRefreshInFlight = false;
   let moduleTabs = isStoredDemoState(state) ? {} : (safeParse(localStorage.getItem('domacnostPlus.moduleTabs'), {}) || {});
   let garageVehicleId = null;
@@ -1497,6 +1498,13 @@
       .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
   }
 
+  function nextPolishShopHomeEntry() {
+    const today = todayISO();
+    return polishShopCalendarAround(new Date().getFullYear())
+      .filter((entry) => entry.date >= today && !isPolishShopSundayEntry(entry) && ['closed', 'limited'].includes(entry.status))
+      .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+  }
+
   function polishShopTodayEntry(offset = 0) {
     const iso = addDaysIso(todayISO(), offset);
     return polishShopCalendarAround(Number(iso.slice(0, 4))).find((entry) => entry.date === iso) || null;
@@ -1506,7 +1514,7 @@
     const todayEntry = polishShopTodayEntry(0);
     if (todayEntry && !isPolishShopSundayEntry(todayEntry) && todayEntry.status === 'closed') return 'Zavřeno';
     if (todayEntry && !isPolishShopSundayEntry(todayEntry) && todayEntry.status === 'limited') return 'Pozor';
-    const next = nextPolishShopImportantEntry('closed');
+    const next = nextPolishShopHomeEntry();
     return next ? dueBadge(daysUntil(next.date)) : 'OK';
   }
 
@@ -1514,7 +1522,7 @@
     const todayEntry = polishShopTodayEntry(0);
     if (todayEntry && !isPolishShopSundayEntry(todayEntry) && todayEntry.status === 'closed') return todayEntry.name;
     if (todayEntry && !isPolishShopSundayEntry(todayEntry) && todayEntry.status === 'limited') return `${todayEntry.name} · zkráceno`;
-    const next = nextPolishShopImportantEntry('closed');
+    const next = nextPolishShopHomeEntry();
     return next ? `${formatDate(next.date)} · ${next.name}` : 'Žádné známé zavření';
   }
 
@@ -1620,8 +1628,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 230,
-      mode: 'profile-nav-layout-v230',
+      appBuild: 231,
+      mode: 'profile-nav-layout-v231',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2608,6 +2616,17 @@
     }
   }
 
+  function placeNavRunnerAt(runner, left = 0, width = 0, animate = false) {
+    if (!runner) return;
+    runner.style.transition = animate ? '' : 'none';
+    runner.style.width = `${Math.max(0, Number(width || 0))}px`;
+    runner.style.transform = `translate3d(${Math.max(0, Number(left || 0))}px, 0, 0)`;
+    if (!animate) {
+      runner.offsetHeight;
+      runner.style.transition = '';
+    }
+  }
+
   function syncNavMotion(motion, fromIndex = 0, toIndex = 0) {
     const navScroll = document.querySelector('.nav-scroll');
     const runner = navScroll?.querySelector('.nav-active-runner');
@@ -2615,19 +2634,19 @@
     const activeItem = items[toIndex] || navScroll?.querySelector('.nav-item.active');
     if (!navScroll || !runner || !activeItem) return;
     const fromItem = items[fromIndex] || activeItem;
+    const hasPixelStart = motion && Number.isFinite(Number(motion.fromLeft)) && Number.isFinite(Number(motion.fromWidth)) && Number(motion.fromWidth) > 0;
 
-    // Důležité pro iPhone/PWA: startovní pozici jezdce nastavíme synchronně
-    // hned po renderu. Když se čekalo až na RAF, Safari stihl krátce vykreslit
-    // runner na výchozí pozici vlevo/Home a animace pak působila, že vždy jede z Domů.
     if (!motion) {
       navScroll.classList.remove('nav-is-moving');
       navScroll.classList.add('nav-runner-ready');
       placeNavRunner(runner, activeItem, false);
+      navRunnerCurrentBottomId = activeItem.dataset?.nav || navRunnerCurrentBottomId || 'home';
       return;
     }
 
     navScroll.classList.remove('nav-runner-ready', 'nav-is-moving');
-    placeNavRunner(runner, fromItem, false);
+    if (hasPixelStart) placeNavRunnerAt(runner, motion.fromLeft, motion.fromWidth, false);
+    else placeNavRunner(runner, fromItem, false);
     navScroll.classList.add('nav-runner-ready');
 
     safeAnimationFrame(() => {
@@ -2635,12 +2654,13 @@
       placeNavRunner(runner, activeItem, true);
     });
     motion.consumed = true;
+    navRunnerCurrentBottomId = activeItem.dataset?.nav || motion.toId || navRunnerCurrentBottomId || 'home';
 
     window.setTimeout(() => {
       document.querySelector('.nav-scroll')?.classList.remove('nav-is-moving');
       document.querySelectorAll('.nav-item.nav-sweep').forEach((item) => item.classList.remove('nav-sweep'));
       if (pendingNavMotion === motion) pendingNavMotion = null;
-    }, 2450);
+    }, 2600);
   }
 
   function keepActiveNavCentered(behavior = 'auto') {
@@ -3795,25 +3815,19 @@
     if (id === 'polishHolidays') {
       const todayEntry = polishShopTodayEntry(0);
       const todayImportant = todayEntry && !isPolishShopSundayEntry(todayEntry) ? todayEntry : null;
-      const nextClosed = nextPolishShopImportantEntry('closed');
-      const nextLimited = nextPolishShopImportantEntry('limited');
+      const nextEntry = nextPolishShopHomeEntry();
       const isClosed = todayImportant?.status === 'closed';
       const isLimited = todayImportant?.status === 'limited';
       const compactPolishName = (value = '') => normalizeText(value).replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
       const compactPolishLine = (entry) => `${shortDateText(entry.date)} · ${compactPolishName(entry.name)}`;
-      const slides = [
-        todayImportant ? { metric: todayImportant.status === 'closed' ? 'Zavřeno' : todayImportant.status === 'limited' ? 'Pozor' : 'Dnes OK', text: compactPolishName(todayImportant.name) || 'Dnes', detail: 'dnešní stav v Polsku' } : null,
-        nextClosed ? { metric: dueBadge(daysUntil(nextClosed.date)), text: compactPolishLine(nextClosed), detail: 'zavřené obchody' } : null,
-        nextLimited ? { metric: 'Pozor', text: compactPolishLine(nextLimited), detail: 'omezení' } : null
-      ].filter(Boolean);
-      const slide = homeCycleItem(slides, 45);
+      const activeEntry = isClosed || isLimited ? todayImportant : nextEntry;
       return {
         ...base,
-        metric: isClosed ? 'Zavřeno' : isLimited ? 'Pozor' : slide?.metric || 'OK',
-        text: isClosed || isLimited ? todayImportant.name : slide?.text || 'Bez známého zavření',
-        detail: isClosed || isLimited ? 'běžné neděle jsou až v detailu' : slide?.detail || 'neděle najdeš po rozkliknutí',
-        live: slides.length > 1,
-        tone: isClosed ? 'bad' : isLimited || nextClosed && daysUntil(nextClosed.date) <= 3 ? 'warn' : 'good'
+        metric: isClosed ? 'Zavřeno' : isLimited ? 'Pozor' : activeEntry ? dueBadge(daysUntil(activeEntry.date)) : 'OK',
+        text: activeEntry ? (isClosed || isLimited ? compactPolishName(activeEntry.name) : compactPolishLine(activeEntry)) : 'Bez známého zavření',
+        detail: isClosed || isLimited ? 'dnešní stav v Polsku' : activeEntry?.status === 'limited' ? 'omezení obchodů' : 'nejbližší důležité zavření',
+        live: false,
+        tone: isClosed ? 'bad' : isLimited || (activeEntry?.status === 'closed' && daysUntil(activeEntry.date) <= 3) ? 'warn' : 'good'
       };
     }
     if (id === 'calendar') {
@@ -5175,7 +5189,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_230', note: 'Hotfix spodní navigace a PL svátků: aktivní jezdec už se při běžném refreshi modulu znovu nerozjíždí z Domů, animace startuje z poslední aktivní ikony a Svátky Polsko mají přepínač nedělí nehandlowe + tichou online aktualizaci aktuálního roku.' },
+      { title: 'Domácnost+ v.0.1_231', note: 'Hotfix Home a spodní navigace: čas a počasí jsou zamknuté, Home má až 10 volitelných panelů pod nimi, PL svátky na Home už nerotují na vzdálené omezení typu březnová sobota a aktivní jezdec spodní lišty drží poslední reálnou pozici.' },
       { title: 'Domácnost+ v.0.1_227', note: 'Hotfix spodní navigace a Financí: lišta je znovu centrovaná bez ujíždění doleva, finance měsíc/datum jsou stažené do šířky karty a ikonky pohybů se párují podle použitých/odpovídajících šablon.' },
       { title: 'Domácnost+ v.0.1_226', note: 'Finance/Home/nav stabilizace: spodní lišta je nižší a kompaktnější bez blikání při běžném renderu, Home karty jsou natažené dolů bez posunu názvu domácnosti, finance datum/měsíc nepřetékají a pohyby dostaly ikonky ve stylu šablon.' },
       { title: 'Domácnost+ v.0.1_225', note: 'Hotfix iPhone/PWA layoutu: stabilnější spodní lišta bez ořezu, přesnější rezerva Home dashboardu, finance měsícový filtr bez přetékání a bez tlačítka Zobrazit měsíc, animace spodní lišty jen při skutečném kliknutí na spodní navigaci.' },
@@ -10124,7 +10138,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 229))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 231))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -10160,7 +10174,7 @@
     };
     return `
       <section class="card desktop-span-2 compact-settings-card dashboard-settings-card">
-        <div class="card-header"><div><h2>Panely v horním bloku Home</h2><p>Čas a počasí jsou na Home pevně. Vyber 0–8 dalších panelů pod ně. Pořadí můžeš měnit dlouhým podržením panelu přímo na Home.</p></div><span class="badge">${normalizeHomeHeroIds(state.settings?.homeHeroItems).length}/8</span></div>
+        <div class="card-header"><div><h2>Panely v horním bloku Home</h2><p>Čas a počasí jsou na Home pevně. Vyber až 10 dalších panelů pod ně. Pořadí můžeš měnit dlouhým podržením panelu přímo na Home.</p></div><span class="badge">${normalizeHomeHeroIds(state.settings?.homeHeroItems).length}/${HOME_HERO_MAX}</span></div>
         <div class="switch-list dashboard-widget-picker">
           ${HOME_HERO_ITEMS.map((item) => {
             const active = normalizeHomeHeroIds(state.settings?.homeHeroItems).includes(item.id);
@@ -15629,7 +15643,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 230, mode: 'rich-demo-v230', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 231, mode: 'rich-demo-v231', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15787,7 +15801,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 230, mode: 'profile-nav-layout-v230', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 231, mode: 'profile-nav-layout-v231', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -19088,7 +19102,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 230
+        appBuild: 231
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19678,7 +19692,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-230-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-231-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -19787,7 +19801,18 @@
 
   function currentRenderedBottomNavId(fallbackModuleId = activeModule) {
     const domActive = document.querySelector('.nav-shell .nav-item.active')?.dataset?.nav;
-    return domActive || lastRenderedBottomNavId || getActiveBottomNavId(fallbackModuleId);
+    return domActive || navRunnerCurrentBottomId || lastRenderedBottomNavId || getActiveBottomNavId(fallbackModuleId);
+  }
+
+  function readNavRunnerSnapshot() {
+    const navScroll = document.querySelector('.nav-scroll');
+    const activeItem = navScroll?.querySelector('.nav-item.active');
+    if (!navScroll || !activeItem) return null;
+    return {
+      id: activeItem.dataset?.nav || currentRenderedBottomNavId(),
+      left: Number(activeItem.offsetLeft || 0),
+      width: Number(activeItem.offsetWidth || activeItem.clientWidth || 0)
+    };
   }
 
   document.addEventListener('pointerdown', () => {
@@ -19825,11 +19850,12 @@
     if (nav) {
       lastUserInteractionAt = Date.now();
       const navFromBottomBar = Boolean(nav.closest('.nav-shell'));
-      const previousBottomNavId = navFromBottomBar ? currentRenderedBottomNavId(activeModule) : getActiveBottomNavId(activeModule);
+      const navSnapshot = navFromBottomBar ? readNavRunnerSnapshot() : null;
+      const previousBottomNavId = navFromBottomBar ? (navRunnerCurrentBottomId || navSnapshot?.id || currentRenderedBottomNavId(activeModule)) : getActiveBottomNavId(activeModule);
       const nextModule = nav.dataset.nav;
       const nextBottomNavId = getActiveBottomNavId(nextModule);
       pendingNavMotion = navFromBottomBar && previousBottomNavId !== nextBottomNavId
-        ? { fromId: previousBottomNavId, toId: nextBottomNavId, createdAt: Date.now(), consumed: false }
+        ? { fromId: previousBottomNavId, toId: nextBottomNavId, fromLeft: navSnapshot?.left, fromWidth: navSnapshot?.width, createdAt: Date.now(), consumed: false }
         : null;
       activeOverview = null;
       activeModule = nextModule;
@@ -20011,7 +20037,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_230</span>
+          <span class="badge">Domácnost+ v.0.1_231</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
