@@ -16,6 +16,22 @@
       return { openItems, doneItems };
     }
 
+    function relativeShoppingTime(value) {
+      if (!value) return 'zatím nenačteno';
+      const time = new Date(value).getTime();
+      if (!Number.isFinite(time)) return 'čas neznámý';
+      const diff = Math.max(0, Date.now() - time);
+      const seconds = Math.round(diff / 1000);
+      if (seconds < 20) return 'právě teď';
+      if (seconds < 60) return `před ${seconds} s`;
+      const minutes = Math.round(seconds / 60);
+      if (minutes < 60) return `před ${minutes} min`;
+      const hours = Math.round(minutes / 60);
+      if (hours < 24) return `před ${hours} h`;
+      const days = Math.round(hours / 24);
+      return `před ${days} dny`;
+    }
+
     function renderShopping() {
       deps.ensureShoppingListsReady();
       const state = getState();
@@ -46,6 +62,12 @@
       const couponsCount = Array.isArray(state.coupons) ? state.coupons.length : 0;
       const coupons = isShoppingCouponsTab ? [...state.coupons].sort((a, b) => String(a.expiry || '9999').localeCompare(String(b.expiry || '9999'))) : [];
       const localOnlyShoppingCount = isShoppingListTab ? activeItems.filter((item) => !item.cloudId).length : 0;
+      const localOnlyListsCount = (state.shoppingLists || []).filter((list) => !(list.cloudId || list.cloudListId)).length;
+      const localOnlyTotalCount = localOnlyShoppingCount + localOnlyListsCount;
+      const loadedAt = state.shoppingCloud?.loadedAt || state.shoppingCloud?.refreshedAt || '';
+      const refreshStatus = state.shoppingCloud?.refreshStatus || '';
+      const refreshError = state.shoppingCloud?.refreshError || '';
+      const householdName = state.household?.name || 'aktivní domácnost';
       const progress = activeStats.total ? Math.round((activeStats.done / activeStats.total) * 100) : 0;
       const addButtonDisabled = !activeListId ? 'disabled title="Nejdřív vytvoř nákupní seznam přes plus"' : '';
 
@@ -53,8 +75,18 @@
         <section class="card desktop-span-2 shopping-panel panel-list listonic-panel">
           <div class="card-header">
             <div><h2>${escapeHtml(activeList?.name || 'Nákupní seznam')}</h2><p>Více seznamů podle obchodů nebo situace. Položky se řadí podle druhu, ať se v krámě nelítá sem a tam.</p></div>
-            <span class="badge ${cloudReady ? 'good' : ''}">${cloudReady ? 'cloud nákupy' : 'lokálně'}</span>
+            <span class="badge ${cloudReady ? 'good' : ''}">${cloudReady ? 'sdílená domácnost' : 'lokálně'}</span>
           </div>
+
+          <div class="shopping-cloud-strip ${cloudReady ? 'is-cloud' : 'is-local'} ${refreshStatus === 'loading' ? 'is-loading' : ''} ${refreshStatus === 'error' ? 'is-error' : ''}">
+            <div class="shopping-cloud-copy">
+              <strong>${cloudReady ? `Sdíleno: ${escapeHtml(householdName)}` : 'Nákupy jsou teď jen v tomto zařízení'}</strong>
+              <span>${cloudReady ? (refreshStatus === 'loading' ? 'Obnovuji cloud nákupy…' : refreshStatus === 'error' ? escapeHtml(refreshError || 'Poslední obnovení se nepovedlo') : `Naposledy načteno ${relativeShoppingTime(loadedAt)}`) : 'Přihlas oba účty do stejné domácnosti, aby seznam viděla i manželka.'}</span>
+            </div>
+            ${cloudReady ? `<button class="ghost-btn shopping-refresh-btn" type="button" data-action="cloud-load-shopping" ${refreshStatus === 'loading' ? 'disabled' : ''}>${refreshStatus === 'loading' ? 'Obnovuji…' : 'Obnovit'}</button>` : ''}
+          </div>
+
+          ${cloudReady && localOnlyTotalCount ? `<div class="inline-note compact-note shopping-pending-note"><strong>Čeká na cloud:</strong> ${localOnlyTotalCount} položek/seznamů z tohoto zařízení. <button class="text-link-btn" type="button" data-action="cloud-sync-local-shopping">Odeslat teď</button></div>` : ''}
 
           <div class="shopping-list-switcher">
             ${lists.map((list) => {
@@ -80,7 +112,6 @@
             </div>
             <div class="form-actions">
               <button class="primary-btn" type="submit" ${addButtonDisabled}>Přidat do ${escapeHtml(activeList?.name || 'seznamu')}</button>
-              ${cloudReady ? `<button class="ghost-btn" type="button" data-action="cloud-load-shopping">Načíst cloud nákupy</button>` : ''}
               ${cloudReady && localOnlyShoppingCount ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-shopping">Odeslat lokální (${localOnlyShoppingCount})</button>` : ''}
             </div>
           </form>

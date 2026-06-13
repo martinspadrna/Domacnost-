@@ -13867,3 +13867,329 @@ form[data-busy="true"] button[type="submit"] {
     transition: none !important;
   }
 }
+
+
+/* Domácnost+ v.0.1_221 – Home/nav layout hotfix po v220
+   Cíl: bez skoku spodní lišty po prvním kliknutí, název o trochu výš,
+   ale bez zvětšování Home panelů, aby spodní řada nezajížděla pod navigaci. */
+:root {
+  --nav-bottom-lock: 0px;
+  --home-compact-head-offset: -12px;
+  --home-compact-height: calc(var(--app-vh) - var(--nav-height) - 150px);
+}
+
+@media (max-width: 720px) {
+  .nav-shell {
+    bottom: var(--nav-bottom-lock) !important;
+    transform: translate3d(-50%, 0, 0) !important;
+    max-height: none !important;
+    will-change: transform;
+  }
+
+  .app-shell.home-app-shell {
+    padding-top: max(12px, calc(env(safe-area-inset-top, 0px) - 4px)) !important;
+    padding-bottom: calc(var(--nav-height) + 18px) !important;
+  }
+
+  .app-shell.home-app-shell .home-clean-frame,
+  .app-shell.home-app-shell .home-clean-frame main {
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  .app-shell.home-app-shell .home-page-head,
+  .home-clean-frame .home-page-head,
+  .home-page-head {
+    margin-top: var(--home-compact-head-offset) !important;
+    margin-bottom: 8px !important;
+    padding-top: 0 !important;
+  }
+
+  .app-shell.home-app-shell .home-page-head .page-title {
+    line-height: .9 !important;
+  }
+
+  .app-shell.home-app-shell .home-hero-count-0.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-1.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-2.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-3.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-4.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-5.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-6.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-7.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-8.home-minimal-hero {
+    height: clamp(560px, var(--home-compact-height), 650px) !important;
+    max-height: clamp(560px, var(--home-compact-height), 650px) !important;
+    min-height: 0 !important;
+  }
+
+  .app-shell.home-app-shell .home-hero-count-5 .station-hero-main,
+  .app-shell.home-app-shell .home-hero-count-6 .station-hero-main,
+  .app-shell.home-app-shell .home-hero-count-7 .station-hero-main,
+  .app-shell.home-app-shell .home-hero-count-8 .station-hero-main {
+    grid-template-rows: minmax(102px, 1.03fr) repeat(4, minmax(86px, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .app-shell.home-app-shell .station-summary,
+  .app-shell.home-app-shell .home-minimal-hero .station-summary {
+    gap: 8px !important;
+  }
+
+  .app-shell.home-app-shell .station-summary-item {
+    min-height: 0 !important;
+  }
+
+  .nav-active-runner {
+    transition: transform .68s cubic-bezier(.2, .86, .18, 1), width .68s cubic-bezier(.2, .86, .18, 1), opacity .24s ease !important;
+  }
+
+  .nav-item .nav-icon,
+  .nav-item .nav-icon.mini-module-icon,
+  .nav-item .nav-icon.module-illustration-slot {
+    transition: transform .42s cubic-bezier(.2, .86, .18, 1), filter .42s ease, width .42s ease, height .42s ease, color .42s ease !important;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 720px) {
+    :root {
+      /* v218 mělo -24px a zajíždělo pod displej; v219/220 bylo zase moc vysoko.
+         -8px je jemný iOS posun dolů bez schování popisků pod home indicator. */
+      --nav-bottom-lock: -8px;
+    }
+  }
+}
+
+@media (max-width: 390px) {
+  :root {
+    --home-compact-height: calc(var(--app-vh) - var(--nav-height) - 138px);
+  }
+
+  .app-shell.home-app-shell .home-hero-count-0.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-1.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-2.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-3.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-4.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-5.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-6.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-7.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-8.home-minimal-hero {
+    height: clamp(520px, var(--home-compact-height), 620px) !important;
+    max-height: clamp(520px, var(--home-compact-height), 620px) !important;
+  }
+}
+
+/* Domácnost+ v.0.1_223 – Finance UI polish */
+.finance-kpi-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  align-items: stretch;
+}
+
+.finance-kpi {
+  min-width: 0;
+  min-height: 78px;
+  display: grid;
+  align-content: center;
+}
+
+.finance-kpi.balance {
+  min-height: 78px;
+}
+
+.finance-toolbar,
+.finance-month-form,
+.finance-month-form .form-grid,
+.finance-month-form .field {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+.finance-month-form .form-grid.two {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.finance-month-form input[type="month"] {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.finance-month-form .item-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.finance-month-form .item-actions .ghost-btn {
+  min-width: 0;
+  width: 100%;
+  justify-content: center;
+  padding-inline: 8px;
+}
+
+.finance-template-panel .quick-chip-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.finance-template-chip-wrap,
+.finance-template-chip-wrap.is-custom,
+.finance-template-chip-wrap.is-system {
+  min-width: 0;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: minmax(56px, auto) 28px;
+  gap: 6px;
+}
+
+.finance-template-chip-wrap .quick-chip {
+  min-height: 56px !important;
+  padding: 8px 6px !important;
+  display: grid !important;
+  grid-template-rows: auto auto;
+  align-content: center;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+  line-height: 1.05;
+}
+
+.finance-template-chip-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.finance-template-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.finance-template-panel .tiny-ghost-btn,
+.finance-template-panel .tiny-danger-btn {
+  height: 28px !important;
+  min-height: 28px !important;
+  border-radius: 12px !important;
+  font-size: .9rem;
+}
+
+.finance-template-panel .tiny-danger-btn {
+  background: rgba(148, 163, 184, 0.16) !important;
+  color: var(--muted) !important;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.22) !important;
+}
+
+.finance-template-panel .tiny-danger-btn:hover,
+.finance-template-panel .tiny-danger-btn:active,
+.finance-template-panel .tiny-danger-btn:focus-visible {
+  background: rgba(239, 68, 68, 0.18) !important;
+  color: #ef4444 !important;
+}
+
+.finance-item-top {
+  align-items: center;
+}
+
+.finance-item-title-wrap {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.finance-movement-icon {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  background: rgba(255, 255, 255, 0.70);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.20), 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+.finance-item-title-text {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.finance-item-title-text .item-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.finance-item-subicons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 800;
+  min-width: 0;
+}
+
+.finance-item-subicons span {
+  line-height: 1;
+}
+
+[data-theme="dark"] .finance-movement-icon {
+  background: rgba(15, 23, 42, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.22), 0 8px 18px rgba(0, 0, 0, 0.14);
+}
+
+@media (max-width: 480px) {
+  .finance-kpi-row {
+    gap: 8px !important;
+  }
+
+  .finance-kpi {
+    min-height: 70px;
+    padding: 10px 8px;
+    border-radius: 18px;
+  }
+
+  .finance-kpi span {
+    font-size: .72rem;
+  }
+
+  .finance-kpi strong {
+    font-size: clamp(.92rem, 3.9vw, 1.08rem);
+  }
+
+  .finance-template-panel .quick-chip-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .finance-template-chip-wrap,
+  .finance-template-chip-wrap.is-custom,
+  .finance-template-chip-wrap.is-system {
+    grid-template-rows: minmax(52px, auto) 27px;
+    gap: 5px;
+  }
+
+  .finance-template-chip-wrap .quick-chip {
+    min-height: 52px !important;
+    font-size: .82rem;
+  }
+
+  .finance-template-panel .tiny-ghost-btn,
+  .finance-template-panel .tiny-danger-btn {
+    height: 27px !important;
+    min-height: 27px !important;
+  }
+
+  .finance-month-form .item-actions {
+    grid-template-columns: 1fr;
+  }
+}

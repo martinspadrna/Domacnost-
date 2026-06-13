@@ -81,15 +81,27 @@
 
       const existingItem = (store.shopping || []).find((item) => item.listId === listId && !item.done && normalizeKey(item.name) === normalizeKey(name) && normalizeKey(item.unit) === normalizeKey(unit) && normalizeKey(item.note) === normalizeKey(note));
       if (existingItem) {
+        const previousQuantity = existingItem.quantity;
         existingItem.quantity = sanitizeShoppingQuantity((Number(existingItem.quantity || 1) || 1) + quantity, unit);
         existingItem.kind = kind;
         existingItem.category = category;
         if (catalogItem?.id && !existingItem.catalogItemId) existingItem.catalogItemId = catalogItem.id;
         deps.trackShoppingUsage?.(name, unit, category);
-        if (cloudReady && deps.cloudUpdateShoppingItem) await deps.cloudUpdateShoppingItem(existingItem);
-        persist('full');
+        persist('request');
         form?.reset?.();
-        return showToast('Položka už byla v seznamu, navýšil jsem množství');
+        showToast('Položka už byla v seznamu, navýšil jsem množství');
+        if (cloudReady && deps.cloudUpdateShoppingItem) {
+          void Promise.resolve().then(async () => {
+            const ok = await deps.cloudUpdateShoppingItem(existingItem);
+            if (ok === false) {
+              existingItem.quantity = previousQuantity;
+              persist('request');
+            } else {
+              persist('request');
+            }
+          });
+        }
+        return;
       }
 
       const localItem = {
@@ -108,21 +120,27 @@
         catalogItemId: catalogItem?.id || ''
       };
 
-      if (cloudReady && deps.cloudAddShoppingItem) {
-        const cloudItem = await deps.cloudAddShoppingItem({ name, category, quantity, unit, note, catalogItem, list });
-        if (cloudItem) {
-          localItem.cloudId = cloudItem.id;
-          localItem.cloudListId = cloudItem.list_id;
-          localItem.catalogItemId = cloudItem.catalog_item_id || localItem.catalogItemId;
-        }
-      }
-
       deps.trackShoppingUsage?.(name, unit, category);
       store.shopping = Array.isArray(store.shopping) ? store.shopping : [];
       store.shopping.push(localItem);
-      persist('full');
+      persist('request');
       form?.reset?.();
       showToast(isKnown ? 'Přidáno do seznamu' : 'Přidáno i do katalogu domácnosti');
+
+      if (cloudReady && deps.cloudAddShoppingItem) {
+        void Promise.resolve().then(async () => {
+          const cloudItem = await deps.cloudAddShoppingItem({ name, category, quantity, unit, note, catalogItem, list });
+          if (cloudItem) {
+            localItem.cloudId = cloudItem.id;
+            localItem.cloudListId = cloudItem.list_id;
+            localItem.catalogItemId = cloudItem.catalog_item_id || localItem.catalogItemId;
+            if (localItem.done || localItem.quantity !== quantity || localItem.note !== note || localItem.unit !== unit) {
+              await deps.cloudUpdateShoppingItem?.(localItem);
+            }
+            persist('request');
+          }
+        });
+      }
     }
 
     async function quickAddShoppingByName(name) {

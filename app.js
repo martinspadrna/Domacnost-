@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_220';
+  const APP_VERSION = 'Domácnost+ v.0.1_223';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -695,8 +695,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 220,
-      mode: 'nav-motion-v220',
+      appBuild: 223,
+      mode: 'nav-layout-v223',
       createdAt: '',
       updatedAt: ''
     },
@@ -1041,6 +1041,9 @@
   let shoppingToolkitInstance = null;
   let shoppingRendererInstance = null;
   let shoppingActionsInstance = null;
+  let shoppingAutoRefreshTimer = 0;
+  let shoppingCloudRefreshInFlight = false;
+  let shoppingLastAutoRefreshAt = 0;
   let warrantyFormDraft = safeParse(sessionStorage.getItem('domacnostPlus.warrantyDraft'), null) || null;
   let calendarDetailEventId = null;
   let toastTimer = null;
@@ -1585,8 +1588,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 220,
-      mode: 'nav-motion-v220',
+      appBuild: 223,
+      mode: 'nav-layout-v223',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2458,7 +2461,7 @@
           document.querySelector('.nav-scroll')?.classList.remove('nav-is-moving');
           document.querySelectorAll('.nav-item.nav-sweep').forEach((item) => item.classList.remove('nav-sweep'));
           if (pendingNavMotion === motion) pendingNavMotion = null;
-        }, 520);
+        }, 860);
       }
     });
   }
@@ -4995,7 +4998,10 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_220', note: 'Home/nav hotfix: spodní lišta má stabilní startovní pozici bez poskoku po prvním kliknutí, název domácnosti i dashboard jsou posunuté lehce výš a aktivní volba ve spodní liště nově plynule přejíždí mezi ikonami.' },
+      { title: 'Domácnost+ v.0.1_223', note: 'Finance UI: všechny šablony plateb jdou smazat včetně výchozích, šablony jsou kompaktněji po třech, přehledové panely jsou vedle sebe, měsícový filtr drží šířku a pohyby mají přehlednější ikonky.' },
+      { title: 'Domácnost+ v.0.1_222', note: 'Nákupy pro sdílenou domácnost: přidaný viditelný cloud stav, ruční Obnovit, šetrné automatické obnovení při otevření Nákupů/návratu do appky a přidávání položek už nečeká na cloud zápis v hlavním UI toku.' },
+      { title: 'Domácnost+ v.0.1_221', note: 'Home/nav hotfix: spodní lišta má jemnější iOS pozici bez skoku po prvním kliknutí, název domácnosti je posunutý výš, Home panely jsou znovu kompaktnější a aktivní jezdec ve spodní liště se pohybuje pomaleji.' },
+      { title: 'Domácnost+ v.0.1_220', note: 'Home/nav hotfix: spodní lišta měla stabilnější startovní pozici bez poskoku po prvním kliknutí, název domácnosti i dashboard byly posunuté lehce výš a aktivní volba ve spodní liště nově plynule přejížděla mezi ikonami.' },
       { title: 'Domácnost+ v.0.1_219', note: 'Hotfix po v218: spodní lišta už se na iPhone/PWA neposouvá pod spodní hranu displeje, drží bezpečný malý odstup od home indicatoru a Home výška je vrácená do stabilního rozsahu.' },
       { title: 'Domácnost+ v.0.1_218', note: 'Stabilizační build: spodní lišta je na iPhone/PWA ukotvená níž už při prvním vykreslení, Finance ukazují účty jako samostatné panely, šablony nemají nechtěný červený stín a přidání pohybu posílá cloud uložení na pozadí.' },
       { title: 'Domácnost+ v.0.1_217', note: 'Home layout hotfix: spodní lišta je ukotvená dole hned při prvním vykreslení v PWA/Safari a hlavní Home panel dostal zpět ušetřené místo, takže čas, počasí i dlaždice mohou být vyšší.' },
@@ -5970,7 +5976,7 @@
         createdAt: timestamp,
         updatedAt: timestamp,
         sortOrder: data.shoppingLists.length + index,
-        source: 'martin-private-restore-v220'
+        source: 'martin-private-restore-v223'
       });
       existingListNames.add(nameKey);
       existingListIds.add(list.id);
@@ -5992,7 +5998,7 @@
         householdId: data.household?.id || '',
         profileId: data.activeProfileId || data.profiles?.[0]?.id || '',
         createdAt: timestamp,
-        source: 'martin-private-restore-v220'
+        source: 'martin-private-restore-v223'
       }));
 
     data.shopping = [...data.shopping, ...restoredItems];
@@ -6007,7 +6013,7 @@
     martinPrivateShoppingRestorePromise = new Promise((resolve) => {
       const run = async () => {
         try {
-          const response = await fetch('./martin-shopping-restore-v220.json', { cache: 'force-cache' });
+          const response = await fetch('./martin-shopping-restore-v223.json', { cache: 'force-cache' });
           if (!response.ok) throw new Error(`restore ${response.status}`);
           const payload = await response.json();
           const changed = applyMartinPrivateShoppingRestorePayload(state, payload);
@@ -6169,6 +6175,8 @@
       shoppingKindIcon,
       shoppingKindLabel,
       renderShoppingCatalogItem,
+      currentHouseholdId,
+      currentProfileId,
       getShoppingViewState: () => ({
         quantityEditId: shoppingQuantityEditId,
         doneModalOpen: shoppingDoneModalOpen
@@ -8778,7 +8786,8 @@
       accountId: normalizeText(template.accountId),
       transferAccountId: type === 'transfer' ? normalizeText(template.transferAccountId) : '',
       note: normalizeText(template.note),
-      system: Boolean(template.system)
+      system: Boolean(template.system),
+      deleted: Boolean(template.deleted)
     };
   }
 
@@ -8823,8 +8832,15 @@
   function financeTemplateDefinitions() {
     const map = new Map();
     DEFAULT_FINANCE_TEMPLATES.map((template) => normalizeFinanceTemplate(template)).forEach((template) => map.set(String(template.id), template));
-    normalizeFinanceTemplates(state.financeTemplates || []).forEach((template) => map.set(String(template.id), { ...template, system: false }));
-    return [...map.values()];
+    normalizeFinanceTemplates(state.financeTemplates || []).forEach((template) => {
+      const key = String(template.id);
+      if (template.deleted) {
+        map.delete(key);
+        return;
+      }
+      map.set(key, { ...template, system: false, deleted: false });
+    });
+    return [...map.values()].filter((template) => !template.deleted);
   }
 
   function financeTemplateById(id) {
@@ -8847,7 +8863,7 @@
 
   function renderFinanceTemplatePanel(accounts = financeAccountsSorted()) {
     const templates = financeTemplateDefinitions();
-    const customTemplates = normalizeFinanceTemplates(state.financeTemplates || []);
+    const customTemplates = normalizeFinanceTemplates(state.financeTemplates || []).filter((template) => !template.deleted);
     const editTemplate = financeTemplateEditId ? financeTemplateById(financeTemplateEditId) : null;
     const formTemplate = editTemplate || normalizeFinanceTemplate({
       id: '',
@@ -8869,9 +8885,11 @@
         <div class="quick-chip-row">
           ${templates.map((template) => `
             <span class="finance-template-chip-wrap ${template.system ? 'is-system' : 'is-custom'}">
-              <button class="quick-chip" type="button" data-action="finance-template" data-template="${escapeHtml(template.id)}">${escapeHtml(template.icon || '💳')} <span>${escapeHtml(template.name)}</span></button>
-              <button class="tiny-ghost-btn" type="button" data-action="edit-finance-template" data-id="${escapeHtml(template.id)}" aria-label="Upravit šablonu ${escapeHtml(template.name)}">✎</button>
-              ${template.system ? '' : `<button class="tiny-danger-btn" type="button" data-action="delete-finance-template" data-id="${escapeHtml(template.id)}" aria-label="Smazat šablonu ${escapeHtml(template.name)}">×</button>`}
+              <button class="quick-chip" type="button" data-action="finance-template" data-template="${escapeHtml(template.id)}"><span class="finance-template-chip-icon">${escapeHtml(template.icon || '💳')}</span><span>${escapeHtml(template.name)}</span></button>
+              <span class="finance-template-actions">
+                <button class="tiny-ghost-btn" type="button" data-action="edit-finance-template" data-id="${escapeHtml(template.id)}" aria-label="Upravit šablonu ${escapeHtml(template.name)}">✎</button>
+                <button class="tiny-danger-btn" type="button" data-action="delete-finance-template" data-id="${escapeHtml(template.id)}" aria-label="Smazat šablonu ${escapeHtml(template.name)}">×</button>
+              </span>
             </span>
           `).join('')}
         </div>
@@ -8896,7 +8914,7 @@
             </div>
           </form>
         </details>
-        ${customTemplates.length ? `<div class="inline-note">Vlastních/upravených šablon: ${customTemplates.length}. Šablony jsou zatím lokální pro tuto domácnost/export, bez zásahu do DB.</div>` : ''}
+        ${customTemplates.length ? `<div class="inline-note">Vlastních/upravených šablon: ${customTemplates.length}. Šablony jsou uložené v domácnosti a zálohují se přes cloud nastavení.</div>` : ''}
       </div>
     `;
   }
@@ -9066,7 +9084,7 @@
           <div class="finance-kpi-row">
             <div class="finance-kpi income"><span>Příjmy</span><strong>${formatCurrency(summary.income)}</strong></div>
             <div class="finance-kpi expense"><span>Výdaje</span><strong>${formatCurrency(summary.expense)}</strong></div>
-            <div class="finance-kpi ${summary.balance >= 0 ? 'income' : 'expense'}"><span>Rozdíl</span><strong>${formatCurrency(summary.balance)}</strong></div>
+            <div class="finance-kpi balance ${summary.balance >= 0 ? 'income' : 'expense'}"><span>Rozdíl</span><strong>${formatCurrency(summary.balance)}</strong></div>
           </div>
           ${renderFinanceMonthToolbar(selectedMonth, typeFilter)}
           ${renderFinanceSplitOverview(incomeItems, expenseItems)}
@@ -9154,11 +9172,19 @@
     const isTransfer = item.type === 'transfer';
     const account = financeAccountById(item.accountId);
     const target = financeAccountById(item.transferAccountId);
+    const movementIcon = isTransfer ? '↔️' : isIncome ? financeCategoryIcon(item.category) : financeCategoryIcon(item.category);
+    const paymentIcon = financePaymentIcon(item.paymentMethod);
     const syncLabel = item.syncStatus ? ' · čeká na cloud' : item.cloudId ? ' · cloud' : ' · lokálně';
     return `
       <div class="item finance-item ${isIncome ? 'is-income' : isTransfer ? 'is-transfer' : 'is-expense'}">
-        <div class="item-top">
-          <div class="item-title">${isTransfer ? '↔️' : isIncome ? '➕' : '➖'} ${escapeHtml(item.title)}</div>
+        <div class="item-top finance-item-top">
+          <div class="finance-item-title-wrap">
+            <span class="finance-movement-icon" aria-hidden="true">${escapeHtml(movementIcon)}</span>
+            <div class="finance-item-title-text">
+              <div class="item-title">${escapeHtml(item.title)}</div>
+              <div class="finance-item-subicons"><span>${escapeHtml(paymentIcon)}</span>${account ? `<span>${financeAccountIcon(account.accountType)}</span>` : ''}${target ? `<span>→ ${financeAccountIcon(target.accountType)}</span>` : ''}</div>
+            </div>
+          </div>
           <span class="badge ${isIncome || isTransfer ? 'good' : 'warn'}">${formatCurrency(item.amount)}</span>
         </div>
         <div class="item-meta">${formatDate(item.date)} · ${isTransfer ? 'Přesun' : escapeHtml(financeCategoryLabel(item.category))}${account ? ` · ${escapeHtml(account.name)}` : ''}${target ? ` → ${escapeHtml(target.name)}` : ''} · ${escapeHtml(financePaymentLabel(item.paymentMethod))}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${syncLabel}</div>
@@ -10007,7 +10033,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 219))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 223))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -12105,6 +12131,82 @@
     return getShoppingActions().cloudSyncLocalShoppingItems();
   }
 
+
+
+  function shoppingCloudLoadedAgeMs() {
+    const loadedAt = state.shoppingCloud?.loadedAt || state.shoppingCloud?.refreshedAt || '';
+    if (!loadedAt) return Number.POSITIVE_INFINITY;
+    const time = new Date(loadedAt).getTime();
+    return Number.isFinite(time) ? Math.max(0, Date.now() - time) : Number.POSITIVE_INFINITY;
+  }
+
+  async function refreshShoppingFromCloud(showMessage = true, reason = 'manual') {
+    if (shoppingCloudRefreshInFlight) {
+      if (showMessage) showToast('Nákupy se právě obnovují');
+      return false;
+    }
+    if (!cloudReady()) {
+      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
+      return false;
+    }
+    shoppingCloudRefreshInFlight = true;
+    state.shoppingCloud = {
+      ...(state.shoppingCloud || {}),
+      refreshStatus: 'loading',
+      refreshReason: reason,
+      refreshError: ''
+    };
+    requestRender();
+    try {
+      const ok = await cloudLoadShoppingData(showMessage);
+      state.shoppingCloud = {
+        ...(state.shoppingCloud || {}),
+        refreshStatus: ok ? 'ok' : 'idle',
+        refreshReason: reason,
+        refreshError: '',
+        refreshedAt: new Date().toISOString()
+      };
+      shoppingLastAutoRefreshAt = Date.now();
+      touchState();
+      saveState();
+      requestRender();
+      return Boolean(ok);
+    } catch (error) {
+      console.warn('Shopping cloud refresh failed', reason, error);
+      state.shoppingCloud = {
+        ...(state.shoppingCloud || {}),
+        refreshStatus: 'error',
+        refreshReason: reason,
+        refreshError: error?.message || 'Nákupy se nepovedlo obnovit'
+      };
+      if (showMessage) showToast(state.shoppingCloud.refreshError);
+      requestRender();
+      return false;
+    } finally {
+      shoppingCloudRefreshInFlight = false;
+      requestRender();
+    }
+  }
+
+  function scheduleShoppingCloudRefresh(reason = 'auto', options = {}) {
+    if (!cloudReady() || isDemoOnlyState()) return;
+    if (activeModule !== 'shopping') return;
+    if (document.hidden) return;
+    const minAgeMs = Number(options.minAgeMs ?? 45000);
+    const nowMs = Date.now();
+    if (!options.force && shoppingCloudLoadedAgeMs() < minAgeMs) return;
+    if (!options.force && nowMs - shoppingLastAutoRefreshAt < Math.min(minAgeMs, 15000)) return;
+    if (shoppingAutoRefreshTimer) window.clearTimeout(shoppingAutoRefreshTimer);
+    const delay = Number(options.delay ?? 900);
+    shoppingAutoRefreshTimer = window.setTimeout(() => {
+      shoppingAutoRefreshTimer = 0;
+      runWhenUiQuiet(() => refreshShoppingFromCloud(false, reason), {
+        delay: Number(options.quietDelay ?? 120),
+        quietMs: Number(options.quietMs ?? 900),
+        timeout: Number(options.timeout ?? 5000)
+      });
+    }, Math.max(0, delay));
+  }
 
   async function cloudLoadShoppingData(showMessage = true) {
     const client = getSupabaseClient();
@@ -15425,7 +15527,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 220, mode: 'rich-demo-v220', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 223, mode: 'rich-demo-v223', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15583,7 +15685,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 220, mode: 'nav-motion-v220', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 223, mode: 'nav-layout-v223', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -15777,6 +15879,32 @@
 
   function financeCategoryType(value) {
     return FINANCE_CATEGORY_OPTIONS.find(([key]) => key === value)?.[2] || 'expense';
+  }
+
+  function financeCategoryIcon(value) {
+    const map = {
+      salary: '💼',
+      bonus: '🎁',
+      sale: '💸',
+      other_income: '➕',
+      groceries: '🛒',
+      drugstore: '🧴',
+      housing: '🏠',
+      energy: '⚡',
+      car: '🚗',
+      kids: '🧸',
+      health: '💊',
+      fun: '🎮',
+      restaurant: '🍽️',
+      subscription: '🎟️',
+      contracts: '📄',
+      other_expense: '💳'
+    };
+    return map[value] || '💳';
+  }
+
+  function financePaymentIcon(value) {
+    return { cash: '💵', card: '💳', bank_transfer: '🏦', direct_debit: '🔁', other: '💰' }[value] || '💰';
   }
 
   function financePaymentLabel(value) {
@@ -16346,10 +16474,15 @@
   }
 
   function deleteFinanceTemplate(id) {
-    const template = (state.financeTemplates || []).find((item) => item.id === id);
-    if (!template) return;
+    const template = financeTemplateById(id);
+    if (!template) return showToast('Šablona nenalezená');
     if (!window.confirm(`Smazat šablonu ${template.name}?`)) return;
-    state.financeTemplates = (state.financeTemplates || []).filter((item) => String(item.id) !== String(id));
+    const current = normalizeFinanceTemplates(state.financeTemplates || []).filter((item) => String(item.id) !== String(id));
+    const isDefaultTemplate = DEFAULT_FINANCE_TEMPLATES.some((item) => String(item.id) === String(id));
+    if (template.system || isDefaultTemplate) {
+      current.push(normalizeFinanceTemplate({ ...template, id: template.id, deleted: true, system: false, updatedAt: new Date().toISOString() }));
+    }
+    state.financeTemplates = normalizeFinanceTemplates(current);
     if (financeTemplateEditId === id) financeTemplateEditId = '';
     persistFinanceTemplatesState();
     render();
@@ -17750,8 +17883,8 @@
       cloudArchiveHouseholdForCurrentUser(button.dataset.id);
       return;
     }
-    if (action === 'cloud-load-shopping') {
-      cloudLoadShoppingData(true);
+    if (action === 'cloud-load-shopping' || action === 'shopping-refresh-now') {
+      refreshShoppingFromCloud(true, 'manual');
       return;
     }
     if (action === 'set-shopping-list') {
@@ -18809,7 +18942,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 220
+        appBuild: 223
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19399,7 +19532,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-220-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-223-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -19553,6 +19686,7 @@
         if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       }
       render();
+      if (activeModule === 'shopping') scheduleShoppingCloudRefresh('shopping-open', { delay: 700, minAgeMs: 8000, quietMs: 700 });
       scheduleLazyCloudLoadForModule(activeModule, { delay: 3400, quietMs: 2200 });
       keepActiveNavCentered('smooth');
       keepActiveSectionTabsCentered('smooth');
@@ -19671,6 +19805,19 @@
     }
   });
 
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) scheduleShoppingCloudRefresh('app-visible', { delay: 700, minAgeMs: 15000 });
+  });
+
+  window.addEventListener('focus', () => {
+    scheduleShoppingCloudRefresh('app-focus', { delay: 700, minAgeMs: 15000 });
+  });
+
+  window.addEventListener('online', () => {
+    scheduleShoppingCloudRefresh('online', { delay: 900, minAgeMs: 5000 });
+  });
+
   app.addEventListener('focusout', (event) => {
     const hdoTimeInput = event.target.closest('[data-hdo-time-input]');
     if (hdoTimeInput) normalizeHdoTimeInputOnBlur(hdoTimeInput);
@@ -19708,7 +19855,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_220</span>
+          <span class="badge">Domácnost+ v.0.1_223</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
