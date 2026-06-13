@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_227';
+  const APP_VERSION = 'Domácnost+ v.0.1_229';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -483,6 +483,8 @@
 
   const BOTTOM_NAV_MIN = 3;
   const BOTTOM_NAV_MAX = 5;
+  const BOTTOM_NAV_CUSTOM_MIN = 2;
+  const BOTTOM_NAV_CUSTOM_MAX = 4;
   const MORE_MODULE = { id: 'more', label: 'Více', icon: '⚙️' };
   const FILE_DB_NAME = 'homeWebOfflineFiles.v1';
   const FILE_STORE_CONTRACTS = 'contractFiles';
@@ -695,8 +697,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 227,
-      mode: 'nav-layout-v227',
+      appBuild: 229,
+      mode: 'profile-nav-layout-v229',
       createdAt: '',
       updatedAt: ''
     },
@@ -709,7 +711,8 @@
       bottomNavIds: [...DEFAULT_BOTTOM_NAV_IDS],
       dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGET_IDS],
       homeHeroItems: [...DEFAULT_HOME_HERO_IDS],
-      vehicleIconColors: {}
+      vehicleIconColors: {},
+      profileUiSettings: {}
     },
     household: {
       id: '',
@@ -1588,8 +1591,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 227,
-      mode: 'nav-layout-v227',
+      appBuild: 229,
+      mode: 'profile-nav-layout-v229',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1603,7 +1606,8 @@
       bottomNavIds: Array.isArray(migrated.settings?.bottomNavIds) ? migrated.settings.bottomNavIds : [...DEFAULT_BOTTOM_NAV_IDS],
       dashboardWidgets: [],
       homeHeroItems: previousAppBuild && previousAppBuild < 74 ? [] : normalizeHomeHeroIds(migrated.settings?.homeHeroItems),
-      vehicleIconColors: normalizeVehicleIconColorMap(migrated.settings?.vehicleIconColors)
+      vehicleIconColors: normalizeVehicleIconColorMap(migrated.settings?.vehicleIconColors),
+      profileUiSettings: normalizeProfileUiSettingsMap(migrated.settings?.profileUiSettings, migrated.enabledModules)
     };
 
     migrated.household = {
@@ -1842,6 +1846,7 @@
     saveLocalVisualSettings();
     touchState();
     saveState();
+    saveActiveProfileUiSettingsSnapshot();
     cloudSaveUserVisualSettings(false).catch((error) => console.warn('Cloud visual settings save failed', error));
     if (showMessage) showToast(state.cloud?.userId ? 'Vzhled uložen na účet' : 'Vzhled uložen v zařízení');
   }
@@ -1956,17 +1961,145 @@
     const candidates = getNavCandidateIds(enabledModules);
     const candidateSet = new Set(candidates);
     const requested = Array.isArray(value) ? value : [];
-    const result = [...new Set(requested.filter((id) => candidateSet.has(id)))].slice(0, BOTTOM_NAV_MAX);
-    const fallback = [...DEFAULT_BOTTOM_NAV_IDS, ...candidates].filter((id) => candidateSet.has(id));
-    const minimum = Math.min(BOTTOM_NAV_MIN, candidates.length);
+    const customCandidates = candidates.filter((id) => id !== 'home');
+    const customFallback = [...DEFAULT_BOTTOM_NAV_IDS.filter((id) => id !== 'home'), ...customCandidates]
+      .filter((id) => candidateSet.has(id) && id !== 'home');
+    const custom = [...new Set(requested.filter((id) => id !== 'home' && candidateSet.has(id)))]
+      .slice(0, BOTTOM_NAV_CUSTOM_MAX);
+    const minimumCustom = Math.min(BOTTOM_NAV_CUSTOM_MIN, customCandidates.length);
 
-    for (const id of fallback) {
-      if (result.length >= minimum) break;
-      if (!result.includes(id)) result.push(id);
+    for (const id of customFallback) {
+      if (custom.length >= minimumCustom) break;
+      if (!custom.includes(id)) custom.push(id);
     }
 
-    if (!result.length && candidates[0]) result.push(candidates[0]);
-    return result.slice(0, BOTTOM_NAV_MAX);
+    return ['home', ...custom].slice(0, BOTTOM_NAV_MAX);
+  }
+
+  function profileUiKey(profile = currentProfile()) {
+    const item = profile || {};
+    return normalizeText(item.cloudId || item.id || item.userId || normalizeKey(item.name) || currentProfileId() || 'default');
+  }
+
+  function normalizeProfileUiSettingsMap(value, enabledModules = null) {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    const navEnabledModules = enabledModules || DEFAULT_STATE.enabledModules;
+    return Object.entries(source).reduce((map, [key, settings]) => {
+      const cleanKey = normalizeText(key);
+      if (!cleanKey || !settings || typeof settings !== 'object' || Array.isArray(settings)) return map;
+      const normalized = { ...settings };
+      if (Array.isArray(settings.bottomNavIds)) normalized.bottomNavIds = normalizeBottomNavIds(settings.bottomNavIds, navEnabledModules);
+      if (Array.isArray(settings.dashboardWidgets)) normalized.dashboardWidgets = normalizeDashboardWidgetIds(settings.dashboardWidgets);
+      if (Array.isArray(settings.homeHeroItems)) normalized.homeHeroItems = normalizeHomeHeroIds(settings.homeHeroItems);
+      if (settings.visualSettings && typeof settings.visualSettings === 'object') {
+        normalized.visualSettings = {
+          theme: normalizeAppTheme(settings.visualSettings.theme),
+          iconTheme: normalizeIconTheme(settings.visualSettings.iconTheme),
+          colorScheme: normalizeColorScheme(settings.visualSettings.colorScheme)
+        };
+      }
+      normalized.updatedAt = settings.updatedAt || new Date().toISOString();
+      map[cleanKey] = normalized;
+      return map;
+    }, {});
+  }
+
+  function mergeProfileUiSettings(localMap = {}, cloudMap = {}, enabledModules = state?.enabledModules) {
+    const local = normalizeProfileUiSettingsMap(localMap, enabledModules);
+    const cloud = normalizeProfileUiSettingsMap(cloudMap, enabledModules);
+    const merged = { ...local };
+    Object.entries(cloud).forEach(([key, value]) => {
+      const current = merged[key];
+      const currentTime = Date.parse(current?.updatedAt || '');
+      const nextTime = Date.parse(value?.updatedAt || '');
+      if (!current || !Number.isFinite(currentTime) || (Number.isFinite(nextTime) && nextTime >= currentTime)) {
+        merged[key] = value;
+      }
+    });
+    return merged;
+  }
+
+  function getProfileUiSettingsMap() {
+    return normalizeProfileUiSettingsMap(state.settings?.profileUiSettings, state.enabledModules);
+  }
+
+  function getCurrentProfileUiSettings(profile = currentProfile()) {
+    const map = getProfileUiSettingsMap();
+    const keys = [
+      profileUiKey(profile),
+      normalizeText(profile?.cloudId || ''),
+      normalizeText(profile?.id || ''),
+      normalizeText(profile?.userId || ''),
+      normalizeKey(profile?.name || '')
+    ].filter(Boolean);
+    return keys.map((key) => map[key]).find((settings) => settings && typeof settings === 'object') || {};
+  }
+
+  function getActiveProfileBottomNavIds() {
+    const profileSettings = getCurrentProfileUiSettings();
+    return normalizeBottomNavIds(profileSettings.bottomNavIds || state.settings?.bottomNavIds || DEFAULT_BOTTOM_NAV_IDS, state.enabledModules);
+  }
+
+  function buildActiveProfileUiSettingsSnapshot() {
+    return {
+      bottomNavIds: normalizeBottomNavIds(state.settings?.bottomNavIds || DEFAULT_BOTTOM_NAV_IDS, state.enabledModules),
+      dashboardWidgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
+      homeHeroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
+      visualSettings: getVisualSettingsSnapshot(),
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  function saveActiveProfileUiSettingsSnapshot() {
+    const key = profileUiKey();
+    if (!key) return;
+    const map = getProfileUiSettingsMap();
+    state.settings = { ...(state.settings || {}), profileUiSettings: { ...map, [key]: { ...(map[key] || {}), ...buildActiveProfileUiSettingsSnapshot() } } };
+  }
+
+  function getProfileUiSettingsSnapshot() {
+    saveActiveProfileUiSettingsSnapshot();
+    return normalizeProfileUiSettingsMap(state.settings?.profileUiSettings, state.enabledModules);
+  }
+
+  function applyActiveProfileUiSettings(profile = currentProfile()) {
+    const profileSettings = getCurrentProfileUiSettings(profile);
+    if (!profileSettings || !Object.keys(profileSettings).length) {
+      state.settings.bottomNavIds = normalizeBottomNavIds(state.settings?.bottomNavIds || DEFAULT_BOTTOM_NAV_IDS, state.enabledModules);
+      return false;
+    }
+    let changed = false;
+    const before = JSON.stringify({
+      bottomNavIds: state.settings?.bottomNavIds,
+      dashboardWidgets: state.settings?.dashboardWidgets,
+      homeHeroItems: state.settings?.homeHeroItems,
+      visualSettings: getVisualSettingsSnapshot()
+    });
+    if (Array.isArray(profileSettings.bottomNavIds)) state.settings.bottomNavIds = normalizeBottomNavIds(profileSettings.bottomNavIds, state.enabledModules);
+    if (Array.isArray(profileSettings.dashboardWidgets)) state.settings.dashboardWidgets = normalizeDashboardWidgetIds(profileSettings.dashboardWidgets);
+    if (Array.isArray(profileSettings.homeHeroItems)) state.settings.homeHeroItems = normalizeHomeHeroIds(profileSettings.homeHeroItems);
+    if (profileSettings.visualSettings && typeof profileSettings.visualSettings === 'object') {
+      state.settings.theme = normalizeAppTheme(profileSettings.visualSettings.theme);
+      state.settings.iconTheme = normalizeIconTheme(profileSettings.visualSettings.iconTheme);
+      state.settings.colorScheme = normalizeColorScheme(profileSettings.visualSettings.colorScheme);
+      applyVisualSettings();
+    }
+    const after = JSON.stringify({
+      bottomNavIds: state.settings?.bottomNavIds,
+      dashboardWidgets: state.settings?.dashboardWidgets,
+      homeHeroItems: state.settings?.homeHeroItems,
+      visualSettings: getVisualSettingsSnapshot()
+    });
+    changed = before !== after;
+    return changed;
+  }
+
+  function persistProfileUiSettings(showMessage = false) {
+    saveActiveProfileUiSettingsSnapshot();
+    touchState();
+    saveState();
+    cloudSaveHouseholdUiSettings(false).catch((error) => console.warn('Cloud profile UI settings save failed', error));
+    if (showMessage) showToast(cloudReady() ? 'Rozložení profilu uložené do cloudu' : 'Rozložení profilu uložené lokálně');
   }
 
   function normalizeDashboardWidgetIds(value) {
@@ -2056,7 +2189,7 @@
 
   function getBottomNavModules() {
     const visible = getVisibleModules();
-    const selectedIds = normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules);
+    const selectedIds = getActiveProfileBottomNavIds();
     const selected = selectedIds
       .map((id) => visible.find((module) => module.id === id))
       .filter(Boolean);
@@ -2064,7 +2197,7 @@
   }
 
   function isMoreNavActive() {
-    const selectedIds = normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules);
+    const selectedIds = getActiveProfileBottomNavIds();
     return activeModule === MORE_MODULE.id || !selectedIds.includes(activeModule);
   }
 
@@ -2446,29 +2579,37 @@
   }
 
   function syncNavMotion(motion, fromIndex = 0, toIndex = 0) {
+    const navScroll = document.querySelector('.nav-scroll');
+    const runner = navScroll?.querySelector('.nav-active-runner');
+    const items = Array.from(navScroll?.querySelectorAll('.nav-item') || []);
+    const activeItem = items[toIndex] || navScroll?.querySelector('.nav-item.active');
+    if (!navScroll || !runner || !activeItem) return;
+    const fromItem = items[fromIndex] || activeItem;
+
+    // Důležité pro iPhone/PWA: startovní pozici jezdce nastavíme synchronně
+    // hned po renderu. Když se čekalo až na RAF, Safari stihl krátce vykreslit
+    // runner na výchozí pozici vlevo/Home a animace pak působila, že vždy jede z Domů.
+    if (!motion) {
+      navScroll.classList.remove('nav-is-moving');
+      navScroll.classList.add('nav-runner-ready');
+      placeNavRunner(runner, activeItem, false);
+      return;
+    }
+
+    navScroll.classList.remove('nav-runner-ready', 'nav-is-moving');
+    placeNavRunner(runner, fromItem, false);
+    navScroll.classList.add('nav-runner-ready');
+
     safeAnimationFrame(() => {
-      const navScroll = document.querySelector('.nav-scroll');
-      const runner = navScroll?.querySelector('.nav-active-runner');
-      const items = Array.from(navScroll?.querySelectorAll('.nav-item') || []);
-      const activeItem = items[toIndex] || navScroll?.querySelector('.nav-item.active');
-      if (!navScroll || !runner || !activeItem) return;
-      const fromItem = items[fromIndex] || activeItem;
-      if (!motion) {
-        navScroll.classList.remove('nav-is-moving');
-        navScroll.classList.add('nav-runner-ready');
-        placeNavRunner(runner, activeItem, false);
-        return;
-      }
-      navScroll.classList.remove('nav-runner-ready');
-      placeNavRunner(runner, fromItem, false);
-      navScroll.classList.add('nav-runner-ready', 'nav-is-moving');
-      safeAnimationFrame(() => placeNavRunner(runner, activeItem, true));
-      window.setTimeout(() => {
-        document.querySelector('.nav-scroll')?.classList.remove('nav-is-moving');
-        document.querySelectorAll('.nav-item.nav-sweep').forEach((item) => item.classList.remove('nav-sweep'));
-        if (pendingNavMotion === motion) pendingNavMotion = null;
-      }, 2260);
+      navScroll.classList.add('nav-is-moving');
+      placeNavRunner(runner, activeItem, true);
     });
+
+    window.setTimeout(() => {
+      document.querySelector('.nav-scroll')?.classList.remove('nav-is-moving');
+      document.querySelectorAll('.nav-item.nav-sweep').forEach((item) => item.classList.remove('nav-sweep'));
+      if (pendingNavMotion === motion) pendingNavMotion = null;
+    }, 2260);
   }
 
   function keepActiveNavCentered(behavior = 'auto') {
@@ -4968,7 +5109,7 @@
       { key: 'household', done: Boolean(state.household?.isConfigured && state.household?.id), title: 'Domácnost má svoje ID', note: 'Základ pro oddělení rodin a household_id v cloudu.' },
       { key: 'profiles', done: state.profiles.length >= 1 && state.profiles.every((profile) => profile.householdId), title: 'Profily jsou navázané na domácnost', note: 'Profily se synchronizují přes cloud domácnosti.' },
       { key: 'modules', done: normalizeModuleList(state.enabledModules).length > 0, title: 'Moduly jsou volitelné', note: 'Každá rodina si vybere vlastní sestavu.' },
-      { key: 'navigation', done: normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules).length >= BOTTOM_NAV_MIN, title: 'Spodní lišta je uživatelská', note: 'Dobré pro iPhone, Android i budoucí tablet.' },
+      { key: 'navigation', done: getActiveProfileBottomNavIds().length >= BOTTOM_NAV_MIN, title: 'Spodní lišta je uživatelská', note: 'Dobré pro iPhone, Android i budoucí tablet.' },
       { key: 'ids', done: getCollectionNames().every((collection) => (state[collection] || []).every((item) => item.householdId && item.profileId)), title: 'Data mají householdId/profileId', note: 'Důležité pro RLS a sdílení jen uvnitř domácnosti.' },
       { key: 'storage', done: true, title: 'Soubory jsou mimo localStorage', note: 'Přílohy smluv i záruk jedou online přes soukromý Supabase Storage, IndexedDB je jen fallback.' }
     ];
@@ -5003,6 +5144,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_229', note: 'Hotfix animace spodní navigace: aktivní jezdec už nezačíná pokaždé z Domů, ale synchronně startuje z předchozí aktivní položky a plynule přejede na novou.' },
       { title: 'Domácnost+ v.0.1_227', note: 'Hotfix spodní navigace a Financí: lišta je znovu centrovaná bez ujíždění doleva, finance měsíc/datum jsou stažené do šířky karty a ikonky pohybů se párují podle použitých/odpovídajících šablon.' },
       { title: 'Domácnost+ v.0.1_226', note: 'Finance/Home/nav stabilizace: spodní lišta je nižší a kompaktnější bez blikání při běžném renderu, Home karty jsou natažené dolů bez posunu názvu domácnosti, finance datum/měsíc nepřetékají a pohyby dostaly ikonky ve stylu šablon.' },
       { title: 'Domácnost+ v.0.1_225', note: 'Hotfix iPhone/PWA layoutu: stabilnější spodní lišta bez ořezu, přesnější rezerva Home dashboardu, finance měsícový filtr bez přetékání a bez tlačítka Zobrazit měsíc, animace spodní lišty jen při skutečném kliknutí na spodní navigaci.' },
@@ -5015,6 +5157,7 @@
       { title: 'Domácnost+ v.0.1_218', note: 'Stabilizační build: spodní lišta je na iPhone/PWA ukotvená níž už při prvním vykreslení, Finance ukazují účty jako samostatné panely, šablony nemají nechtěný červený stín a přidání pohybu posílá cloud uložení na pozadí.' },
       { title: 'Domácnost+ v.0.1_217', note: 'Home layout hotfix: spodní lišta je ukotvená dole hned při prvním vykreslení v PWA/Safari a hlavní Home panel dostal zpět ušetřené místo, takže čas, počasí i dlaždice mohou být vyšší.' },
       { title: 'Domácnost+ v.0.1_216', note: 'Stabilizační build: opravené slučování finance šablon podle updatedAt mezi mobilem a PC, jistější pending marker šablon, jemnější autosync mimo první klikání a silnější deduplikace profilů podle názvu.' },
+      { title: 'Domácnost+ v.0.1_229', note: 'Spodní navigace má pevně Domů vlevo a Více vpravo; prostřední 2–4 ikony jsou nastavitelné podle aktivního profilu a ukládají se do cloudového dashboard_layout.profileUiSettings.' },
       { title: 'Domácnost+ v.0.1_215', note: 'Cloud settings hotfix: odstraněné volání neexistující user_app_settings tabulky, vzhled a finance šablony se ukládají přes household dashboard_layout, profily se deduplikují v zobrazení i při syncu.' },
       { title: 'Domácnost+ v.0.1_214', note: 'Finance kontrast hotfix: tmavší a čitelnější formuláře, editace účtů a přehledové finanční panely, aby na světlém glass pozadí nezanikaly hodnoty ani popisky.' },
       { title: 'Domácnost+ v.0.1_213', note: 'Finance redesign: cloud-first ochrana při úpravě pohybů mezi měsíci, přehledný dashboard se zůstatkem / příjmy / výdaji / rozdílem, filtry pohybů, kopírování plateb do více měsíců a online záloha šablon přes domácí UI nastavení.' },
@@ -9942,7 +10085,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 227))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 229))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -10018,18 +10161,25 @@
   }
 
   function renderBottomNavSettings() {
-    const selected = new Set(normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules));
+    const selected = new Set(getActiveProfileBottomNavIds());
     const candidates = getNavCandidateIds(state.enabledModules)
+      .filter((id) => id !== 'home')
       .map((id) => MODULES.find((module) => module.id === id))
       .filter(Boolean);
+    const customCount = Math.max(0, selected.size - 1);
 
     return `
       <div class="card-header">
-        <div><h2>Spodní lišta</h2><p>Každá domácnost si může připnout vlastní hlavní položky. „Více“ zůstává dole vždycky.</p></div>
-        <span class="badge">${selected.size}/${BOTTOM_NAV_MAX} + Více</span>
+        <div><h2>Spodní lišta</h2><p>Domů je vždy vlevo, Více vždy vpravo. Prostřední 2–4 ikony si nastaví každý profil zvlášť.</p></div>
+        <span class="badge">${customCount}/${BOTTOM_NAV_CUSTOM_MAX} + Domů/Více</span>
       </div>
-      <div class="hint-box">Vyber ${BOTTOM_NAV_MIN} až ${BOTTOM_NAV_MAX} položek. Vypnuté moduly se tady nezobrazí — nejdřív je zapni v části „Zapnuté moduly“.</div>
+      <div class="hint-box">Tohle nastavení je vázané na aktivní profil „${escapeHtml(currentProfile()?.name || 'Profil')}“. Když se stejný profil načte na jiném zařízení, spodní lišta bude stejná.</div>
       <div class="switch-list nav-picker-list">
+        <div class="switch-row nav-picker-switch active nav-picker-fixed" aria-disabled="true">
+          ${renderModuleIllustration('home', { size: 'picker', slotClass: 'switch-row-icon', label: 'Domů' })}
+          <span class="switch-row-copy"><strong>Domů</strong><em>pevně vlevo</em></span>
+          <span class="badge good">pevné</span>
+        </div>
         ${candidates.map((module) => {
           const isSelected = selected.has(module.id);
           return `
@@ -10037,16 +10187,20 @@
               ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'switch-row-icon', label: module.label })}
               <span class="switch-row-copy">
                 <strong>${escapeHtml(module.label)}</strong>
-                <em>${isSelected ? 'zobrazuje se dole' : 'nezobrazuje se dole'}</em>
+                <em>${isSelected ? 'zobrazuje se uprostřed' : 'nezobrazuje se dole'}</em>
               </span>
               <span class="ios-switch" aria-hidden="true"><span></span></span>
             </button>
           `;
         }).join('')}
+        <div class="switch-row nav-picker-switch active nav-picker-fixed" aria-disabled="true">
+          ${renderModuleIllustration('more', { size: 'picker', slotClass: 'switch-row-icon', label: 'Více' })}
+          <span class="switch-row-copy"><strong>Více</strong><em>pevně vpravo</em></span>
+          <span class="badge good">pevné</span>
+        </div>
       </div>
     `;
   }
-
 
   function cloudModeLabel() {
     if (state.cloud?.userId) return `cloud: ${state.cloud.email || 'přihlášeno'}`;
@@ -15436,7 +15590,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 227, mode: 'rich-demo-v227', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 229, mode: 'rich-demo-v229', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15594,7 +15748,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 227, mode: 'nav-layout-v227', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 229, mode: 'profile-nav-layout-v229', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -18511,7 +18665,8 @@
       activeProfileId: state.activeProfileId || '',
       enabledModules: structuredCloneSafe(state.enabledModules || []),
       settings: {
-        bottomNavIds: structuredCloneSafe(state.settings?.bottomNavIds || []),
+        bottomNavIds: structuredCloneSafe(getActiveProfileBottomNavIds()),
+        profileUiSettings: structuredCloneSafe(state.settings?.profileUiSettings || {}),
         homeHeroItems: structuredCloneSafe(state.settings?.homeHeroItems || []),
         dashboardWidgets: structuredCloneSafe(state.settings?.dashboardWidgets || []),
         theme: state.settings?.theme || 'light'
@@ -18817,6 +18972,9 @@
     if (!household) return;
     const layout = household.dashboardLayout || household.dashboard_layout || {};
     const weatherLocation = household.weatherLocation || household.weather_location || {};
+    if (layout.profileUiSettings && typeof layout.profileUiSettings === 'object') {
+      state.settings.profileUiSettings = mergeProfileUiSettings(state.settings?.profileUiSettings, layout.profileUiSettings);
+    }
     if (Array.isArray(layout.widgets)) state.settings.dashboardWidgets = normalizeDashboardWidgetIds(layout.widgets);
     else if (Array.isArray(layout.dashboardWidgets)) state.settings.dashboardWidgets = normalizeDashboardWidgetIds(layout.dashboardWidgets);
     if (Array.isArray(layout.heroItems)) state.settings.homeHeroItems = normalizeHomeHeroIds(layout.heroItems);
@@ -18851,6 +19009,7 @@
       if (/^\d{4}-\d{2}$/.test(String(layout.financeSettings.month || ''))) state.financeCloud = { ...(state.financeCloud || {}), monthFilter: String(layout.financeSettings.month) };
       if (['all', 'income', 'expense', 'transfer'].includes(layout.financeSettings.typeFilter)) state.financeCloud = { ...(state.financeCloud || {}), typeFilter: layout.financeSettings.typeFilter };
     }
+    applyActiveProfileUiSettings();
     if (weatherLocation && typeof weatherLocation === 'object' && Object.keys(weatherLocation).length) {
       state.weather = {
         ...normalizeWeatherState(state.weather),
@@ -18867,6 +19026,7 @@
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
         visualSettings: getVisualSettingsSnapshot(),
+        profileUiSettings: getProfileUiSettingsSnapshot(),
         warrantyBackupCount: normalizeWarranties(state.warranties).length,
         subscriptionPeople: getSubscriptionPeople(),
         subscriptions: getSubscriptionServices(),
@@ -18881,7 +19041,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 227
+        appBuild: 229
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19172,6 +19332,7 @@
       || state.profiles.find((profile) => profile.isDefault)
       || state.profiles[0];
     state.activeProfileId = preserved?.id || '';
+    applyActiveProfileUiSettings();
     state.cloud.profilesLoadedAt = new Date().toISOString();
     state.cloud.lastSyncAt = new Date().toISOString();
     return true;
@@ -19274,8 +19435,11 @@
   }
 
   function setActiveProfile(id) {
-    if (!state.profiles.some((profile) => profile.id === id)) return;
+    const nextProfile = state.profiles.find((profile) => profile.id === id);
+    if (!nextProfile) return;
+    saveActiveProfileUiSettingsSnapshot();
     state.activeProfileId = id;
+    applyActiveProfileUiSettings(nextProfile);
     saveState();
     render();
   }
@@ -19292,7 +19456,10 @@
     const ok = await cloudArchiveProfile(profile);
     if (!ok) return;
     state.profiles = state.profiles.filter((item) => item.id !== id);
-    if (state.activeProfileId === id) state.activeProfileId = state.profiles[0]?.id || '';
+    if (state.activeProfileId === id) {
+      state.activeProfileId = state.profiles[0]?.id || '';
+      applyActiveProfileUiSettings();
+    }
     touchState();
     saveState();
     render();
@@ -19306,6 +19473,7 @@
     else enabled.add(moduleId);
     state.enabledModules = [...enabled];
     state.settings.bottomNavIds = normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules);
+    saveActiveProfileUiSettingsSnapshot();
     if (!isModuleEnabled(activeModule)) activeModule = 'home';
     saveState();
     render();
@@ -19313,28 +19481,28 @@
 
   function toggleBottomNav(moduleId) {
     const candidates = getNavCandidateIds(state.enabledModules);
+    if (moduleId === 'home') return showToast('Domů je vlevo napevno');
     if (!candidates.includes(moduleId)) return;
 
-    const selected = new Set(normalizeBottomNavIds(state.settings?.bottomNavIds, state.enabledModules));
+    const selected = new Set(getActiveProfileBottomNavIds());
     if (selected.has(moduleId)) {
-      if (selected.size <= Math.min(BOTTOM_NAV_MIN, candidates.length)) {
-        showToast(`Nech aspoň ${BOTTOM_NAV_MIN} položky + Více`);
+      if (selected.size <= BOTTOM_NAV_MIN) {
+        showToast(`Nech aspoň ${BOTTOM_NAV_CUSTOM_MIN} prostřední ikony`);
         return;
       }
       selected.delete(moduleId);
     } else {
       if (selected.size >= BOTTOM_NAV_MAX) {
-        showToast(`Maximum je ${BOTTOM_NAV_MAX} položek + Více`);
+        showToast(`Maximum jsou ${BOTTOM_NAV_CUSTOM_MAX} prostřední ikony`);
         return;
       }
       selected.add(moduleId);
     }
 
     state.settings.bottomNavIds = normalizeBottomNavIds([...selected], state.enabledModules);
-    saveState();
+    persistProfileUiSettings(false);
     render();
   }
-
 
   function toggleDashboardWidget(widgetId) {
     if (!DASHBOARD_WIDGETS.some((widget) => widget.id === widgetId)) return;
@@ -19349,17 +19517,13 @@
       selected.add(widgetId);
     }
     state.settings.dashboardWidgets = normalizeDashboardWidgetIds([...selected]);
-    touchState();
-    saveState();
-    cloudSaveHouseholdUiSettings(false);
+    persistProfileUiSettings(false);
     render();
   }
 
   function resetDashboardWidgets() {
     state.settings.dashboardWidgets = [...DEFAULT_DASHBOARD_WIDGET_IDS];
-    touchState();
-    saveState();
-    cloudSaveHouseholdUiSettings(false);
+    persistProfileUiSettings(false);
     render();
     showToast('Home vyčištěná');
   }
@@ -19374,17 +19538,13 @@
       selected.add(itemId);
     }
     state.settings.homeHeroItems = normalizeHomeHeroIds([...selected]);
-    touchState();
-    saveState();
-    cloudSaveHouseholdUiSettings(false);
+    persistProfileUiSettings(false);
     render();
   }
 
   function resetHomeHeroItems() {
     state.settings.homeHeroItems = [...DEFAULT_HOME_HERO_IDS];
-    touchState();
-    saveState();
-    cloudSaveHouseholdUiSettings(false);
+    persistProfileUiSettings(false);
     render();
     showToast('Panely na Home vyčištěné');
   }
@@ -19471,7 +19631,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-227-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-229-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -19799,7 +19959,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_227</span>
+          <span class="badge">Domácnost+ v.0.1_229</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
