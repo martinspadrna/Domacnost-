@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_233';
+  const APP_VERSION = 'Domácnost+ v.0.1_235';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -515,8 +515,7 @@
     { id: 'coupons', label: 'Slevové kódy', icon: '🏷️', nav: 'shopping', tab: 'coupons', metric: () => state.coupons.filter((item) => !item.used).length, text: () => 'nepoužité kódy' },
     { id: 'hdo', label: 'HDO', icon: '💡', overview: 'hdo', metric: (ctx) => ctx.hdo.active ? 'Běží' : 'Ne', text: () => 'HDO' },
     { id: 'waste', label: 'Odpad', icon: '♻️', overview: 'waste', metric: (ctx) => ctx.wasteSoon.length, text: () => 'svoz do 7 dnů' },
-    { id: 'tasks', label: 'Úkoly', icon: '✅', overview: 'tasks', metric: (ctx) => ctx.openTasks.length, text: () => 'otevřené úkoly' },
-    { id: 'notes', label: 'Poznámky', icon: '📝', nav: 'homecare', tab: 'tasks', metric: () => state.notes.length, text: () => 'poznámky' },
+    { id: 'tasks', label: 'Zápisník', icon: '🗒️', overview: 'tasks', metric: (ctx) => (ctx.openTasks?.length || 0) + notebookPages().length, text: () => 'úkoly a stránky' },
     { id: 'warranties', label: 'Záruky', icon: '🧾', nav: 'homecare', tab: 'warranties', metric: () => state.warranties.filter((item) => item.status !== 'archived').length, text: () => 'záruky' },
     { id: 'polishHolidays', label: 'PL svátky', icon: '🇵🇱', nav: 'homecare', tab: 'polish-holidays', metric: () => polishShopHeroMetric(), text: () => polishShopHeroText() },
     { id: 'garage', label: 'Garáž', icon: '🚗', overview: 'garage', metric: () => state.vehicles.length, text: () => garageCountLabel(state.vehicles.length) },
@@ -663,6 +662,7 @@
   ];
   const WARRANTY_YEARS_OPTIONS = Array.from({ length: 9 }, (_, index) => [String(index + 2), `${index + 2} roky`]);
   const WEATHER_CHMI_FUNCTION = 'weather-chmi-forecast';
+  const TRIP_AI_FUNCTION = 'trip-ai-enrich';
   const ICON_THEME_OPTIONS = [
     ['ios', 'iOS Soft', 'Jemné hladké ikonky inspirované moderním iOS stylem.'],
     ['duotone-fresh', 'Duotone Fresh', 'Dvoutónové barevné ikonky se svěžím kontrastem.'],
@@ -723,8 +723,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 233,
-      mode: 'cameras-foundation-v233',
+      appBuild: 235,
+      mode: 'notebook-trip-ai-v235',
       createdAt: '',
       updatedAt: ''
     },
@@ -1630,8 +1630,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 233,
-      mode: 'cameras-foundation-v233',
+      appBuild: 235,
+      mode: 'notebook-trip-ai-v235',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -3242,8 +3242,10 @@
       const openTasks = state.homeTasks.filter((task) => !task.done);
       const urgentTasks = openTasks.filter((task) => task.due && daysUntil(task.due) !== null && daysUntil(task.due) <= 2).length;
       const doneCount = state.homeTasks.filter((task) => task.done).length;
-      const tasks = openTasks.slice(0,8);
-      body = `${renderOverviewSummary([{ label: 'Otevřené', value: openTasks.length }, { label: 'Brzy', value: urgentTasks, tone: urgentTasks ? 'warn' : '' }, { label: 'Hotovo', value: doneCount, tone: doneCount ? 'good' : '' }])}${tasks.length ? `<div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '✅', title: 'Žádné otevřené úkoly', text: 'Přidej domácí úkol, údržbu nebo připomínku.', nav: 'homecare', tab: 'tasks', label: 'Přidat úkol' })}`;
+      const pages = notebookPages();
+      const tasks = openTasks.slice(0,6);
+      const pageRows = pages.slice(0, 3).map((page) => `<div class="item"><div class="item-top"><div class="item-title">${escapeHtml(page.title)}</div><span class="badge">${escapeHtml(page.section)}</span></div><div class="item-meta">${escapeHtml(notebookPageSummary(page))}</div></div>`);
+      body = `${renderOverviewSummary([{ label: 'Otevřené', value: openTasks.length }, { label: 'Stránek', value: pages.length }, { label: 'Hotovo', value: doneCount, tone: doneCount ? 'good' : '' }])}${tasks.length ? `<div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : ''}${pageRows.length ? `<h3 class="overview-mini-title">Stránky</h3><div class="list compact-list overview-list">${pageRows.join('')}</div>` : ''}${(!tasks.length && !pageRows.length) ? renderEmptyCta({ icon: '🗒️', title: 'Zápisník je prázdný', text: 'Přidej stránku, checklist nebo úkol.', nav: 'homecare', tab: 'tasks', label: 'Přidat stránku' }) : ''}`;
     } else if (type === 'waste') {
       const upcomingWaste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days === null || item.days >= 0).sort((a,b)=>(a.days ?? 9999)-(b.days ?? 9999));
       const nextWaste = upcomingWaste.find((item) => item.days !== null);
@@ -3478,7 +3480,7 @@
       calendar: 'Kalendář umí více zdrojů. Google Calendar je připravený přes bezpečný backend, ne přes tokeny ve frontendu.',
       packages: 'Základ pro sledování balíků. Teď ručně, později automatika přes backend.',
       shopping: 'Sdílený nákupní seznam s katalogem položek, jednotkami a cloudovým oddělením domácností.',
-      homecare: 'HDO, odpad, poznámky, úkoly, záruky a polské svátky na jednom místě.',
+      homecare: 'HDO, odpad, Zápisník s úkoly, záruky a polské svátky na jednom místě.',
       garage: 'Auta v domácnosti, tankování, servis a základní přehled spotřeby.',
       contracts: 'Evidence smluv a pojistek s hlídáním platnosti.',
       cameras: 'Přehled kamer Tapo/Hikvision a dalších. Metadata se sdílí cloudově, streamy bezpečně přes lokální síť/VPN nebo vlastní proxy.',
@@ -4897,13 +4899,12 @@
       { nav: 'garage', tab: 'overview', icon: '🚗', label: 'Garáž', items: [...(state.vehicles || []), ...(state.fuel || []), ...(state.services || [])] },
       { nav: 'homecare', tab: 'hdo', icon: '💡', label: 'HDO', items: state.hdoWindows || [], loadedAt: state.hdoCloud?.loadedAt },
       { nav: 'homecare', tab: 'waste', icon: '♻️', label: 'Odpad', items: state.waste || [], loadedAt: state.wasteCloud?.loadedAt },
-      { nav: 'homecare', tab: 'tasks', icon: '✅', label: 'Úkoly', items: state.homeTasks || [], loadedAt: state.tasksCloud?.loadedAt },
+      { nav: 'homecare', tab: 'tasks', icon: '🗒️', label: 'Zápisník a úkoly', items: [...(state.homeTasks || []), ...(state.notes || [])], loadedAt: state.tasksCloud?.loadedAt || state.householdExtrasCloud?.loadedAt },
       { nav: 'packages', tab: 'active', icon: '📦', label: 'Balíky', items: state.packages || [], loadedAt: state.parcelsCloud?.loadedAt },
       { nav: 'calendar', tab: 'overview', icon: '📅', label: 'Kalendář', items: state.calendar || [], loadedAt: state.calendarCloud?.loadedAt },
       { nav: 'calendar', tab: 'sources', icon: '🧩', label: 'Zdroje kalendáře', items: getCalendarSources(), loadedAt: state.calendarCloud?.sourcesLoadedAt },
       { nav: 'finance', tab: 'summary', icon: '💰', label: 'Finance', items: state.finance || [], loadedAt: state.financeCloud?.loadedAt },
       { nav: 'subscriptions', tab: 'overview', icon: '🎬', label: 'Předplatné', items: [...(state.subscriptions || []), ...(state.subscriptionPeople || []), ...(state.subscriptionPayments || [])], loadedAt: state.subscriptionsCloud?.loadedAt, cloudSynced: Boolean(state.subscriptionsCloud?.loadedAt && cloudReady()) },
-      { nav: 'homecare', tab: 'tasks', icon: '📝', label: 'Poznámky', items: state.notes || [], loadedAt: state.householdExtrasCloud?.loadedAt },
       { nav: 'homecare', tab: 'warranties', icon: '🧾', label: 'Záruky', items: state.warranties || [], loadedAt: state.householdExtrasCloud?.loadedAt },
       { nav: 'cameras', tab: 'overview', icon: '📹', label: 'Kamery', items: state.cameras || [], loadedAt: state.householdExtrasCloud?.loadedAt },
       { nav: 'shopping', tab: 'coupons', icon: '🏷️', label: 'Slevové kódy', items: state.coupons || [], loadedAt: state.householdExtrasCloud?.loadedAt }
@@ -5136,7 +5137,7 @@
       calendar: { count: countBy('calendar'), label: 'událostí', note: 'Google napojení později přes backend.' },
       packages: { count: countBy('packages', (item) => item.status !== 'delivered'), label: 'aktivních', note: `${countBy('packages')} balíků celkem.` },
       shopping: { count: countBy('shopping', (item) => !item.done), label: 'koupit', note: `${countBy('coupons', (item) => !item.used)} nepoužitých kódů.` },
-      homecare: { count: countBy('homeTasks', (item) => !item.done) + countBy('hdoWindows') + countBy('waste') + countBy('warranties'), label: 'položek', note: `${countBy('hdoWindows')} HDO oken, ${countBy('waste')} svozů, ${countBy('homeTasks', (item) => !item.done)} úkolů, ${countBy('warranties')} záruk.` },
+      homecare: { count: countBy('homeTasks', (item) => !item.done) + countBy('hdoWindows') + countBy('waste') + countBy('warranties'), label: 'položek', note: `${countBy('hdoWindows')} HDO oken, ${countBy('waste')} svozů, ${countBy('homeTasks', (item) => !item.done)} úkolů, ${countBy('notes')} stránek/poznámek, ${countBy('warranties')} záruk.` },
       garage: { count: countBy('vehicles'), label: 'aut', note: `${countBy('fuel')} tankování, ${countBy('services')} servisů.` },
       contracts: { count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh smluv, ${countBy('warrantyFiles')} příloh záruk.` },
       cameras: { count: countBy('cameras'), label: 'kamer', note: 'Snapshot/stream zatím jen lokálně.' },
@@ -5186,7 +5187,8 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_233', note: 'Odstraněný modul Zařízení z UI a cloudu, rozpracovaný modul Kamery pro Tapo/Hikvision/IP kamery s detailem, snapshot/proxy/RTSP evidencí, orientačním hledáním v síti a stabilnějším ukotvením spodní lišty.' },
+      { title: 'Domácnost+ v.0.1_235', note: 'Zápisník je bez výchozích sekcí. Přidaný typ stránky Výlet, tlačítko AI doplnit výlet a Edge Function trip-ai-enrich pro dohledání otevírací doby, vstupného, cesty, počasí, webu a parkování.' },
+      { title: 'Domácnost+ v.0.1_234', note: 'Zápisník: Úkoly a Poznámky jsou sloučené do jednoho modulu/panelu. Přidané stránky ve stylu OneNote se sekcemi, textem, checklisty a převodem bodu na úkol bez DB změn.' },
       { title: 'Domácnost+ v.0.1_227', note: 'Hotfix spodní navigace a Financí: lišta je znovu centrovaná bez ujíždění doleva, finance měsíc/datum jsou stažené do šířky karty a ikonky pohybů se párují podle použitých/odpovídajících šablon.' },
       { title: 'Domácnost+ v.0.1_226', note: 'Finance/Home/nav stabilizace: spodní lišta je nižší a kompaktnější bez blikání při běžném renderu, Home karty jsou natažené dolů bez posunu názvu domácnosti, finance datum/měsíc nepřetékají a pohyby dostaly ikonky ve stylu šablon.' },
       { title: 'Domácnost+ v.0.1_225', note: 'Hotfix iPhone/PWA layoutu: stabilnější spodní lišta bez ořezu, přesnější rezerva Home dashboardu, finance měsícový filtr bez přetékání a bez tlačítka Zobrazit měsíc, animace spodní lišty jen při skutečném kliknutí na spodní navigaci.' },
@@ -6819,6 +6821,352 @@
     return Math.max(min, Math.min(max, Math.round(number)));
   }
 
+  const NOTEBOOK_NOTE_PREFIX = 'DPLUS_NOTEBOOK_V1:';
+  const NOTEBOOK_PAGE_KIND_OPTIONS = [
+    ['note', 'Poznámka'],
+    ['trip', 'Výlet']
+  ];
+
+  function normalizeNotebookPageKind(value) {
+    return value === 'trip' ? 'trip' : 'note';
+  }
+
+  function normalizeTripMeta(value = {}) {
+    const sources = Array.isArray(value.sources)
+      ? value.sources.map((source) => ({
+          title: normalizeText(source.title || source.name || source.url || ''),
+          url: normalizeText(source.url || source.link || '')
+        })).filter((source) => source.title || source.url).slice(0, 8)
+      : [];
+    return {
+      place: normalizeText(value.place || value.destination || value.location || ''),
+      date: normalizeText(value.date || ''),
+      startLocation: normalizeText(value.startLocation || value.start || ''),
+      openingHours: normalizeText(value.openingHours || value.opening_hours || ''),
+      ticketPrices: normalizeText(value.ticketPrices || value.ticket_prices || value.prices || ''),
+      route: normalizeText(value.route || value.travel || ''),
+      weather: normalizeText(value.weather || ''),
+      website: normalizeText(value.website || value.web || value.officialWebsite || ''),
+      parking: normalizeText(value.parking || ''),
+      tips: normalizeText(value.tips || value.notes || value.note || ''),
+      warning: normalizeText(value.warning || ''),
+      verifiedAt: normalizeText(value.verifiedAt || value.verified_at || value.checkedAt || ''),
+      sources
+    };
+  }
+
+  function parseNotebookNote(note = {}) {
+    const text = String(note.text || '');
+    if (!text.startsWith(NOTEBOOK_NOTE_PREFIX)) return null;
+    try {
+      const raw = JSON.parse(text.slice(NOTEBOOK_NOTE_PREFIX.length));
+      const items = Array.isArray(raw.items) ? raw.items.map((item) => ({
+        id: normalizeText(item.id) || uid(),
+        text: normalizeText(item.text),
+        done: Boolean(item.done),
+        createdAt: item.createdAt || note.createdAt || new Date().toISOString()
+      })).filter((item) => item.text) : [];
+      return {
+        note,
+        id: note.id,
+        cloudId: note.cloudId || '',
+        section: normalizeText(raw.section) || 'Nezařazené',
+        kind: normalizeNotebookPageKind(raw.kind || raw.type),
+        title: normalizeText(raw.title) || 'Stránka',
+        body: normalizeText(raw.body),
+        items,
+        trip: normalizeTripMeta(raw.trip || {}),
+        tripAiStatus: normalizeText(raw.tripAiStatus || ''),
+        createdAt: raw.createdAt || note.createdAt || new Date().toISOString(),
+        updatedAt: raw.updatedAt || note.updatedAt || ''
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function serializeNotebookPage(page = {}) {
+    return NOTEBOOK_NOTE_PREFIX + JSON.stringify({
+      section: normalizeText(page.section) || 'Nezařazené',
+      kind: normalizeNotebookPageKind(page.kind || page.type),
+      title: normalizeText(page.title) || 'Stránka',
+      body: normalizeText(page.body),
+      items: Array.isArray(page.items) ? page.items.map((item) => ({
+        id: normalizeText(item.id) || uid(),
+        text: normalizeText(item.text),
+        done: Boolean(item.done),
+        createdAt: item.createdAt || new Date().toISOString()
+      })).filter((item) => item.text) : [],
+      trip: normalizeTripMeta(page.trip || {}),
+      tripAiStatus: normalizeText(page.tripAiStatus || ''),
+      createdAt: page.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+  }
+
+  function notebookPages() {
+    return (state.notes || [])
+      .map(parseNotebookNote)
+      .filter(Boolean)
+      .sort((a, b) => `${a.section} ${a.title}`.localeCompare(`${b.section} ${b.title}`, 'cs'));
+  }
+
+  function legacyQuickNotes() {
+    return (state.notes || [])
+      .filter((note) => !parseNotebookNote(note))
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  }
+
+  function notebookSections(pages = notebookPages()) {
+    const map = new Map();
+    pages.forEach((page) => {
+      const key = page.section || 'Domácnost';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(page);
+    });
+    return [...map.entries()].map(([section, items]) => ({ section, items }));
+  }
+
+  function notebookChecklistFromText(value) {
+    return String(value || '')
+      .split(/\r?\n/)
+      .map((line) => normalizeText(line.replace(/^[-*☐✓✔\s]+/, '')))
+      .filter(Boolean)
+      .map((text) => ({ id: uid(), text, done: false, createdAt: new Date().toISOString() }));
+  }
+
+  async function saveNotebookPage(page, showMessage = false) {
+    const note = (state.notes || []).find((entry) => entry.id === page.id);
+    if (!note) return false;
+    note.text = serializeNotebookPage(page);
+    note.updatedAt = new Date().toISOString();
+    const ok = await cloudUpdateExtraItem('notes', note);
+    if (!ok) return false;
+    touchState();
+    saveState();
+    render();
+    if (showMessage) showToast(note.cloudId ? 'Stránka uložená do cloudu' : 'Stránka uložená lokálně');
+    return true;
+  }
+
+  async function addNotebookPageFromForm(data, form) {
+    const section = normalizeText(data.section);
+    const title = normalizeText(data.title);
+    if (!section) return showToast('Doplň sekci');
+    if (!title) return showToast('Doplň název stránky');
+    const kind = normalizeNotebookPageKind(data.kind);
+    const page = {
+      section,
+      kind,
+      title,
+      body: normalizeText(data.body),
+      items: notebookChecklistFromText(data.items),
+      trip: kind === 'trip' ? normalizeTripMeta({
+        place: normalizeText(data.tripPlace) || title,
+        date: normalizeText(data.tripDate),
+        startLocation: normalizeText(data.tripStartLocation)
+      }) : normalizeTripMeta({}),
+      createdAt: new Date().toISOString()
+    };
+    await addItem('notes', { text: serializeNotebookPage(page), status: 'active' });
+    form?.reset();
+  }
+
+  async function addNotebookItemFromForm(data, form) {
+    const page = notebookPages().find((entry) => entry.id === form?.dataset?.pageId);
+    const text = normalizeText(data.itemText);
+    if (!page || !text) return showToast('Doplň bod seznamu');
+    page.items.push({ id: uid(), text, done: false, createdAt: new Date().toISOString() });
+    await saveNotebookPage(page, true);
+  }
+
+  async function toggleNotebookItem(pageId, itemId) {
+    const page = notebookPages().find((entry) => entry.id === pageId);
+    const item = page?.items.find((entry) => entry.id === itemId);
+    if (!page || !item) return;
+    item.done = !item.done;
+    await saveNotebookPage(page);
+  }
+
+  async function deleteNotebookItem(pageId, itemId) {
+    const page = notebookPages().find((entry) => entry.id === pageId);
+    if (!page) return;
+    page.items = page.items.filter((entry) => entry.id !== itemId);
+    await saveNotebookPage(page, true);
+  }
+
+  async function notebookItemToTask(pageId, itemId) {
+    const page = notebookPages().find((entry) => entry.id === pageId);
+    const item = page?.items.find((entry) => entry.id === itemId);
+    if (!page || !item) return;
+    const task = {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      title: item.text,
+      due: '',
+      note: `${page.section} / ${page.title}`,
+      category: 'domacnost',
+      priority: 'normal',
+      done: false
+    };
+    const saved = await cloudAddTask(task);
+    if (saved?.id) task.cloudId = saved.id;
+    state.homeTasks.push(task);
+    touchState();
+    saveState();
+    render();
+    showToast(task.cloudId ? 'Bod převedený na cloud úkol' : 'Bod převedený na úkol');
+  }
+
+  function tripResultToNotebookTrip(result = {}) {
+    if (!result || typeof result !== 'object') return null;
+    const openingHours = typeof result.openingHours === 'object' ? result.openingHours?.text : result.openingHours;
+    const ticketPrices = typeof result.tickets === 'object' ? result.tickets?.text : (result.ticketPrices || result.prices);
+    const route = typeof result.route === 'object' ? result.route?.text : result.route;
+    const weather = typeof result.weather === 'object' ? result.weather?.text : result.weather;
+    const warnings = Array.isArray(result.warnings) ? result.warnings.filter(Boolean).join(' · ') : result.warning;
+    const packing = Array.isArray(result.packingChecklist) && result.packingChecklist.length ? `Co vzít: ${result.packingChecklist.filter(Boolean).join(', ')}` : '';
+    const tips = [result.summary, result.food, result.childTips, packing].map(normalizeText).filter(Boolean).join('\n');
+    return normalizeTripMeta({
+      place: result.place,
+      date: result.date,
+      startLocation: result.startLocation,
+      openingHours,
+      ticketPrices,
+      route,
+      weather,
+      website: result.officialWebsite || result.website,
+      parking: result.parking,
+      tips,
+      warning: warnings,
+      verifiedAt: result.checkedAt || result.verifiedAt,
+      sources: result.sources
+    });
+  }
+
+  function tripAiRows(trip = {}) {
+    return [
+      ['Místo', trip.place],
+      ['Datum', trip.date ? formatDate(trip.date) : ''],
+      ['Otevírací doba', trip.openingHours],
+      ['Vstupné', trip.ticketPrices],
+      ['Cesta', trip.route],
+      ['Počasí', trip.weather],
+      ['Parkování', trip.parking],
+      ['Web', trip.website],
+      ['Poznámky', trip.tips],
+      ['Upozornění', trip.warning]
+    ].filter(([, value]) => normalizeText(value));
+  }
+
+  function renderTripInfo(page) {
+    if (page.kind !== 'trip') return '';
+    const trip = normalizeTripMeta(page.trip || {});
+    const rows = tripAiRows(trip);
+    const canUseAi = cloudReady();
+    const loading = page.tripAiStatus === 'loading';
+    return `
+      <div class="trip-ai-card">
+        <div class="trip-ai-head">
+          <div>
+            <strong>Výlet</strong>
+            <span>${escapeHtml(trip.place || page.title)}${trip.date ? ` · ${escapeHtml(formatDate(trip.date))}` : ''}</span>
+          </div>
+          ${canUseAi ? `<button class="primary-btn small-btn" type="button" data-action="notebook-trip-ai" data-page-id="${escapeHtml(page.id)}" ${loading ? 'disabled' : ''}>${loading ? 'Doplňuji…' : 'AI doplnit výlet'}</button>` : '<span class="badge">nejdřív online účet</span>'}
+        </div>
+        ${rows.length ? `<div class="trip-ai-grid">${rows.map(([label, value]) => `
+          <div class="trip-ai-row"><span>${escapeHtml(label)}</span><strong>${label === 'Web' && /^https?:\/\//i.test(String(value)) ? `<a href="${escapeHtml(value)}" target="_blank" rel="noopener noreferrer">${escapeHtml(value)}</a>` : escapeHtml(value)}</strong></div>
+        `).join('')}</div>` : '<div class="inline-note compact-note">Vyplň místo a datum, potom může AI doplnit otevírací dobu, vstupné, cestu, počasí a parkování.</div>'}
+        ${trip.verifiedAt ? `<div class="item-meta">Ověřeno: ${escapeHtml(formatDateTime(trip.verifiedAt))}</div>` : ''}
+        ${trip.sources?.length ? `<details class="compact-edit-details trip-ai-sources"><summary><span>Zdroje</span><em>${trip.sources.length}</em></summary><div class="list compact-list">${trip.sources.map((source) => `<a class="item trip-source-link" href="${escapeHtml(source.url || '#')}" target="_blank" rel="noopener noreferrer"><div class="item-title">${escapeHtml(source.title || source.url)}</div>${source.url ? `<div class="item-meta">${escapeHtml(source.url)}</div>` : ''}</a>`).join('')}</div></details>` : ''}
+      </div>
+    `;
+  }
+
+  async function enrichNotebookTrip(pageId) {
+    const page = notebookPages().find((entry) => entry.id === pageId);
+    if (!page || page.kind !== 'trip') return showToast('Tohle není stránka typu Výlet');
+    const client = getSupabaseClient();
+    if (!client?.functions?.invoke) return showToast('Supabase funkce nejsou dostupné');
+    const user = await refreshCloudSession(false);
+    if (!user || !cloudReady()) return showToast('Nejdřív se přihlas a vyber domácnost');
+    const trip = normalizeTripMeta(page.trip || {});
+    const body = {
+      householdId: state.cloud.householdId,
+      profileId: currentProfileId(),
+      title: page.title,
+      section: page.section,
+      place: trip.place || page.title,
+      date: trip.date,
+      startLocation: trip.startLocation,
+      start: trip.startLocation,
+      website: trip.website,
+      notes: page.body,
+      checklist: page.items.map((item) => item.text)
+    };
+    if (!body.place) return showToast('Doplň místo výletu');
+    if (!body.date) return showToast('Doplň datum výletu');
+    page.tripAiStatus = 'loading';
+    await saveNotebookPage(page, false);
+    try {
+      const { data, error } = await client.functions.invoke(TRIP_AI_FUNCTION, { body });
+      if (error || data?.error || data?.ok === false) throw new Error(data?.message || data?.error || error?.message || 'AI doplnění se nepovedlo');
+      const enrichedTrip = data.trip || data.enrichment || tripResultToNotebookTrip(data.result) || tripResultToNotebookTrip(data) || data;
+      page.trip = normalizeTripMeta({ ...trip, ...enrichedTrip });
+      page.tripAiStatus = '';
+      await saveNotebookPage(page, true);
+      showToast('Výlet doplněný přes AI');
+    } catch (error) {
+      page.tripAiStatus = '';
+      await saveNotebookPage(page, false);
+      console.warn('trip-ai-enrich failed', error);
+      showToast(error?.message || 'AI doplnění zatím není dostupné');
+    }
+  }
+
+  function notebookPageSummary(page) {
+    const open = page.items.filter((item) => !item.done).length;
+    const done = page.items.filter((item) => item.done).length;
+    return `${page.items.length} bodů${open ? ` · ${open} otevřené` : ''}${done ? ` · ${done} hotovo` : ''}`;
+  }
+
+  function renderNotebookPage(page) {
+    const trip = normalizeTripMeta(page.trip || {});
+    const badge = page.kind === 'trip' ? 'výlet' : 'stránka';
+    return `
+      <article class="notebook-page item" id="notebook-page-${escapeHtml(page.id)}">
+        <div class="item-top">
+          <div>
+            <div class="notebook-section-pill">${escapeHtml(page.section)} · ${escapeHtml(badge)}</div>
+            <div class="item-title">${escapeHtml(page.title)}</div>
+          </div>
+          <span class="badge ${page.cloudId ? 'good' : ''}">${page.cloudId ? 'cloud' : 'lokálně'}</span>
+        </div>
+        ${page.kind === 'trip' ? renderTripInfo({ ...page, trip }) : ''}
+        ${page.body ? `<div class="notebook-body">${escapeHtml(page.body)}</div>` : ''}
+        <div class="item-meta">${escapeHtml(notebookPageSummary(page))}</div>
+        ${page.items.length ? `<div class="notebook-checklist">${page.items.map((item) => `
+          <div class="notebook-check ${item.done ? 'done' : ''}">
+            <button class="notebook-check-toggle" type="button" data-action="notebook-item-toggle" data-page-id="${escapeHtml(page.id)}" data-item-id="${escapeHtml(item.id)}">${item.done ? '✓' : ''}</button>
+            <span>${escapeHtml(item.text)}</span>
+            <button class="ghost-btn tiny-btn" type="button" data-action="notebook-item-task" data-page-id="${escapeHtml(page.id)}" data-item-id="${escapeHtml(item.id)}">Úkol</button>
+            <button class="ghost-btn tiny-btn" type="button" data-action="notebook-item-delete" data-page-id="${escapeHtml(page.id)}" data-item-id="${escapeHtml(item.id)}">×</button>
+          </div>
+        `).join('')}</div>` : '<div class="inline-note compact-note">Stránka zatím nemá žádný checklist.</div>'}
+        <form data-form="add-notebook-item" data-page-id="${escapeHtml(page.id)}" class="notebook-add-line">
+          <input class="input" name="itemText" type="text" placeholder="Přidat bod na stránku">
+          <button class="ghost-btn" type="submit">Přidat</button>
+        </form>
+        <div class="item-actions">
+          ${state.cloud?.householdId && !page.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-note" data-id="${escapeHtml(page.id)}">Odeslat</button>` : ''}
+          <button class="danger-btn" type="button" data-action="delete" data-collection="notes" data-id="${escapeHtml(page.id)}">Smazat stránku</button>
+        </div>
+      </article>
+    `;
+  }
+
   function renderHomecare() {
     const hdo = getHdoStatus(now);
     const tasks = [...state.homeTasks].sort((a, b) => Number(a.done) - Number(b.done));
@@ -6834,7 +7182,7 @@
       ${renderSectionTabs('homecare', [
         { id: 'hdo', label: 'HDO', icon: '💡', count: state.hdoWindows.length },
         { id: 'waste', label: 'Odpad', icon: '♻️', count: waste.length },
-        { id: 'tasks', label: 'Úkoly', icon: '✅', count: tasks.filter((task) => !task.done).length },
+        { id: 'tasks', label: 'Zápisník', icon: '🗒️', count: tasks.filter((task) => !task.done).length + notebookPages().length },
         { id: 'warranties', label: 'Záruky', icon: '🧾', count: warranties.length },
         { id: 'polish-holidays', label: 'Svátky PL', icon: '🇵🇱', count: polishShopCount }
       ], 'hdo')}
@@ -6885,38 +7233,65 @@
           `).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej první svoz a aplikace ho ukáže v přehledu Dnes a brzy.', nav: 'homecare', tab: 'waste', label: 'Přidat svoz' })}
         </section>
 
-        <section class="card homecare-panel panel-tasks">
+        <section class="card homecare-panel panel-tasks notebook-panel">
           <div class="card-header">
-            <div><h2>Úkoly a poznámky</h2><p>Domácí úkoly jsou připravené pro cloud i budoucí notifikace.</p></div>
-            <span class="badge ${tasks.some((task) => task.cloudId) ? 'good' : ''}">${tasks.some((task) => task.cloudId) ? 'cloud' : 'lokálně'}</span>
+            <div><h2>Zápisník a úkoly</h2><p>Jedno místo pro nápady, domácí stránky, checklisty a úkoly s termínem.</p></div>
+            <span class="badge ${(tasks.some((task) => task.cloudId) || notebookPages().some((page) => page.cloudId)) ? 'good' : ''}">${state.cloud?.householdId ? 'sdílená domácnost' : 'lokálně'}</span>
           </div>
-          <form data-form="add-task">
-            <div class="form-grid two">
-              ${field('Úkol', 'title', 'text', 'vyměnit filtr / koupit baterky', true)}
-              ${field('Termín', 'due', 'date', '')}
-              ${selectField('Kategorie', 'category', TASK_CATEGORY_OPTIONS, 'domacnost')}
-              ${selectField('Priorita', 'priority', TASK_PRIORITY_OPTIONS, 'normal')}
-              ${field('Poznámka', 'note', 'text', 'volitelné')}
+          <div class="notebook-shell">
+            <aside class="notebook-sidebar">
+              <div class="notebook-sidebar-title">Stránky</div>
+              ${notebookSections().length ? notebookSections().map((group) => `
+                <div class="notebook-section-group">
+                  <strong>${escapeHtml(group.section)}</strong>
+                  ${group.items.map((page) => `<button class="notebook-page-chip" type="button" data-scroll-target="notebook-page-${escapeHtml(page.id)}">${escapeHtml(page.title)}<span>${escapeHtml(String(page.items.length))}</span></button>`).join('')}
+                </div>
+              `).join('') : '<div class="small-muted">Zatím žádné stránky. Vytvoř třeba Výlety.</div>'}
+              ${legacyQuickNotes().length ? `<div class="notebook-section-group"><strong>Rychlé poznámky</strong><span class="small-muted">${legacyQuickNotes().length} starších poznámek</span></div>` : ''}
+            </aside>
+            <div class="notebook-main">
+              <details class="compact-edit-details notebook-create" open>
+                <summary><span>Nová stránka</span><em>sekce, text a checklist</em></summary>
+                <form data-form="add-notebook-page" class="compact-form">
+                  <div class="form-grid two">
+                    ${field('Sekce', 'section', 'text', 'např. Výlety', true)}
+                    ${field('Název stránky', 'title', 'text', 'např. Zoo Dvůr Králové', true)}
+                    ${selectField('Typ stránky', 'kind', NOTEBOOK_PAGE_KIND_OPTIONS, 'note')}
+                    ${field('Místo výletu', 'tripPlace', 'text', 'např. Zoo Dvůr Králové')}
+                    ${field('Datum výletu', 'tripDate', 'date', '')}
+                    ${field('Start cesty', 'tripStartLocation', 'text', 'např. Domov / Hostinné')}
+                  </div>
+                  <div class="inline-note compact-note">Pole výletu se použijí jen u typu Výlet. AI doplnění běží bezpečně přes Supabase Edge Function, ne přímo z frontendu.</div>
+                  <div class="field"><label>Text stránky</label><textarea class="textarea" name="body" placeholder="Poznámka, odkazy, parkování, co vzít s sebou..."></textarea></div>
+                  <div class="field"><label>Checklist / nápady</label><textarea class="textarea" name="items" placeholder="Zoo Dvůr Králové&#10;Karpacz&#10;Stezka korunami stromů"></textarea></div>
+                  <div class="form-actions"><button class="primary-btn" type="submit">Přidat stránku</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud zápisník</button>' : ''}${state.cloud?.householdId && notes.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální stránky (${notes.filter((item) => !item.cloudId).length})</button>` : ''}</div>
+                </form>
+              </details>
+              ${notebookPages().length ? `<div class="notebook-pages">${notebookPages().map((page) => renderNotebookPage(page).replace('notebook-page item', `notebook-page item" id="notebook-page-${escapeHtml(page.id)}`)).join('')}</div>` : renderEmptyCta({ icon: '🗒️', title: 'Zápisník je prázdný', text: 'Vytvoř první vlastní sekci a stránku. Appka už nepřidává žádné výchozí sekce.', nav: 'homecare', tab: 'tasks', label: 'Přidat stránku' })}
+              ${legacyQuickNotes().length ? `<details class="compact-edit-details legacy-notes"><summary><span>Starší rychlé poznámky</span><em>${legacyQuickNotes().length}</em></summary><div class="list">${legacyQuickNotes().map((note) => `<div class="item"><div class="item-top"><div class="item-title">${escapeHtml(note.text)}</div><span class="badge ${note.cloudId ? 'good' : ''}">${note.cloudId ? 'cloud' : 'lokálně'}</span></div><div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="notes" data-id="${escapeHtml(note.id)}">Smazat</button></div></div>`).join('')}</div></details>` : ''}
             </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat úkol</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-tasks">Načíst cloud úkoly</button>' : ''}${state.cloud?.householdId && tasks.some((task) => !task.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-tasks">Odeslat lokální úkoly (${tasks.filter((task) => !task.cloudId).length})</button>` : ''}</div>
-          </form>
-          <div style="height:14px"></div>
-          ${tasks.length ? `<div class="list">${tasks.map((task) => `
-            <div class="item">
-              <div class="item-top"><div class="item-title">${task.done ? '✓ ' : ''}${escapeHtml(task.title)}</div><span class="badge ${task.due && daysUntil(task.due) <= 2 && !task.done ? 'warn' : ''}">${task.due ? formatDate(task.due) : 'bez termínu'}</span></div>
-              <div class="item-meta">${escapeHtml(taskCategoryLabel(task.category))} · ${escapeHtml(taskPriorityLabel(task.priority))}${task.note ? ` · ${escapeHtml(task.note)}` : ''}${task.cloudId ? ' · cloud' : ' · lokálně'}</div>
-              <div class="item-actions">${state.cloud?.householdId && !task.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-task" data-id="${task.id}">Odeslat</button>` : ''}<button class="ghost-btn" type="button" data-action="task-toggle" data-id="${task.id}">${task.done ? 'Vrátit' : 'Hotovo'}</button><button class="danger-btn" type="button" data-action="task-delete" data-id="${task.id}">Smazat</button></div>
-            </div>
-          `).join('')}</div>` : renderEmptyCta({ icon: '✅', title: 'Žádný domácí úkol', text: 'Přidej údržbu, připomínku nebo běžnou domácí poznámku.', nav: 'homecare', tab: 'tasks', label: 'Přidat úkol' })}
-          <form data-form="add-note" style="margin-top:14px;">
-            <div class="form-grid">
-              ${field('Rychlá poznámka', 'text', 'text', 'např. zavolat servis', true)}
-            </div>
-            <div class="form-actions"><button class="ghost-btn" type="submit">Přidat poznámku</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud poznámky</button>' : ''}${state.cloud?.householdId && notes.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální poznámky (${notes.filter((item) => !item.cloudId).length})</button>` : ''}</div>
-          </form>
-          ${notes.length ? `<div class="list" style="margin-top:12px;">${notes.slice(0, 6).map((note) => `
-            <div class="item"><div class="item-top"><div class="item-title">${escapeHtml(note.text)}</div><span class="badge ${note.cloudId ? 'good' : ''}">${note.cloudId ? 'cloud' : 'lokálně'}</span></div><div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="notes" data-id="${note.id}">Smazat</button></div></div>
-          `).join('')}</div>` : ''}
+          </div>
+          <div class="notebook-task-block">
+            <div class="card-subheader"><h3>Úkoly</h3><p>Věci k udělání s termínem, prioritou a stavem.</p></div>
+            <form data-form="add-task">
+              <div class="form-grid two">
+                ${field('Úkol', 'title', 'text', 'vyměnit filtr / koupit baterky', true)}
+                ${field('Termín', 'due', 'date', '')}
+                ${selectField('Kategorie', 'category', TASK_CATEGORY_OPTIONS, 'domacnost')}
+                ${selectField('Priorita', 'priority', TASK_PRIORITY_OPTIONS, 'normal')}
+                ${field('Poznámka', 'note', 'text', 'volitelné')}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Přidat úkol</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-tasks">Načíst cloud úkoly</button>' : ''}${state.cloud?.householdId && tasks.some((task) => !task.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-tasks">Odeslat lokální úkoly (${tasks.filter((task) => !task.cloudId).length})</button>` : ''}</div>
+            </form>
+            <div style="height:14px"></div>
+            ${tasks.length ? `<div class="list">${tasks.map((task) => `
+              <div class="item">
+                <div class="item-top"><div class="item-title">${task.done ? '✓ ' : ''}${escapeHtml(task.title)}</div><span class="badge ${task.due && daysUntil(task.due) <= 2 && !task.done ? 'warn' : ''}">${task.due ? formatDate(task.due) : 'bez termínu'}</span></div>
+                <div class="item-meta">${escapeHtml(taskCategoryLabel(task.category))} · ${escapeHtml(taskPriorityLabel(task.priority))}${task.note ? ` · ${escapeHtml(task.note)}` : ''}${task.cloudId ? ' · cloud' : ' · lokálně'}</div>
+                <div class="item-actions">${state.cloud?.householdId && !task.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-task" data-id="${task.id}">Odeslat</button>` : ''}<button class="ghost-btn" type="button" data-action="task-toggle" data-id="${task.id}">${task.done ? 'Vrátit' : 'Hotovo'}</button><button class="danger-btn" type="button" data-action="task-delete" data-id="${task.id}">Smazat</button></div>
+              </div>
+            `).join('')}</div>` : '<div class="inline-note compact-note">Žádné úkoly. Checklisty v zápisníku můžeš kdykoliv převést na úkol.</div>'}
+          </div>
         </section>
 
         ${renderWarrantiesPanel(warranties)}
@@ -10470,7 +10845,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 233))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 235))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -15368,6 +15743,8 @@
       'add-hdo': () => addHdoWindowFromForm(data, form),
       'add-waste': () => addWasteFromForm(data, form),
       'add-task': () => addTaskFromForm(data, form),
+      'add-notebook-page': () => addNotebookPageFromForm(data, form),
+      'add-notebook-item': () => addNotebookItemFromForm(data, form),
       'add-note': () => addItem('notes', { text: data.text, createdAt: new Date().toISOString() }),
       'add-warranty': () => addWarrantyFromForm(data, form),
       'edit-warranty': () => updateWarrantyFromForm(data, form),
@@ -15975,7 +16352,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 233, mode: 'rich-demo-v233', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 235, mode: 'rich-demo-v235', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -16133,7 +16510,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 233, mode: 'cameras-foundation-v233', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 235, mode: 'notebook-trip-ai-v235', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -18476,6 +18853,27 @@
       deleteWaste(button.dataset.id);
       return;
     }
+    if (action === 'notebook-item-toggle') {
+      toggleNotebookItem(button.dataset.pageId, button.dataset.itemId);
+      return;
+    }
+    if (action === 'notebook-item-delete') {
+      deleteNotebookItem(button.dataset.pageId, button.dataset.itemId);
+      return;
+    }
+    if (action === 'notebook-item-task') {
+      notebookItemToTask(button.dataset.pageId, button.dataset.itemId);
+      return;
+    }
+    if (action === 'notebook-trip-ai') {
+      enrichNotebookTrip(button.dataset.pageId);
+      return;
+    }
+    if (action === 'cloud-sync-note') {
+      const note = state.notes.find((item) => item.id === button.dataset.id);
+      if (note) cloudAddExtraItem('notes', note).then(() => { touchState(); saveState(); render(); showToast(note.cloudId ? 'Stránka odeslaná do cloudu' : 'Stránku se nepovedlo odeslat'); });
+      return;
+    }
     if (action === 'cloud-load-tasks') {
       cloudLoadTasks(true);
       return;
@@ -19445,7 +19843,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 233
+        appBuild: 235
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -20035,7 +20433,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-233-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-235-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20186,6 +20584,13 @@
       garageEditRecord = null;
       closeFilePreviewModal();
       render();
+      return;
+    }
+
+    const scrollTarget = event.target.closest('[data-scroll-target]');
+    if (scrollTarget) {
+      const target = document.getElementById(scrollTarget.dataset.scrollTarget || '');
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
 
@@ -20380,7 +20785,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_233</span>
+          <span class="badge">Domácnost+ v.0.1_235</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

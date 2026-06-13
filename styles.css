@@ -15208,46 +15208,46 @@ form[data-busy="true"] button[type="submit"] {
 
 /* Domácnost+ v0.1_233 – spodní lišta bez visualViewport skoku + Kamery */
 :root {
-  --nav-visual-height-v233: 76px;
-  --nav-inner-height-v233: 62px;
-  --nav-bottom-gap-v233: max(0px, calc(env(safe-area-inset-bottom, 0px) - 30px));
+  --nav-visual-height-v234: 76px;
+  --nav-inner-height-v234: 62px;
+  --nav-bottom-gap-v234: max(0px, calc(env(safe-area-inset-bottom, 0px) - 30px));
   --nav-motion-duration: 2.2s;
   --nav-motion-ease: cubic-bezier(.14, .78, .16, 1);
 }
 
 body {
-  padding-bottom: calc(var(--nav-visual-height-v233) + var(--nav-bottom-gap-v233) + 18px) !important;
+  padding-bottom: calc(var(--nav-visual-height-v234) + var(--nav-bottom-gap-v234) + 18px) !important;
 }
 
 .nav-shell {
   position: fixed !important;
   left: 50% !important;
   right: auto !important;
-  bottom: var(--nav-bottom-gap-v233) !important;
+  bottom: var(--nav-bottom-gap-v234) !important;
   width: min(calc(100vw - 20px), 540px) !important;
-  height: var(--nav-visual-height-v233) !important;
-  min-height: var(--nav-visual-height-v233) !important;
-  max-height: var(--nav-visual-height-v233) !important;
+  height: var(--nav-visual-height-v234) !important;
+  min-height: var(--nav-visual-height-v234) !important;
+  max-height: var(--nav-visual-height-v234) !important;
   transform: translate3d(-50%, 0, 0) !important;
   transform-origin: center bottom !important;
   overflow: visible !important;
 }
 
 .nav-scroll {
-  height: var(--nav-inner-height-v233) !important;
-  min-height: var(--nav-inner-height-v233) !important;
-  max-height: var(--nav-inner-height-v233) !important;
+  height: var(--nav-inner-height-v234) !important;
+  min-height: var(--nav-inner-height-v234) !important;
+  max-height: var(--nav-inner-height-v234) !important;
   overflow: hidden !important;
 }
 
 .nav-item {
-  height: var(--nav-inner-height-v233) !important;
-  min-height: var(--nav-inner-height-v233) !important;
-  max-height: var(--nav-inner-height-v233) !important;
+  height: var(--nav-inner-height-v234) !important;
+  min-height: var(--nav-inner-height-v234) !important;
+  max-height: var(--nav-inner-height-v234) !important;
 }
 
 .app-frame {
-  padding-bottom: calc(var(--nav-visual-height-v233) + var(--nav-bottom-gap-v233) + 18px) !important;
+  padding-bottom: calc(var(--nav-visual-height-v234) + var(--nav-bottom-gap-v234) + 18px) !important;
 }
 
 .cameras-tab-overview .cameras-panel:not(.panel-overview),
@@ -15346,4 +15346,218 @@ body {
 .camera-link-badge,
 .device-link-badge {
   text-decoration: none;
+}
+
+/* v0.1_234: Zápisník + Úkoly */
+.notebook-panel {
+  grid-column: 1 / -1;
+}
+
+.notebook-shell {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.34fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.notebook-sidebar,
+.notebook-task-block {
+  border: 1px solid rgba(255,255,255,0.55);
+  background: rgba(255,255,255,0.46);
+  border-radius: 24px;
+  padding: 12px;
+  box-shadow: 0 12px 30px rgba(15,23,42,0.08);
+}
+
+.notebook-sidebar-title {
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.notebook-section-group {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.notebook-section-group strong {
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.notebook-page-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  border-radius: 16px;
+  padding: 10px 11px;
+  background: rgba(255,255,255,0.72);
+  color: var(--text);
+  font-weight: 760;
+  text-align: left;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
+}
+
+.notebook-page-chip span {
+  min-width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(37,99,235,0.1);
+  color: var(--primary);
+  font-size: 0.78rem;
+}
+
+.notebook-main {
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.notebook-create textarea,
+.notebook-main .textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.notebook-pages {
+  display: grid;
+  gap: 12px;
+}
+
+.notebook-page {
+  scroll-margin-top: 92px;
+}
+
+.notebook-section-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 9px;
+  margin-bottom: 5px;
+  background: rgba(37,99,235,0.1);
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.notebook-body {
+  margin: 10px 0;
+  color: var(--muted);
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.notebook-checklist {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.notebook-check {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.62);
+}
+
+.notebook-check.done span {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.notebook-check-toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(37,99,235,0.28);
+  background: rgba(255,255,255,0.82);
+  color: var(--primary);
+  font-weight: 900;
+}
+
+.tiny-btn {
+  min-height: 28px;
+  padding: 5px 8px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+}
+
+.notebook-add-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.notebook-task-block {
+  margin-top: 14px;
+}
+
+@media (max-width: 760px) {
+  .notebook-shell {
+    grid-template-columns: 1fr;
+  }
+  .notebook-sidebar {
+    order: 2;
+  }
+  .notebook-main {
+    order: 1;
+  }
+  .notebook-check {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+  .notebook-check .tiny-btn {
+    grid-column: span 1;
+  }
+}
+
+
+/* v0.1_235: Zápisník bez výchozích sekcí + AI výlety */
+.trip-ai-card {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 12px;
+  padding: 12px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(37,99,235,0.10), rgba(14,165,233,0.10));
+  border: 1px solid rgba(37,99,235,0.16);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+}
+.trip-ai-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.trip-ai-head div { display: grid; gap: 2px; min-width: 0; }
+.trip-ai-head strong { font-size: 0.9rem; }
+.trip-ai-head span { color: var(--muted); font-size: 0.82rem; }
+.trip-ai-grid { display: grid; gap: 7px; }
+.trip-ai-row {
+  display: grid;
+  grid-template-columns: 105px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.62);
+}
+.trip-ai-row span { color: var(--muted); font-size: 0.78rem; font-weight: 800; }
+.trip-ai-row strong { font-size: 0.86rem; font-weight: 760; min-width: 0; overflow-wrap: anywhere; }
+.trip-source-link { text-decoration: none; color: inherit; }
+.small-btn { min-height: 34px; padding: 7px 11px; border-radius: 14px; font-size: 0.82rem; }
+@media (max-width: 520px) {
+  .trip-ai-head { align-items: stretch; flex-direction: column; }
+  .trip-ai-row { grid-template-columns: 1fr; }
 }
