@@ -14477,7 +14477,7 @@ form[data-busy="true"] button[type="submit"] {
   }
 }
 
-/* Domácnost+ v.0.1_229 – finance/Home/nav stabilizace po reálném iPhone testu
+/* Domácnost+ v.0.1_230 – finance/Home/nav stabilizace po reálném iPhone testu
    - spodní lišta nesmí být po startu vysoká ani oříznutá,
    - běžný render uvnitř Financí nesmí rozblikávat aktivní jezdec,
    - Home karty se natahují jen dolů, horní pozice a název domácnosti zůstávají stabilní,
@@ -14725,29 +14725,29 @@ form[data-busy="true"] button[type="submit"] {
 }
 
 
-/* Domácnost+ v.0.1_229 – hotfix centrování spodní lišty + finance overflow/icon mapping */
+/* Domácnost+ v.0.1_230 – hotfix centrování spodní lišty + finance overflow/icon mapping */
 :root {
-  --nav-visual-height-v229: 78px;
-  --nav-inner-height-v229: 62px;
-  --nav-bottom-gap-v229: 6px;
+  --nav-visual-height-v230: 78px;
+  --nav-inner-height-v230: 62px;
+  --nav-bottom-gap-v230: 6px;
   --nav-motion-duration: 2.2s;
   --nav-motion-ease: cubic-bezier(.14, .78, .16, 1);
 }
 
 @media (max-width: 720px) {
   .app-shell {
-    padding-bottom: calc(var(--nav-visual-height-v229) + var(--nav-bottom-gap-v229) + 18px) !important;
+    padding-bottom: calc(var(--nav-visual-height-v230) + var(--nav-bottom-gap-v230) + 18px) !important;
   }
 
   .nav-shell {
     left: 50% !important;
     right: auto !important;
-    bottom: var(--nav-bottom-gap-v229) !important;
+    bottom: var(--nav-bottom-gap-v230) !important;
     width: calc(100vw - 32px) !important;
     max-width: min(620px, calc(100vw - 32px)) !important;
-    height: var(--nav-visual-height-v229) !important;
-    min-height: var(--nav-visual-height-v229) !important;
-    max-height: var(--nav-visual-height-v229) !important;
+    height: var(--nav-visual-height-v230) !important;
+    min-height: var(--nav-visual-height-v230) !important;
+    max-height: var(--nav-visual-height-v230) !important;
     margin: 0 !important;
     padding: 7px 8px !important;
     border-radius: 28px !important;
@@ -14757,16 +14757,16 @@ form[data-busy="true"] button[type="submit"] {
   }
 
   .nav-scroll {
-    height: var(--nav-inner-height-v229) !important;
-    min-height: var(--nav-inner-height-v229) !important;
-    max-height: var(--nav-inner-height-v229) !important;
+    height: var(--nav-inner-height-v230) !important;
+    min-height: var(--nav-inner-height-v230) !important;
+    max-height: var(--nav-inner-height-v230) !important;
     overflow: hidden !important;
   }
 
   .nav-item {
-    height: var(--nav-inner-height-v229) !important;
-    min-height: var(--nav-inner-height-v229) !important;
-    max-height: var(--nav-inner-height-v229) !important;
+    height: var(--nav-inner-height-v230) !important;
+    min-height: var(--nav-inner-height-v230) !important;
+    max-height: var(--nav-inner-height-v230) !important;
     padding: 4px 5px !important;
   }
 
@@ -14792,7 +14792,7 @@ form[data-busy="true"] button[type="submit"] {
   }
 
   .app-shell.home-app-shell {
-    padding-bottom: calc(var(--nav-visual-height-v229) + var(--nav-bottom-gap-v229) + 18px) !important;
+    padding-bottom: calc(var(--nav-visual-height-v230) + var(--nav-bottom-gap-v230) + 18px) !important;
   }
 }
 
@@ -14874,7 +14874,7 @@ form[data-busy="true"] button[type="submit"] {
   }
 }
 
-/* Domácnost+ v.0.1_229 – profilová spodní lišta: Domů vlevo, Více vpravo, 2–4 volitelné ikony uprostřed */
+/* Domácnost+ v.0.1_230 – profilová spodní lišta: Domů vlevo, Více vpravo, 2–4 volitelné ikony uprostřed */
 .nav-picker-fixed {
   cursor: default !important;
   opacity: .92;
@@ -14899,5 +14899,38 @@ form[data-busy="true"] button[type="submit"] {
 @media (max-width: 380px) {
   .nav-shell .nav-scroll[data-nav-count="6"] .nav-item span:last-child {
     font-size: .62rem;
+  }
+}
+
+
+/* Domácnost+ v.0.1_230 – navigace bez replay animace + PL svátky filtr nedělí */
+.nav-scroll.nav-no-motion .nav-item.nav-sweep .nav-icon,
+.nav-scroll.nav-no-motion .nav-item.nav-sweep .nav-icon.mini-module-icon,
+.nav-scroll.nav-no-motion .nav-item.nav-sweep .nav-icon.module-illustration-slot {
+  transform: none !important;
+}
+
+.polish-shop-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.polish-shop-actions .ghost-btn,
+.polish-shop-actions .primary-btn {
+  min-width: 0 !important;
+  width: 100% !important;
+  justify-content: center !important;
+}
+
+.polish-shop-actions .ghost-btn.active {
+  border-color: rgba(37, 99, 235, .32) !important;
+  background: rgba(37, 99, 235, .10) !important;
+  color: var(--text-strong) !important;
+}
+
+@media (max-width: 380px) {
+  .polish-shop-actions {
+    grid-template-columns: 1fr !important;
   }
 }

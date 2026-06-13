@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_229';
+  const APP_VERSION = 'Domácnost+ v.0.1_230';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -697,8 +697,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 229,
-      mode: 'profile-nav-layout-v229',
+      appBuild: 230,
+      mode: 'profile-nav-layout-v230',
       createdAt: '',
       updatedAt: ''
     },
@@ -712,7 +712,8 @@
       dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGET_IDS],
       homeHeroItems: [...DEFAULT_HOME_HERO_IDS],
       vehicleIconColors: {},
-      profileUiSettings: {}
+      profileUiSettings: {},
+      polishShopShowNonTradingSundays: false
     },
     household: {
       id: '',
@@ -1014,6 +1015,8 @@
   let activeModule = 'home';
   let activeOverview = null;
   let pendingNavMotion = null;
+  let lastRenderedBottomNavId = 'home';
+  let polishShopAutoRefreshInFlight = false;
   let moduleTabs = isStoredDemoState(state) ? {} : (safeParse(localStorage.getItem('domacnostPlus.moduleTabs'), {}) || {});
   let garageVehicleId = null;
   let garageHistoryYearFilter = 'all';
@@ -1461,6 +1464,32 @@
     return entry?.type === 'sunday' || normalizeText(entry?.name).toLowerCase().includes('neděle nehandlová');
   }
 
+  function showPolishShopSundayClosures() {
+    return Boolean(state.settings?.polishShopShowNonTradingSundays);
+  }
+
+  function shouldAutoRefreshPolishShopHolidays() {
+    const shopState = normalizePolishShopState(state.polishShopClosures);
+    const currentYear = new Date().getFullYear();
+    const online = shopState.onlineHolidays || {};
+    const hasCurrentYear = Array.isArray(online[currentYear]) && online[currentYear].length > 0;
+    const hasNextYear = Array.isArray(online[currentYear + 1]) && online[currentYear + 1].length > 0;
+    const updatedTime = Date.parse(shopState.updatedAt || '');
+    const tooOld = !Number.isFinite(updatedTime) || (Date.now() - updatedTime > 1000 * 60 * 60 * 24 * 21);
+    return !hasCurrentYear || !hasNextYear || tooOld;
+  }
+
+  function schedulePolishShopHolidaysAutoRefresh() {
+    if (polishShopAutoRefreshInFlight || !navigator.onLine || isDemoOnlyState()) return;
+    if (!shouldAutoRefreshPolishShopHolidays()) return;
+    polishShopAutoRefreshInFlight = true;
+    runWhenUiQuiet(() => {
+      refreshPolishShopHolidaysOnline({ silent: true, includeCurrentYears: true })
+        .catch((error) => console.warn('Polish holidays auto refresh failed', error))
+        .finally(() => { polishShopAutoRefreshInFlight = false; });
+    }, { delay: 1800, quietMs: 900, timeout: 6000 });
+  }
+
   function nextPolishShopImportantEntry(status = '') {
     const today = todayISO();
     return polishShopCalendarAround(new Date().getFullYear())
@@ -1591,8 +1620,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 229,
-      mode: 'profile-nav-layout-v229',
+      appBuild: 230,
+      mode: 'profile-nav-layout-v230',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2474,7 +2503,7 @@
         const bottomNavModules = getBottomNavModules();
         const activeBottomNavId = getActiveBottomNavId(activeModule);
         const activeBottomNavIndex = Math.max(0, bottomNavModules.findIndex((module) => module.id === activeBottomNavId));
-        const navMotion = pendingNavMotion && pendingNavMotion.toId === activeBottomNavId ? pendingNavMotion : null;
+        const navMotion = pendingNavMotion && !pendingNavMotion.consumed && pendingNavMotion.toId === activeBottomNavId ? pendingNavMotion : null;
         const navMotionFromIndex = navMotion ? Math.max(0, bottomNavModules.findIndex((module) => module.id === navMotion.fromId)) : activeBottomNavIndex;
         const navSweepStart = navMotion ? Math.min(navMotionFromIndex, activeBottomNavIndex) : -1;
         const navSweepEnd = navMotion ? Math.max(navMotionFromIndex, activeBottomNavIndex) : -1;
@@ -2520,6 +2549,7 @@
         if (app) app.setAttribute?.('data-boot-ok', '1');
         promoteActiveContentBeforeForms();
         syncNavMotion(navMotion, navMotionFromIndex, activeBottomNavIndex);
+        lastRenderedBottomNavId = activeBottomNavId;
         keepActiveNavCentered();
         keepActiveSectionTabsCentered();
       }
@@ -2604,12 +2634,13 @@
       navScroll.classList.add('nav-is-moving');
       placeNavRunner(runner, activeItem, true);
     });
+    motion.consumed = true;
 
     window.setTimeout(() => {
       document.querySelector('.nav-scroll')?.classList.remove('nav-is-moving');
       document.querySelectorAll('.nav-item.nav-sweep').forEach((item) => item.classList.remove('nav-sweep'));
       if (pendingNavMotion === motion) pendingNavMotion = null;
-    }, 2260);
+    }, 2450);
   }
 
   function keepActiveNavCentered(behavior = 'auto') {
@@ -5144,7 +5175,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_229', note: 'Hotfix animace spodní navigace: aktivní jezdec už nezačíná pokaždé z Domů, ale synchronně startuje z předchozí aktivní položky a plynule přejede na novou.' },
+      { title: 'Domácnost+ v.0.1_230', note: 'Hotfix spodní navigace a PL svátků: aktivní jezdec už se při běžném refreshi modulu znovu nerozjíždí z Domů, animace startuje z poslední aktivní ikony a Svátky Polsko mají přepínač nedělí nehandlowe + tichou online aktualizaci aktuálního roku.' },
       { title: 'Domácnost+ v.0.1_227', note: 'Hotfix spodní navigace a Financí: lišta je znovu centrovaná bez ujíždění doleva, finance měsíc/datum jsou stažené do šířky karty a ikonky pohybů se párují podle použitých/odpovídajících šablon.' },
       { title: 'Domácnost+ v.0.1_226', note: 'Finance/Home/nav stabilizace: spodní lišta je nižší a kompaktnější bez blikání při běžném renderu, Home karty jsou natažené dolů bez posunu názvu domácnosti, finance datum/měsíc nepřetékají a pohyby dostaly ikonky ve stylu šablon.' },
       { title: 'Domácnost+ v.0.1_225', note: 'Hotfix iPhone/PWA layoutu: stabilnější spodní lišta bez ořezu, přesnější rezerva Home dashboardu, finance měsícový filtr bez přetékání a bez tlačítka Zobrazit měsíc, animace spodní lišty jen při skutečném kliknutí na spodní navigaci.' },
@@ -6676,12 +6707,17 @@
   function renderPolishHolidaysPanel() {
     state.polishShopClosures = normalizePolishShopState(state.polishShopClosures);
     const year = polishShopSelectedYear();
+    const showSundays = showPolishShopSundayClosures();
     const entries = buildPolishShopCalendarYear(year);
+    const visibleEntries = showSundays ? entries : entries.filter((entry) => !isPolishShopSundayEntry(entry));
     const todayEntry = polishShopTodayEntry(0);
     const tomorrowEntry = polishShopTodayEntry(1);
-    const upcoming = polishShopCalendarAround(year).filter((entry) => entry.date >= todayISO()).slice(0, 8);
-    const closedCount = entries.filter((entry) => entry.status === 'closed').length;
+    const upcoming = polishShopCalendarAround(year)
+      .filter((entry) => entry.date >= todayISO() && (showSundays || !isPolishShopSundayEntry(entry)))
+      .slice(0, 8);
+    const closedCount = visibleEntries.filter((entry) => entry.status === 'closed').length;
     const trading = polishTradingSundays(year);
+    schedulePolishShopHolidaysAutoRefresh();
     const nextTrading = trading.filter((date) => date >= todayISO()).slice(0, 4);
     const years = [];
     for (let y = Math.max(POLISH_SHOP_YEAR_MIN, new Date().getFullYear() - 1); y <= Math.min(POLISH_SHOP_YEAR_MAX, new Date().getFullYear() + 3); y += 1) years.push([String(y), String(y)]);
@@ -6707,7 +6743,7 @@
             ${selectField('Rok', 'year', years, String(year))}
             <div class="field"><label>Zdroj</label><input class="input" value="${escapeHtml(source)}" readonly></div>
           </div>
-          <div class="form-actions compact-actions"><button class="ghost-btn" type="submit">Zobrazit rok</button><button class="primary-btn" type="button" data-action="polish-holidays-refresh">Online aktualizace</button></div>
+          <div class="form-actions compact-actions polish-shop-actions"><button class="primary-btn" type="button" data-action="polish-holidays-refresh">Online aktualizace</button><button class="ghost-btn ${showSundays ? 'active' : ''}" type="button" data-action="toggle-polish-sundays" aria-pressed="${showSundays ? 'true' : 'false'}">${showSundays ? 'Neděle nehandlowe: zapnuté' : 'Neděle nehandlowe: vypnuté'}</button></div>
           ${state.polishShopClosures.error ? `<div class="inline-note warn-note">${escapeHtml(state.polishShopClosures.error)}</div>` : ''}
         </form>
         <div class="grid two polish-shop-grid">
@@ -6721,18 +6757,21 @@
           </div>
         </div>
         <details class="compact-edit-details polish-shop-all">
-          <summary><span>Celý přehled roku ${escapeHtml(year)}</span><em>${entries.length} položek</em></summary>
-          <div class="list compact-list">${entries.map(renderPolishShopEntry).join('')}</div>
+          <summary><span>Celý přehled roku ${escapeHtml(year)}</span><em>${visibleEntries.length} položek</em></summary>
+          <div class="list compact-list">${visibleEntries.map(renderPolishShopEntry).join('')}</div>
         </details>
         <div class="inline-note compact-note">Poznámka: výjimky můžou mít malé obchody, čerpací stanice, lékárny nebo provozy, kde obsluhuje majitel. Modul je dělaný hlavně pro velké obchody a galerie.</div>
       </section>
     `;
   }
 
-  async function refreshPolishShopHolidaysOnline() {
+  async function refreshPolishShopHolidaysOnline(options = {}) {
     state.polishShopClosures = normalizePolishShopState(state.polishShopClosures);
+    const showMessage = options.silent !== true;
     const year = polishShopSelectedYear();
-    const years = [...new Set([year, year + 1].filter((item) => item >= POLISH_SHOP_YEAR_MIN && item <= POLISH_SHOP_YEAR_MAX))];
+    const currentYear = new Date().getFullYear();
+    const yearSeed = options.includeCurrentYears ? [year, year + 1, currentYear, currentYear + 1] : [year, year + 1];
+    const years = [...new Set(yearSeed.filter((item) => item >= POLISH_SHOP_YEAR_MIN && item <= POLISH_SHOP_YEAR_MAX))];
     try {
       const nextOnline = { ...(state.polishShopClosures.onlineHolidays || {}) };
       for (const y of years) {
@@ -6746,13 +6785,13 @@
       touchState();
       saveState();
       render();
-      showToast('Polské svátky aktualizované online');
+      if (showMessage) showToast('Polské svátky aktualizované online');
     } catch (error) {
       state.polishShopClosures.error = 'Online aktualizace se nepovedla, zůstává vestavěný kalendář.';
       touchState();
       saveState();
       render();
-      showToast('Online aktualizace se nepovedla');
+      if (showMessage) showToast('Online aktualizace se nepovedla');
     }
   }
 
@@ -15590,7 +15629,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 229, mode: 'rich-demo-v229', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 230, mode: 'rich-demo-v230', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15748,7 +15787,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 229, mode: 'profile-nav-layout-v229', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 230, mode: 'profile-nav-layout-v230', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -17949,7 +17988,15 @@
       return;
     }
     if (action === 'polish-holidays-refresh') {
-      refreshPolishShopHolidaysOnline();
+      refreshPolishShopHolidaysOnline({ includeCurrentYears: true });
+      return;
+    }
+    if (action === 'toggle-polish-sundays') {
+      state.settings = { ...(state.settings || {}), polishShopShowNonTradingSundays: !showPolishShopSundayClosures() };
+      touchState();
+      saveState();
+      render();
+      showToast(state.settings.polishShopShowNonTradingSundays ? 'Neděle nehandlowe se zobrazují' : 'Neděle nehandlowe skryté');
       return;
     }
     if (action === 'cloud-bootstrap') {
@@ -19041,7 +19088,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 229
+        appBuild: 230
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19631,7 +19678,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-229-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-230-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -19738,6 +19785,11 @@
   });
 
 
+  function currentRenderedBottomNavId(fallbackModuleId = activeModule) {
+    const domActive = document.querySelector('.nav-shell .nav-item.active')?.dataset?.nav;
+    return domActive || lastRenderedBottomNavId || getActiveBottomNavId(fallbackModuleId);
+  }
+
   document.addEventListener('pointerdown', () => {
     lastUserInteractionAt = Date.now();
   }, { passive: true });
@@ -19772,12 +19824,12 @@
     const nav = event.target.closest('[data-nav]');
     if (nav) {
       lastUserInteractionAt = Date.now();
-      const previousBottomNavId = getActiveBottomNavId(activeModule);
+      const navFromBottomBar = Boolean(nav.closest('.nav-shell'));
+      const previousBottomNavId = navFromBottomBar ? currentRenderedBottomNavId(activeModule) : getActiveBottomNavId(activeModule);
       const nextModule = nav.dataset.nav;
       const nextBottomNavId = getActiveBottomNavId(nextModule);
-      const navFromBottomBar = Boolean(nav.closest('.nav-shell'));
       pendingNavMotion = navFromBottomBar && previousBottomNavId !== nextBottomNavId
-        ? { fromId: previousBottomNavId, toId: nextBottomNavId, createdAt: Date.now() }
+        ? { fromId: previousBottomNavId, toId: nextBottomNavId, createdAt: Date.now(), consumed: false }
         : null;
       activeOverview = null;
       activeModule = nextModule;
@@ -19959,7 +20011,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_229</span>
+          <span class="badge">Domácnost+ v.0.1_230</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
