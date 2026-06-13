@@ -14194,7 +14194,7 @@ form[data-busy="true"] button[type="submit"] {
   }
 }
 
-/* Domácnost+ v.0.1_224 – čistý build + finální doladění Home/nav po v223
+/* Domácnost+ v.0.1_225 – čistý build + finální doladění Home/nav po v223
    - název domácnosti nesmí být oříznutý nahoře,
    - spodní lišta má držet stabilní výšku a nižší iOS pozici,
    - animace aktivní položky má přejet pomaleji a plynuleji. */
@@ -14303,5 +14303,176 @@ form[data-busy="true"] button[type="submit"] {
   .app-shell.home-app-shell .home-hero-count-8.home-minimal-hero {
     height: clamp(500px, calc(var(--app-vh) - 244px), 606px) !important;
     max-height: clamp(500px, calc(var(--app-vh) - 244px), 606px) !important;
+  }
+}
+
+
+/* Domácnost+ v.0.1_225 – iPhone/PWA layout hotfix
+   Stabilizuje spodní navigaci bez záporného bottomu, přidává přesnou rezervu Home
+   a opravuje finance měsícový filtr bez přetékání. */
+:root {
+  --nav-motion-duration: 1.65s;
+  --nav-motion-ease: cubic-bezier(.16, .86, .16, 1);
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .nav-shell {
+    bottom: 0 !important;
+    height: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+    min-height: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 8px 8px max(8px, env(safe-area-inset-bottom, 0px)) !important;
+    overflow: visible !important;
+    transform: translate3d(-50%, 0, 0) !important;
+  }
+
+  .nav-scroll {
+    height: 74px !important;
+    min-height: 74px !important;
+    max-height: 74px !important;
+    overflow: visible !important;
+  }
+
+  .nav-item {
+    height: 74px !important;
+    min-height: 74px !important;
+    max-height: 74px !important;
+    padding-block: 5px !important;
+  }
+
+  .app-shell.home-app-shell {
+    padding-top: max(12px, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: calc(102px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .app-shell.home-app-shell .home-page-head,
+  .home-clean-frame .home-page-head,
+  .home-page-head {
+    margin-top: -3px !important;
+    margin-bottom: 7px !important;
+    min-height: 44px !important;
+    padding-top: 1px !important;
+    overflow: visible !important;
+  }
+
+  .app-shell.home-app-shell .home-page-head .page-title,
+  .home-clean-frame .home-page-head .page-title {
+    line-height: 1.18 !important;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+    overflow: visible !important;
+  }
+
+  .app-shell.home-app-shell .home-hero-count-0.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-1.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-2.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-3.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-4.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-5.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-6.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-7.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-8.home-minimal-hero {
+    height: clamp(470px, calc(var(--app-vh) - 286px), 590px) !important;
+    max-height: clamp(470px, calc(var(--app-vh) - 286px), 590px) !important;
+  }
+
+  .app-shell.home-app-shell .home-hero-count-5 .station-hero-main,
+  .app-shell.home-app-shell .home-hero-count-6 .station-hero-main,
+  .app-shell.home-app-shell .home-hero-count-7 .station-hero-main,
+  .app-shell.home-app-shell .home-hero-count-8 .station-hero-main {
+    gap: 7px !important;
+    grid-template-rows: minmax(88px, .98fr) repeat(4, minmax(72px, 1fr)) !important;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 720px) {
+    :root { --nav-bottom-lock: 0px; }
+    .nav-shell { bottom: 0 !important; }
+  }
+}
+
+.nav-active-runner {
+  opacity: 0;
+  transition:
+    transform var(--nav-motion-duration) var(--nav-motion-ease),
+    width var(--nav-motion-duration) var(--nav-motion-ease),
+    opacity .22s ease !important;
+}
+
+.nav-scroll.nav-runner-ready .nav-active-runner { opacity: 1; }
+.nav-scroll.nav-no-motion .nav-active-runner { transition: none !important; }
+.nav-scroll.nav-no-motion .nav-item .nav-icon,
+.nav-scroll.nav-no-motion .nav-item .nav-icon.mini-module-icon,
+.nav-scroll.nav-no-motion .nav-item .nav-icon.module-illustration-slot {
+  transition: none !important;
+}
+
+.nav-scroll.nav-is-moving .nav-item.nav-sweep .nav-icon,
+.nav-scroll.nav-is-moving .nav-item.nav-sweep .nav-icon.mini-module-icon,
+.nav-scroll.nav-is-moving .nav-item.nav-sweep .nav-icon.module-illustration-slot {
+  transform: scale(1.12) translateY(-2px) !important;
+}
+
+.finance-toolbar,
+.finance-month-form {
+  overflow: hidden;
+}
+
+.finance-month-form {
+  max-width: 100%;
+}
+
+.finance-month-form .form-grid.two {
+  grid-template-columns: minmax(150px, 210px) minmax(0, 1fr) !important;
+  align-items: end;
+  width: 100%;
+}
+
+.finance-month-form .field:first-child {
+  max-width: 210px;
+}
+
+.finance-month-form input[type="month"] {
+  max-width: 210px;
+}
+
+.finance-month-form .item-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.finance-month-form .item-actions .ghost-btn {
+  min-width: 0 !important;
+  padding-inline: 8px !important;
+  white-space: nowrap;
+}
+
+.finance-month-form > .form-actions {
+  display: none !important;
+}
+
+@media (max-width: 430px) {
+  .finance-month-form .form-grid.two {
+    grid-template-columns: 1fr !important;
+  }
+
+  .finance-month-form .field:first-child,
+  .finance-month-form input[type="month"] {
+    max-width: 100%;
+  }
+
+  .finance-month-form .item-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .finance-month-form .item-actions .ghost-btn {
+    font-size: .82rem;
+    padding-inline: 5px !important;
   }
 }
