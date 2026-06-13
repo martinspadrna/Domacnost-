@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_226';
+  const APP_VERSION = 'Domácnost+ v.0.1_227';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -695,8 +695,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 226,
-      mode: 'nav-layout-v226',
+      appBuild: 227,
+      mode: 'nav-layout-v227',
       createdAt: '',
       updatedAt: ''
     },
@@ -1588,8 +1588,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 226,
-      mode: 'nav-layout-v226',
+      appBuild: 227,
+      mode: 'nav-layout-v227',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5003,6 +5003,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_227', note: 'Hotfix spodní navigace a Financí: lišta je znovu centrovaná bez ujíždění doleva, finance měsíc/datum jsou stažené do šířky karty a ikonky pohybů se párují podle použitých/odpovídajících šablon.' },
       { title: 'Domácnost+ v.0.1_226', note: 'Finance/Home/nav stabilizace: spodní lišta je nižší a kompaktnější bez blikání při běžném renderu, Home karty jsou natažené dolů bez posunu názvu domácnosti, finance datum/měsíc nepřetékají a pohyby dostaly ikonky ve stylu šablon.' },
       { title: 'Domácnost+ v.0.1_225', note: 'Hotfix iPhone/PWA layoutu: stabilnější spodní lišta bez ořezu, přesnější rezerva Home dashboardu, finance měsícový filtr bez přetékání a bez tlačítka Zobrazit měsíc, animace spodní lišty jen při skutečném kliknutí na spodní navigaci.' },
       { title: 'Domácnost+ v.0.1_224', note: 'Čistý distribuční ZIP bez soukromého restore nákupů, nákupy zůstávají jen přes aktivní domácnost/cloud, opravený ořez názvu domácnosti a zpomalenější přejezd spodní navigace.' },
@@ -8831,7 +8832,7 @@
     const type = item?.type === 'income' ? 'income' : item?.type === 'transfer' ? 'transfer' : 'expense';
     const category = item?.category || (type === 'income' ? 'other_income' : 'groceries');
     return `
-      <form data-form="${isEdit ? 'update-finance' : 'add-finance'}" ${isEdit ? `data-id="${escapeHtml(item.id)}"` : ''} class="compact-form spaced-form">
+      <form data-form="${isEdit ? 'update-finance' : 'add-finance'}" ${isEdit ? `data-id="${escapeHtml(item.id)}"` : ''} ${item?.templateId ? `data-template-id="${escapeHtml(item.templateId)}"` : ''} class="compact-form spaced-form">
         <div class="form-grid two">
           ${selectField('Typ', 'type', [['expense', 'Výdaj'], ['income', 'Příjem'], ['transfer', 'Přesun mezi účty']], type)}
           ${selectField('Účet', 'accountId', financeAccountOptions(true), item?.accountId || accounts[0]?.id || '')}
@@ -8924,7 +8925,7 @@
   function renderFinanceSplitOverview(incomeItems, expenseItems) {
     const renderMiniRows = (rows, emptyText) => rows.length
       ? rows.slice(0, 8).map((item) => {
-          const icon = item.type === 'transfer' ? '↔️' : financeCategoryIcon(item.category);
+          const icon = financeMovementIcon(item);
           return `<div class="finance-mini-row"><span class="finance-mini-title"><span class="finance-mini-icon" aria-hidden="true">${escapeHtml(icon)}</span><span>${escapeHtml(item.title)}</span></span><strong>${formatCurrency(item.amount)}</strong></div>`;
         }).join('')
       : `<div class="inline-note compact-note">${escapeHtml(emptyText)}</div>`;
@@ -9080,7 +9081,7 @@
     const isTransfer = item.type === 'transfer';
     const account = financeAccountById(item.accountId);
     const target = financeAccountById(item.transferAccountId);
-    const movementIcon = isTransfer ? '↔️' : isIncome ? financeCategoryIcon(item.category) : financeCategoryIcon(item.category);
+    const movementIcon = financeMovementIcon(item);
     const paymentIcon = financePaymentIcon(item.paymentMethod);
     const syncLabel = item.syncStatus ? ' · čeká na cloud' : item.cloudId ? ' · cloud' : ' · lokálně';
     return `
@@ -9941,7 +9942,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 226))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 227))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -15435,7 +15436,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 226, mode: 'rich-demo-v226', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 227, mode: 'rich-demo-v227', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -15593,7 +15594,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 226, mode: 'nav-layout-v226', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 227, mode: 'nav-layout-v227', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -15809,6 +15810,32 @@
       other_expense: '💳'
     };
     return map[value] || '💳';
+  }
+
+
+  function financeMovementIcon(item = {}) {
+    if (item.type === 'transfer') return '↔️';
+    const templates = financeTemplateDefinitions();
+    const templateId = normalizeText(item.templateId);
+    if (templateId) {
+      const direct = templates.find((template) => String(template.id) === templateId);
+      if (direct?.icon) return direct.icon;
+    }
+    const titleKey = normalizeKey(item.title || '');
+    if (titleKey) {
+      const exact = templates.find((template) => normalizeKey(template.title) === titleKey || normalizeKey(template.name) === titleKey);
+      if (exact?.icon) return exact.icon;
+      const loose = templates.find((template) => {
+        const tTitle = normalizeKey(template.title || '');
+        const tName = normalizeKey(template.name || '');
+        return (tTitle && (titleKey.includes(tTitle) || tTitle.includes(titleKey))) || (tName && (titleKey.includes(tName) || tName.includes(titleKey)));
+      });
+      if (loose?.icon) return loose.icon;
+    }
+    const category = normalizeText(item.category);
+    const typed = templates.find((template) => template.type === item.type && template.category === category && template.paymentMethod === item.paymentMethod);
+    if (typed?.icon) return typed.icon;
+    return financeCategoryIcon(category);
   }
 
   function financePaymentIcon(value) {
@@ -16268,6 +16295,7 @@
       const input = form.elements[name];
       if (input) input.value = value || '';
     });
+    form.dataset.templateId = template.id || '';
     if (form.elements.date) form.elements.date.value = todayISO();
     if (form.elements.amount) form.elements.amount.focus();
     showToast('Šablona vyplněná, můžeš upravit a uložit');
@@ -16541,6 +16569,7 @@
       category,
       accountId,
       transferAccountId: type === 'transfer' ? transferAccountId : '',
+      templateId: normalizeText(form?.dataset?.templateId),
       paymentMethod: normalizeText(data.paymentMethod) || 'other',
       note: normalizeText(data.note)
     };
@@ -16551,6 +16580,7 @@
     touchState();
     saveState();
     form.reset();
+    if (form?.dataset) delete form.dataset.templateId;
     render();
     if (cloudReady()) {
       item.syncStatus = 'pending_add';
@@ -16579,6 +16609,7 @@
       category,
       accountId,
       transferAccountId: type === 'transfer' ? transferAccountId : '',
+      templateId: normalizeText(base.templateId || data.templateId || ''),
       paymentMethod: normalizeText(data.paymentMethod) || 'other',
       note: normalizeText(data.note)
     };
@@ -18850,7 +18881,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 226
+        appBuild: 227
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19440,7 +19471,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-226-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-227-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -19768,7 +19799,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_226</span>
+          <span class="badge">Domácnost+ v.0.1_227</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

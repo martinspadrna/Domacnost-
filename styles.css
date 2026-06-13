@@ -14477,7 +14477,7 @@ form[data-busy="true"] button[type="submit"] {
   }
 }
 
-/* Domácnost+ v.0.1_226 – finance/Home/nav stabilizace po reálném iPhone testu
+/* Domácnost+ v.0.1_227 – finance/Home/nav stabilizace po reálném iPhone testu
    - spodní lišta nesmí být po startu vysoká ani oříznutá,
    - běžný render uvnitř Financí nesmí rozblikávat aktivní jezdec,
    - Home karty se natahují jen dolů, horní pozice a název domácnosti zůstávají stabilní,
@@ -14716,6 +14716,156 @@ form[data-busy="true"] button[type="submit"] {
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
+}
+
+@media (min-width: 520px) {
+  .finance-panel.panel-add .spaced-form .form-grid.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+
+/* Domácnost+ v.0.1_227 – hotfix centrování spodní lišty + finance overflow/icon mapping */
+:root {
+  --nav-visual-height-v227: 78px;
+  --nav-inner-height-v227: 62px;
+  --nav-bottom-gap-v227: 6px;
+  --nav-motion-duration: 2.2s;
+  --nav-motion-ease: cubic-bezier(.14, .78, .16, 1);
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding-bottom: calc(var(--nav-visual-height-v227) + var(--nav-bottom-gap-v227) + 18px) !important;
+  }
+
+  .nav-shell {
+    left: 50% !important;
+    right: auto !important;
+    bottom: var(--nav-bottom-gap-v227) !important;
+    width: calc(100vw - 32px) !important;
+    max-width: min(620px, calc(100vw - 32px)) !important;
+    height: var(--nav-visual-height-v227) !important;
+    min-height: var(--nav-visual-height-v227) !important;
+    max-height: var(--nav-visual-height-v227) !important;
+    margin: 0 !important;
+    padding: 7px 8px !important;
+    border-radius: 28px !important;
+    overflow: hidden !important;
+    transform: translate3d(-50%, 0, 0) !important;
+    contain: layout paint !important;
+  }
+
+  .nav-scroll {
+    height: var(--nav-inner-height-v227) !important;
+    min-height: var(--nav-inner-height-v227) !important;
+    max-height: var(--nav-inner-height-v227) !important;
+    overflow: hidden !important;
+  }
+
+  .nav-item {
+    height: var(--nav-inner-height-v227) !important;
+    min-height: var(--nav-inner-height-v227) !important;
+    max-height: var(--nav-inner-height-v227) !important;
+    padding: 4px 5px !important;
+  }
+
+  .nav-item.active .nav-icon,
+  .nav-item.active .nav-icon.mini-module-icon,
+  .nav-item.active .nav-icon.module-illustration-slot {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+  }
+
+  .nav-item:not(.active) .nav-icon,
+  .nav-item:not(.active) .nav-icon.mini-module-icon,
+  .nav-item:not(.active) .nav-icon.module-illustration-slot {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+  }
+
+  .nav-item span:last-child {
+    font-size: .77rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .app-shell.home-app-shell {
+    padding-bottom: calc(var(--nav-visual-height-v227) + var(--nav-bottom-gap-v227) + 18px) !important;
+  }
+}
+
+.finance-toolbar,
+.finance-month-form,
+.finance-month-form .form-grid,
+.finance-month-form .field,
+.finance-month-form .input,
+.finance-month-form input[type="month"],
+.finance-panel.panel-add .spaced-form,
+.finance-panel.panel-add .spaced-form .form-grid,
+.finance-panel.panel-add .spaced-form .field,
+.finance-panel.panel-add .spaced-form input,
+.finance-panel.panel-add .spaced-form select {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.finance-toolbar,
+.finance-month-form,
+.finance-month-form .form-grid,
+.finance-month-form .field {
+  width: 100% !important;
+  overflow: clip !important;
+}
+
+.finance-month-form .form-grid.two {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.finance-month-form .input,
+.finance-month-form input[type="month"] {
+  display: block !important;
+  inline-size: 100% !important;
+  width: 100% !important;
+  min-inline-size: 0 !important;
+  max-inline-size: 100% !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  text-align: center !important;
+}
+
+.finance-month-form .item-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  gap: 8px !important;
+}
+
+.finance-month-form .item-actions .ghost-btn {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding-inline: 5px !important;
+  justify-content: center !important;
+}
+
+.finance-panel.panel-add .spaced-form .form-grid.two {
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: 100% !important;
+  overflow: clip !important;
+}
+
+.finance-panel.panel-add .spaced-form input[type="date"] {
+  display: block !important;
+  width: 100% !important;
+  inline-size: 100% !important;
+  min-inline-size: 0 !important;
+  max-inline-size: 100% !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  text-align: center !important;
 }
 
 @media (min-width: 520px) {
