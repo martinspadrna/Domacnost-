@@ -16066,7 +16066,7 @@ body {
 }
 
 
-/* Domácnost+ v.0.1_248 – Home panely: sjednocené dlouhé podržení */
+/* Domácnost+ v.0.1_249 – Home panely: sjednocené dlouhé podržení */
 .home-minimal-hero .station-summary-item[data-home-hero-id] {
   -webkit-user-select: none;
   user-select: none;
@@ -16076,4 +16076,245 @@ body {
 
 .home-minimal-hero.home-hero-editing .station-summary-item[data-home-hero-id] {
   cursor: grab;
+}
+
+
+/* Domácnost+ v.0.1_249 – Odečty + tablet počasí */
+.readings-module .panel-overview,
+.readings-module .panel-meters,
+.readings-module .panel-history {
+  overflow: hidden;
+}
+.readings-meter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.reading-meter-card {
+  border: 1px solid rgba(148, 163, 184, .22);
+  border-radius: 24px;
+  padding: 14px;
+  background: linear-gradient(145deg, rgba(255,255,255,.78), rgba(239,246,255,.54));
+  box-shadow: 0 16px 34px rgba(15, 23, 42, .08);
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+[data-theme="dark"] .reading-meter-card {
+  background: linear-gradient(145deg, rgba(15,23,42,.78), rgba(30,41,59,.62));
+  border-color: rgba(148, 163, 184, .18);
+}
+.reading-meter-top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.reading-meter-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(14, 165, 233, .14);
+  font-size: 1.35rem;
+}
+.reading-meter-gas .reading-meter-icon { background: rgba(249, 115, 22, .15); }
+.reading-meter-water .reading-meter-icon { background: rgba(59, 130, 246, .15); }
+.reading-meter-top strong,
+.reading-meter-top em {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reading-meter-top em {
+  color: var(--muted);
+  font-style: normal;
+  font-size: .82rem;
+  margin-top: 2px;
+}
+.reading-meter-value {
+  padding: 12px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.58);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: end;
+}
+[data-theme="dark"] .reading-meter-value { background: rgba(15,23,42,.4); }
+.reading-meter-value strong {
+  font-size: clamp(1.25rem, 4vw, 1.9rem);
+  line-height: 1;
+}
+.reading-meter-value span {
+  color: var(--muted);
+  font-size: .82rem;
+  text-align: right;
+}
+.readings-kpi-grid {
+  margin-bottom: 8px;
+}
+.readings-form .form-grid.two {
+  align-items: end;
+}
+.reading-entry-item .item-title span {
+  margin-right: 4px;
+}
+.app-shell.home-app-shell .hero-weather-copy,
+.home-minimal-hero .hero-weather-copy {
+  min-width: 0;
+  overflow: visible;
+}
+.app-shell.home-app-shell .hero-weather-copy strong,
+.app-shell.home-app-shell .hero-weather-copy em,
+.app-shell.home-app-shell .hero-weather-copy small,
+.home-minimal-hero .hero-weather-copy strong,
+.home-minimal-hero .hero-weather-copy em,
+.home-minimal-hero .hero-weather-copy small {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  line-height: 1.15;
+}
+@media (min-width: 700px) and (max-width: 1100px) {
+  .app-shell.home-app-shell .hero-weather-pill,
+  .home-minimal-hero .hero-weather-pill {
+    min-height: 86px;
+    align-items: center;
+  }
+  .app-shell.home-app-shell .hero-weather-copy em,
+  .home-minimal-hero .hero-weather-copy em {
+    font-size: clamp(.78rem, 1.35vw, .96rem) !important;
+  }
+}
+@media (max-width: 560px) {
+  .readings-meter-grid {
+    grid-template-columns: 1fr;
+  }
+  .reading-meter-top {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .reading-meter-top .badge {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .reading-meter-value {
+    align-items: start;
+    flex-direction: column;
+  }
+  .reading-meter-value span {
+    text-align: left;
+  }
+}
+
+/* Domácnost+ v.0.1_250 – Odečty: graf spotřeby a ceny */
+.readings-tab-overview .readings-panel:not(.panel-overview),
+.readings-tab-meters .readings-panel:not(.panel-meters),
+.readings-tab-history .readings-panel:not(.panel-history) {
+  display: none;
+}
+.reading-meter-pricing {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: 16px;
+  background: rgba(14, 165, 233, .08);
+  color: var(--muted);
+  font-size: .82rem;
+  min-width: 0;
+}
+.reading-meter-pricing span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reading-meter-pricing strong {
+  flex: 0 0 auto;
+  color: var(--text);
+  font-size: .9rem;
+}
+[data-theme="dark"] .reading-meter-pricing {
+  background: rgba(14, 165, 233, .12);
+}
+.readings-chart {
+  display: grid;
+  gap: 12px;
+}
+.reading-chart-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.1fr) minmax(120px, 2fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 18px;
+  background: rgba(255,255,255,.48);
+}
+[data-theme="dark"] .reading-chart-row {
+  background: rgba(15,23,42,.42);
+}
+.reading-chart-label {
+  min-width: 0;
+}
+.reading-chart-label strong,
+.reading-chart-label span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reading-chart-label span {
+  color: var(--muted);
+  font-size: .78rem;
+  margin-top: 2px;
+}
+.reading-chart-track {
+  height: 13px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, .18);
+  overflow: hidden;
+}
+.reading-chart-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(14,165,233,.82), rgba(34,197,94,.78));
+}
+.reading-chart-values {
+  display: grid;
+  gap: 2px;
+  justify-items: end;
+  white-space: nowrap;
+}
+.reading-chart-values strong {
+  font-size: .92rem;
+}
+.reading-chart-values span {
+  color: var(--muted);
+  font-size: .78rem;
+}
+@media (max-width: 640px) {
+  .reading-meter-pricing {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .reading-meter-pricing span {
+    white-space: normal;
+  }
+  .reading-chart-row {
+    grid-template-columns: 1fr;
+  }
+  .reading-chart-values {
+    justify-items: start;
+    grid-auto-flow: column;
+    justify-content: space-between;
+  }
 }
