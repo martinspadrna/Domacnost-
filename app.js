@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_260';
+  const APP_VERSION = 'Domácnost+ v.0.1_261';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -700,8 +700,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 260,
-      mode: 'readings-performance-v260',
+      appBuild: 261,
+      mode: 'readings-costs-performance-v261',
       createdAt: '',
       updatedAt: ''
     },
@@ -750,6 +750,7 @@
     readingMeters: [],
     readings: [],
     readingPrices: { electricityT1: '', electricityT2: '', water: '', gas: '', updatedAt: '' },
+    readingDeposits: { electricity: '', gas: '', water: '', updatedAt: '' },
     readingsCloud: { loadedAt: '' },
     notes: [],
     warranties: [],
@@ -1589,8 +1590,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 260,
-      mode: 'readings-performance-v260',
+      appBuild: 261,
+      mode: 'readings-costs-performance-v261',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5160,7 +5161,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_260', note: 'Hotfix Odečty/Měřidla: zrychlený render měřidel, editace se načítá až po kliknutí na konkrétní měřidlo a opakované výpočty odečtů se cacheují během renderu.' },
+      { title: 'Domácnost+ v.0.1_261', note: 'Odečty: rychlejší lazy render záložek, grafy a přehledy počítají měsíční průměry včetně jednotek, globální ceny slouží jako fallback a přibyl přehled záloh vs. odhad nákladů.' },
       { title: 'Domácnost+ v.0.1_259', note: 'Odečty: měřidla mají samostatné stránky Import, Přidat měřidlo a Ceny; globální průměrné ceny se používají jako fallback a podrobné ceny jsou přehledně podle typu měřidla.' },
       { title: 'Domácnost+ v.0.1_258', note: 'Odečty: grafy ukazují měsíční průměry s jednotkami a obdobím, rychlý odečet nepřetéká přes kraj a prázdná cena přebírá poslední známou cenu.' },
       { title: 'Domácnost+ v.0.1_257', note: 'Odečty: přibyla záložka Odečet pro rychlé měsíční zadání, detail má čárové grafy a porovnání měřidel, akce měřidel jsou jen v záložce Měřidla.' },
@@ -7695,6 +7696,25 @@
     };
   }
 
+  function normalizeReadingDeposits(item = {}) {
+    return {
+      electricity: normalizeReadingPricePart(item.electricity),
+      gas: normalizeReadingPricePart(item.gas),
+      water: normalizeReadingPricePart(item.water),
+      updatedAt: normalizeText(item.updatedAt)
+    };
+  }
+
+  function readingDepositForType(type = '') {
+    state.readingDeposits = normalizeReadingDeposits(state.readingDeposits || {});
+    const value = state.readingDeposits[String(type || '')];
+    return value !== '' && value >= 0 ? value : '';
+  }
+
+  function readingTypeCostLabel(type = '') {
+    return readingTypeMeta(type).label;
+  }
+
   function readingGlobalAverageUnitPrice(type = '', registerLabel = '') {
     state.readingPrices = normalizeReadingPrices(state.readingPrices || {});
     const register = normalizeText(registerLabel).toUpperCase();
@@ -8096,7 +8116,9 @@
           const monthsSpan = readingMonthsBetweenDates(previous.date, entry.date);
           const monthlyUsage = monthsSpan > 0 ? totalUsage / monthsSpan : totalUsage;
           const unitPrice = readingUnitPriceForEntry(entry, meter);
-          const variableMonthlyCost = monthlyUsage > 0 && unitPrice !== '' ? monthlyUsage * unitPrice : 0;
+          const fixedMonthlyCost = readingFixedMonthlyCost(meter);
+          const hasUnitPrice = unitPrice !== '';
+          const variableMonthlyCost = monthlyUsage > 0 && hasUnitPrice ? monthlyUsage * unitPrice : 0;
           const key = `${meter.id}|${month}`;
           const periodLabel = readingDateRangeLabel(previous.date, entry.date);
           const current = map.get(key) || {
@@ -8113,10 +8135,12 @@
             periodStart: previous.date,
             periodEnd: entry.date,
             unitPrice,
-            fixedMonthlyCost: readingFixedMonthlyCost(meter),
-            cost: readingFixedMonthlyCost(meter),
+            fixedMonthlyCost,
+            cost: fixedMonthlyCost,
+            hasCost: fixedMonthlyCost > 0,
             entryId: entry.id,
-            registers: []
+            registers: [],
+            registerValues: []
           };
           current.value += monthlyUsage;
           current.totalValue += totalUsage;
@@ -8125,7 +8149,9 @@
           current.periodEnd = !current.periodEnd || String(entry.date || '') > String(current.periodEnd || '') ? entry.date : current.periodEnd;
           current.periodLabel = readingDateRangeLabel(current.periodStart, current.periodEnd);
           if (registerLabel && !current.registers.includes(registerLabel)) current.registers.push(registerLabel);
+          if (registerLabel) current.registerValues.push({ register: registerLabel, value: monthlyUsage, unitPrice: hasUnitPrice ? unitPrice : '' });
           if (unitPrice !== '') current.unitPrice = unitPrice;
+          if (hasUnitPrice) current.hasCost = true;
           current.cost += variableMonthlyCost;
           current.entryId = entry.id;
           map.set(key, current);
@@ -8139,7 +8165,10 @@
         totalValue: Number((row.totalValue || row.value).toFixed(3)),
         monthsSpan: Number((row.monthsSpan || 1).toFixed(2)),
         periodLabel: row.periodLabel || readingDateRangeLabel(row.periodStart, row.periodEnd),
-        cost: Number(row.cost.toFixed(2))
+        cost: Number(row.cost.toFixed(2)),
+        hasCost: Boolean(row.hasCost),
+        registers: Array.isArray(row.registers) ? row.registers : [],
+        registerValues: Array.isArray(row.registerValues) ? row.registerValues.map((item) => ({ ...item, value: Number(Number(item.value || 0).toFixed(3)) })) : []
       }))
       .sort((a, b) => String(b.month).localeCompare(String(a.month)) || String(a.meterName).localeCompare(String(b.meterName), 'cs'));
   }
@@ -8149,16 +8178,63 @@
     const map = new Map();
     readingsConsumptionRows().forEach((row) => {
       const key = `${row.month}|${row.type}|${row.unit}`;
-      const current = map.get(key) || { month: row.month, type: row.type, unit: row.unit, value: 0, totalValue: 0, cost: 0, periods: [] };
+      const current = map.get(key) || { month: row.month, type: row.type, unit: row.unit, value: 0, totalValue: 0, cost: 0, hasCost: false, periods: [] };
       current.value += Math.max(0, row.value);
       current.totalValue += Math.max(0, row.totalValue || 0);
       current.cost += Math.max(0, row.cost || 0);
+      if (row.hasCost) current.hasCost = true;
       if (row.periodLabel && !current.periods.includes(row.periodLabel)) current.periods.push(row.periodLabel);
       map.set(key, current);
     });
     return [...map.values()].sort((a, b) => String(b.month).localeCompare(String(a.month))).slice(0, 12);
   }
 
+
+  function readingCostValueLabel(row = {}) {
+    if (!row || !row.hasCost) return 'bez ceny';
+    return `${readingMoney(row.cost)}/měs.`;
+  }
+
+  function readingCostSummaryRows(monthRows = []) {
+    const latestByType = new Map();
+    monthRows.forEach((row) => {
+      if (!latestByType.has(row.type)) latestByType.set(row.type, row);
+    });
+    return READING_TYPE_OPTIONS.map(([type]) => {
+      const row = latestByType.get(type) || null;
+      const deposit = readingDepositForType(type);
+      const estimate = row?.hasCost ? Number(row.cost || 0) : null;
+      const diff = estimate !== null && deposit !== '' ? deposit - estimate : null;
+      return { type, row, deposit, estimate, diff };
+    });
+  }
+
+  function renderReadingsCostSummary(monthRows = []) {
+    const rows = readingCostSummaryRows(monthRows);
+    return `<div class="readings-cost-summary">
+      ${rows.map((item) => {
+        const meta = readingTypeMeta(item.type);
+        const hasDeposit = item.deposit !== '';
+        const diffLabel = item.diff === null ? 'bez porovnání' : `${item.diff >= 0 ? '+' : ''}${readingMoney(item.diff)}/měs.`;
+        const diffClass = item.diff === null ? '' : item.diff >= 0 ? 'good' : 'danger';
+        return `<article class="mini-stat readings-cost-card">
+          <span>${escapeHtml(meta.icon)} ${escapeHtml(meta.label)}</span>
+          <strong>${item.estimate === null ? 'bez ceny' : `${readingMoney(item.estimate)}/měs.`}</strong>
+          <small>záloha: ${hasDeposit ? `${readingMoney(item.deposit)}/měs.` : 'nenastavená'}${item.diff !== null ? ` · rozdíl <b class="${diffClass}">${diffLabel}</b>` : ''}</small>
+        </article>`;
+      }).join('')}
+    </div>`;
+  }
+
+  function readingLastMonthDisplay(row = null, meter = null) {
+    if (!row) return '';
+    const registers = Array.isArray(row.registerValues) ? row.registerValues : [];
+    const registerText = registers.length
+      ? ` · ${registers.map((item) => `${item.register} ${readingMonthlyValue(item.value, meter?.unit || row.unit || '')}`).join(' + ')}`
+      : '';
+    const costText = row.hasCost ? ` · ${readingMoney(row.cost)}/měs.` : ' · bez ceny';
+    return `měsíční průměr ${readingMonthlyValue(row.value, meter?.unit || row.unit || '')}${registerText}${costText}`;
+  }
 
   function readingsChartRows(limit = 12) {
     return readingsConsumptionRows().slice(0, limit).reverse();
@@ -8168,6 +8244,7 @@
     state.readingMeters = readingsMeters(true);
     state.readings = readingsEntries();
     state.readingPrices = normalizeReadingPrices(state.readingPrices || {});
+    state.readingDeposits = normalizeReadingDeposits(state.readingDeposits || {});
     state.readingsCloud = { ...(state.readingsCloud || {}), pendingAt: cloudReady() ? new Date().toISOString() : '' };
     touchState();
     saveState();
@@ -8182,18 +8259,26 @@
 
   function renderReadingGlobalPricesPanel() {
     state.readingPrices = normalizeReadingPrices(state.readingPrices || {});
+    state.readingDeposits = normalizeReadingDeposits(state.readingDeposits || {});
     return `
       <section class="soft-panel readings-tool-page readings-prices-page">
-        <div class="card-subheader"><div><h3>Ceny</h3><p>Globální průměrné ceny za jednotku. Použijí se jen tam, kde měřidlo nemá vlastní podrobnější cenu.</p></div></div>
+        <div class="card-subheader"><div><h3>Ceny a zálohy</h3><p>Globální průměrné ceny se použijí jen tam, kde měřidlo nemá vlastní podrobnější cenu. Zálohy slouží pro rychlé porovnání odhadu nákladů.</p></div></div>
         <form data-form="update-reading-prices" class="compact-form readings-form">
+          <div class="mini-section-title">Průměrné ceny za jednotku</div>
           <div class="form-grid two">
             ${field('Elektřina T1', 'electricityT1', 'text', 'Kč/kWh', false, state.readingPrices.electricityT1 ?? '', 'decimal')}
             ${field('Elektřina T2', 'electricityT2', 'text', 'Kč/kWh', false, state.readingPrices.electricityT2 ?? '', 'decimal')}
             ${field('Voda', 'water', 'text', 'Kč/m³', false, state.readingPrices.water ?? '', 'decimal')}
             ${field('Plyn', 'gas', 'text', 'Kč/m³ nebo Kč/kWh', false, state.readingPrices.gas ?? '', 'decimal')}
           </div>
-          <p class="small-muted">Zadej jednoduchý průměr z vyúčtování. Pokud chceš přesnější rozpad ceny, nastav ho přímo u konkrétního měřidla v jeho úpravě.</p>
-          <div class="form-actions"><button class="primary-btn" type="submit">Uložit ceny</button></div>
+          <div class="mini-section-title">Měsíční zálohy</div>
+          <div class="form-grid two">
+            ${field('Záloha elektřina', 'depositElectricity', 'text', 'Kč/měsíc', false, state.readingDeposits.electricity ?? '', 'decimal')}
+            ${field('Záloha plyn', 'depositGas', 'text', 'Kč/měsíc', false, state.readingDeposits.gas ?? '', 'decimal')}
+            ${field('Záloha voda', 'depositWater', 'text', 'Kč/měsíc', false, state.readingDeposits.water ?? '', 'decimal')}
+          </div>
+          <p class="small-muted">Když není cena zadaná přímo u měřidla nebo u odečtu, použije se tady zadaný průměr. U elektřiny se T1/T2 počítá zvlášť a v přehledu se ukazuje součet tarifů.</p>
+          <div class="form-actions"><button class="primary-btn" type="submit">Uložit ceny a zálohy</button></div>
         </form>
       </section>`;
   }
@@ -8233,15 +8318,22 @@
   }
 
   async function updateReadingPricesFromForm(data, form) {
+    const updatedAt = new Date().toISOString();
     state.readingPrices = normalizeReadingPrices({
       electricityT1: data.electricityT1,
       electricityT2: data.electricityT2,
       water: data.water,
       gas: data.gas,
-      updatedAt: new Date().toISOString()
+      updatedAt
+    });
+    state.readingDeposits = normalizeReadingDeposits({
+      electricity: data.depositElectricity,
+      gas: data.depositGas,
+      water: data.depositWater,
+      updatedAt
     });
     form?.reset?.();
-    await persistReadingsState('Ceny uložené');
+    await persistReadingsState('Ceny a zálohy uložené');
   }
 
   async function addReadingMeterFromForm(data, form) {
@@ -8799,8 +8891,10 @@
     const meta = readingTypeMeta(meter.type);
     const stats = options.stats || readingMeterStats(meter, options.consumptionRows || null);
     const latest = stats.latest;
-    const deltaLabel = stats.delta === null ? 'první odečet' : `+${readingValue(Math.max(0, stats.delta), meter.unit)} od minula`;
     const lastMonth = options.lastMonth || null;
+    const deltaLabel = lastMonth
+      ? readingLastMonthDisplay(lastMonth, meter)
+      : (stats.delta === null ? 'první odečet' : `+${readingValue(Math.max(0, stats.delta), meter.unit)} od minula`);
     const isEditing = showManage && readingsEditingMeterId === meter.id;
     return `
       <article class="reading-meter-card reading-meter-${escapeHtml(meta.className)} ${meter.archived ? 'muted-item' : ''} ${isEditing ? 'is-editing' : ''}">
@@ -8810,7 +8904,7 @@
           <span class="badge ${latest ? 'good' : ''}">${latest ? escapeHtml(formatDate(latest.date)) : 'bez odečtu'}</span>
         </div>
         <div class="reading-meter-value"><strong>${escapeHtml(readingMeterLatestDisplay(meter))}</strong><span>${escapeHtml(deltaLabel)}</span></div>
-        <div class="reading-meter-pricing"><span>${escapeHtml(readingPricingLabel(meter))}</span>${lastMonth ? `<strong>${readingMoney(lastMonth.cost)}/měs.</strong>` : ''}</div>
+        <div class="reading-meter-pricing"><span>${escapeHtml(readingPricingLabel(meter))}</span>${lastMonth ? `<strong>${lastMonth.hasCost ? `${readingMoney(lastMonth.cost)}/měs.` : 'bez ceny'}</strong>` : ''}</div>
         <div class="item-meta">${meter.serial ? `Číslo: ${escapeHtml(meter.serial)} · ` : ''}${stats.rows.length} odečtů${lastMonth ? ` · průměr ${readingMonthlyValue(lastMonth.value, meter.unit)} · ${escapeHtml(lastMonth.periodLabel || financeMonthLabel(lastMonth.month))}` : ''}${meter.note ? ` · ${escapeHtml(meter.note)}` : ''}</div>
         ${showManage ? `<div class="item-actions"><button class="ghost-btn" type="button" data-action="toggle-reading-meter-edit" data-id="${escapeHtml(meter.id)}">${isEditing ? 'Zavřít úpravu' : 'Upravit'}</button><button class="ghost-btn" type="button" data-action="toggle-reading-meter" data-id="${escapeHtml(meter.id)}">${meter.archived ? 'Vrátit' : 'Archivovat'}</button><button class="danger-btn" type="button" data-action="delete-reading-meter" data-id="${escapeHtml(meter.id)}">Smazat</button></div>
         ${isEditing ? `<div class="action-details compact-edit-details readings-form-drawer reading-meter-edit-drawer open">
@@ -8945,7 +9039,7 @@
         return `<div class="reading-chart-row" role="listitem">
           <div class="reading-chart-label"><strong>${escapeHtml(meta.icon)} ${escapeHtml(row.meterName || meter?.name || meta.label)}</strong><span>průměr za měsíc · ${escapeHtml(interval)}${row.registers?.length ? ` · ${escapeHtml(row.registers.join('+'))}` : ''}</span></div>
           <div class="reading-chart-track"><span style="width:${width}%"></span></div>
-          <div class="reading-chart-values"><strong>${readingMonthlyValue(row.value, row.unit)}</strong>${row.cost ? `<span>${readingMoney(row.cost)}/měs.</span>` : ''}</div>
+          <div class="reading-chart-values"><strong>${readingMonthlyValue(row.value, row.unit)}</strong>${row.hasCost ? `<span>${readingMoney(row.cost)}/měs.</span>` : '<span>bez ceny</span>'}</div>
         </div>`;
       }).join('')}
     </div>`;
@@ -9053,36 +9147,33 @@
   }
 
   function renderReadings() {
-    const activeTab = getModuleTab('readings', 'overview');
+    let activeTab = getModuleTab('readings', 'overview');
+    if (!['overview', 'entry', 'detail', 'meters', 'history'].includes(activeTab)) activeTab = 'overview';
     const meters = readingsMeters();
-    const allMeters = readingsMeters(true);
-    const entries = readingsEntries();
-    const consumptionRows = readingsConsumptionRows();
+    const allMeters = activeTab === 'meters' ? readingsMeters(true) : readingsMeters(true);
+    const entriesCount = Array.isArray(state.readings) ? state.readings.length : 0;
+    const dueMetersCount = meters.filter((meter) => !readingMeterHasCompleteMonthEntry(meter)).length;
     const latestCount = meters.filter((meter) => latestReadingForMeter(meter.id)).length;
-    const monthRows = readingsMonthlyRows();
-    const chartRows = readingsChartRows(12);
-    const dueMeters = meters.filter((meter) => !readingMeterHasCompleteMonthEntry(meter));
-    const meterStatsMap = new Map(allMeters.map((meter) => [meter.id, readingMeterStats(meter, consumptionRows)]));
-    const lastMonthMap = new Map();
-    consumptionRows.forEach((row) => { if (!lastMonthMap.has(row.meterId)) lastMonthMap.set(row.meterId, row); });
-    const priceFormBlock = renderReadingPriceFormBlock();
-    return `
-      ${renderSectionTabs('readings', [
-        { id: 'overview', label: 'Přehled', icon: '📊', count: latestCount },
-        { id: 'entry', label: 'Odečet', icon: '➕', count: dueMeters.length },
-        { id: 'detail', label: 'Detail', icon: '📉', count: meters.length },
-        { id: 'meters', label: 'Měřidla', icon: '🧮', count: allMeters.length },
-        { id: 'history', label: 'Historie', icon: '📈', count: entries.length }
-      ], 'overview')}
-      <div class="grid two module-tabbed readings-module readings-tab-${escapeHtml(activeTab)}" data-tab-area="readings">
-        <section class="card desktop-span-2 readings-panel panel-overview">
-          <div class="card-header"><div><h2>Odečty</h2><p>Elektřina, plyn a voda v jednom přehledu. Zapíšeš stav a aplikace ukáže rozdíl od minula.</p></div><span class="badge ${cloudReady() ? 'good' : ''}">${cloudReady() ? 'cloud domácnost' : 'lokálně'}</span></div>
-          ${meters.length ? `<div class="readings-meter-grid">${meters.map((meter) => renderReadingMeterCard(meter, { context: 'overview', stats: meterStatsMap.get(meter.id), lastMonth: lastMonthMap.get(meter.id), consumptionRows })).join('')}</div>` : renderEmpty('Zatím žádné měřidlo. Přidání je v záložce Měřidla nahoře.')}
-        </section>
+    const tabs = renderSectionTabs('readings', [
+      { id: 'overview', label: 'Přehled', icon: '📊', count: latestCount },
+      { id: 'entry', label: 'Odečet', icon: '➕', count: dueMetersCount },
+      { id: 'detail', label: 'Detail', icon: '📉', count: meters.length },
+      { id: 'meters', label: 'Měřidla', icon: '🧮', count: allMeters.length },
+      { id: 'history', label: 'Historie', icon: '📈', count: entriesCount }
+    ], 'overview');
 
-        <section class="card desktop-span-2 readings-panel panel-entry">
-          <div class="card-header"><div><h2>Odečet</h2><p>Rychlé zadání aktuálního stavu. Hotová měřidla pro aktuální měsíc se schovají.</p></div><span class="badge">${dueMeters.length} čeká</span></div>
-          ${renderReadingsEntryPanel(meters)}
+    let content = '';
+    if (activeTab === 'overview') {
+      const consumptionRows = readingsConsumptionRows();
+      const monthRows = readingsMonthlyRows();
+      const chartRows = readingsChartRows(12);
+      const meterStatsMap = new Map(meters.map((meter) => [meter.id, readingMeterStats(meter, consumptionRows)]));
+      const lastMonthMap = new Map();
+      consumptionRows.forEach((row) => { if (!lastMonthMap.has(row.meterId)) lastMonthMap.set(row.meterId, row); });
+      content = `
+        <section class="card desktop-span-2 readings-panel panel-overview">
+          <div class="card-header"><div><h2>Odečty</h2><p>Elektřina, plyn a voda v jednom přehledu. U dvoutarifní elektřiny se v souhrnu počítá T1 + T2 dohromady, detail tarifů zůstává vidět v textu.</p></div><span class="badge ${cloudReady() ? 'good' : ''}">${cloudReady() ? 'cloud domácnost' : 'lokálně'}</span></div>
+          ${meters.length ? `<div class="readings-meter-grid">${meters.map((meter) => renderReadingMeterCard(meter, { context: 'overview', stats: meterStatsMap.get(meter.id), lastMonth: lastMonthMap.get(meter.id), consumptionRows })).join('')}</div>` : renderEmpty('Zatím žádné měřidlo. Přidání je v záložce Měřidla nahoře.')}
         </section>
 
         <section class="card readings-panel panel-overview">
@@ -9091,30 +9182,49 @@
         </section>
 
         <section class="card readings-panel panel-overview">
-          <div class="card-header"><div><h2>Průměr a náklady po měsících</h2><p>Součet měsíčních průměrů podle typu měřidla včetně odhadu ceny.</p></div></div>
-          ${monthRows.length ? `<div class="list compact-list">${monthRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(readingTypeMeta(row.type).icon)} ${escapeHtml(readingTypeMeta(row.type).label)}</div><span class="badge">${readingMonthlyValue(row.value, row.unit)}</span></div><div class="item-meta">${escapeHtml(financeMonthLabel(row.month))}${row.periods?.length ? ` · ${escapeHtml(row.periods.slice(0, 2).join('; '))}` : ''}${row.cost ? ` · odhad ${readingMoney(row.cost)}/měs.` : ''}</div></div>`).join('')}</div>` : renderEmpty('Jakmile budou aspoň dva odečty na jednom měřidle, zobrazí se tady průměrná měsíční spotřeba.')}
-        </section>
-
+          <div class="card-header"><div><h2>Zálohy vs. odhad</h2><p>Porovnání posledního měsíčního odhadu nákladů proti zadaným zálohám.</p></div></div>
+          ${renderReadingsCostSummary(monthRows)}
+          <div class="card-subheader compact-subheader"><div><h3>Průměr a náklady po měsících</h3><p>Součet měsíčních průměrů podle typu měřidla včetně odhadu ceny.</p></div></div>
+          ${monthRows.length ? `<div class="list compact-list">${monthRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(readingTypeMeta(row.type).icon)} ${escapeHtml(readingTypeMeta(row.type).label)}</div><span class="badge">${readingMonthlyValue(row.value, row.unit)}</span></div><div class="item-meta">${escapeHtml(financeMonthLabel(row.month))}${row.periods?.length ? ` · ${escapeHtml(row.periods.slice(0, 2).join('; '))}` : ''} · odhad ${escapeHtml(readingCostValueLabel(row))}</div></div>`).join('')}</div>` : renderEmpty('Jakmile budou aspoň dva odečty na jednom měřidle, zobrazí se tady průměrná měsíční spotřeba.')}
+        </section>`;
+    } else if (activeTab === 'entry') {
+      content = `
+        <section class="card desktop-span-2 readings-panel panel-entry">
+          <div class="card-header"><div><h2>Odečet</h2><p>Rychlé zadání aktuálního stavu. Hotová měřidla pro aktuální měsíc se schovají.</p></div><span class="badge">${dueMetersCount} čeká</span></div>
+          ${renderReadingsEntryPanel(meters)}
+        </section>`;
+    } else if (activeTab === 'detail') {
+      content = `
         <section class="card desktop-span-2 readings-panel panel-detail">
           <div class="card-header"><div><h2>Detail</h2><p>Graf spotřeby jednoho měřidla, období a porovnání více měřidel.</p></div></div>
           ${renderReadingDetailPanel(meters)}
-        </section>
-
+        </section>`;
+    } else if (activeTab === 'meters') {
+      const priceFormBlock = readingsMeterToolPage === 'add' ? renderReadingPriceFormBlock() : '';
+      content = `
         <section class="card desktop-span-2 readings-panel panel-meters">
           <div class="card-header"><div><h2>Měřidla</h2><p>Elektroměr, plynoměr, vodoměr nebo více vodoměrů v bytě/domě.</p></div><span class="badge">${allMeters.length}</span></div>
           <div class="readings-meter-tools readings-meter-tool-tabs">
             <button class="readings-tool-card ${readingsMeterToolPage === 'import' ? 'active' : ''}" type="button" data-action="set-reading-meter-tool" data-tool="import"><strong>Import</strong><span>z Domácí odečty</span></button>
             <button class="readings-tool-card ${readingsMeterToolPage === 'add' ? 'active' : ''}" type="button" data-action="set-reading-meter-tool" data-tool="add"><strong>Přidat měřidlo</strong><span>elektřina, plyn, voda</span></button>
-            <button class="readings-tool-card ${readingsMeterToolPage === 'prices' ? 'active' : ''}" type="button" data-action="set-reading-meter-tool" data-tool="prices"><strong>Ceny</strong><span>globální průměry</span></button>
+            <button class="readings-tool-card ${readingsMeterToolPage === 'prices' ? 'active' : ''}" type="button" data-action="set-reading-meter-tool" data-tool="prices"><strong>Ceny</strong><span>průměry a zálohy</span></button>
           </div>
           ${renderReadingsMeterToolPage(readingsMeterToolPage, priceFormBlock)}
           ${allMeters.length ? `<div class="readings-meter-grid">${allMeters.map((meter) => renderReadingMeterCard(meter, { context: 'meters' })).join('')}</div>` : renderEmpty('Zatím není přidané žádné měřidlo.')}
-        </section>
-
+        </section>`;
+    } else {
+      const entries = readingsEntries();
+      content = `
         <section class="card desktop-span-2 readings-panel panel-history">
           <div class="card-header"><div><h2>Historie odečtů</h2><p>Poslední zapsané stavy a rozdíl proti předchozímu odečtu.</p></div><span class="badge">${entries.length}</span></div>
           ${entries.length ? `<div class="list compact-list readings-history-list">${entries.slice(0, 80).map(renderReadingEntryItem).join('')}</div>` : renderEmpty('Historie je zatím prázdná.')}
-        </section>
+        </section>`;
+    }
+
+    return `
+      ${tabs}
+      <div class="grid two module-tabbed readings-module readings-tab-${escapeHtml(activeTab)}" data-tab-area="readings">
+        ${content}
       </div>`;
   }
 
@@ -12207,7 +12317,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 260))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 261))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -17903,7 +18013,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 260, mode: 'rich-demo-v260', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 261, mode: 'rich-demo-v261', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -18056,7 +18166,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 260, mode: 'readings-performance-v260', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 261, mode: 'readings-costs-performance-v261', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -21386,7 +21496,8 @@
     if (Array.isArray(layout.readingMeters)) state.readingMeters = layout.readingMeters.map(normalizeReadingMeter);
     if (Array.isArray(layout.readings)) state.readings = layout.readings.map(normalizeReadingEntry).filter((entry) => entry.meterId);
     if (layout.readingPrices && typeof layout.readingPrices === 'object') state.readingPrices = normalizeReadingPrices({ ...state.readingPrices, ...layout.readingPrices });
-    if (Array.isArray(layout.readingMeters) || Array.isArray(layout.readings) || layout.readingPrices) state.readingsCloud = { ...(state.readingsCloud || {}), loadedAt: new Date().toISOString() };
+    if (layout.readingDeposits && typeof layout.readingDeposits === 'object') state.readingDeposits = normalizeReadingDeposits({ ...state.readingDeposits, ...layout.readingDeposits });
+    if (Array.isArray(layout.readingMeters) || Array.isArray(layout.readings) || layout.readingPrices || layout.readingDeposits) state.readingsCloud = { ...(state.readingsCloud || {}), loadedAt: new Date().toISOString() };
     if (Array.isArray(layout.subscriptions)) state.subscriptions = layout.subscriptions.map(normalizeSubscriptionService);
     if (Array.isArray(layout.subscriptionPeople)) state.subscriptionPeople = layout.subscriptionPeople.map(normalizeSubscriptionPerson);
     if (Array.isArray(layout.subscriptionPayments)) state.subscriptionPayments = layout.subscriptionPayments.map(normalizeSubscriptionPayment).filter((payment) => payment.subscriptionId && payment.personId && payment.amount > 0);
@@ -21433,6 +21544,7 @@
         readingMeters: readingsMeters(true),
         readings: readingsEntries(),
         readingPrices: normalizeReadingPrices(state.readingPrices || {}),
+        readingDeposits: normalizeReadingDeposits(state.readingDeposits || {}),
         subscriptionPeople: getSubscriptionPeople(),
         subscriptions: getSubscriptionServices(),
         subscriptionPayments: getSubscriptionPayments(),
@@ -21447,7 +21559,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 260
+        appBuild: 261
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -22041,7 +22153,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-260-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-261-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -22465,7 +22577,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_260</span>
+          <span class="badge">Domácnost+ v.0.1_261</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

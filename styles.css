@@ -17009,3 +17009,41 @@ body {
   color: var(--muted);
   font-weight: 600;
 }
+
+/* Domácnost+ v.0.1_261 – Odečty: výkon, ceny, zálohy */
+.readings-cost-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.readings-cost-card small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.readings-cost-card b.good { color: #16A34A; }
+.readings-cost-card b.danger { color: #DC2626; }
+.compact-subheader {
+  margin-top: 8px;
+}
+.readings-tab-overview .readings-module,
+.readings-tab-entry .readings-module,
+.readings-tab-detail .readings-module,
+.readings-tab-meters .readings-module,
+.readings-tab-history .readings-module {
+  min-width: 0;
+}
+.reading-meter-value span {
+  max-width: 52%;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .readings-cost-summary {
+    grid-template-columns: 1fr;
+  }
+  .reading-meter-value span {
+    max-width: 100%;
+  }
+}
