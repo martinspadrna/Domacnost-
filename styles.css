@@ -16213,6 +16213,7 @@ body {
 
 /* Domácnost+ v.0.1_250 – Odečty: graf spotřeby a ceny */
 .readings-tab-overview .readings-panel:not(.panel-overview),
+.readings-tab-detail .readings-panel:not(.panel-detail),
 .readings-tab-meters .readings-panel:not(.panel-meters),
 .readings-tab-history .readings-panel:not(.panel-history) {
   display: none;
@@ -16555,4 +16556,106 @@ body {
 
 .readings-import-grid .align-end {
   align-self: end;
+}
+
+
+/* Domácnost+ v.0.1_256 – Odečty: detail, T1/T2 a čistší měřidla */
+.readings-tab-detail .readings-panel:not(.panel-detail),
+.readings-tab-overview .readings-panel.panel-detail,
+.readings-tab-meters .readings-panel.panel-detail,
+.readings-tab-history .readings-panel.panel-detail {
+  display: none;
+}
+
+.readings-meter-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.readings-meter-tools .readings-form-drawer {
+  margin: 0;
+  min-width: 0;
+}
+
+.readings-detail-controls {
+  align-items: end;
+  gap: 14px;
+}
+
+.readings-detail-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 170px));
+  gap: 10px;
+  width: min(100%, 430px);
+}
+
+.readings-detail-filter-grid label,
+.readings-detail-filter-grid select {
+  min-width: 0;
+  width: 100%;
+}
+
+.readings-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.readings-detail-layout .soft-panel {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 24px;
+  padding: 14px;
+  background: rgba(255,255,255,.42);
+}
+
+[data-theme="dark"] .readings-detail-layout .soft-panel {
+  background: rgba(15,23,42,.36);
+}
+
+.readings-compare-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pill-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, .22);
+  background: rgba(255,255,255,.55);
+  font-size: .82rem;
+  font-weight: 760;
+}
+
+[data-theme="dark"] .pill-check {
+  background: rgba(15,23,42,.46);
+}
+
+.pill-check input {
+  width: auto;
+  min-width: auto;
+}
+
+.readings-detail-history {
+  margin-top: 14px;
+}
+
+@media (max-width: 760px) {
+  .readings-meter-tools,
+  .readings-detail-layout,
+  .readings-detail-filter-grid {
+    grid-template-columns: 1fr;
+  }
+  .readings-detail-controls {
+    align-items: stretch;
+  }
 }
