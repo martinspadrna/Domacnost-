@@ -51,8 +51,8 @@
       const groupedOpen = isShoppingListTab ? deps.groupShoppingItemsByKind(openItems) : [];
       const groupedDone = viewState.doneModalOpen ? deps.groupShoppingItemsByKind(doneItems) : [];
       const cloudReady = Boolean(state.cloud?.userId && state.cloud?.householdId);
-      const units = isShoppingListTab ? deps.getShoppingUnits() : [];
-      const categories = isShoppingListTab ? deps.getShoppingCategories() : [];
+      const units = (isShoppingListTab || isShoppingCatalogTab) ? deps.getShoppingUnits() : [];
+      const categories = (isShoppingListTab || isShoppingCatalogTab) ? deps.getShoppingCategories() : [];
       const needsCatalog = isShoppingListTab || isShoppingCatalogTab;
       const catalog = needsCatalog ? deps.getShoppingCatalog() : [];
       const catalogSuggestions = isShoppingListTab ? deps.getShoppingDatalistItems(catalog, 90) : [];
@@ -124,7 +124,19 @@
 
       const catalogPanel = isShoppingCatalogTab ? `
         <section class="card shopping-panel panel-catalog">
-          <div class="card-header"><div><h2>Katalog domácnosti</h2><p>Katalog je nově podle tvých Listonic seznamů. Druh výrobku slouží pro řazení v obchodě.</p></div><span class="badge">${ownCatalogCount ? `${ownCatalogCount} vlastních` : 'základ'}</span></div>
+          <div class="card-header"><div><h2>Katalog domácnosti</h2><p>Produkty můžeš přidat rovnou tady. Pak se budou nabízet v nákupním seznamu.</p></div><span class="badge">${ownCatalogCount ? `${ownCatalogCount} vlastních` : 'základ'}</span></div>
+          <details class="action-details compact-edit-details shopping-catalog-add-details">
+            <summary><span>Přidat produkt do katalogu</span><em>název, druh a výchozí jednotka</em></summary>
+            <form data-form="add-shopping-catalog-item" class="compact-form shopping-catalog-add-form">
+              <div class="form-grid three">
+                ${deps.field('Produkt', 'name', 'text', 'např. kapsle do myčky', true)}
+                ${deps.selectField('Druh výrobku', 'kind', categories.map(([name]) => [name, `${deps.shoppingKindIcon(name)} ${name}`]), 'Ostatní')}
+                ${deps.selectField('Výchozí jednotka', 'unit', units, 'ks')}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Uložit do katalogu</button></div>
+            </form>
+          </details>
+          <div style="height:14px"></div>
           <div class="list compact-list shopping-catalog-list">
             ${catalog.map((item) => deps.renderShoppingCatalogItem(item, activeList)).join('')}
           </div>

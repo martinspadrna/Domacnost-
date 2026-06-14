@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_241';
+  const APP_VERSION = 'Domácnost+ v.0.1_242';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -23,7 +23,11 @@
     { id: 'calendar', label: 'Kalendář', icon: '📅' },
     { id: 'packages', label: 'Balíky', icon: '📦' },
     { id: 'shopping', label: 'Nákupy', icon: '🛒' },
-    { id: 'homecare', label: 'Domácnost', icon: '💡' },
+    { id: 'hdo', label: 'HDO', icon: '💡' },
+    { id: 'waste', label: 'Odpad', icon: '♻️' },
+    { id: 'tasks', label: 'Zápisník', icon: '🗒️' },
+    { id: 'warranties', label: 'Záruky', icon: '🧾' },
+    { id: 'polishHolidays', label: 'Svátky PL', icon: '🇵🇱' },
     { id: 'garage', label: 'Garáž', icon: '🚗' },
     { id: 'contracts', label: 'Smlouvy', icon: '📄' },
     { id: 'finance', label: 'Finance', icon: '💰' },
@@ -31,7 +35,7 @@
     { id: 'settings', label: 'Nastavení', icon: '⚙️' }
   ];
 
-  const DEFAULT_BOTTOM_NAV_IDS = ['home', 'calendar', 'homecare', 'garage', 'finance'];
+  const DEFAULT_BOTTOM_NAV_IDS = ['home', 'calendar', 'hdo', 'garage', 'finance'];
 
 
 
@@ -515,8 +519,8 @@
     { id: 'hdo', label: 'HDO', icon: '💡', overview: 'hdo', metric: (ctx) => ctx.hdo.active ? 'Běží' : 'Ne', text: () => 'HDO' },
     { id: 'waste', label: 'Odpad', icon: '♻️', overview: 'waste', metric: (ctx) => ctx.wasteSoon.length, text: () => 'svoz do 7 dnů' },
     { id: 'tasks', label: 'Zápisník', icon: '🗒️', overview: 'tasks', metric: (ctx) => (ctx.openTasks?.length || 0) + notebookPages().length, text: () => 'úkoly a stránky' },
-    { id: 'warranties', label: 'Záruky', icon: '🧾', nav: 'homecare', tab: 'warranties', metric: () => state.warranties.filter((item) => item.status !== 'archived').length, text: () => 'záruky' },
-    { id: 'polishHolidays', label: 'PL svátky', icon: '🇵🇱', nav: 'homecare', tab: 'polish-holidays', metric: () => polishShopHeroMetric(), text: () => polishShopHeroText() },
+    { id: 'warranties', label: 'Záruky', icon: '🧾', nav: 'warranties', tab: '', metric: () => state.warranties.filter((item) => item.status !== 'archived').length, text: () => 'záruky' },
+    { id: 'polishHolidays', label: 'PL svátky', icon: '🇵🇱', nav: 'polishHolidays', tab: '', metric: () => polishShopHeroMetric(), text: () => polishShopHeroText() },
     { id: 'garage', label: 'Garáž', icon: '🚗', overview: 'garage', metric: () => state.vehicles.length, text: () => garageCountLabel(state.vehicles.length) },
     { id: 'contracts', label: 'Smlouvy', icon: '📄', overview: 'contracts', metric: () => state.contracts.length, text: () => 'smlouvy' },
     { id: 'finance', label: 'Finance', icon: '💰', overview: 'finance', metric: () => formatCurrency(financeMonthSummary().balance), text: () => 'měsíční rozdíl' },
@@ -694,8 +698,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 241,
-      mode: 'notebook-fixes-v241',
+      appBuild: 242,
+      mode: 'module-split-nav-fixes-v242',
       createdAt: '',
       updatedAt: ''
     },
@@ -1565,8 +1569,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 241,
-      mode: 'notebook-fixes-v241',
+      appBuild: 242,
+      mode: 'module-split-nav-fixes-v242',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1648,6 +1652,9 @@
     }
 
     migrated.enabledModules = normalizeModuleList(migrated.enabledModules);
+    ['hdo', 'waste', 'tasks', 'warranties', 'polishHolidays'].forEach((id) => {
+      if (!migrated.enabledModules.includes(id)) migrated.enabledModules.push(id);
+    });
     if (!migrated.enabledModules.includes('weather')) migrated.enabledModules = ['weather', ...migrated.enabledModules];
     if (previousAppBuild && previousAppBuild < 130 && !migrated.enabledModules.includes('subscriptions')) migrated.enabledModules = [...migrated.enabledModules, 'subscriptions'];
     migrated.settings.bottomNavIds = normalizeBottomNavIds(migrated.settings.bottomNavIds, migrated.enabledModules);
@@ -2997,7 +3004,7 @@
   }
 
   function openOverview(type) {
-    activeOverview = type || 'homecare';
+    activeOverview = type || 'tasks';
     try {
       render();
     } catch (error) {
@@ -3011,18 +3018,18 @@
   function overviewTarget(type) {
     const map = {
       calendar: { nav: 'calendar', tab: 'overview' },
-      hdo: { nav: 'homecare', tab: 'hdo' },
-      homecare: { nav: 'homecare', tab: 'hdo' },
+      hdo: { nav: 'hdo', tab: '' },
+      homecare: { nav: 'hdo', tab: '' },
       shopping: { nav: 'shopping', tab: 'list' },
       packages: { nav: 'packages', tab: 'active' },
       contracts: { nav: 'contracts', tab: 'overview' },
       garage: { nav: 'garage', tab: 'overview' },
       finance: { nav: 'finance', tab: 'summary' },
-      tasks: { nav: 'homecare', tab: 'tasks' },
-      waste: { nav: 'homecare', tab: 'waste' },
-      important: { nav: 'homecare', tab: 'tasks' }
+      tasks: { nav: 'tasks', tab: '' },
+      waste: { nav: 'waste', tab: '' },
+      important: { nav: 'tasks', tab: '' }
     };
-    return map[type] || { nav: type || 'homecare', tab: '' };
+    return map[type] || { nav: type || 'tasks', tab: '' };
   }
 
   function hdoAppliesToNormalDays(item) {
@@ -3135,7 +3142,7 @@
           { label: 'Aktivní', value: enabledRows.length, tone: enabledRows.length ? 'good' : '' },
           { label: 'Další změna', value: hdo.active ? 'běží' : nextHdo ? humanDuration(nextHdo.diffMinutes) : '—' }
         ])}
-        ${rows.length ? renderHdoOverviewTables(rows) : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard ukáže aktuální stav i další přepnutí.', nav: 'homecare', tab: 'hdo', label: 'Nastavit HDO' })}
+        ${rows.length ? renderHdoOverviewTables(rows) : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard ukáže aktuální stav i další přepnutí.', nav: 'hdo', tab: '', label: 'Nastavit HDO' })}
       `;
     } else if (type === 'calendar') {
       const upcomingAll = upcomingCalendarEvents(now);
@@ -3182,17 +3189,17 @@
       const pages = notebookPages();
       const tasks = openTasks.slice(0,6);
       const pageRows = pages.slice(0, 3).map((page) => `<div class="item"><div class="item-top"><div class="item-title">${escapeHtml(page.title)}</div><span class="badge">${escapeHtml(page.section)}</span></div><div class="item-meta">${escapeHtml(notebookPageSummary(page))}</div></div>`);
-      body = `${renderOverviewSummary([{ label: 'Otevřené', value: openTasks.length }, { label: 'Stránek', value: pages.length }, { label: 'Hotovo', value: doneCount, tone: doneCount ? 'good' : '' }])}${tasks.length ? `<div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : ''}${pageRows.length ? `<h3 class="overview-mini-title">Stránky</h3><div class="list compact-list overview-list">${pageRows.join('')}</div>` : ''}${(!tasks.length && !pageRows.length) ? renderEmptyCta({ icon: '🗒️', title: 'Zápisník je prázdný', text: 'Přidej stránku, checklist nebo úkol.', nav: 'homecare', tab: 'tasks', label: 'Přidat stránku' }) : ''}`;
+      body = `${renderOverviewSummary([{ label: 'Otevřené', value: openTasks.length }, { label: 'Stránek', value: pages.length }, { label: 'Hotovo', value: doneCount, tone: doneCount ? 'good' : '' }])}${tasks.length ? `<div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : ''}${pageRows.length ? `<h3 class="overview-mini-title">Stránky</h3><div class="list compact-list overview-list">${pageRows.join('')}</div>` : ''}${(!tasks.length && !pageRows.length) ? renderEmptyCta({ icon: '🗒️', title: 'Zápisník je prázdný', text: 'Přidej stránku, checklist nebo úkol.', nav: 'tasks', tab: '', label: 'Přidat stránku' }) : ''}`;
     } else if (type === 'waste') {
       const upcomingWaste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days === null || item.days >= 0).sort((a,b)=>(a.days ?? 9999)-(b.days ?? 9999));
       const nextWaste = upcomingWaste.find((item) => item.days !== null);
       const typeCount = new Set(state.waste.map((item) => item.type || 'jiný')).size;
       const waste = upcomingWaste.slice(0,8);
-      body = `${renderOverviewSummary([{ label: 'Nejbližší', value: nextWaste ? dueBadge(nextWaste.days) : '—', tone: nextWaste?.days <= 1 ? 'warn' : '' }, { label: 'Typy', value: typeCount }, { label: 'Plánů', value: state.waste.length }])}${waste.length ? `<div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej typ odpadu a termín. Dashboard pak ukáže nejbližší svoz.', nav: 'homecare', tab: 'waste', label: 'Přidat svoz' })}`;
+      body = `${renderOverviewSummary([{ label: 'Nejbližší', value: nextWaste ? dueBadge(nextWaste.days) : '—', tone: nextWaste?.days <= 1 ? 'warn' : '' }, { label: 'Typy', value: typeCount }, { label: 'Plánů', value: state.waste.length }])}${waste.length ? `<div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej typ odpadu a termín. Dashboard pak ukáže nejbližší svoz.', nav: 'waste', tab: '', label: 'Přidat svoz' })}`;
     } else {
       const tasks = state.homeTasks.filter((task) => !task.done).slice(0,5);
       const waste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days !== null && item.days >= 0).sort((a,b)=>a.days-b.days).slice(0,4);
-      body = `${tasks.length ? `<h3 class="overview-mini-title">Úkoly</h3><div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : ''}${waste.length ? `<h3 class="overview-mini-title">Odpad</h3><div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '✨', title: 'Nic akutního tu není', text: 'Přidej úkol nebo svoz odpadu, ať má domácí přehled co hlídat.', nav: 'homecare', tab: 'tasks', label: 'Přidat úkol' })}`;
+      body = `${tasks.length ? `<h3 class="overview-mini-title">Úkoly</h3><div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : ''}${waste.length ? `<h3 class="overview-mini-title">Odpad</h3><div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '✨', title: 'Nic akutního tu není', text: 'Přidej úkol nebo svoz odpadu, ať má domácí přehled co hlídat.', nav: 'tasks', tab: '', label: 'Přidat úkol' })}`;
     }
 
     return `
@@ -3417,7 +3424,11 @@
       calendar: 'Kalendář umí více zdrojů. Google Calendar je připravený přes bezpečný backend, ne přes tokeny ve frontendu.',
       packages: 'Základ pro sledování balíků. Teď ručně, později automatika přes backend.',
       shopping: 'Sdílený nákupní seznam s katalogem položek, jednotkami a cloudovým oddělením domácností.',
-      homecare: 'HDO, odpad, Zápisník s úkoly, záruky a polské svátky na jednom místě.',
+      hdo: 'Nízký tarif, aktuální stav a další přepnutí.',
+      waste: 'Svoz odpadu, nejbližší termíny a připomínky.',
+      tasks: 'Poznámky a úkoly v jednom čistém zápisníku.',
+      warranties: 'Záruky, účtenky a hlídání konce záruky.',
+      polishHolidays: 'Polské svátky a dny, kdy můžou být zavřené obchody.',
       garage: 'Auta v domácnosti, tankování, servis a základní přehled spotřeby.',
       contracts: 'Evidence smluv a pojistek s hlídáním platnosti.',
       finance: 'Jednoduchý přehled příjmů a výdajů domácnosti s cloudovým oddělením podle householdId.',
@@ -3439,7 +3450,12 @@
       calendar: renderCalendar,
       packages: renderPackages,
       shopping: renderShopping,
-      homecare: renderHomecare,
+      hdo: () => renderHomecare('hdo'),
+      waste: () => renderHomecare('waste'),
+      tasks: () => renderHomecare('tasks'),
+      warranties: () => renderHomecare('warranties'),
+      polishHolidays: () => renderHomecare('polish-holidays'),
+      homecare: () => renderHomecare('hdo'),
       garage: renderGarage,
       contracts: renderContracts,
       finance: renderFinance,
@@ -4749,7 +4765,7 @@
         tone: todayEvents.length ? 'good' : ''
       },
       {
-        nav: 'homecare',
+        nav: 'hdo',
         overview: 'hdo',
         icon: '💡',
         title: hdo.active ? 'Nízký tarif běží' : 'Nízký tarif neběží',
@@ -4783,8 +4799,8 @@
         tone: financeSummary.balance >= 0 ? 'good' : 'warn'
       },
       {
-        nav: firstContract ? 'contracts' : firstVehicle ? 'garage' : 'homecare',
-        overview: firstContract ? 'contracts' : firstVehicle ? 'garage' : firstTask ? 'tasks' : firstWaste ? 'waste' : 'homecare',
+        nav: firstContract ? 'contracts' : firstVehicle ? 'garage' : 'tasks',
+        overview: firstContract ? 'contracts' : firstVehicle ? 'garage' : firstTask ? 'tasks' : firstWaste ? 'waste' : 'tasks',
         icon: firstContract ? '📄' : firstVehicle ? '🚗' : '🧹',
         title: firstContract ? firstContract.name : firstVehicle ? firstVehicle.title : firstTask ? firstTask.title : firstWaste ? `${firstWaste.type} odpad` : 'Žádná akutní připomínka',
         meta: firstContract
@@ -4811,17 +4827,17 @@
       { nav: 'shopping', tab: 'list', icon: '🛒', label: 'Nákupy', items: [...(state.shoppingLists || []), ...(state.shopping || [])], loadedAt: state.shoppingCloud?.loadedAt },
       { nav: 'contracts', tab: 'overview', icon: '📄', label: 'Smlouvy', items: state.contracts || [] },
       { nav: 'contracts', tab: 'detail', icon: '📎', label: 'Přílohy smluv', items: state.contractFiles || [] },
-      { nav: 'homecare', tab: 'warranties', icon: '🧾', label: 'Přílohy záruk', items: state.warrantyFiles || [] },
+      { nav: 'warranties', tab: '', icon: '🧾', label: 'Přílohy záruk', items: state.warrantyFiles || [] },
       { nav: 'garage', tab: 'overview', icon: '🚗', label: 'Garáž', items: [...(state.vehicles || []), ...(state.fuel || []), ...(state.services || [])] },
-      { nav: 'homecare', tab: 'hdo', icon: '💡', label: 'HDO', items: state.hdoWindows || [], loadedAt: state.hdoCloud?.loadedAt },
-      { nav: 'homecare', tab: 'waste', icon: '♻️', label: 'Odpad', items: state.waste || [], loadedAt: state.wasteCloud?.loadedAt },
-      { nav: 'homecare', tab: 'tasks', icon: '🗒️', label: 'Zápisník a úkoly', items: [...(state.homeTasks || []), ...(state.notes || [])], loadedAt: state.tasksCloud?.loadedAt || state.householdExtrasCloud?.loadedAt },
+      { nav: 'hdo', tab: '', icon: '💡', label: 'HDO', items: state.hdoWindows || [], loadedAt: state.hdoCloud?.loadedAt },
+      { nav: 'waste', tab: '', icon: '♻️', label: 'Odpad', items: state.waste || [], loadedAt: state.wasteCloud?.loadedAt },
+      { nav: 'tasks', tab: '', icon: '🗒️', label: 'Zápisník a úkoly', items: [...(state.homeTasks || []), ...(state.notes || [])], loadedAt: state.tasksCloud?.loadedAt || state.householdExtrasCloud?.loadedAt },
       { nav: 'packages', tab: 'active', icon: '📦', label: 'Balíky', items: state.packages || [], loadedAt: state.parcelsCloud?.loadedAt },
       { nav: 'calendar', tab: 'overview', icon: '📅', label: 'Kalendář', items: state.calendar || [], loadedAt: state.calendarCloud?.loadedAt },
       { nav: 'calendar', tab: 'sources', icon: '🧩', label: 'Zdroje kalendáře', items: getCalendarSources(), loadedAt: state.calendarCloud?.sourcesLoadedAt },
       { nav: 'finance', tab: 'summary', icon: '💰', label: 'Finance', items: state.finance || [], loadedAt: state.financeCloud?.loadedAt },
       { nav: 'subscriptions', tab: 'overview', icon: '🎬', label: 'Předplatné', items: [...(state.subscriptions || []), ...(state.subscriptionPeople || []), ...(state.subscriptionPayments || [])], loadedAt: state.subscriptionsCloud?.loadedAt, cloudSynced: Boolean(state.subscriptionsCloud?.loadedAt && cloudReady()) },
-      { nav: 'homecare', tab: 'warranties', icon: '🧾', label: 'Záruky', items: state.warranties || [], loadedAt: state.householdExtrasCloud?.loadedAt },
+      { nav: 'warranties', tab: '', icon: '🧾', label: 'Záruky', items: state.warranties || [], loadedAt: state.householdExtrasCloud?.loadedAt },
       { nav: 'shopping', tab: 'coupons', icon: '🏷️', label: 'Slevové kódy', items: state.coupons || [], loadedAt: state.householdExtrasCloud?.loadedAt }
     ];
     return counters.map((entry) => {
@@ -4940,8 +4956,8 @@
       ...todayEvents.slice(0, 3).map((event) => ({ nav: 'calendar', icon: '📅', title: event.title, meta: calendarEventMetaLabel(event, now), badge: calendarEventIsRunning(event, now) ? 'běží' : 'dnes', tone: 'good' })),
       ...upcomingEvents.filter((event) => event.date !== todayISO()).slice(0, 3).map((event) => ({ nav: 'calendar', icon: '📅', title: event.title, meta: calendarEventMetaLabel(event, now), badge: 'brzy', tone: '' })),
       ...urgentContracts.slice(0, 3).map((contract) => ({ nav: 'contracts', icon: '📄', title: contract.name, meta: `${contract.provider || 'Bez poskytovatele'} · platnost do ${formatDate(contract.validTo)}`, badge: dueBadge(contract.days), tone: contract.days < 0 ? 'bad' : contract.days <= 14 ? 'warn' : '' })),
-      ...openTasks.slice(0, 3).map((task) => ({ nav: 'homecare', overview: 'tasks', icon: '✅', title: task.title, meta: `${task.due ? `Termín ${formatDate(task.due)}` : 'Bez termínu'}${task.note ? ` · ${task.note}` : ''}`, badge: task.due ? dueBadge(daysUntil(task.due)) : 'úkol', tone: task.due && daysUntil(task.due) <= 2 ? 'warn' : '' })),
-      ...wasteSoon.slice(0, 2).map((item) => ({ nav: 'homecare', overview: 'waste', icon: '♻️', title: `${item.type} odpad`, meta: `${formatDate(item.date)}${item.note ? ` · ${item.note}` : ''}`, badge: dueBadge(item.days), tone: item.days <= 1 ? 'warn' : '' })),
+      ...openTasks.slice(0, 3).map((task) => ({ nav: 'tasks', overview: 'tasks', icon: '✅', title: task.title, meta: `${task.due ? `Termín ${formatDate(task.due)}` : 'Bez termínu'}${task.note ? ` · ${task.note}` : ''}`, badge: task.due ? dueBadge(daysUntil(task.due)) : 'úkol', tone: task.due && daysUntil(task.due) <= 2 ? 'warn' : '' })),
+      ...wasteSoon.slice(0, 2).map((item) => ({ nav: 'waste', overview: 'waste', icon: '♻️', title: `${item.type} odpad`, meta: `${formatDate(item.date)}${item.note ? ` · ${item.note}` : ''}`, badge: dueBadge(item.days), tone: item.days <= 1 ? 'warn' : '' })),
       ...vehicleAlerts.slice(0, 3).map((item) => ({ nav: 'garage', icon: '🚗', title: item.title, meta: item.meta, badge: dueBadge(item.days), tone: item.days < 0 ? 'bad' : item.days <= 30 ? 'warn' : '' }))
     ].slice(0, 9);
 
@@ -5052,7 +5068,11 @@
       calendar: { count: countBy('calendar'), label: 'událostí', note: 'Google napojení později přes backend.' },
       packages: { count: countBy('packages', (item) => item.status !== 'delivered'), label: 'aktivních', note: `${countBy('packages')} balíků celkem.` },
       shopping: { count: countBy('shopping', (item) => !item.done), label: 'koupit', note: `${countBy('coupons', (item) => !item.used)} nepoužitých kódů.` },
-      homecare: { count: countBy('homeTasks', (item) => !item.done) + countBy('hdoWindows') + countBy('waste') + countBy('warranties'), label: 'položek', note: `${countBy('hdoWindows')} HDO oken, ${countBy('waste')} svozů, ${countBy('homeTasks', (item) => !item.done)} úkolů, ${countBy('notes')} stránek/poznámek, ${countBy('warranties')} záruk.` },
+      hdo: { count: countBy('hdoWindows'), label: 'oken', note: 'Nízký tarif, normální dny a víkend + svátky.' },
+      waste: { count: countBy('waste'), label: 'svozů', note: 'Nejbližší odpad a připomínky.' },
+      tasks: { count: countBy('homeTasks', (item) => !item.done) + countBy('notes'), label: 'položek', note: `${countBy('homeTasks', (item) => !item.done)} úkolů, ${countBy('notes')} stránek/poznámek.` },
+      warranties: { count: countBy('warranties'), label: 'záruk', note: `${countBy('warrantyFiles')} příloh záruk.` },
+      polishHolidays: { count: buildPolishShopCalendarYear(polishShopSelectedYear()).filter((entry) => entry.status === 'closed').length, label: 'dnů', note: 'Polské svátky a volitelné neděle nehandlowe.' },
       garage: { count: countBy('vehicles'), label: 'aut', note: `${countBy('fuel')} tankování, ${countBy('services')} servisů.` },
       contracts: { count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh smluv, ${countBy('warrantyFiles')} příloh záruk.` },
       finance: { count: countBy('finance'), label: 'záznamů', note: `${formatCurrency(financeMonthSummary().balance)} rozdíl tento měsíc.` },
@@ -5101,6 +5121,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_242', note: 'Domácnost byla rozdělená na samostatné moduly HDO, Odpad, Zápisník, Záruky a Svátky PL. Spodní lišta je pevněji zamčená k viewportu při scrollu, v katalogu nákupů jde přidat produkt přímo z katalogu a Předplatné má přehlednější karty služeb.' },
       { title: 'Domácnost+ v.0.1_241', note: 'Zápisník nabízí při nové poznámce existující aktivní sekce, takže další výlet může rovnou spadnout do sekce Výlety. Úkoly s vyplněným termínem už nepadají do Bez termínu; delší termíny mají vlastní skupinu Později.' },
       { title: 'Domácnost+ v.0.1_240', note: 'Zápisník má čistší přidávání: tlačítko Přidat poznámku otevírá jen poznámku a Přidat úkol jen úkol. Odstraněné univerzální plus a duplicitní přidání u prázdných úkolů. Úkoly jsou nově rozdělené na Dnes, Brzy, Bez termínu a Hotovo a poznámky se zobrazují jako modernější karty.' },
       { title: 'Domácnost+ v.0.1_239', note: 'Zápisník má přidávání přes samostatnou stránku, opravené přetékání data v úkolech, jemnější tmavší kartu úkolů a vyčištěné staré frontend zbytky odstraněných modulů.' },
@@ -6597,7 +6618,7 @@
           { label: 'Po záruce', value: expired, tone: expired ? 'bad' : '' }
         ])}
         <div style="height:14px"></div>
-        ${warranties.length ? `<div class="list warranty-list">${warranties.map(renderWarrantyItem).join('')}</div>` : renderEmptyCta({ icon: '🧾', title: 'Záruky jsou prázdné', text: 'Přidej první koupenou věc. Konec záruky se předvyplní na 2 roky od nákupu.', nav: 'homecare', tab: 'warranties', label: 'Přidat záruku' })}
+        ${warranties.length ? `<div class="list warranty-list">${warranties.map(renderWarrantyItem).join('')}</div>` : renderEmptyCta({ icon: '🧾', title: 'Záruky jsou prázdné', text: 'Přidej první koupenou věc. Konec záruky se předvyplní na 2 roky od nákupu.', nav: 'warranties', tab: '', label: 'Přidat záruku' })}
       </section>
     `;
   }
@@ -7103,7 +7124,7 @@
     ].join('');
   }
 
-  function renderHomecare() {
+  function renderHomecare(forcedTab = '') {
     const hdo = getHdoStatus(now);
     const tasks = [...state.homeTasks].sort((a, b) => Number(a.done) - Number(b.done));
     const waste = [...state.waste].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
@@ -7111,8 +7132,9 @@
     const warranties = sortedWarranties();
     const polishShopCount = buildPolishShopCalendarYear(polishShopSelectedYear()).filter((entry) => entry.status === 'closed').length;
     const homecareTabs = ['hdo', 'waste', 'tasks', 'warranties', 'polish-holidays'];
-    const storedHomecareTab = getModuleTab('homecare', 'hdo');
+    const storedHomecareTab = forcedTab || getModuleTab('homecare', 'hdo');
     const activeHomecareTab = homecareTabs.includes(storedHomecareTab) ? storedHomecareTab : 'hdo';
+    const showHomecareTabs = !forcedTab;
     const notebookTabs = ['notes', 'tasks'];
     const storedNotebookTab = getModuleTab('notebook', 'notes');
     const activeNotebookTab = notebookTabs.includes(storedNotebookTab) ? storedNotebookTab : 'notes';
@@ -7121,13 +7143,13 @@
     const openTaskCount = tasks.filter((task) => !task.done).length;
 
     return `
-      ${renderSectionTabs('homecare', [
+      ${showHomecareTabs ? renderSectionTabs('homecare', [
         { id: 'hdo', label: 'HDO', icon: '💡', count: state.hdoWindows.length },
         { id: 'waste', label: 'Odpad', icon: '♻️', count: waste.length },
         { id: 'tasks', label: 'Zápisník', icon: '🗒️', count: openTaskCount + notebookPageCount },
         { id: 'warranties', label: 'Záruky', icon: '🧾', count: warranties.length },
         { id: 'polish-holidays', label: 'Svátky PL', icon: '🇵🇱', count: polishShopCount }
-      ], 'hdo')}
+      ], 'hdo') : ''}
       <div class="grid two module-tabbed homecare-tab-${activeHomecareTab}">
         <section class="card homecare-panel panel-hdo">
           <div class="card-header">
@@ -7147,7 +7169,7 @@
             </form>
           </details>
           <div style="height:14px"></div>
-          ${state.hdoWindows.length ? renderHdoModuleTables(sortHdoWindowsForOverview(getSafeHdoWindows())) : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard začne ukazovat aktuální stav.', nav: 'homecare', tab: 'hdo', label: 'Nastavit HDO' })}
+          ${state.hdoWindows.length ? renderHdoModuleTables(sortHdoWindowsForOverview(getSafeHdoWindows())) : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard začne ukazovat aktuální stav.', nav: 'hdo', tab: '', label: 'Nastavit HDO' })}
         </section>
 
         <section class="card homecare-panel panel-waste">
@@ -7172,7 +7194,7 @@
               <div class="item-meta">${escapeHtml(wasteRepeatLabel(item.repeatRule))}${item.notifyBeforeHours ? ` · připomenout ${escapeHtml(String(item.notifyBeforeHours))} h předem` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
               <div class="item-actions">${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-waste" data-id="${item.id}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-waste" data-id="${item.id}">Smazat</button></div>
             </div>
-          `).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej první svoz a aplikace ho ukáže v přehledu Dnes a brzy.', nav: 'homecare', tab: 'waste', label: 'Přidat svoz' })}
+          `).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej první svoz a aplikace ho ukáže v přehledu Dnes a brzy.', nav: 'waste', tab: '', label: 'Přidat svoz' })}
         </section>
 
         <section class="card homecare-panel panel-tasks notebook-panel notebook-tabs-panel">
@@ -9911,6 +9933,17 @@
     const visiblePaymentServices = services
       .map((service) => ({ service, visibleShares: subscriptionVisibleShares(service, month, paymentFilter, summary) }))
       .filter((row) => paymentFilter === 'all' || row.visibleShares.length);
+    const serviceOverviewCards = services.slice(0, 8).map((service) => {
+      const shares = service.shares || [];
+      const shareTotal = shares.reduce((sum, share) => sum + decimalValue(share.amount), 0);
+      const capacity = subscriptionCapacity(service);
+      const ownCost = Math.max(0, decimalValue(service.price) - shareTotal);
+      return `
+        <div class="subscription-overview-service">
+          <div class="subscription-overview-service-head">${renderSubscriptionServiceIcon(service, { size: 'sm' })}<strong>${escapeHtml(service.name)}</strong><span class="badge ${capacity.isFull ? 'warn' : capacity.used ? 'good' : ''}">${capacity.maxMembers ? `${capacity.used}/${capacity.maxMembers}` : `${capacity.used}`}</span></div>
+          <div class="subscription-overview-service-meta"><span>Cena ${formatCurrency(service.price)}</span><span>Vrací se ${formatCurrency(shareTotal)}</span><span>Tvoje část ${formatCurrency(ownCost)}</span></div>
+        </div>`;
+    }).join('');
     return `
       ${renderSectionTabs('subscriptions', [
         { id: 'overview', label: 'Přehled', icon: '🎬', count: services.length },
@@ -9936,6 +9969,7 @@
             <div class="kpi"><strong>${formatCurrency(summary.netCost)}</strong><span>reálný náklad po rozpočítání</span></div>
             <div class="kpi"><strong>${summary.maxSlots ? `${summary.freeSlots}/${summary.maxSlots}` : '—'}</strong><span>volná místa / celkem</span></div>
           </div>
+          ${services.length ? `<div class="subscription-overview-service-grid">${serviceOverviewCards}</div>` : ''}
           ${summary.peopleRows.length ? (visiblePeopleRows.length ? `<div class="list compact-list subscription-person-summary-list">${visiblePeopleRows.map(renderSubscriptionPersonSummary).join('')}</div>` : '<div class="empty">Podle filtru není potřeba nic řešit.</div>') : renderEmptyCta({ icon: '👥', title: 'Zatím tu nejsou lidé', text: 'Přidej člověka, se kterým sdílíš Netflix, Disney+, Spotify nebo jinou službu.', nav: 'subscriptions', tab: 'people', label: 'Přidat člověka' })}
         </section>
 
@@ -10404,7 +10438,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 241))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 242))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -11019,7 +11053,7 @@
       {
         id: 'hdo',
         done: state.hdoWindows.length > 0,
-        nav: 'homecare',
+        nav: 'hdo',
         tab: 'hdo',
         icon: '💡',
         title: 'Nastavit HDO',
@@ -12471,6 +12505,59 @@
 
   async function addShoppingFromForm(data, form) {
     return getShoppingActions().addShoppingFromForm(data, form);
+  }
+
+
+  async function addShoppingCatalogItemFromForm(data, form) {
+    const name = normalizeText(data.name);
+    if (!name) return showToast('Zadej název produktu');
+    const unit = normalizeText(data.unit) || 'ks';
+    const kind = normalizeText(data.kind || data.category) || 'Ostatní';
+    const existing = findShoppingCatalogItem(name);
+    if (existing) {
+      showToast('Produkt už v katalogu je');
+      return;
+    }
+    const item = {
+      id: `catalog-custom-${uid()}`,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      name,
+      defaultUnit: unit,
+      category: kind,
+      kind,
+      source: 'local'
+    };
+    state.shoppingCatalogCustom = Array.isArray(state.shoppingCatalogCustom) ? state.shoppingCatalogCustom : [];
+    state.shoppingCatalogCustom.push(item);
+    markShoppingCatalogDirty();
+    touchState();
+    saveState();
+    form?.reset?.();
+    render();
+    showToast('Produkt přidán do katalogu');
+
+    if (cloudReady()) {
+      void Promise.resolve().then(async () => {
+        try {
+          const cloudId = await cloudFindOrCreateCatalogItem({ name, category: kind, unit, catalogItem: null });
+          if (cloudId) {
+            item.cloudId = cloudId;
+            item.id = cloudId;
+            item.source = 'household';
+            item.householdId = currentHouseholdId();
+            markShoppingCatalogDirty();
+            touchState();
+            saveState();
+            requestRender();
+          }
+        } catch (error) {
+          console.warn('Catalog cloud create failed', error);
+        }
+      });
+    }
   }
 
 
@@ -15298,6 +15385,7 @@
       'add-package': () => addPackageFromForm(data, form),
       'add-shopping': () => addShoppingFromForm(data, form),
       'add-shopping-list': () => addShoppingListFromForm(data, form),
+      'add-shopping-catalog-item': () => addShoppingCatalogItemFromForm(data, form),
       'add-coupon': () => addItem('coupons', { store: data.store, code: data.code, discount: data.discount, expiry: data.expiry, note: data.note, used: false }),
       'update-coupon': () => updateCoupon(form.dataset.id, data),
       'add-hdo': () => addHdoWindowFromForm(data, form),
@@ -15902,11 +15990,11 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 241, mode: 'rich-demo-v241', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 242, mode: 'rich-demo-v242', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
-        bottomNavIds: ['home', 'calendar', 'shopping', 'homecare', 'finance'],
+        bottomNavIds: ['home', 'calendar', 'shopping', 'hdo', 'finance'],
         dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGET_IDS],
         demoMode: true
       },
@@ -16054,7 +16142,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 241, mode: 'notebook-fixes-v241', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 242, mode: 'module-split-nav-fixes-v242', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -17707,7 +17795,11 @@
       calendar: [cloudLoadCalendarSources, cloudLoadCalendar],
       packages: [cloudLoadParcels],
       shopping: [cloudLoadShoppingData],
-      homecare: [cloudLoadHdoData, cloudLoadWaste, cloudLoadTasks, cloudLoadExtraCollections, cloudLoadWarrantyFiles],
+      hdo: [cloudLoadHdoData],
+      waste: [cloudLoadWaste],
+      tasks: [cloudLoadTasks, cloudLoadExtraCollections],
+      warranties: [cloudLoadExtraCollections, cloudLoadWarrantyFiles],
+      polishHolidays: [cloudLoadExtraCollections],
       garage: [cloudLoadGarageData],
       contracts: [cloudLoadContracts, cloudLoadContractFiles],
       finance: [cloudLoadFinance],
@@ -17740,7 +17832,7 @@
 
   async function cloudBackgroundLoadAllModules(showMessage = false) {
     if (!state.cloud?.userId || !state.cloud?.householdId) return false;
-    const moduleOrder = ['shopping', 'calendar', 'finance', 'packages', 'homecare', 'garage', 'contracts', 'subscriptions'];
+    const moduleOrder = ['shopping', 'calendar', 'finance', 'packages', 'hdo', 'waste', 'tasks', 'warranties', 'polishHolidays', 'garage', 'contracts', 'subscriptions'];
     let ok = 0;
     for (const moduleId of moduleOrder) {
       await yieldToMainThread();
@@ -17847,7 +17939,7 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
-      openOverview(button.dataset.overview || 'homecare');
+      openOverview(button.dataset.overview || 'tasks');
       return;
     }
     if (action === 'close-overview') {
@@ -19370,7 +19462,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 241
+        appBuild: 242
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19960,7 +20052,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-241-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-242-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20127,14 +20219,17 @@
       const navFromBottomBar = Boolean(nav.closest('.nav-shell'));
       const navSnapshot = navFromBottomBar ? readNavRunnerSnapshot() : null;
       const previousBottomNavId = navFromBottomBar ? (navSnapshot?.id || currentRenderedBottomNavId(activeModule)) : getActiveBottomNavId(activeModule);
-      const nextModule = nav.dataset.nav;
+      const legacyTargetTab = nav.dataset.targetTab || '';
+      const nextModule = nav.dataset.nav === 'homecare'
+        ? ({ hdo: 'hdo', waste: 'waste', tasks: 'tasks', warranties: 'warranties', 'polish-holidays': 'polishHolidays' }[legacyTargetTab] || 'hdo')
+        : nav.dataset.nav;
       const nextBottomNavId = getActiveBottomNavId(nextModule);
       pendingNavMotion = navFromBottomBar && previousBottomNavId !== nextBottomNavId
         ? { fromId: previousBottomNavId, toId: nextBottomNavId, fromLeft: navSnapshot?.left, fromWidth: navSnapshot?.width, createdAt: Date.now(), consumed: false }
         : null;
       activeOverview = null;
       activeModule = nextModule;
-      if (nav.dataset.targetTab) {
+      if (nav.dataset.targetTab && nav.dataset.nav !== 'homecare') {
         moduleTabs = { ...(moduleTabs || {}), [activeModule]: nav.dataset.targetTab };
         if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       }
@@ -20312,7 +20407,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_241</span>
+          <span class="badge">Domácnost+ v.0.1_242</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

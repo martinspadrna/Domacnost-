@@ -15760,3 +15760,75 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Domácnost+ v.0.1_242 – spodní lišta zamknutá k viewportu při scrollu */
+.nav-shell {
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: 0 !important;
+  width: min(620px, calc(100vw - 16px)) !important;
+  max-width: calc(100vw - 16px) !important;
+  margin: 0 !important;
+  padding: 8px 8px max(8px, env(safe-area-inset-bottom, 0px)) !important;
+  transform: translate3d(-50%, 0, 0) !important;
+  -webkit-transform: translate3d(-50%, 0, 0) !important;
+  will-change: transform !important;
+  contain: layout paint style !important;
+  overscroll-behavior: none !important;
+}
+
+.app-shell {
+  padding-bottom: calc(var(--nav-height) + max(20px, env(safe-area-inset-bottom, 0px)) + 18px) !important;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .nav-shell {
+    bottom: 0 !important;
+  }
+}
+
+.subscription-overview-service-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.subscription-overview-service {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--card) 78%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.subscription-overview-service-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.subscription-overview-service-head strong {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subscription-overview-service-meta {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 750;
+}
+
+@media (max-width: 560px) {
+  .subscription-overview-service-grid {
+    grid-template-columns: 1fr;
+  }
+}
