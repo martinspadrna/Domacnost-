@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_245';
+  const APP_VERSION = 'Domácnost+ v.0.1_246';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -698,8 +698,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 245,
-      mode: 'subscriptions-smart-payments-v245',
+      appBuild: 246,
+      mode: 'subscriptions-debt-month-nav-v246',
       createdAt: '',
       updatedAt: ''
     },
@@ -1570,8 +1570,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 245,
-      mode: 'subscriptions-smart-payments-v245',
+      appBuild: 246,
+      mode: 'subscriptions-debt-month-nav-v246',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -3893,10 +3893,13 @@
       const servicesWithShares = summary.services.filter((service) => (service.shares || []).length);
       const serviceSlide = homeCycleItem(servicesWithShares, 45);
       const debtChips = debtRows.map((row) => `${row.person.name}: ${formatCurrency(row.debt)}`);
-      const slides = [
-        { metric: formatCurrency(summary.expectedReturn), text: 'má se vrátit', detail: `${formatCurrency(summary.paid)} už zaplaceno` },
-        { metric: formatCurrency(summary.owed), text: summary.owed ? 'ještě chybí' : 'vše srovnané', detail: financeMonthLabel(summary.month) },
+      const slides = summary.owed ? [
+        { metric: formatCurrency(summary.owed), text: 'ještě chybí', detail: `${debtRows.length} ${debtRows.length === 1 ? 'člověk nemá doplaceno' : debtRows.length < 5 ? 'lidi nemají doplaceno' : 'lidí nemá doplaceno'}` },
         currentDebt ? { metric: formatCurrency(currentDebt.debt), text: `${currentDebt.person.name} dluží`, detail: `má platit ${formatCurrency(currentDebt.expected)}` } : null,
+        { metric: formatCurrency(summary.expectedReturn), text: 'má se vrátit', detail: `${formatCurrency(summary.paid)} už zaplaceno` },
+        serviceSlide ? { metric: subscriptionCapacityLabel(serviceSlide).replace(' míst', ''), text: serviceSlide.name, detail: `${formatCurrency(serviceSlide.price)} / měsíc` } : null
+      ].filter(Boolean) : [
+        { metric: formatCurrency(summary.expectedReturn), text: summary.expectedReturn ? 'vše srovnané' : 'bez sdílení', detail: summary.expectedReturn ? `${formatCurrency(summary.paid)} už zaplaceno` : 'přiřaď lidi ke službám' },
         serviceSlide ? { metric: subscriptionCapacityLabel(serviceSlide).replace(' míst', ''), text: serviceSlide.name, detail: `${formatCurrency(serviceSlide.price)} / měsíc` } : null
       ].filter(Boolean);
       const slide = homeCycleItem(slides, 45) || slides[0];
@@ -5126,6 +5129,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_246', note: 'Hotfix Předplatné: Home panel počítá dluh po jednotlivých lidech a službách, takže přeplatek jednoho neschová dluh druhého. Měsíční panel v platbách má tvrdší mobilní layout a spodní lišta je znovu zamčená při scrollu.' },
       { title: 'Domácnost+ v.0.1_245', note: 'Předplatné: chytřejší zápis plateb podle vybrané služby nebo člověka, filtruje jen nezaplacené kombinace v daném měsíci, předvyplňuje částku a opravuje ujíždění měsíčního panelu.' },
       { title: 'Domácnost+ v.0.1_242', note: 'Domácnost byla rozdělená na samostatné moduly HDO, Odpad, Zápisník, Záruky a Svátky PL. Spodní lišta je pevněji zamčená k viewportu při scrollu, v katalogu nákupů jde přidat produkt přímo z katalogu a Předplatné má přehlednější karty služeb.' },
       { title: 'Domácnost+ v.0.1_241', note: 'Zápisník nabízí při nové poznámce existující aktivní sekce, takže další výlet může rovnou spadnout do sekce Výlety. Úkoly s vyplněným termínem už nepadají do Bez termínu; delší termíny mají vlastní skupinu Později.' },
@@ -10079,7 +10083,6 @@
     const totalCost = services.reduce((sum, item) => sum + decimalValue(item.price), 0);
     const expectedReturn = services.reduce((sum, item) => sum + (item.shares || []).reduce((inner, share) => inner + decimalValue(share.amount), 0), 0);
     const paid = payments.reduce((sum, item) => sum + decimalValue(item.amount), 0);
-    const owed = Math.max(0, expectedReturn - paid);
     const netCost = totalCost - expectedReturn;
     const capacityRows = services.map(subscriptionCapacity);
     const maxSlots = capacityRows.reduce((sum, row) => sum + row.maxMembers, 0);
@@ -10088,11 +10091,32 @@
     const fullServices = capacityRows.filter((row) => row.isFull).length;
     const futurePayments = getSubscriptionPayments().filter((payment) => payment.month > month);
     const peopleRows = people.map((person) => {
-      const expected = subscriptionExpectedForPerson(person.id, month);
+      const serviceRows = services
+        .map((service) => {
+          const share = (service.shares || []).find((entry) => entry.personId === person.id);
+          if (!share || !(decimalValue(share.amount) > 0)) return null;
+          const expected = decimalValue(share.amount);
+          const paidForService = payments
+            .filter((payment) => payment.personId === person.id && payment.subscriptionId === service.id)
+            .reduce((sum, payment) => sum + decimalValue(payment.amount), 0);
+          return {
+            service,
+            expected,
+            paid: paidForService,
+            debt: Math.max(0, expected - paidForService),
+            overpaid: Math.max(0, paidForService - expected)
+          };
+        })
+        .filter(Boolean);
+      const expected = serviceRows.reduce((sum, row) => sum + row.expected, 0);
       const paidForMonth = payments.filter((payment) => payment.personId === person.id).reduce((sum, payment) => sum + decimalValue(payment.amount), 0);
+      const debt = serviceRows.reduce((sum, row) => sum + row.debt, 0);
+      const serviceOverpaid = serviceRows.reduce((sum, row) => sum + row.overpaid, 0);
+      const extraPayments = Math.max(0, paidForMonth - serviceRows.reduce((sum, row) => sum + row.paid, 0));
       const future = futurePayments.filter((payment) => payment.personId === person.id).reduce((sum, payment) => sum + decimalValue(payment.amount), 0);
-      return { person, expected, paid: paidForMonth, debt: Math.max(0, expected - paidForMonth), overpaid: Math.max(0, paidForMonth - expected), future };
+      return { person, expected, paid: paidForMonth, debt, overpaid: serviceOverpaid + extraPayments, future, serviceRows };
     });
+    const owed = peopleRows.reduce((sum, row) => sum + decimalValue(row.debt), 0);
     return { month, services, people, payments, totalCost, expectedReturn, paid, owed, netCost, maxSlots, usedSlots, freeSlots, fullServices, futurePayments, peopleRows };
   }
 
@@ -10619,7 +10643,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 242))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 246))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -16306,7 +16330,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 245, mode: 'rich-demo-v245', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 246, mode: 'rich-demo-v246', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -16459,7 +16483,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 245, mode: 'subscriptions-smart-payments-v245', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 246, mode: 'subscriptions-debt-month-nav-v246', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -19789,7 +19813,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 245
+        appBuild: 246
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -20382,7 +20406,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-245-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-246-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20752,7 +20776,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_245</span>
+          <span class="badge">Domácnost+ v.0.1_246</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

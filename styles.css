@@ -15874,7 +15874,7 @@ body {
   }
 }
 
-/* Domácnost+ v.0.1_245 – Předplatné: chytré platby a stabilní měsíc */
+/* Domácnost+ v.0.1_246 – Předplatné: chytré platby a stabilní měsíc */
 .subscription-month-form,
 .subscription-month-form .form-grid,
 .subscription-month-form .field,
@@ -15931,5 +15931,136 @@ body {
   }
   .subscription-smart-payment-form .form-grid.two {
     grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+
+/* Domácnost+ v.0.1_246 – Předplatné dluhy, měsícový panel a spodní lišta */
+.subscriptions-module,
+.subscription-panel,
+.subscription-month-form,
+.subscription-month-form .form-grid,
+.subscription-month-form .field,
+.subscription-month-form input,
+.subscription-month-form select,
+.subscription-month-form .item-actions,
+.subscription-smart-payment-form,
+.subscription-smart-payment-form .form-grid,
+.subscription-smart-payment-form .field,
+.subscription-smart-payment-form input,
+.subscription-smart-payment-form select {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.subscription-panel {
+  overflow: hidden !important;
+}
+
+.subscription-month-form {
+  display: block !important;
+  overflow: clip !important;
+}
+
+.subscription-month-form .form-grid.two {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 9px !important;
+  overflow: clip !important;
+}
+
+.subscription-month-form input[type="month"],
+.subscription-smart-payment-form input[type="month"] {
+  display: block !important;
+  inline-size: 100% !important;
+  min-inline-size: 0 !important;
+  max-inline-size: 100% !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  text-align: center !important;
+}
+
+.subscription-month-form .item-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+.subscription-month-form .item-actions .ghost-btn {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  justify-content: center !important;
+  padding-inline: 4px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 430px) {
+  .subscription-month-form .item-actions .ghost-btn {
+    min-height: 34px !important;
+    font-size: .74rem !important;
+    letter-spacing: -0.02em !important;
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --nav-visual-height-v246: 78px;
+    --nav-inner-height-v246: 62px;
+    --nav-bottom-gap-v246: 0px;
+  }
+
+  html,
+  body {
+    overflow-x: hidden !important;
+  }
+
+  .app-shell {
+    padding-bottom: calc(var(--nav-visual-height-v246) + env(safe-area-inset-bottom, 0px) + 14px) !important;
+  }
+
+  .nav-shell {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: var(--nav-bottom-gap-v246) !important;
+    width: calc(100dvw - 24px) !important;
+    max-width: min(620px, calc(100dvw - 24px)) !important;
+    height: calc(var(--nav-visual-height-v246) + env(safe-area-inset-bottom, 0px)) !important;
+    min-height: calc(var(--nav-visual-height-v246) + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(var(--nav-visual-height-v246) + env(safe-area-inset-bottom, 0px)) !important;
+    margin: 0 !important;
+    padding: 7px 8px max(7px, env(safe-area-inset-bottom, 0px)) !important;
+    transform: translate3d(-50%, 0, 0) !important;
+    will-change: auto !important;
+    contain: layout paint style !important;
+    overflow: hidden !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+  }
+
+  .nav-scroll {
+    height: var(--nav-inner-height-v246) !important;
+    min-height: var(--nav-inner-height-v246) !important;
+    max-height: var(--nav-inner-height-v246) !important;
+    overflow: hidden !important;
+  }
+
+  .nav-item {
+    height: var(--nav-inner-height-v246) !important;
+    min-height: var(--nav-inner-height-v246) !important;
+    max-height: var(--nav-inner-height-v246) !important;
+    transform: none !important;
+  }
+
+  .app-shell.home-app-shell {
+    padding-bottom: calc(var(--nav-visual-height-v246) + env(safe-area-inset-bottom, 0px) + 14px) !important;
   }
 }
