@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_247';
+  const APP_VERSION = 'Domácnost+ v.0.1_248';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -698,8 +698,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 247,
-      mode: 'subscriptions-debt-month-nav-v246',
+      appBuild: 248,
+      mode: 'tablet-start-state-init-v248',
       createdAt: '',
       updatedAt: ''
     },
@@ -949,8 +949,10 @@
   let lastVisualSettingsSignature = '';
   const ICON_HTML_CACHE_LIMIT = 360;
   const iconHtmlCache = new Map();
+  let runtimeStateRef = null;
 
   let state = loadState();
+  runtimeStateRef = state;
   mergeVisualSettings({ ...readLocalVisualSettings(), ...(state.settings || {}) });
   applyVisualSettings();
   let demoRuntimeActive = false;
@@ -1570,8 +1572,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 247,
-      mode: 'subscriptions-debt-month-nav-v246',
+      appBuild: 248,
+      mode: 'tablet-start-state-init-v248',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1614,7 +1616,7 @@
       role: profile.role || (index === 0 ? 'owner' : 'member'),
       createdAt: profile.createdAt || timestamp
     }));
-    migrated.profiles = dedupeProfiles(migrated.profiles, { activeProfileId: migrated.activeProfileId });
+    migrated.profiles = dedupeProfiles(migrated.profiles, { activeProfileId: migrated.activeProfileId, householdId: migrated.household.id, stateSnapshot: migrated });
 
     if (!migrated.profiles.some((profile) => profile.id === migrated.activeProfileId)) {
       migrated.activeProfileId = migrated.profiles[0]?.id || '';
@@ -1857,8 +1859,9 @@
     };
   }
 
-  function profileDedupeKey(profile = {}) {
-    const householdId = normalizeText(profile.householdId || profile.household_id || state.household?.id || state.cloud?.householdId || '');
+  function profileDedupeKey(profile = {}, options = {}) {
+    const snapshot = options.stateSnapshot || runtimeStateRef || {};
+    const householdId = normalizeText(profile.householdId || profile.household_id || options.householdId || snapshot.household?.id || snapshot.cloud?.householdId || '');
     const name = normalizeKey(profile.name || profile.displayName || '');
     if (name) return `household:${householdId || 'current'}:name:${name}`;
     const userId = normalizeText(profile.userId || profile.user_id || '');
@@ -1868,11 +1871,12 @@
     return `id:${profile.id || uid()}`;
   }
 
-  function profileDedupeScore(profile = {}, activeProfileId = '') {
+  function profileDedupeScore(profile = {}, activeProfileId = '', options = {}) {
+    const snapshot = options.stateSnapshot || runtimeStateRef || {};
     let score = 0;
     if (String(profile.id || '') === String(activeProfileId || '')) score += 100;
     if (profile.cloudId || (profile.id && !String(profile.id).startsWith('profile-'))) score += 40;
-    if (profile.userId && profile.userId === state.cloud?.userId) score += 30;
+    if (profile.userId && profile.userId === snapshot.cloud?.userId) score += 30;
     if (profile.isDefault) score += 20;
     if (profile.role === 'owner') score += 10;
     if (profile.createdAt) score += 1;
@@ -1880,7 +1884,9 @@
   }
 
   function dedupeProfiles(profiles = [], options = {}) {
-    const activeProfileId = options.activeProfileId || state.activeProfileId || '';
+    const snapshot = options.stateSnapshot || runtimeStateRef || {};
+    const activeProfileId = options.activeProfileId || snapshot.activeProfileId || '';
+    const householdId = options.householdId || snapshot.household?.id || snapshot.cloud?.householdId || '';
     const byKey = new Map();
     const order = [];
     (Array.isArray(profiles) ? profiles : []).forEach((profile, index) => {
@@ -1888,20 +1894,20 @@
       const normalized = {
         ...profile,
         id: profile.id || profile.cloudId || `profile-${uid()}`,
-        householdId: profile.householdId || currentHouseholdId?.(false) || state.household?.id || '',
+        householdId: profile.householdId || householdId || '',
         name: normalizeText(profile.name || profile.displayName) || `Profil ${index + 1}`,
         role: profile.role || (index === 0 ? 'owner' : 'member'),
         color: profile.color || ['blue', 'green', 'violet', 'orange'][index % 4],
         createdAt: profile.createdAt || new Date().toISOString()
       };
-      const key = profileDedupeKey(normalized);
+      const key = profileDedupeKey(normalized, { ...options, householdId, stateSnapshot: snapshot });
       const existing = byKey.get(key);
       if (!existing) {
         byKey.set(key, normalized);
         order.push(key);
         return;
       }
-      const keepNext = profileDedupeScore(normalized, activeProfileId) > profileDedupeScore(existing, activeProfileId);
+      const keepNext = profileDedupeScore(normalized, activeProfileId, { ...options, stateSnapshot: snapshot }) > profileDedupeScore(existing, activeProfileId, { ...options, stateSnapshot: snapshot });
       const primary = keepNext ? normalized : existing;
       const secondary = keepNext ? existing : normalized;
       byKey.set(key, {
@@ -5129,7 +5135,8 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_247', note: 'Hotfix Home panelů: dlouhé podržení pro úpravu pořadí funguje i na panelech, které otevírají rychlý přehled přes interní akci. Pevný čas a počasí zůstávají zamčené.' },
+      { title: 'Domácnost+ v.0.1_248', note: 'Hotfix startu na tabletu: migrace profilů už nesahá na runtime state před inicializací. Přesouvání Home panelů zůstává z v247.' },
+      { title: 'Domácnost+ v.0.1_247', note: 'Home panely: dlouhé podržení pro úpravu pořadí funguje i na panelech, které otevírají rychlý přehled přes interní akci. Pevný čas a počasí zůstávají zamčené.' },
       { title: 'Domácnost+ v.0.1_246', note: 'Hotfix Předplatné: Home panel počítá dluh po jednotlivých lidech a službách, takže přeplatek jednoho neschová dluh druhého. Měsíční panel v platbách má tvrdší mobilní layout a spodní lišta je znovu zamčená při scrollu.' },
       { title: 'Domácnost+ v.0.1_245', note: 'Předplatné: chytřejší zápis plateb podle vybrané služby nebo člověka, filtruje jen nezaplacené kombinace v daném měsíci, předvyplňuje částku a opravuje ujíždění měsíčního panelu.' },
       { title: 'Domácnost+ v.0.1_242', note: 'Domácnost byla rozdělená na samostatné moduly HDO, Odpad, Zápisník, Záruky a Svátky PL. Spodní lišta je pevněji zamčená k viewportu při scrollu, v katalogu nákupů jde přidat produkt přímo z katalogu a Předplatné má přehlednější karty služeb.' },
@@ -10644,7 +10651,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 247))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 248))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -10806,6 +10813,7 @@
     sessionStorage.removeItem(ONBOARDING_GOOGLE_INTENT_KEY);
     sessionStorage.setItem('domacnostPlus.onboardingMode', 'choice');
     state = migrateState(mergeState(DEFAULT_STATE, {}));
+    runtimeStateRef = state;
     state.settings = { ...(state.settings || {}), ...visualSettings };
     state.household = { ...(state.household || {}), name: '', isConfigured: false };
     state.profiles = [];
@@ -10862,6 +10870,7 @@
     await client.auth.signOut().catch(() => {});
     localStorage.removeItem(STORAGE_KEY);
     state = migrateState(mergeState(DEFAULT_STATE, {}));
+    runtimeStateRef = state;
     state.household.isConfigured = false;
     state.cloud = { ...(state.cloud || {}), status: 'offline', userId: '', email: '', householdId: '' };
     sessionStorage.removeItem(DEMO_SESSION_KEY);
@@ -15969,6 +15978,7 @@
     const cloudResult = await registerCloudHouseholdFromOnboarding(email, password);
     if (cloudResult === 'existing-account') {
       state = migrateState(mergeState(DEFAULT_STATE, {}));
+      runtimeStateRef = state;
       markExistingAccount(email);
       return;
     }
@@ -16129,6 +16139,7 @@
   function startDemoHome() {
     const demo = createDemoState();
     state = migrateState(mergeState(DEFAULT_STATE, demo));
+    runtimeStateRef = state;
     state.settings.demoMode = true;
     state.cloud = {
       ...(state.cloud || {}),
@@ -16162,6 +16173,7 @@
     activeModule = 'home';
     moduleTabs = {};
     state = migrateState(mergeState(DEFAULT_STATE, {}));
+    runtimeStateRef = state;
     applyVisualSettings();
     render();
     showToast('Demo ukončeno · můžeš se přihlásit nebo znovu spustit demo');
@@ -16331,7 +16343,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 247, mode: 'rich-demo-v247', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 248, mode: 'rich-demo-v248', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -16484,7 +16496,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 247, mode: 'home-panel-longpress-v247', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 248, mode: 'tablet-start-state-init-v248', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -19814,7 +19826,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 247
+        appBuild: 248
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -20407,7 +20419,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-247-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-248-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20422,6 +20434,7 @@
       return;
     }
     state = migrateState(mergeState(DEFAULT_STATE, parsed.state));
+    runtimeStateRef = state;
     markShoppingRuntimeDirty();
     saveState();
     render();
@@ -20432,6 +20445,7 @@
     const ok = window.confirm('Opravdu smazat všechna offline data Domácnost+ v tomto prohlížeči?');
     if (!ok) return;
     state = migrateState(structuredCloneSafe(DEFAULT_STATE));
+    runtimeStateRef = state;
     markShoppingRuntimeDirty();
     garageVehicleId = null;
     activeModule = 'home';
@@ -20781,7 +20795,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_247</span>
+          <span class="badge">Domácnost+ v.0.1_248</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
