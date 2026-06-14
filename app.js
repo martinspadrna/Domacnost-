@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_237';
+  const APP_VERSION = 'Domácnost+ v.0.1_238';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -722,8 +722,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 237,
-      mode: 'notebook-no-ai-v237',
+      appBuild: 238,
+      mode: 'notebook-no-ai-v238',
       createdAt: '',
       updatedAt: ''
     },
@@ -1629,8 +1629,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 237,
-      mode: 'notebook-no-ai-v237',
+      appBuild: 238,
+      mode: 'notebook-no-ai-v238',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5186,6 +5186,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_238', note: 'Zápisník je zjednodušený do dvou jasných záložek Poznámky a Úkoly. Poznámky drží sekce/stránky/checklisty, Úkoly mají vlastní přehled a formulář ve stejném modulu.' },
       { title: 'Domácnost+ v.0.1_236', note: 'Zápisník už nepoužívá typ stránky Výlet. Sekce si vytváří uživatel sám.' },
       { title: 'Domácnost+ v.0.1_235', note: 'Zápisník byl převeden na čistší režim bez výchozích sekcí a vlastních stránek.' },
       { title: 'Domácnost+ v.0.1_234', note: 'Zápisník: Úkoly a Poznámky jsou sloučené do jednoho modulu/panelu. Přidané stránky ve stylu OneNote se sekcemi, textem, checklisty a převodem bodu na úkol bez DB změn.' },
@@ -7061,6 +7062,9 @@
     const homecareTabs = ['hdo', 'waste', 'tasks', 'warranties', 'polish-holidays'];
     const storedHomecareTab = getModuleTab('homecare', 'hdo');
     const activeHomecareTab = homecareTabs.includes(storedHomecareTab) ? storedHomecareTab : 'hdo';
+    const notebookTabs = ['notes', 'tasks'];
+    const storedNotebookTab = getModuleTab('notebook', 'notes');
+    const activeNotebookTab = notebookTabs.includes(storedNotebookTab) ? storedNotebookTab : 'notes';
 
     return `
       ${renderSectionTabs('homecare', [
@@ -7117,23 +7121,17 @@
           `).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej první svoz a aplikace ho ukáže v přehledu Dnes a brzy.', nav: 'homecare', tab: 'waste', label: 'Přidat svoz' })}
         </section>
 
-        <section class="card homecare-panel panel-tasks notebook-panel">
+        <section class="card homecare-panel panel-tasks notebook-panel notebook-tabs-panel">
           <div class="card-header">
-            <div><h2>Zápisník a úkoly</h2><p>Jedno místo pro nápady, domácí stránky, checklisty a úkoly s termínem.</p></div>
+            <div><h2>Zápisník</h2><p>Jedno místo, ale dvě jasné části: Poznámky pro stránky a Úkoly pro věci k udělání.</p></div>
             <span class="badge ${(tasks.some((task) => task.cloudId) || notebookPages().some((page) => page.cloudId)) ? 'good' : ''}">${state.cloud?.householdId ? 'sdílená domácnost' : 'lokálně'}</span>
           </div>
-          <div class="notebook-shell">
-            <aside class="notebook-sidebar">
-              <div class="notebook-sidebar-title">Stránky</div>
-              ${notebookSections().length ? notebookSections().map((group) => `
-                <div class="notebook-section-group">
-                  <strong>${escapeHtml(group.section)}</strong>
-                  ${group.items.map((page) => `<button class="notebook-page-chip" type="button" data-scroll-target="notebook-page-${escapeHtml(page.id)}">${escapeHtml(page.title)}<span>${escapeHtml(String(page.items.length))}</span></button>`).join('')}
-                </div>
-              `).join('') : '<div class="small-muted">Zatím žádné stránky. Vytvoř třeba Výlety.</div>'}
-              ${legacyQuickNotes().length ? `<div class="notebook-section-group"><strong>Rychlé poznámky</strong><span class="small-muted">${legacyQuickNotes().length} starších poznámek</span></div>` : ''}
-            </aside>
-            <div class="notebook-main">
+          ${renderSectionTabs('notebook', [
+            { id: 'notes', label: 'Poznámky', icon: '📝', count: notebookPages().length },
+            { id: 'tasks', label: 'Úkoly', icon: '✅', count: tasks.filter((task) => !task.done).length }
+          ], 'notes')}
+          ${activeNotebookTab === 'notes' ? `
+            <div class="notebook-tab-content notebook-notes-tab">
               <details class="compact-edit-details notebook-create" open>
                 <summary><span>Nová stránka</span><em>sekce, text a checklist</em></summary>
                 <form data-form="add-notebook-page" class="compact-form">
@@ -7141,37 +7139,46 @@
                     ${field('Sekce', 'section', 'text', 'např. Výlety', true)}
                     ${field('Název stránky', 'title', 'text', 'např. Zoo Dvůr Králové', true)}
                   </div>
-                  <div class="inline-note compact-note">Sekce jsou čistě tvoje. Třeba sekce Výlety může obsahovat samostatné stránky Zoo Dvůr Králové, Karpacz nebo Adršpach.</div>
+                  <div class="inline-note compact-note">Sekce si zakládáš sám. Například sekce Výlety může mít stránky Zoo Dvůr Králové, Karpacz nebo Adršpach.</div>
                   <div class="field"><label>Text stránky</label><textarea class="textarea" name="body" placeholder="Poznámka, odkazy, parkování, co vzít s sebou..."></textarea></div>
-                  <div class="field"><label>Checklist / nápady</label><textarea class="textarea" name="items" placeholder="Zoo Dvůr Králové&#10;Karpacz&#10;Stezka korunami stromů"></textarea></div>
-                  <div class="form-actions"><button class="primary-btn" type="submit">Přidat stránku</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud zápisník</button>' : ''}${state.cloud?.householdId && notes.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální stránky (${notes.filter((item) => !item.cloudId).length})</button>` : ''}</div>
+                  <div class="field"><label>Checklist / nápady</label><textarea class="textarea" name="items" placeholder="Zjistit parkování&#10;Koupit vstupenky&#10;Vzít pití a svačinu"></textarea></div>
+                  <div class="form-actions"><button class="primary-btn" type="submit">Přidat stránku</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud poznámky</button>' : ''}${state.cloud?.householdId && notes.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální stránky (${notes.filter((item) => !item.cloudId).length})</button>` : ''}</div>
                 </form>
               </details>
-              ${notebookPages().length ? `<div class="notebook-pages">${notebookPages().map((page) => renderNotebookPage(page)).join('')}</div>` : renderEmptyCta({ icon: '🗒️', title: 'Zápisník je prázdný', text: 'Vytvoř první vlastní sekci a stránku. Appka už nepřidává žádné výchozí sekce.', nav: 'homecare', tab: 'tasks', label: 'Přidat stránku' })}
+              ${notebookSections().length ? `<div class="notebook-section-list">${notebookSections().map((group) => `
+                <section class="notebook-section-card">
+                  <div class="notebook-section-head">
+                    <strong>${escapeHtml(group.section)}</strong>
+                    <span>${escapeHtml(String(group.items.length))} stránek</span>
+                  </div>
+                  <div class="notebook-pages">${group.items.map((page) => renderNotebookPage(page)).join('')}</div>
+                </section>
+              `).join('')}</div>` : renderEmptyCta({ icon: '🗒️', title: 'Poznámky jsou prázdné', text: 'Vytvoř první vlastní sekci a stránku. Žádné výchozí sekce se nepřidávají.', nav: 'homecare', tab: 'tasks', label: 'Přidat stránku' })}
               ${legacyQuickNotes().length ? `<details class="compact-edit-details legacy-notes"><summary><span>Starší rychlé poznámky</span><em>${legacyQuickNotes().length}</em></summary><div class="list">${legacyQuickNotes().map((note) => `<div class="item"><div class="item-top"><div class="item-title">${escapeHtml(note.text)}</div><span class="badge ${note.cloudId ? 'good' : ''}">${note.cloudId ? 'cloud' : 'lokálně'}</span></div><div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="notes" data-id="${escapeHtml(note.id)}">Smazat</button></div></div>`).join('')}</div></details>` : ''}
             </div>
-          </div>
-          <div class="notebook-task-block">
-            <div class="card-subheader"><h3>Úkoly</h3><p>Věci k udělání s termínem, prioritou a stavem.</p></div>
-            <form data-form="add-task">
-              <div class="form-grid two">
-                ${field('Úkol', 'title', 'text', 'vyměnit filtr / koupit baterky', true)}
-                ${field('Termín', 'due', 'date', '')}
-                ${selectField('Kategorie', 'category', TASK_CATEGORY_OPTIONS, 'domacnost')}
-                ${selectField('Priorita', 'priority', TASK_PRIORITY_OPTIONS, 'normal')}
-                ${field('Poznámka', 'note', 'text', 'volitelné')}
-              </div>
-              <div class="form-actions"><button class="primary-btn" type="submit">Přidat úkol</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-tasks">Načíst cloud úkoly</button>' : ''}${state.cloud?.householdId && tasks.some((task) => !task.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-tasks">Odeslat lokální úkoly (${tasks.filter((task) => !task.cloudId).length})</button>` : ''}</div>
-            </form>
-            <div style="height:14px"></div>
-            ${tasks.length ? `<div class="list">${tasks.map((task) => `
-              <div class="item">
-                <div class="item-top"><div class="item-title">${task.done ? '✓ ' : ''}${escapeHtml(task.title)}</div><span class="badge ${task.due && daysUntil(task.due) <= 2 && !task.done ? 'warn' : ''}">${task.due ? formatDate(task.due) : 'bez termínu'}</span></div>
-                <div class="item-meta">${escapeHtml(taskCategoryLabel(task.category))} · ${escapeHtml(taskPriorityLabel(task.priority))}${task.note ? ` · ${escapeHtml(task.note)}` : ''}${task.cloudId ? ' · cloud' : ' · lokálně'}</div>
-                <div class="item-actions">${state.cloud?.householdId && !task.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-task" data-id="${task.id}">Odeslat</button>` : ''}<button class="ghost-btn" type="button" data-action="task-toggle" data-id="${task.id}">${task.done ? 'Vrátit' : 'Hotovo'}</button><button class="danger-btn" type="button" data-action="task-delete" data-id="${task.id}">Smazat</button></div>
-              </div>
-            `).join('')}</div>` : '<div class="inline-note compact-note">Žádné úkoly. Checklisty v zápisníku můžeš kdykoliv převést na úkol.</div>'}
-          </div>
+          ` : `
+            <div class="notebook-tab-content notebook-tasks-tab">
+              <div class="card-subheader"><h3>Úkoly</h3><p>Věci k udělání s termínem, prioritou a stavem.</p></div>
+              <form data-form="add-task" class="compact-form">
+                <div class="form-grid two">
+                  ${field('Úkol', 'title', 'text', 'vyměnit filtr / koupit baterky', true)}
+                  ${field('Termín', 'due', 'date', '')}
+                  ${selectField('Kategorie', 'category', TASK_CATEGORY_OPTIONS, 'domacnost')}
+                  ${selectField('Priorita', 'priority', TASK_PRIORITY_OPTIONS, 'normal')}
+                  ${field('Poznámka', 'note', 'text', 'volitelné')}
+                </div>
+                <div class="form-actions"><button class="primary-btn" type="submit">Přidat úkol</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-tasks">Načíst cloud úkoly</button>' : ''}${state.cloud?.householdId && tasks.some((task) => !task.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-tasks">Odeslat lokální úkoly (${tasks.filter((task) => !task.cloudId).length})</button>` : ''}</div>
+              </form>
+              <div style="height:14px"></div>
+              ${tasks.length ? `<div class="list">${tasks.map((task) => `
+                <div class="item">
+                  <div class="item-top"><div class="item-title">${task.done ? '✓ ' : ''}${escapeHtml(task.title)}</div><span class="badge ${task.due && daysUntil(task.due) <= 2 && !task.done ? 'warn' : ''}">${task.due ? formatDate(task.due) : 'bez termínu'}</span></div>
+                  <div class="item-meta">${escapeHtml(taskCategoryLabel(task.category))} · ${escapeHtml(taskPriorityLabel(task.priority))}${task.note ? ` · ${escapeHtml(task.note)}` : ''}${task.cloudId ? ' · cloud' : ' · lokálně'}</div>
+                  <div class="item-actions">${state.cloud?.householdId && !task.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-task" data-id="${task.id}">Odeslat</button>` : ''}<button class="ghost-btn" type="button" data-action="task-toggle" data-id="${task.id}">${task.done ? 'Vrátit' : 'Hotovo'}</button><button class="danger-btn" type="button" data-action="task-delete" data-id="${task.id}">Smazat</button></div>
+                </div>
+              `).join('')}</div>` : '<div class="inline-note compact-note">Žádné úkoly. Checklisty v poznámkách můžeš kdykoliv převést na úkol.</div>'}
+            </div>
+          `}
         </section>
 
         ${renderWarrantiesPanel(warranties)}
@@ -10725,7 +10732,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 237))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 238))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -16232,7 +16239,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 237, mode: 'rich-demo-v237', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 238, mode: 'rich-demo-v238', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -16390,7 +16397,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 237, mode: 'notebook-no-ai-v237', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 238, mode: 'notebook-no-ai-v238', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -19719,7 +19726,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 237
+        appBuild: 238
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -20309,7 +20316,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-237-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-238-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20661,7 +20668,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_237</span>
+          <span class="badge">Domácnost+ v.0.1_238</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
