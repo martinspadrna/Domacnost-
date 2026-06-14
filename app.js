@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_253';
+  const APP_VERSION = 'Domácnost+ v.0.1_255';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -700,8 +700,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 253,
-      mode: 'readings-pricing-v253',
+      appBuild: 255,
+      mode: 'readings-import-v255',
       createdAt: '',
       updatedAt: ''
     },
@@ -1577,8 +1577,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 253,
-      mode: 'readings-pricing-v253',
+      appBuild: 255,
+      mode: 'readings-import-v255',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5148,8 +5148,10 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_255', note: 'Odečty: přidaný import z exportu Domácí odečty (.xls/.csv), vytvoří měřidla podle názvů a natáhne historické odečty včetně druhého registru.' },
+      { title: 'Domácnost+ v.0.1_254', note: 'Odečty: měřidla jdou po vytvoření upravit bez smazání odečtů — název, typ, jednotka, umístění, poznámka i cenový režim.' },
       { title: 'Domácnost+ v.0.1_253', note: 'Odečty: přidání měřidla je jen v záložce Měřidla a v základu zabalené; ceny mají režim průměr z vyúčtování nebo rozpad podle smlouvy pro elektřinu, plyn a vodu.' },
-      { title: 'Domácnost+ v.0.1_253', note: 'Hotfix: Odečty se teď skutečně renderují jako samostatný modul a spodní panel má znovu nízkou mobilní výšku.' },
+      { title: 'Domácnost+ v.0.1_251', note: 'Hotfix: Odečty se teď skutečně renderují jako samostatný modul a spodní panel má znovu nízkou mobilní výšku.' },
       { title: 'Domácnost+ v.0.1_250', note: 'Odečty dostaly graf spotřeby, ceny za jednotku, stálé měsíční platby a odhad nákladů po měřidlech i měsících.' },
       { title: 'Domácnost+ v.0.1_249', note: 'Přidaný nový modul Odečty pro elektřinu, plyn a vodu: měřidla, zápisy, historie a rozdíl od minula. Předplatné umí započítat přeplatky do dalších měsíců a Home počasí má pružnější text na tabletu.' },
       { title: 'Domácnost+ v.0.1_248', note: 'Hotfix startu na tabletu: migrace profilů už nesahá na runtime state před inicializací. Přesouvání Home panelů zůstává z v247.' },
@@ -7688,6 +7690,9 @@
       breakerMonthly: normalizeReadingPricePart(item.breakerMonthly),
       otherFixedMonthly: normalizeReadingPricePart(item.otherFixedMonthly),
       fixedMonthlyLabel: normalizeText(item.fixedMonthlyLabel) || 'stálá platba',
+      importSource: normalizeText(item.importSource),
+      importKey: normalizeText(item.importKey),
+      importRegister: normalizeText(item.importRegister),
       note: normalizeText(item.note),
       archived: Boolean(item.archived)
     };
@@ -7705,6 +7710,8 @@
       date: normalizeText(item.date) || todayISO(),
       value: decimalValue(item.value),
       unitPrice: unitPrice === '' || unitPrice < 0 ? '' : unitPrice,
+      importSource: normalizeText(item.importSource),
+      importKey: normalizeText(item.importKey),
       note: normalizeText(item.note)
     };
   }
@@ -7820,6 +7827,38 @@
       water: 'Přesný výpočet počítá vodné, stočné a případnou pevnou složku/stálý paušál. Částky opiš z ceníku vodáren nebo vyúčtování.'
     };
     return byType[type] || byType.electricity;
+  }
+
+
+  function renderReadingPriceFormBlock(meter = {}) {
+    const selectedMode = ['average', 'contract'].includes(meter.pricingMode) ? meter.pricingMode : 'average';
+    const pricingHelp = ['electricity', 'gas', 'water'].map((type) => {
+      const meta = readingTypeMeta(type);
+      return `<div class="mini-stat"><span>${escapeHtml(meta.icon)} ${escapeHtml(meta.label)}</span><strong>${escapeHtml(type === 'electricity' ? 'kWh + stálé platby' : type === 'gas' ? 'm³/kWh + stálé platby' : 'vodné + stočné')}</strong><small>${escapeHtml(readingPricingModeInfo(type))}</small></div>`;
+    }).join('');
+    const readingPriceModeOptions = [['average', 'Průměrná cena z vyúčtování'], ['contract', 'Přesný výpočet ze smlouvy']];
+    return `
+      <details class="subtle-details readings-price-details">
+        <summary><span>Cena a výpočet nákladů</span><em>průměr nebo smlouva</em></summary>
+        <div class="small-muted">Vyber si jednoduchý průměr z vyúčtování, nebo rozpad podle smlouvy. Nezadávej nic natvrdo podle internetu, ceny se liší podle dodavatele a tarifu.</div>
+        <div class="form-grid two">
+          ${selectField('Výpočet ceny', 'pricingMode', readingPriceModeOptions, selectedMode)}
+          ${field('Celková cena z vyúčtování', 'averageBillTotal', 'text', 'např. 24000', false, meter.averageBillTotal ?? '', 'decimal')}
+          ${field('Spotřeba z vyúčtování', 'averageBillUsage', 'text', 'např. 3200', false, meter.averageBillUsage ?? '', 'decimal')}
+          ${field('Komodita / silová energie', 'commodityPrice', 'text', 'Kč za jednotku', false, meter.commodityPrice ?? '', 'decimal')}
+          ${field('Distribuce podle spotřeby', 'distributionPrice', 'text', 'Kč za jednotku', false, meter.distributionPrice ?? '', 'decimal')}
+          ${field('Regulované položky / POZE / OTE', 'regulatedPrice', 'text', 'Kč za jednotku', false, meter.regulatedPrice ?? '', 'decimal')}
+          ${field('Vodné', 'waterPrice', 'text', 'Kč/m³', false, meter.waterPrice ?? '', 'decimal')}
+          ${field('Stočné', 'sewerPrice', 'text', 'Kč/m³', false, meter.sewerPrice ?? '', 'decimal')}
+          ${field('Jiná cena za jednotku', 'otherUnitPrice', 'text', 'Kč za jednotku', false, meter.otherUnitPrice ?? '', 'decimal')}
+          ${field('Stálá platba / měsíc', 'fixedMonthlyCost', 'text', 'např. paušál', false, meter.fixedMonthlyCost ?? '', 'decimal')}
+          ${field('Jistič / regulovaná stálá platba', 'breakerMonthly', 'text', 'Kč/měsíc', false, meter.breakerMonthly ?? '', 'decimal')}
+          ${field('Stálý plat dodavateli', 'fixedSupplierMonthly', 'text', 'Kč/měsíc', false, meter.fixedSupplierMonthly ?? '', 'decimal')}
+          ${field('Jiná stálá platba', 'otherFixedMonthly', 'text', 'Kč/měsíc', false, meter.otherFixedMonthly ?? '', 'decimal')}
+          ${field('Popis stálých plateb', 'fixedMonthlyLabel', 'text', 'např. jistič + stálý plat', false, meter.fixedMonthlyLabel ?? '')}
+        </div>
+        <div class="mini-stat-grid readings-price-help">${pricingHelp}</div>
+      </details>`;
   }
 
   function readingMeterStats(meter) {
@@ -7939,6 +7978,48 @@
     await persistReadingsState('Měřidlo přidané');
   }
 
+
+  async function updateReadingMeterFromForm(id, data, form) {
+    const original = readingMeterById(id);
+    if (!original) return showToast('Měřidlo už neexistuje');
+    const type = ['electricity', 'gas', 'water'].includes(data.type) ? data.type : original.type;
+    const meta = readingTypeMeta(type);
+    const updated = normalizeReadingMeter({
+      ...original,
+      id: original.id,
+      householdId: original.householdId,
+      profileId: original.profileId,
+      createdAt: original.createdAt,
+      updatedAt: new Date().toISOString(),
+      type,
+      name: normalizeText(data.name) || original.name || meta.label,
+      unit: normalizeText(data.unit) || original.unit || meta.unit,
+      serial: data.serial,
+      location: data.location,
+      pricingMode: data.pricingMode,
+      pricePerUnit: data.pricePerUnit,
+      averageBillTotal: data.averageBillTotal,
+      averageBillUsage: data.averageBillUsage,
+      commodityPrice: data.commodityPrice,
+      distributionPrice: data.distributionPrice,
+      regulatedPrice: data.regulatedPrice,
+      waterPrice: data.waterPrice,
+      sewerPrice: data.sewerPrice,
+      otherUnitPrice: data.otherUnitPrice,
+      fixedMonthlyCost: data.fixedMonthlyCost,
+      fixedDistributionMonthly: data.fixedDistributionMonthly,
+      fixedSupplierMonthly: data.fixedSupplierMonthly,
+      breakerMonthly: data.breakerMonthly,
+      otherFixedMonthly: data.otherFixedMonthly,
+      fixedMonthlyLabel: data.fixedMonthlyLabel,
+      note: data.note,
+      archived: original.archived
+    });
+    if (!updated.name) return showToast('Doplň název měřidla');
+    state.readingMeters = readingsMeters(true).map((item) => item.id === original.id ? updated : item);
+    await persistReadingsState('Měřidlo uložené');
+  }
+
   async function addReadingEntryFromForm(data, form) {
     const meter = readingMeterById(data.meterId);
     if (!meter) return showToast('Vyber měřidlo');
@@ -8033,6 +8114,348 @@
     await persistReadingsState('Ceny měřidla uložené');
   }
 
+
+  function easyHomeImportGuessType(name = '') {
+    const text = normalizeText(name).toLowerCase();
+    if (text.includes('plyn')) return 'gas';
+    if (text.includes('voda') || text.includes('vodom')) return 'water';
+    return 'electricity';
+  }
+
+  function easyHomeImportUnit(type = '') {
+    return type === 'electricity' ? 'kWh' : 'm3';
+  }
+
+  function easyHomeImportDate(value) {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 20000 && value < 80000) {
+      const date = new Date(Date.UTC(1899, 11, 30));
+      date.setUTCDate(date.getUTCDate() + Math.round(value));
+      return date.toISOString().slice(0, 10);
+    }
+    const date = parseDateValue(value);
+    return date ? localISODate(date, APP_TIME_ZONE) : '';
+  }
+
+  function easyHomeImportCellText(value) {
+    if (value === null || value === undefined) return '';
+    return String(value).trim();
+  }
+
+  function easyHomeImportNumber(value) {
+    if (value === null || value === undefined || value === '') return '';
+    const num = decimalValue(value);
+    return Number.isFinite(num) ? num : '';
+  }
+
+  function easyHomeImportParseCsv(text = '') {
+    const rawRows = String(text || '').split(/\r?\n/).filter((line) => line.trim());
+    const delimiter = rawRows[0]?.includes(';') ? ';' : rawRows[0]?.includes('\t') ? '\t' : ',';
+    return rawRows.map((line) => {
+      const cells = [];
+      let current = '';
+      let quoted = false;
+      for (let i = 0; i < line.length; i += 1) {
+        const char = line[i];
+        if (char === '"') {
+          if (quoted && line[i + 1] === '"') { current += '"'; i += 1; }
+          else quoted = !quoted;
+        } else if (char === delimiter && !quoted) {
+          cells.push(current.trim());
+          current = '';
+        } else current += char;
+      }
+      cells.push(current.trim());
+      return cells;
+    });
+  }
+
+  function easyHomeImportOleSectorOffset(sectorId, sectorSize) {
+    return (sectorId + 1) * sectorSize;
+  }
+
+  function easyHomeImportUtf16(bytes, start, byteLength) {
+    let out = '';
+    for (let i = 0; i + 1 < byteLength; i += 2) {
+      const code = bytes[start + i] | (bytes[start + i + 1] << 8);
+      if (code) out += String.fromCharCode(code);
+    }
+    return out;
+  }
+
+  function easyHomeImportReadOleWorkbook(arrayBuffer) {
+    const view = new DataView(arrayBuffer);
+    const signature = Array.from(new Uint8Array(arrayBuffer, 0, 8)).map((item) => item.toString(16).padStart(2, '0')).join('');
+    if (signature !== 'd0cf11e0a1b11ae1') throw new Error('Soubor nevypadá jako starý Excel .xls');
+    const u16 = (offset) => view.getUint16(offset, true);
+    const u32 = (offset) => view.getUint32(offset, true);
+    const sectorSize = 1 << u16(30);
+    const firstDirSector = u32(48);
+    const freeSector = 0xFFFFFFFF;
+    const endSector = 0xFFFFFFFE;
+    const difat = [];
+    for (let i = 0; i < 109; i += 1) {
+      const sector = u32(76 + i * 4);
+      if (sector !== freeSector && sector !== endSector) difat.push(sector);
+    }
+    const fat = [];
+    difat.forEach((sector) => {
+      const offset = easyHomeImportOleSectorOffset(sector, sectorSize);
+      if (offset < 0 || offset + sectorSize > arrayBuffer.byteLength) return;
+      for (let p = 0; p < sectorSize; p += 4) fat.push(u32(offset + p));
+    });
+    const readChain = (startSector, size = Number.POSITIVE_INFINITY) => {
+      const chunks = [];
+      let sector = startSector;
+      let remaining = size;
+      let guard = 0;
+      while (sector !== endSector && sector !== freeSector && sector < fat.length && remaining > 0 && guard < 20000) {
+        guard += 1;
+        const offset = easyHomeImportOleSectorOffset(sector, sectorSize);
+        if (offset < 0 || offset >= arrayBuffer.byteLength) break;
+        const take = Math.min(sectorSize, remaining, arrayBuffer.byteLength - offset);
+        chunks.push(new Uint8Array(arrayBuffer, offset, take));
+        remaining -= take;
+        sector = fat[sector];
+      }
+      const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const out = new Uint8Array(total);
+      let cursor = 0;
+      chunks.forEach((chunk) => { out.set(chunk, cursor); cursor += chunk.length; });
+      return out;
+    };
+    const dirBytes = readChain(firstDirSector);
+    let workbook = null;
+    for (let offset = 0; offset + 128 <= dirBytes.length; offset += 128) {
+      const nameLength = dirBytes[offset + 64] | (dirBytes[offset + 65] << 8);
+      if (!nameLength) continue;
+      const name = easyHomeImportUtf16(dirBytes, offset, Math.max(0, nameLength - 2));
+      const start = (dirBytes[offset + 116] | (dirBytes[offset + 117] << 8) | (dirBytes[offset + 118] << 16) | (dirBytes[offset + 119] << 24)) >>> 0;
+      const size = (dirBytes[offset + 120] | (dirBytes[offset + 121] << 8) | (dirBytes[offset + 122] << 16) | (dirBytes[offset + 123] << 24)) >>> 0;
+      if (/^(Workbook|Book)$/i.test(name)) {
+        workbook = { start, size };
+        break;
+      }
+    }
+    if (!workbook) throw new Error('V .xls souboru jsem nenašel Workbook stream');
+    return readChain(workbook.start, workbook.size);
+  }
+
+  function easyHomeImportDecodeBiffString(bytes, position) {
+    if (position + 3 > bytes.length) return null;
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const length = view.getUint16(position, true);
+    let cursor = position + 2;
+    const flags = bytes[cursor];
+    cursor += 1;
+    const isUnicode = Boolean(flags & 1);
+    const richRuns = flags & 8 ? view.getUint16(cursor, true) : 0;
+    if (flags & 8) cursor += 2;
+    const phoneticSize = flags & 4 ? view.getUint32(cursor, true) : 0;
+    if (flags & 4) cursor += 4;
+    const byteLength = length * (isUnicode ? 2 : 1);
+    if (cursor + byteLength > bytes.length) return null;
+    let text = '';
+    if (isUnicode) text = easyHomeImportUtf16(bytes, cursor, byteLength);
+    else for (let i = 0; i < byteLength; i += 1) text += String.fromCharCode(bytes[cursor + i]);
+    cursor += byteLength + richRuns * 4 + phoneticSize;
+    return { text, position: cursor };
+  }
+
+  function easyHomeImportRkNumber(value) {
+    const raw = value >>> 0;
+    const multiplied = raw & 1;
+    const integer = raw & 2;
+    let result;
+    if (integer) {
+      result = raw >> 2;
+      if (result & 0x20000000) result -= 0x40000000;
+    } else {
+      const buffer = new ArrayBuffer(8);
+      const view = new DataView(buffer);
+      view.setUint32(0, raw & 0xFFFFFFFC, true);
+      view.setUint32(4, 0, true);
+      result = view.getFloat64(0, true);
+    }
+    return multiplied ? result / 100 : result;
+  }
+
+  function easyHomeImportParseXls(arrayBuffer) {
+    const workbookBytes = easyHomeImportReadOleWorkbook(arrayBuffer);
+    const workbookView = new DataView(workbookBytes.buffer, workbookBytes.byteOffset, workbookBytes.byteLength);
+    const records = [];
+    let position = 0;
+    while (position + 4 <= workbookBytes.length) {
+      const id = workbookView.getUint16(position, true);
+      const length = workbookView.getUint16(position + 2, true);
+      records.push({ id, data: workbookBytes.slice(position + 4, position + 4 + length) });
+      position += 4 + length;
+    }
+    const sst = [];
+    for (let i = 0; i < records.length; i += 1) {
+      if (records[i].id !== 0x00FC) continue;
+      const chunks = [records[i].data];
+      let j = i + 1;
+      while (j < records.length && records[j].id === 0x003C) { chunks.push(records[j].data); j += 1; }
+      const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const bytes = new Uint8Array(total);
+      let cursor = 0;
+      chunks.forEach((chunk) => { bytes.set(chunk, cursor); cursor += chunk.length; });
+      const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      const unique = view.getUint32(4, true);
+      let stringPosition = 8;
+      for (let k = 0; k < unique; k += 1) {
+        const decoded = easyHomeImportDecodeBiffString(bytes, stringPosition);
+        if (!decoded) break;
+        sst.push(decoded.text);
+        stringPosition = decoded.position;
+      }
+      break;
+    }
+    const rowMap = new Map();
+    const setCell = (row, col, value) => {
+      if (!rowMap.has(row)) rowMap.set(row, {});
+      rowMap.get(row)[col] = value;
+    };
+    records.forEach((record) => {
+      const data = record.data;
+      const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+      if (record.id === 0x00FD && data.length >= 10) {
+        setCell(view.getUint16(0, true), view.getUint16(2, true), sst[view.getUint32(6, true)] || '');
+      } else if (record.id === 0x0203 && data.length >= 14) {
+        setCell(view.getUint16(0, true), view.getUint16(2, true), view.getFloat64(6, true));
+      } else if (record.id === 0x027E && data.length >= 10) {
+        setCell(view.getUint16(0, true), view.getUint16(2, true), easyHomeImportRkNumber(view.getUint32(6, true)));
+      } else if (record.id === 0x00BD && data.length >= 6) {
+        const row = view.getUint16(0, true);
+        const firstCol = view.getUint16(2, true);
+        const lastCol = view.getUint16(data.length - 2, true);
+        let cursor = 4;
+        for (let col = firstCol; col <= lastCol && cursor + 6 <= data.length - 2; col += 1, cursor += 6) {
+          setCell(row, col, easyHomeImportRkNumber(view.getUint32(cursor + 2, true)));
+        }
+      } else if (record.id === 0x0006 && data.length >= 14) {
+        const marker = view.getUint16(6, true);
+        if (marker !== 0xFFFF) {
+          const value = view.getFloat64(6, true);
+          if (Number.isFinite(value)) setCell(view.getUint16(0, true), view.getUint16(2, true), value);
+        }
+      } else if (record.id === 0x0204 && data.length >= 8) {
+        const row = view.getUint16(0, true);
+        const col = view.getUint16(2, true);
+        const length = view.getUint16(6, true);
+        let text = '';
+        for (let i = 0; i < length && 8 + i < data.length; i += 1) text += String.fromCharCode(data[8 + i]);
+        setCell(row, col, text);
+      }
+    });
+    return [...rowMap.entries()].sort((a, b) => a[0] - b[0]).map(([, cells]) => {
+      const keys = Object.keys(cells).map(Number);
+      const max = keys.length ? Math.max(...keys) : 0;
+      return Array.from({ length: max + 1 }, (_, index) => cells[index] ?? '');
+    });
+  }
+
+  function easyHomeImportRowsToState(rows = []) {
+    const headerIndex = rows.findIndex((row) => normalizeText(row?.[0]).toLowerCase().includes('datum') && normalizeText(row?.[1]).toLowerCase().includes('měřid'));
+    const dataRows = rows.slice(headerIndex >= 0 ? headerIndex + 1 : 1);
+    const now = new Date().toISOString();
+    const existingMeters = readingsMeters(true);
+    const meterMap = new Map();
+    existingMeters.forEach((meter) => {
+      if (meter.importKey) meterMap.set(meter.importKey, meter);
+      meterMap.set(`name:${meter.type}|${normalizeKey(meter.name)}|${meter.unit}`, meter);
+    });
+    const meterAdds = [];
+    const entryAdds = [];
+    const entryKeys = new Set(readingsEntries().map((entry) => entry.importKey || `${entry.meterId}|${entry.date}|${entry.value}`));
+    const getMeter = (baseName, register, serial = '') => {
+      const type = easyHomeImportGuessType(baseName);
+      const unit = easyHomeImportUnit(type);
+      const importKey = `easyhome|${normalizeKey(baseName)}|${register}`;
+      const label = register === '2' ? `${baseName} · odečet 2` : baseName;
+      const fallbackKey = `name:${type}|${normalizeKey(label)}|${unit}`;
+      let meter = meterMap.get(importKey) || meterMap.get(fallbackKey);
+      if (!meter) {
+        meter = normalizeReadingMeter({
+          type,
+          name: label,
+          unit,
+          serial,
+          note: 'Import z aplikace Domácí odečty',
+          pricingMode: 'average',
+          importSource: 'easy-home-offtake',
+          importKey,
+          importRegister: register,
+          createdAt: now,
+          updatedAt: now
+        });
+        meterAdds.push(meter);
+        meterMap.set(importKey, meter);
+        meterMap.set(fallbackKey, meter);
+      }
+      return meter;
+    };
+    dataRows.forEach((row) => {
+      const date = easyHomeImportDate(row?.[0]);
+      const baseName = normalizeText(row?.[1]);
+      if (!date || !baseName) return;
+      const serial = easyHomeImportCellText(row?.[7]);
+      const note = normalizeText(row?.[6]);
+      [
+        { register: '1', value: easyHomeImportNumber(row?.[2]) },
+        { register: '2', value: easyHomeImportNumber(row?.[4]) }
+      ].forEach(({ register, value }) => {
+        if (value === '' || !Number.isFinite(value)) return;
+        const meter = getMeter(baseName, register, serial);
+        const importKey = `easyhome|${normalizeKey(baseName)}|${register}|${date}|${value}`;
+        const genericKey = `${meter.id}|${date}|${value}`;
+        if (entryKeys.has(importKey) || entryKeys.has(genericKey)) return;
+        entryKeys.add(importKey);
+        entryKeys.add(genericKey);
+        entryAdds.push(normalizeReadingEntry({
+          meterId: meter.id,
+          date,
+          value,
+          note,
+          importSource: 'easy-home-offtake',
+          importKey,
+          createdAt: now,
+          updatedAt: now
+        }));
+      });
+    });
+    return { meters: meterAdds, entries: entryAdds };
+  }
+
+  async function importEasyHomeOfftakeFile(fileInput) {
+    const file = fileInput?.files?.[0];
+    if (!file) return showToast('Vyber export z Domácí odečty');
+    const name = String(file.name || '').toLowerCase();
+    let rows = [];
+    try {
+      if (name.endsWith('.csv') || name.endsWith('.txt')) {
+        rows = easyHomeImportParseCsv(await file.text());
+      } else if (name.endsWith('.xls')) {
+        rows = easyHomeImportParseXls(await file.arrayBuffer());
+      } else {
+        return showToast('Teď umím import .xls nebo .csv z Domácí odečty');
+      }
+      const result = easyHomeImportRowsToState(rows);
+      if (!result.meters.length && !result.entries.length) return showToast('V souboru jsem nenašel nové odečty');
+      const ok = window.confirm(`Importovat ${result.meters.length} nových měřidel a ${result.entries.length} odečtů z Domácí odečty?`);
+      if (!ok) return;
+      state.readingMeters = [...readingsMeters(true), ...result.meters];
+      state.readings = [...readingsEntries(), ...result.entries];
+      moduleTabs = { ...(moduleTabs || {}), readings: 'meters' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      if (fileInput) fileInput.value = '';
+      await persistReadingsState(`Import hotový: ${result.meters.length} měřidel, ${result.entries.length} odečtů`);
+    } catch (error) {
+      console.error('Easy Home Offtake import failed', error);
+      showToast(`Import se nepovedl: ${error?.message || 'neznámá chyba'}`);
+    }
+  }
+
   function renderReadingMeterCard(meter) {
     const meta = readingTypeMeta(meter.type);
     const stats = readingMeterStats(meter);
@@ -8051,6 +8474,21 @@
         <div class="reading-meter-pricing"><span>${escapeHtml(readingPricingLabel(meter))}</span>${lastMonth ? `<strong>${readingMoney(lastMonth.cost)}</strong>` : ''}</div>
         <div class="item-meta">${meter.serial ? `Číslo: ${escapeHtml(meter.serial)} · ` : ''}${stats.rows.length} odečtů${lastMonth ? ` · poslední měsíc ${readingValue(lastMonth.value, meter.unit)}` : ''}${meter.note ? ` · ${escapeHtml(meter.note)}` : ''}</div>
         <div class="item-actions"><button class="ghost-btn" type="button" data-action="edit-reading-meter-pricing" data-id="${escapeHtml(meter.id)}">Ceny</button><button class="ghost-btn" type="button" data-action="toggle-reading-meter" data-id="${escapeHtml(meter.id)}">${meter.archived ? 'Vrátit' : 'Archivovat'}</button><button class="danger-btn" type="button" data-action="delete-reading-meter" data-id="${escapeHtml(meter.id)}">Smazat</button></div>
+        <details class="action-details compact-edit-details readings-form-drawer reading-meter-edit-drawer">
+          <summary><span>Upravit měřidlo</span><em>název, typ, jednotka, ceny</em></summary>
+          <form data-form="update-reading-meter" data-id="${escapeHtml(meter.id)}" class="compact-form readings-form">
+            <div class="form-grid two">
+              ${selectField('Typ', 'type', READING_TYPE_OPTIONS, meter.type)}
+              ${field('Název', 'name', 'text', 'např. Elektroměr hlavní', true, meter.name)}
+              ${selectField('Jednotka', 'unit', READING_UNIT_OPTIONS, meter.unit)}
+              ${field('Číslo měřidla', 'serial', 'text', 'volitelné', false, meter.serial)}
+              ${field('Umístění', 'location', 'text', 'např. chodba / sklep', false, meter.location)}
+              ${field('Poznámka', 'note', 'text', 'volitelné', false, meter.note)}
+            </div>
+            ${renderReadingPriceFormBlock(meter)}
+            <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button></div>
+          </form>
+        </details>
       </article>`;
   }
 
@@ -8095,33 +8533,7 @@
     const monthRows = readingsMonthlyRows();
     const chartRows = readingsChartRows(12);
     const meterOptions = meters.map((meter) => [meter.id, `${readingTypeMeta(meter.type).icon} ${meter.name} · ${meter.unit}`]);
-    const readingPriceModeOptions = [['average', 'Průměrná cena z vyúčtování'], ['contract', 'Přesný výpočet ze smlouvy']];
-    const pricingHelp = ['electricity', 'gas', 'water'].map((type) => {
-      const meta = readingTypeMeta(type);
-      return `<div class="mini-stat"><span>${escapeHtml(meta.icon)} ${escapeHtml(meta.label)}</span><strong>${escapeHtml(type === 'electricity' ? 'kWh + stálé platby' : type === 'gas' ? 'm³/kWh + stálé platby' : 'vodné + stočné')}</strong><small>${escapeHtml(readingPricingModeInfo(type))}</small></div>`;
-    }).join('');
-    const priceFormBlock = `
-      <details class="subtle-details readings-price-details">
-        <summary><span>Cena a výpočet nákladů</span><em>průměr nebo smlouva</em></summary>
-        <div class="small-muted">Vyber si jednoduchý průměr z vyúčtování, nebo rozpad podle smlouvy. Nezadávej nic natvrdo podle internetu, ceny se liší podle dodavatele a tarifu.</div>
-        <div class="form-grid two">
-          ${selectField('Výpočet ceny', 'pricingMode', readingPriceModeOptions, 'average')}
-          ${field('Celková cena z vyúčtování', 'averageBillTotal', 'text', 'např. 24000', false, '', 'decimal')}
-          ${field('Spotřeba z vyúčtování', 'averageBillUsage', 'text', 'např. 3200', false, '', 'decimal')}
-          ${field('Komodita / silová energie', 'commodityPrice', 'text', 'Kč za jednotku', false, '', 'decimal')}
-          ${field('Distribuce podle spotřeby', 'distributionPrice', 'text', 'Kč za jednotku', false, '', 'decimal')}
-          ${field('Regulované položky / POZE / OTE', 'regulatedPrice', 'text', 'Kč za jednotku', false, '', 'decimal')}
-          ${field('Vodné', 'waterPrice', 'text', 'Kč/m³', false, '', 'decimal')}
-          ${field('Stočné', 'sewerPrice', 'text', 'Kč/m³', false, '', 'decimal')}
-          ${field('Jiná cena za jednotku', 'otherUnitPrice', 'text', 'Kč za jednotku', false, '', 'decimal')}
-          ${field('Stálá platba / měsíc', 'fixedMonthlyCost', 'text', 'např. paušál', false, '', 'decimal')}
-          ${field('Jistič / regulovaná stálá platba', 'breakerMonthly', 'text', 'Kč/měsíc', false, '', 'decimal')}
-          ${field('Stálý plat dodavateli', 'fixedSupplierMonthly', 'text', 'Kč/měsíc', false, '', 'decimal')}
-          ${field('Jiná stálá platba', 'otherFixedMonthly', 'text', 'Kč/měsíc', false, '', 'decimal')}
-          ${field('Popis stálých plateb', 'fixedMonthlyLabel', 'text', 'např. jistič + stálý plat')}
-        </div>
-        <div class="mini-stat-grid readings-price-help">${pricingHelp}</div>
-      </details>`;
+    const priceFormBlock = renderReadingPriceFormBlock();
     return `
       ${renderSectionTabs('readings', [
         { id: 'overview', label: 'Přehled', icon: '📊', count: latestCount },
@@ -8166,6 +8578,14 @@
 
         <section class="card desktop-span-2 readings-panel panel-meters">
           <div class="card-header"><div><h2>Měřidla</h2><p>Elektroměr, plynoměr, vodoměr nebo více vodoměrů v bytě/domě.</p></div><span class="badge">${allMeters.length}</span></div>
+          <details class="action-details compact-edit-details readings-form-drawer">
+            <summary><span>Import z Domácí odečty</span><em>.xls nebo .csv export</em></summary>
+            <div class="small-muted">Vyber export z aplikace Domácí odečty. Import vytvoří měřidla podle názvů a natáhne historii odečtů. Pokud má řádek i „Odečet 2“, vytvoří druhý registr jako samostatné měřidlo.</div>
+            <div class="form-grid two readings-import-grid">
+              <label><span>Soubor</span><input type="file" accept=".xls,.csv,.txt" data-reading-import-file></label>
+              <div class="form-actions align-end"><button class="primary-btn" type="button" data-action="import-easy-home-offtake">Importovat odečty</button></div>
+            </div>
+          </details>
           <details class="action-details compact-edit-details readings-form-drawer">
             <summary><span>Přidat měřidlo</span><em>elektřina, plyn, voda</em></summary>
             <form data-form="add-reading-meter" class="compact-form readings-form">
@@ -11280,7 +11700,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 253))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 255))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -16370,6 +16790,7 @@
       'add-hdo': () => addHdoWindowFromForm(data, form),
       'add-waste': () => addWasteFromForm(data, form),
       'add-reading-meter': () => addReadingMeterFromForm(data, form),
+      'update-reading-meter': () => updateReadingMeterFromForm(form.dataset.id, data, form),
       'add-reading-entry': () => addReadingEntryFromForm(data, form),
       'add-task': () => addTaskFromForm(data, form),
       'add-notebook-page': () => addNotebookPageFromForm(data, form),
@@ -16974,7 +17395,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 253, mode: 'rich-demo-v253', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 255, mode: 'rich-demo-v255', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -17127,7 +17548,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 253, mode: 'readings-pricing-v253', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 255, mode: 'readings-import-v255', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -19465,6 +19886,11 @@
       deleteWaste(button.dataset.id);
       return;
     }
+    if (action === 'import-easy-home-offtake') {
+      const root = button.closest('.readings-form-drawer') || document;
+      importEasyHomeOfftakeFile(root.querySelector('[data-reading-import-file]'));
+      return;
+    }
     if (action === 'delete-reading-entry') {
       deleteReadingEntry(button.dataset.id);
       return;
@@ -20479,7 +20905,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 253
+        appBuild: 255
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -21073,7 +21499,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-253-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-255-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -21449,7 +21875,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_253</span>
+          <span class="badge">Domácnost+ v.0.1_255</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

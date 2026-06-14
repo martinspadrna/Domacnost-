@@ -16540,3 +16540,19 @@ body {
     flex-direction: column;
   }
 }
+
+/* Domácnost+ v.0.1_255 – Odečty: import z Domácí odečty */
+
+
+.readings-import-grid label {
+  min-width: 0;
+}
+
+.readings-import-grid input[type="file"] {
+  width: 100%;
+  max-width: 100%;
+}
+
+.readings-import-grid .align-end {
+  align-self: end;
+}
