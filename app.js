@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_242';
+  const APP_VERSION = 'Domácnost+ v.0.1_245';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -698,8 +698,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 242,
-      mode: 'module-split-nav-fixes-v242',
+      appBuild: 245,
+      mode: 'subscriptions-smart-payments-v245',
       createdAt: '',
       updatedAt: ''
     },
@@ -738,6 +738,7 @@
     hdoCloud: { settingId: '', loadedAt: '' },
     wasteCloud: { types: [], loadedAt: '' },
     parcelsCloud: { loadedAt: '' },
+    parcelLookup: { phone: '', email: '', postalCode: '', address: '', consent: false, lastSearchAt: '', lastResult: '', lastError: '' },
     tasksCloud: { loadedAt: '' },
     calendarCloud: { sources: [], loadedAt: '', sourcesLoadedAt: '', googleConnection: null, googleCalendars: [], googleCalendarsLoadedAt: '', googleLastSyncAt: '' },
     shoppingStats: {},
@@ -1569,8 +1570,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 242,
-      mode: 'module-split-nav-fixes-v242',
+      appBuild: 245,
+      mode: 'subscriptions-smart-payments-v245',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1625,6 +1626,10 @@
     migrated.hdoCloud = migrated.hdoCloud && typeof migrated.hdoCloud === 'object' && !Array.isArray(migrated.hdoCloud)
       ? { settingId: migrated.hdoCloud.settingId || '', loadedAt: migrated.hdoCloud.loadedAt || '' }
       : { ...DEFAULT_STATE.hdoCloud };
+    migrated.parcelsCloud = migrated.parcelsCloud && typeof migrated.parcelsCloud === 'object' && !Array.isArray(migrated.parcelsCloud)
+      ? { loadedAt: migrated.parcelsCloud.loadedAt || '' }
+      : { ...DEFAULT_STATE.parcelsCloud };
+    migrated.parcelLookup = normalizeParcelLookupSettings(migrated.parcelLookup);
     migrated.householdWorkspaces = migrated.householdWorkspaces && typeof migrated.householdWorkspaces === 'object' && !Array.isArray(migrated.householdWorkspaces) ? migrated.householdWorkspaces : {};
     migrated.cloud.households = Array.isArray(migrated.cloud?.households) ? migrated.cloud.households : [];
     migrated.cloud.invitations = Array.isArray(migrated.cloud?.invitations) ? migrated.cloud.invitations : [];
@@ -5121,6 +5126,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_245', note: 'Předplatné: chytřejší zápis plateb podle vybrané služby nebo člověka, filtruje jen nezaplacené kombinace v daném měsíci, předvyplňuje částku a opravuje ujíždění měsíčního panelu.' },
       { title: 'Domácnost+ v.0.1_242', note: 'Domácnost byla rozdělená na samostatné moduly HDO, Odpad, Zápisník, Záruky a Svátky PL. Spodní lišta je pevněji zamčená k viewportu při scrollu, v katalogu nákupů jde přidat produkt přímo z katalogu a Předplatné má přehlednější karty služeb.' },
       { title: 'Domácnost+ v.0.1_241', note: 'Zápisník nabízí při nové poznámce existující aktivní sekce, takže další výlet může rovnou spadnout do sekce Výlety. Úkoly s vyplněným termínem už nepadají do Bez termínu; delší termíny mají vlastní skupinu Později.' },
       { title: 'Domácnost+ v.0.1_240', note: 'Zápisník má čistší přidávání: tlačítko Přidat poznámku otevírá jen poznámku a Přidat úkol jen úkol. Odstraněné univerzální plus a duplicitní přidání u prázdných úkolů. Úkoly jsou nově rozdělené na Dnes, Brzy, Bez termínu a Hotovo a poznámky se zobrazují jako modernější karty.' },
@@ -5756,6 +5762,83 @@
     `).join('')}</div>`;
   }
 
+  function normalizeParcelLookupSettings(input = {}) {
+    const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+    const phone = normalizeText(source.phone).replace(/[^+0-9]/g, '').slice(0, 24);
+    const email = normalizeText(source.email).toLowerCase().slice(0, 120);
+    const postalCode = normalizeText(source.postalCode || source.postal_code).replace(/\s+/g, ' ').slice(0, 16);
+    const address = normalizeText(source.address).slice(0, 220);
+    return {
+      phone,
+      email,
+      postalCode,
+      address,
+      consent: source.consent === true || source.consent === 'on' || source.consent === 'true',
+      lastSearchAt: normalizeText(source.lastSearchAt || source.last_search_at),
+      lastResult: normalizeText(source.lastResult || source.last_result).slice(0, 240),
+      lastError: normalizeText(source.lastError || source.last_error).slice(0, 240)
+    };
+  }
+
+  function getParcelLookupSettings() {
+    state.parcelLookup = normalizeParcelLookupSettings(state.parcelLookup);
+    return state.parcelLookup;
+  }
+
+  function hasParcelLookupContact(lookup = getParcelLookupSettings()) {
+    return Boolean(lookup.phone || lookup.email);
+  }
+
+  function renderParcelLookupContactSummary(lookup = getParcelLookupSettings()) {
+    const rows = [
+      ['Telefon', lookup.phone || 'není nastavený'],
+      ['E-mail', lookup.email || 'není nastavený'],
+      ['PSČ', lookup.postalCode || 'volitelné'],
+      ['Adresa', lookup.address || 'volitelná']
+    ];
+    return `<div class="package-lookup-summary">${rows.map(([label, value]) => `<div class="mini-stat"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('')}</div>`;
+  }
+
+  function renderParcelLookupPanel() {
+    const lookup = getParcelLookupSettings();
+    const cloudReady = Boolean(state.cloud?.householdId);
+    const canSearch = hasParcelLookupContact(lookup) && lookup.consent;
+    return `
+      <section class="card desktop-span-2 packages-panel panel-discovery package-lookup-panel">
+        <div class="card-header">
+          <div>
+            <h2>Automatické hledání podle telefonu a e-mailu</h2>
+            <p>Zadej údaje, na které ti chodí zásilky. Frontend je jen bezpečně uloží; reálné dotazy na dopravce musí běžet přes backend.</p>
+          </div>
+          <span class="badge ${canSearch ? 'good' : ''}">${canSearch ? 'připraveno' : 'nastavit údaje'}</span>
+        </div>
+        ${renderParcelLookupContactSummary(lookup)}
+        <form data-form="parcel-lookup-settings" class="compact-form parcel-lookup-form">
+          <div class="form-grid two">
+            ${field('Telefon', 'phone', 'tel', '+420...', false, lookup.phone)}
+            ${field('E-mail', 'email', 'email', 'mail@example.cz', false, lookup.email)}
+            ${field('PSČ', 'postalCode', 'text', 'např. 543 71', false, lookup.postalCode)}
+            ${field('Adresa / město', 'address', 'text', 'volitelné upřesnění', false, lookup.address)}
+          </div>
+          <label class="check-row parcel-consent-row">
+            <input type="checkbox" name="consent" ${lookup.consent ? 'checked' : ''}>
+            <span>Souhlasím, aby aplikace tyto údaje použila pro hledání zásilek přes bezpečný backend.</span>
+          </label>
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">Uložit údaje</button>
+            <button class="ghost-btn" type="button" data-action="parcel-discovery-search">Zkusit automaticky najít zásilky</button>
+            ${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-parcels">Načíst cloud balíky</button>' : ''}
+          </div>
+        </form>
+        <div class="inline-note">
+          ${lookup.lastSearchAt ? `Poslední pokus: ${escapeHtml(formatDateTime(lookup.lastSearchAt))}. ` : ''}
+          ${lookup.lastResult ? escapeHtml(lookup.lastResult) : 'Teď je připravený bezpečný základ. Backend je nasazený jako první pokus. Bez oficiálního API dopravce nemusí najít nic jen podle kontaktu.'}
+          ${lookup.lastError ? `<br><span class="danger-text">${escapeHtml(lookup.lastError)}</span>` : ''}
+        </div>
+      </section>
+    `;
+  }
+
   function renderPackages() {
     const packages = [...state.packages].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     const activePackages = packages.filter((pkg) => !['delivered', 'archived'].includes(pkg.status));
@@ -5763,17 +5846,19 @@
     const cloudReady = Boolean(state.cloud?.householdId);
     const localOnly = packages.filter((pkg) => !pkg.cloudId).length;
     const cloudCount = packages.filter((pkg) => pkg.cloudId).length;
-    const activePackagesTab = getModuleTab('packages', 'active');
+    const lookup = getParcelLookupSettings();
+    const activePackagesTab = getModuleTab('packages', hasParcelLookupContact(lookup) ? 'active' : 'discovery');
     return `
       ${renderSectionTabs('packages', [
         { id: 'active', label: 'Aktivní', icon: '📦', count: activePackages.length },
-        { id: 'add', label: 'Přidat', icon: '➕' },
+        { id: 'discovery', label: 'Hledání', icon: '🔎' },
+        { id: 'add', label: 'Ručně', icon: '➕' },
         { id: 'archive', label: 'Doručené', icon: '✅', count: deliveredPackages.length }
-      ], 'active')}
+      ], hasParcelLookupContact(lookup) ? 'active' : 'discovery')}
       <div class="grid two module-tabbed packages-tab-${activePackagesTab}" data-tab-area="packages">
         <section class="card desktop-span-2 packages-panel panel-active">
           <div class="card-header">
-            <div><h2>Aktivní balíky</h2><p>Vepředu jsou jen zásilky, které ještě řešíš. Přidávání je schované v záložce, aby modul nebyl roztahaný.</p></div>
+            <div><h2>Aktivní balíky</h2><p>Vepředu jsou jen zásilky, které ještě řešíš. Automatické hledání je v samostatné záložce Hledání.</p></div>
             <span class="badge ${cloudCount ? 'good' : ''}">${packages.length} celkem · ${cloudCount} cloud</span>
           </div>
           <div class="cloud-status-grid compact-cloud-stats">
@@ -5782,12 +5867,14 @@
             <div class="mini-stat"><span>Cloud</span><strong>${cloudCount}</strong></div>
             <div class="mini-stat"><span>Lokálně</span><strong>${localOnly}</strong></div>
           </div>
-          ${activePackages.length ? `<div class="list compact-list">${activePackages.map(renderPackageItem).join('')}</div>` : renderEmptyCta({ icon: '📦', title: 'Žádný aktivní balík', text: 'Přidej zásilku ručně. Později půjde automatika přes bezpečný backend.', nav: 'packages', tab: 'add', label: 'Přidat balík' })}
+          ${activePackages.length ? `<div class="list compact-list">${activePackages.map(renderPackageItem).join('')}</div>` : renderEmptyCta({ icon: '📦', title: 'Žádný aktivní balík', text: 'Nastav telefon/e-mail pro hledání, nebo přidej zásilku ručně.', nav: 'packages', tab: hasParcelLookupContact(lookup) ? 'add' : 'discovery', label: hasParcelLookupContact(lookup) ? 'Přidat ručně' : 'Nastavit hledání' })}
         </section>
+
+        ${renderParcelLookupPanel()}
 
         <section class="card packages-panel panel-add">
           <div class="card-header">
-            <div><h2>Přidat balík</h2><p>Ruční sledování zásilek. Automatika přes e-mail/backend přijde později.</p></div>
+            <div><h2>Přidat ručně</h2><p>Když už znáš číslo zásilky, ručně ho uložíš sem.</p></div>
             <span class="badge ${packages.some((pkg) => pkg.cloudId) ? 'good' : ''}">${packages.some((pkg) => pkg.cloudId) ? 'cloud' : 'lokálně'}</span>
           </div>
           <form data-form="add-package">
@@ -5817,6 +5904,7 @@
       </div>
     `;
   }
+
 
   function renderPackageItem(pkg) {
     const status = packageStatus(pkg.status);
@@ -9872,6 +9960,94 @@
     return includeEmpty ? [['', 'Vyber člověka'], ...rows] : rows;
   }
 
+  function subscriptionUnpaidShares(month = subscriptionSelectedMonth()) {
+    return getSubscriptionServices()
+      .filter((service) => service.enabled !== false)
+      .flatMap((service) => (Array.isArray(service.shares) ? service.shares : [])
+        .filter((share) => share.personId && decimalValue(share.amount) > 0 && !subscriptionIsPaid(share.personId, service.id, month))
+        .map((share) => ({ service, share, person: getSubscriptionPeople().find((item) => item.id === share.personId) || null })));
+  }
+
+  function subscriptionRemainingAmount(personId, subscriptionId, month = subscriptionSelectedMonth()) {
+    const expected = subscriptionShareAmountForPerson(personId, subscriptionId);
+    const paid = subscriptionPaidAmount(personId, subscriptionId, month);
+    return Math.max(0, decimalValue(expected) - decimalValue(paid));
+  }
+
+  function subscriptionPaymentDraft() {
+    const draft = state.settings?.subscriptionPaymentDraft || {};
+    return {
+      subscriptionId: normalizeText(draft.subscriptionId),
+      personId: normalizeText(draft.personId),
+      month: /^\d{4}-\d{2}$/.test(String(draft.month || '')) ? String(draft.month) : subscriptionSelectedMonth()
+    };
+  }
+
+  function setSubscriptionPaymentDraft(partial = {}) {
+    const current = subscriptionPaymentDraft();
+    const month = /^\d{4}-\d{2}$/.test(String((partial.month ?? current.month) || '')) ? String(partial.month ?? current.month) : subscriptionSelectedMonth();
+    const draft = {
+      subscriptionId: normalizeText(partial.subscriptionId ?? current.subscriptionId),
+      personId: normalizeText(partial.personId ?? current.personId),
+      month
+    };
+    state.settings = { ...(state.settings || {}), subscriptionPaymentDraft: draft };
+    touchState();
+    saveState();
+    render();
+  }
+
+  function clearSubscriptionPaymentDraft(keepMonth = subscriptionSelectedMonth()) {
+    state.settings = { ...(state.settings || {}), subscriptionPaymentDraft: { subscriptionId: '', personId: '', month: keepMonth } };
+  }
+
+  function subscriptionPaymentServiceOptions(personId = '', month = subscriptionSelectedMonth(), includeEmpty = false) {
+    const rows = getSubscriptionServices()
+      .filter((service) => service.enabled !== false)
+      .map((service) => {
+        const shares = Array.isArray(service.shares) ? service.shares : [];
+        const matchingShares = shares.filter((share) => (!personId || share.personId === personId) && share.personId && !subscriptionIsPaid(share.personId, service.id, month));
+        if (!matchingShares.length) return null;
+        const labelPerson = personId ? subscriptionPersonName(personId) : `${matchingShares.length} nezapl.`;
+        const amount = personId ? subscriptionRemainingAmount(personId, service.id, month) : matchingShares.reduce((sum, share) => sum + subscriptionRemainingAmount(share.personId, service.id, month), 0);
+        return [service.id, `${service.name} · ${labelPerson} · zbývá ${formatCurrency(amount)}`];
+      })
+      .filter(Boolean);
+    return includeEmpty ? [['', rows.length ? 'Vyber službu' : 'Vše je pro měsíc zaplacené'], ...rows] : rows;
+  }
+
+  function subscriptionPaymentPersonOptions(subscriptionId = '', month = subscriptionSelectedMonth(), includeEmpty = false) {
+    const people = getSubscriptionPeople();
+    const rows = people.map((person) => {
+      const services = getSubscriptionServices().filter((service) => service.enabled !== false && (!subscriptionId || service.id === subscriptionId));
+      const unpaidServices = services.filter((service) => {
+        const share = (service.shares || []).find((entry) => entry.personId === person.id);
+        return share && decimalValue(share.amount) > 0 && !subscriptionIsPaid(person.id, service.id, month);
+      });
+      if (!unpaidServices.length) return null;
+      const amount = unpaidServices.reduce((sum, service) => sum + subscriptionRemainingAmount(person.id, service.id, month), 0);
+      const serviceLabel = subscriptionId ? subscriptionLabelById(subscriptionId) : `${unpaidServices.length} služ.`;
+      return [person.id, `${person.name} · ${serviceLabel} · zbývá ${formatCurrency(amount)}`];
+    }).filter(Boolean);
+    return includeEmpty ? [['', rows.length ? 'Vyber člověka' : 'Nikdo nemá nezaplaceno'], ...rows] : rows;
+  }
+
+  function normalizeSubscriptionPaymentDraft(draft = subscriptionPaymentDraft()) {
+    const month = /^\d{4}-\d{2}$/.test(String(draft.month || '')) ? String(draft.month) : subscriptionSelectedMonth();
+    let subscriptionId = normalizeText(draft.subscriptionId);
+    let personId = normalizeText(draft.personId);
+
+    if (subscriptionId) {
+      const allowedPeople = new Set(subscriptionPaymentPersonOptions(subscriptionId, month, false).map(([id]) => id));
+      if (personId && !allowedPeople.has(personId)) personId = '';
+    }
+    if (personId) {
+      const allowedServices = new Set(subscriptionPaymentServiceOptions(personId, month, false).map(([id]) => id));
+      if (subscriptionId && !allowedServices.has(subscriptionId)) subscriptionId = '';
+    }
+    return { subscriptionId, personId, month };
+  }
+
   function subscriptionExpectedForPerson(personId, month = subscriptionSelectedMonth()) {
     return getSubscriptionServices().filter((service) => service.enabled !== false).reduce((sum, service) => {
       const share = (service.shares || []).find((entry) => entry.personId === personId);
@@ -9933,6 +10109,10 @@
     const visiblePaymentServices = services
       .map((service) => ({ service, visibleShares: subscriptionVisibleShares(service, month, paymentFilter, summary) }))
       .filter((row) => paymentFilter === 'all' || row.visibleShares.length);
+    const paymentDraft = normalizeSubscriptionPaymentDraft(subscriptionPaymentDraft());
+    const paymentServiceOptions = subscriptionPaymentServiceOptions(paymentDraft.personId, paymentDraft.month, true);
+    const paymentPersonOptions = subscriptionPaymentPersonOptions(paymentDraft.subscriptionId, paymentDraft.month, true);
+    const paymentDefaultAmount = paymentDraft.subscriptionId && paymentDraft.personId ? subscriptionRemainingAmount(paymentDraft.personId, paymentDraft.subscriptionId, paymentDraft.month) : 0;
     const serviceOverviewCards = services.slice(0, 8).map((service) => {
       const shares = service.shares || [];
       const shareTotal = shares.reduce((sum, share) => sum + decimalValue(share.amount), 0);
@@ -9955,12 +10135,11 @@
         <section class="card desktop-span-2 subscription-panel panel-overview">
           <div class="card-header"><div><h2>Předplatné</h2><p>Streamovací služby, sdílení s lidmi a měsíční kontrola, kdo už zaplatil.</p></div><span class="badge ${summary.owed ? 'warn' : 'good'}">${summary.owed ? `${formatCurrency(summary.owed)} chybí` : 'srovnáno'}</span></div>
           ${cloudReady() ? `<div class="inline-note compact-note subscription-cloud-status"><span class="badge ${state.subscriptionsCloud?.pendingAt ? 'warn' : state.subscriptionsCloud?.loadedAt ? 'good' : ''}">${state.subscriptionsCloud?.pendingAt ? 'automaticky ukládám' : state.subscriptionsCloud?.loadedAt ? `cloud ${escapeHtml(formatDateTime(state.subscriptionsCloud.loadedAt))}` : 'cloud aktivní'}</span><span>Předplatné se synchronizuje automaticky přes Supabase domácnost. Není potřeba nic ručně odesílat ani načítat.</span></div>` : `<div class="inline-note compact-note">Po přihlášení a napojení domácnosti na cloud se Předplatné začne synchronizovat automaticky.</div>`}
-          <form data-form="subscription-month-filter" class="compact-filter-form">
+          <form data-form="subscription-month-filter" class="compact-filter-form subscription-month-form">
             <div class="form-grid two">
               ${field('Měsíc přehledu', 'month', 'month', '', false, month)}
               <div class="field"><label>Rychlý posun</label><div class="item-actions"><button class="ghost-btn" type="button" data-action="subscription-month-prev">Předchozí</button><button class="ghost-btn" type="button" data-action="subscription-month-current">Aktuální</button><button class="ghost-btn" type="button" data-action="subscription-month-next">Další</button></div></div>
             </div>
-            <div class="form-actions"><button class="ghost-btn" type="submit">Zobrazit měsíc</button></div>
           </form>
           <div class="kpi-grid compact-kpi-grid subscription-kpi-grid">
             <div class="kpi"><strong>${formatCurrency(summary.totalCost)}</strong><span>platím já za služby</span></div>
@@ -10036,14 +10215,15 @@
         <section class="card subscription-panel panel-payments">
           <div class="card-header"><div><h2>Zapsat platbu / předplatné dopředu</h2><p>Když někdo zaplatí ručně nebo dopředu na další měsíc.</p></div></div>
           ${allServices.length && people.length ? `
-            <form data-form="add-subscription-payment" class="compact-form">
+            <form data-form="add-subscription-payment" class="compact-form subscription-smart-payment-form">
               <div class="form-grid two">
-                ${selectField('Služba', 'subscriptionId', subscriptionServiceOptions(true), '')}
-                ${selectField('Člověk', 'personId', subscriptionPersonOptions(true), '')}
-                ${field('Měsíc', 'month', 'month', '', false, month)}
-                ${field('Částka', 'amount', 'number', 'např. 80', true)}
+                ${selectField('Služba', 'subscriptionId', paymentServiceOptions, paymentDraft.subscriptionId)}
+                ${selectField('Člověk', 'personId', paymentPersonOptions, paymentDraft.personId)}
+                ${field('Měsíc', 'month', 'month', '', false, paymentDraft.month)}
+                ${field('Částka', 'amount', 'number', 'např. 80', true, paymentDefaultAmount ? String(paymentDefaultAmount) : '')}
                 ${field('Poznámka', 'note', 'text', 'např. zaplaceno dopředu')}
               </div>
+              <div class="inline-note compact-note subscription-payment-hint">Vybereš službu → nabídnou se jen lidi, kteří ji mají a ještě ji nemají zaplacenou. Vybereš člověka → nabídnou se jen jeho nezaplacené služby. Částka se předvyplní podle nastaveného sdílení.</div>
               <div class="form-actions"><button class="primary-btn" type="submit">Zapsat platbu</button></div>
             </form>
           ` : renderEmpty('Nejdřív přidej službu a člověka.')}
@@ -10184,6 +10364,7 @@
     if (!service || !person) return showToast('Vyber službu a člověka');
     if (!(amount > 0)) return showToast('Vyplň částku');
     state.subscriptionPayments.push(normalizeSubscriptionPayment({ subscriptionId: service.id, personId: person.id, month, amount, paidAt: todayISO(), note: data.note }));
+    clearSubscriptionPaymentDraft(month);
     form.reset();
     persistSubscriptionsState({ toast: month > subscriptionSelectedMonth() ? 'Platba dopředu zapsaná' : 'Platba zapsaná' });
   }
@@ -14535,6 +14716,140 @@
     showToast(synced ? `Odesláno balíků: ${synced}` : 'Žádný balík se nepovedlo odeslat');
   }
 
+  async function saveParcelLookupSettingsFromForm(data, form) {
+    const lookup = normalizeParcelLookupSettings({
+      phone: data.phone,
+      email: data.email,
+      postalCode: data.postalCode,
+      address: data.address,
+      consent: Boolean(form?.querySelector?.('[name="consent"]')?.checked),
+      lastSearchAt: state.parcelLookup?.lastSearchAt || '',
+      lastResult: state.parcelLookup?.lastResult || '',
+      lastError: ''
+    });
+    state.parcelLookup = lookup;
+    touchState();
+    saveState();
+    await cloudSaveHouseholdUiSettings(false);
+    render();
+    showToast(cloudReady() ? 'Údaje pro hledání balíků uložené' : 'Údaje uložené lokálně');
+  }
+
+  function normalizeDiscoveredParcel(input = {}) {
+    const source = input && typeof input === 'object' ? input : {};
+    const tracking = normalizeText(source.tracking || source.trackingNumber || source.tracking_number || source.code || source.number);
+    if (!tracking) return null;
+    return {
+      id: uid(),
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId(),
+      createdAt: new Date().toISOString(),
+      title: normalizeText(source.title || source.store || source.sender || source.name) || carrierLabel(source.carrier) || 'Nalezený balík',
+      carrier: normalizeText(source.carrier || source.provider) || 'other',
+      tracking,
+      status: parcelStatusFromCloud(source.status || 'new'),
+      url: normalizeText(source.url || source.trackingUrl || source.tracking_url),
+      expectedDate: normalizeText(source.expectedDate || source.expected_date),
+      pickupPlace: normalizeText(source.pickupPlace || source.pickup_place),
+      note: normalizeText(source.note || source.description || 'Nalezeno podle telefonu/e-mailu'),
+      source: 'parcel_lookup'
+    };
+  }
+
+  async function runParcelDiscoverySearch() {
+    const lookup = getParcelLookupSettings();
+    if (!hasParcelLookupContact(lookup)) {
+      showToast('Nejdřív zadej telefon nebo e-mail');
+      setModuleTab('packages', 'discovery');
+      render();
+      return;
+    }
+    if (!lookup.consent) {
+      showToast('Potvrď souhlas s hledáním podle těchto údajů');
+      setModuleTab('packages', 'discovery');
+      render();
+      return;
+    }
+    if (!cloudReady()) {
+      state.parcelLookup = { ...lookup, lastSearchAt: new Date().toISOString(), lastResult: '', lastError: 'Pro automatické hledání je potřeba přihlášená cloudová domácnost.' };
+      touchState();
+      saveState();
+      render();
+      showToast('Hledání podle údajů potřebuje cloudovou domácnost');
+      return;
+    }
+    const client = getSupabaseClient();
+    if (!client?.functions?.invoke) {
+      state.parcelLookup = { ...lookup, lastSearchAt: new Date().toISOString(), lastResult: '', lastError: 'Supabase Functions nejsou dostupné.' };
+      touchState();
+      saveState();
+      render();
+      showToast('Automatické hledání je momentálně nedostupné');
+      return;
+    }
+    const user = await refreshCloudSession(false);
+    if (!user) {
+      showToast('Nejdřív se přihlas');
+      return;
+    }
+    try {
+      showToast('Hledám zásilky přes bezpečný backend…');
+      const { data, error } = await client.functions.invoke('parcel-discovery-search', {
+        body: {
+          householdId: state.cloud.householdId,
+          profileId: currentProfileId(),
+          lookup: {
+            phone: lookup.phone,
+            email: lookup.email,
+            postalCode: lookup.postalCode,
+            address: lookup.address,
+            consent: lookup.consent
+          },
+          phone: lookup.phone,
+          email: lookup.email,
+          postalCode: lookup.postalCode,
+          address: lookup.address,
+          consent: lookup.consent
+        }
+      });
+      if (error || data?.error || data?.ok === false) {
+        const message = data?.error || data?.message || await readFunctionErrorMessage(error, 'Automatické hledání je nasazené, ale podle samotného kontaktu nemusí najít zásilky');
+        state.parcelLookup = { ...lookup, lastSearchAt: new Date().toISOString(), lastResult: '', lastError: message };
+        touchState();
+        saveState();
+        render();
+        showToast(message);
+        return;
+      }
+      const discovered = Array.isArray(data?.parcels) ? data.parcels.map(normalizeDiscoveredParcel).filter(Boolean) : [];
+      let added = 0;
+      for (const parcel of discovered) {
+        const duplicate = state.packages.some((pkg) => normalizeText(pkg.tracking).toLowerCase() === parcel.tracking.toLowerCase() && parcel.tracking);
+        if (duplicate) continue;
+        const saved = await cloudAddParcel(parcel);
+        if (saved?.id) parcel.cloudId = saved.id;
+        state.packages.push(parcel);
+        added += 1;
+      }
+      const result = added
+        ? `Nalezeno a přidáno balíků: ${added}`
+        : (normalizeText(data?.message) || 'Automatické hledání proběhlo, ale nenašlo nové zásilky.');
+      state.parcelLookup = { ...lookup, lastSearchAt: new Date().toISOString(), lastResult: result, lastError: '' };
+      state.parcelsCloud = { ...(state.parcelsCloud || {}), loadedAt: new Date().toISOString() };
+      touchState();
+      saveState();
+      render();
+      showToast(result);
+    } catch (error) {
+      const message = error?.message || 'Hledání balíků se nepovedlo';
+      state.parcelLookup = { ...lookup, lastSearchAt: new Date().toISOString(), lastResult: '', lastError: message };
+      touchState();
+      saveState();
+      render();
+      showToast(message);
+    }
+  }
+
   async function addPackageFromForm(data, form) {
     const item = {
       id: uid(),
@@ -15383,6 +15698,7 @@
       'add-calendar-source': () => addCalendarSourceFromForm(data, form),
       'google-calendar-save-sources': () => saveGoogleCalendarSourcesFromForm(form),
       'add-package': () => addPackageFromForm(data, form),
+      'parcel-lookup-settings': () => saveParcelLookupSettingsFromForm(data, form),
       'add-shopping': () => addShoppingFromForm(data, form),
       'add-shopping-list': () => addShoppingListFromForm(data, form),
       'add-shopping-catalog-item': () => addShoppingCatalogItemFromForm(data, form),
@@ -15990,7 +16306,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 242, mode: 'rich-demo-v242', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 245, mode: 'rich-demo-v245', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -16017,6 +16333,7 @@
       shoppingCloud: { units: [], categories: [], catalog: [], activeListId: '', loadedAt: '' },
       wasteCloud: { types: [], loadedAt: '' },
       parcelsCloud: { loadedAt: '' },
+      parcelLookup: { phone: '', email: '', postalCode: '', address: '', consent: false, lastSearchAt: '', lastResult: '', lastError: '' },
       tasksCloud: { loadedAt: '' },
       calendarCloud: { sources: [], loadedAt: '', sourcesLoadedAt: '', googleConnection: null, googleCalendars: [], googleCalendarsLoadedAt: '', googleLastSyncAt: '' },
       waste,
@@ -16142,7 +16459,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 242, mode: 'module-split-nav-fixes-v242', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 245, mode: 'subscriptions-smart-payments-v245', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -18160,6 +18477,10 @@
       render();
       return;
     }
+    if (action === 'parcel-discovery-search') {
+      runParcelDiscoverySearch();
+      return;
+    }
     if (action === 'cloud-load-parcels') {
       cloudLoadParcels(true);
       return;
@@ -19092,6 +19413,7 @@
         dashboardWidgets: structuredCloneSafe(state.settings?.dashboardWidgets || []),
         theme: state.settings?.theme || 'light'
       },
+      parcelLookup: structuredCloneSafe(state.parcelLookup || DEFAULT_STATE.parcelLookup),
       collections: {}
     };
     getCollectionNames().forEach((collection) => {
@@ -19105,6 +19427,7 @@
     state.hdoCloud = structuredCloneSafe(DEFAULT_STATE.hdoCloud);
     state.wasteCloud = structuredCloneSafe(DEFAULT_STATE.wasteCloud);
     state.parcelsCloud = structuredCloneSafe(DEFAULT_STATE.parcelsCloud);
+    state.parcelLookup = structuredCloneSafe(DEFAULT_STATE.parcelLookup);
     state.tasksCloud = structuredCloneSafe(DEFAULT_STATE.tasksCloud);
     state.calendarCloud = structuredCloneSafe(DEFAULT_STATE.calendarCloud);
     state.financeCloud = structuredCloneSafe(DEFAULT_STATE.financeCloud);
@@ -19419,6 +19742,9 @@
       if (/^\d{4}-\d{2}$/.test(String(layout.subscriptionSettings.month || ''))) state.settings.subscriptionMonth = String(layout.subscriptionSettings.month);
       if (['all', 'unpaid', 'debtors'].includes(layout.subscriptionSettings.paymentFilter)) state.settings.subscriptionPaymentFilter = layout.subscriptionSettings.paymentFilter;
     }
+    if (layout.parcelLookup && typeof layout.parcelLookup === 'object') {
+      state.parcelLookup = normalizeParcelLookupSettings({ ...state.parcelLookup, ...layout.parcelLookup });
+    }
     if (layout.visualSettings && typeof layout.visualSettings === 'object') {
       if (mergeVisualSettings(layout.visualSettings)) saveLocalVisualSettings();
     }
@@ -19456,13 +19782,14 @@
           month: subscriptionSelectedMonth(),
           paymentFilter: subscriptionPaymentFilter()
         },
+        parcelLookup: normalizeParcelLookupSettings(state.parcelLookup),
         financeTemplates: normalizeFinanceTemplates(state.financeTemplates || []),
         financeSettings: {
           month: financeSelectedMonth(),
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 242
+        appBuild: 245
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19528,6 +19855,7 @@
       household: structuredCloneSafe(state.household),
       profiles: structuredCloneSafe(state.profiles),
       activeProfileId: state.activeProfileId,
+      parcelLookup: structuredCloneSafe(state.parcelLookup || DEFAULT_STATE.parcelLookup),
       collections: {}
     };
     getCollectionNames().forEach((collection) => {
@@ -19542,6 +19870,7 @@
       state.household = structuredCloneSafe(snapshot.household || state.household);
       state.profiles = structuredCloneSafe(snapshot.profiles || []);
       state.activeProfileId = snapshot.activeProfileId || state.profiles[0]?.id || '';
+      state.parcelLookup = normalizeParcelLookupSettings(snapshot.parcelLookup || state.parcelLookup);
       getCollectionNames().forEach((collection) => {
         state[collection] = structuredCloneSafe(snapshot.collections?.[collection] || []);
       });
@@ -19554,6 +19883,7 @@
       };
       state.profiles = [createProfile(currentProfile()?.name || 'Já', 'owner', state.household.id)];
       state.activeProfileId = state.profiles[0]?.id || '';
+      state.parcelLookup = structuredCloneSafe(DEFAULT_STATE.parcelLookup);
       getCollectionNames().forEach((collection) => { state[collection] = []; });
       state.shoppingStats = {};
     }
@@ -20052,7 +20382,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-242-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-245-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20267,6 +20597,21 @@
       setFinanceMonth(financeMonthInput.value);
       return;
     }
+    const subscriptionMonthInput = event.target.closest('form[data-form="subscription-month-filter"] input[name="month"]');
+    if (subscriptionMonthInput) {
+      setSubscriptionMonth(subscriptionMonthInput.value);
+      return;
+    }
+    const subscriptionPaymentControl = event.target.closest('form[data-form="add-subscription-payment"] select[name="subscriptionId"], form[data-form="add-subscription-payment"] select[name="personId"], form[data-form="add-subscription-payment"] input[name="month"]');
+    if (subscriptionPaymentControl) {
+      const paymentForm = subscriptionPaymentControl.closest('form[data-form="add-subscription-payment"]');
+      setSubscriptionPaymentDraft({
+        subscriptionId: paymentForm?.querySelector('[name="subscriptionId"]')?.value || '',
+        personId: paymentForm?.querySelector('[name="personId"]')?.value || '',
+        month: paymentForm?.querySelector('[name="month"]')?.value || subscriptionSelectedMonth()
+      });
+      return;
+    }
     const warrantyForm = event.target.closest('form[data-form="add-warranty"], form[data-form="edit-warranty"]');
     if (warrantyForm) {
       const warrantyYears = event.target.closest('select[name="warrantyYears"]');
@@ -20407,7 +20752,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_242</span>
+          <span class="badge">Domácnost+ v.0.1_245</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

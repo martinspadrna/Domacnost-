@@ -15832,3 +15832,104 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* v0.1_244 Balíky: hledání podle telefonu/e-mailu */
+.package-lookup-panel {
+  overflow: hidden;
+}
+.package-lookup-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 16px;
+}
+.parcel-lookup-form .field input {
+  width: 100%;
+  min-width: 0;
+}
+.parcel-consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 0 4px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(15,23,42,.28);
+  color: var(--muted);
+  line-height: 1.35;
+}
+.parcel-consent-row input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+.danger-text {
+  color: #fecaca;
+}
+@media (max-width: 760px) {
+  .package-lookup-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Domácnost+ v.0.1_245 – Předplatné: chytré platby a stabilní měsíc */
+.subscription-month-form,
+.subscription-month-form .form-grid,
+.subscription-month-form .field,
+.subscription-smart-payment-form,
+.subscription-smart-payment-form .form-grid,
+.subscription-smart-payment-form .field {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.subscription-month-form .form-grid.two {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.subscription-month-form input[type="month"],
+.subscription-smart-payment-form input[type="month"],
+.subscription-smart-payment-form input[name="amount"],
+.subscription-smart-payment-form select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.subscription-month-form .item-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.subscription-month-form .item-actions .ghost-btn {
+  min-width: 0;
+  width: 100%;
+  justify-content: center;
+  padding-inline: 8px;
+}
+
+.subscription-payment-hint {
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
+@media (max-width: 560px) {
+  .subscription-month-form .item-actions {
+    gap: 6px;
+  }
+  .subscription-month-form .item-actions .ghost-btn {
+    min-height: 36px;
+    padding-inline: 6px;
+    font-size: .78rem;
+  }
+  .subscription-smart-payment-form .form-grid.two {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
