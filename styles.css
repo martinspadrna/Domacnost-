@@ -672,27 +672,6 @@ button {
   box-shadow: 0 12px 24px rgba(53, 116, 240, 0.20);
 }
 
-.camera-preview {
-  display: grid;
-  min-height: 170px;
-  place-items: center;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background:
-    linear-gradient(135deg, rgba(20, 32, 51, 0.14), rgba(53, 116, 240, 0.12)),
-    rgba(255, 255, 255, 0.22);
-  color: var(--muted);
-  text-align: center;
-}
-
-.camera-preview img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-height: 260px;
-  object-fit: cover;
-}
 
 .stat-line {
   display: flex;
@@ -3209,24 +3188,12 @@ body.overview-open {
 }
 .compact-record-grid,
 .detail-summary-grid,
-.compact-add-records,
-.compact-camera-grid {
+.compact-add-records {
   gap: 8px;
 }
 .compact-record-grid .card-header.small,
 .detail-summary-grid .card-header.small {
   margin-bottom: 6px;
-}
-.camera-card {
-  min-height: 0;
-}
-.camera-card .camera-preview {
-  min-height: 128px;
-  border-radius: 17px;
-}
-.cameras-tab-overview .cameras-panel:not(.panel-overview),
-.cameras-tab-add .cameras-panel:not(.panel-add) {
-  display: none;
 }
 .file-row.compact-file-row,
 .compact-list .item {
@@ -3245,8 +3212,7 @@ body.overview-open {
   .compact-form .form-grid.two,
   .compact-add-records,
   .detail-summary-grid,
-  .compact-record-grid,
-  .compact-camera-grid {
+  .compact-record-grid {
     grid-template-columns: 1fr;
   }
   .compact-edit-details,
@@ -3277,9 +3243,6 @@ body.overview-open {
   }
   .finance-panel .quick-chip {
     justify-content: center;
-  }
-  .camera-card .camera-preview {
-    min-height: 118px;
   }
 }
 
@@ -8163,7 +8126,6 @@ textarea {
     radial-gradient(circle at 30% 22%, rgba(255,255,255,.78), rgba(255,255,255,.16) 34%, transparent 46%) !important;
 }
 
-.glass-icon-camera.station-summary-icon,
 .glass-icon-tag.station-summary-icon {
   color: #a855f7 !important;
   background:
@@ -8336,8 +8298,7 @@ textarea {
     radial-gradient(circle at 30% 22%, rgba(255,255,255,.96), rgba(255,255,255,.30) 30%, transparent 46%),
     linear-gradient(180deg, rgba(207,250,254,.90), rgba(6,182,212,.16)) !important;
 }
-.glass-icon-tag.station-summary-icon,
-.glass-icon-camera.station-summary-icon {
+.glass-icon-tag.station-summary-icon {
   color: #a855f7 !important;
   background:
     radial-gradient(circle at 30% 22%, rgba(255,255,255,.96), rgba(255,255,255,.30) 30%, transparent 46%),
@@ -8508,8 +8469,7 @@ textarea {
 .glass-icon-doc.station-summary-icon { color: #2563eb !important; }
 .glass-icon-package.station-summary-icon { color: #f97316 !important; }
 .glass-icon-cart.station-summary-icon { color: #06b6d4 !important; }
-.glass-icon-tag.station-summary-icon,
-.glass-icon-camera.station-summary-icon { color: #a855f7 !important; }
+.glass-icon-tag.station-summary-icon { color: #a855f7 !important; }
 .glass-icon-plug.station-summary-icon,
 .glass-icon-home.station-summary-icon,
 .glass-icon-generic.station-summary-icon,
@@ -8697,7 +8657,6 @@ textarea {
 .glass-icon-car.station-summary-icon { color: #ef4444 !important; }
 .glass-icon-doc.station-summary-icon { color: #2563eb !important; }
 .glass-icon-coins.station-summary-icon { color: #e0a800 !important; }
-.glass-icon-camera.station-summary-icon { color: #8b5cf6 !important; }
 
 .hero-weather-pill .glass-icon.hero-weather-icon,
 .home-minimal-hero .glass-icon.hero-weather-icon {
@@ -15206,7 +15165,7 @@ form[data-busy="true"] button[type="submit"] {
   }
 }
 
-/* Domácnost+ v0.1_233 – spodní lišta bez visualViewport skoku + Kamery */
+/* Domácnost+ v0.1_239 – spodní lišta bez visualViewport skoku */
 :root {
   --nav-visual-height-v234: 76px;
   --nav-inner-height-v234: 62px;
@@ -15250,105 +15209,8 @@ body {
   padding-bottom: calc(var(--nav-visual-height-v234) + var(--nav-bottom-gap-v234) + 18px) !important;
 }
 
-.cameras-tab-overview .cameras-panel:not(.panel-overview),
-.cameras-tab-add .cameras-panel:not(.panel-add),
-.cameras-tab-discovery .cameras-panel:not(.panel-discovery),
-.cameras-tab-help .cameras-panel:not(.panel-help) {
-  display: none !important;
-}
 
-.camera-form-grid,
-.camera-scan-grid {
-  align-items: end;
-}
-
-.form-grid.three.camera-scan-grid {
-  grid-template-columns: minmax(0, 1.4fr) minmax(84px, .55fr) minmax(84px, .55fr);
-}
-
-.camera-discovery-panel,
-.cameras-panel .glass-subcard {
-  border: 1px solid rgba(255,255,255,.42);
-  background: rgba(255,255,255,.52);
-  border-radius: 24px;
-  padding: 14px;
-  box-shadow: 0 14px 34px rgba(15, 23, 42, .08);
-  margin: 14px 0;
-}
-
-[data-theme="dark"] .camera-discovery-panel,
-[data-theme="dark"] .cameras-panel .glass-subcard {
-  background: rgba(15,23,42,.46);
-  border-color: rgba(255,255,255,.14);
-}
-
-.camera-preview video,
-.camera-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border: 0;
-}
-
-.camera-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.camera-note {
-  margin-top: 8px;
-}
-
-.camera-edit-details {
-  margin-top: 10px;
-}
-
-.camera-discovery-results {
-  display: grid;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.camera-discovery-result {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px;
-  border-radius: 18px;
-  background: rgba(255,255,255,.48);
-  border: 1px solid rgba(255,255,255,.34);
-}
-
-.camera-discovery-result > div:first-child {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.camera-discovery-result span {
-  color: var(--muted);
-  font-size: .82rem;
-}
-
-@media (max-width: 620px) {
-  .form-grid.three.camera-scan-grid {
-    grid-template-columns: 1fr 78px 78px;
-  }
-  .camera-discovery-result {
-    align-items: stretch;
-    flex-direction: column;
-  }
-}
-
-.camera-link-badge,
-.device-link-badge {
-  text-decoration: none;
-}
-
-/* v0.1_238: Zápisník jako dvě jednoduché záložky */
+/* v0.1_239: Zápisník jako dvě jednoduché záložky + přidávání přes plus */
 .notebook-panel {
   grid-column: 1 / -1;
 }
@@ -15493,6 +15355,104 @@ body {
   }
   .notebook-check .tiny-btn {
     grid-column: span 1;
+  }
+}
+
+
+
+/* v0.1_239: Zápisník – přidávání přes + a stabilní datum v úkolech */
+.notebook-card-header {
+  align-items: center;
+  gap: 12px;
+}
+
+.notebook-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.notebook-add-btn {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 999px;
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.notebook-create-page {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.notebook-create-head,
+.notebook-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.notebook-create-grid,
+.notebook-task-form-grid {
+  min-width: 0;
+}
+
+.notebook-create-card,
+.notebook-tasks-tab {
+  border: 1px solid rgba(255,255,255,0.38);
+  background: rgba(248,250,252,0.30);
+  box-shadow: 0 14px 34px rgba(15,23,42,0.10);
+}
+
+[data-theme="dark"] .notebook-create-card,
+[data-theme="dark"] .notebook-tasks-tab {
+  background: rgba(15,23,42,0.48);
+  border-color: rgba(255,255,255,0.13);
+}
+
+.notebook-create-page .field,
+.notebook-tasks-tab .field,
+.notebook-create-page .input,
+.notebook-tasks-tab .input,
+.notebook-create-page .select,
+.notebook-tasks-tab .select,
+.notebook-task-form input[type="date"] {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.notebook-empty-actions {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  padding: 20px;
+  border: 1px dashed var(--line);
+  border-radius: 22px;
+  color: var(--muted);
+  text-align: center;
+  background: rgba(255,255,255,0.24);
+}
+
+@media (max-width: 760px) {
+  .notebook-card-header,
+  .notebook-create-head,
+  .notebook-list-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .notebook-header-actions {
+    justify-content: space-between;
+  }
+  .notebook-create-grid,
+  .notebook-task-form-grid {
+    grid-template-columns: 1fr !important;
   }
 }
 

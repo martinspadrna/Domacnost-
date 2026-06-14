@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_238';
+  const APP_VERSION = 'Domácnost+ v.0.1_239';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -26,7 +26,6 @@
     { id: 'homecare', label: 'Domácnost', icon: '💡' },
     { id: 'garage', label: 'Garáž', icon: '🚗' },
     { id: 'contracts', label: 'Smlouvy', icon: '📄' },
-    { id: 'cameras', label: 'Kamery', icon: '📹' },
     { id: 'finance', label: 'Finance', icon: '💰' },
     { id: 'subscriptions', label: 'Předplatné', icon: '🎬' },
     { id: 'settings', label: 'Nastavení', icon: '⚙️' }
@@ -521,8 +520,7 @@
     { id: 'garage', label: 'Garáž', icon: '🚗', overview: 'garage', metric: () => state.vehicles.length, text: () => garageCountLabel(state.vehicles.length) },
     { id: 'contracts', label: 'Smlouvy', icon: '📄', overview: 'contracts', metric: () => state.contracts.length, text: () => 'smlouvy' },
     { id: 'finance', label: 'Finance', icon: '💰', overview: 'finance', metric: () => formatCurrency(financeMonthSummary().balance), text: () => 'měsíční rozdíl' },
-    { id: 'subscriptions', label: 'Předplatné', icon: '🎬', nav: 'subscriptions', tab: 'overview', metric: () => formatCurrency(subscriptionMonthSummary().expectedReturn), text: () => 'má se vrátit' },
-    { id: 'cameras', label: 'Kamery', icon: '📹', nav: 'cameras', tab: 'overview', metric: () => state.cameras.length, text: () => 'kamery' }
+    { id: 'subscriptions', label: 'Předplatné', icon: '🎬', nav: 'subscriptions', tab: 'overview', metric: () => formatCurrency(subscriptionMonthSummary().expectedReturn), text: () => 'má se vrátit' }
   ];
   const DEFAULT_HOME_HERO_IDS = [];
   const HOME_HERO_MAX = 10;
@@ -670,34 +668,8 @@
     ['isometric-micro', 'Isometric Micro', 'Drobnější prostorové ikonky s technickým detailem.']
   ];
 
-  const CAMERA_NOTE_META_PREFIX = '__DOMPLUS_CAMERA_META__:';
-  const CAMERA_VENDOR_OPTIONS = [
-    ['tapo', 'TP-Link Tapo'],
-    ['hikvision', 'Hikvision'],
-    ['dahua', 'Dahua'],
-    ['reolink', 'Reolink'],
-    ['ezviz', 'EZVIZ'],
-    ['unifi', 'UniFi Protect'],
-    ['generic', 'Obecná IP kamera']
-  ];
-  const CAMERA_STREAM_TYPE_OPTIONS = [
-    ['snapshot', 'Snapshot / obrázek'],
-    ['mjpeg', 'MJPEG náhled'],
-    ['hls', 'HLS video'],
-    ['rtsp', 'RTSP uložený odkaz'],
-    ['onvif', 'ONVIF / NVR'],
-    ['app', 'Jen odkaz do aplikace']
-  ];
-  const CAMERA_STATUS_OPTIONS = [
-    ['online', 'Online'],
-    ['unknown', 'Nevím'],
-    ['offline', 'Offline'],
-    ['private', 'Jen lokální síť/VPN']
-  ];
-  const CAMERA_DISCOVERY_COMMON_HOSTS = [1, 2, 10, 11, 20, 50, 80, 88, 100, 101, 102, 110, 120, 150, 200, 254];
-  const CAMERA_DISCOVERY_MAX_RANGE = 64;
 
-  const ASSET_ICON_IDS = ['home', 'calendar', 'weather', 'packages', 'shopping', 'homecare', 'garage', 'contracts', 'cameras', 'finance', 'subscriptions', 'settings', 'coupons', 'hdo', 'waste', 'tasks', 'notes', 'warranties', 'polishHolidays', 'more'];
+  const ASSET_ICON_IDS = ['home', 'calendar', 'weather', 'packages', 'shopping', 'homecare', 'garage', 'contracts', 'finance', 'subscriptions', 'settings', 'coupons', 'hdo', 'waste', 'tasks', 'notes', 'warranties', 'polishHolidays', 'more'];
   const ASSET_ICON_MODULE_IDS = new Set(ASSET_ICON_IDS);
   const ASSET_ICON_THEMES = {
     'ios': { surface: 'soft', pathPrefix: './icons/module-icons/' },
@@ -722,8 +694,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 238,
-      mode: 'notebook-no-ai-v238',
+      appBuild: 239,
+      mode: 'notebook-no-ai-v239',
       createdAt: '',
       updatedAt: ''
     },
@@ -769,7 +741,6 @@
     homeTasks: [],
     waste: [],
     notes: [],
-    devices: [],
     warranties: [],
     warrantyFiles: [],
     vehicles: [],
@@ -777,8 +748,6 @@
     services: [],
     contracts: [],
     contractFiles: [],
-    cameras: [],
-    cameraDiscovery: { subnet: '192.168.1', from: 1, to: 254, scanning: false, results: [], scannedAt: '', error: '' },
     finance: [],
     financeAccounts: [],
     financeTemplates: [],
@@ -788,7 +757,6 @@
     financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: '', typeFilter: 'all' },
     subscriptionsCloud: { loadedAt: '' },
     householdExtrasCloud: { loadedAt: '' },
-    deviceDiscovery: { subnet: '192.168.1', from: 1, to: 254, scanning: false, results: [], scannedAt: '', error: '' },
     weather: {
       location: { ...WEATHER_DEFAULT_LOCATION },
       current: null,
@@ -920,37 +888,6 @@
         text: item.text || 'Poznámka',
         status: item.status || 'active'
       })
-    },
-    cameras: {
-      table: 'camera_feeds',
-      select: 'id,name,location,snapshot_url,status,note,created_at',
-      order: { column: 'created_at', ascending: false },
-      payload: (item, userId) => {
-        const camera = normalizeCameraItem(item);
-        return {
-          household_id: state.cloud.householdId,
-          profile_id: null,
-          name: camera.name || 'Kamera',
-          location: camera.location || null,
-          snapshot_url: camera.snapshotUrl || null,
-          status: camera.status || 'unknown',
-          note: serializeCameraNote(camera),
-          created_by: item.cloudId ? undefined : userId,
-          updated_by: userId
-        };
-      },
-      map: (item) => normalizeCameraItem({
-        id: state.cameras.find((entry) => entry.cloudId === item.id)?.id || `camera-cloud-${item.id}`,
-        cloudId: item.id,
-        householdId: currentHouseholdId(),
-        profileId: currentProfileId(),
-        createdAt: item.created_at || new Date().toISOString(),
-        name: item.name || 'Kamera',
-        location: item.location || '',
-        snapshotUrl: item.snapshot_url || '',
-        status: item.status || 'unknown',
-        note: item.note || ''
-      })
     }
   };
 
@@ -977,7 +914,6 @@
     'finance_accounts',
     'finance_transactions',
     'household_notes',
-    'camera_feeds',
     'household_coupons',
     'household_warranties',
     'household_warranty_files'
@@ -1629,8 +1565,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 238,
-      mode: 'notebook-no-ai-v238',
+      appBuild: 239,
+      mode: 'notebook-no-ai-v239',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1693,7 +1629,10 @@
     migrated.cloud.lastAutosyncAt = migrated.cloud?.lastAutosyncAt || '';
     migrated.cloud.profilesLoadedAt = migrated.cloud?.profilesLoadedAt || '';
     migrated.cloud.localPendingCount = Number(migrated.cloud?.localPendingCount || 0);
-    migrated.cameraDiscovery = normalizeCameraDiscoveryState(migrated.cameraDiscovery);
+    delete migrated.devices;
+    delete migrated.deviceDiscovery;
+    delete migrated.cameras;
+    delete migrated.cameraDiscovery;
     migrated.weather = normalizeWeatherState(migrated.weather);
     migrated.polishShopClosures = normalizePolishShopState(migrated.polishShopClosures);
     if (previousAppBuild < 82 && migrated.weather.source === 'open-meteo') {
@@ -1748,7 +1687,6 @@
     dedupeShoppingData(migrated);
     migrated.shoppingSeedVersion = 201;
     migrated.financeTemplates = normalizeFinanceTemplates(migrated.financeTemplates);
-    migrated.cameras = (migrated.cameras || []).map((camera) => normalizeCameraItem(camera));
 
     const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
     migrated.vehicles = migrated.vehicles.map((vehicle) => {
@@ -1981,7 +1919,7 @@
   }
 
   function getCollectionNames() {
-    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingLists', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'notes', 'warranties', 'warrantyFiles', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'cameras', 'finance', 'financeAccounts', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
+    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingLists', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'notes', 'warranties', 'warrantyFiles', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'finance', 'financeAccounts', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
   }
 
   function normalizeModuleList(value) {
@@ -3482,7 +3420,6 @@
       homecare: 'HDO, odpad, Zápisník s úkoly, záruky a polské svátky na jednom místě.',
       garage: 'Auta v domácnosti, tankování, servis a základní přehled spotřeby.',
       contracts: 'Evidence smluv a pojistek s hlídáním platnosti.',
-      cameras: 'Přehled kamer Tapo/Hikvision a dalších. Metadata se sdílí cloudově, streamy bezpečně přes lokální síť/VPN nebo vlastní proxy.',
       finance: 'Jednoduchý přehled příjmů a výdajů domácnosti s cloudovým oddělením podle householdId.',
       subscriptions: 'Předplatné, sdílení streamovacích služeb, platby lidí a kontrola dluhů/přeplatků.',
       settings: 'Domácnost, profily, zapnuté moduly, export/import a reset offline prototypu.',
@@ -3505,7 +3442,6 @@
       homecare: renderHomecare,
       garage: renderGarage,
       contracts: renderContracts,
-      cameras: renderCameras,
       finance: renderFinance,
       subscriptions: renderSubscriptions,
       settings: renderSettings,
@@ -3638,7 +3574,7 @@
     ensureWeatherFresh(false);
     normalizeGarageRuntimeState({ persist: false });
     const weather = normalizeWeatherState(state.weather);
-    const dashboardContext = { hdo, todayEvents, upcomingEvents, calendarPanelEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, weather, notes: state.notes, cameras: state.cameras, coupons: state.coupons, contracts: state.contracts };
+    const dashboardContext = { hdo, todayEvents, upcomingEvents, calendarPanelEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, weather, notes: state.notes, coupons: state.coupons, contracts: state.contracts };
     const selectedHeroItems = normalizeHomeHeroIds(state.settings?.homeHeroItems);
     const heroCount = selectedHeroItems.length;
 
@@ -3945,12 +3881,6 @@
       const slide = homeCycleItem(slides, 45) || slides[0];
       return { ...base, metric: slide.metric, text: slide.text, detail: slide.detail, chips: debtChips, extraRows: debtChips, live: slides.length > 1 || debtRows.length > 1, tone: summary.owed ? 'warn' : summary.expectedReturn ? 'good' : 'neutral' };
     }
-    if (id === 'cameras') {
-      const cameras = state.cameras || [];
-      const online = cameras.filter((camera) => camera.status === 'online' || camera.status === 'active').length;
-      const currentCamera = homeCycleItem(cameras, 45);
-      return { ...base, metric: cameras.length, text: currentCamera ? firstTitle(currentCamera, 'Kamera') : 'Žádná kamera', detail: cameras.length ? `${online} online / ${cameras.length} celkem` : 'Přidej kameru do přehledu', live: cameras.length > 1, tone: cameras.length ? 'good' : 'neutral' };
-    }
     return base;
   }
 
@@ -4096,14 +4026,12 @@
       waste: 'recycle',
       tasks: 'check',
       notes: 'note',
-      devices: 'plug',
       warranties: 'receipt',
       polishHolidays: 'flag-pl',
       garage: 'car',
       contracts: 'doc',
       finance: 'coins',
       subscriptions: 'tag',
-      cameras: 'camera',
       weather: 'weather-partly-cloud',
       settings: 'settings',
       more: 'settings',
@@ -4120,7 +4048,6 @@
       homecare: 'homecare',
       garage: 'garage',
       contracts: 'contracts',
-      cameras: 'cameras',
       finance: 'finance',
       subscriptions: 'subscriptions',
       settings: 'settings',
@@ -4129,7 +4056,6 @@
       waste: 'waste',
       tasks: 'tasks',
       notes: 'notes',
-      devices: 'devices',
       warranties: 'warranties',
       polishHolidays: 'polishHolidays',
       more: 'more',
@@ -4236,7 +4162,6 @@
       homecare: ['#8B5CF6', '#DDD6FE', '#F59E0B'],
       garage: ['#2563EB', '#BFDBFE', '#334155'],
       contracts: ['#3B82F6', '#DBEAFE', '#16A34A'],
-      cameras: ['#64748B', '#E2E8F0', '#0EA5E9'],
       settings: ['#64748B', '#CBD5E1', '#334155'],
       more: ['#64748B', '#CBD5E1', '#334155'],
       subscriptions: ['#7C3AED', '#DDD6FE', '#F59E0B'],
@@ -4247,7 +4172,6 @@
       waste: ['#16A34A', '#DCFCE7', '#0F766E'],
       tasks: ['#2563EB', '#DBEAFE', '#22C55E'],
       notes: ['#F59E0B', '#FEF3C7', '#EF4444'],
-      devices: ['#0EA5E9', '#E0F2FE', '#1D4ED8'],
       finance: ['#16A34A', '#DCFCE7', '#F59E0B']
     }[String(id || '')] || ['#64748B', '#E2E8F0', '#334155'];
   }
@@ -4289,7 +4213,6 @@
       homecare: '<path class="icon-primary" d="M19 49V29h26v20Z"/><path class="icon-accent" d="M25 44h14V32H25Z"/><path class="icon-line" d="M18 29 32 18l14 11M44 49H20M43 29v-8"/>',
       garage: '<path class="icon-primary" d="M14 49V27l18-12 18 12v22Z"/><path class="icon-secondary" d="M21 34h22v15H21Z"/><path class="icon-line" d="M25 45h14M22 38h20"/><path class="icon-accent" d="M24 44c2-5 3-6 8-6s6 1 8 6Z"/>',
       contracts: '<path class="icon-primary" d="M18 12h22l8 8v31a3 3 0 0 1-3 3H18a3 3 0 0 1-3-3V15a3 3 0 0 1 3-3Z"/><path class="icon-secondary" d="M40 12v10h9"/><path class="icon-line light" d="M23 30h16M23 38h13M23 46h8"/><path class="icon-accent" d="M42 38 51 42v6c0 4-3 7-9 10-6-3-9-6-9-10v-6Z"/>',
-      cameras: '<path class="icon-primary" d="M14 26h32a6 6 0 0 1 6 6v7a6 6 0 0 1-6 6H14Z"/><circle class="icon-secondary" cx="31" cy="35" r="9"/><circle class="icon-accent" cx="31" cy="35" r="4"/><path class="icon-line" d="M46 31l8-5v18l-8-5"/>',
       settings: '<path class="icon-primary" d="m35 12 2 7a16 16 0 0 1 4 2l7-2 4 7-5 5a17 17 0 0 1 0 4l5 5-4 7-7-2a16 16 0 0 1-4 2l-2 7h-8l-2-7a16 16 0 0 1-4-2l-7 2-4-7 5-5a17 17 0 0 1 0-4l-5-5 4-7 7 2a16 16 0 0 1 4-2l2-7Z"/><circle class="icon-secondary" cx="31" cy="33" r="8"/>',
       more: '<circle class="icon-primary" cx="20" cy="32" r="6"/><circle class="icon-primary" cx="32" cy="32" r="6"/><circle class="icon-primary" cx="44" cy="32" r="6"/>',
       subscriptions: '<rect class="icon-primary" x="15" y="19" width="34" height="26" rx="8"/><path class="icon-accent" d="m31 24 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z"/><path class="icon-line light" d="M20 47h24"/>',
@@ -4300,7 +4223,6 @@
       waste: '<path class="icon-primary" d="M20 24h24l-2 27a4 4 0 0 1-4 3H26a4 4 0 0 1-4-3Z"/><path class="icon-line" d="M18 24h28M25 24v-6h14v6"/><path class="icon-accent" d="M32 31c-5 3-7 7-6 12 4 0 7-2 9-6 2 3 4 5 8 6 1-5-1-9-6-12-1 3-3 5-5 6-2-1-4-3-5-6Z"/>',
       tasks: '<rect class="icon-primary" x="18" y="12" width="28" height="40" rx="8"/><path class="icon-secondary" d="M24 20h16v26H24Z"/><path class="icon-line" d="m27 29 3 3 7-8M27 40l3 3 7-8"/>',
       notes: '<path class="icon-primary" d="M17 14h30v38H17Z"/><path class="icon-accent" d="M39 14h8v8Z"/><path class="icon-line light" d="M24 29h16M24 38h13"/>',
-      devices: '<path class="icon-primary" d="M20 28a12 12 0 0 1 24 0v7a12 12 0 0 1-24 0Z"/><path class="icon-line" d="M15 22a21 21 0 0 1 34 0M24 48h16"/><path class="icon-accent" d="M32 25v10l7-5"/>',
       finance: '<circle class="icon-primary" cx="32" cy="32" r="20"/><path class="icon-line light" d="M38 23c-8-4-16 1-16 8s8 12 17 7M21 29h20M21 36h16"/>'
     };
     return map[String(id || '')] || map.settings;
@@ -4319,13 +4241,11 @@
       waste: `<svg viewBox="0 0 24 24"><path d="M7 7h10l-1 12a1.1 1.1 0 0 1-1.1 1H9.1A1.1 1.1 0 0 1 8 19z" fill="#16A34A"/><path d="M9 7V5h6v2M5.5 7h13" stroke="#86EFAC" stroke-width="1.8" stroke-linecap="round"/><path d="M12 10c-1 .5-1.7 1.2-2 2.2 1 .2 1.7.8 2 1.8.4-1 1-1.6 2-1.8-.3-1-.9-1.7-2-2.2Z" fill="#DCFCE7"/></svg>`,
       tasks: `<svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="3" fill="#2563EB"/><rect x="7.5" y="6" width="9" height="12" rx="2" fill="#EFF6FF"/><path d="M9.2 9.5 10.5 11l2.2-2.7M9.2 13.3 10.5 14.8l2.2-2.7" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.8 9.7h1.8M13.8 13.5h1.8" stroke="#60A5FA" stroke-width="1.8" stroke-linecap="round"/></svg>`,
       notes: `<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z" fill="#FDE68A"/><path d="M16.5 5H19v2.5z" fill="#F59E0B"/><path d="M8 10h8M8 13h6" stroke="#92400E" stroke-width="1.8" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="1.2" fill="#EF4444"/></svg>`,
-      devices: `<svg viewBox="0 0 24 24"><path d="M7 11a5 5 0 0 1 10 0v1.3a4.7 4.7 0 0 1-9.4 0z" fill="#38BDF8"/><path d="M5 8c1.2-1.7 2.7-2.7 4.6-3.1M19 8c-1.2-1.7-2.7-2.7-4.6-3.1" stroke="#0EA5E9" stroke-width="1.8" stroke-linecap="round"/><path d="M12 16v3" stroke="#1D4ED8" stroke-width="1.8" stroke-linecap="round"/></svg>`,
       warranties: `<svg viewBox="0 0 24 24"><path d="M12 3.5 18 6v5.3c0 3.6-2.2 6.6-6 9.2-3.8-2.6-6-5.6-6-9.2V6z" fill="#2563EB"/><path d="m8.5 12 2.1 2.1 4.9-5" stroke="#DBEAFE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
       polishHolidays: `<svg viewBox="0 0 24 24"><path d="M6 4v16" stroke="#64748B" stroke-width="1.8" stroke-linecap="round"/><path d="M7 5h10a1 1 0 0 1 1 1l-1 2 1 2a1 1 0 0 1-1 1H7z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/><path d="M7 10h10v3H7z" fill="#EF4444"/></svg>`,
       homecare: `<svg viewBox="0 0 24 24"><path d="M12 3.5A6.5 6.5 0 0 0 8 15c1 .7 1.6 1.6 1.7 2.8h4.6c.1-1.2.7-2.1 1.7-2.8A6.5 6.5 0 0 0 12 3.5Z" fill="#FBBF24"/><path d="M10 20h4M10.5 22h3" stroke="#1D4ED8" stroke-width="1.8" stroke-linecap="round"/><path d="M12 8v3.3l2.2 1.3" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"/></svg>`,
       garage: `<svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" fill="#60A5FA"/><path d="M6.5 20v-6h11v6" fill="#1E40AF"/><path d="M8 15.2h8" stroke="#93C5FD" stroke-width="1.8"/><circle cx="10" cy="18" r="1.4" fill="#0F172A"/><circle cx="14" cy="18" r="1.4" fill="#0F172A"/></svg>`,
       contracts: `<svg viewBox="0 0 24 24"><path d="M5 4h8l4 4v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z" fill="#2563EB"/><path d="M13 4v4h4" fill="#BFDBFE"/><path d="M8 12h8M8 15h6" stroke="#DBEAFE" stroke-width="1.8" stroke-linecap="round"/><circle cx="17.5" cy="17.5" r="2.5" fill="#22C55E"/></svg>`,
-      cameras: `<svg viewBox="0 0 24 24"><rect x="4" y="7" width="13" height="10" rx="5" fill="#CBD5E1"/><circle cx="10.5" cy="12" r="4" fill="#0F172A"/><circle cx="10.5" cy="12" r="2.1" fill="#60A5FA"/><path d="M17 9h3v6h-3" fill="#94A3B8"/><path d="M5 20c1.5-2 3.5-3 6-3" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round"/></svg>`,
       finance: `<svg viewBox="0 0 24 24"><ellipse cx="7" cy="17" rx="4" ry="2" fill="#FBBF24"/><path d="M3 17v2c0 1.1 1.8 2 4 2s4-.9 4-2v-2" fill="#D97706"/><path d="M12 18h2v-5h-2Zm4 0h2V9h-2Zm4 0h2V5h-2Z" fill="#3B82F6"/><path d="M11 8c3 0 6-1.5 9-4" stroke="#22C55E" stroke-width="2" stroke-linecap="round"/></svg>`,
       subscriptions: `<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="12" rx="4" fill="#A855F7"/><path d="m10 8.5 5 2.5-5 2.5z" fill="#F8FAFC"/><path d="M7 20h10" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"/><circle cx="18" cy="16.5" r="3" fill="#22C55E"/></svg>`,
       settings: `<svg viewBox="0 0 24 24"><path d="m13.8 3 .6 2.5a6.7 6.7 0 0 1 1.7 1l2.4-.8 1.4 2.3-1.9 1.6c.1.5.1 1 .1 1.5s0 1-.1 1.5l1.9 1.6-1.4 2.3-2.4-.8a6.7 6.7 0 0 1-1.7 1l-.6 2.5h-2.8l-.6-2.5a6.7 6.7 0 0 1-1.7-1l-2.4.8-1.4-2.3 1.9-1.6a7.5 7.5 0 0 1 0-3L4.3 8l1.4-2.3 2.4.8a6.7 6.7 0 0 1 1.7-1L10.4 3z" fill="#94A3B8"/><circle cx="12" cy="12" r="3" fill="#334155"/></svg>`,
@@ -4382,7 +4302,6 @@
       car: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15.5V12l1.8-4.2A2 2 0 0 1 8.6 6.5h6.8a2 2 0 0 1 1.8 1.3L19 12v3.5"/><path d="M5 15.5h14"/><circle cx="8" cy="16.5" r="1.8"/><circle cx="16" cy="16.5" r="1.8"/><path d="M7.4 9.5h9.2"/></svg>`,
       doc: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20V3.5Z"/><path d="M14 3.5V8h4M9.2 12h5.6M9.2 15.5h5.6"/></svg>`,
       coins: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="7" rx="5.8" ry="2.7"/><path d="M6.2 7v4c0 1.5 2.6 2.7 5.8 2.7s5.8-1.2 5.8-2.7V7"/><path d="M8.2 14.2v2.2c0 1.2 1.7 2.2 3.8 2.2 2.1 0 3.8-1 3.8-2.2v-2.2"/></svg>`,
-      camera: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8.5h2.5l1.3-2h6.4l1.3 2H19a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17v-7A1.5 1.5 0 0 1 5 8.5Z"/><circle cx="12" cy="13" r="3.5"/></svg>`,
       home: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 11 8-6 8 6"/><path d="M6.5 10.5V19a.5.5 0 0 0 .5.5h3.5V15h3v4.5H17a.5.5 0 0 0 .5-.5v-8.5"/></svg>`,
       settings: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.1"/><path d="M19.4 13.5a7.8 7.8 0 0 0 0-3l2-1.5-2-3.4-2.4 1a8 8 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.6A8 8 0 0 0 7 6.6l-2.4-1-2 3.4 2 1.5a7.8 7.8 0 0 0 0 3l-2 1.5 2 3.4 2.4-1a8 8 0 0 0 2.6 1.5l.4 2.6h4l.4-2.6a8 8 0 0 0 2.6-1.5l2.4 1 2-3.4-2-1.5Z"/></svg>`,
       generic: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7.5"/></svg>`,
@@ -4409,7 +4328,6 @@
       car: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCar" x1="10" x2="55" y1="20" y2="48"><stop stop-color="#FB7185"/><stop offset="1" stop-color="#DC2626"/></linearGradient></defs><path d="M13 38 18 24c1-4 4-6 8-6h12c4 0 7 2 8 6l5 14v9H13Z" fill="url(#icCar)"/><path d="M22 27h20l3 9H19Z" fill="#DBEAFE"/><circle cx="22" cy="48" r="6" fill="#111827"/><circle cx="42" cy="48" r="6" fill="#111827"/><circle cx="22" cy="48" r="2.5" fill="#CBD5E1"/><circle cx="42" cy="48" r="2.5" fill="#CBD5E1"/><path d="M16 39h32" stroke="#FEE2E2" stroke-width="3" stroke-linecap="round"/></svg>`,
       doc: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icDoc" x1="16" x2="49" y1="8" y2="56"><stop stop-color="#C7D2FE"/><stop offset="1" stop-color="#2563EB"/></linearGradient></defs><path d="M18 8h23l9 9v36a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V12a4 4 0 0 1 4-4Z" fill="url(#icDoc)"/><path d="M40 8v12h11" fill="#EEF2FF"/><path d="M23 29h19M23 38h19M23 47h13" stroke="#EFF6FF" stroke-width="4" stroke-linecap="round"/><path d="M15 12c7 2 14 2 20 0" stroke="#FFFFFF" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/></svg>`,
       coins: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCoins" x1="14" x2="50" y1="9" y2="55"><stop stop-color="#FDE68A"/><stop offset="1" stop-color="#D97706"/></linearGradient></defs><ellipse cx="32" cy="18" rx="18" ry="8" fill="url(#icCoins)"/><path d="M14 18v16c0 5 8 9 18 9s18-4 18-9V18" fill="#FBBF24"/><ellipse cx="32" cy="34" rx="18" ry="9" fill="#F59E0B"/><ellipse cx="32" cy="45" rx="15" ry="8" fill="#FDE68A"/><path d="M23 18c5 3 14 3 19 0M22 34c6 3 15 3 21 0" stroke="#92400E" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/></svg>`,
-      camera: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCam" x1="12" x2="52" y1="15" y2="51"><stop stop-color="#DDD6FE"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs><path d="M15 23h9l4-6h8l4 6h9a5 5 0 0 1 5 5v20a5 5 0 0 1-5 5H15a5 5 0 0 1-5-5V28a5 5 0 0 1 5-5Z" fill="url(#icCam)"/><circle cx="32" cy="38" r="11" fill="#EEF2FF"/><circle cx="32" cy="38" r="7" fill="#4C1D95"/><circle cx="36" cy="34" r="3" fill="#A78BFA"/><path d="M17 30h8" stroke="#F5F3FF" stroke-width="4" stroke-linecap="round"/></svg>`,
       home: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icHome" x1="12" x2="52" y1="13" y2="55"><stop stop-color="#BAE6FD"/><stop offset="1" stop-color="#0EA5E9"/></linearGradient></defs><path d="M10 31 32 13l22 18" fill="none" stroke="#0369A1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 29v25h30V29L32 17Z" fill="url(#icHome)"/><path d="M27 54V40h10v14" fill="#FEF3C7"/><circle cx="43" cy="25" r="7" fill="#FACC15"/></svg>`,
       settings: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icSet" x1="12" x2="52" y1="10" y2="55"><stop stop-color="#E2E8F0"/><stop offset="1" stop-color="#64748B"/></linearGradient></defs><circle cx="32" cy="32" r="10" fill="#FFFFFF"/><path d="M36 9 38 18c2 1 4 2 6 4l9-3 5 9-7 6v6l7 6-5 9-9-3c-2 2-4 3-6 4l-2 9h-8l-2-9c-2-1-4-2-6-4l-9 3-5-9 7-6v-6l-7-6 5-9 9 3c2-2 4-3 6-4l2-9Z" fill="url(#icSet)"/><circle cx="32" cy="32" r="8" fill="#F8FAFC"/><circle cx="32" cy="32" r="4" fill="#334155"/></svg>`,
       generic: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icGen" x1="12" x2="52" y1="12" y2="52"><stop stop-color="#CBD5E1"/><stop offset="1" stop-color="#64748B"/></linearGradient></defs><circle cx="32" cy="32" r="24" fill="url(#icGen)"/><circle cx="32" cy="32" r="10" fill="#F8FAFC"/></svg>`
@@ -4429,7 +4347,6 @@
       car: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 27h44v24H10Z" fill="#334155"/><path d="M15 22h34l5 8H10Z" fill="#475569"/><path d="M18 30h28v13H18Z" fill="#BFDBFE"/><path d="M22 36h20" fill="none" class="anime-icon-line" stroke="#60A5FA" stroke-width="3" stroke-linecap="round"/><path d="M20 45h24v9H20Z" fill="#2563EB"/><path d="M24 39c2-6 5-8 9-8h5c4 0 7 2 9 8l3 8H21Z" fill="#1D4ED8"/><path d="M29 35h14l2 6H26Z" fill="#DBEAFE"/><circle cx="29" cy="51" r="5" fill="#0F172A"/><circle cx="45" cy="51" r="5" fill="#0F172A"/><path d="M14 20h36" fill="none" class="anime-icon-line" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/><path d="M52 43h7M54 38h5" fill="none" class="anime-icon-line" stroke="#64748B" stroke-width="4" stroke-linecap="round"/></svg>`,
       doc: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M9 21h18l5 6h23v25c0 3-2 5-5 5H14c-3 0-5-2-5-5Z" fill="#2563EB"/><path d="M16 13h28c3 0 5 2 5 5v30H16Z" fill="#F8FAFC"/><path d="M21 25h22M21 34h18M21 43h13" fill="none" class="anime-icon-line" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/><path d="M9 29h46v23c0 3-2 5-5 5H14c-3 0-5-2-5-5Z" fill="#1D4ED8"/><path d="M35 49c6 4 10 3 15-2" fill="none" class="anime-icon-line" stroke="#BFDBFE" stroke-width="3" stroke-linecap="round"/><circle cx="51" cy="52" r="7" fill="#22C55E"/><path d="m48 52 2 2 4-5" fill="none" class="anime-icon-line" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
       coins: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M12 52h8V35h-8Zm13 0h8V27h-8Zm13 0h8V20h-8Zm13 0h8V13h-8Z" fill="#3B82F6"/><path d="M12 52h47" fill="none" class="anime-icon-line" stroke="#64748B" stroke-width="3" stroke-linecap="round"/><path d="M10 31c10 2 23-3 38-18" fill="none" class="anime-icon-line" stroke="#22C55E" stroke-width="4" stroke-linecap="round"/><path d="M45 13h8v8" fill="none" class="anime-icon-line" stroke="#22C55E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="22" cy="47" rx="10" ry="5" fill="#FBBF24"/><path d="M12 47v6c0 3 4 5 10 5s10-2 10-5v-6" fill="#D97706"/><ellipse cx="22" cy="47" rx="10" ry="5" fill="#FDE68A"/><text x="17" y="51" font-size="9" font-family="Arial, sans-serif" font-weight="900" fill="#92400E">Kč</text></svg>`,
-      camera: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M13 22h28c8 0 14 6 14 14v3c0 8-6 14-14 14H13Z" fill="#CBD5E1"/><path d="M13 22h28c5 0 9 4 9 9H13Z" fill="#F8FAFC"/><circle cx="31" cy="39" r="13" fill="#1E293B"/><circle cx="31" cy="39" r="8" fill="#0F172A"/><circle cx="35" cy="35" r="4" fill="#60A5FA"/><path d="M53 25h7v19h-7Z" fill="#94A3B8"/><path d="M54 30h6" fill="none" class="anime-icon-line" stroke="#64748B" stroke-width="3" stroke-linecap="round"/><path d="M12 57c2-8 7-12 15-13" fill="none" class="anime-icon-line" stroke="#86EFAC" stroke-width="4" stroke-linecap="round"/><path d="M8 49c7 0 12 3 15 9" fill="none" class="anime-icon-line" stroke="#22C55E" stroke-width="4" stroke-linecap="round"/></svg>`,
       settings: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M37 8 39 17c2 1 5 2 7 4l9-3 5 9-7 6v6l7 6-5 9-9-3c-2 2-5 3-7 4l-2 9H27l-2-9c-2-1-5-2-7-4l-9 3-5-9 7-6v-6l-7-6 5-9 9 3c2-2 5-3 7-4l2-9Z" fill="#94A3B8"/><path d="M37 8 39 17c2 1 5 2 7 4l9-3 5 9-7 6v6l7 6-5 9-9-3c-2 2-5 3-7 4l-2 9H32V8Z" fill="#64748B" opacity=".7"/><circle cx="32" cy="36" r="13" fill="#F8FAFC"/><circle cx="32" cy="36" r="6" fill="#334155"/><path d="M18 21c5-5 12-8 20-7" fill="none" class="anime-icon-line" stroke="#E2E8F0" stroke-width="4" stroke-linecap="round"/></svg>`,
       home: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M8 32 32 12l24 20" fill="none" class="anime-icon-line" stroke="#0369A1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 30v25h34V30L32 16Z" fill="#38BDF8"/><path d="M26 55V41h12v14" fill="#FEF3C7"/><path d="M20 35h9v8h-9ZM36 35h9v8h-9Z" fill="#DBEAFE"/><path d="M43 17l3 6 6 3-6 3-3 6-3-6-6-3 6-3Z" fill="#FACC15"/></svg>`,
       generic: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M16 14h32c3 0 5 2 5 5v32c0 3-2 5-5 5H16c-3 0-5-2-5-5V19c0-3 2-5 5-5Z" fill="#94A3B8"/><circle cx="32" cy="32" r="11" fill="#F8FAFC"/></svg>`
@@ -4905,7 +4822,6 @@
       { nav: 'finance', tab: 'summary', icon: '💰', label: 'Finance', items: state.finance || [], loadedAt: state.financeCloud?.loadedAt },
       { nav: 'subscriptions', tab: 'overview', icon: '🎬', label: 'Předplatné', items: [...(state.subscriptions || []), ...(state.subscriptionPeople || []), ...(state.subscriptionPayments || [])], loadedAt: state.subscriptionsCloud?.loadedAt, cloudSynced: Boolean(state.subscriptionsCloud?.loadedAt && cloudReady()) },
       { nav: 'homecare', tab: 'warranties', icon: '🧾', label: 'Záruky', items: state.warranties || [], loadedAt: state.householdExtrasCloud?.loadedAt },
-      { nav: 'cameras', tab: 'overview', icon: '📹', label: 'Kamery', items: state.cameras || [], loadedAt: state.householdExtrasCloud?.loadedAt },
       { nav: 'shopping', tab: 'coupons', icon: '🏷️', label: 'Slevové kódy', items: state.coupons || [], loadedAt: state.householdExtrasCloud?.loadedAt }
     ];
     return counters.map((entry) => {
@@ -4926,7 +4842,7 @@
     const overall = total ? Math.round((totalCloud / total) * 100) : (cloudReady ? 100 : 0);
     const autosyncEnabled = state.cloud?.autoSyncEnabled !== false;
     const autosyncStatus = cloudAutosyncStatusLabel();
-    const featuredCloudLabels = ['Profily', 'Nákupy', 'Smlouvy', 'Přílohy smluv', 'Přílohy záruk', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář', 'Finance', 'Předplatné', 'Poznámky', 'Kamery', 'Slevové kódy'];
+    const featuredCloudLabels = ['Profily', 'Nákupy', 'Smlouvy', 'Přílohy smluv', 'Přílohy záruk', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář', 'Finance', 'Předplatné', 'Poznámky', 'Slevové kódy'];
     const compactItems = mode === 'dashboard' ? items.filter((item) => item.total || featuredCloudLabels.includes(item.label)).slice(0, 14) : items;
     return `
       <section class="card desktop-span-2 cloud-sync-overview-card">
@@ -5139,7 +5055,6 @@
       homecare: { count: countBy('homeTasks', (item) => !item.done) + countBy('hdoWindows') + countBy('waste') + countBy('warranties'), label: 'položek', note: `${countBy('hdoWindows')} HDO oken, ${countBy('waste')} svozů, ${countBy('homeTasks', (item) => !item.done)} úkolů, ${countBy('notes')} stránek/poznámek, ${countBy('warranties')} záruk.` },
       garage: { count: countBy('vehicles'), label: 'aut', note: `${countBy('fuel')} tankování, ${countBy('services')} servisů.` },
       contracts: { count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh smluv, ${countBy('warrantyFiles')} příloh záruk.` },
-      cameras: { count: countBy('cameras'), label: 'kamer', note: 'Snapshot/stream zatím jen lokálně.' },
       finance: { count: countBy('finance'), label: 'záznamů', note: `${formatCurrency(financeMonthSummary().balance)} rozdíl tento měsíc.` },
       subscriptions: { count: countBy('subscriptions', (item) => item.enabled !== false), label: 'služeb', note: `${formatCurrency(subscriptionMonthSummary().expectedReturn)} se má vrátit tento měsíc.` }
     };
@@ -5186,7 +5101,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_238', note: 'Zápisník je zjednodušený do dvou jasných záložek Poznámky a Úkoly. Poznámky drží sekce/stránky/checklisty, Úkoly mají vlastní přehled a formulář ve stejném modulu.' },
+      { title: 'Domácnost+ v.0.1_239', note: 'Zápisník má přidávání přes jedno tlačítko + na samostatné stránce, takže jsou hned vidět uložené poznámky a úkoly. Opravené přetékání data v úkolech, jemnější tmavší karta úkolů a vyčištěné staré frontend zbytky odstraněných modulů.' },
       { title: 'Domácnost+ v.0.1_236', note: 'Zápisník už nepoužívá typ stránky Výlet. Sekce si vytváří uživatel sám.' },
       { title: 'Domácnost+ v.0.1_235', note: 'Zápisník byl převeden na čistší režim bez výchozích sekcí a vlastních stránek.' },
       { title: 'Domácnost+ v.0.1_234', note: 'Zápisník: Úkoly a Poznámky jsou sloučené do jednoho modulu/panelu. Přidané stránky ve stylu OneNote se sekcemi, textem, checklisty a převodem bodu na úkol bez DB změn.' },
@@ -5201,7 +5116,7 @@
       { title: 'Domácnost+ v.0.1_219', note: 'Hotfix po v218: spodní lišta už se na iPhone/PWA neposouvá pod spodní hranu displeje, drží bezpečný malý odstup od home indicatoru a Home výška je vrácená do stabilního rozsahu.' },
       { title: 'Domácnost+ v.0.1_218', note: 'Stabilizační build: spodní lišta je na iPhone/PWA ukotvená níž už při prvním vykreslení, Finance ukazují účty jako samostatné panely, šablony nemají nechtěný červený stín a přidání pohybu posílá cloud uložení na pozadí.' },
       { title: 'Domácnost+ v.0.1_217', note: 'Home layout hotfix: spodní lišta je ukotvená dole hned při prvním vykreslení v PWA/Safari a hlavní Home panel dostal zpět ušetřené místo, takže čas, počasí i dlaždice mohou být vyšší.' },
-      { title: 'Domácnost+ v.0.1_232', note: 'Domácnost / Zařízení bylo krátce rozšířené jako inventář. Modul je od v233 odstraněný z UI, protože směr se přesouvá na Kamery.' },
+      { title: 'Domácnost+ v.0.1_232', note: 'Domácnost měla krátce rozšířený inventář domácnosti. Od v239 jsou jeho staré frontend zbytky uklizené.' },
       { title: 'Domácnost+ v.0.1_216', note: 'Stabilizační build: opravené slučování finance šablon podle updatedAt mezi mobilem a PC, jistější pending marker šablon, jemnější autosync mimo první klikání a silnější deduplikace profilů podle názvu.' },
       { title: 'Domácnost+ v.0.1_229', note: 'Spodní navigace má pevně Domů vlevo a Více vpravo; prostřední 2–4 ikony jsou nastavitelné podle aktivního profilu a ukládají se do cloudového dashboard_layout.profileUiSettings.' },
       { title: 'Domácnost+ v.0.1_215', note: 'Cloud settings hotfix: odstraněné volání neexistující user_app_settings tabulky, vzhled a finance šablony se ukládají přes household dashboard_layout, profily se deduplikují v zobrazení i při syncu.' },
@@ -6961,6 +6876,7 @@
       trip: normalizeTripMeta({}),
       createdAt: new Date().toISOString()
     };
+    setModuleTab('notebookCreate', '');
     await addItem('notes', { text: serializeNotebookPage(page), status: 'active' });
     form?.reset();
   }
@@ -7007,6 +6923,7 @@
     const saved = await cloudAddTask(task);
     if (saved?.id) task.cloudId = saved.id;
     state.homeTasks.push(task);
+    setModuleTab('notebookCreate', '');
     touchState();
     saveState();
     render();
@@ -7065,6 +6982,7 @@
     const notebookTabs = ['notes', 'tasks'];
     const storedNotebookTab = getModuleTab('notebook', 'notes');
     const activeNotebookTab = notebookTabs.includes(storedNotebookTab) ? storedNotebookTab : 'notes';
+    const notebookCreateOpen = getModuleTab('notebookCreate', '') === 'open';
 
     return `
       ${renderSectionTabs('homecare', [
@@ -7122,29 +7040,52 @@
         </section>
 
         <section class="card homecare-panel panel-tasks notebook-panel notebook-tabs-panel">
-          <div class="card-header">
+          <div class="card-header notebook-card-header">
             <div><h2>Zápisník</h2><p>Jedno místo, ale dvě jasné části: Poznámky pro stránky a Úkoly pro věci k udělání.</p></div>
-            <span class="badge ${(tasks.some((task) => task.cloudId) || notebookPages().some((page) => page.cloudId)) ? 'good' : ''}">${state.cloud?.householdId ? 'sdílená domácnost' : 'lokálně'}</span>
+            <div class="notebook-header-actions">
+              <span class="badge ${(tasks.some((task) => task.cloudId) || notebookPages().some((page) => page.cloudId)) ? 'good' : ''}">${state.cloud?.householdId ? 'sdílená domácnost' : 'lokálně'}</span>
+              <button class="primary-btn notebook-add-btn" type="button" data-action="set-section-tab" data-area="notebookCreate" data-tab="open" aria-label="Přidat do zápisníku">+</button>
+            </div>
           </div>
+          ${notebookCreateOpen ? `
+            <div class="notebook-create-page">
+              <div class="card-subheader notebook-create-head"><div><h3>Přidat do zápisníku</h3><p>Vyber, jestli přidáváš poznámku/stránku nebo rovnou úkol.</p></div><button class="ghost-btn" type="button" data-action="set-section-tab" data-area="notebookCreate" data-tab="">Zpět</button></div>
+              <div class="grid two notebook-create-grid">
+                <section class="glass-subcard notebook-create-card">
+                  <div class="card-subheader"><h3>Nová poznámka</h3><p>Sekce, stránka, text a volitelný checklist.</p></div>
+                  <form data-form="add-notebook-page" class="compact-form">
+                    <div class="form-grid two">
+                      ${field('Sekce', 'section', 'text', 'např. Výlety', true)}
+                      ${field('Název stránky', 'title', 'text', 'např. Zoo Dvůr Králové', true)}
+                    </div>
+                    <div class="field"><label>Text stránky</label><textarea class="textarea" name="body" placeholder="Poznámka, odkazy, parkování, co vzít s sebou..."></textarea></div>
+                    <div class="field"><label>Checklist / nápady</label><textarea class="textarea" name="items" placeholder="Zjistit parkování&#10;Koupit vstupenky&#10;Vzít pití a svačinu"></textarea></div>
+                    <div class="form-actions"><button class="primary-btn" type="submit">Uložit poznámku</button></div>
+                  </form>
+                </section>
+                <section class="glass-subcard notebook-create-card">
+                  <div class="card-subheader"><h3>Nový úkol</h3><p>Věc k udělání s termínem, kategorií a prioritou.</p></div>
+                  <form data-form="add-task" class="compact-form notebook-task-form">
+                    <div class="form-grid two notebook-task-form-grid">
+                      ${field('Úkol', 'title', 'text', 'vyměnit filtr / koupit baterky', true)}
+                      ${field('Termín', 'due', 'date', '')}
+                      ${selectField('Kategorie', 'category', TASK_CATEGORY_OPTIONS, 'domacnost')}
+                      ${selectField('Priorita', 'priority', TASK_PRIORITY_OPTIONS, 'normal')}
+                      ${field('Poznámka', 'note', 'text', 'volitelné')}
+                    </div>
+                    <div class="form-actions"><button class="primary-btn" type="submit">Uložit úkol</button></div>
+                  </form>
+                </section>
+              </div>
+              <div class="form-actions compact-actions">${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-tasks">Načíst cloud úkoly</button><button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud poznámky</button>' : ''}${state.cloud?.householdId && (tasks.some((task) => !task.cloudId) || notes.some((item) => !item.cloudId)) ? '<button class="ghost-btn" type="button" data-action="cloud-sync-pending">Odeslat lokální změny</button>' : ''}</div>
+            </div>
+          ` : `
           ${renderSectionTabs('notebook', [
             { id: 'notes', label: 'Poznámky', icon: '📝', count: notebookPages().length },
             { id: 'tasks', label: 'Úkoly', icon: '✅', count: tasks.filter((task) => !task.done).length }
           ], 'notes')}
           ${activeNotebookTab === 'notes' ? `
             <div class="notebook-tab-content notebook-notes-tab">
-              <details class="compact-edit-details notebook-create" open>
-                <summary><span>Nová stránka</span><em>sekce, text a checklist</em></summary>
-                <form data-form="add-notebook-page" class="compact-form">
-                  <div class="form-grid two">
-                    ${field('Sekce', 'section', 'text', 'např. Výlety', true)}
-                    ${field('Název stránky', 'title', 'text', 'např. Zoo Dvůr Králové', true)}
-                  </div>
-                  <div class="inline-note compact-note">Sekce si zakládáš sám. Například sekce Výlety může mít stránky Zoo Dvůr Králové, Karpacz nebo Adršpach.</div>
-                  <div class="field"><label>Text stránky</label><textarea class="textarea" name="body" placeholder="Poznámka, odkazy, parkování, co vzít s sebou..."></textarea></div>
-                  <div class="field"><label>Checklist / nápady</label><textarea class="textarea" name="items" placeholder="Zjistit parkování&#10;Koupit vstupenky&#10;Vzít pití a svačinu"></textarea></div>
-                  <div class="form-actions"><button class="primary-btn" type="submit">Přidat stránku</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud poznámky</button>' : ''}${state.cloud?.householdId && notes.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální stránky (${notes.filter((item) => !item.cloudId).length})</button>` : ''}</div>
-                </form>
-              </details>
               ${notebookSections().length ? `<div class="notebook-section-list">${notebookSections().map((group) => `
                 <section class="notebook-section-card">
                   <div class="notebook-section-head">
@@ -7153,31 +7094,21 @@
                   </div>
                   <div class="notebook-pages">${group.items.map((page) => renderNotebookPage(page)).join('')}</div>
                 </section>
-              `).join('')}</div>` : renderEmptyCta({ icon: '🗒️', title: 'Poznámky jsou prázdné', text: 'Vytvoř první vlastní sekci a stránku. Žádné výchozí sekce se nepřidávají.', nav: 'homecare', tab: 'tasks', label: 'Přidat stránku' })}
+              `).join('')}</div>` : '<div class="notebook-empty-actions"><div><strong>Poznámky jsou prázdné</strong><p>Vytvoř první vlastní sekci a stránku. Žádné výchozí sekce se nepřidávají.</p></div><button class="primary-btn" type="button" data-action="set-section-tab" data-area="notebookCreate" data-tab="open">+ přidat poznámku</button></div>'}
               ${legacyQuickNotes().length ? `<details class="compact-edit-details legacy-notes"><summary><span>Starší rychlé poznámky</span><em>${legacyQuickNotes().length}</em></summary><div class="list">${legacyQuickNotes().map((note) => `<div class="item"><div class="item-top"><div class="item-title">${escapeHtml(note.text)}</div><span class="badge ${note.cloudId ? 'good' : ''}">${note.cloudId ? 'cloud' : 'lokálně'}</span></div><div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="notes" data-id="${escapeHtml(note.id)}">Smazat</button></div></div>`).join('')}</div></details>` : ''}
             </div>
           ` : `
             <div class="notebook-tab-content notebook-tasks-tab">
-              <div class="card-subheader"><h3>Úkoly</h3><p>Věci k udělání s termínem, prioritou a stavem.</p></div>
-              <form data-form="add-task" class="compact-form">
-                <div class="form-grid two">
-                  ${field('Úkol', 'title', 'text', 'vyměnit filtr / koupit baterky', true)}
-                  ${field('Termín', 'due', 'date', '')}
-                  ${selectField('Kategorie', 'category', TASK_CATEGORY_OPTIONS, 'domacnost')}
-                  ${selectField('Priorita', 'priority', TASK_PRIORITY_OPTIONS, 'normal')}
-                  ${field('Poznámka', 'note', 'text', 'volitelné')}
-                </div>
-                <div class="form-actions"><button class="primary-btn" type="submit">Přidat úkol</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-tasks">Načíst cloud úkoly</button>' : ''}${state.cloud?.householdId && tasks.some((task) => !task.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-tasks">Odeslat lokální úkoly (${tasks.filter((task) => !task.cloudId).length})</button>` : ''}</div>
-              </form>
-              <div style="height:14px"></div>
+              <div class="card-subheader notebook-list-head"><div><h3>Úkoly</h3><p>Věci k udělání s termínem, prioritou a stavem.</p></div><button class="ghost-btn" type="button" data-action="set-section-tab" data-area="notebookCreate" data-tab="open">+ přidat</button></div>
               ${tasks.length ? `<div class="list">${tasks.map((task) => `
                 <div class="item">
                   <div class="item-top"><div class="item-title">${task.done ? '✓ ' : ''}${escapeHtml(task.title)}</div><span class="badge ${task.due && daysUntil(task.due) <= 2 && !task.done ? 'warn' : ''}">${task.due ? formatDate(task.due) : 'bez termínu'}</span></div>
                   <div class="item-meta">${escapeHtml(taskCategoryLabel(task.category))} · ${escapeHtml(taskPriorityLabel(task.priority))}${task.note ? ` · ${escapeHtml(task.note)}` : ''}${task.cloudId ? ' · cloud' : ' · lokálně'}</div>
                   <div class="item-actions">${state.cloud?.householdId && !task.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-task" data-id="${task.id}">Odeslat</button>` : ''}<button class="ghost-btn" type="button" data-action="task-toggle" data-id="${task.id}">${task.done ? 'Vrátit' : 'Hotovo'}</button><button class="danger-btn" type="button" data-action="task-delete" data-id="${task.id}">Smazat</button></div>
                 </div>
-              `).join('')}</div>` : '<div class="inline-note compact-note">Žádné úkoly. Checklisty v poznámkách můžeš kdykoliv převést na úkol.</div>'}
+              `).join('')}</div>` : '<div class="notebook-empty-actions"><div><strong>Žádné úkoly</strong><p>Checklisty v poznámkách můžeš kdykoliv převést na úkol.</p></div><button class="primary-btn" type="button" data-action="set-section-tab" data-area="notebookCreate" data-tab="open">+ přidat úkol</button></div>'}
             </div>
+          `}
           `}
         </section>
 
@@ -9073,396 +9004,6 @@
     return state.contractFiles.filter((file) => file.contractId === contractId).length;
   }
 
-  function parseCameraNote(rawNote = '') {
-    const raw = String(rawNote || '');
-    if (!raw.startsWith(CAMERA_NOTE_META_PREFIX)) return { note: raw, meta: {} };
-    const parsed = safeParse(raw.slice(CAMERA_NOTE_META_PREFIX.length), null);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { note: '', meta: {} };
-    const { note = '', ...meta } = parsed;
-    return { note: normalizeText(note), meta };
-  }
-
-  function normalizeCameraVendor(value) {
-    const key = normalizeKey(value || 'generic');
-    if (CAMERA_VENDOR_OPTIONS.some(([id]) => id === key)) return key;
-    if (key.includes('tplink') || key.includes('tp-link')) return 'tapo';
-    if (key.includes('hik')) return 'hikvision';
-    if (key.includes('dahua')) return 'dahua';
-    if (key.includes('reolink')) return 'reolink';
-    if (key.includes('ezviz')) return 'ezviz';
-    if (key.includes('unifi') || key.includes('ubiquiti')) return 'unifi';
-    return 'generic';
-  }
-
-  function normalizeCameraStreamType(value) {
-    const key = normalizeKey(value || 'snapshot');
-    return CAMERA_STREAM_TYPE_OPTIONS.some(([id]) => id === key) ? key : 'snapshot';
-  }
-
-  function normalizeCameraStatus(value) {
-    const key = normalizeKey(value || 'unknown');
-    return CAMERA_STATUS_OPTIONS.some(([id]) => id === key) ? key : 'unknown';
-  }
-
-  function cameraVendorLabel(value) {
-    const key = normalizeCameraVendor(value);
-    return CAMERA_VENDOR_OPTIONS.find(([id]) => id === key)?.[1] || 'Obecná IP kamera';
-  }
-
-  function cameraStreamTypeLabel(value) {
-    const key = normalizeCameraStreamType(value);
-    return CAMERA_STREAM_TYPE_OPTIONS.find(([id]) => id === key)?.[1] || 'Snapshot';
-  }
-
-  function cameraStatusBadgeClass(value) {
-    const key = normalizeCameraStatus(value);
-    if (key === 'online') return 'good';
-    if (key === 'private' || key === 'unknown') return 'warn';
-    if (key === 'offline') return 'bad';
-    return '';
-  }
-
-  function normalizeCameraUrl(value = '') {
-    const text = normalizeText(value || '');
-    if (!text) return '';
-    if (/^(https?|rtsp):\/\//i.test(text)) return text;
-    if (/^\d{1,3}(\.\d{1,3}){3}/.test(text)) return `http://${text}`;
-    return text;
-  }
-
-  function normalizeCameraItem(item = {}) {
-    const parsed = parseCameraNote(item.note || '');
-    const meta = parsed.meta || {};
-    const camera = {
-      id: item.id || `camera-${uid()}`,
-      householdId: item.householdId || currentHouseholdId(),
-      profileId: item.profileId || currentProfileId(),
-      cloudId: item.cloudId || '',
-      createdAt: item.createdAt || new Date().toISOString(),
-      updatedAt: item.updatedAt || '',
-      name: normalizeText(item.name || meta.name || 'Kamera'),
-      location: normalizeText(item.location || meta.location || ''),
-      vendor: normalizeCameraVendor(item.vendor || meta.vendor || 'generic'),
-      model: normalizeText(item.model || meta.model || ''),
-      ip: normalizeText(item.ip || meta.ip || ''),
-      adminUrl: normalizeCameraUrl(item.adminUrl || meta.adminUrl || ''),
-      snapshotUrl: normalizeCameraUrl(item.snapshotUrl || meta.snapshotUrl || ''),
-      streamUrl: normalizeCameraUrl(item.streamUrl || meta.streamUrl || ''),
-      streamType: normalizeCameraStreamType(item.streamType || meta.streamType || (item.snapshotUrl ? 'snapshot' : 'app')),
-      onvifPort: normalizeText(item.onvifPort || meta.onvifPort || ''),
-      usernameHint: normalizeText(item.usernameHint || meta.usernameHint || ''),
-      status: normalizeCameraStatus(item.status || meta.status || 'unknown'),
-      note: normalizeText(item.noteText || item.plainNote || parsed.note || '')
-    };
-    if (!camera.adminUrl && camera.ip) camera.adminUrl = `http://${camera.ip}`;
-    return camera;
-  }
-
-  function serializeCameraNote(item = {}) {
-    const camera = normalizeCameraItem(item);
-    const meta = {
-      note: camera.note || '',
-      vendor: camera.vendor || 'generic',
-      model: camera.model || '',
-      ip: camera.ip || '',
-      adminUrl: camera.adminUrl || '',
-      streamUrl: camera.streamUrl || '',
-      streamType: camera.streamType || 'snapshot',
-      onvifPort: camera.onvifPort || '',
-      usernameHint: camera.usernameHint || ''
-    };
-    const hasExtended = Object.entries(meta).some(([key, value]) => key !== 'note' && Boolean(value) && value !== 'generic' && value !== 'snapshot');
-    return hasExtended ? `${CAMERA_NOTE_META_PREFIX}${JSON.stringify(meta)}` : (camera.note || null);
-  }
-
-  function cameraFromFormData(data = {}) {
-    return normalizeCameraItem({
-      name: data.name,
-      location: data.location,
-      vendor: data.vendor,
-      model: data.model,
-      ip: data.ip,
-      adminUrl: data.adminUrl,
-      snapshotUrl: data.snapshotUrl,
-      streamUrl: data.streamUrl,
-      streamType: data.streamType,
-      onvifPort: data.onvifPort,
-      usernameHint: data.usernameHint,
-      status: data.status,
-      note: data.note
-    });
-  }
-
-  async function addCameraFromForm(data, form) {
-    const camera = cameraFromFormData(data);
-    if (!camera.name || camera.name === 'Kamera') return showToast('Zadej název kamery');
-    await addItem('cameras', camera);
-    form?.reset();
-  }
-
-  async function updateCameraFromForm(id, data, form) {
-    const camera = state.cameras.find((item) => item.id === id);
-    if (!camera) return showToast('Kamera nenalezena');
-    Object.assign(camera, cameraFromFormData(data), { id: camera.id, cloudId: camera.cloudId || '', createdAt: camera.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() });
-    const ok = await cloudUpdateExtraItem('cameras', camera);
-    if (!ok) return;
-    touchState();
-    saveState();
-    render();
-    showToast(camera.cloudId ? 'Kamera upravená v cloudu' : 'Kamera upravená lokálně');
-  }
-
-  function renderCameraFormFields(camera = {}) {
-    const c = normalizeCameraItem(camera);
-    return `
-      <div class="form-grid two camera-form-grid">
-        ${field('Název', 'name', 'text', 'Vchod / garáž / zahrada', true, c.name === 'Kamera' ? '' : c.name)}
-        ${field('Umístění', 'location', 'text', 'venku / chodba / garáž', false, c.location)}
-        ${selectField('Značka / systém', 'vendor', CAMERA_VENDOR_OPTIONS, c.vendor)}
-        ${field('Model', 'model', 'text', 'C320WS / DS-2CD...', false, c.model)}
-        ${field('IP adresa', 'ip', 'text', '192.168.1.50', false, c.ip)}
-        ${field('Administrace', 'adminUrl', 'text', 'http://192.168.1.50', false, c.adminUrl)}
-        ${selectField('Typ náhledu', 'streamType', CAMERA_STREAM_TYPE_OPTIONS, c.streamType)}
-        ${selectField('Stav', 'status', CAMERA_STATUS_OPTIONS, c.status)}
-        ${field('Snapshot / MJPEG / HLS URL', 'snapshotUrl', 'text', 'http://.../snapshot.jpg nebo HLS playlist', false, c.snapshotUrl)}
-        ${field('RTSP / ONVIF / proxy URL', 'streamUrl', 'text', 'rtsp://... nebo https://go2rtc...', false, c.streamUrl)}
-        ${field('ONVIF port', 'onvifPort', 'text', '80 / 8899 / 8000', false, c.onvifPort)}
-        ${field('Uživatel / poznámka k účtu', 'usernameHint', 'text', 'bez hesla', false, c.usernameHint)}
-      </div>
-      <div class="form-grid">
-        ${field('Poznámka', 'note', 'text', 'např. jen přes VPN, heslo v trezoru', false, c.note)}
-      </div>
-    `;
-  }
-
-  function normalizeCameraDiscoveryState(input = {}) {
-    const fallback = DEFAULT_STATE?.cameraDiscovery || { subnet: '192.168.1', from: 1, to: 254, scanning: false, results: [], scannedAt: '', error: '' };
-    const subnet = normalizeSubnetPrefix(input.subnet || fallback.subnet || '192.168.1');
-    const from = clampNumber(input.from, 1, 254, 1);
-    const to = clampNumber(input.to, from, 254, Math.min(254, Math.max(from, Number(input.to || 254))));
-    return {
-      subnet,
-      from,
-      to,
-      scanning: false,
-      results: Array.isArray(input.results) ? input.results.slice(0, 40).map(normalizeCameraDiscoveryResult).filter(Boolean) : [],
-      scannedAt: input.scannedAt || '',
-      error: input.error || ''
-    };
-  }
-
-  function normalizeCameraDiscoveryResult(input = {}) {
-    const ip = normalizeText(input.ip || '');
-    if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) return null;
-    return {
-      ip,
-      url: normalizeCameraUrl(input.url || `http://${ip}`),
-      vendor: normalizeCameraVendor(input.vendor || 'generic'),
-      label: normalizeText(input.label || 'Možné webové rozhraní kamery'),
-      checkedAt: input.checkedAt || new Date().toISOString()
-    };
-  }
-
-  function renderCameraDiscoveryPanel() {
-    state.cameraDiscovery = normalizeCameraDiscoveryState(state.cameraDiscovery);
-    const discovery = state.cameraDiscovery;
-    const hasResults = discovery.results.length > 0;
-    return `
-      <section class="camera-discovery-panel glass-subcard">
-        <div class="card-header small"><div><h3>Najít kamery v síti</h3><p>Orientační hledání webových rozhraní Tapo/Hikvision/Dahua a dalších IP kamer. Prohlížeč neumí ARP ani ping, takže je to bezpečný best-effort scan.</p></div><span class="badge ${discovery.scanning ? 'warn' : ''}">${discovery.scanning ? 'hledám' : 'volitelné'}</span></div>
-        <div class="form-grid three camera-scan-grid">
-          ${field('Podsíť', 'cameraSubnet', 'text', '192.168.1', false, discovery.subnet)}
-          ${field('Od', 'cameraFrom', 'number', '1', false, discovery.from)}
-          ${field('Do', 'cameraTo', 'number', '254', false, discovery.to)}
-        </div>
-        <div class="form-actions compact-actions">
-          <button class="ghost-btn" type="button" data-action="camera-scan-common">Rychlé hledání</button>
-          <button class="ghost-btn" type="button" data-action="camera-scan-range">Hledat rozsah</button>
-          ${hasResults ? '<button class="ghost-btn" type="button" data-action="camera-scan-clear">Vyčistit nálezy</button>' : ''}
-        </div>
-        <div class="inline-note compact-note">Pozn.: iPhone/Safari může lokální HTTP dotazy blokovat. Když se nic nenajde, není to chyba kamery — zadej IP ručně nebo použij router/NVR seznam zařízení.</div>
-        ${discovery.error ? `<div class="inline-note warn-note">${escapeHtml(discovery.error)}</div>` : ''}
-        ${hasResults ? `<div class="camera-discovery-results">${discovery.results.map((result) => `
-          <div class="camera-discovery-result">
-            <div><strong>${escapeHtml(result.ip)}</strong><span>${escapeHtml(result.label || 'Možná kamera')}</span></div>
-            <div class="form-actions compact-actions"><a class="ghost-btn" href="${escapeHtml(result.url)}" target="_blank" rel="noopener">Otevřít</a><button class="primary-btn" type="button" data-action="camera-add-discovered" data-ip="${escapeHtml(result.ip)}" data-url="${escapeHtml(result.url)}" data-vendor="${escapeHtml(result.vendor)}">Přidat kameru</button></div>
-          </div>
-        `).join('')}</div>` : ''}
-      </section>
-    `;
-  }
-
-  function readCameraDiscoveryInputs(button) {
-    const panel = button.closest('.camera-discovery-panel') || document;
-    const subnet = normalizeSubnetPrefix(panel.querySelector('[name="cameraSubnet"]')?.value || state.cameraDiscovery?.subnet || '192.168.1');
-    const from = clampNumber(panel.querySelector('[name="cameraFrom"]')?.value, 1, 254, 1);
-    const to = clampNumber(panel.querySelector('[name="cameraTo"]')?.value, from, 254, 254);
-    return { subnet, from, to };
-  }
-
-  async function scanCameraHost(ip, timeoutMs = 1150) {
-    const probes = [
-      { url: `http://${ip}/`, label: 'Odpovědělo webové rozhraní', vendor: 'generic' },
-      { url: `http://${ip}/doc/page/login.asp`, label: 'Možná Hikvision kamera/NVR', vendor: 'hikvision' },
-      { url: `http://${ip}/ISAPI/System/deviceInfo`, label: 'Možné Hikvision ISAPI', vendor: 'hikvision' },
-      { url: `http://${ip}/favicon.ico`, label: 'Možné webové rozhraní', vendor: 'generic' }
-    ];
-    for (const probe of probes) {
-      const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        await fetch(probe.url, { mode: 'no-cors', cache: 'no-store', signal: controller.signal });
-        window.clearTimeout(timer);
-        return normalizeCameraDiscoveryResult({ ip, url: `http://${ip}`, label: probe.label, vendor: probe.vendor });
-      } catch (_) {
-        window.clearTimeout(timer);
-      }
-      await yieldToMainThread();
-    }
-    return null;
-  }
-
-  async function scanCameraNetwork(button, mode = 'common') {
-    if (state.cameraDiscovery?.scanning) return showToast('Hledání už běží');
-    const { subnet, from, to } = readCameraDiscoveryInputs(button);
-    const hostSet = mode === 'common'
-      ? CAMERA_DISCOVERY_COMMON_HOSTS.filter((host) => host >= from && host <= to)
-      : Array.from({ length: Math.min(CAMERA_DISCOVERY_MAX_RANGE, to - from + 1) }, (_, index) => from + index);
-    if (!hostSet.length) return showToast('Zadej rozsah IP adres');
-    state.cameraDiscovery = normalizeCameraDiscoveryState({ ...state.cameraDiscovery, subnet, from, to, scanning: true, error: '', results: state.cameraDiscovery?.results || [] });
-    render();
-    showToast(mode === 'common' ? 'Zkouším běžné adresy kamer' : `Zkouším prvních ${hostSet.length} adres rozsahu`);
-    const existing = new Map((state.cameraDiscovery.results || []).map((item) => [item.ip, item]));
-    let found = 0;
-    for (const host of hostSet) {
-      const ip = `${subnet}.${host}`;
-      if ((state.cameras || []).some((camera) => normalizeCameraItem(camera).ip === ip)) continue;
-      const result = await scanCameraHost(ip);
-      if (result) {
-        existing.set(result.ip, result);
-        found += 1;
-      }
-      await yieldToMainThread();
-    }
-    state.cameraDiscovery = normalizeCameraDiscoveryState({ subnet, from, to, scanning: false, results: [...existing.values()].slice(-40).reverse(), scannedAt: new Date().toISOString(), error: found ? '' : 'Nic se nepodařilo ověřit. To je u PWA normální — lokální HTTP scan může blokovat Safari nebo kamera.' });
-    touchState();
-    saveState();
-    render();
-    showToast(found ? `Nalezeno možných kamer: ${found}` : 'Automatické hledání nic nepotvrdilo');
-  }
-
-  async function addDiscoveredCamera(button) {
-    const ip = normalizeText(button.dataset.ip || '');
-    if (!ip) return;
-    const url = normalizeCameraUrl(button.dataset.url || `http://${ip}`);
-    const vendor = normalizeCameraVendor(button.dataset.vendor || 'generic');
-    const exists = (state.cameras || []).some((camera) => normalizeCameraItem(camera).ip === ip);
-    if (exists) return showToast('Tahle kamera už v seznamu je');
-    await addItem('cameras', normalizeCameraItem({ name: `Kamera ${ip}`, vendor, ip, adminUrl: url, status: 'unknown', streamType: 'app', note: 'Nalezeno orientačním hledáním v síti. Doplň snapshot/RTSP/ONVIF podle konkrétní kamery.' }));
-  }
-
-  function clearCameraDiscovery() {
-    state.cameraDiscovery = normalizeCameraDiscoveryState({ ...state.cameraDiscovery, results: [], error: '', scanning: false, scannedAt: '' });
-    touchState();
-    saveState();
-    render();
-  }
-
-  function cameraConnectHint(camera = {}) {
-    const c = normalizeCameraItem(camera);
-    if (c.vendor === 'tapo') return 'Tapo: v appce zapni RTSP/ONVIF účet, v Domácnost+ ulož lokální IP a ideálně snapshot/proxy URL. Heslo sem nepiš.';
-    if (c.vendor === 'hikvision') return 'Hikvision: pro web/NVR použij lokální administraci, pro živý náhled ideálně HLS/WebRTC/MJPEG přes go2rtc/Frigate/Home Assistant.';
-    if (c.streamType === 'rtsp') return 'RTSP prohlížeč přímo nepřehraje. Použij lokální převod na HLS/WebRTC/MJPEG přes bezpečnou proxy nebo VPN.';
-    return 'Pro živý náhled je nejstabilnější snapshot/MJPEG/HLS URL dostupná jen v lokální síti nebo přes VPN.';
-  }
-
-  function renderCameraPreview(camera) {
-    const c = normalizeCameraItem(camera);
-    const previewUrl = c.snapshotUrl || (['mjpeg', 'hls'].includes(c.streamType) ? c.streamUrl : '');
-    if (previewUrl && (c.streamType === 'snapshot' || c.streamType === 'mjpeg')) {
-      return `<img src="${escapeHtml(previewUrl)}" alt="Náhled kamery ${escapeHtml(c.name)}" loading="lazy" onerror="this.replaceWith(document.createTextNode('Náhled nejde načíst'))">`;
-    }
-    if (previewUrl && c.streamType === 'hls') {
-      return `<video src="${escapeHtml(previewUrl)}" muted playsinline controls preload="metadata"></video>`;
-    }
-    return `<div>📹<br>${escapeHtml(c.name)}</div>`;
-  }
-
-  function renderCameras() {
-    state.cameraDiscovery = normalizeCameraDiscoveryState(state.cameraDiscovery);
-    state.cameras = (state.cameras || []).map(normalizeCameraItem);
-    const cameras = state.cameras;
-    const onlineCount = cameras.filter((camera) => normalizeCameraStatus(camera.status) === 'online').length;
-    const activeCamerasTab = getModuleTab('cameras', 'overview');
-    return `
-      ${renderSectionTabs('cameras', [
-        { id: 'overview', label: 'Přehled', icon: '📷', count: cameras.length },
-        { id: 'add', label: 'Přidat', icon: '➕' },
-        { id: 'discovery', label: 'Najít v síti', icon: '📡' },
-        { id: 'help', label: 'Napojení', icon: '🧩' }
-      ], 'overview')}
-      <div class="grid two module-tabbed cameras-tab-${activeCamerasTab}" data-tab-area="cameras">
-        <section class="card desktop-span-2 cameras-panel panel-overview">
-          <div class="card-header"><div><h2>Přehled kamer</h2><p>Kamery jsou evidence + bezpečný náhled. Tapo/Hikvision a další držím přes IP, administraci, snapshot/proxy URL a poznámky bez hesel.</p></div><span class="badge ${onlineCount ? 'good' : ''}">${onlineCount}/${cameras.length} online</span></div><div class="form-actions compact-actions">${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud kamery</button>' : ''}${state.cloud?.householdId && cameras.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální kamery (${cameras.filter((item) => !item.cloudId).length})</button>` : ''}</div>
-          ${cameras.length ? `<div class="grid two compact-camera-grid">${cameras.map(renderCameraCard).join('')}</div>` : renderEmptyCta({ icon: '📷', title: 'Kamery jsou prázdné', text: 'Přidej Tapo, Hikvision nebo jinou IP kameru. Nejdřív stačí IP/adresa, později doplníš snapshot nebo proxy stream.', nav: 'cameras', tab: 'add', label: 'Přidat kameru' })}
-        </section>
-
-        <section class="card cameras-panel panel-add">
-          <div class="card-header"><div><h2>Přidat kameru</h2><p>Bezpečně: neukládej sem heslo. Ulož IP, administraci, typ streamu a případně URL na lokální snapshot/proxy.</p></div></div>
-          <form data-form="add-camera" class="compact-form">
-            ${renderCameraFormFields()}
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat kameru</button></div>
-          </form>
-          <div class="inline-note compact-note">HTTPS/mixed-content: když aplikace běží přes HTTPS a kamera jen přes HTTP, prohlížeč může náhled blokovat. Nejčistší bude později lokální proxy přes Home Assistant/Frigate/go2rtc/VPN.</div>
-        </section>
-
-        <section class="card desktop-span-2 cameras-panel panel-discovery">
-          <div class="card-header"><div><h2>Najít kamery v síti</h2><p>Rychlé orientační hledání webových rozhraní. Není to plnohodnotný síťový scanner, ale pomůže najít IP kandidáty.</p></div></div>
-          ${renderCameraDiscoveryPanel()}
-        </section>
-
-        <section class="card desktop-span-2 cameras-panel panel-help">
-          <div class="card-header"><div><h2>Jak napojit Tapo / Hikvision</h2><p>Nejbezpečnější směr bez veřejného port forwardingu.</p></div><span class="badge warn">bez hesel v appce</span></div>
-          <div class="grid two">
-            <div class="glass-subcard"><h3>TP-Link Tapo</h3><p>V Tapo aplikaci zapni lokální RTSP/ONVIF účet, zapiš IP kamery a do Domácnost+ dej jen URL/nápovědu. Heslo nech v trezoru.</p></div>
-            <div class="glass-subcard"><h3>Hikvision / NVR</h3><p>Ulož IP/NVR administraci. Živý náhled přes prohlížeč řeš radši převodem na HLS/WebRTC/MJPEG, ne přímým RTSP.</p></div>
-            <div class="glass-subcard"><h3>Proč ne přímo RTSP?</h3><p>Safari/Chrome RTSP přímo nepřehrají. Domácnost+ ho zatím umí evidovat, ale pro živý náhled je potřeba proxy: go2rtc, Frigate nebo Home Assistant.</p></div>
-            <div class="glass-subcard"><h3>Vzdálený přístup</h3><p>Nedávej kamery veřejně přes port forwarding. Lepší je VPN/Tailscale/WireGuard nebo bezpečný backend/proxy v lokální síti.</p></div>
-          </div>
-        </section>
-      </div>
-    `;
-  }
-
-  function renderCameraCard(camera) {
-    const c = normalizeCameraItem(camera);
-    const details = [c.location || 'bez umístění', cameraVendorLabel(c.vendor), c.ip, c.model, c.cloudId ? 'cloud' : 'lokálně'].filter(Boolean).join(' · ');
-    return `
-      <article class="item compact-item camera-card">
-        <div class="camera-preview">
-          ${renderCameraPreview(c)}
-        </div>
-        <div class="item-top" style="margin-top:10px;"><div class="item-title">${escapeHtml(c.name)}</div><span class="badge ${cameraStatusBadgeClass(c.status)}">${escapeHtml(CAMERA_STATUS_OPTIONS.find(([id]) => id === c.status)?.[1] || c.status)}</span></div>
-        <div class="item-meta">${escapeHtml(details)}</div>
-        <div class="camera-chip-row">
-          <span class="badge">${escapeHtml(cameraStreamTypeLabel(c.streamType))}</span>
-          ${c.adminUrl ? `<a class="badge camera-link-badge" href="${escapeHtml(c.adminUrl)}" target="_blank" rel="noopener">administrace</a>` : ''}
-          ${c.streamUrl ? `<span class="badge">stream uložen</span>` : ''}
-          ${c.usernameHint ? `<span class="badge">účet: ${escapeHtml(c.usernameHint)}</span>` : ''}
-        </div>
-        <div class="inline-note compact-note camera-note">${escapeHtml(cameraConnectHint(c))}${c.note ? ` · ${escapeHtml(c.note)}` : ''}</div>
-        <details class="compact-edit-details camera-edit-details">
-          <summary><span>Upravit detail</span><em>${escapeHtml(c.ip || c.location || cameraVendorLabel(c.vendor))}</em></summary>
-          <form data-form="update-camera" data-id="${escapeHtml(c.id)}">
-            ${renderCameraFormFields(c)}
-            <div class="form-actions"><button class="primary-btn" type="submit">Uložit kameru</button><button class="danger-btn" type="button" data-action="delete" data-collection="cameras" data-id="${escapeHtml(c.id)}">Smazat</button></div>
-          </form>
-        </details>
-      </article>
-    `;
-  }
-
-
   function normalizeFinanceTemplate(template = {}) {
     const id = normalizeText(template.id) || `finance-template-${uid()}`;
     const type = template.type === 'income' ? 'income' : template.type === 'transfer' ? 'transfer' : 'expense';
@@ -10601,7 +10142,7 @@
         'duotone-fresh': ['home', 'calendar', 'finance'],
         'sticker-ui': ['home', 'calendar', 'garage'],
         'clay-3d': ['homecare', 'garage', 'finance'],
-        'isometric-micro': ['home', 'garage', 'devices']
+        'isometric-micro': ['home', 'garage']
       };
       const iconIds = previewIconsByTheme[id] || ['home', 'packages', 'settings'];
       return `<span class="visual-icon-preview-row">${iconIds.map((iconId) => renderAssetThemeIcon(iconId, { themeId: id, size: 'picker', baseClass: 'visual-asset-icon', innerClass: 'visual-asset-icon-inner' }) || getThemedModuleIconSvg(iconId, { themeId: id })).join('')}</span>`;
@@ -10732,7 +10273,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 238))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 239))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -11325,7 +10866,7 @@
       state.vehicles?.length || 0,
       state.contracts?.length || 0,
       state.finance?.length || 0,
-      state.cameras?.length || 0
+      0
     ];
     return counts.reduce((sum, value) => sum + value, 0) <= 2;
   }
@@ -15574,6 +15115,7 @@
     const saved = await cloudAddTask(task);
     if (saved?.id) task.cloudId = saved.id;
     state.homeTasks.push(task);
+    setModuleTab('notebookCreate', '');
     touchState();
     saveState();
     form.reset();
@@ -15751,8 +15293,6 @@
       'update-contract': async () => updateContract(form.dataset.contractId, data, form),
       'add-contract-file': () => addContractFiles(form),
       'fuelio-preview': () => previewFuelioImport(form),
-      'add-camera': () => addCameraFromForm(data, form),
-      'update-camera': () => updateCameraFromForm(form.dataset.id, data, form),
       onboarding: () => completeOnboarding(data),
       'onboarding-google-setup': () => completeGoogleOnboardingSetup(data),
       'onboarding-login': () => loginExistingHouseholdFromOnboarding(data),
@@ -16161,14 +15701,6 @@
       homeTasks.push(make({ profileId: index % 2 ? janaId : petrId, title, category: index % 3 === 0 ? 'udrzba' : index % 3 === 1 ? 'domacnost' : 'zdravi', priority: index % 5 === 0 ? 'high' : 'normal', due: addDays(index * 4 - 12), note: index % 2 ? 'Opakovaný demo úkol' : '', done: index < 3, doneAt: index < 3 ? isoAt(-index * 3, 19, 0) : '' }));
     });
 
-    const devices = [
-      make({ profileId: petrId, name: 'Router', type: 'Síť', address: '192.168.1.1', note: 'Hlavní router v pracovně' }),
-      make({ profileId: petrId, name: 'NAS', type: 'Úložiště', address: '192.168.1.50', note: 'Zálohy fotek a dokumentů' }),
-      make({ profileId: petrId, name: 'Switch garáž', type: 'Síť', address: '192.168.1.12', note: 'Kamery + AP' }),
-      make({ profileId: janaId, name: 'Tablet v kuchyni', type: 'Dashboard', address: '192.168.1.80', note: 'Budoucí domácí panel' }),
-      make({ profileId: petrId, name: 'Tiskárna', type: 'Tisk', address: '192.168.1.45', note: 'Toner objednat při 15 %' })
-    ];
-
     const warranties = [
       make({ profileId: petrId, name: 'Pračka se sušičkou', store: 'Datart', category: 'Spotřebič', price: 14990, purchaseDate: daysAgo(220), warrantyUntil: addYearsIso(daysAgo(220), 2), status: 'active', note: 'Účtenka v e-mailu, řešit čištění filtru.' }),
       make({ profileId: janaId, name: 'Telefon Jana', store: 'Alza', category: 'Elektronika', price: 11990, purchaseDate: daysAgo(540), warrantyUntil: addYearsIso(daysAgo(540), 3), status: 'active', note: 'Prodloužená záruka na 3 roky.' }),
@@ -16239,7 +15771,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 238, mode: 'rich-demo-v238', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 239, mode: 'rich-demo-v239', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -16276,7 +15808,6 @@
         make({ profileId: petrId, text: 'Po výplatě zkontrolovat rezervu a obálku dovolená.' }),
         make({ profileId: janaId, text: 'Koupit nové filtry do konvice, poslední je nasazený.' })
       ],
-      devices,
       warranties,
       vehicles,
       fuel,
@@ -16284,11 +15815,6 @@
       contracts,
       contractFiles: [],
       warrantyFiles: [],
-      cameras: [
-        make({ profileId: petrId, name: 'Vchod', location: 'Před domem', snapshotUrl: '', status: 'online', note: 'Demo kamera bez streamu' }),
-        make({ profileId: petrId, name: 'Garáž', location: 'Garáž', snapshotUrl: '', status: 'online', note: 'Snapshot se doplní později' }),
-        make({ profileId: janaId, name: 'Zahrada', location: 'Zadní část domu', snapshotUrl: '', status: 'offline', note: 'Výměna napájení' })
-      ],
       financeAccounts,
       finance,
       financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: todayISO().slice(0, 7), typeFilter: 'all' },
@@ -16397,7 +15923,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 238, mode: 'notebook-no-ai-v238', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 239, mode: 'notebook-no-ai-v239', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -18056,7 +17582,6 @@
       finance: [cloudLoadFinance],
       subscriptions: [cloudLoadExtraCollections],
       notes: [cloudLoadExtraCollections],
-      cameras: [cloudLoadExtraCollections],
       coupons: [cloudLoadExtraCollections],
       warranties: [cloudLoadWarrantyFiles],
       weather: []
@@ -18323,18 +17848,6 @@
     }
     if (action === 'cloud-sync-local-extras') {
       cloudSyncLocalExtraCollections(true).then(() => cloudLoadExtraCollections(false));
-      return;
-    }
-    if (action === 'camera-scan-common' || action === 'camera-scan-range') {
-      scanCameraNetwork(button, action === 'camera-scan-range' ? 'range' : 'common');
-      return;
-    }
-    if (action === 'camera-add-discovered') {
-      addDiscoveredCamera(button);
-      return;
-    }
-    if (action === 'camera-scan-clear') {
-      clearCameraDiscovery();
       return;
     }
     if (action === 'cloud-sync-pending') {
@@ -19726,7 +19239,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 238
+        appBuild: 239
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -20316,7 +19829,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-238-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-239-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20668,7 +20181,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_238</span>
+          <span class="badge">Domácnost+ v.0.1_239</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
