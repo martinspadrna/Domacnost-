@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_257';
+  const APP_VERSION = 'Domácnost+ v.0.1_259';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -700,8 +700,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 257,
-      mode: 'readings-detail-v257',
+      appBuild: 259,
+      mode: 'readings-monthly-v259',
       createdAt: '',
       updatedAt: ''
     },
@@ -749,6 +749,7 @@
     waste: [],
     readingMeters: [],
     readings: [],
+    readingPrices: { electricityT1: '', electricityT2: '', water: '', gas: '', updatedAt: '' },
     readingsCloud: { loadedAt: '' },
     notes: [],
     warranties: [],
@@ -993,6 +994,7 @@
   let readingsCompareMeterIds = safeParse(localStorage.getItem('domacnostPlus.readingsCompareMeterIds'), []) || [];
   let readingsEntryMeterId = localStorage.getItem('domacnostPlus.readingsEntryMeterId') || '';
   let readingsEntryDrawerOpen = false;
+  let readingsMeterToolPage = localStorage.getItem('domacnostPlus.readingsMeterToolPage') || '';
   let financeTemplateEditId = '';
   let financeCopyId = '';
   let shoppingQuantityEditId = '';
@@ -1582,8 +1584,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 257,
-      mode: 'readings-detail-v257',
+      appBuild: 259,
+      mode: 'readings-monthly-v259',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5153,6 +5155,8 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_259', note: 'Odečty: měřidla mají samostatné stránky Import, Přidat měřidlo a Ceny; globální průměrné ceny se používají jako fallback a podrobné ceny jsou přehledně podle typu měřidla.' },
+      { title: 'Domácnost+ v.0.1_258', note: 'Odečty: grafy ukazují měsíční průměry s jednotkami a obdobím, rychlý odečet nepřetéká přes kraj a prázdná cena přebírá poslední známou cenu.' },
       { title: 'Domácnost+ v.0.1_257', note: 'Odečty: přibyla záložka Odečet pro rychlé měsíční zadání, detail má čárové grafy a porovnání měřidel, akce měřidel jsou jen v záložce Měřidla.' },
       { title: 'Domácnost+ v.0.1_256', note: 'Odečty: import elektřiny spojuje Odečet/Odečet 2 do jednoho měřidla T1/T2, přehled je čistší bez statistik, přibyla záložka Detail s grafy a porovnáním měřidel.' },
       { title: 'Domácnost+ v.0.1_255', note: 'Odečty: přidaný import z exportu Domácí odečty (.xls/.csv), vytvoří měřidla podle názvů a natáhne historické odečty včetně druhého registru.' },
@@ -7675,6 +7679,38 @@
     return num === '' || num < 0 ? '' : num;
   }
 
+  function normalizeReadingPrices(item = {}) {
+    return {
+      electricityT1: normalizeReadingPricePart(item.electricityT1),
+      electricityT2: normalizeReadingPricePart(item.electricityT2),
+      water: normalizeReadingPricePart(item.water),
+      gas: normalizeReadingPricePart(item.gas),
+      updatedAt: normalizeText(item.updatedAt)
+    };
+  }
+
+  function readingGlobalAverageUnitPrice(type = '', registerLabel = '') {
+    state.readingPrices = normalizeReadingPrices(state.readingPrices || {});
+    const register = normalizeText(registerLabel).toUpperCase();
+    if (type === 'electricity') {
+      const t2 = state.readingPrices.electricityT2;
+      const t1 = state.readingPrices.electricityT1;
+      if (register === 'T2') return t2 !== '' ? t2 : t1;
+      if (register === 'T1') return t1 !== '' ? t1 : t2;
+      return t1 !== '' ? t1 : t2;
+    }
+    if (type === 'water') return state.readingPrices.water;
+    if (type === 'gas') return state.readingPrices.gas;
+    return '';
+  }
+
+  function readingHasCustomUnitPrice(meter = null) {
+    if (!meter) return false;
+    if (readingMeterAverageUnitPrice(meter) !== '') return true;
+    if (readingMeterContractUnitPrice(meter) !== '') return true;
+    return false;
+  }
+
   function normalizeReadingMeter(item = {}) {
     const type = ['electricity', 'gas', 'water'].includes(item.type) ? item.type : 'electricity';
     const meta = readingTypeMeta(type);
@@ -7838,15 +7874,46 @@
     return legacy !== '' && legacy >= 0 ? legacy : '';
   }
 
-  function readingMeterUnitPrice(meter = null) {
+  function readingMeterDirectUnitPrice(meter = null) {
     if (!meter) return '';
     return meter.pricingMode === 'contract' ? readingMeterContractUnitPrice(meter) : readingMeterAverageUnitPrice(meter);
+  }
+
+  function readingMeterUnitPrice(meter = null, registerLabel = '') {
+    if (!meter) return '';
+    const direct = readingMeterDirectUnitPrice(meter);
+    if (direct !== '') return direct;
+    return readingGlobalAverageUnitPrice(meter.type, registerLabel);
+  }
+
+  function readingLastKnownUnitPrice(meterId = '', beforeEntry = null, registerLabel = '') {
+    const normalizedRegister = normalizeText(registerLabel).toUpperCase();
+    const beforeDate = normalizeText(beforeEntry?.date || beforeEntry || '');
+    const beforeCreatedAt = normalizeText(beforeEntry?.createdAt || '');
+    const beforeId = normalizeText(beforeEntry?.id || '');
+    const rows = readingsEntries(meterId)
+      .filter((entry) => {
+        if (beforeId && entry.id === beforeId) return false;
+        const price = decimalValue(entry.unitPrice);
+        if (price === '' || price < 0) return false;
+        if (normalizedRegister && readingEntryRegisterLabel(entry) !== normalizedRegister) return false;
+        if (!beforeDate) return true;
+        const entryDate = normalizeText(entry.date);
+        if (entryDate < beforeDate) return true;
+        if (entryDate > beforeDate) return false;
+        return !beforeCreatedAt || normalizeText(entry.createdAt) < beforeCreatedAt;
+      })
+      .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const price = decimalValue(rows[0]?.unitPrice);
+    return price !== '' && price >= 0 ? price : '';
   }
 
   function readingUnitPriceForEntry(entry = {}, meter = null) {
     const entryPrice = decimalValue(entry.unitPrice);
     if (entryPrice !== '' && entryPrice >= 0) return entryPrice;
-    return readingMeterUnitPrice(meter);
+    const previousPrice = readingLastKnownUnitPrice(entry.meterId, entry, readingEntryRegisterLabel(entry));
+    if (previousPrice !== '') return previousPrice;
+    return readingMeterUnitPrice(meter, readingEntryRegisterLabel(entry));
   }
 
   function readingFixedMonthlyCost(meter = null) {
@@ -7866,12 +7933,25 @@
   }
 
   function readingPricingLabel(meter = null) {
-    const price = readingMeterUnitPrice(meter);
+    if (!meter) return 'bez ceny';
     const fixed = readingFixedMonthlyCost(meter);
     const parts = [];
-    const modeLabel = meter?.pricingMode === 'contract' ? 'smlouva' : 'průměr';
-    if (price !== '' && price >= 0) parts.push(`${modeLabel}: ${price.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })} Kč/${meter?.unit || 'j.'}`);
-    if (fixed) parts.push(`${readingMoney(fixed)} / měsíc${meter?.fixedMonthlyLabel ? ` · ${meter.fixedMonthlyLabel}` : ''}`);
+    const direct = readingMeterDirectUnitPrice(meter);
+    const modeLabel = meter.pricingMode === 'contract' ? 'smlouva' : 'průměr';
+    if (direct !== '' && direct >= 0) {
+      parts.push(`${modeLabel}: ${direct.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })} Kč/${meter.unit || 'j.'}`);
+    } else if (meter.type === 'electricity') {
+      const t1 = readingGlobalAverageUnitPrice('electricity', 'T1');
+      const t2 = readingGlobalAverageUnitPrice('electricity', 'T2');
+      const bits = [];
+      if (t1 !== '') bits.push(`T1 ${t1.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })}`);
+      if (t2 !== '') bits.push(`T2 ${t2.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })}`);
+      if (bits.length) parts.push(`globál: ${bits.join(' · ')} Kč/${meter.unit || 'kWh'}`);
+    } else {
+      const global = readingGlobalAverageUnitPrice(meter.type);
+      if (global !== '') parts.push(`globál: ${global.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })} Kč/${meter.unit || 'j.'}`);
+    }
+    if (fixed) parts.push(`${readingMoney(fixed)} / měsíc${meter.fixedMonthlyLabel ? ` · ${meter.fixedMonthlyLabel}` : ''}`);
     return parts.join(' · ') || 'bez ceny';
   }
 
@@ -7886,35 +7966,50 @@
 
 
   function renderReadingPriceFormBlock(meter = {}) {
+    const type = ['electricity', 'gas', 'water'].includes(meter.type) ? meter.type : 'electricity';
     const selectedMode = ['average', 'contract'].includes(meter.pricingMode) ? meter.pricingMode : 'average';
-    const pricingHelp = ['electricity', 'gas', 'water'].map((type) => {
-      const meta = readingTypeMeta(type);
-      return `<div class="mini-stat"><span>${escapeHtml(meta.icon)} ${escapeHtml(meta.label)}</span><strong>${escapeHtml(type === 'electricity' ? 'kWh + stálé platby' : type === 'gas' ? 'm³/kWh + stálé platby' : 'vodné + stočné')}</strong><small>${escapeHtml(readingPricingModeInfo(type))}</small></div>`;
-    }).join('');
+    const meta = readingTypeMeta(type);
     const readingPriceModeOptions = [['average', 'Průměrná cena z vyúčtování'], ['contract', 'Přesný výpočet ze smlouvy']];
+    const averageFields = `
+      ${field('Celková cena z vyúčtování', 'averageBillTotal', 'text', 'např. 24000', false, meter.averageBillTotal ?? '', 'decimal')}
+      ${field(`Spotřeba z vyúčtování (${meta.unit || 'jednotka'})`, 'averageBillUsage', 'text', 'např. 3200', false, meter.averageBillUsage ?? '', 'decimal')}`;
+    const contractFields = type === 'water'
+      ? `
+        ${field('Vodné', 'waterPrice', 'text', 'Kč/m³', false, meter.waterPrice ?? '', 'decimal')}
+        ${field('Stočné', 'sewerPrice', 'text', 'Kč/m³', false, meter.sewerPrice ?? '', 'decimal')}
+        ${field('Jiná cena za m³', 'otherUnitPrice', 'text', 'Kč/m³', false, meter.otherUnitPrice ?? '', 'decimal')}
+        ${field('Pevná/stálá platba za vodu', 'fixedMonthlyCost', 'text', 'Kč/měsíc', false, meter.fixedMonthlyCost ?? '', 'decimal')}
+        ${field('Jiná stálá platba', 'otherFixedMonthly', 'text', 'Kč/měsíc', false, meter.otherFixedMonthly ?? '', 'decimal')}`
+      : type === 'gas'
+        ? `
+          ${field('Komodita plyn', 'commodityPrice', 'text', 'Kč za jednotku', false, meter.commodityPrice ?? '', 'decimal')}
+          ${field('Distribuce plynu podle spotřeby', 'distributionPrice', 'text', 'Kč za jednotku', false, meter.distributionPrice ?? '', 'decimal')}
+          ${field('Regulované položky plynu', 'regulatedPrice', 'text', 'Kč za jednotku', false, meter.regulatedPrice ?? '', 'decimal')}
+          ${field('Jiná cena za jednotku', 'otherUnitPrice', 'text', 'Kč za jednotku', false, meter.otherUnitPrice ?? '', 'decimal')}
+          ${field('Stálá platba za plyn', 'fixedMonthlyCost', 'text', 'Kč/měsíc', false, meter.fixedMonthlyCost ?? '', 'decimal')}
+          ${field('Stálý plat dodavateli', 'fixedSupplierMonthly', 'text', 'Kč/měsíc', false, meter.fixedSupplierMonthly ?? '', 'decimal')}
+          ${field('Jiná stálá platba', 'otherFixedMonthly', 'text', 'Kč/měsíc', false, meter.otherFixedMonthly ?? '', 'decimal')}`
+        : `
+          ${field('Silová elektřina', 'commodityPrice', 'text', 'Kč/kWh', false, meter.commodityPrice ?? '', 'decimal')}
+          ${field('Distribuce podle spotřeby', 'distributionPrice', 'text', 'Kč/kWh', false, meter.distributionPrice ?? '', 'decimal')}
+          ${field('Regulované položky / POZE / OTE', 'regulatedPrice', 'text', 'Kč/kWh', false, meter.regulatedPrice ?? '', 'decimal')}
+          ${field('Jiná cena za kWh', 'otherUnitPrice', 'text', 'Kč/kWh', false, meter.otherUnitPrice ?? '', 'decimal')}
+          ${field('Jistič / rezervovaný příkon', 'breakerMonthly', 'text', 'Kč/měsíc', false, meter.breakerMonthly ?? '', 'decimal')}
+          ${field('Stálý plat dodavateli', 'fixedSupplierMonthly', 'text', 'Kč/měsíc', false, meter.fixedSupplierMonthly ?? '', 'decimal')}
+          ${field('Jiná stálá platba', 'otherFixedMonthly', 'text', 'Kč/měsíc', false, meter.otherFixedMonthly ?? '', 'decimal')}`;
     return `
       <details class="subtle-details readings-price-details">
-        <summary><span>Cena a výpočet nákladů</span><em>průměr nebo smlouva</em></summary>
-        <div class="small-muted">Vyber si jednoduchý průměr z vyúčtování, nebo rozpad podle smlouvy. Nezadávej nic natvrdo podle internetu, ceny se liší podle dodavatele a tarifu.</div>
+        <summary><span>Cena a výpočet nákladů</span><em>${escapeHtml(meta.label)} · průměr nebo smlouva</em></summary>
+        <div class="small-muted">Tady nastavíš cenu jen pro toto konkrétní měřidlo. Když ji nevyplníš, použije se globální průměr ze stránky Ceny.</div>
         <div class="form-grid two">
           ${selectField('Výpočet ceny', 'pricingMode', readingPriceModeOptions, selectedMode)}
-          ${field('Celková cena z vyúčtování', 'averageBillTotal', 'text', 'např. 24000', false, meter.averageBillTotal ?? '', 'decimal')}
-          ${field('Spotřeba z vyúčtování', 'averageBillUsage', 'text', 'např. 3200', false, meter.averageBillUsage ?? '', 'decimal')}
-          ${field('Komodita / silová energie', 'commodityPrice', 'text', 'Kč za jednotku', false, meter.commodityPrice ?? '', 'decimal')}
-          ${field('Distribuce podle spotřeby', 'distributionPrice', 'text', 'Kč za jednotku', false, meter.distributionPrice ?? '', 'decimal')}
-          ${field('Regulované položky / POZE / OTE', 'regulatedPrice', 'text', 'Kč za jednotku', false, meter.regulatedPrice ?? '', 'decimal')}
-          ${field('Vodné', 'waterPrice', 'text', 'Kč/m³', false, meter.waterPrice ?? '', 'decimal')}
-          ${field('Stočné', 'sewerPrice', 'text', 'Kč/m³', false, meter.sewerPrice ?? '', 'decimal')}
-          ${field('Jiná cena za jednotku', 'otherUnitPrice', 'text', 'Kč za jednotku', false, meter.otherUnitPrice ?? '', 'decimal')}
-          ${field('Stálá platba / měsíc', 'fixedMonthlyCost', 'text', 'např. paušál', false, meter.fixedMonthlyCost ?? '', 'decimal')}
-          ${field('Jistič / regulovaná stálá platba', 'breakerMonthly', 'text', 'Kč/měsíc', false, meter.breakerMonthly ?? '', 'decimal')}
-          ${field('Stálý plat dodavateli', 'fixedSupplierMonthly', 'text', 'Kč/měsíc', false, meter.fixedSupplierMonthly ?? '', 'decimal')}
-          ${field('Jiná stálá platba', 'otherFixedMonthly', 'text', 'Kč/měsíc', false, meter.otherFixedMonthly ?? '', 'decimal')}
+          ${averageFields}
+          ${contractFields}
           ${field('Popis stálých plateb', 'fixedMonthlyLabel', 'text', 'např. jistič + stálý plat', false, meter.fixedMonthlyLabel ?? '')}
         </div>
-        <div class="mini-stat-grid readings-price-help">${pricingHelp}</div>
+        <div class="small-muted">${escapeHtml(readingPricingModeInfo(type))}</div>
       </details>`;
-  }
+}
 
   function readingMeterStats(meter) {
     const rows = readingsEntries(meter.id).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
@@ -7927,6 +8022,40 @@
   function readingMonthKey(value) {
     const date = parseDateValue(value);
     return date ? date.toISOString().slice(0, 7) : '';
+  }
+
+  function readingDateRangeLabel(fromDate, toDate) {
+    const from = formatDate(fromDate);
+    const to = formatDate(toDate);
+    if (from === '—' || to === '—') return 'období odečtu';
+    return `${from} – ${to}`;
+  }
+
+  function readingMonthsBetweenDates(fromDate, toDate) {
+    const from = parseDateValue(fromDate);
+    const to = parseDateValue(toDate);
+    if (!from || !to) return 1;
+    const diffDays = Math.max(0, (to.getTime() - from.getTime()) / 86400000);
+    if (!Number.isFinite(diffDays) || diffDays <= 0) return 1;
+    return Math.max(0.03, diffDays / 30.4375);
+  }
+
+  function readingMonthsLabel(value) {
+    const months = Number(value);
+    if (!Number.isFinite(months) || months <= 0) return '1 měsíc';
+    if (months < 1) return `${Math.max(1, Math.round(months * 30)).toLocaleString('cs-CZ')} dní`;
+    const rounded = Number(months.toFixed(1));
+    if (Math.abs(rounded - 1) < 0.05) return '1 měsíc';
+    return `${rounded.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} měs.`;
+  }
+
+  function readingMonthlyUnit(unit = '') {
+    const clean = normalizeText(unit);
+    return clean ? `${clean}/měs.` : 'jedn./měs.';
+  }
+
+  function readingMonthlyValue(value, unit = '') {
+    return readingValue(value, readingMonthlyUnit(unit));
   }
 
   function readingsConsumptionRows() {
@@ -7942,12 +8071,15 @@
           if (!index) return;
           const previous = sorted[index - 1];
           const month = readingMonthKey(entry.date);
-          const delta = decimalValue(entry.value) - decimalValue(previous.value);
-          if (!month || !Number.isFinite(delta)) return;
-          const usage = Math.max(0, delta);
+          const rawDelta = decimalValue(entry.value) - decimalValue(previous.value);
+          if (!month || !Number.isFinite(rawDelta)) return;
+          const totalUsage = Math.max(0, rawDelta);
+          const monthsSpan = readingMonthsBetweenDates(previous.date, entry.date);
+          const monthlyUsage = monthsSpan > 0 ? totalUsage / monthsSpan : totalUsage;
           const unitPrice = readingUnitPriceForEntry(entry, meter);
-          const variableCost = usage > 0 && unitPrice !== '' ? usage * unitPrice : 0;
+          const variableMonthlyCost = monthlyUsage > 0 && unitPrice !== '' ? monthlyUsage * unitPrice : 0;
           const key = `${meter.id}|${month}`;
+          const periodLabel = readingDateRangeLabel(previous.date, entry.date);
           const current = map.get(key) || {
             id: `${meter.id}-${month}`,
             meterId: meter.id,
@@ -7956,23 +8088,40 @@
             unit: meter.unit,
             month,
             value: 0,
+            totalValue: 0,
+            monthsSpan: 0,
+            periodLabel,
+            periodStart: previous.date,
+            periodEnd: entry.date,
             unitPrice,
             fixedMonthlyCost: readingFixedMonthlyCost(meter),
             cost: readingFixedMonthlyCost(meter),
             entryId: entry.id,
             registers: []
           };
-          current.value += usage;
+          current.value += monthlyUsage;
+          current.totalValue += totalUsage;
+          current.monthsSpan = Math.max(current.monthsSpan || 0, monthsSpan || 0);
+          current.periodStart = !current.periodStart || String(previous.date || '') < String(current.periodStart || '') ? previous.date : current.periodStart;
+          current.periodEnd = !current.periodEnd || String(entry.date || '') > String(current.periodEnd || '') ? entry.date : current.periodEnd;
+          current.periodLabel = readingDateRangeLabel(current.periodStart, current.periodEnd);
           if (registerLabel && !current.registers.includes(registerLabel)) current.registers.push(registerLabel);
           if (unitPrice !== '') current.unitPrice = unitPrice;
-          current.cost += variableCost;
+          current.cost += variableMonthlyCost;
           current.entryId = entry.id;
           map.set(key, current);
         });
       });
     });
     return [...map.values()]
-      .map((row) => ({ ...row, value: Number(row.value.toFixed(3)), cost: Number(row.cost.toFixed(2)) }))
+      .map((row) => ({
+        ...row,
+        value: Number(row.value.toFixed(3)),
+        totalValue: Number((row.totalValue || row.value).toFixed(3)),
+        monthsSpan: Number((row.monthsSpan || 1).toFixed(2)),
+        periodLabel: row.periodLabel || readingDateRangeLabel(row.periodStart, row.periodEnd),
+        cost: Number(row.cost.toFixed(2))
+      }))
       .sort((a, b) => String(b.month).localeCompare(String(a.month)) || String(a.meterName).localeCompare(String(b.meterName), 'cs'));
   }
 
@@ -7981,13 +8130,16 @@
     const map = new Map();
     readingsConsumptionRows().forEach((row) => {
       const key = `${row.month}|${row.type}|${row.unit}`;
-      const current = map.get(key) || { month: row.month, type: row.type, unit: row.unit, value: 0, cost: 0 };
+      const current = map.get(key) || { month: row.month, type: row.type, unit: row.unit, value: 0, totalValue: 0, cost: 0, periods: [] };
       current.value += Math.max(0, row.value);
+      current.totalValue += Math.max(0, row.totalValue || 0);
       current.cost += Math.max(0, row.cost || 0);
+      if (row.periodLabel && !current.periods.includes(row.periodLabel)) current.periods.push(row.periodLabel);
       map.set(key, current);
     });
     return [...map.values()].sort((a, b) => String(b.month).localeCompare(String(a.month))).slice(0, 12);
   }
+
 
   function readingsChartRows(limit = 12) {
     return readingsConsumptionRows().slice(0, limit).reverse();
@@ -7996,6 +8148,7 @@
   async function persistReadingsState(toast = '') {
     state.readingMeters = readingsMeters(true);
     state.readings = readingsEntries();
+    state.readingPrices = normalizeReadingPrices(state.readingPrices || {});
     state.readingsCloud = { ...(state.readingsCloud || {}), pendingAt: cloudReady() ? new Date().toISOString() : '' };
     touchState();
     saveState();
@@ -8006,6 +8159,70 @@
     }
     render();
     if (toast) showToast(toast);
+  }
+
+  function renderReadingGlobalPricesPanel() {
+    state.readingPrices = normalizeReadingPrices(state.readingPrices || {});
+    return `
+      <section class="soft-panel readings-tool-page readings-prices-page">
+        <div class="card-subheader"><div><h3>Ceny</h3><p>Globální průměrné ceny za jednotku. Použijí se jen tam, kde měřidlo nemá vlastní podrobnější cenu.</p></div></div>
+        <form data-form="update-reading-prices" class="compact-form readings-form">
+          <div class="form-grid two">
+            ${field('Elektřina T1', 'electricityT1', 'text', 'Kč/kWh', false, state.readingPrices.electricityT1 ?? '', 'decimal')}
+            ${field('Elektřina T2', 'electricityT2', 'text', 'Kč/kWh', false, state.readingPrices.electricityT2 ?? '', 'decimal')}
+            ${field('Voda', 'water', 'text', 'Kč/m³', false, state.readingPrices.water ?? '', 'decimal')}
+            ${field('Plyn', 'gas', 'text', 'Kč/m³ nebo Kč/kWh', false, state.readingPrices.gas ?? '', 'decimal')}
+          </div>
+          <p class="small-muted">Zadej jednoduchý průměr z vyúčtování. Pokud chceš přesnější rozpad ceny, nastav ho přímo u konkrétního měřidla v jeho úpravě.</p>
+          <div class="form-actions"><button class="primary-btn" type="submit">Uložit ceny</button></div>
+        </form>
+      </section>`;
+  }
+
+  function renderReadingsMeterToolPage(activeTool = '', priceFormBlock = '') {
+    if (activeTool === 'import') {
+      return `
+        <section class="soft-panel readings-tool-page">
+          <div class="card-subheader"><div><h3>Import z Domácí odečty</h3><p>Načte měřidla a historii ze starého exportu.</p></div></div>
+          <div class="small-muted">Vyber export z aplikace Domácí odečty. U elektřiny se „Odečet“ a „Odečet 2“ spojí do jednoho elektroměru jako T1/T2.</div>
+          <div class="form-grid two readings-import-grid">
+            <label><span>Soubor</span><input type="file" accept=".xls,.csv,.txt" data-reading-import-file></label>
+            <div class="form-actions align-end"><button class="primary-btn" type="button" data-action="import-easy-home-offtake">Importovat odečty</button></div>
+          </div>
+        </section>`;
+    }
+    if (activeTool === 'add') {
+      return `
+        <section class="soft-panel readings-tool-page">
+          <div class="card-subheader"><div><h3>Přidat měřidlo</h3><p>Elektroměr, plynoměr, vodoměr nebo další podružné měřidlo.</p></div></div>
+          <form data-form="add-reading-meter" class="compact-form readings-form">
+            <div class="form-grid two">
+              ${selectField('Typ', 'type', READING_TYPE_OPTIONS, 'electricity')}
+              ${field('Název', 'name', 'text', 'např. Elektroměr hlavní', true)}
+              ${selectField('Jednotka', 'unit', READING_UNIT_OPTIONS, 'kWh')}
+              ${field('Číslo měřidla', 'serial', 'text', 'volitelné')}
+              ${field('Umístění', 'location', 'text', 'např. chodba / sklep')}
+              ${field('Poznámka', 'note', 'text', 'volitelné')}
+            </div>
+            ${priceFormBlock}
+            <div class="form-actions"><button class="primary-btn" type="submit">Přidat měřidlo</button></div>
+          </form>
+        </section>`;
+    }
+    if (activeTool === 'prices') return renderReadingGlobalPricesPanel();
+    return '';
+  }
+
+  async function updateReadingPricesFromForm(data, form) {
+    state.readingPrices = normalizeReadingPrices({
+      electricityT1: data.electricityT1,
+      electricityT2: data.electricityT2,
+      water: data.water,
+      gas: data.gas,
+      updatedAt: new Date().toISOString()
+    });
+    form?.reset?.();
+    await persistReadingsState('Ceny uložené');
   }
 
   async function addReadingMeterFromForm(data, form) {
@@ -8038,6 +8255,8 @@
     if (!meter.name) return showToast('Doplň název měřidla');
     state.readingMeters = [...readingsMeters(true), meter];
     form?.reset?.();
+    readingsMeterToolPage = '';
+    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
     await persistReadingsState('Měřidlo přidané');
   }
 
@@ -8570,9 +8789,9 @@
           <span class="badge ${latest ? 'good' : ''}">${latest ? escapeHtml(formatDate(latest.date)) : 'bez odečtu'}</span>
         </div>
         <div class="reading-meter-value"><strong>${escapeHtml(readingMeterLatestDisplay(meter))}</strong><span>${escapeHtml(deltaLabel)}</span></div>
-        <div class="reading-meter-pricing"><span>${escapeHtml(readingPricingLabel(meter))}</span>${lastMonth ? `<strong>${readingMoney(lastMonth.cost)}</strong>` : ''}</div>
-        <div class="item-meta">${meter.serial ? `Číslo: ${escapeHtml(meter.serial)} · ` : ''}${stats.rows.length} odečtů${lastMonth ? ` · poslední měsíc ${readingValue(lastMonth.value, meter.unit)}` : ''}${meter.note ? ` · ${escapeHtml(meter.note)}` : ''}</div>
-        ${showManage ? `<div class="item-actions"><button class="ghost-btn" type="button" data-action="edit-reading-meter-pricing" data-id="${escapeHtml(meter.id)}">Ceny</button><button class="ghost-btn" type="button" data-action="toggle-reading-meter" data-id="${escapeHtml(meter.id)}">${meter.archived ? 'Vrátit' : 'Archivovat'}</button><button class="danger-btn" type="button" data-action="delete-reading-meter" data-id="${escapeHtml(meter.id)}">Smazat</button></div>
+        <div class="reading-meter-pricing"><span>${escapeHtml(readingPricingLabel(meter))}</span>${lastMonth ? `<strong>${readingMoney(lastMonth.cost)}/měs.</strong>` : ''}</div>
+        <div class="item-meta">${meter.serial ? `Číslo: ${escapeHtml(meter.serial)} · ` : ''}${stats.rows.length} odečtů${lastMonth ? ` · průměr ${readingMonthlyValue(lastMonth.value, meter.unit)} · ${escapeHtml(lastMonth.periodLabel || financeMonthLabel(lastMonth.month))}` : ''}${meter.note ? ` · ${escapeHtml(meter.note)}` : ''}</div>
+        ${showManage ? `<div class="item-actions"><button class="ghost-btn" type="button" data-action="toggle-reading-meter" data-id="${escapeHtml(meter.id)}">${meter.archived ? 'Vrátit' : 'Archivovat'}</button><button class="danger-btn" type="button" data-action="delete-reading-meter" data-id="${escapeHtml(meter.id)}">Smazat</button></div>
         <details class="action-details compact-edit-details readings-form-drawer reading-meter-edit-drawer">
           <summary><span>Upravit měřidlo</span><em>název, typ, jednotka, ceny</em></summary>
           <form data-form="update-reading-meter" data-id="${escapeHtml(meter.id)}" class="compact-form readings-form">
@@ -8643,6 +8862,8 @@
     const meter = readingMeterById(selectedId) || meters[0] || null;
     if (!meter) return renderEmpty('Nejdřív přidej měřidlo.');
     const registers = readingRegistersForMeter(meter);
+    const lastKnownPrice = readingLastKnownUnitPrice(meter.id, null, registers[0] || '') || readingMeterUnitPrice(meter, registers[0] || '');
+    const unitPricePlaceholder = lastKnownPrice !== '' ? `prázdné = poslední ${lastKnownPrice.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })} Kč/${meter.unit || 'j.'}` : 'volitelně, prázdné = poslední cena';
     const meterOptions = meters.map((item) => [item.id, `${readingTypeMeta(item.type).icon} ${item.name} · ${item.unit}`]);
     const valueFields = registers.length
       ? registers.map((register) => {
@@ -8656,7 +8877,7 @@
           ${showMeterSelect ? selectField('Měřidlo', 'meterId', [['', 'Vyber měřidlo'], ...meterOptions], meter.id) : `<input type="hidden" name="meterId" value="${escapeHtml(meter.id)}">`}
           ${field('Datum', 'date', 'date', '', true, todayISO())}
           ${valueFields}
-          ${field('Cena za jednotku pro tento odečet', 'unitPrice', 'text', 'volitelně, např. 6,50', false, '', 'decimal')}
+          ${field('Cena za jednotku pro tento odečet', 'unitPrice', 'text', unitPricePlaceholder, false, '', 'decimal')}
           <label><span>Foto odečtu</span><input type="file" name="photo" accept="image/*" capture="environment"><small>Fotka se zatím použije jen jako poznámka k odečtu. Automatické přečtení hodnoty bude potřeba doplnit přes OCR/backend.</small></label>
           ${field('Poznámka', 'note', 'text', 'např. samoodečet')}
         </div>
@@ -8694,19 +8915,21 @@
   function renderReadingsChart(rows) {
     if (!rows.length) return renderEmpty('Graf se zobrazí po druhém odečtu na stejném měřidle.');
     const max = Math.max(...rows.map((row) => Number(row.value) || 0), 1);
-    return `<div class="readings-chart" role="list" aria-label="Graf spotřeby">
+    return `<div class="readings-chart" role="list" aria-label="Graf průměrné měsíční spotřeby">
       ${rows.map((row) => {
         const meter = readingMeterById(row.meterId);
         const meta = readingTypeMeta(row.type);
         const width = Math.max(6, Math.min(100, Math.round((Number(row.value) || 0) / max * 100)));
+        const interval = row.periodLabel ? `${row.periodLabel}${row.monthsSpan ? ` · ${readingMonthsLabel(row.monthsSpan)}` : ''}` : financeMonthLabel(row.month);
         return `<div class="reading-chart-row" role="listitem">
-          <div class="reading-chart-label"><strong>${escapeHtml(meta.icon)} ${escapeHtml(row.meterName || meter?.name || meta.label)}</strong><span>${escapeHtml(financeMonthLabel(row.month))}${row.registers?.length ? ` · ${escapeHtml(row.registers.join('+'))}` : ''}</span></div>
+          <div class="reading-chart-label"><strong>${escapeHtml(meta.icon)} ${escapeHtml(row.meterName || meter?.name || meta.label)}</strong><span>průměr za měsíc · ${escapeHtml(interval)}${row.registers?.length ? ` · ${escapeHtml(row.registers.join('+'))}` : ''}</span></div>
           <div class="reading-chart-track"><span style="width:${width}%"></span></div>
-          <div class="reading-chart-values"><strong>${readingValue(row.value, row.unit)}</strong>${row.cost ? `<span>${readingMoney(row.cost)}</span>` : ''}</div>
+          <div class="reading-chart-values"><strong>${readingMonthlyValue(row.value, row.unit)}</strong>${row.cost ? `<span>${readingMoney(row.cost)}/měs.</span>` : ''}</div>
         </div>`;
       }).join('')}
     </div>`;
   }
+
 
   function renderReadingsLineChart(rows = []) {
     if (!rows.length) return renderEmpty('Čárový graf se zobrazí po druhém odečtu na stejném měřidle.');
@@ -8717,29 +8940,40 @@
     sorted.forEach((row) => {
       const key = row.meterId || row.meterName || 'meter';
       const meter = readingMeterById(row.meterId);
-      if (!seriesMap.has(key)) seriesMap.set(key, { key, label: row.meterName || meter?.name || readingTypeMeta(row.type).label, unit: row.unit || meter?.unit || '', values: new Map() });
-      seriesMap.get(key).values.set(row.month, Number(row.value) || 0);
+      if (!seriesMap.has(key)) seriesMap.set(key, { key, label: row.meterName || meter?.name || readingTypeMeta(row.type).label, unit: row.unit || meter?.unit || '', values: new Map(), meta: new Map() });
+      const item = seriesMap.get(key);
+      item.values.set(row.month, Number(row.value) || 0);
+      item.meta.set(row.month, row);
     });
     const series = Array.from(seriesMap.values()).slice(0, 6);
+    const units = Array.from(new Set(series.map((item) => item.unit).filter(Boolean)));
+    const unitLabel = units.length === 1 ? readingMonthlyUnit(units[0]) : (units.length ? 'různé jednotky/měs.' : 'jedn./měs.');
     const allValues = series.flatMap((item) => months.map((month) => Number(item.values.get(month)) || 0));
     const max = Math.max(...allValues, 1);
     const min = Math.min(...allValues, 0);
     const range = Math.max(1, max - min);
     const width = 640;
     const height = 220;
-    const padX = 34;
-    const padY = 24;
+    const padX = 42;
+    const padY = 28;
     const pointX = (index) => months.length === 1 ? width / 2 : padX + (index * (width - padX * 2) / (months.length - 1));
     const pointY = (value) => height - padY - ((Number(value) - min) / range * (height - padY * 2));
     const lines = series.map((item, index) => {
       const points = months.map((month, monthIndex) => `${pointX(monthIndex).toFixed(1)},${pointY(item.values.get(month) || 0).toFixed(1)}`).join(' ');
-      const circles = months.map((month, monthIndex) => `<circle cx="${pointX(monthIndex).toFixed(1)}" cy="${pointY(item.values.get(month) || 0).toFixed(1)}" r="3.8"><title>${escapeHtml(item.label)} · ${escapeHtml(financeMonthLabel(month))}: ${escapeHtml(readingValue(item.values.get(month) || 0, item.unit))}</title></circle>`).join('');
+      const circles = months.map((month, monthIndex) => {
+        const row = item.meta.get(month) || {};
+        const interval = row.periodLabel ? `${row.periodLabel}${row.monthsSpan ? ` · ${readingMonthsLabel(row.monthsSpan)}` : ''}` : financeMonthLabel(month);
+        return `<circle cx="${pointX(monthIndex).toFixed(1)}" cy="${pointY(item.values.get(month) || 0).toFixed(1)}" r="3.8"><title>${escapeHtml(item.label)} · ${escapeHtml(financeMonthLabel(month))}: ${escapeHtml(readingMonthlyValue(item.values.get(month) || 0, item.unit))} · ${escapeHtml(interval)}</title></circle>`;
+      }).join('');
       return `<g class="readings-line-series readings-line-series-${index + 1}"><polyline points="${points}"/>${circles}</g>`;
     }).join('');
+    const yLabels = `<span class="readings-line-unit">${escapeHtml(unitLabel)}</span><span>${escapeHtml(readingMonthlyValue(max, units[0] || ''))}</span><span>${escapeHtml(readingMonthlyValue(min, units[0] || ''))}</span>`;
     const xLabels = months.map((month, index) => `<span style="left:${months.length === 1 ? 50 : (index * 100 / (months.length - 1)).toFixed(2)}%">${escapeHtml(financeMonthLabel(month))}</span>`).join('');
-    const legend = series.map((item, index) => `<span class="readings-line-legend-item readings-line-series-${index + 1}"><i></i>${escapeHtml(item.label)}</span>`).join('');
+    const legend = series.map((item, index) => `<span class="readings-line-legend-item readings-line-series-${index + 1}"><i></i>${escapeHtml(item.label)} <small>${escapeHtml(readingMonthlyUnit(item.unit))}</small></span>`).join('');
     return `<div class="readings-line-chart">
-      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Čárový graf spotřeby">
+      <div class="readings-line-note">Graf ukazuje průměrnou měsíční spotřebu dopočítanou z období mezi dvěma odečty. Nejde o prostý rozdíl mezi odečty.</div>
+      <div class="readings-line-ylabels">${yLabels}</div>
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Čárový graf průměrné měsíční spotřeby">
         <line class="readings-line-axis" x1="${padX}" y1="${height - padY}" x2="${width - padX}" y2="${height - padY}"/>
         <line class="readings-line-axis" x1="${padX}" y1="${padY}" x2="${padX}" y2="${height - padY}"/>
         ${lines}
@@ -8748,6 +8982,7 @@
       <div class="readings-line-legend">${legend}</div>
     </div>`;
   }
+
 
   function readingsPeriodFilteredRows(rows = [], period = readingsDetailPeriod) {
     const value = String(period || '12');
@@ -8772,7 +9007,7 @@
     const selectedEntries = readingsPeriodFilteredEntries(readingsEntries(selectedMeter.id), readingsDetailPeriod).slice(0, 40);
     return `
       <div class="card-subheader readings-detail-controls">
-        <div><h3>Detail měřidla</h3><p>Vyber měřidlo, období a případně další měřidla pro porovnání spotřeby.</p></div>
+        <div><h3>Detail měřidla</h3><p>Grafy ukazují průměrnou měsíční spotřebu z období mezi odečty, včetně jednotek a rozsahu.</p></div>
         <div class="readings-detail-filter-grid">
           <label><span>Měřidlo</span><select data-reading-detail-filter="meter">${meters.map((meter) => `<option value="${escapeHtml(meter.id)}" ${meter.id === selectedMeter.id ? 'selected' : ''}>${escapeHtml(readingTypeMeta(meter.type).icon)} ${escapeHtml(meter.name)}</option>`).join('')}</select></label>
           <label><span>Období</span><select data-reading-detail-filter="period">${READING_DETAIL_PERIOD_OPTIONS.map(([value, label]) => `<option value="${escapeHtml(value)}" ${value === readingsDetailPeriod ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select></label>
@@ -8780,11 +9015,11 @@
       </div>
       <div class="readings-detail-layout">
         <section class="soft-panel readings-detail-chart-panel">
-          <div class="card-subheader"><div><h3>Spotřeba vybraného měřidla</h3><p>${escapeHtml(selectedMeter.name)} · ${escapeHtml(readingPricingLabel(selectedMeter))}</p></div></div>
+          <div class="card-subheader"><div><h3>Průměrná měsíční spotřeba</h3><p>${escapeHtml(selectedMeter.name)} · ${escapeHtml(readingPricingLabel(selectedMeter))}</p></div></div>
           ${renderReadingsLineChart(selectedRows)}
         </section>
         <section class="soft-panel readings-compare-panel">
-          <div class="card-subheader"><div><h3>Porovnání měřidel</h3><p>Zaškrtni další měřidla a porovnej je čarami v jednom grafu.</p></div></div>
+          <div class="card-subheader"><div><h3>Porovnání měřidel</h3><p>Zaškrtni další měřidla a porovnej průměrnou měsíční spotřebu v jednom grafu.</p></div></div>
           <div class="readings-compare-list">
             ${meters.map((meter) => `<label class="pill-check"><input type="checkbox" data-reading-detail-filter="compare" value="${escapeHtml(meter.id)}" ${readingsCompareMeterIds.includes(meter.id) ? 'checked' : ''} ${meter.id === selectedMeter.id ? 'disabled' : ''}><span>${escapeHtml(readingTypeMeta(meter.type).icon)} ${escapeHtml(meter.name)}</span></label>`).join('')}
           </div>
@@ -8826,13 +9061,13 @@
         </section>
 
         <section class="card readings-panel panel-overview">
-          <div class="card-header"><div><h2>Graf spotřeby</h2><p>Poslední rozdíly po měřidlech. Čím delší čára, tím vyšší spotřeba.</p></div></div>
+          <div class="card-header"><div><h2>Graf spotřeby</h2><p>Průměrná měsíční spotřeba dopočítaná z období mezi odečty.</p></div></div>
           ${renderReadingsChart(chartRows)}
         </section>
 
         <section class="card readings-panel panel-overview">
-          <div class="card-header"><div><h2>Spotřeba a náklady po měsících</h2><p>Součet rozdílů podle typu měřidla včetně odhadu ceny.</p></div></div>
-          ${monthRows.length ? `<div class="list compact-list">${monthRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(readingTypeMeta(row.type).icon)} ${escapeHtml(readingTypeMeta(row.type).label)}</div><span class="badge">${readingValue(row.value, row.unit)}</span></div><div class="item-meta">${escapeHtml(financeMonthLabel(row.month))}${row.cost ? ` · odhad ${readingMoney(row.cost)}` : ''}</div></div>`).join('')}</div>` : renderEmpty('Jakmile budou aspoň dva odečty na jednom měřidle, zobrazí se tady spotřeba.')}
+          <div class="card-header"><div><h2>Průměr a náklady po měsících</h2><p>Součet měsíčních průměrů podle typu měřidla včetně odhadu ceny.</p></div></div>
+          ${monthRows.length ? `<div class="list compact-list">${monthRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(readingTypeMeta(row.type).icon)} ${escapeHtml(readingTypeMeta(row.type).label)}</div><span class="badge">${readingMonthlyValue(row.value, row.unit)}</span></div><div class="item-meta">${escapeHtml(financeMonthLabel(row.month))}${row.periods?.length ? ` · ${escapeHtml(row.periods.slice(0, 2).join('; '))}` : ''}${row.cost ? ` · odhad ${readingMoney(row.cost)}/měs.` : ''}</div></div>`).join('')}</div>` : renderEmpty('Jakmile budou aspoň dva odečty na jednom měřidle, zobrazí se tady průměrná měsíční spotřeba.')}
         </section>
 
         <section class="card desktop-span-2 readings-panel panel-detail">
@@ -8842,31 +9077,12 @@
 
         <section class="card desktop-span-2 readings-panel panel-meters">
           <div class="card-header"><div><h2>Měřidla</h2><p>Elektroměr, plynoměr, vodoměr nebo více vodoměrů v bytě/domě.</p></div><span class="badge">${allMeters.length}</span></div>
-          <div class="readings-meter-tools">
-            <details class="action-details compact-edit-details readings-form-drawer">
-              <summary><span>Import z Domácí odečty</span><em>.xls nebo .csv export</em></summary>
-              <div class="small-muted">Vyber export z aplikace Domácí odečty. Import vytvoří měřidla podle názvů a natáhne historii odečtů. U elektřiny se „Odečet“ a „Odečet 2“ spojí do jednoho elektroměru jako T1/T2.</div>
-              <div class="form-grid two readings-import-grid">
-                <label><span>Soubor</span><input type="file" accept=".xls,.csv,.txt" data-reading-import-file></label>
-                <div class="form-actions align-end"><button class="primary-btn" type="button" data-action="import-easy-home-offtake">Importovat odečty</button></div>
-              </div>
-            </details>
-            <details class="action-details compact-edit-details readings-form-drawer">
-              <summary><span>Přidat měřidlo</span><em>elektřina, plyn, voda</em></summary>
-              <form data-form="add-reading-meter" class="compact-form readings-form">
-              <div class="form-grid two">
-                ${selectField('Typ', 'type', READING_TYPE_OPTIONS, 'electricity')}
-                ${field('Název', 'name', 'text', 'např. Elektroměr hlavní', true)}
-                ${selectField('Jednotka', 'unit', READING_UNIT_OPTIONS, 'kWh')}
-                ${field('Číslo měřidla', 'serial', 'text', 'volitelné')}
-                ${field('Umístění', 'location', 'text', 'např. chodba / sklep')}
-                ${field('Poznámka', 'note', 'text', 'volitelné')}
-              </div>
-                ${priceFormBlock}
-                <div class="form-actions"><button class="primary-btn" type="submit">Přidat měřidlo</button></div>
-              </form>
-            </details>
+          <div class="readings-meter-tools readings-meter-tool-tabs">
+            <button class="readings-tool-card ${readingsMeterToolPage === 'import' ? 'active' : ''}" type="button" data-action="set-reading-meter-tool" data-tool="import"><strong>Import</strong><span>z Domácí odečty</span></button>
+            <button class="readings-tool-card ${readingsMeterToolPage === 'add' ? 'active' : ''}" type="button" data-action="set-reading-meter-tool" data-tool="add"><strong>Přidat měřidlo</strong><span>elektřina, plyn, voda</span></button>
+            <button class="readings-tool-card ${readingsMeterToolPage === 'prices' ? 'active' : ''}" type="button" data-action="set-reading-meter-tool" data-tool="prices"><strong>Ceny</strong><span>globální průměry</span></button>
           </div>
+          ${renderReadingsMeterToolPage(readingsMeterToolPage, priceFormBlock)}
           ${allMeters.length ? `<div class="readings-meter-grid">${allMeters.map((meter) => renderReadingMeterCard(meter, { context: 'meters' })).join('')}</div>` : renderEmpty('Zatím není přidané žádné měřidlo.')}
         </section>
 
@@ -11966,7 +12182,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 257))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 259))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -17058,6 +17274,7 @@
       'add-reading-meter': () => addReadingMeterFromForm(data, form),
       'update-reading-meter': () => updateReadingMeterFromForm(form.dataset.id, data, form),
       'add-reading-entry': () => addReadingEntryFromForm(data, form),
+      'update-reading-prices': () => updateReadingPricesFromForm(data, form),
       'add-task': () => addTaskFromForm(data, form),
       'add-notebook-page': () => addNotebookPageFromForm(data, form),
       'add-notebook-item': () => addNotebookItemFromForm(data, form),
@@ -17661,7 +17878,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 257, mode: 'rich-demo-v257', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 259, mode: 'rich-demo-v259', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -17814,7 +18031,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 257, mode: 'readings-detail-v257', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 259, mode: 'readings-monthly-v259', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -20152,6 +20369,15 @@
       deleteWaste(button.dataset.id);
       return;
     }
+    if (action === 'set-reading-meter-tool') {
+      const tool = button.dataset.tool || '';
+      readingsMeterToolPage = readingsMeterToolPage === tool ? '' : tool;
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
+      moduleTabs = { ...(moduleTabs || {}), readings: 'meters' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      render();
+      return;
+    }
     if (action === 'import-easy-home-offtake') {
       const root = button.closest('.readings-form-drawer') || document;
       importEasyHomeOfftakeFile(root.querySelector('[data-reading-import-file]'));
@@ -21122,7 +21348,8 @@
     }
     if (Array.isArray(layout.readingMeters)) state.readingMeters = layout.readingMeters.map(normalizeReadingMeter);
     if (Array.isArray(layout.readings)) state.readings = layout.readings.map(normalizeReadingEntry).filter((entry) => entry.meterId);
-    if (Array.isArray(layout.readingMeters) || Array.isArray(layout.readings)) state.readingsCloud = { ...(state.readingsCloud || {}), loadedAt: new Date().toISOString() };
+    if (layout.readingPrices && typeof layout.readingPrices === 'object') state.readingPrices = normalizeReadingPrices({ ...state.readingPrices, ...layout.readingPrices });
+    if (Array.isArray(layout.readingMeters) || Array.isArray(layout.readings) || layout.readingPrices) state.readingsCloud = { ...(state.readingsCloud || {}), loadedAt: new Date().toISOString() };
     if (Array.isArray(layout.subscriptions)) state.subscriptions = layout.subscriptions.map(normalizeSubscriptionService);
     if (Array.isArray(layout.subscriptionPeople)) state.subscriptionPeople = layout.subscriptionPeople.map(normalizeSubscriptionPerson);
     if (Array.isArray(layout.subscriptionPayments)) state.subscriptionPayments = layout.subscriptionPayments.map(normalizeSubscriptionPayment).filter((payment) => payment.subscriptionId && payment.personId && payment.amount > 0);
@@ -21168,6 +21395,7 @@
         warrantyBackupCount: normalizeWarranties(state.warranties).length,
         readingMeters: readingsMeters(true),
         readings: readingsEntries(),
+        readingPrices: normalizeReadingPrices(state.readingPrices || {}),
         subscriptionPeople: getSubscriptionPeople(),
         subscriptions: getSubscriptionServices(),
         subscriptionPayments: getSubscriptionPayments(),
@@ -21182,7 +21410,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 257
+        appBuild: 259
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -21776,7 +22004,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-257-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-259-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -22200,7 +22428,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_257</span>
+          <span class="badge">Domácnost+ v.0.1_259</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

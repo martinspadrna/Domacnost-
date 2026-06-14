@@ -16861,3 +16861,130 @@ body {
   }
 }
 .readings-line-series polyline { fill: none !important; }
+
+/* Domácnost+ v.0.1_259 – Odečty: rychlý formulář bez přetékání */
+.readings-due-grid,
+.reading-due-card,
+.reading-due-card > div,
+.reading-due-form,
+.reading-due-form .readings-entry-form,
+.reading-due-form .form-grid,
+.readings-entry-form label,
+.readings-entry-form input,
+.readings-entry-form select {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.reading-due-card.active {
+  grid-column: 1 / -1;
+}
+
+.reading-due-form {
+  width: 100%;
+  overflow: hidden;
+  padding-top: 4px;
+}
+
+.reading-due-form .form-grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.readings-entry-form input[type="file"] {
+  width: 100%;
+  overflow: hidden;
+}
+
+.readings-line-note,
+.readings-line-ylabels {
+  color: var(--muted);
+  font-size: .76rem;
+  line-height: 1.35;
+}
+
+.readings-line-ylabels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.readings-line-unit {
+  font-weight: 850;
+  color: var(--text);
+}
+
+.readings-line-legend-item small {
+  color: var(--muted-2);
+  font-size: .7rem;
+}
+
+@media (max-width: 720px) {
+  .reading-due-form .form-grid.two {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Domácnost+ v.0.1_259 – Odečty: stránky Import / Přidat měřidlo / Ceny */
+.readings-meter-tool-tabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.readings-tool-card {
+  appearance: none;
+  border: 1px solid rgba(148, 163, 184, .22);
+  border-radius: 22px;
+  padding: 14px 16px;
+  min-width: 0;
+  text-align: left;
+  color: var(--text);
+  background: rgba(255,255,255,.58);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, .07);
+  cursor: pointer;
+}
+
+[data-theme="dark"] .readings-tool-card {
+  background: rgba(15,23,42,.44);
+}
+
+.readings-tool-card strong,
+.readings-tool-card span {
+  display: block;
+  min-width: 0;
+}
+
+.readings-tool-card strong {
+  font-size: .98rem;
+  font-weight: 850;
+}
+
+.readings-tool-card span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+.readings-tool-card.active {
+  border-color: rgba(14, 165, 233, .42);
+  background: rgba(14, 165, 233, .12);
+}
+
+.readings-tool-page {
+  margin: 0 0 14px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 24px;
+  padding: 14px;
+  background: rgba(255,255,255,.46);
+}
+
+[data-theme="dark"] .readings-tool-page {
+  background: rgba(15,23,42,.38);
+}
+
+@media (max-width: 760px) {
+  .readings-meter-tool-tabs {
+    grid-template-columns: 1fr;
+  }
+}
