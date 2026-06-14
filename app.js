@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_246';
+  const APP_VERSION = 'Domácnost+ v.0.1_247';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -698,7 +698,7 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 246,
+      appBuild: 247,
       mode: 'subscriptions-debt-month-nav-v246',
       createdAt: '',
       updatedAt: ''
@@ -1570,7 +1570,7 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 246,
+      appBuild: 247,
       mode: 'subscriptions-debt-month-nav-v246',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
@@ -5129,6 +5129,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_247', note: 'Hotfix Home panelů: dlouhé podržení pro úpravu pořadí funguje i na panelech, které otevírají rychlý přehled přes interní akci. Pevný čas a počasí zůstávají zamčené.' },
       { title: 'Domácnost+ v.0.1_246', note: 'Hotfix Předplatné: Home panel počítá dluh po jednotlivých lidech a službách, takže přeplatek jednoho neschová dluh druhého. Měsíční panel v platbách má tvrdší mobilní layout a spodní lišta je znovu zamčená při scrollu.' },
       { title: 'Domácnost+ v.0.1_245', note: 'Předplatné: chytřejší zápis plateb podle vybrané služby nebo člověka, filtruje jen nezaplacené kombinace v daném měsíci, předvyplňuje částku a opravuje ujíždění měsíčního panelu.' },
       { title: 'Domácnost+ v.0.1_242', note: 'Domácnost byla rozdělená na samostatné moduly HDO, Odpad, Zápisník, Záruky a Svátky PL. Spodní lišta je pevněji zamčená k viewportu při scrollu, v katalogu nákupů jde přidat produkt přímo z katalogu a Předplatné má přehlednější karty služeb.' },
@@ -10643,7 +10644,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 246))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 247))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -16330,7 +16331,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 246, mode: 'rich-demo-v246', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 247, mode: 'rich-demo-v247', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -16483,7 +16484,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 246, mode: 'subscriptions-debt-month-nav-v246', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 247, mode: 'home-panel-longpress-v247', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -19813,7 +19814,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 246
+        appBuild: 247
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -20406,7 +20407,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-246-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-247-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20469,7 +20470,11 @@
 
   app.addEventListener('pointerdown', (event) => {
     const card = event.target.closest('.station-summary-item[data-home-hero-id]');
-    if (!card || event.target.closest('[data-action]')) return;
+    if (!card) return;
+    const actionTarget = event.target.closest('[data-action]');
+    // Některé Home panely samy otevírají rychlý přehled přes data-action.
+    // To nesmí blokovat dlouhé podržení celé karty; blokujeme jen vnitřní ovládací tlačítka při editaci.
+    if (actionTarget && actionTarget !== card && card.contains(actionTarget)) return;
     homeHeroLongPressPointer = { x: event.clientX, y: event.clientY, id: card.dataset.homeHeroId };
     clearTimeout(homeHeroLongPressTimer);
     homeHeroLongPressTimer = setTimeout(() => {
@@ -20776,7 +20781,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_246</span>
+          <span class="badge">Domácnost+ v.0.1_247</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
