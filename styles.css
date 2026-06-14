@@ -16320,7 +16320,7 @@ body {
 }
 
 
-/* Domácnost+ v.0.1_251 – hotfix spodní lišty po v250 */
+/* Domácnost+ v.0.1_252 – hotfix spodní lišty po v250 */
 @media (max-width: 720px) {
   :root {
     --nav-visual-height-v251: 64px;
@@ -16368,5 +16368,175 @@ body {
     width: 32px !important;
     height: 32px !important;
     min-width: 32px !important;
+  }
+}
+
+
+/* Domácnost+ v.0.1_252 – skutečné zmenšení spodní lišty
+   v251 zmenšilo hlavně obsah, ale obal nav-shell zůstal vysoký. Tady je pevně
+   zmenšený celý dock včetně aktivní položky a safe-area se řeší pozicí, ne výškou. */
+@media (max-width: 720px) {
+  :root {
+    --nav-height: 72px;
+    --nav-compact-height-v252: 72px;
+    --nav-compact-inner-v252: 56px;
+    --nav-compact-bottom-v252: max(6px, calc(env(safe-area-inset-bottom, 0px) - 28px));
+  }
+
+  .app-shell,
+  .app-shell.home-app-shell {
+    padding-bottom: calc(var(--nav-compact-height-v252) + max(10px, env(safe-area-inset-bottom, 0px)) + 10px) !important;
+  }
+
+  .nav-shell {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: var(--nav-compact-bottom-v252) !important;
+    width: calc(100dvw - 22px) !important;
+    max-width: min(620px, calc(100dvw - 22px)) !important;
+    height: var(--nav-compact-height-v252) !important;
+    min-height: var(--nav-compact-height-v252) !important;
+    max-height: var(--nav-compact-height-v252) !important;
+    padding: 7px 8px !important;
+    margin: 0 !important;
+    border-radius: 28px !important;
+    transform: translate3d(-50%, 0, 0) !important;
+    overflow: hidden !important;
+    contain: layout paint style !important;
+    box-sizing: border-box !important;
+  }
+
+  .nav-scroll {
+    height: var(--nav-compact-inner-v252) !important;
+    min-height: var(--nav-compact-inner-v252) !important;
+    max-height: var(--nav-compact-inner-v252) !important;
+    align-items: center !important;
+    gap: 6px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .nav-active-runner {
+    inset: 5px 4px !important;
+    height: auto !important;
+    max-height: calc(var(--nav-compact-inner-v252) - 10px) !important;
+    border-radius: 24px !important;
+  }
+
+  .nav-item,
+  .nav-item.active {
+    height: var(--nav-compact-inner-v252) !important;
+    min-height: var(--nav-compact-inner-v252) !important;
+    max-height: var(--nav-compact-inner-v252) !important;
+    padding: 4px 2px !important;
+    gap: 2px !important;
+    border-radius: 22px !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    font-size: .68rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .nav-item > span:last-child {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .nav-item.active > span:last-child {
+    display: none !important;
+  }
+
+  .nav-item .nav-icon,
+  .nav-item .nav-icon.mini-module-icon,
+  .nav-item .nav-icon.module-illustration-slot,
+  .mini-module-icon-nav,
+  .module-illustration-slot-nav {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    max-width: 30px !important;
+    max-height: 30px !important;
+    margin: 0 !important;
+    flex: 0 0 30px !important;
+  }
+
+  .nav-item.active .nav-icon,
+  .nav-item.active .nav-icon.mini-module-icon,
+  .nav-item.active .nav-icon.module-illustration-slot {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    max-height: 42px !important;
+    flex-basis: 42px !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 720px) {
+    :root {
+      --nav-compact-bottom-v252: max(4px, calc(env(safe-area-inset-bottom, 0px) - 30px));
+    }
+  }
+}
+
+/* Domácnost+ v.0.1_253 – Odečty: ceníky a zabalené přidání měřidla */
+.readings-price-details {
+  margin-top: 12px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 20px;
+  padding: 10px;
+  background: rgba(255,255,255,.38);
+}
+[data-theme="dark"] .readings-price-details {
+  background: rgba(15,23,42,.36);
+}
+.readings-price-details > summary {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  font-weight: 850;
+  list-style: none;
+}
+.readings-price-details > summary::-webkit-details-marker { display: none; }
+.readings-price-details > summary em {
+  color: var(--muted);
+  font-size: .78rem;
+  font-style: normal;
+}
+.readings-price-details[open] > summary {
+  margin-bottom: 10px;
+}
+.readings-price-help {
+  margin-top: 10px;
+}
+.readings-price-help .mini-stat {
+  align-content: start;
+}
+.readings-price-help .mini-stat small {
+  display: block;
+  color: var(--muted);
+  font-size: .72rem;
+  line-height: 1.25;
+  margin-top: 4px;
+}
+@media (max-width: 640px) {
+  .readings-price-details {
+    padding: 9px;
+    border-radius: 18px;
+  }
+  .readings-price-details > summary {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

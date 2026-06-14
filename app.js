@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_251';
+  const APP_VERSION = 'Domácnost+ v.0.1_253';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -700,8 +700,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 251,
-      mode: 'readings-render-nav-hotfix-v251',
+      appBuild: 253,
+      mode: 'readings-pricing-v253',
       createdAt: '',
       updatedAt: ''
     },
@@ -1577,8 +1577,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 251,
-      mode: 'readings-render-nav-hotfix-v251',
+      appBuild: 253,
+      mode: 'readings-pricing-v253',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5148,7 +5148,8 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_251', note: 'Hotfix: Odečty se teď skutečně renderují jako samostatný modul a spodní panel má znovu nízkou mobilní výšku.' },
+      { title: 'Domácnost+ v.0.1_253', note: 'Odečty: přidání měřidla je jen v záložce Měřidla a v základu zabalené; ceny mají režim průměr z vyúčtování nebo rozpad podle smlouvy pro elektřinu, plyn a vodu.' },
+      { title: 'Domácnost+ v.0.1_253', note: 'Hotfix: Odečty se teď skutečně renderují jako samostatný modul a spodní panel má znovu nízkou mobilní výšku.' },
       { title: 'Domácnost+ v.0.1_250', note: 'Odečty dostaly graf spotřeby, ceny za jednotku, stálé měsíční platby a odhad nákladů po měřidlech i měsících.' },
       { title: 'Domácnost+ v.0.1_249', note: 'Přidaný nový modul Odečty pro elektřinu, plyn a vodu: měřidla, zápisy, historie a rozdíl od minula. Předplatné umí započítat přeplatky do dalších měsíců a Home počasí má pružnější text na tabletu.' },
       { title: 'Domácnost+ v.0.1_248', note: 'Hotfix startu na tabletu: migrace profilů už nesahá na runtime state před inicializací. Přesouvání Home panelů zůstává z v247.' },
@@ -7651,11 +7652,15 @@
     }[String(type || '')] || { label: 'Odečet', icon: '📊', unit: '', className: 'generic' };
   }
 
+  function normalizeReadingPricePart(value) {
+    const num = decimalValue(value);
+    return num === '' || num < 0 ? '' : num;
+  }
+
   function normalizeReadingMeter(item = {}) {
     const type = ['electricity', 'gas', 'water'].includes(item.type) ? item.type : 'electricity';
     const meta = readingTypeMeta(type);
-    const pricePerUnit = decimalValue(item.pricePerUnit);
-    const fixedMonthlyCost = decimalValue(item.fixedMonthlyCost);
+    const pricingMode = ['average', 'contract'].includes(item.pricingMode) ? item.pricingMode : (item.priceMode === 'contract' ? 'contract' : 'average');
     return {
       id: item.id || uid(),
       householdId: item.householdId || currentHouseholdId(),
@@ -7667,8 +7672,21 @@
       unit: normalizeText(item.unit) || meta.unit,
       serial: normalizeText(item.serial || item.number || item.identifier),
       location: normalizeText(item.location),
-      pricePerUnit: pricePerUnit === '' || pricePerUnit < 0 ? '' : pricePerUnit,
-      fixedMonthlyCost: fixedMonthlyCost === '' || fixedMonthlyCost < 0 ? '' : fixedMonthlyCost,
+      pricingMode,
+      pricePerUnit: normalizeReadingPricePart(item.pricePerUnit),
+      averageBillTotal: normalizeReadingPricePart(item.averageBillTotal),
+      averageBillUsage: normalizeReadingPricePart(item.averageBillUsage),
+      commodityPrice: normalizeReadingPricePart(item.commodityPrice),
+      distributionPrice: normalizeReadingPricePart(item.distributionPrice),
+      regulatedPrice: normalizeReadingPricePart(item.regulatedPrice),
+      waterPrice: normalizeReadingPricePart(item.waterPrice),
+      sewerPrice: normalizeReadingPricePart(item.sewerPrice),
+      otherUnitPrice: normalizeReadingPricePart(item.otherUnitPrice),
+      fixedMonthlyCost: normalizeReadingPricePart(item.fixedMonthlyCost),
+      fixedDistributionMonthly: normalizeReadingPricePart(item.fixedDistributionMonthly),
+      fixedSupplierMonthly: normalizeReadingPricePart(item.fixedSupplierMonthly),
+      breakerMonthly: normalizeReadingPricePart(item.breakerMonthly),
+      otherFixedMonthly: normalizeReadingPricePart(item.otherFixedMonthly),
       fixedMonthlyLabel: normalizeText(item.fixedMonthlyLabel) || 'stálá platba',
       note: normalizeText(item.note),
       archived: Boolean(item.archived)
@@ -7737,16 +7755,44 @@
     return `${num.toLocaleString('cs-CZ', { maximumFractionDigits: 0 })} Kč`;
   }
 
+  function readingMeterAverageUnitPrice(meter = null) {
+    const total = decimalValue(meter?.averageBillTotal);
+    const usage = decimalValue(meter?.averageBillUsage);
+    if (total !== '' && usage !== '' && total >= 0 && usage > 0) return Number((total / usage).toFixed(4));
+    const legacy = decimalValue(meter?.pricePerUnit);
+    return legacy !== '' && legacy >= 0 ? legacy : '';
+  }
+
+  function readingMeterContractUnitPrice(meter = null) {
+    const values = meter?.type === 'water'
+      ? [meter?.waterPrice, meter?.sewerPrice, meter?.otherUnitPrice]
+      : [meter?.commodityPrice, meter?.distributionPrice, meter?.regulatedPrice, meter?.otherUnitPrice];
+    const sum = values.reduce((total, value) => {
+      const num = decimalValue(value);
+      return total + (num !== '' && num > 0 ? num : 0);
+    }, 0);
+    if (sum > 0) return Number(sum.toFixed(4));
+    const legacy = decimalValue(meter?.pricePerUnit);
+    return legacy !== '' && legacy >= 0 ? legacy : '';
+  }
+
+  function readingMeterUnitPrice(meter = null) {
+    if (!meter) return '';
+    return meter.pricingMode === 'contract' ? readingMeterContractUnitPrice(meter) : readingMeterAverageUnitPrice(meter);
+  }
+
   function readingUnitPriceForEntry(entry = {}, meter = null) {
     const entryPrice = decimalValue(entry.unitPrice);
     if (entryPrice !== '' && entryPrice >= 0) return entryPrice;
-    const meterPrice = decimalValue(meter?.pricePerUnit);
-    return meterPrice !== '' && meterPrice >= 0 ? meterPrice : '';
+    return readingMeterUnitPrice(meter);
   }
 
   function readingFixedMonthlyCost(meter = null) {
-    const fixed = decimalValue(meter?.fixedMonthlyCost);
-    return fixed !== '' && fixed > 0 ? fixed : 0;
+    const values = [meter?.fixedMonthlyCost, meter?.fixedDistributionMonthly, meter?.fixedSupplierMonthly, meter?.breakerMonthly, meter?.otherFixedMonthly];
+    return Number(values.reduce((total, value) => {
+      const num = decimalValue(value);
+      return total + (num !== '' && num > 0 ? num : 0);
+    }, 0).toFixed(2));
   }
 
   function readingEntryCost(entry = {}, meter = null, delta = null, includeFixed = true) {
@@ -7758,12 +7804,22 @@
   }
 
   function readingPricingLabel(meter = null) {
-    const price = decimalValue(meter?.pricePerUnit);
+    const price = readingMeterUnitPrice(meter);
     const fixed = readingFixedMonthlyCost(meter);
     const parts = [];
-    if (price !== '' && price >= 0) parts.push(`${price.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })} Kč/${meter?.unit || 'j.'}`);
+    const modeLabel = meter?.pricingMode === 'contract' ? 'smlouva' : 'průměr';
+    if (price !== '' && price >= 0) parts.push(`${modeLabel}: ${price.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })} Kč/${meter?.unit || 'j.'}`);
     if (fixed) parts.push(`${readingMoney(fixed)} / měsíc${meter?.fixedMonthlyLabel ? ` · ${meter.fixedMonthlyLabel}` : ''}`);
     return parts.join(' · ') || 'bez ceny';
+  }
+
+  function readingPricingModeInfo(type = 'electricity') {
+    const byType = {
+      electricity: 'Přesný výpočet počítá složky jako silová elektřina, distribuce podle spotřeby, regulované položky/POZE/OTE a stálé měsíční platby jako jistič nebo plat dodavateli. Částky opiš ze smlouvy nebo ceníku.',
+      gas: 'Přesný výpočet počítá komoditu, distribuci podle spotřeby a stálé měsíční platby dodavatele/distributora. Částky opiš ze smlouvy nebo ceníku.',
+      water: 'Přesný výpočet počítá vodné, stočné a případnou pevnou složku/stálý paušál. Částky opiš z ceníku vodáren nebo vyúčtování.'
+    };
+    return byType[type] || byType.electricity;
   }
 
   function readingMeterStats(meter) {
@@ -7859,8 +7915,21 @@
       unit: normalizeText(data.unit) || meta.unit,
       serial: data.serial,
       location: data.location,
+      pricingMode: data.pricingMode,
       pricePerUnit: data.pricePerUnit,
+      averageBillTotal: data.averageBillTotal,
+      averageBillUsage: data.averageBillUsage,
+      commodityPrice: data.commodityPrice,
+      distributionPrice: data.distributionPrice,
+      regulatedPrice: data.regulatedPrice,
+      waterPrice: data.waterPrice,
+      sewerPrice: data.sewerPrice,
+      otherUnitPrice: data.otherUnitPrice,
       fixedMonthlyCost: data.fixedMonthlyCost,
+      fixedDistributionMonthly: data.fixedDistributionMonthly,
+      fixedSupplierMonthly: data.fixedSupplierMonthly,
+      breakerMonthly: data.breakerMonthly,
+      otherFixedMonthly: data.otherFixedMonthly,
       fixedMonthlyLabel: data.fixedMonthlyLabel,
       note: data.note
     });
@@ -7911,23 +7980,56 @@
   async function updateReadingMeterPricing(id) {
     const meter = readingMeterById(id);
     if (!meter) return;
-    const unitPriceRaw = window.prompt(`Cena za jednotku pro „${meter.name}“ (${meter.unit})`, meter.pricePerUnit === '' ? '' : String(meter.pricePerUnit).replace('.', ','));
-    if (unitPriceRaw === null) return;
-    const fixedRaw = window.prompt('Stálá měsíční platba / jistič / paušál', meter.fixedMonthlyCost === '' ? '' : String(meter.fixedMonthlyCost).replace('.', ','));
-    if (fixedRaw === null) return;
-    const fixedLabelRaw = window.prompt('Popis stálé platby', meter.fixedMonthlyLabel || 'stálá platba');
+    const currentMode = meter.pricingMode === 'contract' ? 'smlouva' : 'prumer';
+    const modeRaw = window.prompt('Režim ceny: napiš "prumer" pro cenu z vyúčtování, nebo "smlouva" pro rozpad podle smlouvy.', currentMode);
+    if (modeRaw === null) return;
+    const wantsContract = normalizeText(modeRaw).toLowerCase().startsWith('sml');
+    const patch = { pricingMode: wantsContract ? 'contract' : 'average', updatedAt: new Date().toISOString() };
+    if (wantsContract) {
+      if (meter.type === 'water') {
+        const waterPrice = window.prompt('Vodné Kč/m³', meter.waterPrice === '' ? '' : String(meter.waterPrice).replace('.', ','));
+        if (waterPrice === null) return;
+        const sewerPrice = window.prompt('Stočné Kč/m³', meter.sewerPrice === '' ? '' : String(meter.sewerPrice).replace('.', ','));
+        if (sewerPrice === null) return;
+        const otherUnitPrice = window.prompt('Jiná cena za m³ / jednotku', meter.otherUnitPrice === '' ? '' : String(meter.otherUnitPrice).replace('.', ','));
+        if (otherUnitPrice === null) return;
+        patch.waterPrice = waterPrice;
+        patch.sewerPrice = sewerPrice;
+        patch.otherUnitPrice = otherUnitPrice;
+      } else {
+        const commodityPrice = window.prompt(meter.type === 'gas' ? 'Cena plynu / komodity za jednotku' : 'Silová elektřina za jednotku', meter.commodityPrice === '' ? '' : String(meter.commodityPrice).replace('.', ','));
+        if (commodityPrice === null) return;
+        const distributionPrice = window.prompt('Distribuce podle spotřeby za jednotku', meter.distributionPrice === '' ? '' : String(meter.distributionPrice).replace('.', ','));
+        if (distributionPrice === null) return;
+        const regulatedPrice = window.prompt(meter.type === 'gas' ? 'Další regulované položky za jednotku' : 'Regulované položky / POZE / OTE za jednotku', meter.regulatedPrice === '' ? '' : String(meter.regulatedPrice).replace('.', ','));
+        if (regulatedPrice === null) return;
+        const otherUnitPrice = window.prompt('Jiná cena za jednotku', meter.otherUnitPrice === '' ? '' : String(meter.otherUnitPrice).replace('.', ','));
+        if (otherUnitPrice === null) return;
+        patch.commodityPrice = commodityPrice;
+        patch.distributionPrice = distributionPrice;
+        patch.regulatedPrice = regulatedPrice;
+        patch.otherUnitPrice = otherUnitPrice;
+      }
+    } else {
+      const averageBillTotal = window.prompt('Celková cena z vyúčtování v Kč', meter.averageBillTotal === '' ? '' : String(meter.averageBillTotal).replace('.', ','));
+      if (averageBillTotal === null) return;
+      const averageBillUsage = window.prompt(`Spotřeba z vyúčtování v ${meter.unit || 'jednotkách'}`, meter.averageBillUsage === '' ? '' : String(meter.averageBillUsage).replace('.', ','));
+      if (averageBillUsage === null) return;
+      patch.averageBillTotal = averageBillTotal;
+      patch.averageBillUsage = averageBillUsage;
+    }
+    const fixedMonthlyCost = window.prompt('Stálá platba / měsíc', meter.fixedMonthlyCost === '' ? '' : String(meter.fixedMonthlyCost).replace('.', ','));
+    if (fixedMonthlyCost === null) return;
+    const breakerMonthly = window.prompt(meter.type === 'electricity' ? 'Jistič / rezervovaný příkon / měsíc' : 'Další stálá regulovaná platba / měsíc', meter.breakerMonthly === '' ? '' : String(meter.breakerMonthly).replace('.', ','));
+    if (breakerMonthly === null) return;
+    const fixedSupplierMonthly = window.prompt('Stálý plat dodavateli / měsíc', meter.fixedSupplierMonthly === '' ? '' : String(meter.fixedSupplierMonthly).replace('.', ','));
+    if (fixedSupplierMonthly === null) return;
+    const otherFixedMonthly = window.prompt('Jiná stálá platba / měsíc', meter.otherFixedMonthly === '' ? '' : String(meter.otherFixedMonthly).replace('.', ','));
+    if (otherFixedMonthly === null) return;
+    const fixedLabelRaw = window.prompt('Popis stálých plateb', meter.fixedMonthlyLabel || 'stálá platba');
     if (fixedLabelRaw === null) return;
-    const unitPrice = decimalValue(unitPriceRaw);
-    const fixedMonthlyCost = decimalValue(fixedRaw);
-    if (unitPrice !== '' && unitPrice < 0) return showToast('Cena za jednotku nesmí být záporná');
-    if (fixedMonthlyCost !== '' && fixedMonthlyCost < 0) return showToast('Stálá platba nesmí být záporná');
-    state.readingMeters = readingsMeters(true).map((item) => item.id === id ? normalizeReadingMeter({
-      ...item,
-      pricePerUnit: unitPrice === '' ? '' : unitPrice,
-      fixedMonthlyCost: fixedMonthlyCost === '' ? '' : fixedMonthlyCost,
-      fixedMonthlyLabel: normalizeText(fixedLabelRaw) || 'stálá platba',
-      updatedAt: new Date().toISOString()
-    }) : item);
+    Object.assign(patch, { fixedMonthlyCost, breakerMonthly, fixedSupplierMonthly, otherFixedMonthly, fixedMonthlyLabel: fixedLabelRaw });
+    state.readingMeters = readingsMeters(true).map((item) => item.id === id ? normalizeReadingMeter({ ...item, ...patch }) : item);
     await persistReadingsState('Ceny měřidla uložené');
   }
 
@@ -7993,6 +8095,33 @@
     const monthRows = readingsMonthlyRows();
     const chartRows = readingsChartRows(12);
     const meterOptions = meters.map((meter) => [meter.id, `${readingTypeMeta(meter.type).icon} ${meter.name} · ${meter.unit}`]);
+    const readingPriceModeOptions = [['average', 'Průměrná cena z vyúčtování'], ['contract', 'Přesný výpočet ze smlouvy']];
+    const pricingHelp = ['electricity', 'gas', 'water'].map((type) => {
+      const meta = readingTypeMeta(type);
+      return `<div class="mini-stat"><span>${escapeHtml(meta.icon)} ${escapeHtml(meta.label)}</span><strong>${escapeHtml(type === 'electricity' ? 'kWh + stálé platby' : type === 'gas' ? 'm³/kWh + stálé platby' : 'vodné + stočné')}</strong><small>${escapeHtml(readingPricingModeInfo(type))}</small></div>`;
+    }).join('');
+    const priceFormBlock = `
+      <details class="subtle-details readings-price-details">
+        <summary><span>Cena a výpočet nákladů</span><em>průměr nebo smlouva</em></summary>
+        <div class="small-muted">Vyber si jednoduchý průměr z vyúčtování, nebo rozpad podle smlouvy. Nezadávej nic natvrdo podle internetu, ceny se liší podle dodavatele a tarifu.</div>
+        <div class="form-grid two">
+          ${selectField('Výpočet ceny', 'pricingMode', readingPriceModeOptions, 'average')}
+          ${field('Celková cena z vyúčtování', 'averageBillTotal', 'text', 'např. 24000', false, '', 'decimal')}
+          ${field('Spotřeba z vyúčtování', 'averageBillUsage', 'text', 'např. 3200', false, '', 'decimal')}
+          ${field('Komodita / silová energie', 'commodityPrice', 'text', 'Kč za jednotku', false, '', 'decimal')}
+          ${field('Distribuce podle spotřeby', 'distributionPrice', 'text', 'Kč za jednotku', false, '', 'decimal')}
+          ${field('Regulované položky / POZE / OTE', 'regulatedPrice', 'text', 'Kč za jednotku', false, '', 'decimal')}
+          ${field('Vodné', 'waterPrice', 'text', 'Kč/m³', false, '', 'decimal')}
+          ${field('Stočné', 'sewerPrice', 'text', 'Kč/m³', false, '', 'decimal')}
+          ${field('Jiná cena za jednotku', 'otherUnitPrice', 'text', 'Kč za jednotku', false, '', 'decimal')}
+          ${field('Stálá platba / měsíc', 'fixedMonthlyCost', 'text', 'např. paušál', false, '', 'decimal')}
+          ${field('Jistič / regulovaná stálá platba', 'breakerMonthly', 'text', 'Kč/měsíc', false, '', 'decimal')}
+          ${field('Stálý plat dodavateli', 'fixedSupplierMonthly', 'text', 'Kč/měsíc', false, '', 'decimal')}
+          ${field('Jiná stálá platba', 'otherFixedMonthly', 'text', 'Kč/měsíc', false, '', 'decimal')}
+          ${field('Popis stálých plateb', 'fixedMonthlyLabel', 'text', 'např. jistič + stálý plat')}
+        </div>
+        <div class="mini-stat-grid readings-price-help">${pricingHelp}</div>
+      </details>`;
     return `
       ${renderSectionTabs('readings', [
         { id: 'overview', label: 'Přehled', icon: '📊', count: latestCount },
@@ -8007,7 +8136,7 @@
             <div class="kpi"><strong>${entries.length}</strong><span>odečtů celkem</span></div>
             <div class="kpi"><strong>${latestCount}</strong><span>měřidel se stavem</span></div>
           </div>
-          ${meters.length ? `<div class="readings-meter-grid">${meters.map(renderReadingMeterCard).join('')}</div>` : renderEmptyCta({ icon: '📊', title: 'Zatím žádné měřidlo', text: 'Přidej elektroměr, plynoměr nebo vodoměr a začni ukládat odečty.', nav: 'readings', tab: 'meters', label: 'Přidat měřidlo' })}
+          ${meters.length ? `<div class="readings-meter-grid">${meters.map(renderReadingMeterCard).join('')}</div>` : renderEmpty('Zatím žádné měřidlo. Přidání je v záložce Měřidla nahoře.')} 
         </section>
 
         <section class="card readings-panel panel-overview">
@@ -8037,7 +8166,7 @@
 
         <section class="card desktop-span-2 readings-panel panel-meters">
           <div class="card-header"><div><h2>Měřidla</h2><p>Elektroměr, plynoměr, vodoměr nebo více vodoměrů v bytě/domě.</p></div><span class="badge">${allMeters.length}</span></div>
-          <details class="action-details compact-edit-details readings-form-drawer" open>
+          <details class="action-details compact-edit-details readings-form-drawer">
             <summary><span>Přidat měřidlo</span><em>elektřina, plyn, voda</em></summary>
             <form data-form="add-reading-meter" class="compact-form readings-form">
               <div class="form-grid two">
@@ -8046,11 +8175,9 @@
                 ${selectField('Jednotka', 'unit', READING_UNIT_OPTIONS, 'kWh')}
                 ${field('Číslo měřidla', 'serial', 'text', 'volitelné')}
                 ${field('Umístění', 'location', 'text', 'např. chodba / sklep')}
-                ${field('Cena za jednotku', 'pricePerUnit', 'text', 'např. 6,50', false, '', 'decimal')}
-                ${field('Stálá platba / měsíc', 'fixedMonthlyCost', 'text', 'např. 180', false, '', 'decimal')}
-                ${field('Popis stálé platby', 'fixedMonthlyLabel', 'text', 'např. jistič / paušál')}
                 ${field('Poznámka', 'note', 'text', 'volitelné')}
               </div>
+              ${priceFormBlock}
               <div class="form-actions"><button class="primary-btn" type="submit">Přidat měřidlo</button></div>
             </form>
           </details>
@@ -11153,7 +11280,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 251))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 253))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -16847,7 +16974,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 251, mode: 'rich-demo-v251', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 253, mode: 'rich-demo-v253', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -17000,7 +17127,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 251, mode: 'readings-render-nav-hotfix-v251', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 253, mode: 'readings-pricing-v253', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -20352,7 +20479,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 251
+        appBuild: 253
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -20946,7 +21073,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-251-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-253-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -21322,7 +21449,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_251</span>
+          <span class="badge">Domácnost+ v.0.1_253</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
