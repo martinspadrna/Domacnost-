@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_236';
+  const APP_VERSION = 'Domácnost+ v.0.1_237';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -662,7 +662,6 @@
   ];
   const WARRANTY_YEARS_OPTIONS = Array.from({ length: 9 }, (_, index) => [String(index + 2), `${index + 2} roky`]);
   const WEATHER_CHMI_FUNCTION = 'weather-chmi-forecast';
-  const TRIP_AI_FUNCTION = 'trip-ai-enrich';
   const ICON_THEME_OPTIONS = [
     ['ios', 'iOS Soft', 'Jemné hladké ikonky inspirované moderním iOS stylem.'],
     ['duotone-fresh', 'Duotone Fresh', 'Dvoutónové barevné ikonky se svěžím kontrastem.'],
@@ -723,8 +722,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 236,
-      mode: 'notebook-trip-ai-v236',
+      appBuild: 237,
+      mode: 'notebook-no-ai-v237',
       createdAt: '',
       updatedAt: ''
     },
@@ -1630,8 +1629,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 236,
-      mode: 'notebook-trip-ai-v236',
+      appBuild: 237,
+      mode: 'notebook-no-ai-v237',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5187,8 +5186,8 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_236', note: 'Zápisník už nepoužívá typ stránky Výlet. Sekce si vytváří uživatel sám a AI doplnění výletu je volitelný blok uvnitř libovolné stránky.' },
-      { title: 'Domácnost+ v.0.1_236', note: 'Zápisník je bez výchozích sekcí. Přidané AI doplnění výletu a Edge Function trip-ai-enrich pro dohledání otevírací doby, vstupného, cesty, počasí, webu a parkování.' },
+      { title: 'Domácnost+ v.0.1_236', note: 'Zápisník už nepoužívá typ stránky Výlet. Sekce si vytváří uživatel sám.' },
+      { title: 'Domácnost+ v.0.1_235', note: 'Zápisník byl převeden na čistší režim bez výchozích sekcí a vlastních stránek.' },
       { title: 'Domácnost+ v.0.1_234', note: 'Zápisník: Úkoly a Poznámky jsou sloučené do jednoho modulu/panelu. Přidané stránky ve stylu OneNote se sekcemi, textem, checklisty a převodem bodu na úkol bez DB změn.' },
       { title: 'Domácnost+ v.0.1_227', note: 'Hotfix spodní navigace a Financí: lišta je znovu centrovaná bez ujíždění doleva, finance měsíc/datum jsou stažené do šířky karty a ikonky pohybů se párují podle použitých/odpovídajících šablon.' },
       { title: 'Domácnost+ v.0.1_226', note: 'Finance/Home/nav stabilizace: spodní lišta je nižší a kompaktnější bez blikání při běžném renderu, Home karty jsou natažené dolů bez posunu názvu domácnosti, finance datum/měsíc nepřetékají a pohyby dostaly ikonky ve stylu šablon.' },
@@ -6973,21 +6972,6 @@
     await saveNotebookPage(page, true);
   }
 
-  async function updateNotebookTripFromForm(data, form) {
-    const page = notebookPages().find((entry) => entry.id === form?.dataset?.pageId);
-    if (!page) return showToast('Stránka se nenašla');
-    const trip = normalizeTripMeta(page.trip || {});
-    page.trip = normalizeTripMeta({
-      ...trip,
-      place: normalizeText(data.tripPlace) || page.title,
-      date: normalizeText(data.tripDate),
-      startLocation: normalizeText(data.tripStartLocation),
-      website: normalizeText(data.tripWebsite) || trip.website
-    });
-    await saveNotebookPage(page, true);
-    showToast('Údaje k výletu uložené');
-  }
-
   async function toggleNotebookItem(pageId, itemId) {
     const page = notebookPages().find((entry) => entry.id === pageId);
     const item = page?.items.find((entry) => entry.id === itemId);
@@ -7028,121 +7012,6 @@
     showToast(task.cloudId ? 'Bod převedený na cloud úkol' : 'Bod převedený na úkol');
   }
 
-  function tripResultToNotebookTrip(result = {}) {
-    if (!result || typeof result !== 'object') return null;
-    const openingHours = typeof result.openingHours === 'object' ? result.openingHours?.text : result.openingHours;
-    const ticketPrices = typeof result.tickets === 'object' ? result.tickets?.text : (result.ticketPrices || result.prices);
-    const route = typeof result.route === 'object' ? result.route?.text : result.route;
-    const weather = typeof result.weather === 'object' ? result.weather?.text : result.weather;
-    const warnings = Array.isArray(result.warnings) ? result.warnings.filter(Boolean).join(' · ') : result.warning;
-    const packing = Array.isArray(result.packingChecklist) && result.packingChecklist.length ? `Co vzít: ${result.packingChecklist.filter(Boolean).join(', ')}` : '';
-    const tips = [result.summary, result.food, result.childTips, packing].map(normalizeText).filter(Boolean).join('\n');
-    return normalizeTripMeta({
-      place: result.place,
-      date: result.date,
-      startLocation: result.startLocation,
-      openingHours,
-      ticketPrices,
-      route,
-      weather,
-      website: result.officialWebsite || result.website,
-      parking: result.parking,
-      tips,
-      warning: warnings,
-      verifiedAt: result.checkedAt || result.verifiedAt,
-      sources: result.sources
-    });
-  }
-
-  function tripAiRows(trip = {}) {
-    return [
-      ['Místo', trip.place],
-      ['Datum', trip.date ? formatDate(trip.date) : ''],
-      ['Otevírací doba', trip.openingHours],
-      ['Vstupné', trip.ticketPrices],
-      ['Cesta', trip.route],
-      ['Počasí', trip.weather],
-      ['Parkování', trip.parking],
-      ['Web', trip.website],
-      ['Poznámky', trip.tips],
-      ['Upozornění', trip.warning]
-    ].filter(([, value]) => normalizeText(value));
-  }
-
-  function renderTripInfo(page) {
-    const trip = normalizeTripMeta(page.trip || {});
-    const rows = tripAiRows(trip);
-    const canUseAi = cloudReady();
-    const loading = page.tripAiStatus === 'loading';
-    return `
-      <details class="compact-edit-details trip-ai-card" ${rows.length || trip.date ? 'open' : ''}>
-        <summary><span>AI výlet</span><em>${trip.date ? escapeHtml(formatDate(trip.date)) : 'volitelné doplnění stránky'}</em></summary>
-        <div class="trip-ai-head">
-          <div>
-            <strong>${escapeHtml(trip.place || page.title)}</strong>
-            <span>Vyplň místo a datum jen u stránky, kde chceš dohledat výlet.</span>
-          </div>
-          ${canUseAi ? `<button class="primary-btn small-btn" type="button" data-action="notebook-trip-ai" data-page-id="${escapeHtml(page.id)}" ${loading ? 'disabled' : ''}>${loading ? 'Doplňuji…' : 'AI doplnit výlet'}</button>` : '<span class="badge">nejdřív online účet</span>'}
-        </div>
-        <form data-form="update-notebook-trip" data-page-id="${escapeHtml(page.id)}" class="compact-form trip-ai-form">
-          <div class="form-grid three">
-            ${field('Místo', 'tripPlace', 'text', 'např. Zoo Dvůr Králové', false, trip.place || page.title)}
-            ${field('Datum', 'tripDate', 'date', '', false, trip.date || '')}
-            ${field('Start cesty', 'tripStartLocation', 'text', 'např. Domov / Hostinné', false, trip.startLocation || '')}
-            ${field('Web', 'tripWebsite', 'url', 'https://...', false, trip.website || '')}
-          </div>
-          <div class="form-actions"><button class="ghost-btn small-btn" type="submit">Uložit údaje</button></div>
-        </form>
-        ${rows.length ? `<div class="trip-ai-grid">${rows.map(([label, value]) => `
-          <div class="trip-ai-row"><span>${escapeHtml(label)}</span><strong>${label === 'Web' && /^https?:\/\//i.test(String(value)) ? `<a href="${escapeHtml(value)}" target="_blank" rel="noopener noreferrer">${escapeHtml(value)}</a>` : escapeHtml(value)}</strong></div>
-        `).join('')}</div>` : '<div class="inline-note compact-note">Tady můžeš u libovolné stránky zapnout AI doplnění výletu. Sekce zůstává čistě tvoje — třeba Výlety, Dovolená nebo Polsko.</div>'}
-        ${trip.verifiedAt ? `<div class="item-meta">Ověřeno: ${escapeHtml(formatDateTime(trip.verifiedAt))}</div>` : ''}
-        ${trip.sources?.length ? `<details class="compact-edit-details trip-ai-sources"><summary><span>Zdroje</span><em>${trip.sources.length}</em></summary><div class="list compact-list">${trip.sources.map((source) => `<a class="item trip-source-link" href="${escapeHtml(source.url || '#')}" target="_blank" rel="noopener noreferrer"><div class="item-title">${escapeHtml(source.title || source.url)}</div>${source.url ? `<div class="item-meta">${escapeHtml(source.url)}</div>` : ''}</a>`).join('')}</div></details>` : ''}
-      </details>
-    `;
-  }
-
-  async function enrichNotebookTrip(pageId) {
-    const page = notebookPages().find((entry) => entry.id === pageId);
-    if (!page) return showToast('Stránka se nenašla');
-    const client = getSupabaseClient();
-    if (!client?.functions?.invoke) return showToast('Supabase funkce nejsou dostupné');
-    const user = await refreshCloudSession(false);
-    if (!user || !cloudReady()) return showToast('Nejdřív se přihlas a vyber domácnost');
-    const trip = normalizeTripMeta(page.trip || {});
-    const body = {
-      householdId: state.cloud.householdId,
-      profileId: currentProfileId(),
-      title: page.title,
-      section: page.section,
-      place: trip.place || page.title,
-      date: trip.date,
-      startLocation: trip.startLocation,
-      start: trip.startLocation,
-      website: trip.website,
-      notes: page.body,
-      checklist: page.items.map((item) => item.text)
-    };
-    if (!body.place) return showToast('Doplň místo výletu');
-    if (!body.date) return showToast('Doplň datum výletu');
-    page.tripAiStatus = 'loading';
-    await saveNotebookPage(page, false);
-    try {
-      const { data, error } = await client.functions.invoke(TRIP_AI_FUNCTION, { body });
-      if (error || data?.error || data?.ok === false) throw new Error(data?.message || data?.error || error?.message || 'AI doplnění se nepovedlo');
-      const enrichedTrip = data.trip || data.enrichment || tripResultToNotebookTrip(data.result) || tripResultToNotebookTrip(data) || data;
-      page.trip = normalizeTripMeta({ ...trip, ...enrichedTrip });
-      page.tripAiStatus = '';
-      await saveNotebookPage(page, true);
-      showToast('Výlet doplněný přes AI');
-    } catch (error) {
-      page.tripAiStatus = '';
-      await saveNotebookPage(page, false);
-      console.warn('trip-ai-enrich failed', error);
-      showToast(error?.message || 'AI doplnění zatím není dostupné');
-    }
-  }
-
   function notebookPageSummary(page) {
     const open = page.items.filter((item) => !item.done).length;
     const done = page.items.filter((item) => item.done).length;
@@ -7150,7 +7019,6 @@
   }
 
   function renderNotebookPage(page) {
-    const trip = normalizeTripMeta(page.trip || {});
     const badge = 'stránka';
     return `
       <article class="notebook-page item" id="notebook-page-${escapeHtml(page.id)}">
@@ -7161,7 +7029,6 @@
           </div>
           <span class="badge ${page.cloudId ? 'good' : ''}">${page.cloudId ? 'cloud' : 'lokálně'}</span>
         </div>
-        ${renderTripInfo({ ...page, trip })}
         ${page.body ? `<div class="notebook-body">${escapeHtml(page.body)}</div>` : ''}
         <div class="item-meta">${escapeHtml(notebookPageSummary(page))}</div>
         ${page.items.length ? `<div class="notebook-checklist">${page.items.map((item) => `
@@ -7274,7 +7141,7 @@
                     ${field('Sekce', 'section', 'text', 'např. Výlety', true)}
                     ${field('Název stránky', 'title', 'text', 'např. Zoo Dvůr Králové', true)}
                   </div>
-                  <div class="inline-note compact-note">Sekce jsou čistě tvoje. Když si uděláš sekci Výlety, jednotlivé výlety zakládej jako stránky a AI doplnění zapneš až uvnitř konkrétní stránky.</div>
+                  <div class="inline-note compact-note">Sekce jsou čistě tvoje. Třeba sekce Výlety může obsahovat samostatné stránky Zoo Dvůr Králové, Karpacz nebo Adršpach.</div>
                   <div class="field"><label>Text stránky</label><textarea class="textarea" name="body" placeholder="Poznámka, odkazy, parkování, co vzít s sebou..."></textarea></div>
                   <div class="field"><label>Checklist / nápady</label><textarea class="textarea" name="items" placeholder="Zoo Dvůr Králové&#10;Karpacz&#10;Stezka korunami stromů"></textarea></div>
                   <div class="form-actions"><button class="primary-btn" type="submit">Přidat stránku</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-extras">Načíst cloud zápisník</button>' : ''}${state.cloud?.householdId && notes.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-extras">Odeslat lokální stránky (${notes.filter((item) => !item.cloudId).length})</button>` : ''}</div>
@@ -10858,7 +10725,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 236))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 237))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -15758,7 +15625,6 @@
       'add-task': () => addTaskFromForm(data, form),
       'add-notebook-page': () => addNotebookPageFromForm(data, form),
       'add-notebook-item': () => addNotebookItemFromForm(data, form),
-      'update-notebook-trip': () => updateNotebookTripFromForm(data, form),
       'add-note': () => addItem('notes', { text: data.text, createdAt: new Date().toISOString() }),
       'add-warranty': () => addWarrantyFromForm(data, form),
       'edit-warranty': () => updateWarrantyFromForm(data, form),
@@ -16366,7 +16232,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 236, mode: 'rich-demo-v236', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 237, mode: 'rich-demo-v237', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -16524,7 +16390,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 236, mode: 'notebook-trip-ai-v236', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 237, mode: 'notebook-no-ai-v237', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -18879,10 +18745,6 @@
       notebookItemToTask(button.dataset.pageId, button.dataset.itemId);
       return;
     }
-    if (action === 'notebook-trip-ai') {
-      enrichNotebookTrip(button.dataset.pageId);
-      return;
-    }
     if (action === 'cloud-sync-note') {
       const note = state.notes.find((item) => item.id === button.dataset.id);
       if (note) cloudAddExtraItem('notes', note).then(() => { touchState(); saveState(); render(); showToast(note.cloudId ? 'Stránka odeslaná do cloudu' : 'Stránku se nepovedlo odeslat'); });
@@ -19857,7 +19719,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 236
+        appBuild: 237
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -20447,7 +20309,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-236-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-237-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20799,7 +20661,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_236</span>
+          <span class="badge">Domácnost+ v.0.1_237</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
