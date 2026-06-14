@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_240';
+  const APP_VERSION = 'Domácnost+ v.0.1_241';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -694,8 +694,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 240,
-      mode: 'notebook-ux-v240',
+      appBuild: 241,
+      mode: 'notebook-fixes-v241',
       createdAt: '',
       updatedAt: ''
     },
@@ -1565,8 +1565,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 240,
-      mode: 'notebook-ux-v240',
+      appBuild: 241,
+      mode: 'notebook-fixes-v241',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5101,6 +5101,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_241', note: 'Zápisník nabízí při nové poznámce existující aktivní sekce, takže další výlet může rovnou spadnout do sekce Výlety. Úkoly s vyplněným termínem už nepadají do Bez termínu; delší termíny mají vlastní skupinu Později.' },
       { title: 'Domácnost+ v.0.1_240', note: 'Zápisník má čistší přidávání: tlačítko Přidat poznámku otevírá jen poznámku a Přidat úkol jen úkol. Odstraněné univerzální plus a duplicitní přidání u prázdných úkolů. Úkoly jsou nově rozdělené na Dnes, Brzy, Bez termínu a Hotovo a poznámky se zobrazují jako modernější karty.' },
       { title: 'Domácnost+ v.0.1_239', note: 'Zápisník má přidávání přes samostatnou stránku, opravené přetékání data v úkolech, jemnější tmavší kartu úkolů a vyčištěné staré frontend zbytky odstraněných modulů.' },
       { title: 'Domácnost+ v.0.1_236', note: 'Zápisník už nepoužívá typ stránky Výlet. Sekce si vytváří uživatel sám.' },
@@ -6841,6 +6842,48 @@
     return [...map.entries()].map(([section, items]) => ({ section, items }));
   }
 
+  function notebookSectionNames() {
+    return notebookSections()
+      .map((group) => normalizeText(group.section))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'cs'));
+  }
+
+  function notebookSectionField() {
+    const sections = notebookSectionNames();
+    if (!sections.length) {
+      return field('Sekce', 'section', 'text', 'např. Výlety', true);
+    }
+    const selectId = `field-notebook-section-preset-${Math.random().toString(36).slice(2, 7)}`;
+    const inputId = `field-notebook-section-new-${Math.random().toString(36).slice(2, 7)}`;
+    return `
+      <div class="notebook-section-picker">
+        <div class="field notebook-section-field">
+          <label for="${selectId}">Sekce</label>
+          <select class="select" id="${selectId}" name="sectionPreset">
+            <option value="">Nová sekce…</option>
+            ${sections.map((section) => `<option value="${escapeHtml(section)}">${escapeHtml(section)}</option>`).join('')}
+          </select>
+          <small class="field-hint">Vyber existující sekci, třeba Výlety, nebo níž napiš novou.</small>
+        </div>
+        <div class="field notebook-new-section-field">
+          <label for="${inputId}">Nová sekce</label>
+          <input class="input" id="${inputId}" name="section" type="text" placeholder="Vyplň jen pro novou sekci" autocomplete="off">
+        </div>
+      </div>
+    `;
+  }
+
+  function notebookDueField() {
+    const inputId = `field-task-due-${Math.random().toString(36).slice(2, 7)}`;
+    return `
+      <div class="field notebook-due-field">
+        <label for="${inputId}">Termín</label>
+        <input class="input notebook-date-input" id="${inputId}" name="due" type="date" autocomplete="off">
+      </div>
+    `;
+  }
+
   function notebookChecklistFromText(value) {
     return String(value || '')
       .split(/\r?\n/)
@@ -6864,7 +6907,7 @@
   }
 
   async function addNotebookPageFromForm(data, form) {
-    const section = normalizeText(data.section);
+    const section = normalizeText(data.sectionPreset) || normalizeText(data.section);
     const title = normalizeText(data.title);
     if (!section) return showToast('Doplň sekci');
     if (!title) return showToast('Doplň název stránky');
@@ -7002,6 +7045,7 @@
     const groups = {
       today: [],
       soon: [],
+      later: [],
       noDue: [],
       done: []
     };
@@ -7011,9 +7055,10 @@
         return;
       }
       const diff = daysUntil(task.due);
-      if (diff !== null && diff <= 0) groups.today.push(task);
-      else if (diff !== null && diff <= 14) groups.soon.push(task);
-      else groups.noDue.push(task);
+      if (!task.due || diff === null) groups.noDue.push(task);
+      else if (diff <= 0) groups.today.push(task);
+      else if (diff <= 14) groups.soon.push(task);
+      else groups.later.push(task);
     });
     return groups;
   }
@@ -7052,6 +7097,7 @@
     return [
       renderNotebookTaskGroup('Dnes', groups.today, 'Co je dnes nebo už po termínu.'),
       renderNotebookTaskGroup('Brzy', groups.soon, 'Úkoly s termínem v nejbližších 14 dnech.'),
+      renderNotebookTaskGroup('Později', groups.later, 'Úkoly s termínem dál v kalendáři.'),
       renderNotebookTaskGroup('Bez termínu', groups.noDue, 'Věci, které nejsou navázané na konkrétní den.'),
       renderNotebookTaskGroup('Hotovo', groups.done.slice(0, 30))
     ].join('');
@@ -7144,7 +7190,7 @@
                   <div class="card-subheader"><h3>Nová poznámka</h3><p>Sekce, stránka, text a volitelný checklist.</p></div>
                   <form data-form="add-notebook-page" class="compact-form">
                     <div class="form-grid two notebook-note-form-grid">
-                      ${field('Sekce', 'section', 'text', 'např. Výlety', true)}
+                      ${notebookSectionField()}
                       ${field('Název stránky', 'title', 'text', 'např. Zoo Dvůr Králové', true)}
                     </div>
                     <div class="field"><label>Text stránky</label><textarea class="textarea" name="body" placeholder="Poznámka, odkazy, parkování, co vzít s sebou..."></textarea></div>
@@ -7158,7 +7204,7 @@
                   <form data-form="add-task" class="compact-form notebook-task-form">
                     <div class="form-grid two notebook-task-form-grid">
                       ${field('Úkol', 'title', 'text', 'vyměnit filtr / koupit baterky', true)}
-                      ${field('Termín', 'due', 'date', '')}
+                      ${notebookDueField()}
                       ${selectField('Kategorie', 'category', TASK_CATEGORY_OPTIONS, 'domacnost')}
                       ${selectField('Priorita', 'priority', TASK_PRIORITY_OPTIONS, 'normal')}
                       ${field('Poznámka', 'note', 'text', 'volitelné')}
@@ -7190,7 +7236,7 @@
             </div>
           ` : `
             <div class="notebook-tab-content notebook-tasks-tab">
-              <div class="card-subheader notebook-list-head"><div><h3>Úkoly</h3><p>Rozdělené na dnes, brzy, bez termínu a hotovo.</p></div>${tasks.length ? '<button class="ghost-btn" type="button" data-action="set-section-tab" data-area="notebookCreate" data-tab="task">+ přidat úkol</button>' : ''}</div>
+              <div class="card-subheader notebook-list-head"><div><h3>Úkoly</h3><p>Rozdělené na dnes, brzy, později, bez termínu a hotovo.</p></div>${tasks.length ? '<button class="ghost-btn" type="button" data-action="set-section-tab" data-area="notebookCreate" data-tab="task">+ přidat úkol</button>' : ''}</div>
               ${tasks.length ? renderNotebookTaskGroups(tasks) : '<div class="notebook-empty-actions"><div><strong>Žádné úkoly</strong><p>Checklisty v poznámkách můžeš kdykoliv převést na úkol.</p></div><button class="primary-btn" type="button" data-action="set-section-tab" data-area="notebookCreate" data-tab="task">+ přidat úkol</button></div>'}
             </div>
           `}
@@ -10358,7 +10404,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 240))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 241))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -15856,7 +15902,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 240, mode: 'rich-demo-v240', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 241, mode: 'rich-demo-v241', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -16008,7 +16054,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 240, mode: 'notebook-ux-v240', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 241, mode: 'notebook-fixes-v241', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -19324,7 +19370,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 240
+        appBuild: 241
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -19914,7 +19960,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-240-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-241-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -20266,7 +20312,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_240</span>
+          <span class="badge">Domácnost+ v.0.1_241</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

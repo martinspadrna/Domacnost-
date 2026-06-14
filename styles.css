@@ -15703,3 +15703,60 @@ body {
     justify-content: flex-start;
   }
 }
+
+/* v0.1_241: Zápisník – aktivní sekce a přesné řazení termínů */
+.notebook-section-field .field-hint {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.notebook-section-field input[list] {
+  width: 100%;
+}
+
+.notebook-due-field {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+}
+
+.notebook-due-field .notebook-date-input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  direction: ltr;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .notebook-due-field .notebook-date-input {
+    min-height: 46px;
+    line-height: 1.2;
+  }
+}
+
+.notebook-section-picker {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.notebook-section-picker .field {
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .notebook-section-picker {
+    grid-template-columns: 1fr;
+  }
+}
