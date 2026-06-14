@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_259';
+  const APP_VERSION = 'Domácnost+ v.0.1_260';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -700,8 +700,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 259,
-      mode: 'readings-monthly-v259',
+      appBuild: 260,
+      mode: 'readings-performance-v260',
       createdAt: '',
       updatedAt: ''
     },
@@ -995,6 +995,11 @@
   let readingsEntryMeterId = localStorage.getItem('domacnostPlus.readingsEntryMeterId') || '';
   let readingsEntryDrawerOpen = false;
   let readingsMeterToolPage = localStorage.getItem('domacnostPlus.readingsMeterToolPage') || '';
+  let readingsEditingMeterId = localStorage.getItem('domacnostPlus.readingsEditingMeterId') || '';
+  let readingsMetersCacheSource = null;
+  let readingsMetersCache = [];
+  let readingsEntriesCacheSource = null;
+  let readingsEntriesCache = [];
   let financeTemplateEditId = '';
   let financeCopyId = '';
   let shoppingQuantityEditId = '';
@@ -1584,8 +1589,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 259,
-      mode: 'readings-monthly-v259',
+      appBuild: 260,
+      mode: 'readings-performance-v260',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5155,6 +5160,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_260', note: 'Hotfix Odečty/Měřidla: zrychlený render měřidel, editace se načítá až po kliknutí na konkrétní měřidlo a opakované výpočty odečtů se cacheují během renderu.' },
       { title: 'Domácnost+ v.0.1_259', note: 'Odečty: měřidla mají samostatné stránky Import, Přidat měřidlo a Ceny; globální průměrné ceny se používají jako fallback a podrobné ceny jsou přehledně podle typu měřidla.' },
       { title: 'Domácnost+ v.0.1_258', note: 'Odečty: grafy ukazují měsíční průměry s jednotkami a obdobím, rychlý odečet nepřetéká přes kraj a prázdná cena přebírá poslední známou cenu.' },
       { title: 'Domácnost+ v.0.1_257', note: 'Odečty: přibyla záložka Odečet pro rychlé měsíční zadání, detail má čárové grafy a porovnání měřidel, akce měřidel jsou jen v záložce Měřidla.' },
@@ -7771,16 +7777,28 @@
   }
 
   function readingsMeters(includeArchived = false) {
-    state.readingMeters = Array.isArray(state.readingMeters) ? state.readingMeters.map(normalizeReadingMeter) : [];
-    const list = includeArchived ? state.readingMeters : state.readingMeters.filter((item) => !item.archived);
+    const source = Array.isArray(state.readingMeters) ? state.readingMeters : [];
+    if (source !== readingsMetersCacheSource) {
+      readingsMetersCache = source.map(normalizeReadingMeter);
+      state.readingMeters = readingsMetersCache;
+      readingsMetersCacheSource = state.readingMeters;
+    }
+    const list = includeArchived ? readingsMetersCache : readingsMetersCache.filter((item) => !item.archived);
     return [...list].sort((a, b) => Number(a.archived) - Number(b.archived) || a.type.localeCompare(b.type) || a.name.localeCompare(b.name, 'cs'));
   }
 
   function readingsEntries(meterId = '') {
-    state.readings = Array.isArray(state.readings) ? state.readings.map(normalizeReadingEntry).filter((item) => item.meterId && Number.isFinite(Number(item.value))) : [];
-    return state.readings
-      .filter((item) => !meterId || item.meterId === meterId)
-      .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const source = Array.isArray(state.readings) ? state.readings : [];
+    if (source !== readingsEntriesCacheSource) {
+      readingsEntriesCache = source
+        .map(normalizeReadingEntry)
+        .filter((item) => item.meterId && Number.isFinite(Number(item.value)))
+        .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      state.readings = readingsEntriesCache;
+      readingsEntriesCacheSource = state.readings;
+    }
+    const list = meterId ? readingsEntriesCache.filter((item) => item.meterId === meterId) : readingsEntriesCache;
+    return [...list];
   }
 
   function readingMeterById(id) {
@@ -8011,10 +8029,11 @@
       </details>`;
 }
 
-  function readingMeterStats(meter) {
+  function readingMeterStats(meter, precomputedRows = null) {
     const rows = readingsEntries(meter.id).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
     const latest = rows[rows.length - 1] || null;
-    const lastConsumption = readingsConsumptionRows().filter((row) => row.meterId === meter.id)[0] || null;
+    const sourceRows = Array.isArray(precomputedRows) ? precomputedRows : readingsConsumptionRows();
+    const lastConsumption = sourceRows.find((row) => row.meterId === meter.id) || null;
     const delta = lastConsumption ? lastConsumption.value : null;
     return { rows, latest, previous: null, delta };
   }
@@ -8299,6 +8318,8 @@
     });
     if (!updated.name) return showToast('Doplň název měřidla');
     state.readingMeters = readingsMeters(true).map((item) => item.id === original.id ? updated : item);
+    readingsEditingMeterId = '';
+    if (!isDemoOnlyState()) localStorage.removeItem('domacnostPlus.readingsEditingMeterId');
     await persistReadingsState('Měřidlo uložené');
   }
 
@@ -8776,13 +8797,13 @@
     const context = options.context || 'overview';
     const showManage = context === 'meters';
     const meta = readingTypeMeta(meter.type);
-    const stats = readingMeterStats(meter);
+    const stats = options.stats || readingMeterStats(meter, options.consumptionRows || null);
     const latest = stats.latest;
     const deltaLabel = stats.delta === null ? 'první odečet' : `+${readingValue(Math.max(0, stats.delta), meter.unit)} od minula`;
-    const monthRows = readingsConsumptionRows().filter((row) => row.meterId === meter.id);
-    const lastMonth = monthRows[0] || null;
+    const lastMonth = options.lastMonth || null;
+    const isEditing = showManage && readingsEditingMeterId === meter.id;
     return `
-      <article class="reading-meter-card reading-meter-${escapeHtml(meta.className)} ${meter.archived ? 'muted-item' : ''}">
+      <article class="reading-meter-card reading-meter-${escapeHtml(meta.className)} ${meter.archived ? 'muted-item' : ''} ${isEditing ? 'is-editing' : ''}">
         <div class="reading-meter-top">
           <span class="reading-meter-icon">${escapeHtml(meta.icon)}</span>
           <div><strong>${escapeHtml(meter.name)}</strong><em>${escapeHtml(meta.label)}${meter.location ? ` · ${escapeHtml(meter.location)}` : ''}</em></div>
@@ -8791,9 +8812,9 @@
         <div class="reading-meter-value"><strong>${escapeHtml(readingMeterLatestDisplay(meter))}</strong><span>${escapeHtml(deltaLabel)}</span></div>
         <div class="reading-meter-pricing"><span>${escapeHtml(readingPricingLabel(meter))}</span>${lastMonth ? `<strong>${readingMoney(lastMonth.cost)}/měs.</strong>` : ''}</div>
         <div class="item-meta">${meter.serial ? `Číslo: ${escapeHtml(meter.serial)} · ` : ''}${stats.rows.length} odečtů${lastMonth ? ` · průměr ${readingMonthlyValue(lastMonth.value, meter.unit)} · ${escapeHtml(lastMonth.periodLabel || financeMonthLabel(lastMonth.month))}` : ''}${meter.note ? ` · ${escapeHtml(meter.note)}` : ''}</div>
-        ${showManage ? `<div class="item-actions"><button class="ghost-btn" type="button" data-action="toggle-reading-meter" data-id="${escapeHtml(meter.id)}">${meter.archived ? 'Vrátit' : 'Archivovat'}</button><button class="danger-btn" type="button" data-action="delete-reading-meter" data-id="${escapeHtml(meter.id)}">Smazat</button></div>
-        <details class="action-details compact-edit-details readings-form-drawer reading-meter-edit-drawer">
-          <summary><span>Upravit měřidlo</span><em>název, typ, jednotka, ceny</em></summary>
+        ${showManage ? `<div class="item-actions"><button class="ghost-btn" type="button" data-action="toggle-reading-meter-edit" data-id="${escapeHtml(meter.id)}">${isEditing ? 'Zavřít úpravu' : 'Upravit'}</button><button class="ghost-btn" type="button" data-action="toggle-reading-meter" data-id="${escapeHtml(meter.id)}">${meter.archived ? 'Vrátit' : 'Archivovat'}</button><button class="danger-btn" type="button" data-action="delete-reading-meter" data-id="${escapeHtml(meter.id)}">Smazat</button></div>
+        ${isEditing ? `<div class="action-details compact-edit-details readings-form-drawer reading-meter-edit-drawer open">
+          <div class="details-like-head"><span>Upravit měřidlo</span><em>název, typ, jednotka, ceny</em></div>
           <form data-form="update-reading-meter" data-id="${escapeHtml(meter.id)}" class="compact-form readings-form">
             <div class="form-grid two">
               ${selectField('Typ', 'type', READING_TYPE_OPTIONS, meter.type)}
@@ -8806,7 +8827,7 @@
             ${renderReadingPriceFormBlock(meter)}
             <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button></div>
           </form>
-        </details>` : ''}
+        </div>` : ''}` : ''}
       </article>`;
   }
 
@@ -9036,10 +9057,14 @@
     const meters = readingsMeters();
     const allMeters = readingsMeters(true);
     const entries = readingsEntries();
+    const consumptionRows = readingsConsumptionRows();
     const latestCount = meters.filter((meter) => latestReadingForMeter(meter.id)).length;
     const monthRows = readingsMonthlyRows();
     const chartRows = readingsChartRows(12);
     const dueMeters = meters.filter((meter) => !readingMeterHasCompleteMonthEntry(meter));
+    const meterStatsMap = new Map(allMeters.map((meter) => [meter.id, readingMeterStats(meter, consumptionRows)]));
+    const lastMonthMap = new Map();
+    consumptionRows.forEach((row) => { if (!lastMonthMap.has(row.meterId)) lastMonthMap.set(row.meterId, row); });
     const priceFormBlock = renderReadingPriceFormBlock();
     return `
       ${renderSectionTabs('readings', [
@@ -9052,7 +9077,7 @@
       <div class="grid two module-tabbed readings-module readings-tab-${escapeHtml(activeTab)}" data-tab-area="readings">
         <section class="card desktop-span-2 readings-panel panel-overview">
           <div class="card-header"><div><h2>Odečty</h2><p>Elektřina, plyn a voda v jednom přehledu. Zapíšeš stav a aplikace ukáže rozdíl od minula.</p></div><span class="badge ${cloudReady() ? 'good' : ''}">${cloudReady() ? 'cloud domácnost' : 'lokálně'}</span></div>
-          ${meters.length ? `<div class="readings-meter-grid">${meters.map((meter) => renderReadingMeterCard(meter, { context: 'overview' })).join('')}</div>` : renderEmpty('Zatím žádné měřidlo. Přidání je v záložce Měřidla nahoře.')}
+          ${meters.length ? `<div class="readings-meter-grid">${meters.map((meter) => renderReadingMeterCard(meter, { context: 'overview', stats: meterStatsMap.get(meter.id), lastMonth: lastMonthMap.get(meter.id), consumptionRows })).join('')}</div>` : renderEmpty('Zatím žádné měřidlo. Přidání je v záložce Měřidla nahoře.')}
         </section>
 
         <section class="card desktop-span-2 readings-panel panel-entry">
@@ -12182,7 +12207,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 259))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 260))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -17878,7 +17903,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 259, mode: 'rich-demo-v259', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 260, mode: 'rich-demo-v260', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -18031,7 +18056,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 259, mode: 'readings-monthly-v259', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 260, mode: 'readings-performance-v260', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -20402,6 +20427,18 @@
       updateReadingMeterPricing(button.dataset.id);
       return;
     }
+    if (action === 'toggle-reading-meter-edit') {
+      const id = button.dataset.id || '';
+      readingsEditingMeterId = readingsEditingMeterId === id ? '' : id;
+      if (!isDemoOnlyState()) {
+        if (readingsEditingMeterId) localStorage.setItem('domacnostPlus.readingsEditingMeterId', readingsEditingMeterId);
+        else localStorage.removeItem('domacnostPlus.readingsEditingMeterId');
+      }
+      moduleTabs = { ...(moduleTabs || {}), readings: 'meters' };
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      render();
+      return;
+    }
     if (action === 'toggle-reading-meter') {
       toggleReadingMeterArchived(button.dataset.id);
       return;
@@ -21410,7 +21447,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 259
+        appBuild: 260
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -22004,7 +22041,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-259-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-260-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -22428,7 +22465,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_259</span>
+          <span class="badge">Domácnost+ v.0.1_260</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

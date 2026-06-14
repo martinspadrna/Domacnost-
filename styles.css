@@ -16988,3 +16988,24 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Domácnost+ v.0.1_260 – Odečty/Měřidla: editace se renderuje až po otevření */
+.reading-meter-card.is-editing {
+  grid-column: 1 / -1;
+}
+
+.details-like-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-weight: 800;
+}
+
+.details-like-head em {
+  font-size: .78rem;
+  font-style: normal;
+  color: var(--muted);
+  font-weight: 600;
+}
