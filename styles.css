@@ -16318,3 +16318,55 @@ body {
     justify-content: space-between;
   }
 }
+
+
+/* Domácnost+ v.0.1_251 – hotfix spodní lišty po v250 */
+@media (max-width: 720px) {
+  :root {
+    --nav-visual-height-v251: 64px;
+    --nav-inner-height-v251: 52px;
+  }
+
+  .app-shell,
+  .app-shell.home-app-shell {
+    padding-bottom: calc(var(--nav-visual-height-v251) + max(8px, env(safe-area-inset-bottom, 0px)) + 12px) !important;
+  }
+
+  .nav-shell {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: calc(100dvw - 24px) !important;
+    max-width: min(620px, calc(100dvw - 24px)) !important;
+    height: calc(var(--nav-visual-height-v251) + env(safe-area-inset-bottom, 0px)) !important;
+    min-height: calc(var(--nav-visual-height-v251) + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(var(--nav-visual-height-v251) + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 6px 8px max(6px, env(safe-area-inset-bottom, 0px)) !important;
+    margin: 0 !important;
+    transform: translate3d(-50%, 0, 0) !important;
+    overflow: hidden !important;
+    contain: layout paint style !important;
+  }
+
+  .nav-scroll {
+    height: var(--nav-inner-height-v251) !important;
+    min-height: var(--nav-inner-height-v251) !important;
+    max-height: var(--nav-inner-height-v251) !important;
+    overflow: hidden !important;
+  }
+
+  .nav-item {
+    height: var(--nav-inner-height-v251) !important;
+    min-height: var(--nav-inner-height-v251) !important;
+    max-height: var(--nav-inner-height-v251) !important;
+    padding-block: 4px !important;
+  }
+
+  .nav-icon {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+  }
+}

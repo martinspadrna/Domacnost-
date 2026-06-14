@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_250';
+  const APP_VERSION = 'Domácnost+ v.0.1_251';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -700,8 +700,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 250,
-      mode: 'readings-pricing-charts-v250',
+      appBuild: 251,
+      mode: 'readings-render-nav-hotfix-v251',
       createdAt: '',
       updatedAt: ''
     },
@@ -1577,8 +1577,8 @@
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 250,
-      mode: 'readings-pricing-charts-v250',
+      appBuild: 251,
+      mode: 'readings-render-nav-hotfix-v251',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -3442,6 +3442,7 @@
       shopping: 'Sdílený nákupní seznam s katalogem položek, jednotkami a cloudovým oddělením domácností.',
       hdo: 'Nízký tarif, aktuální stav a další přepnutí.',
       waste: 'Svoz odpadu, nejbližší termíny a připomínky.',
+      readings: 'Odečty elektřiny, plynu a vody, spotřeba, graf a odhad nákladů.',
       tasks: 'Poznámky a úkoly v jednom čistém zápisníku.',
       warranties: 'Záruky, účtenky a hlídání konce záruky.',
       polishHolidays: 'Polské svátky a dny, kdy můžou být zavřené obchody.',
@@ -3468,6 +3469,7 @@
       shopping: renderShopping,
       hdo: () => renderHomecare('hdo'),
       waste: () => renderHomecare('waste'),
+      readings: renderReadings,
       tasks: () => renderHomecare('tasks'),
       warranties: () => renderHomecare('warranties'),
       polishHolidays: () => renderHomecare('polish-holidays'),
@@ -5146,6 +5148,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_251', note: 'Hotfix: Odečty se teď skutečně renderují jako samostatný modul a spodní panel má znovu nízkou mobilní výšku.' },
       { title: 'Domácnost+ v.0.1_250', note: 'Odečty dostaly graf spotřeby, ceny za jednotku, stálé měsíční platby a odhad nákladů po měřidlech i měsících.' },
       { title: 'Domácnost+ v.0.1_249', note: 'Přidaný nový modul Odečty pro elektřinu, plyn a vodu: měřidla, zápisy, historie a rozdíl od minula. Předplatné umí započítat přeplatky do dalších měsíců a Home počasí má pružnější text na tabletu.' },
       { title: 'Domácnost+ v.0.1_248', note: 'Hotfix startu na tabletu: migrace profilů už nesahá na runtime state před inicializací. Přesouvání Home panelů zůstává z v247.' },
@@ -11150,7 +11153,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 250))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 251))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -16844,7 +16847,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 250, mode: 'rich-demo-v250', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 251, mode: 'rich-demo-v251', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -16997,7 +17000,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 250, mode: 'readings-pricing-charts-v250', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 251, mode: 'readings-render-nav-hotfix-v251', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -20349,7 +20352,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 250
+        appBuild: 251
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -20943,7 +20946,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-250-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-251-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -21319,7 +21322,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_250</span>
+          <span class="badge">Domácnost+ v.0.1_251</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
