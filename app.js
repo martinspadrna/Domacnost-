@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_261';
+  const APP_VERSION = 'Domácnost+ v.0.1_262';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -700,8 +700,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 261,
-      mode: 'readings-costs-performance-v261',
+      appBuild: 262,
+      mode: 'readings-billing-period-hotfix-v262',
       createdAt: '',
       updatedAt: ''
     },
@@ -751,6 +751,7 @@
     readings: [],
     readingPrices: { electricityT1: '', electricityT2: '', water: '', gas: '', updatedAt: '' },
     readingDeposits: { electricity: '', gas: '', water: '', updatedAt: '' },
+    readingBilling: { from: '', to: '', updatedAt: '' },
     readingsCloud: { loadedAt: '' },
     notes: [],
     warranties: [],
@@ -1001,6 +1002,7 @@
   let readingsMetersCache = [];
   let readingsEntriesCacheSource = null;
   let readingsEntriesCache = [];
+  let forceLightVisualRecovery = false;
   let financeTemplateEditId = '';
   let financeCopyId = '';
   let shoppingQuantityEditId = '';
@@ -1587,18 +1589,19 @@
     const migrated = structuredCloneSafe(input || DEFAULT_STATE);
     const timestamp = new Date().toISOString();
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
+    forceLightVisualRecovery = Boolean(previousAppBuild && previousAppBuild < 262 && normalizeAppTheme(migrated.settings?.theme) === 'dark');
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 261,
-      mode: 'readings-costs-performance-v261',
+      appBuild: 262,
+      mode: 'readings-billing-period-hotfix-v262',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
 
     migrated.settings = {
       ...(migrated.settings || {}),
-      theme: normalizeAppTheme(migrated.settings?.theme),
+      theme: forceLightVisualRecovery ? 'light' : normalizeAppTheme(migrated.settings?.theme),
       iconTheme: normalizeIconTheme(migrated.settings?.iconTheme),
       colorScheme: normalizeColorScheme(migrated.settings?.colorScheme),
       dashboardNote: migrated.settings?.dashboardNote || DEFAULT_STATE.settings.dashboardNote,
@@ -1607,6 +1610,19 @@
       homeHeroItems: previousAppBuild && previousAppBuild < 74 ? [] : normalizeHomeHeroIds(migrated.settings?.homeHeroItems),
       vehicleIconColors: normalizeVehicleIconColorMap(migrated.settings?.vehicleIconColors),
       profileUiSettings: normalizeProfileUiSettingsMap(migrated.settings?.profileUiSettings, migrated.enabledModules)
+    };
+    if (forceLightVisualRecovery) {
+      Object.keys(migrated.settings.profileUiSettings || {}).forEach((key) => {
+        const item = migrated.settings.profileUiSettings[key];
+        if (item?.visualSettings) item.visualSettings = { ...item.visualSettings, theme: 'light' };
+      });
+      try {
+        localStorage.setItem(VISUAL_SETTINGS_STORAGE_KEY, JSON.stringify({
+          theme: 'light',
+          iconTheme: migrated.settings.iconTheme,
+          colorScheme: migrated.settings.colorScheme
+        }));
+      } catch (error) {}
     };
 
     migrated.household = {
@@ -1843,7 +1859,7 @@
     const before = JSON.stringify(getVisualSettingsSnapshot());
     state.settings = {
       ...(state.settings || {}),
-      theme: normalizeAppTheme(settings.theme ?? state.settings?.theme),
+      theme: forceLightVisualRecovery ? 'light' : normalizeAppTheme(settings.theme ?? state.settings?.theme),
       iconTheme: normalizeIconTheme(settings.iconTheme ?? settings.icon_theme ?? state.settings?.iconTheme),
       colorScheme: normalizeColorScheme(settings.colorScheme ?? settings.color_scheme ?? state.settings?.colorScheme)
     };
@@ -5161,6 +5177,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_262', note: 'Hotfix Odečtů: po uložení cen se vynutí bezpečný světlý vzhled, přibylo fakturační období od–do a ceny/zálohy/měřidla se dál ukládají do cloudového dashboard_layout.' },
       { title: 'Domácnost+ v.0.1_261', note: 'Odečty: rychlejší lazy render záložek, grafy a přehledy počítají měsíční průměry včetně jednotek, globální ceny slouží jako fallback a přibyl přehled záloh vs. odhad nákladů.' },
       { title: 'Domácnost+ v.0.1_259', note: 'Odečty: měřidla mají samostatné stránky Import, Přidat měřidlo a Ceny; globální průměrné ceny se používají jako fallback a podrobné ceny jsou přehledně podle typu měřidla.' },
       { title: 'Domácnost+ v.0.1_258', note: 'Odečty: grafy ukazují měsíční průměry s jednotkami a obdobím, rychlý odečet nepřetéká přes kraj a prázdná cena přebírá poslední známou cenu.' },
@@ -7705,6 +7722,24 @@
     };
   }
 
+  function normalizeReadingBilling(item = {}) {
+    const from = normalizeText(item.from || item.billingFrom || item.periodFrom);
+    const to = normalizeText(item.to || item.billingTo || item.periodTo);
+    return {
+      from: /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : '',
+      to: /^\d{4}-\d{2}-\d{2}$/.test(to) ? to : '',
+      updatedAt: normalizeText(item.updatedAt)
+    };
+  }
+
+  function readingBillingLabel() {
+    const billing = normalizeReadingBilling(state.readingBilling || {});
+    if (billing.from && billing.to) return `${formatDate(billing.from)} – ${formatDate(billing.to)}`;
+    if (billing.from) return `od ${formatDate(billing.from)}`;
+    if (billing.to) return `do ${formatDate(billing.to)}`;
+    return 'nenastavené';
+  }
+
   function readingDepositForType(type = '') {
     state.readingDeposits = normalizeReadingDeposits(state.readingDeposits || {});
     const value = state.readingDeposits[String(type || '')];
@@ -8211,7 +8246,8 @@
 
   function renderReadingsCostSummary(monthRows = []) {
     const rows = readingCostSummaryRows(monthRows);
-    return `<div class="readings-cost-summary">
+    const billingLabel = readingBillingLabel();
+    return `<div class="inline-note readings-billing-note"><strong>Fakturační období:</strong> ${escapeHtml(billingLabel)}</div><div class="readings-cost-summary">
       ${rows.map((item) => {
         const meta = readingTypeMeta(item.type);
         const hasDeposit = item.deposit !== '';
@@ -8245,6 +8281,7 @@
     state.readings = readingsEntries();
     state.readingPrices = normalizeReadingPrices(state.readingPrices || {});
     state.readingDeposits = normalizeReadingDeposits(state.readingDeposits || {});
+    state.readingBilling = normalizeReadingBilling(state.readingBilling || {});
     state.readingsCloud = { ...(state.readingsCloud || {}), pendingAt: cloudReady() ? new Date().toISOString() : '' };
     touchState();
     saveState();
@@ -8277,7 +8314,12 @@
             ${field('Záloha plyn', 'depositGas', 'text', 'Kč/měsíc', false, state.readingDeposits.gas ?? '', 'decimal')}
             ${field('Záloha voda', 'depositWater', 'text', 'Kč/měsíc', false, state.readingDeposits.water ?? '', 'decimal')}
           </div>
-          <p class="small-muted">Když není cena zadaná přímo u měřidla nebo u odečtu, použije se tady zadaný průměr. U elektřiny se T1/T2 počítá zvlášť a v přehledu se ukazuje součet tarifů.</p>
+          <div class="mini-section-title">Fakturační období</div>
+          <div class="form-grid two">
+            ${field('Od', 'billingFrom', 'date', '', false, state.readingBilling?.from || '')}
+            ${field('Do', 'billingTo', 'date', '', false, state.readingBilling?.to || '')}
+          </div>
+          <p class="small-muted">Když není cena zadaná přímo u měřidla nebo u odečtu, použije se tady zadaný průměr. U elektřiny se T1/T2 počítá zvlášť a v přehledu se ukazuje součet tarifů. Fakturační období pomáhá porovnat odhad spotřeby se zálohami a vyúčtováním.</p>
           <div class="form-actions"><button class="primary-btn" type="submit">Uložit ceny a zálohy</button></div>
         </form>
       </section>`;
@@ -8332,6 +8374,18 @@
       water: data.depositWater,
       updatedAt
     });
+    state.readingBilling = normalizeReadingBilling({
+      from: data.billingFrom,
+      to: data.billingTo,
+      updatedAt
+    });
+    if (forceLightVisualRecovery || state.settings?.theme === 'dark') {
+      state.settings = { ...(state.settings || {}), theme: 'light' };
+      forceLightVisualRecovery = true;
+      applyVisualSettings();
+      saveLocalVisualSettings();
+      saveActiveProfileUiSettingsSnapshot();
+    }
     form?.reset?.();
     await persistReadingsState('Ceny a zálohy uložené');
   }
@@ -12317,7 +12371,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 261))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 262))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -18013,7 +18067,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 261, mode: 'rich-demo-v261', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 262, mode: 'rich-demo-v262', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -18166,7 +18220,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 261, mode: 'readings-costs-performance-v261', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 262, mode: 'readings-billing-period-hotfix-v262', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -21497,7 +21551,8 @@
     if (Array.isArray(layout.readings)) state.readings = layout.readings.map(normalizeReadingEntry).filter((entry) => entry.meterId);
     if (layout.readingPrices && typeof layout.readingPrices === 'object') state.readingPrices = normalizeReadingPrices({ ...state.readingPrices, ...layout.readingPrices });
     if (layout.readingDeposits && typeof layout.readingDeposits === 'object') state.readingDeposits = normalizeReadingDeposits({ ...state.readingDeposits, ...layout.readingDeposits });
-    if (Array.isArray(layout.readingMeters) || Array.isArray(layout.readings) || layout.readingPrices || layout.readingDeposits) state.readingsCloud = { ...(state.readingsCloud || {}), loadedAt: new Date().toISOString() };
+    if (layout.readingBilling && typeof layout.readingBilling === 'object') state.readingBilling = normalizeReadingBilling({ ...state.readingBilling, ...layout.readingBilling });
+    if (Array.isArray(layout.readingMeters) || Array.isArray(layout.readings) || layout.readingPrices || layout.readingDeposits || layout.readingBilling) state.readingsCloud = { ...(state.readingsCloud || {}), loadedAt: new Date().toISOString() };
     if (Array.isArray(layout.subscriptions)) state.subscriptions = layout.subscriptions.map(normalizeSubscriptionService);
     if (Array.isArray(layout.subscriptionPeople)) state.subscriptionPeople = layout.subscriptionPeople.map(normalizeSubscriptionPerson);
     if (Array.isArray(layout.subscriptionPayments)) state.subscriptionPayments = layout.subscriptionPayments.map(normalizeSubscriptionPayment).filter((payment) => payment.subscriptionId && payment.personId && payment.amount > 0);
@@ -21545,6 +21600,7 @@
         readings: readingsEntries(),
         readingPrices: normalizeReadingPrices(state.readingPrices || {}),
         readingDeposits: normalizeReadingDeposits(state.readingDeposits || {}),
+        readingBilling: normalizeReadingBilling(state.readingBilling || {}),
         subscriptionPeople: getSubscriptionPeople(),
         subscriptions: getSubscriptionServices(),
         subscriptionPayments: getSubscriptionPayments(),
@@ -21559,7 +21615,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 261
+        appBuild: 262
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -22153,7 +22209,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-261-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-262-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -22577,7 +22633,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_261</span>
+          <span class="badge">Domácnost+ v.0.1_262</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
