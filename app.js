@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_263';
+  const APP_VERSION = 'Domácnost+ v.0.1_264';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -700,8 +700,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 263,
-      mode: 'readings-stability-cache-v263',
+      appBuild: 264,
+      mode: 'readings-init-hotfix-v264',
       createdAt: '',
       updatedAt: ''
     },
@@ -958,6 +958,7 @@
   const ICON_HTML_CACHE_LIMIT = 360;
   const iconHtmlCache = new Map();
   let runtimeStateRef = null;
+  let forceLightVisualRecovery = false;
 
   let state = loadState();
   runtimeStateRef = state;
@@ -1006,7 +1007,6 @@
   let readingsConsumptionCacheEntriesSource = null;
   let readingsConsumptionCachePricesSource = null;
   let readingsConsumptionCacheRows = null;
-  let forceLightVisualRecovery = false;
   let financeTemplateEditId = '';
   let financeCopyId = '';
   let shoppingQuantityEditId = '';
@@ -1593,12 +1593,12 @@
     const migrated = structuredCloneSafe(input || DEFAULT_STATE);
     const timestamp = new Date().toISOString();
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
-    forceLightVisualRecovery = Boolean(previousAppBuild && previousAppBuild < 263 && normalizeAppTheme(migrated.settings?.theme) === 'dark');
+    forceLightVisualRecovery = Boolean(previousAppBuild && previousAppBuild < 264 && normalizeAppTheme(migrated.settings?.theme) === 'dark');
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 263,
-      mode: 'readings-stability-cache-v263',
+      appBuild: 264,
+      mode: 'readings-init-hotfix-v264',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5181,6 +5181,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_264', note: 'Hotfix startu aplikace po v263: recovery světlého vzhledu je inicializované ještě před migrací stavu, takže už nespadne na chybě Cannot access forceLightVisualRecovery before initialization.' },
       { title: 'Domácnost+ v.0.1_263', note: 'Stabilizace Odečtů: spotřební řádky se při jednom stavu aplikace cachují, Detail a Přehled už je nepočítají opakovaně, recovery světlého vzhledu se vztahuje i na rozbitý stav z v262 a formuláře cen/odečtů mají pevnější mobilní šířky.' },
       { title: 'Domácnost+ v.0.1_262', note: 'Hotfix Odečtů: po uložení cen se vynutí bezpečný světlý vzhled, přibylo fakturační období od–do a ceny/zálohy/měřidla se dál ukládají do cloudového dashboard_layout.' },
       { title: 'Domácnost+ v.0.1_261', note: 'Odečty: rychlejší lazy render záložek, grafy a přehledy počítají měsíční průměry včetně jednotek, globální ceny slouží jako fallback a přibyl přehled záloh vs. odhad nákladů.' },
@@ -12402,7 +12403,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 263))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 264))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -18098,7 +18099,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 263, mode: 'rich-demo-v263', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 264, mode: 'rich-demo-v264', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -18251,7 +18252,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 263, mode: 'readings-stability-cache-v263', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 264, mode: 'readings-init-hotfix-v264', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -21649,7 +21650,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 263
+        appBuild: 264
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -22243,7 +22244,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-263-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-264-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -22667,7 +22668,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_263</span>
+          <span class="badge">Domácnost+ v.0.1_264</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
