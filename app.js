@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_265';
+  const APP_VERSION = 'Domácnost+ v.0.1_266';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -701,8 +701,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 265,
-      mode: 'readings-groups-v265',
+      appBuild: 266,
+      mode: 'reading-groups-v266',
       createdAt: '',
       updatedAt: ''
     },
@@ -1600,8 +1600,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 265,
-      mode: 'readings-groups-v265',
+      appBuild: 266,
+      mode: 'reading-groups-v266',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5184,6 +5184,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_266', note: 'Odečty: globální ceny a globální fakturační období jsou pryč z UI. Základní skupina je plně editovatelná včetně přejmenování a další vyúčtování se řeší přidáním dalších skupin.' },
       { title: 'Domácnost+ v.0.1_265', note: 'Odečty mají skupiny vyúčtování pro více bytů/částí domu. Každá skupina má vlastní ceny, zálohy a fakturační období zvlášť pro elektřinu, plyn a vodu. Měřidla lze ke skupinám přiřadit a fakturační období už na mobilu neutíká k pravému kraji.' },
       { title: 'Domácnost+ v.0.1_264', note: 'Hotfix startu aplikace po v263: recovery světlého vzhledu je inicializované ještě před migrací stavu, takže už nespadne na chybě Cannot access forceLightVisualRecovery before initialization.' },
       { title: 'Domácnost+ v.0.1_263', note: 'Stabilizace Odečtů: spotřební řádky se při jednom stavu aplikace cachují, Detail a Přehled už je nepočítají opakovaně, recovery světlého vzhledu se vztahuje i na rozbitý stav z v262 a formuláře cen/odečtů mají pevnější mobilní šířky.' },
@@ -7773,7 +7774,7 @@
     const now = new Date().toISOString();
     return normalizeReadingGroup({
       id: DEFAULT_READING_GROUP_ID,
-      name: 'Domácnost',
+      name: 'Základní skupina',
       prices: state.readingPrices || {},
       deposits: state.readingDeposits || {},
       billing: state.readingBilling || {},
@@ -7824,11 +7825,9 @@
   }
 
   function readingBillingForType(type = '', groupId = '') {
-    const group = groupId ? readingGroupById(groupId) : null;
+    const group = readingGroupById(groupId || DEFAULT_READING_GROUP_ID);
     const groupPeriod = group?.billing?.[String(type || '')];
-    if (groupPeriod?.from || groupPeriod?.to) return normalizeReadingBillingPeriod(groupPeriod);
-    state.readingBilling = normalizeReadingBilling(state.readingBilling || {});
-    return normalizeReadingBillingPeriod(state.readingBilling[String(type || '')] || state.readingBilling);
+    return normalizeReadingBillingPeriod(groupPeriod || {});
   }
 
   function readingBillingLabel(type = '', groupId = '') {
@@ -7852,31 +7851,13 @@
   }
 
   function readingDepositForType(type = '', groupId = '') {
-    const group = groupId ? readingGroupById(groupId) : null;
+    const group = readingGroupById(groupId || DEFAULT_READING_GROUP_ID);
     const groupValue = group?.deposits?.[String(type || '')];
-    if (groupValue !== '' && groupValue >= 0) return groupValue;
-    state.readingDeposits = normalizeReadingDeposits(state.readingDeposits || {});
-    const value = state.readingDeposits[String(type || '')];
-    return value !== '' && value >= 0 ? value : '';
+    return groupValue !== '' && groupValue >= 0 ? groupValue : '';
   }
 
   function readingTypeCostLabel(type = '') {
     return readingTypeMeta(type).label;
-  }
-
-  function readingGlobalAverageUnitPrice(type = '', registerLabel = '') {
-    state.readingPrices = normalizeReadingPrices(state.readingPrices || {});
-    const register = normalizeText(registerLabel).toUpperCase();
-    if (type === 'electricity') {
-      const t2 = state.readingPrices.electricityT2;
-      const t1 = state.readingPrices.electricityT1;
-      if (register === 'T2') return t2 !== '' ? t2 : t1;
-      if (register === 'T1') return t1 !== '' ? t1 : t2;
-      return t1 !== '' ? t1 : t2;
-    }
-    if (type === 'water') return state.readingPrices.water;
-    if (type === 'gas') return state.readingPrices.gas;
-    return '';
   }
 
   function readingHasCustomUnitPrice(meter = null) {
@@ -8071,9 +8052,7 @@
     if (!meter) return '';
     const direct = readingMeterDirectUnitPrice(meter);
     if (direct !== '') return direct;
-    const groupPrice = readingGroupAverageUnitPrice(meter.groupId, meter.type, registerLabel);
-    if (groupPrice !== '') return groupPrice;
-    return readingGlobalAverageUnitPrice(meter.type, registerLabel);
+    return readingGroupAverageUnitPrice(meter.groupId || DEFAULT_READING_GROUP_ID, meter.type, registerLabel);
   }
 
   function readingLastKnownUnitPrice(meterId = '', beforeEntry = null, registerLabel = '') {
@@ -8134,26 +8113,14 @@
       const group = readingMeterGroup(meter);
       const t1 = readingGroupAverageUnitPrice(meter.groupId, 'electricity', 'T1');
       const t2 = readingGroupAverageUnitPrice(meter.groupId, 'electricity', 'T2');
-      const globalT1 = readingGlobalAverageUnitPrice('electricity', 'T1');
-      const globalT2 = readingGlobalAverageUnitPrice('electricity', 'T2');
       const bits = [];
       if (t1 !== '') bits.push(`T1 ${t1.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })}`);
       if (t2 !== '') bits.push(`T2 ${t2.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })}`);
       if (bits.length) parts.push(`${group?.name || 'skupina'}: ${bits.join(' · ')} Kč/${meter.unit || 'kWh'}`);
-      else {
-        const globalBits = [];
-        if (globalT1 !== '') globalBits.push(`T1 ${globalT1.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })}`);
-        if (globalT2 !== '') globalBits.push(`T2 ${globalT2.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })}`);
-        if (globalBits.length) parts.push(`globál: ${globalBits.join(' · ')} Kč/${meter.unit || 'kWh'}`);
-      }
     } else {
       const group = readingMeterGroup(meter);
       const groupPrice = readingGroupAverageUnitPrice(meter.groupId, meter.type);
       if (groupPrice !== '') parts.push(`${group?.name || 'skupina'}: ${groupPrice.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })} Kč/${meter.unit || 'j.'}`);
-      else {
-        const global = readingGlobalAverageUnitPrice(meter.type);
-        if (global !== '') parts.push(`globál: ${global.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })} Kč/${meter.unit || 'j.'}`);
-      }
     }
     if (fixed) parts.push(`${readingMoney(fixed)} / měsíc${meter.fixedMonthlyLabel ? ` · ${meter.fixedMonthlyLabel}` : ''}`);
     return parts.join(' · ') || 'bez ceny';
@@ -8204,7 +8171,7 @@
     return `
       <details class="subtle-details readings-price-details">
         <summary><span>Cena a výpočet nákladů</span><em>${escapeHtml(meta.label)} · průměr nebo smlouva</em></summary>
-        <div class="small-muted">Tady nastavíš cenu jen pro toto konkrétní měřidlo. Když ji nevyplníš, použije se cena skupiny a potom globální fallback ze stránky Ceny.</div>
+        <div class="small-muted">Tady nastavíš cenu jen pro toto konkrétní měřidlo. Když ji nevyplníš, použije se cena skupiny vyúčtování.</div>
         <div class="form-grid two">
           ${selectField('Výpočet ceny', 'pricingMode', readingPriceModeOptions, selectedMode)}
           ${averageFields}
@@ -8522,7 +8489,7 @@
         <div class="readings-group-head">
           <div>
             <strong>${escapeHtml(clean.name)}</strong>
-            <span>${id === DEFAULT_READING_GROUP_ID ? 'výchozí skupina pro starší měřidla' : 'samostatné vyúčtování'}</span>
+            <span>${id === DEFAULT_READING_GROUP_ID ? 'základní skupina – jde přejmenovat i upravit' : 'samostatné vyúčtování'}</span>
           </div>
           ${canDelete ? `<button class="danger-btn small-btn" type="button" data-action="delete-reading-group" data-id="${escapeHtml(id)}">Smazat skupinu</button>` : ''}
         </div>
@@ -8542,41 +8509,24 @@
   }
 
   function renderReadingGlobalPricesPanel() {
-    state.readingPrices = normalizeReadingPrices(state.readingPrices || {});
-    state.readingDeposits = normalizeReadingDeposits(state.readingDeposits || {});
-    state.readingBilling = normalizeReadingBilling(state.readingBilling || {});
+    state.readingGroups = readingGroups();
     const groups = readingGroups();
     return `
       <section class="soft-panel readings-tool-page readings-prices-page">
-        <div class="card-subheader"><div><h3>Ceny, zálohy a skupiny</h3><p>Skupiny slouží pro víc vyúčtování v jednom domě. Třeba Byt, Byt 2 nebo Garáž. Měřidlo nejdřív použije vlastní cenu, potom cenu skupiny a až pak globální fallback.</p></div></div>
+        <div class="card-subheader"><div><h3>Ceny, zálohy a skupiny</h3><p>Základní skupina je hlavní vyúčtování. Můžeš ji přejmenovat třeba na Byt a nastavit jí vlastní ceny, zálohy i fakturační období. Další byty nebo části domu přidej jako další skupiny.</p></div></div>
         <form data-form="add-reading-group" class="compact-form readings-form readings-add-group-form">
           <div class="form-grid two">
-            ${field('Nová skupina vyúčtování', 'name', 'text', 'např. Byt 2', true)}
+            ${field('Nová skupina vyúčtování', 'name', 'text', 'např. Byt 2 / Garáž / Dílna', true)}
             <div class="form-actions align-end"><button class="primary-btn" type="submit">Přidat skupinu</button></div>
           </div>
         </form>
         <form data-form="update-reading-prices" class="compact-form readings-form">
-          <div class="mini-section-title">Globální fallback ceny</div>
-          <div class="form-grid two">
-            ${field('Elektřina T1', 'electricityT1', 'text', 'Kč/kWh', false, state.readingPrices.electricityT1 ?? '', 'decimal')}
-            ${field('Elektřina T2', 'electricityT2', 'text', 'Kč/kWh', false, state.readingPrices.electricityT2 ?? '', 'decimal')}
-            ${field('Voda', 'water', 'text', 'Kč/m³', false, state.readingPrices.water ?? '', 'decimal')}
-            ${field('Plyn', 'gas', 'text', 'Kč/m³ nebo Kč/kWh', false, state.readingPrices.gas ?? '', 'decimal')}
-          </div>
-          <div class="mini-section-title">Globální fallback zálohy</div>
-          <div class="form-grid two">
-            ${field('Záloha elektřina', 'depositElectricity', 'text', 'Kč/měsíc', false, state.readingDeposits.electricity ?? '', 'decimal')}
-            ${field('Záloha plyn', 'depositGas', 'text', 'Kč/měsíc', false, state.readingDeposits.gas ?? '', 'decimal')}
-            ${field('Záloha voda', 'depositWater', 'text', 'Kč/měsíc', false, state.readingDeposits.water ?? '', 'decimal')}
-          </div>
-          <div class="mini-section-title">Globální fallback fakturační období</div>
-          ${renderReadingBillingEnergyFields('', state.readingBilling)}
           <div class="mini-section-title">Skupiny vyúčtování</div>
           <div class="readings-groups-settings">
             ${groups.map(renderReadingGroupSettingsCard).join('')}
           </div>
-          <p class="small-muted">Fakturační období je zvlášť pro elektřinu, plyn a vodu, protože každé vyúčtování může chodit v jiném termínu. Skupinové hodnoty mají přednost před globálními.</p>
-          <div class="form-actions"><button class="primary-btn" type="submit">Uložit ceny, zálohy a skupiny</button></div>
+          <p class="small-muted">Fakturační období je zvlášť pro elektřinu, plyn a vodu, protože každé vyúčtování může chodit v jiném termínu. Když měřidlo nemá vlastní cenu, použije se cena jeho skupiny.</p>
+          <div class="form-actions"><button class="primary-btn" type="submit">Uložit skupiny</button></div>
         </form>
       </section>`;
   }
@@ -8618,20 +8568,11 @@
 
   async function updateReadingPricesFromForm(data, form) {
     const updatedAt = new Date().toISOString();
-    state.readingPrices = normalizeReadingPrices({
-      electricityT1: data.electricityT1,
-      electricityT2: data.electricityT2,
-      water: data.water,
-      gas: data.gas,
-      updatedAt
-    });
-    state.readingDeposits = normalizeReadingDeposits({
-      electricity: data.depositElectricity,
-      gas: data.depositGas,
-      water: data.depositWater,
-      updatedAt
-    });
-    state.readingBilling = readingBillingFromForm(data, '');
+    // Od v0.1_266 se ceny, zálohy a fakturační období drží jen na skupinách.
+    // Staré globální hodnoty necháváme jen jako migrační zdroj pro starší uložená data.
+    state.readingPrices = normalizeReadingPrices({ updatedAt });
+    state.readingDeposits = normalizeReadingDeposits({ updatedAt });
+    state.readingBilling = normalizeReadingBilling({ updatedAt });
     state.readingGroups = readingGroups().map((group) => {
       const suffix = `__${group.id}`;
       return normalizeReadingGroup({
@@ -8663,7 +8604,7 @@
       saveActiveProfileUiSettingsSnapshot();
     }
     form?.reset?.();
-    await persistReadingsState('Ceny, zálohy a skupiny uložené');
+    await persistReadingsState('Skupiny uložené');
   }
 
   async function addReadingGroupFromForm(data, form) {
@@ -12688,7 +12629,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 265))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 266))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -18385,7 +18326,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 85, appBuild: 265, mode: 'rich-demo-v265', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 85, appBuild: 266, mode: 'rich-demo-v266', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -18538,7 +18479,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 265, mode: 'readings-groups-v265', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 266, mode: 'reading-groups-v266', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -21945,7 +21886,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 265
+        appBuild: 266
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -22548,7 +22489,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-265-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-266-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -22972,7 +22913,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_265</span>
+          <span class="badge">Domácnost+ v.0.1_266</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
