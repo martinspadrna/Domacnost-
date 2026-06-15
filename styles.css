@@ -17247,3 +17247,70 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Domácnost+ v.0.1_267 – Odečty: fakturační období nesmí tlačit skupiny mimo panel */
+.readings-prices-page,
+.readings-prices-page *,
+.readings-group-card,
+.readings-group-card *,
+.readings-billing-energy-grid,
+.readings-energy-box,
+.readings-billing-period-grid {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.readings-prices-page {
+  overflow-x: hidden;
+}
+
+.readings-groups-settings,
+.readings-group-card,
+.readings-billing-energy-grid,
+.readings-energy-box,
+.readings-billing-period-grid,
+.readings-billing-period-grid .field {
+  width: 100%;
+  max-width: 100%;
+}
+
+.readings-billing-energy-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  align-items: stretch;
+}
+
+.readings-billing-period-grid.form-grid.two {
+  grid-template-columns: 1fr !important;
+}
+
+.readings-billing-period-grid .field,
+.readings-billing-period-grid .input,
+.readings-billing-period-grid input[type="date"] {
+  display: block;
+  inline-size: 100%;
+  width: 100%;
+  max-inline-size: 100%;
+  max-width: 100%;
+}
+
+.readings-billing-period-grid input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  font-size: 16px;
+  line-height: 1.25;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+@media (max-width: 520px) {
+  .readings-prices-page {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .readings-group-card,
+  .readings-energy-box {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}

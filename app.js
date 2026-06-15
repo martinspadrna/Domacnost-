@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_266';
+  const APP_VERSION = 'Domácnost+ v.0.1_267';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -701,8 +701,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 266,
-      mode: 'reading-groups-v266',
+      appBuild: 267,
+      mode: 'reading-groups-v267',
       createdAt: '',
       updatedAt: ''
     },
@@ -1600,8 +1600,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 266,
-      mode: 'reading-groups-v266',
+      appBuild: 267,
+      mode: 'reading-groups-v267',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5184,6 +5184,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_267', note: 'Odečty: opravené rozjíždění panelů fakturačních období doprava. Datumová pole od–do se ve skupinách skládají stabilně pod sebe a netlačí kartu mimo šířku obrazovky.' },
       { title: 'Domácnost+ v.0.1_266', note: 'Odečty: globální ceny a globální fakturační období jsou pryč z UI. Základní skupina je plně editovatelná včetně přejmenování a další vyúčtování se řeší přidáním dalších skupin.' },
       { title: 'Domácnost+ v.0.1_265', note: 'Odečty mají skupiny vyúčtování pro více bytů/částí domu. Každá skupina má vlastní ceny, zálohy a fakturační období zvlášť pro elektřinu, plyn a vodu. Měřidla lze ke skupinám přiřadit a fakturační období už na mobilu neutíká k pravému kraji.' },
       { title: 'Domácnost+ v.0.1_264', note: 'Hotfix startu aplikace po v263: recovery světlého vzhledu je inicializované ještě před migrací stavu, takže už nespadne na chybě Cannot access forceLightVisualRecovery before initialization.' },
@@ -12629,7 +12630,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 266))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 267))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -18326,7 +18327,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 85, appBuild: 266, mode: 'rich-demo-v266', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 85, appBuild: 267, mode: 'rich-demo-v267', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -18479,7 +18480,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 266, mode: 'reading-groups-v266', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 267, mode: 'reading-groups-v267', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -21886,7 +21887,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 266
+        appBuild: 267
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -22489,7 +22490,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-266-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-267-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -22913,7 +22914,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_266</span>
+          <span class="badge">Domácnost+ v.0.1_267</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
