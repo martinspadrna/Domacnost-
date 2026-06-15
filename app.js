@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_262';
+  const APP_VERSION = 'Domácnost+ v.0.1_263';
   const APP_TIME_ZONE = 'Europe/Prague';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
@@ -700,8 +700,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 84,
-      appBuild: 262,
-      mode: 'readings-billing-period-hotfix-v262',
+      appBuild: 263,
+      mode: 'readings-stability-cache-v263',
       createdAt: '',
       updatedAt: ''
     },
@@ -1002,6 +1002,10 @@
   let readingsMetersCache = [];
   let readingsEntriesCacheSource = null;
   let readingsEntriesCache = [];
+  let readingsConsumptionCacheMetersSource = null;
+  let readingsConsumptionCacheEntriesSource = null;
+  let readingsConsumptionCachePricesSource = null;
+  let readingsConsumptionCacheRows = null;
   let forceLightVisualRecovery = false;
   let financeTemplateEditId = '';
   let financeCopyId = '';
@@ -1589,12 +1593,12 @@
     const migrated = structuredCloneSafe(input || DEFAULT_STATE);
     const timestamp = new Date().toISOString();
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
-    forceLightVisualRecovery = Boolean(previousAppBuild && previousAppBuild < 262 && normalizeAppTheme(migrated.settings?.theme) === 'dark');
+    forceLightVisualRecovery = Boolean(previousAppBuild && previousAppBuild < 263 && normalizeAppTheme(migrated.settings?.theme) === 'dark');
 
     migrated.meta = {
       schemaVersion: 84,
-      appBuild: 262,
-      mode: 'readings-billing-period-hotfix-v262',
+      appBuild: 263,
+      mode: 'readings-stability-cache-v263',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5177,6 +5181,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_263', note: 'Stabilizace Odečtů: spotřební řádky se při jednom stavu aplikace cachují, Detail a Přehled už je nepočítají opakovaně, recovery světlého vzhledu se vztahuje i na rozbitý stav z v262 a formuláře cen/odečtů mají pevnější mobilní šířky.' },
       { title: 'Domácnost+ v.0.1_262', note: 'Hotfix Odečtů: po uložení cen se vynutí bezpečný světlý vzhled, přibylo fakturační období od–do a ceny/zálohy/měřidla se dál ukládají do cloudového dashboard_layout.' },
       { title: 'Domácnost+ v.0.1_261', note: 'Odečty: rychlejší lazy render záložek, grafy a přehledy počítají měsíční průměry včetně jednotek, globální ceny slouží jako fallback a přibyl přehled záloh vs. odhad nákladů.' },
       { title: 'Domácnost+ v.0.1_259', note: 'Odečty: měřidla mají samostatné stránky Import, Přidat měřidlo a Ceny; globální průměrné ceny se používají jako fallback a podrobné ceny jsou přehledně podle typu měřidla.' },
@@ -8132,7 +8137,25 @@
     return readingValue(value, readingMonthlyUnit(unit));
   }
 
+  function invalidateReadingsConsumptionCache() {
+    readingsConsumptionCacheMetersSource = null;
+    readingsConsumptionCacheEntriesSource = null;
+    readingsConsumptionCachePricesSource = null;
+    readingsConsumptionCacheRows = null;
+  }
+
   function readingsConsumptionRows() {
+    const metersSource = state.readingMeters || [];
+    const entriesSource = state.readings || [];
+    const pricesSource = state.readingPrices || {};
+    if (
+      readingsConsumptionCacheRows &&
+      readingsConsumptionCacheMetersSource === metersSource &&
+      readingsConsumptionCacheEntriesSource === entriesSource &&
+      readingsConsumptionCachePricesSource === pricesSource
+    ) {
+      return readingsConsumptionCacheRows;
+    }
     const map = new Map();
     readingsMeters().forEach((meter) => {
       const registers = readingRegistersForMeter(meter);
@@ -8193,7 +8216,7 @@
         });
       });
     });
-    return [...map.values()]
+    const rows = [...map.values()]
       .map((row) => ({
         ...row,
         value: Number(row.value.toFixed(3)),
@@ -8206,12 +8229,18 @@
         registerValues: Array.isArray(row.registerValues) ? row.registerValues.map((item) => ({ ...item, value: Number(Number(item.value || 0).toFixed(3)) })) : []
       }))
       .sort((a, b) => String(b.month).localeCompare(String(a.month)) || String(a.meterName).localeCompare(String(b.meterName), 'cs'));
+    readingsConsumptionCacheMetersSource = metersSource;
+    readingsConsumptionCacheEntriesSource = entriesSource;
+    readingsConsumptionCachePricesSource = pricesSource;
+    readingsConsumptionCacheRows = rows;
+    return rows;
   }
 
 
-  function readingsMonthlyRows() {
+  function readingsMonthlyRows(sourceRows = null) {
     const map = new Map();
-    readingsConsumptionRows().forEach((row) => {
+    const rows = Array.isArray(sourceRows) ? sourceRows : readingsConsumptionRows();
+    rows.forEach((row) => {
       const key = `${row.month}|${row.type}|${row.unit}`;
       const current = map.get(key) || { month: row.month, type: row.type, unit: row.unit, value: 0, totalValue: 0, cost: 0, hasCost: false, periods: [] };
       current.value += Math.max(0, row.value);
@@ -8272,8 +8301,9 @@
     return `měsíční průměr ${readingMonthlyValue(row.value, meter?.unit || row.unit || '')}${registerText}${costText}`;
   }
 
-  function readingsChartRows(limit = 12) {
-    return readingsConsumptionRows().slice(0, limit).reverse();
+  function readingsChartRows(limit = 12, sourceRows = null) {
+    const rows = Array.isArray(sourceRows) ? sourceRows : readingsConsumptionRows();
+    return rows.slice(0, limit).reverse();
   }
 
   async function persistReadingsState(toast = '') {
@@ -8282,6 +8312,7 @@
     state.readingPrices = normalizeReadingPrices(state.readingPrices || {});
     state.readingDeposits = normalizeReadingDeposits(state.readingDeposits || {});
     state.readingBilling = normalizeReadingBilling(state.readingBilling || {});
+    invalidateReadingsConsumptionCache();
     state.readingsCloud = { ...(state.readingsCloud || {}), pendingAt: cloudReady() ? new Date().toISOString() : '' };
     touchState();
     saveState();
@@ -8379,9 +8410,8 @@
       to: data.billingTo,
       updatedAt
     });
-    if (forceLightVisualRecovery || state.settings?.theme === 'dark') {
+    if (forceLightVisualRecovery) {
       state.settings = { ...(state.settings || {}), theme: 'light' };
-      forceLightVisualRecovery = true;
       applyVisualSettings();
       saveLocalVisualSettings();
       saveActiveProfileUiSettingsSnapshot();
@@ -9170,9 +9200,10 @@
     if (!READING_DETAIL_PERIOD_OPTIONS.some(([value]) => value === readingsDetailPeriod)) readingsDetailPeriod = '12';
     readingsCompareMeterIds = Array.isArray(readingsCompareMeterIds) ? readingsCompareMeterIds.filter((id) => meters.some((meter) => meter.id === id)) : [];
     const selectedMeter = readingMeterById(readingsDetailMeterId) || meters[0];
-    const selectedRows = readingsPeriodFilteredRows(readingsConsumptionRows().filter((row) => row.meterId === selectedMeter.id), readingsDetailPeriod).reverse();
+    const consumptionRows = readingsConsumptionRows();
+    const selectedRows = readingsPeriodFilteredRows(consumptionRows.filter((row) => row.meterId === selectedMeter.id), readingsDetailPeriod).reverse();
     const compareIds = Array.from(new Set([selectedMeter.id, ...readingsCompareMeterIds]));
-    const compareRows = readingsPeriodFilteredRows(readingsConsumptionRows().filter((row) => compareIds.includes(row.meterId)), readingsDetailPeriod).reverse();
+    const compareRows = readingsPeriodFilteredRows(consumptionRows.filter((row) => compareIds.includes(row.meterId)), readingsDetailPeriod).reverse();
     const selectedEntries = readingsPeriodFilteredEntries(readingsEntries(selectedMeter.id), readingsDetailPeriod).slice(0, 40);
     return `
       <div class="card-subheader readings-detail-controls">
@@ -9219,8 +9250,8 @@
     let content = '';
     if (activeTab === 'overview') {
       const consumptionRows = readingsConsumptionRows();
-      const monthRows = readingsMonthlyRows();
-      const chartRows = readingsChartRows(12);
+      const monthRows = readingsMonthlyRows(consumptionRows);
+      const chartRows = readingsChartRows(12, consumptionRows);
       const meterStatsMap = new Map(meters.map((meter) => [meter.id, readingMeterStats(meter, consumptionRows)]));
       const lastMonthMap = new Map();
       consumptionRows.forEach((row) => { if (!lastMonthMap.has(row.meterId)) lastMonthMap.set(row.meterId, row); });
@@ -12371,7 +12402,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 262))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 263))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -18067,7 +18098,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 262, mode: 'rich-demo-v262', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 84, appBuild: 263, mode: 'rich-demo-v263', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -18220,7 +18251,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 262, mode: 'readings-billing-period-hotfix-v262', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 263, mode: 'readings-stability-cache-v263', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -21552,7 +21583,10 @@
     if (layout.readingPrices && typeof layout.readingPrices === 'object') state.readingPrices = normalizeReadingPrices({ ...state.readingPrices, ...layout.readingPrices });
     if (layout.readingDeposits && typeof layout.readingDeposits === 'object') state.readingDeposits = normalizeReadingDeposits({ ...state.readingDeposits, ...layout.readingDeposits });
     if (layout.readingBilling && typeof layout.readingBilling === 'object') state.readingBilling = normalizeReadingBilling({ ...state.readingBilling, ...layout.readingBilling });
-    if (Array.isArray(layout.readingMeters) || Array.isArray(layout.readings) || layout.readingPrices || layout.readingDeposits || layout.readingBilling) state.readingsCloud = { ...(state.readingsCloud || {}), loadedAt: new Date().toISOString() };
+    if (Array.isArray(layout.readingMeters) || Array.isArray(layout.readings) || layout.readingPrices || layout.readingDeposits || layout.readingBilling) {
+      invalidateReadingsConsumptionCache();
+      state.readingsCloud = { ...(state.readingsCloud || {}), loadedAt: new Date().toISOString() };
+    }
     if (Array.isArray(layout.subscriptions)) state.subscriptions = layout.subscriptions.map(normalizeSubscriptionService);
     if (Array.isArray(layout.subscriptionPeople)) state.subscriptionPeople = layout.subscriptionPeople.map(normalizeSubscriptionPerson);
     if (Array.isArray(layout.subscriptionPayments)) state.subscriptionPayments = layout.subscriptionPayments.map(normalizeSubscriptionPayment).filter((payment) => payment.subscriptionId && payment.personId && payment.amount > 0);
@@ -21615,7 +21649,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 262
+        appBuild: 263
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -22209,7 +22243,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-262-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-263-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -22633,7 +22667,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_262</span>
+          <span class="badge">Domácnost+ v.0.1_263</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

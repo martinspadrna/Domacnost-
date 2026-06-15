@@ -17047,3 +17047,57 @@ body {
     max-width: 100%;
   }
 }
+
+/* Domácnost+ v.0.1_263 – Odečty: stabilnější formuláře na mobilu */
+.readings-panel,
+.readings-tool-page,
+.readings-prices-page,
+.readings-entry-form,
+.readings-entry-form .form-grid,
+.readings-prices-page .form-grid,
+.readings-detail-layout,
+.readings-line-chart {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.readings-entry-form input,
+.readings-entry-form select,
+.readings-entry-form textarea,
+.readings-prices-page input,
+.readings-prices-page select,
+.readings-prices-page textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.readings-entry-form input[type="date"],
+.readings-prices-page input[type="date"] {
+  min-height: 44px;
+  overflow: hidden;
+}
+
+.readings-entry-form input[type="date"]::-webkit-date-and-time-value,
+.readings-prices-page input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+.readings-prices-page .form-grid.two,
+.readings-entry-form .form-grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 720px) {
+  .readings-prices-page .form-grid.two,
+  .readings-entry-form .form-grid.two {
+    grid-template-columns: 1fr;
+  }
+
+  .readings-tool-page {
+    padding: 12px;
+    border-radius: 22px;
+  }
+}
