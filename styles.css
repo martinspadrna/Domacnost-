@@ -17101,3 +17101,149 @@ body {
     border-radius: 22px;
   }
 }
+
+/* Domácnost+ v.0.1_265 – Odečty: skupiny vyúčtování a stabilní období na mobilu */
+.readings-add-group-form {
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 20px;
+  background: rgba(255,255,255,.38);
+}
+
+[data-theme="dark"] .readings-add-group-form {
+  background: rgba(15,23,42,.32);
+}
+
+.readings-groups-settings {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.readings-group-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, .2);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255,255,255,.6), rgba(239,246,255,.38));
+  box-shadow: 0 14px 30px rgba(15, 23, 42, .06);
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .readings-group-card {
+  background: linear-gradient(145deg, rgba(15,23,42,.52), rgba(30,41,59,.34));
+}
+
+.readings-group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.readings-group-head strong,
+.readings-group-head span {
+  display: block;
+  min-width: 0;
+}
+
+.readings-group-head strong {
+  font-size: 1rem;
+}
+
+.readings-group-head span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.readings-billing-energy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.readings-energy-box {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 18px;
+  background: rgba(255,255,255,.42);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .readings-energy-box {
+  background: rgba(15,23,42,.34);
+}
+
+.readings-energy-box strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.readings-billing-period-grid,
+.readings-billing-period-grid .field,
+.readings-billing-period-grid input,
+.readings-group-card .field,
+.readings-group-card input,
+.readings-group-card select,
+.readings-add-group-form .field,
+.readings-add-group-form input {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.readings-billing-period-grid input[type="date"] {
+  width: 100%;
+  min-height: 44px;
+  padding-inline: 10px;
+  overflow: hidden;
+}
+
+.readings-billing-period-grid input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  min-width: 0;
+}
+
+@media (max-width: 920px) {
+  .readings-billing-energy-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .readings-group-card {
+    padding: 12px;
+    border-radius: 20px;
+  }
+
+  .readings-group-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .readings-group-head .danger-btn {
+    width: 100%;
+  }
+
+  .readings-prices-page .form-grid.two,
+  .readings-group-card .form-grid.two,
+  .readings-billing-period-grid.form-grid.two,
+  .readings-add-group-form .form-grid.two {
+    grid-template-columns: 1fr !important;
+  }
+}

@@ -9,8 +9,9 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_264';
+  const APP_VERSION = 'Domácnost+ v.0.1_265';
   const APP_TIME_ZONE = 'Europe/Prague';
+  const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
   const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -699,9 +700,9 @@
   const VISUAL_SETTINGS_STORAGE_KEY = 'domacnostPlus.visualSettings.v1';
   const DEFAULT_STATE = {
     meta: {
-      schemaVersion: 84,
-      appBuild: 264,
-      mode: 'readings-init-hotfix-v264',
+      schemaVersion: 85,
+      appBuild: 265,
+      mode: 'readings-groups-v265',
       createdAt: '',
       updatedAt: ''
     },
@@ -752,6 +753,7 @@
     readingPrices: { electricityT1: '', electricityT2: '', water: '', gas: '', updatedAt: '' },
     readingDeposits: { electricity: '', gas: '', water: '', updatedAt: '' },
     readingBilling: { from: '', to: '', updatedAt: '' },
+    readingGroups: [],
     readingsCloud: { loadedAt: '' },
     notes: [],
     warranties: [],
@@ -1006,6 +1008,7 @@
   let readingsConsumptionCacheMetersSource = null;
   let readingsConsumptionCacheEntriesSource = null;
   let readingsConsumptionCachePricesSource = null;
+  let readingsConsumptionCacheGroupsSource = null;
   let readingsConsumptionCacheRows = null;
   let financeTemplateEditId = '';
   let financeCopyId = '';
@@ -1596,9 +1599,9 @@
     forceLightVisualRecovery = Boolean(previousAppBuild && previousAppBuild < 264 && normalizeAppTheme(migrated.settings?.theme) === 'dark');
 
     migrated.meta = {
-      schemaVersion: 84,
-      appBuild: 264,
-      mode: 'readings-init-hotfix-v264',
+      schemaVersion: 85,
+      appBuild: 265,
+      mode: 'readings-groups-v265',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1975,7 +1978,7 @@
   }
 
   function getCollectionNames() {
-    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingLists', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'readingMeters', 'readings', 'notes', 'warranties', 'warrantyFiles', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'finance', 'financeAccounts', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
+    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingLists', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'readingGroups', 'readingMeters', 'readings', 'notes', 'warranties', 'warrantyFiles', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'finance', 'financeAccounts', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
   }
 
   function normalizeModuleList(value) {
@@ -5181,6 +5184,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_265', note: 'Odečty mají skupiny vyúčtování pro více bytů/částí domu. Každá skupina má vlastní ceny, zálohy a fakturační období zvlášť pro elektřinu, plyn a vodu. Měřidla lze ke skupinám přiřadit a fakturační období už na mobilu neutíká k pravému kraji.' },
       { title: 'Domácnost+ v.0.1_264', note: 'Hotfix startu aplikace po v263: recovery světlého vzhledu je inicializované ještě před migrací stavu, takže už nespadne na chybě Cannot access forceLightVisualRecovery before initialization.' },
       { title: 'Domácnost+ v.0.1_263', note: 'Stabilizace Odečtů: spotřební řádky se při jednom stavu aplikace cachují, Detail a Přehled už je nepočítají opakovaně, recovery světlého vzhledu se vztahuje i na rozbitý stav z v262 a formuláře cen/odečtů mají pevnější mobilní šířky.' },
       { title: 'Domácnost+ v.0.1_262', note: 'Hotfix Odečtů: po uložení cen se vynutí bezpečný světlý vzhled, přibylo fakturační období od–do a ceny/zálohy/měřidla se dál ukládají do cloudového dashboard_layout.' },
@@ -7728,25 +7732,129 @@
     };
   }
 
-  function normalizeReadingBilling(item = {}) {
-    const from = normalizeText(item.from || item.billingFrom || item.periodFrom);
-    const to = normalizeText(item.to || item.billingTo || item.periodTo);
+  function normalizeReadingBillingPeriod(item = {}) {
+    const from = normalizeText(item?.from || item?.billingFrom || item?.periodFrom);
+    const to = normalizeText(item?.to || item?.billingTo || item?.periodTo);
     return {
       from: /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : '',
-      to: /^\d{4}-\d{2}-\d{2}$/.test(to) ? to : '',
+      to: /^\d{4}-\d{2}-\d{2}$/.test(to) ? to : ''
+    };
+  }
+
+  function normalizeReadingBilling(item = {}) {
+    const legacy = normalizeReadingBillingPeriod(item || {});
+    const pick = (type) => normalizeReadingBillingPeriod(item?.[type] && typeof item[type] === 'object' ? item[type] : legacy);
+    return {
+      electricity: pick('electricity'),
+      gas: pick('gas'),
+      water: pick('water'),
+      from: legacy.from,
+      to: legacy.to,
+      updatedAt: normalizeText(item?.updatedAt)
+    };
+  }
+
+  function normalizeReadingGroup(item = {}) {
+    const id = normalizeText(item.id) || `reading-group-${uid()}`;
+    return {
+      id,
+      householdId: item.householdId || currentHouseholdId(),
+      profileId: item.profileId || currentProfileId(),
+      name: normalizeText(item.name) || 'Skupina',
+      prices: normalizeReadingPrices(item.prices || {}),
+      deposits: normalizeReadingDeposits(item.deposits || {}),
+      billing: normalizeReadingBilling(item.billing || {}),
+      createdAt: item.createdAt || new Date().toISOString(),
       updatedAt: normalizeText(item.updatedAt)
     };
   }
 
-  function readingBillingLabel() {
-    const billing = normalizeReadingBilling(state.readingBilling || {});
+  function createDefaultReadingGroup() {
+    const now = new Date().toISOString();
+    return normalizeReadingGroup({
+      id: DEFAULT_READING_GROUP_ID,
+      name: 'Domácnost',
+      prices: state.readingPrices || {},
+      deposits: state.readingDeposits || {},
+      billing: state.readingBilling || {},
+      createdAt: now,
+      updatedAt: now
+    });
+  }
+
+  function readingGroups() {
+    const source = Array.isArray(state.readingGroups) ? state.readingGroups : [];
+    const normalized = source.map(normalizeReadingGroup).filter((group) => group.id);
+    if (!normalized.length) normalized.push(createDefaultReadingGroup());
+    if (!normalized.some((group) => group.id === DEFAULT_READING_GROUP_ID)) {
+      normalized.unshift(createDefaultReadingGroup());
+    }
+    const seen = new Set();
+    state.readingGroups = normalized.filter((group) => {
+      if (seen.has(group.id)) return false;
+      seen.add(group.id);
+      return true;
+    });
+    return state.readingGroups;
+  }
+
+  function readingDefaultGroup() {
+    return readingGroups()[0] || createDefaultReadingGroup();
+  }
+
+  function readingGroupById(id = '') {
+    const cleanId = normalizeText(id);
+    return readingGroups().find((group) => group.id === cleanId) || readingDefaultGroup();
+  }
+
+  function readingGroupOptions() {
+    return readingGroups().map((group) => [group.id, group.name]);
+  }
+
+  function readingMeterGroup(meter = null) {
+    return readingGroupById(meter?.groupId || '');
+  }
+
+  function readingBillingPeriodLabel(period = {}) {
+    const billing = normalizeReadingBillingPeriod(period || {});
     if (billing.from && billing.to) return `${formatDate(billing.from)} – ${formatDate(billing.to)}`;
     if (billing.from) return `od ${formatDate(billing.from)}`;
     if (billing.to) return `do ${formatDate(billing.to)}`;
     return 'nenastavené';
   }
 
-  function readingDepositForType(type = '') {
+  function readingBillingForType(type = '', groupId = '') {
+    const group = groupId ? readingGroupById(groupId) : null;
+    const groupPeriod = group?.billing?.[String(type || '')];
+    if (groupPeriod?.from || groupPeriod?.to) return normalizeReadingBillingPeriod(groupPeriod);
+    state.readingBilling = normalizeReadingBilling(state.readingBilling || {});
+    return normalizeReadingBillingPeriod(state.readingBilling[String(type || '')] || state.readingBilling);
+  }
+
+  function readingBillingLabel(type = '', groupId = '') {
+    return readingBillingPeriodLabel(readingBillingForType(type, groupId));
+  }
+
+  function readingGroupAverageUnitPrice(groupId = '', type = '', registerLabel = '') {
+    const group = readingGroupById(groupId);
+    const prices = normalizeReadingPrices(group?.prices || {});
+    const register = normalizeText(registerLabel).toUpperCase();
+    if (type === 'electricity') {
+      const t2 = prices.electricityT2;
+      const t1 = prices.electricityT1;
+      if (register === 'T2') return t2 !== '' ? t2 : t1;
+      if (register === 'T1') return t1 !== '' ? t1 : t2;
+      return t1 !== '' ? t1 : t2;
+    }
+    if (type === 'water') return prices.water;
+    if (type === 'gas') return prices.gas;
+    return '';
+  }
+
+  function readingDepositForType(type = '', groupId = '') {
+    const group = groupId ? readingGroupById(groupId) : null;
+    const groupValue = group?.deposits?.[String(type || '')];
+    if (groupValue !== '' && groupValue >= 0) return groupValue;
     state.readingDeposits = normalizeReadingDeposits(state.readingDeposits || {});
     const value = state.readingDeposits[String(type || '')];
     return value !== '' && value >= 0 ? value : '';
@@ -7789,6 +7897,7 @@
       createdAt: item.createdAt || new Date().toISOString(),
       updatedAt: item.updatedAt || '',
       type,
+      groupId: normalizeText(item.groupId || item.readingGroupId || item.billingGroupId) || DEFAULT_READING_GROUP_ID,
       name: normalizeText(item.name) || meta.label,
       unit: normalizeText(item.unit) || meta.unit,
       serial: normalizeText(item.serial || item.number || item.identifier),
@@ -7962,6 +8071,8 @@
     if (!meter) return '';
     const direct = readingMeterDirectUnitPrice(meter);
     if (direct !== '') return direct;
+    const groupPrice = readingGroupAverageUnitPrice(meter.groupId, meter.type, registerLabel);
+    if (groupPrice !== '') return groupPrice;
     return readingGlobalAverageUnitPrice(meter.type, registerLabel);
   }
 
@@ -8020,15 +8131,29 @@
     if (direct !== '' && direct >= 0) {
       parts.push(`${modeLabel}: ${direct.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })} Kč/${meter.unit || 'j.'}`);
     } else if (meter.type === 'electricity') {
-      const t1 = readingGlobalAverageUnitPrice('electricity', 'T1');
-      const t2 = readingGlobalAverageUnitPrice('electricity', 'T2');
+      const group = readingMeterGroup(meter);
+      const t1 = readingGroupAverageUnitPrice(meter.groupId, 'electricity', 'T1');
+      const t2 = readingGroupAverageUnitPrice(meter.groupId, 'electricity', 'T2');
+      const globalT1 = readingGlobalAverageUnitPrice('electricity', 'T1');
+      const globalT2 = readingGlobalAverageUnitPrice('electricity', 'T2');
       const bits = [];
       if (t1 !== '') bits.push(`T1 ${t1.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })}`);
       if (t2 !== '') bits.push(`T2 ${t2.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })}`);
-      if (bits.length) parts.push(`globál: ${bits.join(' · ')} Kč/${meter.unit || 'kWh'}`);
+      if (bits.length) parts.push(`${group?.name || 'skupina'}: ${bits.join(' · ')} Kč/${meter.unit || 'kWh'}`);
+      else {
+        const globalBits = [];
+        if (globalT1 !== '') globalBits.push(`T1 ${globalT1.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })}`);
+        if (globalT2 !== '') globalBits.push(`T2 ${globalT2.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })}`);
+        if (globalBits.length) parts.push(`globál: ${globalBits.join(' · ')} Kč/${meter.unit || 'kWh'}`);
+      }
     } else {
-      const global = readingGlobalAverageUnitPrice(meter.type);
-      if (global !== '') parts.push(`globál: ${global.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })} Kč/${meter.unit || 'j.'}`);
+      const group = readingMeterGroup(meter);
+      const groupPrice = readingGroupAverageUnitPrice(meter.groupId, meter.type);
+      if (groupPrice !== '') parts.push(`${group?.name || 'skupina'}: ${groupPrice.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })} Kč/${meter.unit || 'j.'}`);
+      else {
+        const global = readingGlobalAverageUnitPrice(meter.type);
+        if (global !== '') parts.push(`globál: ${global.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })} Kč/${meter.unit || 'j.'}`);
+      }
     }
     if (fixed) parts.push(`${readingMoney(fixed)} / měsíc${meter.fixedMonthlyLabel ? ` · ${meter.fixedMonthlyLabel}` : ''}`);
     return parts.join(' · ') || 'bez ceny';
@@ -8079,7 +8204,7 @@
     return `
       <details class="subtle-details readings-price-details">
         <summary><span>Cena a výpočet nákladů</span><em>${escapeHtml(meta.label)} · průměr nebo smlouva</em></summary>
-        <div class="small-muted">Tady nastavíš cenu jen pro toto konkrétní měřidlo. Když ji nevyplníš, použije se globální průměr ze stránky Ceny.</div>
+        <div class="small-muted">Tady nastavíš cenu jen pro toto konkrétní měřidlo. Když ji nevyplníš, použije se cena skupiny a potom globální fallback ze stránky Ceny.</div>
         <div class="form-grid two">
           ${selectField('Výpočet ceny', 'pricingMode', readingPriceModeOptions, selectedMode)}
           ${averageFields}
@@ -8142,6 +8267,7 @@
     readingsConsumptionCacheMetersSource = null;
     readingsConsumptionCacheEntriesSource = null;
     readingsConsumptionCachePricesSource = null;
+    readingsConsumptionCacheGroupsSource = null;
     readingsConsumptionCacheRows = null;
   }
 
@@ -8149,16 +8275,19 @@
     const metersSource = state.readingMeters || [];
     const entriesSource = state.readings || [];
     const pricesSource = state.readingPrices || {};
+    const groupsSource = state.readingGroups || [];
     if (
       readingsConsumptionCacheRows &&
       readingsConsumptionCacheMetersSource === metersSource &&
       readingsConsumptionCacheEntriesSource === entriesSource &&
-      readingsConsumptionCachePricesSource === pricesSource
+      readingsConsumptionCachePricesSource === pricesSource &&
+      readingsConsumptionCacheGroupsSource === groupsSource
     ) {
       return readingsConsumptionCacheRows;
     }
     const map = new Map();
     readingsMeters().forEach((meter) => {
+      const meterGroup = readingMeterGroup(meter);
       const registers = readingRegistersForMeter(meter);
       const groups = registers.length ? registers : [''];
       groups.forEach((registerLabel) => {
@@ -8184,6 +8313,8 @@
             id: `${meter.id}-${month}`,
             meterId: meter.id,
             meterName: meter.name,
+            groupId: meterGroup?.id || DEFAULT_READING_GROUP_ID,
+            groupName: meterGroup?.name || 'Domácnost',
             type: meter.type,
             unit: meter.unit,
             month,
@@ -8233,6 +8364,7 @@
     readingsConsumptionCacheMetersSource = metersSource;
     readingsConsumptionCacheEntriesSource = entriesSource;
     readingsConsumptionCachePricesSource = pricesSource;
+    readingsConsumptionCacheGroupsSource = groupsSource;
     readingsConsumptionCacheRows = rows;
     return rows;
   }
@@ -8242,8 +8374,8 @@
     const map = new Map();
     const rows = Array.isArray(sourceRows) ? sourceRows : readingsConsumptionRows();
     rows.forEach((row) => {
-      const key = `${row.month}|${row.type}|${row.unit}`;
-      const current = map.get(key) || { month: row.month, type: row.type, unit: row.unit, value: 0, totalValue: 0, cost: 0, hasCost: false, periods: [] };
+      const key = `${row.month}|${row.groupId || DEFAULT_READING_GROUP_ID}|${row.type}|${row.unit}`;
+      const current = map.get(key) || { month: row.month, groupId: row.groupId || DEFAULT_READING_GROUP_ID, groupName: row.groupName || readingGroupById(row.groupId)?.name || 'Domácnost', type: row.type, unit: row.unit, value: 0, totalValue: 0, cost: 0, hasCost: false, periods: [] };
       current.value += Math.max(0, row.value);
       current.totalValue += Math.max(0, row.totalValue || 0);
       current.cost += Math.max(0, row.cost || 0);
@@ -8261,32 +8393,46 @@
   }
 
   function readingCostSummaryRows(monthRows = []) {
-    const latestByType = new Map();
+    const latestByGroupType = new Map();
     monthRows.forEach((row) => {
-      if (!latestByType.has(row.type)) latestByType.set(row.type, row);
+      const key = `${row.groupId || DEFAULT_READING_GROUP_ID}|${row.type}`;
+      if (!latestByGroupType.has(key)) latestByGroupType.set(key, row);
     });
-    return READING_TYPE_OPTIONS.map(([type]) => {
-      const row = latestByType.get(type) || null;
-      const deposit = readingDepositForType(type);
-      const estimate = row?.hasCost ? Number(row.cost || 0) : null;
-      const diff = estimate !== null && deposit !== '' ? deposit - estimate : null;
-      return { type, row, deposit, estimate, diff };
+    const activeGroups = new Map();
+    readingsMeters().forEach((meter) => {
+      const group = readingMeterGroup(meter);
+      if (group?.id) activeGroups.set(group.id, group);
     });
+    if (!activeGroups.size) readingGroups().forEach((group) => activeGroups.set(group.id, group));
+    const rows = [];
+    activeGroups.forEach((group) => {
+      READING_TYPE_OPTIONS.forEach(([type]) => {
+        const row = latestByGroupType.get(`${group.id}|${type}`) || null;
+        const hasAnyMeter = readingsMeters().some((meter) => (meter.groupId || DEFAULT_READING_GROUP_ID) === group.id && meter.type === type);
+        if (!row && !hasAnyMeter) return;
+        const deposit = readingDepositForType(type, group.id);
+        const estimate = row?.hasCost ? Number(row.cost || 0) : null;
+        const diff = estimate !== null && deposit !== '' ? deposit - estimate : null;
+        rows.push({ groupId: group.id, groupName: group.name, type, row, deposit, estimate, diff });
+      });
+    });
+    return rows;
   }
 
   function renderReadingsCostSummary(monthRows = []) {
     const rows = readingCostSummaryRows(monthRows);
-    const billingLabel = readingBillingLabel();
-    return `<div class="inline-note readings-billing-note"><strong>Fakturační období:</strong> ${escapeHtml(billingLabel)}</div><div class="readings-cost-summary">
+    return `<div class="readings-cost-summary">
       ${rows.map((item) => {
         const meta = readingTypeMeta(item.type);
         const hasDeposit = item.deposit !== '';
         const diffLabel = item.diff === null ? 'bez porovnání' : `${item.diff >= 0 ? '+' : ''}${readingMoney(item.diff)}/měs.`;
         const diffClass = item.diff === null ? '' : item.diff >= 0 ? 'good' : 'danger';
+        const billingLabel = readingBillingLabel(item.type, item.groupId);
         return `<article class="mini-stat readings-cost-card">
-          <span>${escapeHtml(meta.icon)} ${escapeHtml(meta.label)}</span>
+          <span>${escapeHtml(item.groupName || 'Domácnost')} · ${escapeHtml(meta.icon)} ${escapeHtml(meta.label)}</span>
           <strong>${item.estimate === null ? 'bez ceny' : `${readingMoney(item.estimate)}/měs.`}</strong>
           <small>záloha: ${hasDeposit ? `${readingMoney(item.deposit)}/měs.` : 'nenastavená'}${item.diff !== null ? ` · rozdíl <b class="${diffClass}">${diffLabel}</b>` : ''}</small>
+          <small>období: ${escapeHtml(billingLabel)}</small>
         </article>`;
       }).join('')}
     </div>`;
@@ -8313,6 +8459,7 @@
     state.readingPrices = normalizeReadingPrices(state.readingPrices || {});
     state.readingDeposits = normalizeReadingDeposits(state.readingDeposits || {});
     state.readingBilling = normalizeReadingBilling(state.readingBilling || {});
+    state.readingGroups = readingGroups();
     invalidateReadingsConsumptionCache();
     state.readingsCloud = { ...(state.readingsCloud || {}), pendingAt: cloudReady() ? new Date().toISOString() : '' };
     touchState();
@@ -8326,33 +8473,110 @@
     if (toast) showToast(toast);
   }
 
+  function renderReadingBillingEnergyFields(prefix = '', billing = {}) {
+    const normalized = normalizeReadingBilling(billing || {});
+    const fieldName = (name) => `${prefix}${name}`;
+    return `
+      <div class="readings-billing-energy-grid">
+        <section class="readings-energy-box readings-energy-electricity">
+          <strong>⚡ Elektřina</strong>
+          <div class="form-grid two readings-billing-period-grid">
+            ${field('Období od', fieldName('BillingElectricityFrom'), 'date', '', false, normalized.electricity?.from || '')}
+            ${field('Období do', fieldName('BillingElectricityTo'), 'date', '', false, normalized.electricity?.to || '')}
+          </div>
+        </section>
+        <section class="readings-energy-box readings-energy-gas">
+          <strong>🔥 Plyn</strong>
+          <div class="form-grid two readings-billing-period-grid">
+            ${field('Období od', fieldName('BillingGasFrom'), 'date', '', false, normalized.gas?.from || '')}
+            ${field('Období do', fieldName('BillingGasTo'), 'date', '', false, normalized.gas?.to || '')}
+          </div>
+        </section>
+        <section class="readings-energy-box readings-energy-water">
+          <strong>💧 Voda</strong>
+          <div class="form-grid two readings-billing-period-grid">
+            ${field('Období od', fieldName('BillingWaterFrom'), 'date', '', false, normalized.water?.from || '')}
+            ${field('Období do', fieldName('BillingWaterTo'), 'date', '', false, normalized.water?.to || '')}
+          </div>
+        </section>
+      </div>`;
+  }
+
+  function readingBillingFromForm(data = {}, prefix = '') {
+    const value = (key) => data[`${prefix}${key}`];
+    return normalizeReadingBilling({
+      electricity: { from: value('BillingElectricityFrom'), to: value('BillingElectricityTo') },
+      gas: { from: value('BillingGasFrom'), to: value('BillingGasTo') },
+      water: { from: value('BillingWaterFrom'), to: value('BillingWaterTo') },
+      updatedAt: new Date().toISOString()
+    });
+  }
+
+  function renderReadingGroupSettingsCard(group = {}) {
+    const clean = normalizeReadingGroup(group);
+    const id = clean.id;
+    const suffix = `__${id}`;
+    const canDelete = readingGroups().length > 1 && id !== DEFAULT_READING_GROUP_ID;
+    return `
+      <article class="readings-group-card">
+        <div class="readings-group-head">
+          <div>
+            <strong>${escapeHtml(clean.name)}</strong>
+            <span>${id === DEFAULT_READING_GROUP_ID ? 'výchozí skupina pro starší měřidla' : 'samostatné vyúčtování'}</span>
+          </div>
+          ${canDelete ? `<button class="danger-btn small-btn" type="button" data-action="delete-reading-group" data-id="${escapeHtml(id)}">Smazat skupinu</button>` : ''}
+        </div>
+        <div class="form-grid two">
+          ${field('Název skupiny', `groupName${suffix}`, 'text', 'např. Byt / Byt 2 / Garáž', true, clean.name)}
+          ${field('Elektřina T1', `groupElectricityT1${suffix}`, 'text', 'Kč/kWh', false, clean.prices.electricityT1 ?? '', 'decimal')}
+          ${field('Elektřina T2', `groupElectricityT2${suffix}`, 'text', 'Kč/kWh', false, clean.prices.electricityT2 ?? '', 'decimal')}
+          ${field('Voda', `groupWater${suffix}`, 'text', 'Kč/m³', false, clean.prices.water ?? '', 'decimal')}
+          ${field('Plyn', `groupGas${suffix}`, 'text', 'Kč/m³ nebo Kč/kWh', false, clean.prices.gas ?? '', 'decimal')}
+          ${field('Záloha elektřina', `groupDepositElectricity${suffix}`, 'text', 'Kč/měsíc', false, clean.deposits.electricity ?? '', 'decimal')}
+          ${field('Záloha plyn', `groupDepositGas${suffix}`, 'text', 'Kč/měsíc', false, clean.deposits.gas ?? '', 'decimal')}
+          ${field('Záloha voda', `groupDepositWater${suffix}`, 'text', 'Kč/měsíc', false, clean.deposits.water ?? '', 'decimal')}
+        </div>
+        <div class="mini-section-title">Fakturační období podle energie</div>
+        ${renderReadingBillingEnergyFields(`group${suffix}`, clean.billing)}
+      </article>`;
+  }
+
   function renderReadingGlobalPricesPanel() {
     state.readingPrices = normalizeReadingPrices(state.readingPrices || {});
     state.readingDeposits = normalizeReadingDeposits(state.readingDeposits || {});
+    state.readingBilling = normalizeReadingBilling(state.readingBilling || {});
+    const groups = readingGroups();
     return `
       <section class="soft-panel readings-tool-page readings-prices-page">
-        <div class="card-subheader"><div><h3>Ceny a zálohy</h3><p>Globální průměrné ceny se použijí jen tam, kde měřidlo nemá vlastní podrobnější cenu. Zálohy slouží pro rychlé porovnání odhadu nákladů.</p></div></div>
+        <div class="card-subheader"><div><h3>Ceny, zálohy a skupiny</h3><p>Skupiny slouží pro víc vyúčtování v jednom domě. Třeba Byt, Byt 2 nebo Garáž. Měřidlo nejdřív použije vlastní cenu, potom cenu skupiny a až pak globální fallback.</p></div></div>
+        <form data-form="add-reading-group" class="compact-form readings-form readings-add-group-form">
+          <div class="form-grid two">
+            ${field('Nová skupina vyúčtování', 'name', 'text', 'např. Byt 2', true)}
+            <div class="form-actions align-end"><button class="primary-btn" type="submit">Přidat skupinu</button></div>
+          </div>
+        </form>
         <form data-form="update-reading-prices" class="compact-form readings-form">
-          <div class="mini-section-title">Průměrné ceny za jednotku</div>
+          <div class="mini-section-title">Globální fallback ceny</div>
           <div class="form-grid two">
             ${field('Elektřina T1', 'electricityT1', 'text', 'Kč/kWh', false, state.readingPrices.electricityT1 ?? '', 'decimal')}
             ${field('Elektřina T2', 'electricityT2', 'text', 'Kč/kWh', false, state.readingPrices.electricityT2 ?? '', 'decimal')}
             ${field('Voda', 'water', 'text', 'Kč/m³', false, state.readingPrices.water ?? '', 'decimal')}
             ${field('Plyn', 'gas', 'text', 'Kč/m³ nebo Kč/kWh', false, state.readingPrices.gas ?? '', 'decimal')}
           </div>
-          <div class="mini-section-title">Měsíční zálohy</div>
+          <div class="mini-section-title">Globální fallback zálohy</div>
           <div class="form-grid two">
             ${field('Záloha elektřina', 'depositElectricity', 'text', 'Kč/měsíc', false, state.readingDeposits.electricity ?? '', 'decimal')}
             ${field('Záloha plyn', 'depositGas', 'text', 'Kč/měsíc', false, state.readingDeposits.gas ?? '', 'decimal')}
             ${field('Záloha voda', 'depositWater', 'text', 'Kč/měsíc', false, state.readingDeposits.water ?? '', 'decimal')}
           </div>
-          <div class="mini-section-title">Fakturační období</div>
-          <div class="form-grid two">
-            ${field('Od', 'billingFrom', 'date', '', false, state.readingBilling?.from || '')}
-            ${field('Do', 'billingTo', 'date', '', false, state.readingBilling?.to || '')}
+          <div class="mini-section-title">Globální fallback fakturační období</div>
+          ${renderReadingBillingEnergyFields('', state.readingBilling)}
+          <div class="mini-section-title">Skupiny vyúčtování</div>
+          <div class="readings-groups-settings">
+            ${groups.map(renderReadingGroupSettingsCard).join('')}
           </div>
-          <p class="small-muted">Když není cena zadaná přímo u měřidla nebo u odečtu, použije se tady zadaný průměr. U elektřiny se T1/T2 počítá zvlášť a v přehledu se ukazuje součet tarifů. Fakturační období pomáhá porovnat odhad spotřeby se zálohami a vyúčtováním.</p>
-          <div class="form-actions"><button class="primary-btn" type="submit">Uložit ceny a zálohy</button></div>
+          <p class="small-muted">Fakturační období je zvlášť pro elektřinu, plyn a vodu, protože každé vyúčtování může chodit v jiném termínu. Skupinové hodnoty mají přednost před globálními.</p>
+          <div class="form-actions"><button class="primary-btn" type="submit">Uložit ceny, zálohy a skupiny</button></div>
         </form>
       </section>`;
   }
@@ -8376,6 +8600,7 @@
           <form data-form="add-reading-meter" class="compact-form readings-form">
             <div class="form-grid two">
               ${selectField('Typ', 'type', READING_TYPE_OPTIONS, 'electricity')}
+              ${selectField('Skupina vyúčtování', 'groupId', readingGroupOptions(), readingDefaultGroup().id)}
               ${field('Název', 'name', 'text', 'např. Elektroměr hlavní', true)}
               ${selectField('Jednotka', 'unit', READING_UNIT_OPTIONS, 'kWh')}
               ${field('Číslo měřidla', 'serial', 'text', 'volitelné')}
@@ -8406,11 +8631,31 @@
       water: data.depositWater,
       updatedAt
     });
-    state.readingBilling = normalizeReadingBilling({
-      from: data.billingFrom,
-      to: data.billingTo,
-      updatedAt
+    state.readingBilling = readingBillingFromForm(data, '');
+    state.readingGroups = readingGroups().map((group) => {
+      const suffix = `__${group.id}`;
+      return normalizeReadingGroup({
+        ...group,
+        name: data[`groupName${suffix}`] || group.name,
+        prices: {
+          electricityT1: data[`groupElectricityT1${suffix}`],
+          electricityT2: data[`groupElectricityT2${suffix}`],
+          water: data[`groupWater${suffix}`],
+          gas: data[`groupGas${suffix}`],
+          updatedAt
+        },
+        deposits: {
+          electricity: data[`groupDepositElectricity${suffix}`],
+          gas: data[`groupDepositGas${suffix}`],
+          water: data[`groupDepositWater${suffix}`],
+          updatedAt
+        },
+        billing: readingBillingFromForm(data, `group${suffix}`),
+        updatedAt
+      });
     });
+    const groupIds = new Set(state.readingGroups.map((group) => group.id));
+    state.readingMeters = readingsMeters(true).map((meter) => groupIds.has(meter.groupId) ? meter : { ...meter, groupId: DEFAULT_READING_GROUP_ID, updatedAt });
     if (forceLightVisualRecovery) {
       state.settings = { ...(state.settings || {}), theme: 'light' };
       applyVisualSettings();
@@ -8418,7 +8663,43 @@
       saveActiveProfileUiSettingsSnapshot();
     }
     form?.reset?.();
-    await persistReadingsState('Ceny a zálohy uložené');
+    await persistReadingsState('Ceny, zálohy a skupiny uložené');
+  }
+
+  async function addReadingGroupFromForm(data, form) {
+    const name = normalizeText(data.name);
+    if (!name) return showToast('Doplň název skupiny');
+    const exists = readingGroups().find((group) => normalizeKey(group.name) === normalizeKey(name));
+    if (exists) {
+      readingsMeterToolPage = 'prices';
+      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
+      showToast('Skupina už existuje');
+      render();
+      return;
+    }
+    const now = new Date().toISOString();
+    state.readingGroups = [...readingGroups(), normalizeReadingGroup({ id: `reading-group-${uid()}`, name, createdAt: now, updatedAt: now })];
+    form?.reset?.();
+    readingsMeterToolPage = 'prices';
+    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
+    await persistReadingsState('Skupina přidaná');
+  }
+
+  async function deleteReadingGroup(id) {
+    const cleanId = normalizeText(id);
+    const groups = readingGroups();
+    const group = groups.find((item) => item.id === cleanId);
+    if (!group) return;
+    if (groups.length <= 1 || cleanId === DEFAULT_READING_GROUP_ID) return showToast('Výchozí skupinu nejde smazat');
+    const metersInGroup = readingsMeters(true).filter((meter) => meter.groupId === cleanId).length;
+    const ok = window.confirm(metersInGroup ? `Smazat skupinu „${group.name}“? ${metersInGroup} měřidel se přesune do výchozí skupiny.` : `Smazat skupinu „${group.name}“?`);
+    if (!ok) return;
+    const updatedAt = new Date().toISOString();
+    state.readingGroups = groups.filter((item) => item.id !== cleanId);
+    state.readingMeters = readingsMeters(true).map((meter) => meter.groupId === cleanId ? { ...meter, groupId: DEFAULT_READING_GROUP_ID, updatedAt } : meter);
+    readingsMeterToolPage = 'prices';
+    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
+    await persistReadingsState('Skupina smazaná');
   }
 
   async function addReadingMeterFromForm(data, form) {
@@ -8426,6 +8707,7 @@
     const meta = readingTypeMeta(type);
     const meter = normalizeReadingMeter({
       type,
+      groupId: data.groupId || readingDefaultGroup().id,
       name: normalizeText(data.name) || meta.label,
       unit: normalizeText(data.unit) || meta.unit,
       serial: data.serial,
@@ -8470,6 +8752,7 @@
       createdAt: original.createdAt,
       updatedAt: new Date().toISOString(),
       type,
+      groupId: data.groupId || original.groupId || readingDefaultGroup().id,
       name: normalizeText(data.name) || original.name || meta.label,
       unit: normalizeText(data.unit) || original.unit || meta.unit,
       serial: data.serial,
@@ -8981,11 +9264,12 @@
       ? readingLastMonthDisplay(lastMonth, meter)
       : (stats.delta === null ? 'první odečet' : `+${readingValue(Math.max(0, stats.delta), meter.unit)} od minula`);
     const isEditing = showManage && readingsEditingMeterId === meter.id;
+    const meterGroup = readingMeterGroup(meter);
     return `
       <article class="reading-meter-card reading-meter-${escapeHtml(meta.className)} ${meter.archived ? 'muted-item' : ''} ${isEditing ? 'is-editing' : ''}">
         <div class="reading-meter-top">
           <span class="reading-meter-icon">${escapeHtml(meta.icon)}</span>
-          <div><strong>${escapeHtml(meter.name)}</strong><em>${escapeHtml(meta.label)}${meter.location ? ` · ${escapeHtml(meter.location)}` : ''}</em></div>
+          <div><strong>${escapeHtml(meter.name)}</strong><em>${escapeHtml(meta.label)} · ${escapeHtml(meterGroup?.name || 'Domácnost')}${meter.location ? ` · ${escapeHtml(meter.location)}` : ''}</em></div>
           <span class="badge ${latest ? 'good' : ''}">${latest ? escapeHtml(formatDate(latest.date)) : 'bez odečtu'}</span>
         </div>
         <div class="reading-meter-value"><strong>${escapeHtml(readingMeterLatestDisplay(meter))}</strong><span>${escapeHtml(deltaLabel)}</span></div>
@@ -8997,6 +9281,7 @@
           <form data-form="update-reading-meter" data-id="${escapeHtml(meter.id)}" class="compact-form readings-form">
             <div class="form-grid two">
               ${selectField('Typ', 'type', READING_TYPE_OPTIONS, meter.type)}
+              ${selectField('Skupina vyúčtování', 'groupId', readingGroupOptions(), meter.groupId || readingDefaultGroup().id)}
               ${field('Název', 'name', 'text', 'např. Elektroměr hlavní', true, meter.name)}
               ${selectField('Jednotka', 'unit', READING_UNIT_OPTIONS, meter.unit)}
               ${field('Číslo měřidla', 'serial', 'text', 'volitelné', false, meter.serial)}
@@ -9271,7 +9556,7 @@
           <div class="card-header"><div><h2>Zálohy vs. odhad</h2><p>Porovnání posledního měsíčního odhadu nákladů proti zadaným zálohám.</p></div></div>
           ${renderReadingsCostSummary(monthRows)}
           <div class="card-subheader compact-subheader"><div><h3>Průměr a náklady po měsících</h3><p>Součet měsíčních průměrů podle typu měřidla včetně odhadu ceny.</p></div></div>
-          ${monthRows.length ? `<div class="list compact-list">${monthRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(readingTypeMeta(row.type).icon)} ${escapeHtml(readingTypeMeta(row.type).label)}</div><span class="badge">${readingMonthlyValue(row.value, row.unit)}</span></div><div class="item-meta">${escapeHtml(financeMonthLabel(row.month))}${row.periods?.length ? ` · ${escapeHtml(row.periods.slice(0, 2).join('; '))}` : ''} · odhad ${escapeHtml(readingCostValueLabel(row))}</div></div>`).join('')}</div>` : renderEmpty('Jakmile budou aspoň dva odečty na jednom měřidle, zobrazí se tady průměrná měsíční spotřeba.')}
+          ${monthRows.length ? `<div class="list compact-list">${monthRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(row.groupName || 'Domácnost')} · ${escapeHtml(readingTypeMeta(row.type).icon)} ${escapeHtml(readingTypeMeta(row.type).label)}</div><span class="badge">${readingMonthlyValue(row.value, row.unit)}</span></div><div class="item-meta">${escapeHtml(financeMonthLabel(row.month))}${row.periods?.length ? ` · ${escapeHtml(row.periods.slice(0, 2).join('; '))}` : ''} · odhad ${escapeHtml(readingCostValueLabel(row))} · období ${escapeHtml(readingBillingLabel(row.type, row.groupId))}</div></div>`).join('')}</div>` : renderEmpty('Jakmile budou aspoň dva odečty na jednom měřidle, zobrazí se tady průměrná měsíční spotřeba.')}
         </section>`;
     } else if (activeTab === 'entry') {
       content = `
@@ -12403,7 +12688,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 264))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 265))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -17496,6 +17781,7 @@
       'update-reading-meter': () => updateReadingMeterFromForm(form.dataset.id, data, form),
       'add-reading-entry': () => addReadingEntryFromForm(data, form),
       'update-reading-prices': () => updateReadingPricesFromForm(data, form),
+      'add-reading-group': () => addReadingGroupFromForm(data, form),
       'add-task': () => addTaskFromForm(data, form),
       'add-notebook-page': () => addNotebookPageFromForm(data, form),
       'add-notebook-item': () => addNotebookItemFromForm(data, form),
@@ -18099,7 +18385,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 84, appBuild: 264, mode: 'rich-demo-v264', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 85, appBuild: 265, mode: 'rich-demo-v265', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -18252,7 +18538,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 84, appBuild: 264, mode: 'readings-init-hotfix-v264', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 265, mode: 'readings-groups-v265', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -20619,6 +20905,10 @@
       deleteReadingEntry(button.dataset.id);
       return;
     }
+    if (action === 'delete-reading-group') {
+      deleteReadingGroup(button.dataset.id);
+      return;
+    }
     if (action === 'edit-reading-meter-pricing') {
       updateReadingMeterPricing(button.dataset.id);
       return;
@@ -21260,6 +21550,9 @@
         theme: state.settings?.theme || 'light'
       },
       parcelLookup: structuredCloneSafe(state.parcelLookup || DEFAULT_STATE.parcelLookup),
+      readingPrices: structuredCloneSafe(state.readingPrices || DEFAULT_STATE.readingPrices),
+      readingDeposits: structuredCloneSafe(state.readingDeposits || DEFAULT_STATE.readingDeposits),
+      readingBilling: structuredCloneSafe(state.readingBilling || DEFAULT_STATE.readingBilling),
       collections: {}
     };
     getCollectionNames().forEach((collection) => {
@@ -21579,12 +21872,13 @@
     if (Array.isArray(layout.warranties) && !(state.warranties || []).length) {
       state.warranties = normalizeWarranties(layout.warranties);
     }
+    if (Array.isArray(layout.readingGroups)) state.readingGroups = layout.readingGroups.map(normalizeReadingGroup);
     if (Array.isArray(layout.readingMeters)) state.readingMeters = layout.readingMeters.map(normalizeReadingMeter);
     if (Array.isArray(layout.readings)) state.readings = layout.readings.map(normalizeReadingEntry).filter((entry) => entry.meterId);
     if (layout.readingPrices && typeof layout.readingPrices === 'object') state.readingPrices = normalizeReadingPrices({ ...state.readingPrices, ...layout.readingPrices });
     if (layout.readingDeposits && typeof layout.readingDeposits === 'object') state.readingDeposits = normalizeReadingDeposits({ ...state.readingDeposits, ...layout.readingDeposits });
     if (layout.readingBilling && typeof layout.readingBilling === 'object') state.readingBilling = normalizeReadingBilling({ ...state.readingBilling, ...layout.readingBilling });
-    if (Array.isArray(layout.readingMeters) || Array.isArray(layout.readings) || layout.readingPrices || layout.readingDeposits || layout.readingBilling) {
+    if (Array.isArray(layout.readingGroups) || Array.isArray(layout.readingMeters) || Array.isArray(layout.readings) || layout.readingPrices || layout.readingDeposits || layout.readingBilling) {
       invalidateReadingsConsumptionCache();
       state.readingsCloud = { ...(state.readingsCloud || {}), loadedAt: new Date().toISOString() };
     }
@@ -21631,6 +21925,7 @@
         visualSettings: getVisualSettingsSnapshot(),
         profileUiSettings: getProfileUiSettingsSnapshot(),
         warrantyBackupCount: normalizeWarranties(state.warranties).length,
+        readingGroups: readingGroups(),
         readingMeters: readingsMeters(true),
         readings: readingsEntries(),
         readingPrices: normalizeReadingPrices(state.readingPrices || {}),
@@ -21650,7 +21945,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 264
+        appBuild: 265
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -21718,6 +22013,9 @@
       profiles: structuredCloneSafe(state.profiles),
       activeProfileId: state.activeProfileId,
       parcelLookup: structuredCloneSafe(state.parcelLookup || DEFAULT_STATE.parcelLookup),
+      readingPrices: structuredCloneSafe(state.readingPrices || DEFAULT_STATE.readingPrices),
+      readingDeposits: structuredCloneSafe(state.readingDeposits || DEFAULT_STATE.readingDeposits),
+      readingBilling: structuredCloneSafe(state.readingBilling || DEFAULT_STATE.readingBilling),
       collections: {}
     };
     getCollectionNames().forEach((collection) => {
@@ -21733,6 +22031,9 @@
       state.profiles = structuredCloneSafe(snapshot.profiles || []);
       state.activeProfileId = snapshot.activeProfileId || state.profiles[0]?.id || '';
       state.parcelLookup = normalizeParcelLookupSettings(snapshot.parcelLookup || state.parcelLookup);
+      state.readingPrices = normalizeReadingPrices(snapshot.readingPrices || state.readingPrices);
+      state.readingDeposits = normalizeReadingDeposits(snapshot.readingDeposits || state.readingDeposits);
+      state.readingBilling = normalizeReadingBilling(snapshot.readingBilling || state.readingBilling);
       getCollectionNames().forEach((collection) => {
         state[collection] = structuredCloneSafe(snapshot.collections?.[collection] || []);
       });
@@ -21746,6 +22047,9 @@
       state.profiles = [createProfile(currentProfile()?.name || 'Já', 'owner', state.household.id)];
       state.activeProfileId = state.profiles[0]?.id || '';
       state.parcelLookup = structuredCloneSafe(DEFAULT_STATE.parcelLookup);
+      state.readingPrices = normalizeReadingPrices(DEFAULT_STATE.readingPrices);
+      state.readingDeposits = normalizeReadingDeposits(DEFAULT_STATE.readingDeposits);
+      state.readingBilling = normalizeReadingBilling(DEFAULT_STATE.readingBilling);
       getCollectionNames().forEach((collection) => { state[collection] = []; });
       state.shoppingStats = {};
     }
@@ -21777,7 +22081,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 213, schema_version: 84, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 265, schema_version: 85, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -21991,8 +22295,8 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 219,
-          schema_version: 84,
+          app_build: 265,
+          schema_version: 85,
           created_by: user.id,
           ...householdUiPayload()
         })
@@ -22244,7 +22548,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-264-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-265-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -22668,7 +22972,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_264</span>
+          <span class="badge">Domácnost+ v.0.1_265</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
