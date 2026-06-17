@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_272';
+  const APP_VERSION = 'Domácnost+ v.0.1_273';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -702,8 +702,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 272,
-      mode: 'loyalty-add-panel-stability-v272',
+      appBuild: 273,
+      mode: 'loyalty-card-photo-ocr-v273',
       createdAt: '',
       updatedAt: ''
     },
@@ -999,7 +999,7 @@
   let loyaltyCardSearchTerm = '';
   let loyaltyAddDetailsOpen = false;
   let loyaltyAddDraft = { store: '', cardNumber: '', codeType: 'barcode', color: 'rose', note: '' };
-  let loyaltyCardScan = { loading: false, dataUrl: '', detectedCode: '', detectedFormat: '', error: '' };
+  let loyaltyCardScan = { loading: false, dataUrl: '', detectedCode: '', detectedFormat: '', detectedText: '', error: '', source: '' };
   let financeEditId = '';
   let financeAccountEditId = '';
   let readingsDetailMeterId = localStorage.getItem('domacnostPlus.readingsDetailMeterId') || '';
@@ -1617,8 +1617,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 272,
-      mode: 'loyalty-add-panel-stability-v272',
+      appBuild: 273,
+      mode: 'loyalty-card-photo-ocr-v273',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5219,6 +5219,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_273', note: 'Nákupy / Karty: vyfocený kód se ukládá jako podklad, appka se pokusí přečíst i viditelné číslo z fotky přes dostupné čtení textu a z čísla jde dál zvolit čárový kód / QR / text.' },
       { title: 'Domácnost+ v.0.1_272', note: 'Nákupy / Karty: opravené samovolné zavírání panelu Přidat kartu. Otevření panelu se drží ve stavu a rozpracované hodnoty formuláře se při překreslení neztratí.' },
       { title: 'Domácnost+ v.0.1_271', note: 'Odpad: opakované svozy se na Home, v přehledech a v modulu Odpad počítají podle dalšího budoucího termínu. Svoz nastavený každé 2 týdny už po proběhlém datu nezmizí z upozornění, ale ukáže nejbližší další svoz.' },
       { title: 'Domácnost+ v.0.1_270', note: 'Nákupy / Karty: doplněná jasná editace uložených věrnostních karet včetně přepnutí typu čárový kód / QR / text, přefocení kódu u existující karty a viditelný cloud sync přes sdílenou domácnost.' },
@@ -6573,6 +6574,7 @@
       codeType: normalizeLoyaltyCodeType(item.codeType || item.code_type),
       color: normalizeLoyaltyColor(item.color || item.theme),
       note: normalizeText(item.note || ''),
+      photoDataUrl: normalizeText(item.photoDataUrl || item.photo_data_url || item.codeImage || item.image || ''),
       favorite: Boolean(item.favorite)
     };
   }
@@ -6645,16 +6647,18 @@
   }
 
   function loyaltyCodePreview(card = {}) {
+    const photo = normalizeText(card.photoDataUrl || '');
+    const photoPreview = photo ? `<div class="loyalty-code-photo"><img src="${escapeHtml(photo)}" alt="Vyfocený kód karty"></div>` : '';
     if (card.codeType === 'qr') {
       const seed = normalizeText(card.cardNumber || card.store || 'qr');
       const cells = Array.from({ length: 49 }, (_, index) => {
         const code = seed.charCodeAt(index % seed.length) || 7;
         return `<i class="${((code + index * 3) % 5) < 2 ? 'on' : ''}"></i>`;
       }).join('');
-      return `<div class="loyalty-qr" aria-hidden="true">${cells}</div>`;
+      return `${photoPreview}<div class="loyalty-qr" aria-hidden="true">${cells}</div>`;
     }
-    if (card.codeType === 'text') return `<div class="loyalty-text-code selectable-text">${escapeHtml(card.cardNumber || 'bez čísla')}</div>`;
-    return `<div class="loyalty-barcode" aria-hidden="true">${loyaltyBarcodeBars(card.cardNumber)}</div>`;
+    if (card.codeType === 'text') return `${photoPreview}<div class="loyalty-text-code selectable-text">${escapeHtml(card.cardNumber || 'bez čísla')}</div>`;
+    return `${photoPreview}<div class="loyalty-barcode" aria-hidden="true">${loyaltyBarcodeBars(card.cardNumber)}</div>`;
   }
 
   function normalizeLoyaltyDetectedFormat(format = '') {
@@ -6665,11 +6669,11 @@
   }
 
   function getLoyaltyScanState() {
-    return loyaltyCardScan || { loading: false, dataUrl: '', detectedCode: '', detectedFormat: '', error: '' };
+    return loyaltyCardScan || { loading: false, dataUrl: '', detectedCode: '', detectedFormat: '', detectedText: '', error: '', source: '' };
   }
 
   function resetLoyaltyCardScan() {
-    loyaltyCardScan = { loading: false, dataUrl: '', detectedCode: '', detectedFormat: '', error: '' };
+    loyaltyCardScan = { loading: false, dataUrl: '', detectedCode: '', detectedFormat: '', detectedText: '', error: '', source: '' };
   }
 
   function normalizeLoyaltyAddDraft(data = {}) {
@@ -6699,26 +6703,30 @@
   function renderLoyaltyScanPanel(scan = getLoyaltyScanState()) {
     const hasPreview = Boolean(scan?.dataUrl);
     const detected = normalizeText(scan?.detectedCode || '');
+    const detectedText = normalizeText(scan?.detectedText || '');
+    const sourceLabel = scan?.source === 'text' ? 'číslo z textu na fotce' : scan?.source === 'barcode' ? 'čárový/QR kód' : '';
     const status = scan?.loading
-      ? 'Načítám fotku a hledám kód…'
+      ? 'Načítám fotku a zkouším najít kód i viditelné číslo…'
       : detected
-        ? `Načteno: ${detected}`
-        : scan?.error
-          ? scan.error
-          : 'Vyfoť kartu nebo nahraj obrázek. Pokud prohlížeč najde čárový/QR kód, doplní číslo automaticky.';
-    const statusClass = scan?.loading ? 'is-loading' : detected ? 'is-good' : scan?.error ? 'is-warn' : '';
+        ? `Načteno ${sourceLabel ? `(${sourceLabel})` : ''}: ${detected}`
+        : hasPreview
+          ? 'Fotka je uložená jako podklad. Když se číslo nepřečetlo automaticky, opiš ho z náhledu do pole Číslo / kód karty.'
+          : 'Vyfoť čárový/QR kód nebo kartu s viditelným číslem. Když to prohlížeč dovolí, číslo se doplní automaticky.';
+    const statusClass = scan?.loading ? 'is-loading' : detected ? 'is-good' : hasPreview ? 'is-warn' : '';
+    const textHint = detectedText && !detected ? `<span class="loyalty-detected-text">Na fotce jsem našel text: ${escapeHtml(detectedText)}</span>` : '';
     return `
       <div class="loyalty-scan-card ${statusClass}">
         <div class="loyalty-scan-copy">
-          <strong>Vyfotit kartu</strong>
+          <strong>Vyfotit kartu / kód</strong>
           <span>${escapeHtml(status)}</span>
+          ${textHint}
         </div>
         <div class="loyalty-scan-actions">
           <label class="ghost-btn loyalty-photo-btn" for="loyalty-card-photo-input">Vyfotit / nahrát</label>
           <input id="loyalty-card-photo-input" class="sr-only-input" type="file" accept="image/*" capture="environment" data-loyalty-card-photo>
           ${hasPreview || detected || scan?.error ? '<button class="ghost-btn" type="button" data-action="clear-loyalty-scan">Vyčistit</button>' : ''}
         </div>
-        ${hasPreview ? `<div class="loyalty-scan-preview"><img src="${escapeHtml(scan.dataUrl)}" alt="Náhled věrnostní karty"></div>` : ''}
+        ${hasPreview ? `<div class="loyalty-scan-preview"><img src="${escapeHtml(scan.dataUrl)}" alt="Náhled věrnostní karty nebo kódu"></div><div class="inline-note compact-note">Číslo z fotky můžeš rovnou opsat do pole níž. Uložená karta pak z čísla ukáže zvolený typ: čárový kód, QR nebo text.</div>` : ''}
       </div>`;
   }
 
@@ -6760,28 +6768,76 @@
     }
   }
 
-  async function detectLoyaltyCodeFromImage(dataUrl) {
+  function extractLoyaltyNumberFromText(text = '') {
+    const source = normalizeText(text)
+      .replace(/[O]/g, '0')
+      .replace(/[Il|]/g, '1')
+      .replace(/[–—]/g, '-');
+    const numericCandidates = (source.match(/(?:\d[\s.\-]*){6,}/g) || [])
+      .map((value) => value.replace(/[^0-9]/g, ''))
+      .filter((value) => value.length >= 6);
+    if (numericCandidates.length) return numericCandidates.sort((a, b) => b.length - a.length)[0];
+    const alphaCandidates = (source.match(/[A-Z0-9][A-Z0-9\s.\-]{5,}/gi) || [])
+      .map((value) => value.replace(/[^A-Z0-9]/gi, '').toUpperCase())
+      .filter((value) => value.length >= 6);
+    return alphaCandidates.sort((a, b) => b.length - a.length)[0] || '';
+  }
+
+  async function detectLoyaltyBarcodeFromImage(dataUrl) {
     const Detector = window.BarcodeDetector;
-    if (typeof Detector !== 'function') return { code: '', format: '', error: 'Tenhle prohlížeč neumí automatické čtení kódů. Číslo můžeš doplnit ručně.' };
+    if (typeof Detector !== 'function') return { code: '', format: '', error: 'BarcodeDetector není dostupný.' };
     try {
       const supported = typeof Detector.getSupportedFormats === 'function' ? await Detector.getSupportedFormats() : [];
       const detector = Array.isArray(supported) && supported.length ? new Detector({ formats: supported }) : new Detector();
       const image = await loadImageElement(dataUrl);
       const found = await detector.detect(image);
       const first = Array.isArray(found) ? found[0] : null;
-      if (!first?.rawValue) return { code: '', format: '', error: 'Kód se z fotky nepovedlo načíst. Zkus fotit rovněji a víc zblízka, nebo číslo doplň ručně.' };
-      return { code: normalizeText(first.rawValue), format: normalizeText(first.format || '') };
+      if (!first?.rawValue) return { code: '', format: '', error: 'Čárový/QR kód se z fotky nepovedlo načíst.' };
+      return { code: normalizeText(first.rawValue), format: normalizeText(first.format || ''), source: 'barcode' };
     } catch (error) {
       console.warn('Loyalty barcode scan failed', error);
-      return { code: '', format: '', error: 'Automatické čtení kódu se nepovedlo. Číslo můžeš doplnit ručně.' };
+      return { code: '', format: '', error: 'Automatické čtení čárového/QR kódu se nepovedlo.' };
     }
+  }
+
+  async function detectLoyaltyTextFromImage(dataUrl) {
+    const Detector = window.TextDetector;
+    if (typeof Detector !== 'function') return { code: '', text: '', format: 'text', error: 'TextDetector není dostupný.' };
+    try {
+      const detector = new Detector();
+      const image = await loadImageElement(dataUrl);
+      const found = await detector.detect(image);
+      const text = (Array.isArray(found) ? found : [])
+        .map((item) => normalizeText(item.rawValue || item.text || ''))
+        .filter(Boolean)
+        .join(' ');
+      const code = extractLoyaltyNumberFromText(text);
+      if (!code) return { code: '', text, format: 'text', error: 'Text na fotce jsem našel, ale číslo karty z něj nešlo spolehlivě určit.' };
+      return { code, text, format: 'text', source: 'text' };
+    } catch (error) {
+      console.warn('Loyalty text scan failed', error);
+      return { code: '', text: '', format: 'text', error: 'Automatické čtení čísla z fotky se nepovedlo.' };
+    }
+  }
+
+  async function detectLoyaltyCodeFromImage(dataUrl) {
+    const barcode = await detectLoyaltyBarcodeFromImage(dataUrl);
+    if (barcode.code) return barcode;
+    const text = await detectLoyaltyTextFromImage(dataUrl);
+    if (text.code) return text;
+    return {
+      code: '',
+      format: '',
+      detectedText: text.text || '',
+      error: 'Fotku jsem uložil jako podklad, ale automatické čtení čísla tenhle prohlížeč nezvládl. Číslo opiš z náhledu ručně.'
+    };
   }
 
   async function handleLoyaltyPhotoInput(input) {
     const file = input?.files?.[0];
     if (!file) return;
     loyaltyAddDetailsOpen = true;
-    loyaltyCardScan = { loading: true, dataUrl: '', detectedCode: '', detectedFormat: '', error: '' };
+    loyaltyCardScan = { loading: true, dataUrl: '', detectedCode: '', detectedFormat: '', detectedText: '', error: '', source: '' };
     render();
     try {
       const dataUrl = await compressLoyaltyImage(file);
@@ -6791,7 +6847,9 @@
         dataUrl,
         detectedCode: detected.code || '',
         detectedFormat: normalizeLoyaltyDetectedFormat(detected.format || ''),
-        error: detected.code ? '' : detected.error || 'Kód se nepovedlo načíst. Číslo doplň ručně.'
+        detectedText: detected.detectedText || detected.text || '',
+        error: detected.code ? '' : detected.error || 'Fotka uložená. Číslo doplň ručně z náhledu.',
+        source: detected.source || ''
       };
       if (loyaltyCardScan.detectedCode) {
         loyaltyAddDraft = normalizeLoyaltyAddDraft({
@@ -6799,33 +6857,33 @@
           cardNumber: loyaltyAddDraft.cardNumber || loyaltyCardScan.detectedCode,
           codeType: loyaltyCardScan.detectedFormat || loyaltyAddDraft.codeType || 'barcode'
         });
-        showToast('Kód karty načtený z fotky');
+        showToast(loyaltyCardScan.source === 'text' ? 'Číslo karty načtené z textu na fotce' : 'Kód karty načtený z fotky');
+      } else {
+        showToast('Fotka uložená jako podklad. Číslo opiš z náhledu do pole níž.');
       }
-      else showToast('Fotka načtená, kód se musí doplnit ručně');
     } catch (error) {
       console.error('Loyalty photo load failed', error);
-      loyaltyCardScan = { loading: false, dataUrl: '', detectedCode: '', detectedFormat: '', error: 'Fotku se nepovedlo načíst.' };
+      loyaltyCardScan = { loading: false, dataUrl: '', detectedCode: '', detectedFormat: '', detectedText: '', error: 'Fotku se nepovedlo načíst.', source: '' };
+    } finally {
+      input.value = '';
     }
     render();
   }
-
 
   async function handleLoyaltyEditPhotoInput(input) {
     const id = input?.dataset?.id || '';
     const file = input?.files?.[0];
     const card = state.loyaltyCards?.find((item) => item.id === id);
     if (!file || !card) return;
-    showToast('Načítám kód z fotky…');
+    showToast('Načítám fotku karty…');
     try {
       const dataUrl = await compressLoyaltyImage(file);
       const detected = await detectLoyaltyCodeFromImage(dataUrl);
-      if (!detected.code) {
-        showToast(detected.error || 'Kód se z fotky nepovedlo načíst. Číslo můžeš upravit ručně.');
-        input.value = '';
-        return;
+      if (detected.code) {
+        card.cardNumber = normalizeText(detected.code);
+        card.codeType = normalizeLoyaltyDetectedFormat(detected.format || card.codeType || 'barcode');
       }
-      card.cardNumber = normalizeText(detected.code);
-      card.codeType = normalizeLoyaltyDetectedFormat(detected.format || card.codeType || 'barcode');
+      card.photoDataUrl = dataUrl;
       card.updatedAt = new Date().toISOString();
       markLoyaltyCardsPending();
       state.loyaltyCards = normalizeLoyaltyCards(state.loyaltyCards || []);
@@ -6834,7 +6892,7 @@
       render();
       await syncLoyaltyCardsToCloud();
       render();
-      showToast(cloudReady() ? 'Kód karty načtený a uložený do domácnosti' : 'Kód karty načtený lokálně');
+      showToast(detected.code ? (cloudReady() ? 'Kód karty načtený a uložený do domácnosti' : 'Kód karty načtený lokálně') : 'Fotka uložená. Číslo můžeš upravit ručně.');
     } catch (error) {
       console.error('Loyalty edit photo load failed', error);
       showToast('Fotku se nepovedlo načíst.');
@@ -6901,6 +6959,7 @@
       codeType: draft.codeType || scan.detectedFormat,
       color: draft.color,
       note: draft.note,
+      photoDataUrl: scan.dataUrl || '',
       favorite: false,
       householdId: currentHouseholdId(),
       profileId: currentProfileId()
@@ -6939,6 +6998,7 @@
       codeType: data.codeType,
       color: data.color,
       note: data.note,
+      photoDataUrl: card.photoDataUrl || '',
       updatedAt: new Date().toISOString()
     });
     Object.assign(card, updated);
@@ -13119,7 +13179,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 272))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 273))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -18890,7 +18950,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 85, appBuild: 272, mode: 'rich-demo-v272', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 85, appBuild: 273, mode: 'rich-demo-v273', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -19043,7 +19103,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 272, mode: 'loyalty-add-panel-stability-v272', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 273, mode: 'loyalty-card-photo-ocr-v273', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -22476,7 +22536,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 272
+        appBuild: 273
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -23086,7 +23146,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-272-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-273-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -23547,7 +23607,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_272</span>
+          <span class="badge">Domácnost+ v.0.1_273</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
