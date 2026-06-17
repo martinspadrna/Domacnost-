@@ -430,3 +430,261 @@ html[data-theme="dark"] .shopping-cloud-strip {
     width: 100%;
   }
 }
+
+/* Domácnost+ v.0.1_268 – Nákupy / Věrnostní karty */
+.shopping-tab-loyalty {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.loyalty-wallet-panel {
+  overflow: hidden;
+  min-width: 0;
+}
+
+.loyalty-wallet-head p {
+  max-width: 680px;
+}
+
+.loyalty-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  margin: 12px 0 14px;
+  min-width: 0;
+}
+
+.loyalty-search-field {
+  width: min(100%, 460px);
+  min-width: 0;
+}
+
+.loyalty-search-field .input,
+.loyalty-card-form .input,
+.loyalty-card-form .select,
+.loyalty-edit-form .input,
+.loyalty-edit-form .select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.loyalty-wallet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 14px;
+  margin-top: 14px;
+  min-width: 0;
+}
+
+.loyalty-card-item {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  border: 1px solid rgba(255,255,255,.58);
+  border-radius: 28px;
+  padding: 18px;
+  color: #111827;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255,255,255,.88), transparent 34%),
+    linear-gradient(135deg, rgba(255,255,255,.82), rgba(255,255,255,.44));
+  box-shadow: 0 24px 58px rgba(15,23,42,.13), inset 0 1px 0 rgba(255,255,255,.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.loyalty-card-glow {
+  position: absolute;
+  inset: auto -22% -38% 28%;
+  height: 150px;
+  z-index: -1;
+  border-radius: 999px;
+  filter: blur(10px);
+  opacity: .9;
+  transform: rotate(-8deg);
+}
+
+.loyalty-color-rose .loyalty-card-glow { background: linear-gradient(90deg, rgba(255,114,184,.72), rgba(255,209,102,.6)); }
+.loyalty-color-blue .loyalty-card-glow { background: linear-gradient(90deg, rgba(96,165,250,.72), rgba(125,211,252,.56)); }
+.loyalty-color-mint .loyalty-card-glow { background: linear-gradient(90deg, rgba(52,211,153,.66), rgba(167,243,208,.58)); }
+.loyalty-color-amber .loyalty-card-glow { background: linear-gradient(90deg, rgba(251,191,36,.72), rgba(253,186,116,.58)); }
+.loyalty-color-violet .loyalty-card-glow { background: linear-gradient(90deg, rgba(167,139,250,.72), rgba(244,114,182,.48)); }
+.loyalty-color-slate .loyalty-card-glow { background: linear-gradient(90deg, rgba(100,116,139,.62), rgba(203,213,225,.58)); }
+
+.loyalty-card-top,
+.loyalty-card-bottom,
+.loyalty-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.loyalty-card-top span,
+.loyalty-card-bottom span,
+.loyalty-card-bottom em {
+  color: rgba(15,23,42,.62);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+
+.loyalty-card-top h3 {
+  margin: 3px 0 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.45rem;
+  line-height: 1.05;
+  color: #0f172a;
+}
+
+.loyalty-favorite-btn {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 18px;
+  background: rgba(255,255,255,.58);
+  color: rgba(15,23,42,.34);
+  font-size: 1.1rem;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.74), 0 10px 24px rgba(15,23,42,.08);
+}
+
+.loyalty-favorite-btn.active {
+  color: #f59e0b;
+  background: rgba(255,255,255,.86);
+}
+
+.loyalty-card-code {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  border-radius: 22px;
+  padding: 14px;
+  background: rgba(255,255,255,.74);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.88);
+}
+
+.loyalty-card-code strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #111827;
+  font-size: .92rem;
+  letter-spacing: .05em;
+}
+
+.loyalty-barcode {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 2px;
+  height: 58px;
+  width: 100%;
+  overflow: hidden;
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.loyalty-barcode i {
+  display: block;
+  height: 100%;
+  width: 2px;
+  border-radius: 2px;
+  background: #111827;
+}
+
+.loyalty-barcode i.w2 { width: 3px; }
+.loyalty-barcode i.w3 { width: 4px; }
+.loyalty-barcode i.w4 { width: 5px; }
+.loyalty-barcode i.tall { height: 112%; margin-top: -3px; }
+
+.loyalty-qr {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  width: 92px;
+  height: 92px;
+  padding: 9px;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.loyalty-qr i {
+  display: block;
+  border-radius: 3px;
+  background: transparent;
+}
+
+.loyalty-qr i.on { background: #111827; }
+
+.loyalty-text-code {
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: #fff;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #111827;
+  letter-spacing: .04em;
+  overflow-wrap: anywhere;
+}
+
+.loyalty-card-bottom em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: normal;
+  text-align: right;
+}
+
+.loyalty-card-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.loyalty-card-actions .ghost-btn,
+.loyalty-card-actions .danger-btn {
+  min-height: 38px;
+  padding-inline: 12px;
+}
+
+.loyalty-edit-form {
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(15,23,42,.08);
+}
+
+@media (max-width: 680px) {
+  .loyalty-toolbar {
+    display: block;
+  }
+  .loyalty-search-field {
+    width: 100%;
+  }
+  .loyalty-wallet-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .loyalty-card-item {
+    border-radius: 24px;
+    padding: 16px;
+  }
+  .loyalty-card-top h3 {
+    font-size: 1.28rem;
+  }
+  .loyalty-card-actions .ghost-btn,
+  .loyalty-card-actions .danger-btn {
+    flex: 1 1 auto;
+  }
+}

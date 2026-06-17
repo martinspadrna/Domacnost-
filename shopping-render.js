@@ -40,6 +40,7 @@
       const isShoppingListTab = activeShoppingTab === 'list';
       const isShoppingCatalogTab = activeShoppingTab === 'catalog';
       const isShoppingCouponsTab = activeShoppingTab === 'coupons';
+      const isShoppingLoyaltyTab = activeShoppingTab === 'loyalty';
       const lists = deps.getShoppingLists();
       const activeListId = deps.getActiveShoppingListId();
       const activeList = lists.find((list) => list.id === activeListId) || lists[0] || null;
@@ -61,6 +62,14 @@
       const ownCatalogCount = isShoppingCatalogTab ? catalog.filter((item) => item.householdId || item.source === 'local').length : customCatalogCount;
       const couponsCount = Array.isArray(state.coupons) ? state.coupons.length : 0;
       const coupons = isShoppingCouponsTab ? [...state.coupons].sort((a, b) => String(a.expiry || '9999').localeCompare(String(b.expiry || '9999'))) : [];
+      const loyaltySearch = deps.getLoyaltySearchTerm ? String(deps.getLoyaltySearchTerm() || '') : '';
+      const loyaltyCardsAll = deps.getLoyaltyCards ? deps.getLoyaltyCards() : (Array.isArray(state.loyaltyCards) ? state.loyaltyCards : []);
+      const loyaltyCards = isShoppingLoyaltyTab ? loyaltyCardsAll.filter((card) => {
+        const query = loyaltySearch.trim().toLowerCase();
+        if (!query) return true;
+        return [card.store, card.cardNumber, card.note].filter(Boolean).join(' ').toLowerCase().includes(query);
+      }) : [];
+      const loyaltyCount = loyaltyCardsAll.length;
       const localOnlyShoppingCount = isShoppingListTab ? activeItems.filter((item) => !item.cloudId).length : 0;
       const localOnlyListsCount = (state.shoppingLists || []).filter((list) => !(list.cloudId || list.cloudListId)).length;
       const localOnlyTotalCount = localOnlyShoppingCount + localOnlyListsCount;
@@ -162,16 +171,43 @@
           ${coupons.length ? `<div class="list">${coupons.map(deps.renderCouponItem).join('')}</div>` : deps.renderEmpty('Zatím nemáš uložený žádný slevový kód.')}
         </section>` : '';
 
+
+      const loyaltyPanel = isShoppingLoyaltyTab ? `
+        <section class="card desktop-span-2 shopping-panel panel-loyalty loyalty-wallet-panel">
+          <div class="card-header loyalty-wallet-head"><div><h2>Věrnostní karty</h2><p>Rychlá peněženka na karty do obchodů. Otevři, ukaž kód u pokladny a hotovo.</p></div><span class="badge ${state.cloud?.householdId ? 'good' : ''}">${state.cloud?.householdId ? 'domácnost' : 'lokálně'}</span></div>
+          <div class="loyalty-toolbar">
+            <div class="field loyalty-search-field"><label>Najít kartu</label><input class="input" type="search" placeholder="Kaufland, Lidl, DM…" value="${escapeHtml(loyaltySearch)}" data-loyalty-search autocomplete="off"></div>
+          </div>
+          <details class="action-details compact-edit-details loyalty-add-details">
+            <summary><span>Přidat kartu</span><em>obchod, číslo karty, typ kódu</em></summary>
+            <form data-form="add-loyalty-card" class="compact-form loyalty-card-form">
+              <div class="form-grid two">
+                ${deps.field('Obchod', 'store', 'text', 'Kaufland / Lidl / DM', true)}
+                ${deps.field('Číslo / kód karty', 'cardNumber', 'text', 'číslo karty nebo kód', true)}
+                ${deps.selectField('Typ kódu', 'codeType', [['barcode', 'Čárový kód'], ['qr', 'QR'], ['text', 'Text']], 'barcode')}
+                ${deps.selectField('Barva karty', 'color', [['rose', 'Rose'], ['blue', 'Blue'], ['mint', 'Mint'], ['amber', 'Amber'], ['violet', 'Violet'], ['slate', 'Slate']], 'rose')}
+                ${deps.field('Poznámka', 'note', 'text', 'např. Lucčina karta')}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Uložit kartu</button></div>
+            </form>
+          </details>
+          <div class="loyalty-wallet-grid">
+            ${loyaltyCards.length ? loyaltyCards.map((card) => deps.renderLoyaltyCardItem(card)).join('') : deps.renderEmptyCta({ icon: '💳', title: loyaltySearch ? 'Nic nenalezeno' : 'Zatím žádná karta', text: loyaltySearch ? 'Zkus jiný obchod nebo číslo karty.' : 'Přidej věrnostní kartu a budeš ji mít po ruce v nákupech.', nav: 'shopping', tab: 'loyalty', label: 'Přidat kartu' })}
+          </div>
+        </section>` : '';
+
       return `
       ${deps.renderSectionTabs('shopping', [
         { id: 'list', label: 'Seznamy', icon: '🛒', count: activeStats.open },
         { id: 'catalog', label: 'Katalog', icon: '📚', count: catalogCount },
-        { id: 'coupons', label: 'Kódy', icon: '🏷️', count: couponsCount }
+        { id: 'coupons', label: 'Kódy', icon: '🏷️', count: couponsCount },
+        { id: 'loyalty', label: 'Karty', icon: '💳', count: loyaltyCount }
       ], 'list')}
       <div class="grid two module-tabbed shopping-tab-${activeShoppingTab}">
         ${listPanel}
         ${catalogPanel}
         ${couponsPanel}
+        ${loyaltyPanel}
       </div>
       ${viewState.doneModalOpen ? renderShoppingDoneModal(groupedDone, doneItems, activeList) : ''}
     `;

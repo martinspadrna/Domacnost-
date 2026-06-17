@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_267';
+  const APP_VERSION = 'Domácnost+ v.0.1_268';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -701,8 +701,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 267,
-      mode: 'reading-groups-v267',
+      appBuild: 268,
+      mode: 'shopping-loyalty-v268',
       createdAt: '',
       updatedAt: ''
     },
@@ -731,6 +731,8 @@
     calendar: [],
     packages: [],
     coupons: [],
+    loyaltyCards: [],
+    loyaltyCardsCloud: { loadedAt: '', pendingAt: '' },
     hdoWindows: [],
     shopping: [],
     shoppingLists: [],
@@ -992,6 +994,8 @@
   let activeWarrantyDetailId = null;
   let visualSettingsDrawerOpen = false;
   let couponEditId = '';
+  let loyaltyCardEditId = '';
+  let loyaltyCardSearchTerm = '';
   let financeEditId = '';
   let financeAccountEditId = '';
   let readingsDetailMeterId = localStorage.getItem('domacnostPlus.readingsDetailMeterId') || '';
@@ -1600,8 +1604,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 267,
-      mode: 'reading-groups-v267',
+      appBuild: 268,
+      mode: 'shopping-loyalty-v268',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1741,6 +1745,8 @@
     migrated.shopping = (migrated.shopping || []).map((item) => normalizeShoppingItemRecord(item, migrated.activeShoppingListId || migrated.shoppingLists[0]?.id || ''));
     dedupeShoppingData(migrated);
     migrated.shoppingSeedVersion = 201;
+    migrated.loyaltyCards = normalizeLoyaltyCards(migrated.loyaltyCards || []);
+    migrated.loyaltyCardsCloud = migrated.loyaltyCardsCloud && typeof migrated.loyaltyCardsCloud === 'object' && !Array.isArray(migrated.loyaltyCardsCloud) ? { loadedAt: migrated.loyaltyCardsCloud.loadedAt || '', pendingAt: migrated.loyaltyCardsCloud.pendingAt || '' } : { ...DEFAULT_STATE.loyaltyCardsCloud };
     migrated.financeTemplates = normalizeFinanceTemplates(migrated.financeTemplates);
 
     const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
@@ -5184,6 +5190,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_268', note: 'Nákupy: přidaná záložka Věrnostní karty ve stylu moderní peněženky. Karty se ukládají k domácnosti přes dashboard_layout bez nové DB tabulky.' },
       { title: 'Domácnost+ v.0.1_267', note: 'Odečty: opravené rozjíždění panelů fakturačních období doprava. Datumová pole od–do se ve skupinách skládají stabilně pod sebe a netlačí kartu mimo šířku obrazovky.' },
       { title: 'Domácnost+ v.0.1_266', note: 'Odečty: globální ceny a globální fakturační období jsou pryč z UI. Základní skupina je plně editovatelná včetně přejmenování a další vyúčtování se řeší přidáním dalších skupin.' },
       { title: 'Domácnost+ v.0.1_265', note: 'Odečty mají skupiny vyúčtování pro více bytů/částí domu. Každá skupina má vlastní ceny, zálohy a fakturační období zvlášť pro elektřinu, plyn a vodu. Měřidla lze ke skupinám přiřadit a fakturační období už na mobilu neutíká k pravému kraji.' },
@@ -6362,6 +6369,9 @@
       renderEmptyCta,
       renderEmpty,
       renderCouponItem,
+      renderLoyaltyCardItem,
+      getLoyaltyCards,
+      getLoyaltySearchTerm: () => loyaltyCardSearchTerm,
       ensureShoppingListsReady,
       getShoppingLists,
       getActiveShoppingListId,
@@ -6492,6 +6502,222 @@
         ` : ''}
       </div>
     `;
+  }
+
+
+
+  function normalizeLoyaltyColor(value = '') {
+    const key = normalizeKey(value || 'rose');
+    return ['rose', 'blue', 'mint', 'amber', 'violet', 'slate'].includes(key) ? key : 'rose';
+  }
+
+  function normalizeLoyaltyCodeType(value = '') {
+    const key = normalizeKey(value || 'barcode');
+    return ['barcode', 'qr', 'text'].includes(key) ? key : 'barcode';
+  }
+
+  function loyaltyCardKey(card = {}) {
+    return normalizeKey([card.store, card.cardNumber || card.code || card.barcode].filter(Boolean).join('|'));
+  }
+
+  function normalizeLoyaltyCard(item = {}) {
+    const now = new Date().toISOString();
+    const store = normalizeText(item.store || item.name || item.title || 'Karta');
+    const cardNumber = normalizeText(item.cardNumber || item.card_number || item.number || item.code || item.barcode || '');
+    return {
+      id: normalizeText(item.id) || `loyalty-${uid()}`,
+      householdId: normalizeText(item.householdId || item.household_id) || '',
+      profileId: normalizeText(item.profileId || item.profile_id) || '',
+      createdAt: normalizeText(item.createdAt || item.created_at) || now,
+      updatedAt: normalizeText(item.updatedAt || item.updated_at) || normalizeText(item.createdAt || item.created_at) || now,
+      store,
+      cardNumber,
+      codeType: normalizeLoyaltyCodeType(item.codeType || item.code_type),
+      color: normalizeLoyaltyColor(item.color || item.theme),
+      note: normalizeText(item.note || ''),
+      favorite: Boolean(item.favorite)
+    };
+  }
+
+  function normalizeLoyaltyCards(items = []) {
+    const byKey = new Map();
+    (Array.isArray(items) ? items : []).forEach((item) => {
+      const card = normalizeLoyaltyCard(item);
+      if (!card.store && !card.cardNumber) return;
+      const key = card.id || loyaltyCardKey(card);
+      const existing = byKey.get(key);
+      if (!existing || String(card.updatedAt || '').localeCompare(String(existing.updatedAt || '')) >= 0) byKey.set(key, card);
+    });
+    return [...byKey.values()].sort((a, b) => Number(Boolean(b.favorite)) - Number(Boolean(a.favorite)) || String(a.store).localeCompare(String(b.store), 'cs'));
+  }
+
+  function mergeLoyaltyCards(localItems = [], cloudItems = []) {
+    const byKey = new Map();
+    [...normalizeLoyaltyCards(localItems), ...normalizeLoyaltyCards(cloudItems)].forEach((card) => {
+      const key = card.id || loyaltyCardKey(card);
+      const altKey = loyaltyCardKey(card);
+      const existingKey = byKey.has(key) ? key : (altKey && byKey.has(altKey) ? altKey : key);
+      const existing = byKey.get(existingKey);
+      if (!existing || String(card.updatedAt || '').localeCompare(String(existing.updatedAt || '')) >= 0) byKey.set(existingKey, card);
+    });
+    return normalizeLoyaltyCards([...byKey.values()]);
+  }
+
+  function getLoyaltyCards() {
+    state.loyaltyCards = normalizeLoyaltyCards(state.loyaltyCards || []);
+    return state.loyaltyCards;
+  }
+
+  function loyaltyCardSearchMatches(card, term = '') {
+    const key = normalizeKey(term);
+    if (!key) return true;
+    return normalizeKey([card.store, card.cardNumber, card.note].filter(Boolean).join(' ')).includes(key);
+  }
+
+  function loyaltyBarcodeBars(value = '') {
+    const source = normalizeText(value) || '000000000000';
+    const chars = [...source].slice(0, 28);
+    if (!chars.length) chars.push('0');
+    return chars.map((char, index) => {
+      const code = char.charCodeAt(0) + index;
+      const width = 1 + (code % 4);
+      const tall = code % 3 === 0 ? ' tall' : '';
+      return `<i class="w${width}${tall}"></i>`;
+    }).join('');
+  }
+
+  function loyaltyCodePreview(card = {}) {
+    if (card.codeType === 'qr') {
+      const seed = normalizeText(card.cardNumber || card.store || 'qr');
+      const cells = Array.from({ length: 49 }, (_, index) => {
+        const code = seed.charCodeAt(index % seed.length) || 7;
+        return `<i class="${((code + index * 3) % 5) < 2 ? 'on' : ''}"></i>`;
+      }).join('');
+      return `<div class="loyalty-qr" aria-hidden="true">${cells}</div>`;
+    }
+    if (card.codeType === 'text') return `<div class="loyalty-text-code selectable-text">${escapeHtml(card.cardNumber || 'bez čísla')}</div>`;
+    return `<div class="loyalty-barcode" aria-hidden="true">${loyaltyBarcodeBars(card.cardNumber)}</div>`;
+  }
+
+  function renderLoyaltyCardItem(card) {
+    const normalized = normalizeLoyaltyCard(card);
+    const isEditing = loyaltyCardEditId === normalized.id;
+    const typeLabel = normalized.codeType === 'qr' ? 'QR' : normalized.codeType === 'text' ? 'Text' : 'Čárový kód';
+    return `
+      <article class="loyalty-card-item loyalty-color-${escapeHtml(normalized.color)} ${normalized.favorite ? 'is-favorite' : ''}" data-loyalty-card-search="${escapeHtml([normalized.store, normalized.cardNumber, normalized.note].filter(Boolean).join(' ').toLowerCase())}">
+        <div class="loyalty-card-glow"></div>
+        <div class="loyalty-card-top">
+          <div>
+            <span>Věrnostní karta</span>
+            <h3>${escapeHtml(normalized.store || 'Obchod')}</h3>
+          </div>
+          <button class="loyalty-favorite-btn ${normalized.favorite ? 'active' : ''}" type="button" data-action="toggle-loyalty-favorite" data-id="${escapeHtml(normalized.id)}" aria-label="${normalized.favorite ? 'Odebrat z oblíbených' : 'Přidat do oblíbených'}">★</button>
+        </div>
+        <div class="loyalty-card-code">
+          ${loyaltyCodePreview(normalized)}
+          <strong class="selectable-text">${escapeHtml(normalized.cardNumber || 'bez čísla')}</strong>
+        </div>
+        <div class="loyalty-card-bottom">
+          <span>${escapeHtml(typeLabel)}</span>
+          ${normalized.note ? `<em>${escapeHtml(normalized.note)}</em>` : '<em>připraveno u pokladny</em>'}
+        </div>
+        <div class="loyalty-card-actions">
+          <button class="ghost-btn" type="button" data-action="copy" data-value="${escapeHtml(normalized.cardNumber || '')}">Kopírovat číslo</button>
+          <button class="ghost-btn" type="button" data-action="toggle-loyalty-edit" data-id="${escapeHtml(normalized.id)}">${isEditing ? 'Zavřít' : 'Upravit'}</button>
+          <button class="danger-btn" type="button" data-action="delete-loyalty-card" data-id="${escapeHtml(normalized.id)}">Smazat</button>
+        </div>
+        ${isEditing ? `
+          <form data-form="update-loyalty-card" data-id="${escapeHtml(normalized.id)}" class="compact-form loyalty-edit-form">
+            <div class="form-grid two">
+              ${field('Obchod', 'store', 'text', 'Kaufland / Lidl / DM', true, normalized.store || '')}
+              ${field('Číslo / kód karty', 'cardNumber', 'text', 'číslo karty nebo kód', true, normalized.cardNumber || '')}
+              ${selectField('Typ kódu', 'codeType', [['barcode', 'Čárový kód'], ['qr', 'QR'], ['text', 'Text']], normalized.codeType)}
+              ${selectField('Barva karty', 'color', [['rose', 'Rose'], ['blue', 'Blue'], ['mint', 'Mint'], ['amber', 'Amber'], ['violet', 'Violet'], ['slate', 'Slate']], normalized.color)}
+              ${field('Poznámka', 'note', 'text', 'např. manželčina karta', false, normalized.note || '')}
+            </div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Uložit kartu</button></div>
+          </form>
+        ` : ''}
+      </article>
+    `;
+  }
+
+  async function addLoyaltyCardFromForm(data, form) {
+    const card = normalizeLoyaltyCard({
+      store: data.store,
+      cardNumber: data.cardNumber,
+      codeType: data.codeType,
+      color: data.color,
+      note: data.note,
+      favorite: false,
+      householdId: currentHouseholdId(),
+      profileId: currentProfileId()
+    });
+    if (!card.store || !card.cardNumber) return showToast('Zadej obchod a číslo karty');
+    state.loyaltyCards = normalizeLoyaltyCards(state.loyaltyCards || []);
+    const existing = state.loyaltyCards.find((item) => loyaltyCardKey(item) === loyaltyCardKey(card));
+    if (existing) {
+      loyaltyCardEditId = existing.id;
+      showToast('Tahle karta už existuje, otevřel jsem ji k úpravě');
+      render();
+      return;
+    }
+    state.loyaltyCards.push(card);
+    state.loyaltyCards = normalizeLoyaltyCards(state.loyaltyCards);
+    touchState();
+    saveState();
+    form?.reset?.();
+    render();
+    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
+    showToast('Věrnostní karta uložena');
+  }
+
+  async function updateLoyaltyCardFromForm(id, data, form) {
+    const card = state.loyaltyCards?.find((item) => item.id === id);
+    if (!card) return showToast('Karta nenalezena');
+    const updated = normalizeLoyaltyCard({
+      ...card,
+      store: data.store,
+      cardNumber: data.cardNumber,
+      codeType: data.codeType,
+      color: data.color,
+      note: data.note,
+      updatedAt: new Date().toISOString()
+    });
+    Object.assign(card, updated);
+    state.loyaltyCards = normalizeLoyaltyCards(state.loyaltyCards);
+    loyaltyCardEditId = '';
+    touchState();
+    saveState();
+    form?.reset?.();
+    render();
+    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
+    showToast('Věrnostní karta upravena');
+  }
+
+  async function toggleLoyaltyFavorite(id) {
+    const card = state.loyaltyCards?.find((item) => item.id === id);
+    if (!card) return;
+    card.favorite = !card.favorite;
+    card.updatedAt = new Date().toISOString();
+    state.loyaltyCards = normalizeLoyaltyCards(state.loyaltyCards);
+    touchState();
+    saveState();
+    render();
+    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
+  }
+
+  async function deleteLoyaltyCard(id) {
+    const card = state.loyaltyCards?.find((item) => item.id === id);
+    if (!card) return;
+    if (!window.confirm(`Smazat věrnostní kartu ${card.store || 'obchodu'}?`)) return;
+    state.loyaltyCards = (state.loyaltyCards || []).filter((item) => item.id !== id);
+    if (loyaltyCardEditId === id) loyaltyCardEditId = '';
+    touchState();
+    saveState();
+    render();
+    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
+    showToast('Karta smazána');
   }
 
   function normalizeWarrantyStatus(value) {
@@ -17717,6 +17943,8 @@
       'add-shopping-catalog-item': () => addShoppingCatalogItemFromForm(data, form),
       'add-coupon': () => addItem('coupons', { store: data.store, code: data.code, discount: data.discount, expiry: data.expiry, note: data.note, used: false }),
       'update-coupon': () => updateCoupon(form.dataset.id, data),
+      'add-loyalty-card': () => addLoyaltyCardFromForm(data, form),
+      'update-loyalty-card': () => updateLoyaltyCardFromForm(form.dataset.id, data, form),
       'add-hdo': () => addHdoWindowFromForm(data, form),
       'add-waste': () => addWasteFromForm(data, form),
       'add-reading-meter': () => addReadingMeterFromForm(data, form),
@@ -18327,7 +18555,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 85, appBuild: 267, mode: 'rich-demo-v267', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 85, appBuild: 268, mode: 'rich-demo-v268', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -18480,7 +18708,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 267, mode: 'reading-groups-v267', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 268, mode: 'shopping-loyalty-v268', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -20132,7 +20360,7 @@
     const map = {
       calendar: [cloudLoadCalendarSources, cloudLoadCalendar],
       packages: [cloudLoadParcels],
-      shopping: [cloudLoadShoppingData],
+      shopping: [cloudLoadHouseholdUiSettings, cloudLoadShoppingData],
       hdo: [cloudLoadHdoData],
       waste: [cloudLoadWaste],
       tasks: [cloudLoadTasks, cloudLoadExtraCollections],
@@ -20381,6 +20609,19 @@
     if (action === 'toggle-coupon-edit') {
       couponEditId = couponEditId === button.dataset.id ? '' : (button.dataset.id || '');
       render();
+      return;
+    }
+    if (action === 'toggle-loyalty-edit') {
+      loyaltyCardEditId = loyaltyCardEditId === button.dataset.id ? '' : (button.dataset.id || '');
+      render();
+      return;
+    }
+    if (action === 'toggle-loyalty-favorite') {
+      toggleLoyaltyFavorite(button.dataset.id || '');
+      return;
+    }
+    if (action === 'delete-loyalty-card') {
+      deleteLoyaltyCard(button.dataset.id || '');
       return;
     }
     if (action === 'copy') {
@@ -21492,6 +21733,8 @@
         theme: state.settings?.theme || 'light'
       },
       parcelLookup: structuredCloneSafe(state.parcelLookup || DEFAULT_STATE.parcelLookup),
+      loyaltyCards: structuredCloneSafe(normalizeLoyaltyCards(state.loyaltyCards || [])),
+      loyaltyCardsCloud: structuredCloneSafe(state.loyaltyCardsCloud || DEFAULT_STATE.loyaltyCardsCloud),
       readingPrices: structuredCloneSafe(state.readingPrices || DEFAULT_STATE.readingPrices),
       readingDeposits: structuredCloneSafe(state.readingDeposits || DEFAULT_STATE.readingDeposits),
       readingBilling: structuredCloneSafe(state.readingBilling || DEFAULT_STATE.readingBilling),
@@ -21837,6 +22080,10 @@
     if (layout.parcelLookup && typeof layout.parcelLookup === 'object') {
       state.parcelLookup = normalizeParcelLookupSettings({ ...state.parcelLookup, ...layout.parcelLookup });
     }
+    if (Array.isArray(layout.loyaltyCards)) {
+      state.loyaltyCards = mergeLoyaltyCards(state.loyaltyCards || [], layout.loyaltyCards);
+      state.loyaltyCardsCloud = { ...(state.loyaltyCardsCloud || {}), loadedAt: new Date().toISOString(), pendingAt: '' };
+    }
     if (layout.visualSettings && typeof layout.visualSettings === 'object') {
       if (mergeVisualSettings(layout.visualSettings)) saveLocalVisualSettings();
     }
@@ -21881,13 +22128,14 @@
           paymentFilter: subscriptionPaymentFilter()
         },
         parcelLookup: normalizeParcelLookupSettings(state.parcelLookup),
+        loyaltyCards: normalizeLoyaltyCards(state.loyaltyCards || []),
         financeTemplates: normalizeFinanceTemplates(state.financeTemplates || []),
         financeSettings: {
           month: financeSelectedMonth(),
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 267
+        appBuild: 268
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -21955,6 +22203,8 @@
       profiles: structuredCloneSafe(state.profiles),
       activeProfileId: state.activeProfileId,
       parcelLookup: structuredCloneSafe(state.parcelLookup || DEFAULT_STATE.parcelLookup),
+      loyaltyCards: structuredCloneSafe(normalizeLoyaltyCards(state.loyaltyCards || [])),
+      loyaltyCardsCloud: structuredCloneSafe(state.loyaltyCardsCloud || DEFAULT_STATE.loyaltyCardsCloud),
       readingPrices: structuredCloneSafe(state.readingPrices || DEFAULT_STATE.readingPrices),
       readingDeposits: structuredCloneSafe(state.readingDeposits || DEFAULT_STATE.readingDeposits),
       readingBilling: structuredCloneSafe(state.readingBilling || DEFAULT_STATE.readingBilling),
@@ -21973,6 +22223,8 @@
       state.profiles = structuredCloneSafe(snapshot.profiles || []);
       state.activeProfileId = snapshot.activeProfileId || state.profiles[0]?.id || '';
       state.parcelLookup = normalizeParcelLookupSettings(snapshot.parcelLookup || state.parcelLookup);
+      state.loyaltyCards = normalizeLoyaltyCards(snapshot.loyaltyCards || state.loyaltyCards || []);
+      state.loyaltyCardsCloud = structuredCloneSafe(snapshot.loyaltyCardsCloud || state.loyaltyCardsCloud || DEFAULT_STATE.loyaltyCardsCloud);
       state.readingPrices = normalizeReadingPrices(snapshot.readingPrices || state.readingPrices);
       state.readingDeposits = normalizeReadingDeposits(snapshot.readingDeposits || state.readingDeposits);
       state.readingBilling = normalizeReadingBilling(snapshot.readingBilling || state.readingBilling);
@@ -21989,6 +22241,8 @@
       state.profiles = [createProfile(currentProfile()?.name || 'Já', 'owner', state.household.id)];
       state.activeProfileId = state.profiles[0]?.id || '';
       state.parcelLookup = structuredCloneSafe(DEFAULT_STATE.parcelLookup);
+      state.loyaltyCards = [];
+      state.loyaltyCardsCloud = structuredCloneSafe(DEFAULT_STATE.loyaltyCardsCloud);
       state.readingPrices = normalizeReadingPrices(DEFAULT_STATE.readingPrices);
       state.readingDeposits = normalizeReadingDeposits(DEFAULT_STATE.readingDeposits);
       state.readingBilling = normalizeReadingBilling(DEFAULT_STATE.readingBilling);
@@ -22023,7 +22277,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 265, schema_version: 85, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 268, schema_version: 85, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -22237,7 +22491,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 265,
+          app_build: 268,
           schema_version: 85,
           created_by: user.id,
           ...householdUiPayload()
@@ -22490,7 +22744,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-267-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-268-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -22819,6 +23073,16 @@
   });
 
   app.addEventListener('input', (event) => {
+    const loyaltySearchInput = event.target.closest('[data-loyalty-search]');
+    if (loyaltySearchInput) {
+      loyaltyCardSearchTerm = loyaltySearchInput.value || '';
+      const query = normalizeKey(loyaltyCardSearchTerm);
+      app.querySelectorAll('[data-loyalty-card-search]').forEach((card) => {
+        const haystack = normalizeKey(card.getAttribute('data-loyalty-card-search') || '');
+        card.hidden = Boolean(query && !haystack.includes(query));
+      });
+      return;
+    }
     const hdoTimeInput = event.target.closest('[data-hdo-time-input]');
     if (hdoTimeInput) formatHdoTimeInputLive(hdoTimeInput, event);
     const fuelCalcInput = event.target.closest('[data-fuel-calc]');
@@ -22914,7 +23178,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_267</span>
+          <span class="badge">Domácnost+ v.0.1_268</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
