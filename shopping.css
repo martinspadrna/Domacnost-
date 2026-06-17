@@ -1500,3 +1500,54 @@ html[data-theme="dark"] .shopping-cloud-strip {
     height: clamp(150px, 30dvh, 220px);
   }
 }
+
+/* Domácnost+ v.0.1_281 – věrnostní karty: zachované nižší přehledové karty */
+.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) {
+  min-height: 158px !important;
+  gap: 9px !important;
+  padding: 12px !important;
+}
+
+.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-code-thumb {
+  min-height: 88px !important;
+  padding: 8px !important;
+  border-radius: 18px !important;
+}
+
+.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-card-compact-head h3 {
+  font-size: 1.02rem !important;
+}
+
+.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-qr-svg {
+  width: 76px !important;
+  height: 76px !important;
+}
+
+.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-barcode-svg {
+  height: 54px !important;
+  max-width: 180px !important;
+}
+
+.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-card-mini-meta {
+  font-size: .68rem !important;
+}
+
+@media (max-width: 680px) {
+  .loyalty-wallet-grid .loyalty-card-item:not(.is-editing) {
+    min-height: 142px !important;
+    padding: 10px !important;
+  }
+
+  .loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-code-thumb {
+    min-height: 76px !important;
+  }
+
+  .loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-qr-svg {
+    width: 66px !important;
+    height: 66px !important;
+  }
+
+  .loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-barcode-svg {
+    height: 46px !important;
+  }
+}

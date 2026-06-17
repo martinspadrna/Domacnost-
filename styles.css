@@ -17678,3 +17678,189 @@ body {
     max-height: calc(100dvh - 36px) !important;
   }
 }
+
+/* Domácnost+ v.0.1_281 – navazuje na UI kontrast a přidává výkonovou stabilizaci */
+.app-shell.home-app-shell {
+  height: 100svh !important;
+  max-height: 100svh !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px) !important;
+}
+
+.app-shell.home-app-shell .home-clean-frame,
+.app-shell.home-app-shell .home-clean-frame main,
+.app-shell.home-app-shell .dashboard-empty-home {
+  overflow: hidden !important;
+  max-height: 100% !important;
+}
+
+.app-shell.home-app-shell .dashboard-empty-home {
+  touch-action: manipulation !important;
+}
+
+.app-shell.home-app-shell .hero-weather-pill .hero-weather-icon,
+.app-shell.home-app-shell .hero-weather-pill .weather-anime-icon-md,
+.app-shell.home-app-shell .hero-weather-pill .weather-anime-icon-hero {
+  width: clamp(56px, 10vw, 74px) !important;
+  height: clamp(56px, 10vw, 74px) !important;
+  min-width: clamp(56px, 10vw, 74px) !important;
+}
+
+.app-shell.home-app-shell .hero-weather-copy strong {
+  font-size: clamp(1.75rem, 8vw, 3.05rem) !important;
+  line-height: .95 !important;
+}
+
+.app-shell.home-app-shell .hero-weather-copy em,
+.app-shell.home-app-shell .hero-weather-copy small {
+  color: rgba(255,255,255,.86) !important;
+}
+
+.station-summary-item-calendar .station-summary-primary {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+}
+
+.station-summary-item-calendar .station-summary-detail {
+  display: block !important;
+  color: rgba(255,255,255,.78) !important;
+}
+
+[data-theme="dark"] .overview-panel,
+[data-theme="dark"] .overview-status,
+[data-theme="dark"] .hdo-overview-table-card,
+[data-theme="dark"] .hdo-module-table-card,
+[data-theme="dark"] .homecare-panel.panel-hdo,
+[data-theme="dark"] .hdo-manual-details,
+[data-theme="dark"] .hdo-module-row,
+[data-theme="dark"] .hdo-overview-table-row:not(.hdo-overview-table-row-head) {
+  background: rgba(15, 23, 42, .78) !important;
+  border-color: rgba(148, 163, 184, .28) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 18px 42px rgba(2, 6, 23, .28) !important;
+}
+
+[data-theme="dark"] .hdo-overview-table-row:not(.hdo-overview-table-row-head) {
+  background: rgba(30, 41, 59, .86) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .hdo-overview-table-head strong,
+[data-theme="dark"] .hdo-overview-table-row strong,
+[data-theme="dark"] .homecare-panel.panel-hdo h2,
+[data-theme="dark"] .homecare-panel.panel-hdo h3,
+[data-theme="dark"] .homecare-panel.panel-hdo .item-title,
+[data-theme="dark"] .homecare-panel.panel-hdo .item-meta,
+[data-theme="dark"] .homecare-panel.panel-hdo p,
+[data-theme="dark"] .overview-panel h2,
+[data-theme="dark"] .overview-panel h3,
+[data-theme="dark"] .overview-panel strong,
+[data-theme="dark"] .overview-panel span,
+[data-theme="dark"] .overview-panel .item-meta {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .hdo-overview-table-head span,
+[data-theme="dark"] .hdo-overview-table-row-head,
+[data-theme="dark"] .homecare-panel.panel-hdo .inline-note,
+[data-theme="dark"] .homecare-panel.panel-hdo em {
+  color: rgba(226,232,240,.78) !important;
+}
+
+[data-theme="dark"] .subscriptions-module,
+[data-theme="dark"] .subscription-panel,
+[data-theme="dark"] .subscription-overview-service,
+[data-theme="dark"] .subscription-payment-card,
+[data-theme="dark"] .subscription-pay-row,
+[data-theme="dark"] .subscription-person-detail-card,
+[data-theme="dark"] .subscription-person-detail-body,
+[data-theme="dark"] .subscription-person-assign-box,
+[data-theme="dark"] .subscription-service-item,
+[data-theme="dark"] .subscription-month-form,
+[data-theme="dark"] .subscription-smart-payment-form,
+[data-theme="dark"] .subscription-share-list .quick-chip,
+[data-theme="dark"] .subscription-filter-row,
+[data-theme="dark"] .subscription-cloud-status {
+  background: rgba(15, 23, 42, .78) !important;
+  border-color: rgba(148, 163, 184, .26) !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .subscription-pay-row,
+[data-theme="dark"] .subscription-overview-service,
+[data-theme="dark"] .subscription-person-detail-card,
+[data-theme="dark"] .subscription-service-item {
+  background: rgba(30, 41, 59, .86) !important;
+}
+
+[data-theme="dark"] .subscription-panel h2,
+[data-theme="dark"] .subscription-panel h3,
+[data-theme="dark"] .subscription-panel strong,
+[data-theme="dark"] .subscription-panel .item-title,
+[data-theme="dark"] .subscription-panel .subscription-service-brand-name,
+[data-theme="dark"] .subscription-payment-head strong,
+[data-theme="dark"] .subscription-pay-row strong,
+[data-theme="dark"] .subscription-person-summary-main strong,
+[data-theme="dark"] .subscription-overview-service-head strong {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .subscription-panel p,
+[data-theme="dark"] .subscription-panel em,
+[data-theme="dark"] .subscription-panel span,
+[data-theme="dark"] .subscription-panel .item-meta,
+[data-theme="dark"] .subscription-pay-row em,
+[data-theme="dark"] .subscription-payment-head span,
+[data-theme="dark"] .subscription-overview-service-meta span {
+  color: rgba(226,232,240,.78) !important;
+}
+
+.nav-shell {
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: max(6px, env(safe-area-inset-bottom, 0px)) !important;
+  transform: translate3d(-50%, 0, 0) !important;
+  will-change: transform !important;
+  overscroll-behavior: contain !important;
+  z-index: 80 !important;
+}
+
+.nav-scroll {
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+
+.nav-active-runner {
+  pointer-events: none !important;
+}
+
+@media (max-width: 720px) {
+  .nav-shell {
+    width: calc(100dvw - 32px) !important;
+    max-width: 620px !important;
+    height: 82px !important;
+    min-height: 82px !important;
+    max-height: 82px !important;
+    padding: 8px !important;
+    border-radius: 28px !important;
+  }
+
+  .nav-scroll {
+    height: 64px !important;
+    min-height: 64px !important;
+    max-height: 64px !important;
+  }
+
+  .nav-item,
+  .nav-item.active {
+    height: 64px !important;
+    min-height: 64px !important;
+    max-height: 64px !important;
+  }
+}

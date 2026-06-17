@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_279';
+  const APP_VERSION = 'Domácnost+ v.0.1_281';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -22,7 +22,6 @@
     { id: 'home', label: 'Domů', icon: '🏠' },
     { id: 'weather', label: 'Počasí', icon: '🌤️' },
     { id: 'calendar', label: 'Kalendář', icon: '📅' },
-    { id: 'packages', label: 'Balíky', icon: '📦' },
     { id: 'shopping', label: 'Nákupy', icon: '🛒' },
     { id: 'hdo', label: 'HDO', icon: '💡' },
     { id: 'waste', label: 'Odpad', icon: '♻️' },
@@ -515,7 +514,6 @@
   const DEFAULT_DASHBOARD_WIDGET_IDS = [];
   const HOME_HERO_ITEMS = [
     { id: 'calendar', label: 'Kalendář', icon: '📅', overview: 'calendar', metric: (ctx) => ctx.calendarPanelEvents?.length || 0, text: () => 'nejbližší události' },
-    { id: 'packages', label: 'Balíky', icon: '📦', overview: 'packages', metric: (ctx) => ctx.activePackages.length, text: () => 'aktivní balíky' },
     { id: 'shopping', label: 'Nákup', icon: '🛒', overview: 'shopping', metric: (ctx) => ctx.openShopping.length, text: () => 'v nákupu' },
     { id: 'coupons', label: 'Slevové kódy', icon: '🏷️', nav: 'shopping', tab: 'coupons', metric: () => state.coupons.filter((item) => !item.used).length, text: () => 'nepoužité kódy' },
     { id: 'loyaltyCards', label: 'Věrnostní karty', icon: '💳', nav: 'shopping', tab: 'loyalty', metric: () => getLoyaltyCards().length, text: () => 'uložené karty' },
@@ -702,8 +700,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 279,
-      mode: 'performance-stability-v279',
+      appBuild: 281,
+      mode: 'performance-stabilization-v281',
       createdAt: '',
       updatedAt: ''
     },
@@ -1059,6 +1057,10 @@
   let renderDeferredPending = false;
   let renderInProgress = false;
   let renderFrameRequest = 0;
+  let pendingStatePersistTimer = 0;
+  let pendingStatePersistKind = '';
+  let lastStatePersistAt = 0;
+  let statePersistDirty = false;
   let cloudWarmStartTimer = null;
   let bootCloudMaintenanceTimer = null;
   let bootBackgroundCloudLoadTimer = null;
@@ -1619,8 +1621,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 279,
-      mode: 'performance-stability-v279',
+      appBuild: 281,
+      mode: 'performance-stabilization-v281',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2270,17 +2272,67 @@
     return moduleId === 'home' || moduleId === 'settings' || moduleId === 'weather' || normalizeModuleList(state.enabledModules).includes(moduleId);
   }
 
-  function persistStateSnapshot() {
+  function writeStateSnapshotNow() {
     if (isDemoOnlyState()) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      lastStatePersistAt = Date.now();
+      statePersistDirty = false;
+    } catch (error) {
+      console.warn('State persist failed', error);
+    }
   }
 
-  function saveState() {
+  function persistStateSnapshot(options = {}) {
+    if (isDemoOnlyState()) return;
+    statePersistDirty = true;
+    const immediate = options.immediate === true;
+    if (pendingStatePersistTimer) {
+      if (pendingStatePersistKind === 'idle' && 'cancelIdleCallback' in window) {
+        try { window.cancelIdleCallback(pendingStatePersistTimer); } catch {}
+      } else {
+        window.clearTimeout(pendingStatePersistTimer);
+      }
+      pendingStatePersistTimer = 0;
+      pendingStatePersistKind = '';
+    }
+    if (immediate || Date.now() - lastStatePersistAt > 12000) {
+      writeStateSnapshotNow();
+      return;
+    }
+    const write = () => {
+      pendingStatePersistTimer = 0;
+      pendingStatePersistKind = '';
+      if (statePersistDirty) writeStateSnapshotNow();
+    };
+    if ('requestIdleCallback' in window) {
+      pendingStatePersistKind = 'idle';
+      pendingStatePersistTimer = window.requestIdleCallback(write, { timeout: 1800 });
+    } else {
+      pendingStatePersistKind = 'timeout';
+      pendingStatePersistTimer = window.setTimeout(write, 900);
+    }
+  }
+
+  function flushStatePersist() {
+    if (pendingStatePersistTimer) {
+      if (pendingStatePersistKind === 'idle' && 'cancelIdleCallback' in window) {
+        try { window.cancelIdleCallback(pendingStatePersistTimer); } catch {}
+      } else {
+        window.clearTimeout(pendingStatePersistTimer);
+      }
+      pendingStatePersistTimer = 0;
+      pendingStatePersistKind = '';
+    }
+    if (statePersistDirty) writeStateSnapshotNow();
+  }
+
+  function saveState(options = {}) {
     // Demo je jen dočasný sandbox. Nikdy ho neukládáme do localStorage,
     // aby se všem při každém spuštění ukázala stejná plná demo domácnost.
     if (isDemoOnlyState()) return;
     if (state?.meta) state.meta.updatedAt = new Date().toISOString();
-    persistStateSnapshot();
+    persistStateSnapshot({ immediate: options.immediate === true });
     scheduleCloudAutosync('save');
   }
 
@@ -2464,18 +2516,18 @@
 
   function scheduleBootCloudMaintenance() {
     if (bootCloudMaintenanceTimer || !cloudReady() || isDemoOnlyState()) return;
-    bootCloudMaintenanceTimer = runWhenMainThreadFree(() => {
+    bootCloudMaintenanceTimer = runWhenUiQuiet(() => {
       bootCloudMaintenanceTimer = null;
       scheduleCloudAutosync('boot-idle');
-    }, { delay: 32000, timeout: 9000 });
+    }, { delay: 42000, quietMs: 3600, timeout: 9000 });
   }
 
   function scheduleBootBackgroundCloudLoad() {
     if (bootBackgroundCloudLoadTimer || !cloudReady() || isDemoOnlyState()) return;
-    bootBackgroundCloudLoadTimer = runWhenMainThreadFree(() => {
+    bootBackgroundCloudLoadTimer = runWhenUiQuiet(() => {
       bootBackgroundCloudLoadTimer = null;
       cloudBackgroundLoadAllModules(false).catch((error) => console.warn('Background cloud load failed', error));
-    }, { delay: 18000, timeout: 15000 });
+    }, { delay: 60000, quietMs: 4200, timeout: 15000 });
   }
 
   function scheduleLazyCloudLoadForModule(moduleId, options = {}) {
@@ -3158,7 +3210,6 @@
       hdo: { nav: 'hdo', tab: '' },
       homecare: { nav: 'hdo', tab: '' },
       shopping: { nav: 'shopping', tab: 'list' },
-      packages: { nav: 'packages', tab: 'active' },
       contracts: { nav: 'contracts', tab: 'overview' },
       garage: { nav: 'garage', tab: 'overview' },
       finance: { nav: 'finance', tab: 'summary' },
@@ -3254,7 +3305,6 @@
       hdo: ['💡', 'HDO / nízký tarif'],
       homecare: ['🏠', 'Domácnost'],
       shopping: ['🛒', 'Nákupy'],
-      packages: ['📦', 'Balíky'],
       contracts: ['📄', 'Smlouvy'],
       garage: ['🚗', 'Garáž'],
       finance: ['💰', 'Finance'],
@@ -3559,7 +3609,6 @@
       weather: 'Aktuální počasí, hodinový výhled a předpověď pro místo domácnosti.',
       home: 'Rychlý domácí přehled pro tablet i mobil. Online domácnost je hlavní zdroj, lokál jen cache/fallback.',
       calendar: 'Kalendář umí více zdrojů. Google Calendar je připravený přes bezpečný backend, ne přes tokeny ve frontendu.',
-      packages: 'Základ pro sledování balíků. Teď ručně, později automatika přes backend.',
       shopping: 'Sdílený nákupní seznam s katalogem položek, jednotkami a cloudovým oddělením domácností.',
       hdo: 'Nízký tarif, aktuální stav a další přepnutí.',
       waste: 'Svoz odpadu, nejbližší termíny a připomínky.',
@@ -3586,7 +3635,6 @@
       home: renderDashboard,
       weather: renderWeatherPage,
       calendar: renderCalendar,
-      packages: renderPackages,
       shopping: renderShopping,
       hdo: () => renderHomecare('hdo'),
       waste: () => renderHomecare('waste'),
@@ -3930,8 +3978,8 @@
       return {
         ...base,
         metric: isRunning ? 'Nyní' : next ? 'Další' : 'Volno',
-        text: next ? firstTitle(next, 'Událost') : 'Žádná nadcházející událost',
-        detail: next ? calendarEventTimeLabel(next, now) : 'Kliknutím otevřeš kalendář',
+        text: next ? `${calendarEventTimeLabel(next, now)} · ${firstTitle(next, 'Událost')}` : 'Žádná nadcházející událost',
+        detail: next?.location ? next.location : next ? 'kliknutím otevřeš kalendář' : 'Kliknutím otevřeš kalendář',
         chips: [],
         extraRows: [],
         live: runningEvents.length > 1,
@@ -4935,14 +4983,6 @@
         tone: hdo.active ? 'good' : 'warn'
       },
       {
-        nav: 'packages',
-        icon: '📦',
-        title: firstPackage ? `${carrierLabel(firstPackage.carrier) || 'Balík'} · ${packageStatus(firstPackage.status).label}` : 'Žádný aktivní balík',
-        meta: firstPackage ? `${firstPackage.tracking || 'bez čísla'}${firstPackage.note ? ` · ${firstPackage.note}` : ''}` : 'Tady se později ukáže nejbližší zásilka.',
-        badge: `${activePackages.length} aktivní`,
-        tone: activePackages.length ? 'warn' : 'good'
-      },
-      {
         nav: 'shopping',
         icon: '🛒',
         title: openShopping.length ? 'Nákup čeká' : 'Nákup hotový',
@@ -4994,7 +5034,6 @@
       { nav: 'waste', tab: '', icon: '♻️', label: 'Odpad', items: state.waste || [], loadedAt: state.wasteCloud?.loadedAt },
       { nav: 'readings', tab: 'overview', icon: '📊', label: 'Odečty', items: [...(state.readingMeters || []), ...(state.readings || [])], loadedAt: state.readingsCloud?.loadedAt || state.householdExtrasCloud?.loadedAt },
       { nav: 'tasks', tab: '', icon: '🗒️', label: 'Zápisník a úkoly', items: [...(state.homeTasks || []), ...(state.notes || [])], loadedAt: state.tasksCloud?.loadedAt || state.householdExtrasCloud?.loadedAt },
-      { nav: 'packages', tab: 'active', icon: '📦', label: 'Balíky', items: state.packages || [], loadedAt: state.parcelsCloud?.loadedAt },
       { nav: 'calendar', tab: 'overview', icon: '📅', label: 'Kalendář', items: state.calendar || [], loadedAt: state.calendarCloud?.loadedAt },
       { nav: 'calendar', tab: 'sources', icon: '🧩', label: 'Zdroje kalendáře', items: getCalendarSources(), loadedAt: state.calendarCloud?.sourcesLoadedAt },
       { nav: 'finance', tab: 'summary', icon: '💰', label: 'Finance', items: state.finance || [], loadedAt: state.financeCloud?.loadedAt },
@@ -5020,7 +5059,7 @@
     const overall = total ? Math.round((totalCloud / total) * 100) : (cloudReady ? 100 : 0);
     const autosyncEnabled = state.cloud?.autoSyncEnabled !== false;
     const autosyncStatus = cloudAutosyncStatusLabel();
-    const featuredCloudLabels = ['Profily', 'Nákupy', 'Smlouvy', 'Přílohy smluv', 'Přílohy záruk', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Balíky', 'Kalendář', 'Finance', 'Předplatné', 'Odečty', 'Poznámky', 'Slevové kódy'];
+    const featuredCloudLabels = ['Profily', 'Nákupy', 'Smlouvy', 'Přílohy smluv', 'Přílohy záruk', 'Garáž', 'HDO', 'Odpad', 'Úkoly', 'Kalendář', 'Finance', 'Předplatné', 'Odečty', 'Poznámky', 'Slevové kódy'];
     const compactItems = mode === 'dashboard' ? items.filter((item) => item.total || featuredCloudLabels.includes(item.label)).slice(0, 14) : items;
     return `
       <section class="card desktop-span-2 cloud-sync-overview-card">
@@ -5228,7 +5267,6 @@
     const stats = {
       weather: { count: normalizeWeatherState(state.weather).current ? 1 : 0, label: 'místo', note: weatherLocationLabel() || 'Počasí podle místa domácnosti.' },
       calendar: { count: countBy('calendar'), label: 'událostí', note: 'Google napojení později přes backend.' },
-      packages: { count: countBy('packages', (item) => item.status !== 'delivered'), label: 'aktivních', note: `${countBy('packages')} balíků celkem.` },
       shopping: { count: countBy('shopping', (item) => !item.done), label: 'koupit', note: `${countBy('coupons', (item) => !item.used)} nepoužitých kódů.` },
       hdo: { count: countBy('hdoWindows'), label: 'oken', note: 'Nízký tarif, normální dny a víkend + svátky.' },
       waste: { count: countBy('waste'), label: 'svozů', note: 'Nejbližší odpad a připomínky.' },
@@ -5283,6 +5321,8 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_281', note: 'Výkonová stabilizace: méně synchronního ukládání do localStorage, odloženější autosync, rychlejší otevření HDO/Odpadu/Záruk/Svátků PL a Předplatné renderuje jen aktivní záložku.' },
+      { title: 'Domácnost+ v.0.1_280', note: 'UI stabilizace: Home bez scrollu, větší počasí, kalendářový panel ukazuje čas, ztmavené HDO a Předplatné, odstraněný modul Balíky z frontendu, nižší karty věrnostních karet a pevnější spodní dock.' },
       { title: 'Domácnost+ v.0.1_279', note: 'Výkonová stabilizace: Garáž a Finance renderují jen aktivní záložku, přidané měření pomalých renderů do konzole a omezení zbytečného skládání těžkých panelů při otevření modulů.' },
       { title: 'Domácnost+ v.0.1_278', note: 'Tablet responsive hotfix: lepší rozložení pro tablet na výšku i na šířku, širší panely, čitelnější modaly, stabilnější Home a spodní dock bez rozbití mobilního vzhledu.' },
       { title: 'Domácnost+ v.0.1_277', note: 'Nákupy / Karty: při úpravě karty přidaný křížek vpravo nahoře pro rychlé zavření editace zpět na seznam karet.' },
@@ -7026,7 +7066,7 @@
     const rawDataUrl = await readFileAsDataUrl(file);
     try {
       const image = await loadImageElement(rawDataUrl);
-      const maxSize = 980;
+      const maxSize = 760;
       const ratio = Math.min(1, maxSize / Math.max(image.naturalWidth || image.width || 1, image.naturalHeight || image.height || 1));
       const width = Math.max(1, Math.round((image.naturalWidth || image.width || 1) * ratio));
       const height = Math.max(1, Math.round((image.naturalHeight || image.height || 1) * ratio));
@@ -7035,7 +7075,7 @@
       canvas.height = height;
       const ctx = canvas.getContext('2d', { alpha: false });
       ctx.drawImage(image, 0, 0, width, height);
-      return canvas.toDataURL('image/jpeg', 0.76);
+      return canvas.toDataURL('image/jpeg', 0.64);
     } catch (error) {
       console.warn('Loyalty image compression skipped', error);
       return rawDataUrl;
@@ -8108,6 +8148,64 @@
   }
 
   function renderHomecare(forcedTab = '') {
+    const fastForcedTab = String(forcedTab || '');
+    const wrapFastHomecarePanel = (tab, panelHtml) => `
+      <div class="grid two module-tabbed homecare-tab-${escapeHtml(tab)} homecare-fast-tab">
+        ${panelHtml}
+      </div>`;
+    if (fastForcedTab === 'hdo') {
+      const hdo = getHdoStatus(now);
+      return wrapFastHomecarePanel('hdo', `
+        <section class="card homecare-panel panel-hdo">
+          <div class="card-header">
+            <div><h2>HDO / nízký tarif</h2><p>${escapeHtml(hdo.message)}</p></div>
+            <span class="badge ${hdo.active ? 'good' : 'warn'}">${hdo.active ? 'běží' : 'neběží'} · ${state.hdoWindows.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
+          </div>
+          <details class="compact-edit-details hdo-manual-details">
+            <summary><span>Ruční zadání časů</span><em>funguje pořád stejně</em></summary>
+            <form data-form="add-hdo" class="compact-form hdo-manual-form">
+              <div class="form-grid two">
+                ${field('Název okna', 'label', 'text', 'např. Večerní tarif', true)}
+                ${hdoTimeField('Od', 'start', '0600 nebo 06:00', true)}
+                ${hdoTimeField('Do', 'end', '2200 nebo 22:00', true)}
+                ${selectField('Dny', 'daysMode', [['all', 'Každý den'], ['workdays', 'Po–Pá'], ['weekend', 'Víkend']])}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Přidat HDO okno</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-hdo">Načíst cloud HDO</button>' : ''}${state.cloud?.householdId && state.hdoWindows.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-hdo">Odeslat lokální HDO (${state.hdoWindows.filter((item) => !item.cloudId).length})</button>` : ''}</div>
+            </form>
+          </details>
+          <div style="height:14px"></div>
+          ${state.hdoWindows.length ? renderHdoModuleTables(sortHdoWindowsForOverview(getSafeHdoWindows())) : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard začne ukazovat aktuální stav.', nav: 'hdo', tab: '', label: 'Nastavit HDO' })}
+        </section>`);
+    }
+    if (fastForcedTab === 'waste') {
+      const waste = getWasteRuntimeItems(state.waste).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+      return wrapFastHomecarePanel('waste', `
+        <section class="card homecare-panel panel-waste">
+          <div class="card-header">
+            <div><h2>Odpad</h2><p>Svoz odpadu s přípravou na připomínky.</p></div>
+            <span class="badge ${waste.some((item) => item.cloudId) ? 'good' : ''}">${waste.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
+          </div>
+          <form data-form="add-waste">
+            <div class="form-grid two">
+              ${field('Typ', 'type', 'text', 'plast / papír / komunál', true)}
+              ${field('Datum svozu', 'date', 'date', '', true)}
+              ${selectField('Opakování', 'repeatRule', [['none', 'Jednorázově'], ['weekly', 'Týdně'], ['biweekly', 'Každé 2 týdny'], ['monthly', 'Měsíčně']])}
+              ${field('Upozornit předem (hod)', 'notifyBeforeHours', 'number', '12')}
+              ${field('Poznámka', 'note', 'text', 'volitelné')}
+            </div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Přidat svoz</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-waste">Načíst cloud odpad</button>' : ''}${state.cloud?.householdId && waste.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-waste">Odeslat lokální svozy (${waste.filter((item) => !item.cloudId).length})</button>` : ''}</div>
+          </form>
+          <div style="height:14px"></div>
+          ${waste.length ? `<div class="list">${waste.map((item) => `
+            <div class="item">
+              <div class="item-top"><div class="item-title">${escapeHtml(item.type)}</div><span class="badge ${daysUntil(item.date) <= 1 ? 'warn' : ''}">${formatDate(item.date)}</span></div>
+              <div class="item-meta">${escapeHtml(wasteRepeatLabel(item.repeatRule))}${item.notifyBeforeHours ? ` · připomenout ${escapeHtml(String(item.notifyBeforeHours))} h předem` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
+              <div class="item-actions">${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-waste" data-id="${escapeHtml(item.id)}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-waste" data-id="${escapeHtml(item.id)}">Smazat</button></div>
+            </div>`).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej první svoz a aplikace ho ukáže v přehledu Dnes a brzy.', nav: 'waste', tab: '', label: 'Přidat svoz' })}
+        </section>`);
+    }
+    if (fastForcedTab === 'warranties') return wrapFastHomecarePanel('warranties', renderWarrantiesPanel(sortedWarranties()));
+    if (fastForcedTab === 'polish-holidays') return wrapFastHomecarePanel('polish-holidays', renderPolishHolidaysPanel());
     const hdo = getHdoStatus(now);
     const tasks = [...state.homeTasks].sort((a, b) => Number(a.done) - Number(b.done));
     const waste = getWasteRuntimeItems(state.waste).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
@@ -12944,22 +13042,112 @@
   }
 
   function renderSubscriptions() {
-    const activeTab = getModuleTab('subscriptions', 'overview');
+    let activeTab = getModuleTab('subscriptions', 'overview');
+    if (!['overview', 'services', 'people', 'payments'].includes(activeTab)) activeTab = 'overview';
     const month = subscriptionSelectedMonth();
     const summary = subscriptionMonthSummary(month);
     const services = summary.services;
     const people = summary.people;
     const allServices = getSubscriptionServices();
-    const allPayments = getSubscriptionPayments();
+    const tabs = renderSectionTabs('subscriptions', [
+      { id: 'overview', label: 'Přehled', icon: '🎬', count: services.length },
+      { id: 'services', label: 'Služby', icon: '📺', count: allServices.length },
+      { id: 'people', label: 'Lidé', icon: '👥', count: people.length },
+      { id: 'payments', label: 'Platby', icon: '✅', count: summary.payments.length }
+    ], 'overview');
+    const wrap = (content) => `
+      ${tabs}
+      <div class="grid two module-tabbed subscriptions-tab-${escapeHtml(activeTab)} subscriptions-module" data-tab-area="subscriptions">
+        ${content}
+      </div>`;
+
+    if (activeTab === 'services') {
+      return wrap(`
+        <section class="card desktop-span-2 subscription-panel panel-services">
+          <div class="card-header"><div><h2>Služby</h2><p>Vyber službu, uprav cenu a potom nastav, kdo ti za ni kolik platí.</p></div><span class="badge">${allServices.length}</span></div>
+          <details class="action-details compact-edit-details subscription-form-drawer">
+            <summary><span>Přidat službu</span><em>Netflix, Disney+, Spotify nebo vlastní</em></summary>
+            <form data-form="add-subscription" class="compact-form">
+              <div class="form-grid two">
+                ${selectField('Služba', 'serviceKey', subscriptionServiceSelectOptions(), 'netflix')}
+                ${field('Vlastní název', 'name', 'text', 'vyplň jen u vlastní služby')}
+                ${field('Cena / měsíc', 'price', 'number', 'např. 319', true)}
+                ${field('Den stržení', 'billingDay', 'number', '1–31', false, '1')}
+                ${field('Max míst / členů', 'maxMembers', 'number', 'např. 5', false)}
+                ${field('Poznámka', 'note', 'text', 'např. rodinný tarif')}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Přidat službu</button></div>
+            </form>
+          </details>
+          ${allServices.length ? `<div class="list compact-list">${allServices.map(renderSubscriptionServiceItem).join('')}</div>` : renderEmpty('Zatím není uložená žádná služba.')}
+        </section>
+        <section class="card subscription-panel panel-services">
+          <div class="card-header"><div><h2>Přiřadit člověka ke službě</h2><p>Kolik ti má konkrétní člověk platit za konkrétní službu.</p></div></div>
+          ${allServices.length && people.length ? `
+            <form data-form="add-subscription-share" class="compact-form">
+              <div class="form-grid two">
+                ${selectField('Služba', 'subscriptionId', subscriptionServiceOptions(true), '')}
+                ${selectField('Člověk', 'personId', subscriptionPersonOptions(true), '')}
+                ${field('Částka / měsíc', 'amount', 'number', 'např. 80', true)}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Přidat / upravit sdílení</button></div>
+            </form>
+          ` : renderEmpty('Nejdřív přidej aspoň jednu službu a jednoho člověka.')}
+        </section>`);
+    }
+
+    if (activeTab === 'people') {
+      return wrap(`
+        <section class="card desktop-span-2 subscription-panel panel-people">
+          <div class="card-header"><div><h2>Lidé</h2><p>Klikni na člověka a přiřaď mu službu včetně částky. Volná místa u služeb se přepočítají sama.</p></div><span class="badge">${people.length}</span></div>
+          <details class="action-details compact-edit-details subscription-form-drawer">
+            <summary><span>Přidat člověka</span><em>kamarád, rodina, kolega</em></summary>
+            <form data-form="add-subscription-person" class="compact-form">
+              <div class="form-grid two">
+                ${field('Jméno', 'name', 'text', 'např. Lukáš', true)}
+                ${field('Poznámka', 'note', 'text', 'volitelné')}
+              </div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Přidat člověka</button></div>
+            </form>
+          </details>
+          ${people.length ? `<div class="list compact-list">${summary.peopleRows.map(renderSubscriptionPersonDetail).join('')}</div>` : renderEmpty('Zatím tu nejsou žádní lidé.')}
+        </section>`);
+    }
+
+    if (activeTab === 'payments') {
+      const allPayments = getSubscriptionPayments();
+      const paymentDraft = normalizeSubscriptionPaymentDraft(subscriptionPaymentDraft());
+      const paymentServiceOptions = subscriptionPaymentServiceOptions(paymentDraft.personId, paymentDraft.month, true);
+      const paymentPersonOptions = subscriptionPaymentPersonOptions(paymentDraft.subscriptionId, paymentDraft.month, true);
+      const paymentDefaultAmount = paymentDraft.subscriptionId && paymentDraft.personId ? subscriptionRemainingAmount(paymentDraft.personId, paymentDraft.subscriptionId, paymentDraft.month) : 0;
+      return wrap(`
+        <section class="card subscription-panel panel-payments">
+          <div class="card-header"><div><h2>Zapsat platbu / předplatné dopředu</h2><p>Když někdo zaplatí ručně nebo dopředu na další měsíc.</p></div></div>
+          ${allServices.length && people.length ? `
+            <form data-form="add-subscription-payment" class="compact-form subscription-smart-payment-form">
+              <div class="form-grid two">
+                ${selectField('Služba', 'subscriptionId', paymentServiceOptions, paymentDraft.subscriptionId)}
+                ${selectField('Člověk', 'personId', paymentPersonOptions, paymentDraft.personId)}
+                ${field('Měsíc', 'month', 'month', '', false, paymentDraft.month)}
+                ${field('Částka', 'amount', 'number', 'např. 80', true, paymentDefaultAmount ? String(paymentDefaultAmount) : '')}
+                ${field('Poznámka', 'note', 'text', 'např. zaplaceno dopředu')}
+              </div>
+              <div class="inline-note compact-note subscription-payment-hint">Vybereš službu → nabídnou se jen lidi, kteří ji mají a ještě ji nemají zaplacenou. Vybereš člověka → nabídnou se jen jeho nezaplacené služby. Částka se předvyplní podle nastaveného sdílení.</div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Zapsat platbu</button></div>
+            </form>
+          ` : renderEmpty('Nejdřív přidej službu a člověka.')}
+        </section>
+        <section class="card subscription-panel panel-payments">
+          <div class="card-header"><div><h2>Historie plateb</h2><p>Poslední zápisy plateb a přeplatků.</p></div><span class="badge">${allPayments.length}</span></div>
+          ${allPayments.length ? `<div class="list compact-list">${allPayments.slice(0, 24).map(renderSubscriptionPaymentItem).join('')}</div>` : renderEmpty('Zatím není zapsaná žádná platba.')}
+        </section>`);
+    }
+
     const paymentFilter = subscriptionPaymentFilter();
     const visiblePeopleRows = subscriptionFilteredPeopleRows(summary, paymentFilter);
     const visiblePaymentServices = services
       .map((service) => ({ service, visibleShares: subscriptionVisibleShares(service, month, paymentFilter, summary) }))
       .filter((row) => paymentFilter === 'all' || row.visibleShares.length);
-    const paymentDraft = normalizeSubscriptionPaymentDraft(subscriptionPaymentDraft());
-    const paymentServiceOptions = subscriptionPaymentServiceOptions(paymentDraft.personId, paymentDraft.month, true);
-    const paymentPersonOptions = subscriptionPaymentPersonOptions(paymentDraft.subscriptionId, paymentDraft.month, true);
-    const paymentDefaultAmount = paymentDraft.subscriptionId && paymentDraft.personId ? subscriptionRemainingAmount(paymentDraft.personId, paymentDraft.subscriptionId, paymentDraft.month) : 0;
     const serviceOverviewCards = services.slice(0, 8).map((service) => {
       const shares = service.shares || [];
       const shareTotal = shares.reduce((sum, share) => sum + decimalValue(share.amount), 0);
@@ -12971,14 +13159,8 @@
           <div class="subscription-overview-service-meta"><span>Cena ${formatCurrency(service.price)}</span><span>Vrací se ${formatCurrency(shareTotal)}</span><span>Tvoje část ${formatCurrency(ownCost)}</span></div>
         </div>`;
     }).join('');
-    return `
-      ${renderSectionTabs('subscriptions', [
-        { id: 'overview', label: 'Přehled', icon: '🎬', count: services.length },
-        { id: 'services', label: 'Služby', icon: '📺', count: allServices.length },
-        { id: 'people', label: 'Lidé', icon: '👥', count: people.length },
-        { id: 'payments', label: 'Platby', icon: '✅', count: summary.payments.length }
-      ], 'overview')}
-      <div class="grid two module-tabbed subscriptions-tab-${escapeHtml(activeTab)} subscriptions-module" data-tab-area="subscriptions">
+
+    return wrap(`
         <section class="card desktop-span-2 subscription-panel panel-overview">
           <div class="card-header"><div><h2>Předplatné</h2><p>Streamovací služby, sdílení s lidmi a měsíční kontrola, kdo už zaplatil.</p></div><span class="badge ${summary.owed ? 'warn' : 'good'}">${summary.owed ? `${formatCurrency(summary.owed)} chybí` : 'srovnáno'}</span></div>
           ${cloudReady() ? `<div class="inline-note compact-note subscription-cloud-status"><span class="badge ${state.subscriptionsCloud?.pendingAt ? 'warn' : state.subscriptionsCloud?.loadedAt ? 'good' : ''}">${state.subscriptionsCloud?.pendingAt ? 'automaticky ukládám' : state.subscriptionsCloud?.loadedAt ? `cloud ${escapeHtml(formatDateTime(state.subscriptionsCloud.loadedAt))}` : 'cloud aktivní'}</span><span>Předplatné se synchronizuje automaticky přes Supabase domácnost. Není potřeba nic ručně odesílat ani načítat.</span></div>` : `<div class="inline-note compact-note">Po přihlášení a napojení domácnosti na cloud se Předplatné začne synchronizovat automaticky.</div>`}
@@ -12998,7 +13180,6 @@
           ${services.length ? `<div class="subscription-overview-service-grid">${serviceOverviewCards}</div>` : ''}
           ${summary.peopleRows.length ? (visiblePeopleRows.length ? `<div class="list compact-list subscription-person-summary-list">${visiblePeopleRows.map(renderSubscriptionPersonSummary).join('')}</div>` : '<div class="empty">Podle filtru není potřeba nic řešit.</div>') : renderEmptyCta({ icon: '👥', title: 'Zatím tu nejsou lidé', text: 'Přidej člověka, se kterým sdílíš Netflix, Disney+, Spotify nebo jinou službu.', nav: 'subscriptions', tab: 'people', label: 'Přidat člověka' })}
         </section>
-
         <section class="card desktop-span-2 subscription-panel panel-overview">
           <div class="card-header"><div><h2>Kontrola plateb</h2><p>Zaškrtni aktuální měsíc u každé služby/osoby. Budoucí platby se berou jako předplaceno.</p></div><span class="badge">${escapeHtml(financeMonthLabel(month))}</span></div>
           <div class="subscription-filter-row" role="group" aria-label="Filtr předplatného">
@@ -13009,79 +13190,7 @@
             ].map(([id, label]) => `<button class="quick-chip subscription-filter-chip ${paymentFilter === id ? 'active' : ''}" type="button" data-action="subscription-filter" data-filter="${id}">${label}</button>`).join('')}
           </div>
           ${services.length ? (visiblePaymentServices.length ? `<div class="subscription-payment-grid">${visiblePaymentServices.map((row) => renderSubscriptionPaymentCard(row.service, month, paymentFilter, summary)).join('')}</div>` : '<div class="empty">V tomhle filtru není nic k zaplacení.</div>') : renderEmptyCta({ icon: '🎬', title: 'Zatím žádná služba', text: 'Přidej předplatné a potom k němu přiřaď lidi.', nav: 'subscriptions', tab: 'services', label: 'Přidat službu' })}
-        </section>
-
-        <section class="card desktop-span-2 subscription-panel panel-services">
-          <div class="card-header"><div><h2>Služby</h2><p>Vyber službu, uprav cenu a potom nastav, kdo ti za ni kolik platí.</p></div><span class="badge">${allServices.length}</span></div>
-          <details class="action-details compact-edit-details subscription-form-drawer">
-            <summary><span>Přidat službu</span><em>Netflix, Disney+, Spotify nebo vlastní</em></summary>
-            <form data-form="add-subscription" class="compact-form">
-              <div class="form-grid two">
-                ${selectField('Služba', 'serviceKey', subscriptionServiceSelectOptions(), 'netflix')}
-                ${field('Vlastní název', 'name', 'text', 'vyplň jen u vlastní služby')}
-                ${field('Cena / měsíc', 'price', 'number', 'např. 319', true)}
-                ${field('Den stržení', 'billingDay', 'number', '1–31', false, '1')}
-                ${field('Max míst / členů', 'maxMembers', 'number', 'např. 5', false)}
-                ${field('Poznámka', 'note', 'text', 'např. rodinný tarif')}
-              </div>
-              <div class="form-actions"><button class="primary-btn" type="submit">Přidat službu</button></div>
-            </form>
-          </details>
-          ${allServices.length ? `<div class="list compact-list">${allServices.map(renderSubscriptionServiceItem).join('')}</div>` : renderEmpty('Zatím není uložená žádná služba.')}
-        </section>
-
-        <section class="card subscription-panel panel-services">
-          <div class="card-header"><div><h2>Přiřadit člověka ke službě</h2><p>Kolik ti má konkrétní člověk platit za konkrétní službu.</p></div></div>
-          ${allServices.length && people.length ? `
-            <form data-form="add-subscription-share" class="compact-form">
-              <div class="form-grid two">
-                ${selectField('Služba', 'subscriptionId', subscriptionServiceOptions(true), '')}
-                ${selectField('Člověk', 'personId', subscriptionPersonOptions(true), '')}
-                ${field('Částka / měsíc', 'amount', 'number', 'např. 80', true)}
-              </div>
-              <div class="form-actions"><button class="primary-btn" type="submit">Přidat / upravit sdílení</button></div>
-            </form>
-          ` : renderEmpty('Nejdřív přidej aspoň jednu službu a jednoho člověka.')}
-        </section>
-
-        <section class="card desktop-span-2 subscription-panel panel-people">
-          <div class="card-header"><div><h2>Lidé</h2><p>Klikni na člověka a přiřaď mu službu včetně částky. Volná místa u služeb se přepočítají sama.</p></div><span class="badge">${people.length}</span></div>
-          <details class="action-details compact-edit-details subscription-form-drawer">
-            <summary><span>Přidat člověka</span><em>kamarád, rodina, kolega</em></summary>
-            <form data-form="add-subscription-person" class="compact-form">
-              <div class="form-grid two">
-                ${field('Jméno', 'name', 'text', 'např. Lukáš', true)}
-                ${field('Poznámka', 'note', 'text', 'volitelné')}
-              </div>
-              <div class="form-actions"><button class="primary-btn" type="submit">Přidat člověka</button></div>
-            </form>
-          </details>
-          ${people.length ? `<div class="list compact-list">${summary.peopleRows.map(renderSubscriptionPersonDetail).join('')}</div>` : renderEmpty('Zatím tu nejsou žádní lidé.')}
-        </section>
-
-        <section class="card subscription-panel panel-payments">
-          <div class="card-header"><div><h2>Zapsat platbu / předplatné dopředu</h2><p>Když někdo zaplatí ručně nebo dopředu na další měsíc.</p></div></div>
-          ${allServices.length && people.length ? `
-            <form data-form="add-subscription-payment" class="compact-form subscription-smart-payment-form">
-              <div class="form-grid two">
-                ${selectField('Služba', 'subscriptionId', paymentServiceOptions, paymentDraft.subscriptionId)}
-                ${selectField('Člověk', 'personId', paymentPersonOptions, paymentDraft.personId)}
-                ${field('Měsíc', 'month', 'month', '', false, paymentDraft.month)}
-                ${field('Částka', 'amount', 'number', 'např. 80', true, paymentDefaultAmount ? String(paymentDefaultAmount) : '')}
-                ${field('Poznámka', 'note', 'text', 'např. zaplaceno dopředu')}
-              </div>
-              <div class="inline-note compact-note subscription-payment-hint">Vybereš službu → nabídnou se jen lidi, kteří ji mají a ještě ji nemají zaplacenou. Vybereš člověka → nabídnou se jen jeho nezaplacené služby. Částka se předvyplní podle nastaveného sdílení.</div>
-              <div class="form-actions"><button class="primary-btn" type="submit">Zapsat platbu</button></div>
-            </form>
-          ` : renderEmpty('Nejdřív přidej službu a člověka.')}
-        </section>
-
-        <section class="card subscription-panel panel-payments">
-          <div class="card-header"><div><h2>Historie plateb</h2><p>Poslední zápisy plateb a přeplatků.</p></div><span class="badge">${allPayments.length}</span></div>
-          ${allPayments.length ? `<div class="list compact-list">${allPayments.slice(0, 24).map(renderSubscriptionPaymentItem).join('')}</div>` : renderEmpty('Zatím není zapsaná žádná platba.')}
-        </section>
-      </div>
-    `;
+        </section>`);
   }
 
   function renderSubscriptionPersonSummary(row) {
@@ -13334,13 +13443,13 @@
   function renderVisualPreview(id, type) {
     if (type === 'iconTheme') {
       const previewIconsByTheme = {
-        ios: ['home', 'packages', 'settings'],
+        ios: ['home', 'shopping', 'settings'],
         'duotone-fresh': ['home', 'calendar', 'finance'],
         'sticker-ui': ['home', 'calendar', 'garage'],
         'clay-3d': ['homecare', 'garage', 'finance'],
         'isometric-micro': ['home', 'garage']
       };
-      const iconIds = previewIconsByTheme[id] || ['home', 'packages', 'settings'];
+      const iconIds = previewIconsByTheme[id] || ['home', 'shopping', 'settings'];
       return `<span class="visual-icon-preview-row">${iconIds.map((iconId) => renderAssetThemeIcon(iconId, { themeId: id, size: 'picker', baseClass: 'visual-asset-icon', innerClass: 'visual-asset-icon-inner' }) || getThemedModuleIconSvg(iconId, { themeId: id })).join('')}</span>`;
     }
     if (type === 'theme') {
@@ -13469,7 +13578,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 279))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 281))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -19240,7 +19349,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 85, appBuild: 279, mode: 'rich-demo-v279', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 85, appBuild: 281, mode: 'rich-demo-v281', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -19393,7 +19502,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 279, mode: 'performance-stability-v279', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 281, mode: 'performance-stabilization-v281', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -20626,8 +20735,8 @@
     state.cloud.autosyncStatus = 'pending';
     state.cloud.autosyncSource = source;
     persistStateSnapshot();
-    const quietMs = source === 'save' ? 2200 : 2800;
-    const baseDelay = source === 'save' ? 4200 : 7600;
+    const quietMs = source === 'save' ? 3000 : 3600;
+    const baseDelay = source === 'save' ? 6500 : 9600;
     const attemptAutosync = () => {
       const elapsed = Date.now() - lastUserInteractionAt;
       if (elapsed < quietMs) {
@@ -21044,7 +21153,6 @@
     const renderAfter = options.renderAfter !== false;
     const map = {
       calendar: [cloudLoadCalendarSources, cloudLoadCalendar],
-      packages: [cloudLoadParcels],
       shopping: [cloudLoadHouseholdUiSettings, cloudLoadShoppingData],
       hdo: [cloudLoadHdoData],
       waste: [cloudLoadWaste],
@@ -21083,7 +21191,7 @@
 
   async function cloudBackgroundLoadAllModules(showMessage = false) {
     if (!state.cloud?.userId || !state.cloud?.householdId) return false;
-    const moduleOrder = ['shopping', 'calendar', 'finance', 'packages', 'hdo', 'waste', 'readings', 'tasks', 'warranties', 'polishHolidays', 'garage', 'contracts', 'subscriptions'];
+    const moduleOrder = ['shopping', 'calendar', 'finance', 'hdo', 'waste', 'readings', 'tasks', 'warranties', 'polishHolidays', 'garage', 'contracts', 'subscriptions'];
     let ok = 0;
     for (const moduleId of moduleOrder) {
       await yieldToMainThread();
@@ -21121,7 +21229,6 @@
         cloudLoadHdoData,
         cloudLoadWaste,
         cloudLoadTasks,
-        cloudLoadParcels,
         cloudLoadCalendarSources,
         cloudLoadCalendar,
         cloudLoadContractFiles,
@@ -22861,7 +22968,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 279
+        appBuild: 281
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -23471,7 +23578,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-279-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-281-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -23889,7 +23996,15 @@
 
 
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) scheduleShoppingCloudRefresh('app-visible', { delay: 700, minAgeMs: 15000 });
+    if (document.hidden) {
+      flushStatePersist();
+      return;
+    }
+    scheduleShoppingCloudRefresh('app-visible', { delay: 700, minAgeMs: 15000 });
+  });
+
+  window.addEventListener('pagehide', () => {
+    flushStatePersist();
   });
 
   window.addEventListener('focus', () => {
@@ -23936,7 +24051,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_279</span>
+          <span class="badge">Domácnost+ v.0.1_281</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
