@@ -63,6 +63,8 @@
       const couponsCount = Array.isArray(state.coupons) ? state.coupons.length : 0;
       const coupons = isShoppingCouponsTab ? [...state.coupons].sort((a, b) => String(a.expiry || '9999').localeCompare(String(b.expiry || '9999'))) : [];
       const loyaltySearch = deps.getLoyaltySearchTerm ? String(deps.getLoyaltySearchTerm() || '') : '';
+      const loyaltyScan = deps.getLoyaltyScanState ? deps.getLoyaltyScanState() : { detectedCode: '', detectedFormat: '' };
+      const loyaltyAddOpen = deps.getLoyaltyAddDetailsOpen ? Boolean(deps.getLoyaltyAddDetailsOpen()) : false;
       const loyaltyCardsAll = deps.getLoyaltyCards ? deps.getLoyaltyCards() : (Array.isArray(state.loyaltyCards) ? state.loyaltyCards : []);
       const loyaltyCards = isShoppingLoyaltyTab ? loyaltyCardsAll.filter((card) => {
         const query = loyaltySearch.trim().toLowerCase();
@@ -178,13 +180,14 @@
           <div class="loyalty-toolbar">
             <div class="field loyalty-search-field"><label>Najít kartu</label><input class="input" type="search" placeholder="Kaufland, Lidl, DM…" value="${escapeHtml(loyaltySearch)}" data-loyalty-search autocomplete="off"></div>
           </div>
-          <details class="action-details compact-edit-details loyalty-add-details">
-            <summary><span>Přidat kartu</span><em>obchod, číslo karty, typ kódu</em></summary>
+          <details class="action-details compact-edit-details loyalty-add-details" ${loyaltyAddOpen || loyaltyScan?.loading || loyaltyScan?.dataUrl || loyaltyScan?.detectedCode || loyaltyScan?.error ? 'open' : ''}>
+            <summary><span>Přidat kartu</span><em>vyfotit kartu, číslo, typ kódu</em></summary>
             <form data-form="add-loyalty-card" class="compact-form loyalty-card-form">
+              ${deps.renderLoyaltyScanPanel ? deps.renderLoyaltyScanPanel(loyaltyScan) : ''}
               <div class="form-grid two">
                 ${deps.field('Obchod', 'store', 'text', 'Kaufland / Lidl / DM', true)}
-                ${deps.field('Číslo / kód karty', 'cardNumber', 'text', 'číslo karty nebo kód', true)}
-                ${deps.selectField('Typ kódu', 'codeType', [['barcode', 'Čárový kód'], ['qr', 'QR'], ['text', 'Text']], 'barcode')}
+                ${deps.field('Číslo / kód karty', 'cardNumber', 'text', 'číslo karty nebo kód', true, loyaltyScan?.detectedCode || '')}
+                ${deps.selectField('Typ kódu', 'codeType', [['barcode', 'Čárový kód'], ['qr', 'QR'], ['text', 'Text']], loyaltyScan?.detectedFormat || 'barcode')}
                 ${deps.selectField('Barva karty', 'color', [['rose', 'Rose'], ['blue', 'Blue'], ['mint', 'Mint'], ['amber', 'Amber'], ['violet', 'Violet'], ['slate', 'Slate']], 'rose')}
                 ${deps.field('Poznámka', 'note', 'text', 'např. Lucčina karta')}
               </div>
