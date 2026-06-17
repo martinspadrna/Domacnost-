@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_273';
+  const APP_VERSION = 'Domácnost+ v.0.1_274';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -702,8 +702,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 273,
-      mode: 'loyalty-card-photo-ocr-v273',
+      appBuild: 274,
+      mode: 'loyalty-wallet-code-preview-v274',
       createdAt: '',
       updatedAt: ''
     },
@@ -733,7 +733,7 @@
     packages: [],
     coupons: [],
     loyaltyCards: [],
-    loyaltyCardsCloud: { loadedAt: '', pendingAt: '' },
+    loyaltyCardsCloud: { loadedAt: '', pendingAt: '', errorAt: '', error: '' },
     hdoWindows: [],
     shopping: [],
     shoppingLists: [],
@@ -997,6 +997,7 @@
   let couponEditId = '';
   let loyaltyCardEditId = '';
   let loyaltyCardSearchTerm = '';
+  let loyaltyCardPreviewId = '';
   let loyaltyAddDetailsOpen = false;
   let loyaltyAddDraft = { store: '', cardNumber: '', codeType: 'barcode', color: 'rose', note: '' };
   let loyaltyCardScan = { loading: false, dataUrl: '', detectedCode: '', detectedFormat: '', detectedText: '', error: '', source: '' };
@@ -1617,8 +1618,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 273,
-      mode: 'loyalty-card-photo-ocr-v273',
+      appBuild: 274,
+      mode: 'loyalty-wallet-code-preview-v274',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1761,7 +1762,7 @@
     dedupeShoppingData(migrated);
     migrated.shoppingSeedVersion = 201;
     migrated.loyaltyCards = normalizeLoyaltyCards(migrated.loyaltyCards || []);
-    migrated.loyaltyCardsCloud = migrated.loyaltyCardsCloud && typeof migrated.loyaltyCardsCloud === 'object' && !Array.isArray(migrated.loyaltyCardsCloud) ? { loadedAt: migrated.loyaltyCardsCloud.loadedAt || '', pendingAt: migrated.loyaltyCardsCloud.pendingAt || '' } : { ...DEFAULT_STATE.loyaltyCardsCloud };
+    migrated.loyaltyCardsCloud = migrated.loyaltyCardsCloud && typeof migrated.loyaltyCardsCloud === 'object' && !Array.isArray(migrated.loyaltyCardsCloud) ? { loadedAt: migrated.loyaltyCardsCloud.loadedAt || '', pendingAt: migrated.loyaltyCardsCloud.pendingAt || '', errorAt: migrated.loyaltyCardsCloud.errorAt || '', error: migrated.loyaltyCardsCloud.error || '' } : { ...DEFAULT_STATE.loyaltyCardsCloud };
     migrated.financeTemplates = normalizeFinanceTemplates(migrated.financeTemplates);
 
     const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
@@ -2516,7 +2517,7 @@
       applyVisualSettings();
       const showStartChoice = shouldShowStartChoice();
       if (showStartChoice) activeOverview = null;
-      document.body.classList.toggle('overview-open', Boolean(activeOverview || garageModal || calendarDetailEventId || filePreviewModal || activeWarrantyDetailId || shoppingDoneModalOpen));
+      document.body.classList.toggle('overview-open', Boolean(activeOverview || garageModal || calendarDetailEventId || filePreviewModal || activeWarrantyDetailId || shoppingDoneModalOpen || loyaltyCardPreviewId));
 
       if (showStartChoice) {
         app?.classList?.remove('home-app-shell');
@@ -2893,7 +2894,7 @@
   }
 
   function renderGlobalModals() {
-    return `${renderCalendarEventDetailModal()}${renderGarageRecordModal()}${renderWarrantyDetailModal()}${renderFilePreviewModal()}`;
+    return `${renderCalendarEventDetailModal()}${renderGarageRecordModal()}${renderWarrantyDetailModal()}${renderFilePreviewModal()}${renderLoyaltyCodeModal()}`;
   }
 
   function findCalendarEventById(id) {
@@ -2929,6 +2930,35 @@
           <div class="form-actions modal-actions">
             <button class="ghost-btn" type="button" data-action="close-modal">Zavřít</button>
             ${!event.cloudId ? `<button class="danger-btn" type="button" data-action="delete-calendar" data-id="${escapeHtml(event.id || '')}">Smazat událost</button>` : ''}
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderLoyaltyCodeModal() {
+    const card = getLoyaltyCards().find((item) => item.id === loyaltyCardPreviewId);
+    if (!card) return '';
+    const normalized = normalizeLoyaltyCard(card);
+    const titleId = 'loyalty-code-modal-title';
+    return `
+      <div class="app-modal-backdrop loyalty-code-backdrop" data-modal-backdrop role="presentation">
+        <section class="app-modal loyalty-code-modal" role="dialog" aria-modal="true" aria-labelledby="${titleId}">
+          <div class="app-modal-head loyalty-code-modal-head">
+            <div>
+              <span class="badge good">${escapeHtml(loyaltyCodeTypeLabel(normalized.codeType))}</span>
+              <h2 id="${titleId}">${escapeHtml(normalized.store || 'Věrnostní karta')}</h2>
+              <p>Velký kód pro načtení u pokladny.</p>
+            </div>
+            <button class="icon-btn" type="button" data-action="close-modal" aria-label="Zavřít kód">×</button>
+          </div>
+          <div class="loyalty-code-stage">
+            ${loyaltyCodePreview(normalized, 'large')}
+            <strong class="selectable-text">${escapeHtml(normalized.cardNumber || '')}</strong>
+          </div>
+          <div class="form-actions modal-actions loyalty-code-modal-actions">
+            <button class="ghost-btn" type="button" data-action="copy" data-value="${escapeHtml(normalized.cardNumber || '')}">Kopírovat číslo</button>
+            <button class="ghost-btn" type="button" data-action="close-modal">Zavřít</button>
           </div>
         </section>
       </div>
@@ -5219,7 +5249,7 @@
 
   function renderNextPlanCard() {
     const steps = [
-      { title: 'Domácnost+ v.0.1_273', note: 'Nákupy / Karty: vyfocený kód se ukládá jako podklad, appka se pokusí přečíst i viditelné číslo z fotky přes dostupné čtení textu a z čísla jde dál zvolit čárový kód / QR / text.' },
+      { title: 'Domácnost+ v.0.1_274', note: 'Nákupy / Karty: vyfocený kód se ukládá jako podklad, appka se pokusí přečíst i viditelné číslo z fotky přes dostupné čtení textu a z čísla jde dál zvolit čárový kód / QR / text.' },
       { title: 'Domácnost+ v.0.1_272', note: 'Nákupy / Karty: opravené samovolné zavírání panelu Přidat kartu. Otevření panelu se drží ve stavu a rozpracované hodnoty formuláře se při překreslení neztratí.' },
       { title: 'Domácnost+ v.0.1_271', note: 'Odpad: opakované svozy se na Home, v přehledech a v modulu Odpad počítají podle dalšího budoucího termínu. Svoz nastavený každé 2 týdny už po proběhlém datu nezmizí z upozornění, ale ukáže nejbližší další svoz.' },
       { title: 'Domácnost+ v.0.1_270', note: 'Nákupy / Karty: doplněná jasná editace uložených věrnostních karet včetně přepnutí typu čárový kód / QR / text, přefocení kódu u existující karty a viditelný cloud sync přes sdílenou domácnost.' },
@@ -6609,22 +6639,30 @@
   }
 
   function markLoyaltyCardsPending() {
-    state.loyaltyCardsCloud = { ...(state.loyaltyCardsCloud || {}), pendingAt: new Date().toISOString() };
+    state.loyaltyCardsCloud = { ...(state.loyaltyCardsCloud || {}), pendingAt: new Date().toISOString(), errorAt: '', error: '' };
   }
 
   async function syncLoyaltyCardsToCloud() {
-    if (!cloudReady()) return false;
+    if (!cloudReady()) {
+      state.loyaltyCardsCloud = { ...(state.loyaltyCardsCloud || {}), errorAt: new Date().toISOString(), error: 'cloud-not-ready' };
+      return false;
+    }
     const ok = await cloudSaveHouseholdUiSettings(false);
     if (ok) {
-      state.loyaltyCardsCloud = { ...(state.loyaltyCardsCloud || {}), loadedAt: new Date().toISOString(), pendingAt: '' };
+      state.loyaltyCardsCloud = { ...(state.loyaltyCardsCloud || {}), loadedAt: new Date().toISOString(), pendingAt: '', errorAt: '', error: '' };
+      saveState();
+    } else {
+      state.loyaltyCardsCloud = { ...(state.loyaltyCardsCloud || {}), errorAt: new Date().toISOString(), error: 'sync-failed' };
       saveState();
     }
     return ok;
   }
 
   function loyaltyCloudBadge() {
-    if (!cloudReady()) return { label: 'jen v tomto zařízení', className: '' };
-    if (state.loyaltyCardsCloud?.pendingAt) return { label: 'čeká na cloud', className: 'warn' };
+    const cloud = state.loyaltyCardsCloud || {};
+    if (!cloudReady()) return { label: 'bez synchronizace', className: 'bad' };
+    if (cloud.errorAt || cloud.error) return { label: 'problém synchronizace', className: 'bad' };
+    if (cloud.pendingAt) return { label: 'čeká na odeslání', className: 'warn' };
     return { label: 'sdílená domácnost', className: 'good' };
   }
 
@@ -6634,31 +6672,226 @@
     return normalizeKey([card.store, card.cardNumber, card.note].filter(Boolean).join(' ')).includes(key);
   }
 
-  function loyaltyBarcodeBars(value = '') {
-    const source = normalizeText(value) || '000000000000';
-    const chars = [...source].slice(0, 28);
-    if (!chars.length) chars.push('0');
-    return chars.map((char, index) => {
-      const code = char.charCodeAt(0) + index;
-      const width = 1 + (code % 4);
-      const tall = code % 3 === 0 ? ' tall' : '';
-      return `<i class="w${width}${tall}"></i>`;
-    }).join('');
+  function loyaltyCodeValue(value = '') {
+    return normalizeText(value || '').trim() || '0000000000000';
   }
 
-  function loyaltyCodePreview(card = {}) {
-    const photo = normalizeText(card.photoDataUrl || '');
-    const photoPreview = photo ? `<div class="loyalty-code-photo"><img src="${escapeHtml(photo)}" alt="Vyfocený kód karty"></div>` : '';
-    if (card.codeType === 'qr') {
-      const seed = normalizeText(card.cardNumber || card.store || 'qr');
-      const cells = Array.from({ length: 49 }, (_, index) => {
-        const code = seed.charCodeAt(index % seed.length) || 7;
-        return `<i class="${((code + index * 3) % 5) < 2 ? 'on' : ''}"></i>`;
-      }).join('');
-      return `${photoPreview}<div class="loyalty-qr" aria-hidden="true">${cells}</div>`;
+  function loyaltyUtf8Bytes(value = '') {
+    const text = loyaltyCodeValue(value);
+    if (typeof TextEncoder !== 'undefined') return Array.from(new TextEncoder().encode(text));
+    return Array.from(text).map((char) => char.charCodeAt(0) & 0xFF);
+  }
+
+  const LOYALTY_QR_CAPACITY_L = {
+    1: { data: 19, ecc: 7, align: [] },
+    2: { data: 34, ecc: 10, align: [6, 18] },
+    3: { data: 55, ecc: 15, align: [6, 22] },
+    4: { data: 80, ecc: 20, align: [6, 26] },
+    5: { data: 108, ecc: 26, align: [6, 30] }
+  };
+
+  function loyaltyQrGfMul(x, y) {
+    let z = 0;
+    for (let i = 7; i >= 0; i -= 1) {
+      z = ((z << 1) ^ ((z >>> 7) * 0x11D)) & 0xFF;
+      if (((y >>> i) & 1) !== 0) z ^= x;
     }
-    if (card.codeType === 'text') return `${photoPreview}<div class="loyalty-text-code selectable-text">${escapeHtml(card.cardNumber || 'bez čísla')}</div>`;
-    return `${photoPreview}<div class="loyalty-barcode" aria-hidden="true">${loyaltyBarcodeBars(card.cardNumber)}</div>`;
+    return z & 0xFF;
+  }
+
+  function loyaltyQrRsDivisor(degree) {
+    const result = Array(degree).fill(0);
+    result[degree - 1] = 1;
+    let root = 1;
+    for (let i = 0; i < degree; i += 1) {
+      for (let j = 0; j < degree; j += 1) {
+        result[j] = loyaltyQrGfMul(result[j], root);
+        if (j + 1 < degree) result[j] ^= result[j + 1];
+      }
+      root = loyaltyQrGfMul(root, 0x02);
+    }
+    return result;
+  }
+
+  function loyaltyQrRsRemainder(data, degree) {
+    const divisor = loyaltyQrRsDivisor(degree);
+    const result = Array(degree).fill(0);
+    data.forEach((byte) => {
+      const factor = byte ^ result.shift();
+      result.push(0);
+      divisor.forEach((coef, index) => {
+        result[index] ^= loyaltyQrGfMul(coef, factor);
+      });
+    });
+    return result;
+  }
+
+  function loyaltyQrAppendBits(bits, value, length) {
+    for (let i = length - 1; i >= 0; i -= 1) bits.push((value >>> i) & 1);
+  }
+
+  function loyaltyQrFormatBits(eccLevelBits, mask) {
+    const data = (eccLevelBits << 3) | mask;
+    let bits = data << 10;
+    for (let i = 14; i >= 10; i -= 1) {
+      if (((bits >>> i) & 1) !== 0) bits ^= 0x537 << (i - 10);
+    }
+    return (((data << 10) | (bits & 0x3FF)) ^ 0x5412) & 0x7FFF;
+  }
+
+  function loyaltyQrMatrix(value = '') {
+    const bytes = loyaltyUtf8Bytes(value);
+    let version = 5;
+    for (let v = 1; v <= 5; v += 1) {
+      const meta = LOYALTY_QR_CAPACITY_L[v];
+      if ((4 + 8 + bytes.length * 8) <= meta.data * 8) {
+        version = v;
+        break;
+      }
+    }
+    const meta = LOYALTY_QR_CAPACITY_L[version] || LOYALTY_QR_CAPACITY_L[5];
+    const dataBytes = bytes.slice(0, Math.max(0, meta.data - 2));
+    const bits = [];
+    loyaltyQrAppendBits(bits, 0x4, 4);
+    loyaltyQrAppendBits(bits, dataBytes.length, 8);
+    dataBytes.forEach((byte) => loyaltyQrAppendBits(bits, byte, 8));
+    const maxBits = meta.data * 8;
+    loyaltyQrAppendBits(bits, 0, Math.min(4, Math.max(0, maxBits - bits.length)));
+    while (bits.length % 8) bits.push(0);
+    const dataCodewords = [];
+    for (let i = 0; i < bits.length; i += 8) dataCodewords.push(bits.slice(i, i + 8).reduce((acc, bit) => (acc << 1) | bit, 0));
+    for (let pad = 0; dataCodewords.length < meta.data; pad += 1) dataCodewords.push(pad % 2 ? 0x11 : 0xEC);
+    const codewords = [...dataCodewords, ...loyaltyQrRsRemainder(dataCodewords, meta.ecc)];
+    const size = 21 + (version - 1) * 4;
+    const modules = Array.from({ length: size }, () => Array(size).fill(false));
+    const reserved = Array.from({ length: size }, () => Array(size).fill(false));
+    const set = (x, y, dark, isFunction = true) => {
+      if (x < 0 || y < 0 || x >= size || y >= size) return;
+      modules[y][x] = Boolean(dark);
+      if (isFunction) reserved[y][x] = true;
+    };
+    const finder = (x, y) => {
+      for (let dy = -1; dy <= 7; dy += 1) {
+        for (let dx = -1; dx <= 7; dx += 1) {
+          const xx = x + dx;
+          const yy = y + dy;
+          if (xx < 0 || yy < 0 || xx >= size || yy >= size) continue;
+          const inCore = dx >= 0 && dx <= 6 && dy >= 0 && dy <= 6;
+          const dark = inCore && (dx === 0 || dx === 6 || dy === 0 || dy === 6 || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4));
+          set(xx, yy, dark, true);
+        }
+      }
+    };
+    finder(0, 0);
+    finder(size - 7, 0);
+    finder(0, size - 7);
+    for (let i = 8; i < size - 8; i += 1) {
+      set(i, 6, i % 2 === 0, true);
+      set(6, i, i % 2 === 0, true);
+    }
+    (meta.align || []).forEach((cx) => (meta.align || []).forEach((cy) => {
+      if (reserved[cy]?.[cx]) return;
+      for (let dy = -2; dy <= 2; dy += 1) {
+        for (let dx = -2; dx <= 2; dx += 1) {
+          set(cx + dx, cy + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1, true);
+        }
+      }
+    }));
+    for (let i = 0; i < 8; i += 1) {
+      set(8, i, false, true);
+      set(i, 8, false, true);
+      set(size - 1 - i, 8, false, true);
+      set(8, size - 1 - i, false, true);
+    }
+    set(8, size - 8, true, true);
+
+    const dataBits = [];
+    codewords.forEach((byte) => loyaltyQrAppendBits(dataBits, byte, 8));
+    let bitIndex = 0;
+    let upward = true;
+    for (let right = size - 1; right > 0; right -= 2) {
+      if (right === 6) right -= 1;
+      for (let vert = 0; vert < size; vert += 1) {
+        const y = upward ? size - 1 - vert : vert;
+        for (let col = 0; col < 2; col += 1) {
+          const x = right - col;
+          if (reserved[y][x]) continue;
+          let bit = bitIndex < dataBits.length ? dataBits[bitIndex] : 0;
+          bitIndex += 1;
+          if ((x + y) % 2 === 0) bit ^= 1;
+          modules[y][x] = Boolean(bit);
+        }
+      }
+      upward = !upward;
+    }
+    const format = loyaltyQrFormatBits(1, 0); // ECC low, mask 0
+    const formatBit = (i) => ((format >>> i) & 1) !== 0;
+    for (let i = 0; i <= 5; i += 1) set(8, i, formatBit(i), true);
+    set(8, 7, formatBit(6), true);
+    set(8, 8, formatBit(7), true);
+    set(7, 8, formatBit(8), true);
+    for (let i = 9; i < 15; i += 1) set(14 - i, 8, formatBit(i), true);
+    for (let i = 0; i < 8; i += 1) set(size - 1 - i, 8, formatBit(i), true);
+    for (let i = 8; i < 15; i += 1) set(8, size - 15 + i, formatBit(i), true);
+    set(8, size - 8, true, true);
+    return modules;
+  }
+
+  function loyaltyQrSvg(value = '', large = false) {
+    const matrix = loyaltyQrMatrix(value);
+    const size = matrix.length;
+    const quiet = 4;
+    const view = size + quiet * 2;
+    const rects = [];
+    matrix.forEach((row, y) => row.forEach((dark, x) => {
+      if (dark) rects.push(`<rect x="${x + quiet}" y="${y + quiet}" width="1" height="1"/>`);
+    }));
+    return `<svg class="loyalty-code-svg loyalty-qr-svg ${large ? 'is-large' : ''}" viewBox="0 0 ${view} ${view}" role="img" aria-label="QR kód"><rect width="${view}" height="${view}" fill="#fff"/>${rects.join('')}</svg>`;
+  }
+
+  const LOYALTY_CODE128_PATTERNS = [
+    '212222','222122','222221','121223','121322','131222','122213','122312','132212','221213','221312','231212','112232','122132','122231','113222','123122','123221','223211','221132','221231','213212','223112','312131','311222','321122','321221','312212','322112','322211','212123','212321','232121','111323','131123','131321','112313','132113','132311','211313','231113','231311','112133','112331','132131','113123','113321','133121','313121','211331','231131','213113','213311','213131','311123','311321','331121','312113','312311','332111','314111','221411','431111','111224','111422','121124','121421','141122','141221','112214','112412','122114','122411','142112','142211','241211','221114','413111','241112','134111','111242','121142','121241','114212','124112','124211','411212','421112','421211','212141','214121','412121','111143','111341','131141','114113','114311','411113','411311','113141','114131','311141','411131','211412','211214','211232','2331112'
+  ];
+
+  function loyaltyCode128Values(value = '') {
+    const source = loyaltyCodeValue(value).replace(/[^\x20-\x7E]/g, '').slice(0, 80) || '0000000000000';
+    const values = [104];
+    [...source].forEach((char) => values.push(char.charCodeAt(0) - 32));
+    const checksum = values.reduce((sum, code, index) => sum + (index === 0 ? code : code * index), 0) % 103;
+    values.push(checksum, 106);
+    return values;
+  }
+
+  function loyaltyBarcodeSvg(value = '', large = false) {
+    const values = loyaltyCode128Values(value);
+    let x = 10;
+    const height = large ? 92 : 58;
+    const bars = [];
+    values.forEach((code) => {
+      const pattern = LOYALTY_CODE128_PATTERNS[code] || LOYALTY_CODE128_PATTERNS[0];
+      [...pattern].forEach((part, index) => {
+        const width = Number(part) || 1;
+        if (index % 2 === 0) bars.push(`<rect x="${x}" y="0" width="${width}" height="${height}"/>`);
+        x += width;
+      });
+    });
+    const viewWidth = x + 10;
+    return `<svg class="loyalty-code-svg loyalty-barcode-svg ${large ? 'is-large' : ''}" viewBox="0 0 ${viewWidth} ${height}" role="img" aria-label="Čárový kód"><rect width="${viewWidth}" height="${height}" fill="#fff"/>${bars.join('')}</svg>`;
+  }
+
+  function loyaltyCodePreview(card = {}, size = 'small') {
+    const large = size === 'large';
+    const type = normalizeLoyaltyCodeType(card.codeType);
+    if (type === 'qr') return `<div class="loyalty-code-render loyalty-code-render-qr ${large ? 'is-large' : ''}">${loyaltyQrSvg(card.cardNumber || card.store || 'qr', large)}</div>`;
+    if (type === 'text') return `<div class="loyalty-text-code selectable-text ${large ? 'is-large' : ''}">${escapeHtml(card.cardNumber || 'bez čísla')}</div>`;
+    return `<div class="loyalty-code-render loyalty-code-render-barcode ${large ? 'is-large' : ''}">${loyaltyBarcodeSvg(card.cardNumber || '0000000000000', large)}</div>`;
+  }
+
+  function loyaltyCodeTypeLabel(type = '') {
+    const normalized = normalizeLoyaltyCodeType(type);
+    if (normalized === 'qr') return 'QR kód';
+    if (normalized === 'text') return 'Text';
+    return 'Čárový kód';
   }
 
   function normalizeLoyaltyDetectedFormat(format = '') {
@@ -6904,39 +7137,34 @@
   function renderLoyaltyCardItem(card) {
     const normalized = normalizeLoyaltyCard(card);
     const isEditing = loyaltyCardEditId === normalized.id;
-    const typeLabel = normalized.codeType === 'qr' ? 'QR' : normalized.codeType === 'text' ? 'Text' : 'Čárový kód';
+    const typeLabel = loyaltyCodeTypeLabel(normalized.codeType);
     return `
       <article class="loyalty-card-item loyalty-color-${escapeHtml(normalized.color)} ${normalized.favorite ? 'is-favorite' : ''}" data-loyalty-card-search="${escapeHtml([normalized.store, normalized.cardNumber, normalized.note].filter(Boolean).join(' ').toLowerCase())}">
         <div class="loyalty-card-glow"></div>
-        <div class="loyalty-card-top">
-          <div>
-            <span>Věrnostní karta</span>
-            <h3>${escapeHtml(normalized.store || 'Obchod')}</h3>
-          </div>
-          <button class="loyalty-favorite-btn ${normalized.favorite ? 'active' : ''}" type="button" data-action="toggle-loyalty-favorite" data-id="${escapeHtml(normalized.id)}" aria-label="${normalized.favorite ? 'Odebrat z oblíbených' : 'Přidat do oblíbených'}">★</button>
+        <div class="loyalty-card-compact-head">
+          <h3>${escapeHtml(normalized.store || 'Obchod')}</h3>
+          <details class="loyalty-card-menu">
+            <summary aria-label="Možnosti karty">•••</summary>
+            <div class="loyalty-card-menu-panel">
+              <button type="button" data-action="toggle-loyalty-edit" data-id="${escapeHtml(normalized.id)}">${isEditing ? 'Zavřít úpravu' : 'Upravit kartu'}</button>
+              <button type="button" data-action="copy" data-value="${escapeHtml(normalized.cardNumber || '')}">Kopírovat číslo</button>
+              <button type="button" data-action="toggle-loyalty-favorite" data-id="${escapeHtml(normalized.id)}">${normalized.favorite ? 'Odebrat z oblíbených' : 'Dát do oblíbených'}</button>
+              <button type="button" class="danger" data-action="delete-loyalty-card" data-id="${escapeHtml(normalized.id)}">Smazat</button>
+            </div>
+          </details>
         </div>
-        <div class="loyalty-card-code">
-          ${loyaltyCodePreview(normalized)}
-          <strong class="selectable-text">${escapeHtml(normalized.cardNumber || 'bez čísla')}</strong>
-        </div>
-        <div class="loyalty-card-bottom">
-          <span>${escapeHtml(typeLabel)}</span>
-          ${normalized.note ? `<em>${escapeHtml(normalized.note)}</em>` : '<em>připraveno u pokladny</em>'}
-        </div>
-        <div class="loyalty-card-actions">
-          <button class="ghost-btn" type="button" data-action="copy" data-value="${escapeHtml(normalized.cardNumber || '')}">Kopírovat číslo</button>
-          <button class="ghost-btn" type="button" data-action="toggle-loyalty-edit" data-id="${escapeHtml(normalized.id)}">${isEditing ? 'Zavřít' : 'Upravit'}</button>
-          <button class="danger-btn" type="button" data-action="delete-loyalty-card" data-id="${escapeHtml(normalized.id)}">Smazat</button>
-        </div>
+        <button class="loyalty-code-thumb" type="button" data-action="open-loyalty-code" data-id="${escapeHtml(normalized.id)}" aria-label="Zobrazit kód karty ${escapeHtml(normalized.store || '')} ve velkém">
+          ${loyaltyCodePreview(normalized, 'small')}
+        </button>
+        <div class="loyalty-card-mini-meta"><span>${escapeHtml(typeLabel)}</span>${normalized.favorite ? '<span>★ oblíbená</span>' : ''}</div>
         ${isEditing ? `
           <form data-form="update-loyalty-card" data-id="${escapeHtml(normalized.id)}" class="compact-form loyalty-edit-form">
-            <div class="inline-note compact-note loyalty-edit-note">Tady můžeš změnit číslo, obchod i typ kódu. Klidně přepni čárový kód na QR nebo text.</div>
             <div class="form-grid two">
               ${field('Obchod', 'store', 'text', 'Kaufland / Lidl / DM', true, normalized.store || '')}
               ${field('Číslo / kód karty', 'cardNumber', 'text', 'číslo karty nebo kód', true, normalized.cardNumber || '')}
               ${selectField('Typ kódu', 'codeType', [['barcode', 'Čárový kód'], ['qr', 'QR'], ['text', 'Text']], normalized.codeType)}
               ${selectField('Barva karty', 'color', [['rose', 'Rose'], ['blue', 'Blue'], ['mint', 'Mint'], ['amber', 'Amber'], ['violet', 'Violet'], ['slate', 'Slate']], normalized.color)}
-              ${field('Poznámka', 'note', 'text', 'např. manželčina karta', false, normalized.note || '')}
+              ${field('Poznámka', 'note', 'text', 'např. Lucčina karta', false, normalized.note || '')}
             </div>
             <div class="form-actions loyalty-edit-actions">
               <button class="primary-btn" type="submit">Uložit změny</button>
@@ -6985,7 +7213,7 @@
     render();
     await syncLoyaltyCardsToCloud();
     render();
-    showToast(cloudReady() ? 'Věrnostní karta uložena a sdílí se v domácnosti' : 'Věrnostní karta uložena lokálně');
+    showToast(cloudReady() ? 'Věrnostní karta uložena' : 'Věrnostní karta uložena lokálně');
   }
 
   async function updateLoyaltyCardFromForm(id, data, form) {
@@ -7011,7 +7239,7 @@
     render();
     await syncLoyaltyCardsToCloud();
     render();
-    showToast(cloudReady() ? 'Věrnostní karta upravena a sdílí se v domácnosti' : 'Věrnostní karta upravena lokálně');
+    showToast(cloudReady() ? 'Věrnostní karta upravena' : 'Věrnostní karta upravena lokálně');
   }
 
   async function toggleLoyaltyFavorite(id) {
@@ -7040,7 +7268,7 @@
     render();
     await syncLoyaltyCardsToCloud();
     render();
-    showToast(cloudReady() ? 'Karta smazána i ze sdílené domácnosti' : 'Karta smazána lokálně');
+    showToast(cloudReady() ? 'Karta smazána' : 'Karta smazána lokálně');
   }
 
   function normalizeWarrantyStatus(value) {
@@ -13179,7 +13407,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 273))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 274))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -18950,7 +19178,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 85, appBuild: 273, mode: 'rich-demo-v273', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 85, appBuild: 274, mode: 'rich-demo-v274', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -19103,7 +19331,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 273, mode: 'loyalty-card-photo-ocr-v273', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 274, mode: 'loyalty-wallet-code-preview-v274', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -20912,6 +21140,7 @@
       calendarDetailEventId = null;
       activeWarrantyDetailId = null;
       shoppingDoneModalOpen = false;
+      loyaltyCardPreviewId = '';
       garageEditRecord = null;
       closeFilePreviewModal();
       render();
@@ -21008,6 +21237,20 @@
     }
     if (action === 'toggle-loyalty-edit') {
       loyaltyCardEditId = loyaltyCardEditId === button.dataset.id ? '' : (button.dataset.id || '');
+      render();
+      return;
+    }
+    if (action === 'toggle-loyalty-add') {
+      loyaltyAddDetailsOpen = !loyaltyAddDetailsOpen;
+      if (!loyaltyAddDetailsOpen) {
+        resetLoyaltyCardScan();
+        clearLoyaltyAddDraft();
+      }
+      render();
+      return;
+    }
+    if (action === 'open-loyalty-code') {
+      loyaltyCardPreviewId = button.dataset.id || '';
       render();
       return;
     }
@@ -22536,7 +22779,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 273
+        appBuild: 274
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -23146,7 +23389,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-273-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-274-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -23196,11 +23439,12 @@
 
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
-    if (garageModal || calendarDetailEventId || activeWarrantyDetailId || filePreviewModal || shoppingDoneModalOpen) {
+    if (garageModal || calendarDetailEventId || activeWarrantyDetailId || filePreviewModal || shoppingDoneModalOpen || loyaltyCardPreviewId) {
       garageModal = null;
       calendarDetailEventId = null;
       activeWarrantyDetailId = null;
       shoppingDoneModalOpen = false;
+      loyaltyCardPreviewId = '';
       garageEditRecord = null;
       closeFilePreviewModal();
       render();
@@ -23301,6 +23545,7 @@
       calendarDetailEventId = null;
       activeWarrantyDetailId = null;
       shoppingDoneModalOpen = false;
+      loyaltyCardPreviewId = '';
       garageEditRecord = null;
       closeFilePreviewModal();
       render();
@@ -23607,7 +23852,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_273</span>
+          <span class="badge">Domácnost+ v.0.1_274</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

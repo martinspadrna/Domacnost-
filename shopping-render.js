@@ -176,34 +176,33 @@
         </section>` : '';
 
 
+      const loyaltyAddVisible = loyaltyAddOpen || loyaltyScan?.loading || loyaltyScan?.dataUrl || loyaltyScan?.detectedCode || loyaltyScan?.error;
       const loyaltyPanel = isShoppingLoyaltyTab ? `
         <section class="card desktop-span-2 shopping-panel panel-loyalty loyalty-wallet-panel">
-          <div class="card-header loyalty-wallet-head"><div><h2>Věrnostní karty</h2><p>Rychlá peněženka na karty do obchodů. V online domácnosti jsou sdílené pro všechny členy.</p></div><span class="badge ${escapeHtml(loyaltyCloudBadge.className || '')}">${escapeHtml(loyaltyCloudBadge.label || '')}</span></div>
-          <div class="shopping-cloud-strip ${state.cloud?.householdId ? 'is-cloud' : 'is-local'} ${state.loyaltyCardsCloud?.pendingAt ? 'is-loading' : ''}">
-            <div class="shopping-cloud-copy">
-              <strong>${state.cloud?.householdId ? `Sdíleno: ${escapeHtml(householdName)}` : 'Karty jsou teď jen v tomto zařízení'}</strong>
-              <span>${state.cloud?.householdId ? (state.loyaltyCardsCloud?.pendingAt ? 'Změny čekají na uložení do Supabase domácnosti…' : `Naposledy načteno ${relativeShoppingTime(state.loyaltyCardsCloud?.loadedAt || loadedAt)}`) : 'Po přihlášení do domácnosti se budou karty sdílet přes Supabase.'}</span>
-            </div>
+          <div class="card-header loyalty-wallet-head">
+            <div><h2>Věrnostní karty</h2><p>Karty do obchodů, rychle po ruce u pokladny.</p></div>
+            <div class="loyalty-head-actions"><span class="badge ${escapeHtml(loyaltyCloudBadge.className || '')}">${escapeHtml(loyaltyCloudBadge.label || '')}</span><button class="icon-btn loyalty-add-plus" type="button" data-action="toggle-loyalty-add" aria-label="Nová věrnostní karta">+</button></div>
           </div>
           <div class="loyalty-toolbar">
             <div class="field loyalty-search-field"><label>Najít kartu</label><input class="input" type="search" placeholder="Kaufland, Lidl, DM…" value="${escapeHtml(loyaltySearch)}" data-loyalty-search autocomplete="off"></div>
           </div>
-          <details class="action-details compact-edit-details loyalty-add-details" ${loyaltyAddOpen || loyaltyScan?.loading || loyaltyScan?.dataUrl || loyaltyScan?.detectedCode || loyaltyScan?.error ? 'open' : ''}>
-            <summary><span>Přidat kartu</span><em>vyfotit kód, opsat/načíst číslo, zvolit QR nebo čárový kód</em></summary>
-            <form data-form="add-loyalty-card" class="compact-form loyalty-card-form">
-              ${deps.renderLoyaltyScanPanel ? deps.renderLoyaltyScanPanel(loyaltyScan) : ''}
-              <div class="form-grid two">
-                ${deps.field('Obchod', 'store', 'text', 'Kaufland / Lidl / DM', true, loyaltyDraft.store || '')}
-                ${deps.field('Číslo / kód karty', 'cardNumber', 'text', 'číslo z fotky nebo kód', true, loyaltyDraft.cardNumber || loyaltyScan?.detectedCode || '')}
-                ${deps.selectField('Typ kódu', 'codeType', [['barcode', 'Čárový kód'], ['qr', 'QR'], ['text', 'Text']], loyaltyDraft.codeType || loyaltyScan?.detectedFormat || 'barcode')}
-                ${deps.selectField('Barva karty', 'color', [['rose', 'Rose'], ['blue', 'Blue'], ['mint', 'Mint'], ['amber', 'Amber'], ['violet', 'Violet'], ['slate', 'Slate']], loyaltyDraft.color || 'rose')}
-                ${deps.field('Poznámka', 'note', 'text', 'např. Lucčina karta', false, loyaltyDraft.note || '')}
-              </div>
-              <div class="form-actions"><button class="primary-btn" type="submit">Uložit kartu do domácnosti</button></div>
-            </form>
-          </details>
+          ${loyaltyAddVisible ? `
+            <div class="loyalty-add-panel">
+              <form data-form="add-loyalty-card" class="compact-form loyalty-card-form">
+                ${deps.renderLoyaltyScanPanel ? deps.renderLoyaltyScanPanel(loyaltyScan) : ''}
+                <div class="form-grid two">
+                  ${deps.field('Obchod', 'store', 'text', 'Kaufland / Lidl / DM', true, loyaltyDraft.store || '')}
+                  ${deps.field('Číslo / kód karty', 'cardNumber', 'text', 'číslo z fotky nebo kód', true, loyaltyDraft.cardNumber || loyaltyScan?.detectedCode || '')}
+                  ${deps.selectField('Typ kódu', 'codeType', [['barcode', 'Čárový kód'], ['qr', 'QR'], ['text', 'Text']], loyaltyDraft.codeType || loyaltyScan?.detectedFormat || 'barcode')}
+                  ${deps.selectField('Barva karty', 'color', [['rose', 'Rose'], ['blue', 'Blue'], ['mint', 'Mint'], ['amber', 'Amber'], ['violet', 'Violet'], ['slate', 'Slate']], loyaltyDraft.color || 'rose')}
+                  ${deps.field('Poznámka', 'note', 'text', 'např. Lucčina karta', false, loyaltyDraft.note || '')}
+                </div>
+                <div class="form-actions"><button class="primary-btn" type="submit">Uložit kartu</button><button class="ghost-btn" type="button" data-action="toggle-loyalty-add">Zrušit</button></div>
+              </form>
+            </div>
+          ` : ''}
           <div class="loyalty-wallet-grid">
-            ${loyaltyCards.length ? loyaltyCards.map((card) => deps.renderLoyaltyCardItem(card)).join('') : deps.renderEmptyCta({ icon: '💳', title: loyaltySearch ? 'Nic nenalezeno' : 'Zatím žádná karta', text: loyaltySearch ? 'Zkus jiný obchod nebo číslo karty.' : 'Přidej věrnostní kartu a budeš ji mít po ruce v nákupech.', nav: 'shopping', tab: 'loyalty', label: 'Přidat kartu' })}
+            ${loyaltyCards.length ? loyaltyCards.map((card) => deps.renderLoyaltyCardItem(card)).join('') : `<div class="empty loyalty-empty"><div class="empty-icon">💳</div><strong>${loyaltySearch ? 'Nic nenalezeno' : 'Zatím žádná karta'}</strong><span>${loyaltySearch ? 'Zkus jiný obchod nebo číslo karty.' : 'Novou kartu přidáš přes + vpravo nahoře.'}</span></div>`}
           </div>
         </section>` : '';
 
