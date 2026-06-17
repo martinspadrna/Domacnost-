@@ -66,6 +66,7 @@
       const loyaltyScan = deps.getLoyaltyScanState ? deps.getLoyaltyScanState() : { detectedCode: '', detectedFormat: '' };
       const loyaltyAddOpen = deps.getLoyaltyAddDetailsOpen ? Boolean(deps.getLoyaltyAddDetailsOpen()) : false;
       const loyaltyCardsAll = deps.getLoyaltyCards ? deps.getLoyaltyCards() : (Array.isArray(state.loyaltyCards) ? state.loyaltyCards : []);
+      const loyaltyCloudBadge = deps.loyaltyCloudBadge ? deps.loyaltyCloudBadge() : { label: state.cloud?.householdId ? 'sdílená domácnost' : 'jen v tomto zařízení', className: state.cloud?.householdId ? 'good' : '' };
       const loyaltyCards = isShoppingLoyaltyTab ? loyaltyCardsAll.filter((card) => {
         const query = loyaltySearch.trim().toLowerCase();
         if (!query) return true;
@@ -176,7 +177,13 @@
 
       const loyaltyPanel = isShoppingLoyaltyTab ? `
         <section class="card desktop-span-2 shopping-panel panel-loyalty loyalty-wallet-panel">
-          <div class="card-header loyalty-wallet-head"><div><h2>Věrnostní karty</h2><p>Rychlá peněženka na karty do obchodů. Otevři, ukaž kód u pokladny a hotovo.</p></div><span class="badge ${state.cloud?.householdId ? 'good' : ''}">${state.cloud?.householdId ? 'domácnost' : 'lokálně'}</span></div>
+          <div class="card-header loyalty-wallet-head"><div><h2>Věrnostní karty</h2><p>Rychlá peněženka na karty do obchodů. V online domácnosti jsou sdílené pro všechny členy.</p></div><span class="badge ${escapeHtml(loyaltyCloudBadge.className || '')}">${escapeHtml(loyaltyCloudBadge.label || '')}</span></div>
+          <div class="shopping-cloud-strip ${state.cloud?.householdId ? 'is-cloud' : 'is-local'} ${state.loyaltyCardsCloud?.pendingAt ? 'is-loading' : ''}">
+            <div class="shopping-cloud-copy">
+              <strong>${state.cloud?.householdId ? `Sdíleno: ${escapeHtml(householdName)}` : 'Karty jsou teď jen v tomto zařízení'}</strong>
+              <span>${state.cloud?.householdId ? (state.loyaltyCardsCloud?.pendingAt ? 'Změny čekají na uložení do Supabase domácnosti…' : `Naposledy načteno ${relativeShoppingTime(state.loyaltyCardsCloud?.loadedAt || loadedAt)}`) : 'Po přihlášení do domácnosti se budou karty sdílet přes Supabase.'}</span>
+            </div>
+          </div>
           <div class="loyalty-toolbar">
             <div class="field loyalty-search-field"><label>Najít kartu</label><input class="input" type="search" placeholder="Kaufland, Lidl, DM…" value="${escapeHtml(loyaltySearch)}" data-loyalty-search autocomplete="off"></div>
           </div>
@@ -191,7 +198,7 @@
                 ${deps.selectField('Barva karty', 'color', [['rose', 'Rose'], ['blue', 'Blue'], ['mint', 'Mint'], ['amber', 'Amber'], ['violet', 'Violet'], ['slate', 'Slate']], 'rose')}
                 ${deps.field('Poznámka', 'note', 'text', 'např. Lucčina karta')}
               </div>
-              <div class="form-actions"><button class="primary-btn" type="submit">Uložit kartu</button></div>
+              <div class="form-actions"><button class="primary-btn" type="submit">Uložit kartu do domácnosti</button></div>
             </form>
           </details>
           <div class="loyalty-wallet-grid">

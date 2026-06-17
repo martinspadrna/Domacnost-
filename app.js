@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_269';
+  const APP_VERSION = 'Domácnost+ v.0.1_270';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -702,8 +702,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 269,
-      mode: 'shopping-loyalty-scan-v269',
+      appBuild: 270,
+      mode: 'shopping-loyalty-edit-sync-v270',
       createdAt: '',
       updatedAt: ''
     },
@@ -1607,8 +1607,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 269,
-      mode: 'shopping-loyalty-scan-v269',
+      appBuild: 270,
+      mode: 'shopping-loyalty-edit-sync-v270',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5211,6 +5211,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_270', note: 'Nákupy / Karty: doplněná jasná editace uložených věrnostních karet včetně přepnutí typu čárový kód / QR / text, přefocení kódu u existující karty a viditelný cloud sync přes sdílenou domácnost.' },
       { title: 'Domácnost+ v.0.1_269', note: 'Nákupy: věrnostní kartu jde přidat vyfocením nebo nahráním obrázku. Pokud prohlížeč podporuje BarcodeDetector, automaticky doplní čárový/QR kód. Přidaný je i Home panel Věrnostní karty.' },
       { title: 'Domácnost+ v.0.1_268', note: 'Nákupy: přidaná záložka Věrnostní karty ve stylu moderní peněženky. Karty se ukládají k domácnosti přes dashboard_layout bez nové DB tabulky.' },
       { title: 'Domácnost+ v.0.1_267', note: 'Odečty: opravené rozjíždění panelů fakturačních období doprava. Datumová pole od–do se ve skupinách skládají stabilně pod sebe a netlačí kartu mimo šířku obrazovky.' },
@@ -6397,6 +6398,7 @@
       getLoyaltyScanState,
       getLoyaltyAddDetailsOpen: () => loyaltyAddDetailsOpen,
       getLoyaltySearchTerm: () => loyaltyCardSearchTerm,
+      loyaltyCloudBadge,
       ensureShoppingListsReady,
       getShoppingLists,
       getActiveShoppingListId,
@@ -6593,6 +6595,26 @@
     return state.loyaltyCards;
   }
 
+  function markLoyaltyCardsPending() {
+    state.loyaltyCardsCloud = { ...(state.loyaltyCardsCloud || {}), pendingAt: new Date().toISOString() };
+  }
+
+  async function syncLoyaltyCardsToCloud() {
+    if (!cloudReady()) return false;
+    const ok = await cloudSaveHouseholdUiSettings(false);
+    if (ok) {
+      state.loyaltyCardsCloud = { ...(state.loyaltyCardsCloud || {}), loadedAt: new Date().toISOString(), pendingAt: '' };
+      saveState();
+    }
+    return ok;
+  }
+
+  function loyaltyCloudBadge() {
+    if (!cloudReady()) return { label: 'jen v tomto zařízení', className: '' };
+    if (state.loyaltyCardsCloud?.pendingAt) return { label: 'čeká na cloud', className: 'warn' };
+    return { label: 'sdílená domácnost', className: 'good' };
+  }
+
   function loyaltyCardSearchMatches(card, term = '') {
     const key = normalizeKey(term);
     if (!key) return true;
@@ -6745,6 +6767,40 @@
     render();
   }
 
+
+  async function handleLoyaltyEditPhotoInput(input) {
+    const id = input?.dataset?.id || '';
+    const file = input?.files?.[0];
+    const card = state.loyaltyCards?.find((item) => item.id === id);
+    if (!file || !card) return;
+    showToast('Načítám kód z fotky…');
+    try {
+      const dataUrl = await compressLoyaltyImage(file);
+      const detected = await detectLoyaltyCodeFromImage(dataUrl);
+      if (!detected.code) {
+        showToast(detected.error || 'Kód se z fotky nepovedlo načíst. Číslo můžeš upravit ručně.');
+        input.value = '';
+        return;
+      }
+      card.cardNumber = normalizeText(detected.code);
+      card.codeType = normalizeLoyaltyDetectedFormat(detected.format || card.codeType || 'barcode');
+      card.updatedAt = new Date().toISOString();
+      markLoyaltyCardsPending();
+      state.loyaltyCards = normalizeLoyaltyCards(state.loyaltyCards || []);
+      touchState();
+      saveState();
+      render();
+      await syncLoyaltyCardsToCloud();
+      render();
+      showToast(cloudReady() ? 'Kód karty načtený a uložený do domácnosti' : 'Kód karty načtený lokálně');
+    } catch (error) {
+      console.error('Loyalty edit photo load failed', error);
+      showToast('Fotku se nepovedlo načíst.');
+    } finally {
+      input.value = '';
+    }
+  }
+
   function renderLoyaltyCardItem(card) {
     const normalized = normalizeLoyaltyCard(card);
     const isEditing = loyaltyCardEditId === normalized.id;
@@ -6774,6 +6830,7 @@
         </div>
         ${isEditing ? `
           <form data-form="update-loyalty-card" data-id="${escapeHtml(normalized.id)}" class="compact-form loyalty-edit-form">
+            <div class="inline-note compact-note loyalty-edit-note">Tady můžeš změnit číslo, obchod i typ kódu. Klidně přepni čárový kód na QR nebo text.</div>
             <div class="form-grid two">
               ${field('Obchod', 'store', 'text', 'Kaufland / Lidl / DM', true, normalized.store || '')}
               ${field('Číslo / kód karty', 'cardNumber', 'text', 'číslo karty nebo kód', true, normalized.cardNumber || '')}
@@ -6781,7 +6838,11 @@
               ${selectField('Barva karty', 'color', [['rose', 'Rose'], ['blue', 'Blue'], ['mint', 'Mint'], ['amber', 'Amber'], ['violet', 'Violet'], ['slate', 'Slate']], normalized.color)}
               ${field('Poznámka', 'note', 'text', 'např. manželčina karta', false, normalized.note || '')}
             </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Uložit kartu</button></div>
+            <div class="form-actions loyalty-edit-actions">
+              <button class="primary-btn" type="submit">Uložit změny</button>
+              <label class="ghost-btn loyalty-photo-btn" for="loyalty-card-edit-photo-${escapeHtml(normalized.id)}">Přefotit kód</label>
+              <input id="loyalty-card-edit-photo-${escapeHtml(normalized.id)}" class="sr-only-input" type="file" accept="image/*" capture="environment" data-loyalty-card-edit-photo data-id="${escapeHtml(normalized.id)}">
+            </div>
           </form>
         ` : ''}
       </article>
@@ -6811,14 +6872,16 @@
     }
     state.loyaltyCards.push(card);
     state.loyaltyCards = normalizeLoyaltyCards(state.loyaltyCards);
+    markLoyaltyCardsPending();
     touchState();
     saveState();
     form?.reset?.();
     resetLoyaltyCardScan();
     loyaltyAddDetailsOpen = false;
     render();
-    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
-    showToast('Věrnostní karta uložena');
+    await syncLoyaltyCardsToCloud();
+    render();
+    showToast(cloudReady() ? 'Věrnostní karta uložena a sdílí se v domácnosti' : 'Věrnostní karta uložena lokálně');
   }
 
   async function updateLoyaltyCardFromForm(id, data, form) {
@@ -6836,12 +6899,14 @@
     Object.assign(card, updated);
     state.loyaltyCards = normalizeLoyaltyCards(state.loyaltyCards);
     loyaltyCardEditId = '';
+    markLoyaltyCardsPending();
     touchState();
     saveState();
     form?.reset?.();
     render();
-    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
-    showToast('Věrnostní karta upravena');
+    await syncLoyaltyCardsToCloud();
+    render();
+    showToast(cloudReady() ? 'Věrnostní karta upravena a sdílí se v domácnosti' : 'Věrnostní karta upravena lokálně');
   }
 
   async function toggleLoyaltyFavorite(id) {
@@ -6850,10 +6915,12 @@
     card.favorite = !card.favorite;
     card.updatedAt = new Date().toISOString();
     state.loyaltyCards = normalizeLoyaltyCards(state.loyaltyCards);
+    markLoyaltyCardsPending();
     touchState();
     saveState();
     render();
-    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
+    await syncLoyaltyCardsToCloud();
+    render();
   }
 
   async function deleteLoyaltyCard(id) {
@@ -6862,11 +6929,13 @@
     if (!window.confirm(`Smazat věrnostní kartu ${card.store || 'obchodu'}?`)) return;
     state.loyaltyCards = (state.loyaltyCards || []).filter((item) => item.id !== id);
     if (loyaltyCardEditId === id) loyaltyCardEditId = '';
+    markLoyaltyCardsPending();
     touchState();
     saveState();
     render();
-    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
-    showToast('Karta smazána');
+    await syncLoyaltyCardsToCloud();
+    render();
+    showToast(cloudReady() ? 'Karta smazána i ze sdílené domácnosti' : 'Karta smazána lokálně');
   }
 
   function normalizeWarrantyStatus(value) {
@@ -13005,7 +13074,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 269))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 270))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -18704,7 +18773,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 85, appBuild: 269, mode: 'rich-demo-v269', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 85, appBuild: 270, mode: 'rich-demo-v270', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -18857,7 +18926,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 269, mode: 'shopping-loyalty-scan-v269', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 270, mode: 'shopping-loyalty-edit-sync-v270', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -22290,7 +22359,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 269
+        appBuild: 270
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -22315,6 +22384,7 @@
     state.cloud.lastSyncAt = syncedAt;
     state.subscriptionsCloud = { ...(state.subscriptionsCloud || {}), loadedAt: syncedAt, pendingAt: '' };
     state.readingsCloud = { ...(state.readingsCloud || {}), loadedAt: syncedAt, pendingAt: '' };
+    state.loyaltyCardsCloud = { ...(state.loyaltyCardsCloud || {}), loadedAt: syncedAt, pendingAt: '' };
     saveState();
     if (showMessage) showToast('Nastavení hlavní obrazovky uloženo do cloudu');
     return true;
@@ -22899,7 +22969,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-269-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-270-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -23120,6 +23190,11 @@
       handleLoyaltyPhotoInput(loyaltyPhotoInput);
       return;
     }
+    const loyaltyEditPhotoInput = event.target.closest('[data-loyalty-card-edit-photo]');
+    if (loyaltyEditPhotoInput) {
+      handleLoyaltyEditPhotoInput(loyaltyEditPhotoInput);
+      return;
+    }
     const financeMonthInput = event.target.closest('form[data-form="finance-month-filter"] input[name="month"]');
     if (financeMonthInput) {
       setFinanceMonth(financeMonthInput.value);
@@ -23338,7 +23413,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_269</span>
+          <span class="badge">Domácnost+ v.0.1_270</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

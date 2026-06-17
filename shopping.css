@@ -431,7 +431,7 @@ html[data-theme="dark"] .shopping-cloud-strip {
   }
 }
 
-/* Domácnost+ v.0.1_269 – Nákupy / Věrnostní karty */
+/* Domácnost+ v.0.1_270 – Nákupy / Věrnostní karty */
 .shopping-tab-loyalty {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -658,6 +658,15 @@ html[data-theme="dark"] .shopping-cloud-strip {
 .loyalty-card-actions .danger-btn {
   min-height: 38px;
   padding-inline: 12px;
+}
+
+
+.loyalty-edit-note {
+  margin-bottom: 10px;
+}
+
+.loyalty-edit-actions {
+  align-items: center;
 }
 
 .loyalty-edit-form {
