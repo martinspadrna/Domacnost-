@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_278';
+  const APP_VERSION = 'Domácnost+ v.0.1_279';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -702,8 +702,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 278,
-      mode: 'tablet-responsive-v278',
+      appBuild: 279,
+      mode: 'performance-stability-v279',
       createdAt: '',
       updatedAt: ''
     },
@@ -1619,8 +1619,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 278,
-      mode: 'tablet-responsive-v278',
+      appBuild: 279,
+      mode: 'performance-stability-v279',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -2542,6 +2542,10 @@
         app?.classList?.toggle('home-app-shell', isHomeModule);
         const pageTitle = isHomeModule ? householdName() : active.label;
         const pageSubtitle = isHomeModule ? '' : getModuleSubtitle(active.id);
+        const moduleRenderStartedAt = performance?.now ? performance.now() : Date.now();
+        const moduleHtml = renderModule(active.id);
+        const moduleRenderMs = Math.round((performance?.now ? performance.now() : Date.now()) - moduleRenderStartedAt);
+        if (moduleRenderMs > 180) console.info('Domácnost+ pomalý render modulu', active.id, `${moduleRenderMs} ms`);
 
         app.innerHTML = `
           <div class="app-frame ${isHomeModule ? 'home-clean-frame' : ''}">
@@ -2553,7 +2557,7 @@
                 </div>
                 ${renderPageActions(active.id)}
               </section>
-              ${renderDemoReadOnlyBanner()}${renderModule(active.id)}
+              ${renderDemoReadOnlyBanner()}${moduleHtml}
             </main>
           </div>
 
@@ -5279,6 +5283,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_279', note: 'Výkonová stabilizace: Garáž a Finance renderují jen aktivní záložku, přidané měření pomalých renderů do konzole a omezení zbytečného skládání těžkých panelů při otevření modulů.' },
       { title: 'Domácnost+ v.0.1_278', note: 'Tablet responsive hotfix: lepší rozložení pro tablet na výšku i na šířku, širší panely, čitelnější modaly, stabilnější Home a spodní dock bez rozbití mobilního vzhledu.' },
       { title: 'Domácnost+ v.0.1_277', note: 'Nákupy / Karty: při úpravě karty přidaný křížek vpravo nahoře pro rychlé zavření editace zpět na seznam karet.' },
       { title: 'Domácnost+ v.0.1_276', note: 'Nákupy / Karty: opravená editace karty přes celou šířku s čitelným tmavým/glass kontrastem a stabilizované spodní navigační orámování i aktivní ikonka na mobilu.' },
@@ -10363,37 +10368,34 @@
       garageVehicleId = vehicles[0].id;
       activeVehicle = vehicles[0];
     }
-    const fuelRowsAll = state.fuel || [];
-    const serviceRowsAll = state.services || [];
-    const alerts = getVehicleAlerts();
     const activeGarageTab = getModuleTab('garage', 'overview');
+    const tabs = renderSectionTabs('garage', [
+      { id: 'overview', label: 'Přehled', icon: '🚗', count: vehicles.length },
+      { id: 'detail', label: 'Detail', icon: '🔧', count: activeVehicle ? 1 : 0 },
+      { id: 'stats', label: 'Statistiky', icon: '📊' },
+      { id: 'calculator', label: 'Kalkulačka', icon: '🧮' },
+      { id: 'add', label: 'Přidat auto', icon: '➕' },
+      { id: 'import', label: 'Fuelio', icon: '📥' }
+    ], 'overview');
 
-    return `
-      ${renderSectionTabs('garage', [
-        { id: 'overview', label: 'Přehled', icon: '🚗', count: vehicles.length },
-        { id: 'detail', label: 'Detail', icon: '🔧', count: activeVehicle ? 1 : 0 },
-        { id: 'stats', label: 'Statistiky', icon: '📊' },
-        { id: 'calculator', label: 'Kalkulačka', icon: '🧮' },
-        { id: 'add', label: 'Přidat auto', icon: '➕' },
-        { id: 'import', label: 'Fuelio', icon: '📥' }
-      ], 'overview')}
-      <div class="grid two module-tabbed garage-tab-${activeGarageTab}" data-tab-area="garage">
-        <section class="card desktop-span-2 garage-panel panel-overview garage-fuelio-panel clean-garage-overview garage-overview-dashboard-card">
-          ${renderGarageOverviewDashboard(vehicles, activeVehicle)}
-        </section>
-
+    let content = '';
+    if (activeGarageTab === 'detail') {
+      content = `
         <section class="card desktop-span-2 garage-panel panel-detail garage-fuelio-panel">
           ${activeVehicle ? renderVehicleDetail(activeVehicle) : renderEmptyCta({ icon: '🚗', title: 'Nejdřív přidej auto', text: 'Detail se naplní tankováním, servisy, termíny STK a pojištěním.', nav: 'garage', tab: 'add', label: 'Přidat auto' })}
-        </section>
-
+        </section>`;
+    } else if (activeGarageTab === 'stats') {
+      content = `
         <section class="card desktop-span-2 garage-panel panel-stats garage-fuelio-panel">
           ${renderGarageStatsPanel(vehicles, activeVehicle)}
-        </section>
-
+        </section>`;
+    } else if (activeGarageTab === 'calculator') {
+      content = `
         <section class="card desktop-span-2 garage-panel panel-calculator garage-fuelio-panel">
           ${renderGarageTripCalculator(vehicles, activeVehicle)}
-        </section>
-
+        </section>`;
+    } else if (activeGarageTab === 'add') {
+      content = `
         <section class="card garage-panel panel-add">
           <div class="card-header"><div><h2>Přidat auto</h2><p>Základ vozidla, termíny STK a pojištění. Detail se pak řeší v záložce Detail.</p></div></div>
           <form data-form="add-vehicle">
@@ -10415,17 +10417,29 @@
               ${selectField('Barva ikonky auta', 'iconColor', vehicleIconColorOptions(), 'blue')}
             </div>
             ${renderVehicleTechnicalFields()}
-
             <div class="form-actions"><button class="primary-btn" type="submit">Přidat auto</button></div>
           </form>
-        </section>
-
+        </section>`;
+    } else if (activeGarageTab === 'import') {
+      content = `
         <section class="card desktop-span-2 garage-panel panel-import">
           ${renderFuelioImport()}
-        </section>
+        </section>`;
+    } else {
+      content = `
+        <section class="card desktop-span-2 garage-panel panel-overview garage-fuelio-panel clean-garage-overview garage-overview-dashboard-card">
+          ${renderGarageOverviewDashboard(vehicles, activeVehicle)}
+        </section>`;
+    }
+
+    return `
+      ${tabs}
+      <div class="grid two module-tabbed garage-tab-${escapeHtml(activeGarageTab)}" data-tab-area="garage">
+        ${content}
       </div>
     `;
   }
+
 
   function renderVehicleListItem(vehicle) {
     const fuelRows = state.fuel.filter((item) => item.vehicleId === vehicle.id);
@@ -12286,51 +12300,25 @@
   }
 
   function renderFinance() {
-    const items = [...(state.finance || [])].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     const accounts = financeAccountsSorted();
     const selectedMonth = financeSelectedMonth();
-    const typeFilter = financeTypeFilter();
-    const visibleMonthItems = items.filter((item) => String(item.date || '').slice(0, 7) === selectedMonth);
-    const visibleItems = filterFinanceItemsByType(visibleMonthItems, typeFilter);
-    const incomeItems = visibleMonthItems.filter((item) => item.type === 'income').sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0));
-    const expenseItems = visibleMonthItems.filter((item) => item.type === 'expense').sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0));
-    const summary = financeMonthSummary(selectedMonth);
-    const balances = financeAccountBalances();
-    const localOnly = items.filter((item) => !item.cloudId || item.syncStatus).length;
-    const localAccounts = accounts.filter((account) => !account.cloudId || account.syncStatus).length;
-    const categoryRows = financeCategoryBreakdown(selectedMonth);
-    const accountRows = financeAccountMonthSummary(selectedMonth);
-    const managedRows = financeManagedGroups(balances);
     const editingFinanceItem = (state.finance || []).find((item) => item.id === financeEditId) || null;
     const editingFinanceAccount = (state.financeAccounts || []).find((account) => account.id === financeAccountEditId) || null;
     const activeFinanceTab = getModuleTab('finance', editingFinanceItem || financeCopyId ? 'add' : 'summary');
-    const cloudNote = state.cloud?.householdId ? (localOnly || localAccounts ? `čeká na cloud: ${localOnly + localAccounts}` : 'online záloha OK') : 'lokální režim';
-    return `
-      ${renderSectionTabs('finance', [
-        { id: 'summary', label: 'Přehled', icon: '💰', count: visibleMonthItems.length },
-        { id: 'accounts', label: 'Účty', icon: '🏦', count: accounts.length },
-        { id: 'add', label: 'Přidat', icon: '➕' },
-        { id: 'analysis', label: 'Souhrny', icon: '📊' }
-      ], 'summary')}
-      <div class="grid two module-tabbed finance-tab-${activeFinanceTab}" data-tab-area="finance">
-        <section class="card desktop-span-2 finance-panel panel-summary finance-dashboard-card">
-          <div class="card-header finance-overview-head"><div><h2>Účty zvlášť</h2><p>${escapeHtml(financeMonthLabel(selectedMonth))} · ${escapeHtml(cloudNote)}</p></div><span class="badge ${state.cloud?.householdId && !localOnly && !localAccounts ? 'good' : localOnly || localAccounts ? 'warn' : ''}">${state.cloud?.householdId ? 'cloud-first' : 'lokálně'}</span></div>
-          ${renderFinanceAccountBalanceCards(accounts, balances)}
-          <div class="finance-kpi-row">
-            <div class="finance-kpi income"><span>Příjmy</span><strong>${formatCurrency(summary.income)}</strong></div>
-            <div class="finance-kpi expense"><span>Výdaje</span><strong>${formatCurrency(summary.expense)}</strong></div>
-            <div class="finance-kpi balance ${summary.balance >= 0 ? 'income' : 'expense'}"><span>Rozdíl</span><strong>${formatCurrency(summary.balance)}</strong></div>
-          </div>
-          ${renderFinanceMonthToolbar(selectedMonth, typeFilter)}
-          ${renderFinanceSplitOverview(incomeItems, expenseItems)}
-          <div class="card-header finance-list-head"><div><h2>Pohyby na účtu</h2><p>${escapeHtml(typeFilter === 'all' ? 'Všechny pohyby' : typeFilter === 'income' ? 'Jen příjmy' : typeFilter === 'expense' ? 'Jen výdaje' : 'Jen přesuny')} za ${escapeHtml(financeMonthLabel(selectedMonth))}</p></div><span class="badge">${visibleItems.length}</span></div>
-          ${visibleItems.length ? `<div class="list compact-list finance-movement-list">${visibleItems.slice(0, 80).map(renderFinanceItem).join('')}</div>` : renderEmptyCta({ icon: '💰', title: 'Měsíc je bez pohybů', text: 'Přidej příjem, výdaj nebo přesun mezi účty. Přehled se začne počítat automaticky.', nav: 'finance', tab: 'add', label: 'Přidat pohyb' })}
-          <div class="form-actions cloud-inline-actions">
-            ${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-finance">Načíst cloud finance</button>' : ''}
-            ${state.cloud?.householdId && (localOnly || localAccounts) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-finance-all">Odeslat čekající finance (${localOnly + localAccounts})</button>` : ''}
-          </div>
-        </section>
+    const monthItems = (state.finance || []).filter((item) => String(item.date || '').slice(0, 7) === selectedMonth);
+    const localAccounts = accounts.filter((account) => !account.cloudId || account.syncStatus).length;
+    const tabs = renderSectionTabs('finance', [
+      { id: 'summary', label: 'Přehled', icon: '💰', count: monthItems.length },
+      { id: 'accounts', label: 'Účty', icon: '🏦', count: accounts.length },
+      { id: 'add', label: 'Přidat', icon: '➕' },
+      { id: 'analysis', label: 'Souhrny', icon: '📊' }
+    ], 'summary');
 
+    let content = '';
+    if (activeFinanceTab === 'accounts') {
+      const balances = financeAccountBalances();
+      const managedRows = financeManagedGroups(balances);
+      content = `
         <section class="card finance-panel panel-accounts">
           <div class="card-header"><div><h2>Účty / peněženky</h2><p>Každý účet má vlastní zůstatek. Může to být banka, hotovost, spoření, obálka nebo osoba.</p></div><span class="badge">${accounts.length}</span></div>
           ${accounts.length ? `<div class="list compact-list">${accounts.map((account) => renderFinanceAccount(account, balances)).join('')}</div>` : renderEmptyCta({ icon: '🏦', title: 'Nejdřív přidej účet', text: 'Účet může být banka, hotovost, spoření, obálka nebo spravované peníze pro někoho dalšího.', nav: 'finance', tab: 'accounts', label: 'Přidat účet' })}
@@ -12362,16 +12350,20 @@
               <div class="form-actions"><button class="primary-btn" type="submit">Založit dvojici účtů</button></div>
             </form>
           </details>
-        </section>
-
+        </section>`;
+    } else if (activeFinanceTab === 'add') {
+      content = `
         ${renderFinanceCopyPanel()}
         <section class="card finance-panel panel-add">
           <div class="card-header"><div><h2>${editingFinanceItem ? 'Upravit pohyb' : 'Přidat pohyb'}</h2><p>Příjem, výdaj nebo přesun mezi účty. Šablony jsou rychlé pro opakované platby.</p></div>${editingFinanceItem ? '<span class="badge warn">úprava</span>' : ''}</div>
           ${renderFinanceTemplatePanel(accounts)}
           ${renderFinanceTransactionForm(editingFinanceItem)}
           <div class="inline-note">Finance jsou cloud-first: při přihlášené domácnosti se účty a pohyby ukládají do Supabase. Když cloud zrovna nejde, záznam zůstane lokálně označený jako čekající a dá se později odeslat.</div>
-        </section>
-
+        </section>`;
+    } else if (activeFinanceTab === 'analysis') {
+      const categoryRows = financeCategoryBreakdown(selectedMonth);
+      const accountRows = financeAccountMonthSummary(selectedMonth);
+      content = `
         <section class="card finance-panel panel-analysis">
           <div class="card-header"><div><h2>Souhrn podle kategorií</h2><p>${escapeHtml(financeMonthLabel(selectedMonth))}</p></div></div>
           ${categoryRows.length ? `<div class="list compact-list">${categoryRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(row.label)}</div><span class="badge ${row.type === 'income' ? 'good' : ''}">${formatCurrency(row.amount)}</span></div><div class="item-meta">${row.type === 'income' ? 'příjmy' : 'výdaje'} · ${row.count}×</div></div>`).join('')}</div>` : renderEmpty('V tomhle měsíci zatím nejsou žádné kategorie.')}
@@ -12380,7 +12372,42 @@
         <section class="card finance-panel panel-analysis">
           <div class="card-header"><div><h2>Souhrn podle účtů</h2><p>${escapeHtml(financeMonthLabel(selectedMonth))}</p></div></div>
           ${accountRows.length ? `<div class="list compact-list">${accountRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(row.label)}</div><span class="badge">${formatCurrency(row.net)}</span></div><div class="item-meta">Příjmy ${formatCurrency(row.income)} · výdaje ${formatCurrency(row.expense)} · přesuny ${formatCurrency(row.transferIn - row.transferOut)}</div></div>`).join('')}</div>` : renderEmpty('V tomhle měsíci zatím nejsou žádné pohyby na účtech.')}
-        </section>
+        </section>`;
+    } else {
+      const typeFilter = financeTypeFilter();
+      const items = [...(state.finance || [])].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      const visibleMonthItems = items.filter((item) => String(item.date || '').slice(0, 7) === selectedMonth);
+      const visibleItems = filterFinanceItemsByType(visibleMonthItems, typeFilter);
+      const incomeItems = visibleMonthItems.filter((item) => item.type === 'income').sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0));
+      const expenseItems = visibleMonthItems.filter((item) => item.type === 'expense').sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0));
+      const summary = financeMonthSummary(selectedMonth);
+      const balances = financeAccountBalances();
+      const localOnly = items.filter((item) => !item.cloudId || item.syncStatus).length;
+      const cloudNote = state.cloud?.householdId ? (localOnly || localAccounts ? `čeká na cloud: ${localOnly + localAccounts}` : 'online záloha OK') : 'lokální režim';
+      content = `
+        <section class="card desktop-span-2 finance-panel panel-summary finance-dashboard-card">
+          <div class="card-header finance-overview-head"><div><h2>Účty zvlášť</h2><p>${escapeHtml(financeMonthLabel(selectedMonth))} · ${escapeHtml(cloudNote)}</p></div><span class="badge ${state.cloud?.householdId && !localOnly && !localAccounts ? 'good' : localOnly || localAccounts ? 'warn' : ''}">${state.cloud?.householdId ? 'cloud-first' : 'lokálně'}</span></div>
+          ${renderFinanceAccountBalanceCards(accounts, balances)}
+          <div class="finance-kpi-row">
+            <div class="finance-kpi income"><span>Příjmy</span><strong>${formatCurrency(summary.income)}</strong></div>
+            <div class="finance-kpi expense"><span>Výdaje</span><strong>${formatCurrency(summary.expense)}</strong></div>
+            <div class="finance-kpi balance ${summary.balance >= 0 ? 'income' : 'expense'}"><span>Rozdíl</span><strong>${formatCurrency(summary.balance)}</strong></div>
+          </div>
+          ${renderFinanceMonthToolbar(selectedMonth, typeFilter)}
+          ${renderFinanceSplitOverview(incomeItems, expenseItems)}
+          <div class="card-header finance-list-head"><div><h2>Pohyby na účtu</h2><p>${escapeHtml(typeFilter === 'all' ? 'Všechny pohyby' : typeFilter === 'income' ? 'Jen příjmy' : typeFilter === 'expense' ? 'Jen výdaje' : 'Jen přesuny')} za ${escapeHtml(financeMonthLabel(selectedMonth))}</p></div><span class="badge">${visibleItems.length}</span></div>
+          ${visibleItems.length ? `<div class="list compact-list finance-movement-list">${visibleItems.slice(0, 80).map(renderFinanceItem).join('')}</div>` : renderEmptyCta({ icon: '💰', title: 'Měsíc je bez pohybů', text: 'Přidej příjem, výdaj nebo přesun mezi účty. Přehled se začne počítat automaticky.', nav: 'finance', tab: 'add', label: 'Přidat pohyb' })}
+          <div class="form-actions cloud-inline-actions">
+            ${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-finance">Načíst cloud finance</button>' : ''}
+            ${state.cloud?.householdId && (localOnly || localAccounts) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-finance-all">Odeslat čekající finance (${localOnly + localAccounts})</button>` : ''}
+          </div>
+        </section>`;
+    }
+
+    return `
+      ${tabs}
+      <div class="grid two module-tabbed finance-tab-${escapeHtml(activeFinanceTab)}" data-tab-area="finance">
+        ${content}
       </div>
     `;
   }
@@ -13442,7 +13469,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 278))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 279))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -19213,7 +19240,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 85, appBuild: 278, mode: 'rich-demo-v278', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 85, appBuild: 279, mode: 'rich-demo-v279', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -19366,7 +19393,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 278, mode: 'tablet-responsive-v278', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 279, mode: 'performance-stability-v279', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -22834,7 +22861,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 278
+        appBuild: 279
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -23444,7 +23471,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-278-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-279-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -23909,7 +23936,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_278</span>
+          <span class="badge">Domácnost+ v.0.1_279</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
