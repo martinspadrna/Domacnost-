@@ -17320,15 +17320,15 @@ body {
 @media (max-width: 720px) {
   :root {
     --nav-height: 76px;
-    --nav-v276-shell-height: 76px;
-    --nav-v276-inner-height: 58px;
-    --nav-v276-bottom-gap: max(6px, calc(env(safe-area-inset-bottom, 0px) - 24px));
+    --nav-v278-shell-height: 76px;
+    --nav-v278-inner-height: 58px;
+    --nav-v278-bottom-gap: max(6px, calc(env(safe-area-inset-bottom, 0px) - 24px));
   }
 
   .app-shell,
   .app-shell.home-app-shell,
   .app-frame {
-    padding-bottom: calc(var(--nav-v276-shell-height) + max(14px, env(safe-area-inset-bottom, 0px)) + 12px) !important;
+    padding-bottom: calc(var(--nav-v278-shell-height) + max(14px, env(safe-area-inset-bottom, 0px)) + 12px) !important;
   }
 
   .nav-shell {
@@ -17336,11 +17336,11 @@ body {
     left: 50% !important;
     right: auto !important;
     top: auto !important;
-    bottom: var(--nav-v276-bottom-gap) !important;
+    bottom: var(--nav-v278-bottom-gap) !important;
     width: min(620px, calc(100dvw - 22px)) !important;
-    height: var(--nav-v276-shell-height) !important;
-    min-height: var(--nav-v276-shell-height) !important;
-    max-height: var(--nav-v276-shell-height) !important;
+    height: var(--nav-v278-shell-height) !important;
+    min-height: var(--nav-v278-shell-height) !important;
+    max-height: var(--nav-v278-shell-height) !important;
     padding: 8px !important;
     margin: 0 !important;
     border: 1px solid rgba(226, 232, 240, .20) !important;
@@ -17362,9 +17362,9 @@ body {
     align-items: center !important;
     gap: 6px !important;
     width: 100% !important;
-    height: var(--nav-v276-inner-height) !important;
-    min-height: var(--nav-v276-inner-height) !important;
-    max-height: var(--nav-v276-inner-height) !important;
+    height: var(--nav-v278-inner-height) !important;
+    min-height: var(--nav-v278-inner-height) !important;
+    max-height: var(--nav-v278-inner-height) !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
   }
@@ -17385,9 +17385,9 @@ body {
     position: relative !important;
     z-index: 1 !important;
     flex: 1 1 0 !important;
-    height: var(--nav-v276-inner-height) !important;
-    min-height: var(--nav-v276-inner-height) !important;
-    max-height: var(--nav-v276-inner-height) !important;
+    height: var(--nav-v278-inner-height) !important;
+    min-height: var(--nav-v278-inner-height) !important;
+    max-height: var(--nav-v278-inner-height) !important;
     padding: 4px 2px !important;
     border-radius: 22px !important;
     transform: none !important;
@@ -17435,5 +17435,246 @@ body {
     flex-basis: 42px !important;
     margin: 0 auto !important;
     transform: none !important;
+  }
+}
+
+/* Domácnost+ v.0.1_278 – tablet responsive: mobil zůstává, tablet na výšku i na šířku má vlastní rozložení */
+@media (min-width: 700px) and (max-width: 1180px) {
+  html,
+  body,
+  .app-shell {
+    overflow-x: hidden;
+  }
+
+  .app-shell {
+    padding-left: max(20px, calc(env(safe-area-inset-left, 0px) + 18px)) !important;
+    padding-right: max(20px, calc(env(safe-area-inset-right, 0px) + 18px)) !important;
+    padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 34px) !important;
+  }
+
+  .app-frame:not(.home-clean-frame) {
+    width: min(100%, 1060px);
+    max-width: 1060px;
+    margin-inline: auto;
+  }
+
+  .page-head {
+    align-items: center;
+    gap: 16px;
+  }
+
+  .page-title {
+    font-size: clamp(1.85rem, 3vw, 2.55rem);
+  }
+
+  .card {
+    padding: clamp(16px, 2.1vw, 22px);
+  }
+
+  .grid,
+  .dashboard-v10,
+  .tablet-focus-grid,
+  .list,
+  .timeline-list {
+    gap: clamp(12px, 1.8vw, 18px);
+  }
+
+  .section-tabs {
+    flex-wrap: wrap;
+    overflow: visible;
+    padding-bottom: 8px;
+  }
+
+  .section-tab {
+    min-height: 42px;
+    padding-inline: 13px;
+  }
+
+  .overview-backdrop,
+  .app-modal-backdrop {
+    align-items: center !important;
+    padding: max(18px, env(safe-area-inset-top, 0px)) max(22px, env(safe-area-inset-right, 0px)) max(22px, env(safe-area-inset-bottom, 0px)) max(22px, env(safe-area-inset-left, 0px)) !important;
+  }
+
+  .overview-panel,
+  .app-modal {
+    width: min(760px, calc(100dvw - 48px));
+    max-height: calc(100dvh - max(44px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px) + 32px));
+    overflow: auto;
+  }
+
+  .form-grid.three,
+  .form-grid.four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-actions {
+    flex-wrap: wrap;
+  }
+
+  .nav-shell {
+    --nav-v278-shell-height: 78px;
+    --nav-v278-inner-height: 60px;
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: max(8px, calc(env(safe-area-inset-bottom, 0px) - 12px)) !important;
+    width: min(720px, calc(100dvw - 40px)) !important;
+    height: var(--nav-v278-shell-height) !important;
+    min-height: var(--nav-v278-shell-height) !important;
+    max-height: var(--nav-v278-shell-height) !important;
+    padding: 8px !important;
+    border-radius: 28px !important;
+    overflow: hidden !important;
+    transform: translate3d(-50%, 0, 0) !important;
+    contain: layout paint style !important;
+  }
+
+  .nav-scroll {
+    position: relative !important;
+    align-items: center !important;
+    height: var(--nav-v278-inner-height) !important;
+    min-height: var(--nav-v278-inner-height) !important;
+    max-height: var(--nav-v278-inner-height) !important;
+    overflow: hidden !important;
+  }
+
+  .nav-active-runner {
+    top: 4px !important;
+    bottom: 4px !important;
+    height: auto !important;
+    border-radius: 23px !important;
+  }
+
+  .nav-item,
+  .nav-item.active {
+    height: var(--nav-v278-inner-height) !important;
+    min-height: var(--nav-v278-inner-height) !important;
+    max-height: var(--nav-v278-inner-height) !important;
+    padding: 5px 6px !important;
+    border-radius: 22px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+  }
+
+  .nav-item > span:last-child {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .72rem;
+  }
+
+  .nav-item .nav-icon,
+  .nav-item .nav-icon.mini-module-icon,
+  .nav-item .nav-icon.module-illustration-slot,
+  .mini-module-icon-nav,
+  .module-illustration-slot-nav {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    max-width: 30px !important;
+    max-height: 30px !important;
+    flex: 0 0 30px !important;
+  }
+
+  .nav-item.active .nav-icon,
+  .nav-item.active .nav-icon.mini-module-icon,
+  .nav-item.active .nav-icon.module-illustration-slot {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
+    max-height: 36px !important;
+    flex-basis: 36px !important;
+  }
+}
+
+@media (min-width: 700px) and (max-width: 999px) {
+  .grid.three,
+  .grid.four {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 700px) and (max-width: 1180px) and (orientation: portrait) {
+  .app-frame.home-clean-frame {
+    width: calc(100dvw - max(28px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px) + 24px));
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .home-clean-frame main {
+    min-height: calc(100svh - var(--nav-height) - var(--safe-bottom) - max(32px, env(safe-area-inset-top, 0px)) - 18px);
+  }
+
+  .home-hero-count-0.home-minimal-hero,
+  .home-hero-count-1.home-minimal-hero,
+  .home-hero-count-2.home-minimal-hero,
+  .home-hero-count-3.home-minimal-hero,
+  .home-hero-count-4.home-minimal-hero,
+  .home-hero-count-5.home-minimal-hero,
+  .home-hero-count-6.home-minimal-hero,
+  .home-hero-count-7.home-minimal-hero,
+  .home-hero-count-8.home-minimal-hero {
+    height: clamp(640px, calc(100svh - var(--nav-height) - var(--safe-bottom) - 118px), 860px) !important;
+    padding: clamp(22px, 3.2vw, 32px);
+    border-radius: 40px;
+  }
+
+  .home-minimal-hero .station-summary {
+    gap: clamp(12px, 1.8vw, 18px);
+  }
+}
+
+@media (min-width: 700px) and (max-width: 1180px) and (orientation: landscape) {
+  .app-shell {
+    padding-top: max(12px, env(safe-area-inset-top, 0px)) !important;
+  }
+
+  .app-frame:not(.home-clean-frame) {
+    max-width: min(1120px, calc(100dvw - 40px));
+  }
+
+  .app-frame.home-clean-frame {
+    width: calc(100dvw - max(24px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px) + 20px));
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .home-clean-frame .home-page-head {
+    margin-bottom: 10px;
+  }
+
+  .home-hero-count-0.home-minimal-hero,
+  .home-hero-count-1.home-minimal-hero,
+  .home-hero-count-2.home-minimal-hero,
+  .home-hero-count-3.home-minimal-hero,
+  .home-hero-count-4.home-minimal-hero,
+  .home-hero-count-5.home-minimal-hero,
+  .home-hero-count-6.home-minimal-hero,
+  .home-hero-count-7.home-minimal-hero,
+  .home-hero-count-8.home-minimal-hero {
+    height: clamp(500px, calc(100svh - var(--nav-height) - var(--safe-bottom) - 86px), 660px) !important;
+    padding: clamp(18px, 2.4vw, 26px);
+    border-radius: 36px;
+  }
+
+  .home-hero-count-1 .station-hero-main,
+  .home-hero-count-2 .station-hero-main,
+  .home-hero-count-3 .station-hero-main,
+  .home-hero-count-4 .station-hero-main,
+  .home-hero-count-5 .station-hero-main,
+  .home-hero-count-6 .station-hero-main,
+  .home-hero-count-7 .station-hero-main,
+  .home-hero-count-8 .station-hero-main {
+    grid-template-rows: minmax(112px, 140px) minmax(0, 1fr) !important;
+  }
+
+  .overview-panel,
+  .app-modal {
+    max-height: calc(100dvh - 36px) !important;
   }
 }

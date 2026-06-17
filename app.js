@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_276';
+  const APP_VERSION = 'Domácnost+ v.0.1_278';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -702,8 +702,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 276,
-      mode: 'loyalty-card-edit-dock-fix-v276',
+      appBuild: 278,
+      mode: 'tablet-responsive-v278',
       createdAt: '',
       updatedAt: ''
     },
@@ -1619,8 +1619,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 276,
-      mode: 'loyalty-card-edit-dock-fix-v276',
+      appBuild: 278,
+      mode: 'tablet-responsive-v278',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5279,6 +5279,8 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_278', note: 'Tablet responsive hotfix: lepší rozložení pro tablet na výšku i na šířku, širší panely, čitelnější modaly, stabilnější Home a spodní dock bez rozbití mobilního vzhledu.' },
+      { title: 'Domácnost+ v.0.1_277', note: 'Nákupy / Karty: při úpravě karty přidaný křížek vpravo nahoře pro rychlé zavření editace zpět na seznam karet.' },
       { title: 'Domácnost+ v.0.1_276', note: 'Nákupy / Karty: opravená editace karty přes celou šířku s čitelným tmavým/glass kontrastem a stabilizované spodní navigační orámování i aktivní ikonka na mobilu.' },
       { title: 'Domácnost+ v.0.1_275', note: 'Nákupy / Karty: plus pro přidání je přímo vpravo nahoře, menu tří teček se otevírá jako čitelný modal, přidané je samostatné nahrání fotky a velký náhled QR/čárového kódu je výrazně větší pro skenování u pokladny.' },
       { title: 'Domácnost+ v.0.1_274', note: 'Nákupy / Karty: vyfocený kód se ukládá jako podklad, appka se pokusí přečíst i viditelné číslo z fotky přes dostupné čtení textu a z čísla jde dál zvolit čárový kód / QR / text.' },
@@ -7177,7 +7179,10 @@
         <div class="loyalty-card-glow"></div>
         <div class="loyalty-card-compact-head">
           <h3>${escapeHtml(normalized.store || 'Obchod')}</h3>
-          <button class="loyalty-card-menu-button" type="button" data-action="open-loyalty-menu" data-id="${escapeHtml(normalized.id)}" aria-label="Možnosti karty ${escapeHtml(normalized.store || '')}">•••</button>
+          <div class="loyalty-card-head-actions">
+            <button class="loyalty-card-menu-button" type="button" data-action="open-loyalty-menu" data-id="${escapeHtml(normalized.id)}" aria-label="Možnosti karty ${escapeHtml(normalized.store || '')}">•••</button>
+            ${isEditing ? `<button class="loyalty-card-close-edit-button" type="button" data-action="close-loyalty-edit" data-id="${escapeHtml(normalized.id)}" aria-label="Zavřít úpravu karty ${escapeHtml(normalized.store || '')}">×</button>` : ''}
+          </div>
         </div>
         <button class="loyalty-code-thumb" type="button" data-action="open-loyalty-code" data-id="${escapeHtml(normalized.id)}" aria-label="Zobrazit kód karty ${escapeHtml(normalized.store || '')} ve velkém">
           ${loyaltyCodePreview(normalized, 'small')}
@@ -13437,7 +13442,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 276))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 278))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -19208,7 +19213,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 85, appBuild: 276, mode: 'rich-demo-v276', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 85, appBuild: 278, mode: 'rich-demo-v278', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -19361,7 +19366,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 276, mode: 'loyalty-card-edit-dock-fix-v276', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 278, mode: 'tablet-responsive-v278', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -21277,6 +21282,14 @@
       render();
       return;
     }
+    if (action === 'close-loyalty-edit') {
+      if (!button.dataset.id || loyaltyCardEditId === button.dataset.id) {
+        loyaltyCardEditId = '';
+      }
+      loyaltyCardMenuId = '';
+      render();
+      return;
+    }
     if (action === 'toggle-loyalty-add') {
       loyaltyAddDetailsOpen = !loyaltyAddDetailsOpen;
       if (!loyaltyAddDetailsOpen) {
@@ -22821,7 +22834,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 276
+        appBuild: 278
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -23431,7 +23444,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-276-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-278-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -23896,7 +23909,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_276</span>
+          <span class="badge">Domácnost+ v.0.1_278</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
