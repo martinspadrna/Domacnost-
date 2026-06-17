@@ -64,6 +64,7 @@
       const coupons = isShoppingCouponsTab ? [...state.coupons].sort((a, b) => String(a.expiry || '9999').localeCompare(String(b.expiry || '9999'))) : [];
       const loyaltySearch = deps.getLoyaltySearchTerm ? String(deps.getLoyaltySearchTerm() || '') : '';
       const loyaltyScan = deps.getLoyaltyScanState ? deps.getLoyaltyScanState() : { detectedCode: '', detectedFormat: '' };
+      const loyaltyDraft = deps.getLoyaltyAddDraft ? deps.getLoyaltyAddDraft() : {};
       const loyaltyAddOpen = deps.getLoyaltyAddDetailsOpen ? Boolean(deps.getLoyaltyAddDetailsOpen()) : false;
       const loyaltyCardsAll = deps.getLoyaltyCards ? deps.getLoyaltyCards() : (Array.isArray(state.loyaltyCards) ? state.loyaltyCards : []);
       const loyaltyCloudBadge = deps.loyaltyCloudBadge ? deps.loyaltyCloudBadge() : { label: state.cloud?.householdId ? 'sdílená domácnost' : 'jen v tomto zařízení', className: state.cloud?.householdId ? 'good' : '' };
@@ -192,11 +193,11 @@
             <form data-form="add-loyalty-card" class="compact-form loyalty-card-form">
               ${deps.renderLoyaltyScanPanel ? deps.renderLoyaltyScanPanel(loyaltyScan) : ''}
               <div class="form-grid two">
-                ${deps.field('Obchod', 'store', 'text', 'Kaufland / Lidl / DM', true)}
-                ${deps.field('Číslo / kód karty', 'cardNumber', 'text', 'číslo karty nebo kód', true, loyaltyScan?.detectedCode || '')}
-                ${deps.selectField('Typ kódu', 'codeType', [['barcode', 'Čárový kód'], ['qr', 'QR'], ['text', 'Text']], loyaltyScan?.detectedFormat || 'barcode')}
-                ${deps.selectField('Barva karty', 'color', [['rose', 'Rose'], ['blue', 'Blue'], ['mint', 'Mint'], ['amber', 'Amber'], ['violet', 'Violet'], ['slate', 'Slate']], 'rose')}
-                ${deps.field('Poznámka', 'note', 'text', 'např. Lucčina karta')}
+                ${deps.field('Obchod', 'store', 'text', 'Kaufland / Lidl / DM', true, loyaltyDraft.store || '')}
+                ${deps.field('Číslo / kód karty', 'cardNumber', 'text', 'číslo karty nebo kód', true, loyaltyDraft.cardNumber || loyaltyScan?.detectedCode || '')}
+                ${deps.selectField('Typ kódu', 'codeType', [['barcode', 'Čárový kód'], ['qr', 'QR'], ['text', 'Text']], loyaltyDraft.codeType || loyaltyScan?.detectedFormat || 'barcode')}
+                ${deps.selectField('Barva karty', 'color', [['rose', 'Rose'], ['blue', 'Blue'], ['mint', 'Mint'], ['amber', 'Amber'], ['violet', 'Violet'], ['slate', 'Slate']], loyaltyDraft.color || 'rose')}
+                ${deps.field('Poznámka', 'note', 'text', 'např. Lucčina karta', false, loyaltyDraft.note || '')}
               </div>
               <div class="form-actions"><button class="primary-btn" type="submit">Uložit kartu do domácnosti</button></div>
             </form>

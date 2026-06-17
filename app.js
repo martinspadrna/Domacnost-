@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_271';
+  const APP_VERSION = 'Domácnost+ v.0.1_272';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -702,8 +702,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 271,
-      mode: 'waste-repeat-next-date-v271',
+      appBuild: 272,
+      mode: 'loyalty-add-panel-stability-v272',
       createdAt: '',
       updatedAt: ''
     },
@@ -998,6 +998,7 @@
   let loyaltyCardEditId = '';
   let loyaltyCardSearchTerm = '';
   let loyaltyAddDetailsOpen = false;
+  let loyaltyAddDraft = { store: '', cardNumber: '', codeType: 'barcode', color: 'rose', note: '' };
   let loyaltyCardScan = { loading: false, dataUrl: '', detectedCode: '', detectedFormat: '', error: '' };
   let financeEditId = '';
   let financeAccountEditId = '';
@@ -1616,8 +1617,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 271,
-      mode: 'waste-repeat-next-date-v271',
+      appBuild: 272,
+      mode: 'loyalty-add-panel-stability-v272',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5218,6 +5219,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_272', note: 'Nákupy / Karty: opravené samovolné zavírání panelu Přidat kartu. Otevření panelu se drží ve stavu a rozpracované hodnoty formuláře se při překreslení neztratí.' },
       { title: 'Domácnost+ v.0.1_271', note: 'Odpad: opakované svozy se na Home, v přehledech a v modulu Odpad počítají podle dalšího budoucího termínu. Svoz nastavený každé 2 týdny už po proběhlém datu nezmizí z upozornění, ale ukáže nejbližší další svoz.' },
       { title: 'Domácnost+ v.0.1_270', note: 'Nákupy / Karty: doplněná jasná editace uložených věrnostních karet včetně přepnutí typu čárový kód / QR / text, přefocení kódu u existující karty a viditelný cloud sync přes sdílenou domácnost.' },
       { title: 'Domácnost+ v.0.1_269', note: 'Nákupy: věrnostní kartu jde přidat vyfocením nebo nahráním obrázku. Pokud prohlížeč podporuje BarcodeDetector, automaticky doplní čárový/QR kód. Přidaný je i Home panel Věrnostní karty.' },
@@ -6405,6 +6407,7 @@
       getLoyaltyCards,
       getLoyaltyScanState,
       getLoyaltyAddDetailsOpen: () => loyaltyAddDetailsOpen,
+      getLoyaltyAddDraft: () => ({ ...(loyaltyAddDraft || {}) }),
       getLoyaltySearchTerm: () => loyaltyCardSearchTerm,
       loyaltyCloudBadge,
       ensureShoppingListsReady,
@@ -6669,6 +6672,30 @@
     loyaltyCardScan = { loading: false, dataUrl: '', detectedCode: '', detectedFormat: '', error: '' };
   }
 
+  function normalizeLoyaltyAddDraft(data = {}) {
+    return {
+      store: normalizeText(data.store || ''),
+      cardNumber: normalizeText(data.cardNumber || ''),
+      codeType: normalizeLoyaltyCodeType(data.codeType || 'barcode'),
+      color: normalizeLoyaltyColor(data.color || 'rose'),
+      note: normalizeText(data.note || '')
+    };
+  }
+
+  function saveLoyaltyAddDraftFromForm(form) {
+    if (!form) return;
+    const data = getFormData(form);
+    loyaltyAddDraft = normalizeLoyaltyAddDraft({
+      ...loyaltyAddDraft,
+      ...data
+    });
+    loyaltyAddDetailsOpen = true;
+  }
+
+  function clearLoyaltyAddDraft() {
+    loyaltyAddDraft = { store: '', cardNumber: '', codeType: 'barcode', color: 'rose', note: '' };
+  }
+
   function renderLoyaltyScanPanel(scan = getLoyaltyScanState()) {
     const hasPreview = Boolean(scan?.dataUrl);
     const detected = normalizeText(scan?.detectedCode || '');
@@ -6766,7 +6793,14 @@
         detectedFormat: normalizeLoyaltyDetectedFormat(detected.format || ''),
         error: detected.code ? '' : detected.error || 'Kód se nepovedlo načíst. Číslo doplň ručně.'
       };
-      if (loyaltyCardScan.detectedCode) showToast('Kód karty načtený z fotky');
+      if (loyaltyCardScan.detectedCode) {
+        loyaltyAddDraft = normalizeLoyaltyAddDraft({
+          ...loyaltyAddDraft,
+          cardNumber: loyaltyAddDraft.cardNumber || loyaltyCardScan.detectedCode,
+          codeType: loyaltyCardScan.detectedFormat || loyaltyAddDraft.codeType || 'barcode'
+        });
+        showToast('Kód karty načtený z fotky');
+      }
       else showToast('Fotka načtená, kód se musí doplnit ručně');
     } catch (error) {
       console.error('Loyalty photo load failed', error);
@@ -6858,13 +6892,15 @@
   }
 
   async function addLoyaltyCardFromForm(data, form) {
+    saveLoyaltyAddDraftFromForm(form);
     const scan = getLoyaltyScanState();
+    const draft = normalizeLoyaltyAddDraft({ ...loyaltyAddDraft, ...data });
     const card = normalizeLoyaltyCard({
-      store: data.store,
-      cardNumber: data.cardNumber || scan.detectedCode,
-      codeType: data.codeType || scan.detectedFormat,
-      color: data.color,
-      note: data.note,
+      store: draft.store,
+      cardNumber: draft.cardNumber || scan.detectedCode,
+      codeType: draft.codeType || scan.detectedFormat,
+      color: draft.color,
+      note: draft.note,
       favorite: false,
       householdId: currentHouseholdId(),
       profileId: currentProfileId()
@@ -6885,6 +6921,7 @@
     saveState();
     form?.reset?.();
     resetLoyaltyCardScan();
+    clearLoyaltyAddDraft();
     loyaltyAddDetailsOpen = false;
     render();
     await syncLoyaltyCardsToCloud();
@@ -13082,7 +13119,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 271))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 272))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -18853,7 +18890,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 85, appBuild: 271, mode: 'rich-demo-v271', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 85, appBuild: 272, mode: 'rich-demo-v272', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -19006,7 +19043,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 271, mode: 'waste-repeat-next-date-v271', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 272, mode: 'loyalty-add-panel-stability-v272', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -22439,7 +22476,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 271
+        appBuild: 272
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -23049,7 +23086,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-271-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-272-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -23189,6 +23226,7 @@
     const details = event.target;
     if (!(details instanceof HTMLDetailsElement)) return;
     if (details.matches('.settings-visual-details')) visualSettingsDrawerOpen = details.open;
+    if (details.matches('.loyalty-add-details')) loyaltyAddDetailsOpen = details.open;
   }, true);
 
   app.addEventListener('click', (event) => {
@@ -23207,6 +23245,12 @@
       closeFilePreviewModal();
       render();
       return;
+    }
+
+    const loyaltySummary = event.target.closest('.loyalty-add-details > summary');
+    if (loyaltySummary) {
+      const details = loyaltySummary.closest('.loyalty-add-details');
+      loyaltyAddDetailsOpen = !details?.open;
     }
 
     const scrollTarget = event.target.closest('[data-scroll-target]');
@@ -23273,6 +23317,11 @@
     const loyaltyEditPhotoInput = event.target.closest('[data-loyalty-card-edit-photo]');
     if (loyaltyEditPhotoInput) {
       handleLoyaltyEditPhotoInput(loyaltyEditPhotoInput);
+      return;
+    }
+    const loyaltyAddFormControl = event.target.closest('form[data-form="add-loyalty-card"] input, form[data-form="add-loyalty-card"] select, form[data-form="add-loyalty-card"] textarea');
+    if (loyaltyAddFormControl) {
+      saveLoyaltyAddDraftFromForm(loyaltyAddFormControl.form);
       return;
     }
     const financeMonthInput = event.target.closest('form[data-form="finance-month-filter"] input[name="month"]');
@@ -23398,6 +23447,11 @@
       });
       return;
     }
+    const loyaltyAddDraftInput = event.target.closest('form[data-form="add-loyalty-card"] input, form[data-form="add-loyalty-card"] select, form[data-form="add-loyalty-card"] textarea');
+    if (loyaltyAddDraftInput) {
+      saveLoyaltyAddDraftFromForm(loyaltyAddDraftInput.form);
+      return;
+    }
     const hdoTimeInput = event.target.closest('[data-hdo-time-input]');
     if (hdoTimeInput) formatHdoTimeInputLive(hdoTimeInput, event);
     const fuelCalcInput = event.target.closest('[data-fuel-calc]');
@@ -23493,7 +23547,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_271</span>
+          <span class="badge">Domácnost+ v.0.1_272</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
