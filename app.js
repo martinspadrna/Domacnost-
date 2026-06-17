@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_275';
+  const APP_VERSION = 'Domácnost+ v.0.1_276';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -702,8 +702,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 275,
-      mode: 'loyalty-wallet-code-preview-v275',
+      appBuild: 276,
+      mode: 'loyalty-card-edit-dock-fix-v276',
       createdAt: '',
       updatedAt: ''
     },
@@ -1619,8 +1619,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 275,
-      mode: 'loyalty-wallet-code-preview-v275',
+      appBuild: 276,
+      mode: 'loyalty-card-edit-dock-fix-v276',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5279,6 +5279,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_276', note: 'Nákupy / Karty: opravená editace karty přes celou šířku s čitelným tmavým/glass kontrastem a stabilizované spodní navigační orámování i aktivní ikonka na mobilu.' },
       { title: 'Domácnost+ v.0.1_275', note: 'Nákupy / Karty: plus pro přidání je přímo vpravo nahoře, menu tří teček se otevírá jako čitelný modal, přidané je samostatné nahrání fotky a velký náhled QR/čárového kódu je výrazně větší pro skenování u pokladny.' },
       { title: 'Domácnost+ v.0.1_274', note: 'Nákupy / Karty: vyfocený kód se ukládá jako podklad, appka se pokusí přečíst i viditelné číslo z fotky přes dostupné čtení textu a z čísla jde dál zvolit čárový kód / QR / text.' },
       { title: 'Domácnost+ v.0.1_272', note: 'Nákupy / Karty: opravené samovolné zavírání panelu Přidat kartu. Otevření panelu se drží ve stavu a rozpracované hodnoty formuláře se při překreslení neztratí.' },
@@ -7172,7 +7173,7 @@
     const isEditing = loyaltyCardEditId === normalized.id;
     const typeLabel = loyaltyCodeTypeLabel(normalized.codeType);
     return `
-      <article class="loyalty-card-item loyalty-color-${escapeHtml(normalized.color)} ${normalized.favorite ? 'is-favorite' : ''}" data-loyalty-card-search="${escapeHtml([normalized.store, normalized.cardNumber, normalized.note].filter(Boolean).join(' ').toLowerCase())}">
+      <article class="loyalty-card-item loyalty-color-${escapeHtml(normalized.color)} ${normalized.favorite ? 'is-favorite' : ''} ${isEditing ? 'is-editing' : ''}" data-loyalty-card-search="${escapeHtml([normalized.store, normalized.cardNumber, normalized.note].filter(Boolean).join(' ').toLowerCase())}">
         <div class="loyalty-card-glow"></div>
         <div class="loyalty-card-compact-head">
           <h3>${escapeHtml(normalized.store || 'Obchod')}</h3>
@@ -13436,7 +13437,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 275))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 276))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -19207,7 +19208,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 85, appBuild: 275, mode: 'rich-demo-v275', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 85, appBuild: 276, mode: 'rich-demo-v276', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -19360,7 +19361,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 275, mode: 'loyalty-wallet-code-preview-v275', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 276, mode: 'loyalty-card-edit-dock-fix-v276', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -22820,7 +22821,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 275
+        appBuild: 276
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -23430,7 +23431,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-275-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-276-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -23895,7 +23896,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_275</span>
+          <span class="badge">Domácnost+ v.0.1_276</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

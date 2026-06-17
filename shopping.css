@@ -1247,3 +1247,125 @@ html[data-theme="dark"] .shopping-cloud-strip {
     width: calc(100vw - 22px);
   }
 }
+
+
+/* Domácnost+ v.0.1_276 – Karty: editace přes celou šířku a čitelný kontrast */
+.loyalty-wallet-grid .loyalty-card-item.is-editing {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  color: var(--text);
+  background:
+    linear-gradient(145deg, rgba(15, 23, 42, .92), rgba(30, 41, 59, .76)),
+    var(--card-strong);
+  border-color: rgba(148, 163, 184, .32);
+  box-shadow: 0 22px 52px rgba(2, 6, 23, .32), inset 0 1px 0 rgba(255,255,255,.14);
+}
+
+[data-theme="light"] .loyalty-wallet-grid .loyalty-card-item.is-editing {
+  color: #111827;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.96), rgba(239,246,255,.88)),
+    var(--card-strong);
+  border-color: rgba(148, 163, 184, .36);
+  box-shadow: 0 20px 46px rgba(15, 23, 42, .16), inset 0 1px 0 rgba(255,255,255,.7);
+}
+
+.loyalty-card-item.is-editing .loyalty-edit-form {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, .26);
+  border-radius: 22px;
+  background: rgba(15, 23, 42, .54);
+  color: #f8fafc;
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .loyalty-card-item.is-editing .loyalty-edit-form {
+  color: #111827;
+  background: rgba(255,255,255,.78);
+}
+
+.loyalty-card-item.is-editing .loyalty-edit-form .form-grid,
+.loyalty-card-item.is-editing .loyalty-edit-form .form-grid.two {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.loyalty-card-item.is-editing .loyalty-edit-form .field,
+.loyalty-card-item.is-editing .loyalty-edit-form .input,
+.loyalty-card-item.is-editing .loyalty-edit-form .select {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.loyalty-card-item.is-editing .loyalty-edit-form label,
+.loyalty-card-item.is-editing .loyalty-edit-form .field label {
+  color: inherit;
+}
+
+.loyalty-card-item.is-editing .loyalty-edit-form .input,
+.loyalty-card-item.is-editing .loyalty-edit-form .select {
+  color: #f8fafc;
+  background: rgba(2, 6, 23, .38);
+  border-color: rgba(226, 232, 240, .22);
+}
+
+[data-theme="light"] .loyalty-card-item.is-editing .loyalty-edit-form .input,
+[data-theme="light"] .loyalty-card-item.is-editing .loyalty-edit-form .select {
+  color: #111827;
+  background: rgba(255,255,255,.92);
+  border-color: rgba(148, 163, 184, .34);
+}
+
+.loyalty-card-item.is-editing .loyalty-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.loyalty-card-item.is-editing .loyalty-edit-actions .primary-btn,
+.loyalty-card-item.is-editing .loyalty-edit-actions .ghost-btn,
+.loyalty-card-item.is-editing .loyalty-edit-actions .loyalty-photo-btn {
+  min-width: 0;
+  flex: 1 1 150px;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .loyalty-wallet-grid .loyalty-card-item.is-editing {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .loyalty-card-item.is-editing .loyalty-edit-form {
+    padding: 12px;
+    border-radius: 20px;
+  }
+
+  .loyalty-card-item.is-editing .loyalty-edit-form .form-grid,
+  .loyalty-card-item.is-editing .loyalty-edit-form .form-grid.two {
+    grid-template-columns: 1fr !important;
+  }
+
+  .loyalty-card-item.is-editing .loyalty-edit-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .loyalty-card-item.is-editing .loyalty-edit-actions .primary-btn,
+  .loyalty-card-item.is-editing .loyalty-edit-actions .ghost-btn,
+  .loyalty-card-item.is-editing .loyalty-edit-actions .loyalty-photo-btn {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+}
