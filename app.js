@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_270';
+  const APP_VERSION = 'Domácnost+ v.0.1_271';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -702,8 +702,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 270,
-      mode: 'shopping-loyalty-edit-sync-v270',
+      appBuild: 271,
+      mode: 'waste-repeat-next-date-v271',
       createdAt: '',
       updatedAt: ''
     },
@@ -1203,6 +1203,15 @@
     return date.toISOString().slice(0, 10);
   }
 
+  function addMonthsIso(isoDate, months = 1) {
+    const [year, month, day] = String(isoDate || '').slice(0, 10).split('-').map(Number);
+    if (!year || !month || !day) return '';
+    const targetMonthIndex = month - 1 + Number(months || 0);
+    const lastDayOfTargetMonth = new Date(Date.UTC(year, targetMonthIndex + 1, 0)).getUTCDate();
+    const date = new Date(Date.UTC(year, targetMonthIndex, Math.min(day, lastDayOfTargetMonth)));
+    return date.toISOString().slice(0, 10);
+  }
+
   function addYearsIso(isoDate, years = 2) {
     const [year, month, day] = String(isoDate || '').slice(0, 10).split('-').map(Number);
     if (!year || !month || !day) return '';
@@ -1607,8 +1616,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 270,
-      mode: 'shopping-loyalty-edit-sync-v270',
+      appBuild: 271,
+      mode: 'waste-repeat-next-date-v271',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -1724,6 +1733,8 @@
           ...item
         }));
     });
+
+    migrated.waste = normalizeWasteStorageItems(migrated.waste || []);
 
     if (!Array.isArray(migrated.shoppingLists)) migrated.shoppingLists = [];
     migrated.shoppingLists = normalizeShoppingLists(migrated.shoppingLists, migrated);
@@ -3252,14 +3263,14 @@
       const pageRows = pages.slice(0, 3).map((page) => `<div class="item"><div class="item-top"><div class="item-title">${escapeHtml(page.title)}</div><span class="badge">${escapeHtml(page.section)}</span></div><div class="item-meta">${escapeHtml(notebookPageSummary(page))}</div></div>`);
       body = `${renderOverviewSummary([{ label: 'Otevřené', value: openTasks.length }, { label: 'Stránek', value: pages.length }, { label: 'Hotovo', value: doneCount, tone: doneCount ? 'good' : '' }])}${tasks.length ? `<div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : ''}${pageRows.length ? `<h3 class="overview-mini-title">Stránky</h3><div class="list compact-list overview-list">${pageRows.join('')}</div>` : ''}${(!tasks.length && !pageRows.length) ? renderEmptyCta({ icon: '🗒️', title: 'Zápisník je prázdný', text: 'Přidej stránku, checklist nebo úkol.', nav: 'tasks', tab: '', label: 'Přidat stránku' }) : ''}`;
     } else if (type === 'waste') {
-      const upcomingWaste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days === null || item.days >= 0).sort((a,b)=>(a.days ?? 9999)-(b.days ?? 9999));
+      const upcomingWaste = getUpcomingWasteRuntimeItems({ includeUnscheduled: true });
       const nextWaste = upcomingWaste.find((item) => item.days !== null);
       const typeCount = new Set(state.waste.map((item) => item.type || 'jiný')).size;
       const waste = upcomingWaste.slice(0,8);
       body = `${renderOverviewSummary([{ label: 'Nejbližší', value: nextWaste ? dueBadge(nextWaste.days) : '—', tone: nextWaste?.days <= 1 ? 'warn' : '' }, { label: 'Typy', value: typeCount }, { label: 'Plánů', value: state.waste.length }])}${waste.length ? `<div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej typ odpadu a termín. Dashboard pak ukáže nejbližší svoz.', nav: 'waste', tab: '', label: 'Přidat svoz' })}`;
     } else {
       const tasks = state.homeTasks.filter((task) => !task.done).slice(0,5);
-      const waste = state.waste.map((item) => ({...item, days: daysUntil(item.date)})).filter((item)=>item.days !== null && item.days >= 0).sort((a,b)=>a.days-b.days).slice(0,4);
+      const waste = getUpcomingWasteRuntimeItems({ limit: 4 });
       body = `${tasks.length ? `<h3 class="overview-mini-title">Úkoly</h3><div class="list compact-list overview-list">${tasks.map(renderTaskOverviewItem).join('')}</div>` : ''}${waste.length ? `<h3 class="overview-mini-title">Odpad</h3><div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '✨', title: 'Nic akutního tu není', text: 'Přidej úkol nebo svoz odpadu, ať má domácí přehled co hlídat.', nav: 'tasks', tab: '', label: 'Přidat úkol' })}`;
     }
 
@@ -3643,11 +3654,7 @@
       .filter((task) => !task.done)
       .sort((a, b) => String(a.due || '9999-12-31').localeCompare(String(b.due || '9999-12-31')))
       .slice(0, 4);
-    const wasteSoon = state.waste
-      .map((item) => ({ ...item, days: daysUntil(item.date) }))
-      .filter((item) => item.days !== null && item.days >= 0 && item.days <= 7)
-      .sort((a, b) => a.days - b.days)
-      .slice(0, 3);
+    const wasteSoon = getUpcomingWasteRuntimeItems({ maxDays: 7, limit: 3 });
     const vehicleAlerts = getVehicleAlerts().slice(0, 4);
     const visibleModules = getVisibleModules();
     ensureWeatherFresh(false);
@@ -3897,7 +3904,7 @@
       };
     }
     if (id === 'waste') {
-      const upcoming = (state.waste || []).map((entry) => ({ ...entry, days: daysUntil(entry.date) })).filter((entry) => entry.days !== null && entry.days >= 0).sort((a, b) => a.days - b.days);
+      const upcoming = getUpcomingWasteRuntimeItems();
       const next = homeCycleItem(upcoming, 45);
       return { ...base, metric: next ? dueBadge(next.days) : '—', text: next ? firstTitle(next, 'Svoz') : 'Svoz není nastavený', detail: next ? shortDateText(next.date) : 'Přidej termín odpadu', extraRows: detailRows(upcoming, (entry) => `${shortDateText(entry.date)} · ${firstTitle(entry, 'Svoz')}`), live: upcoming.length > 1, tone: next?.days <= 1 ? 'warn' : next ? 'good' : 'neutral' };
     }
@@ -5211,6 +5218,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_271', note: 'Odpad: opakované svozy se na Home, v přehledech a v modulu Odpad počítají podle dalšího budoucího termínu. Svoz nastavený každé 2 týdny už po proběhlém datu nezmizí z upozornění, ale ukáže nejbližší další svoz.' },
       { title: 'Domácnost+ v.0.1_270', note: 'Nákupy / Karty: doplněná jasná editace uložených věrnostních karet včetně přepnutí typu čárový kód / QR / text, přefocení kódu u existující karty a viditelný cloud sync přes sdílenou domácnost.' },
       { title: 'Domácnost+ v.0.1_269', note: 'Nákupy: věrnostní kartu jde přidat vyfocením nebo nahráním obrázku. Pokud prohlížeč podporuje BarcodeDetector, automaticky doplní čárový/QR kód. Přidaný je i Home panel Věrnostní karty.' },
       { title: 'Domácnost+ v.0.1_268', note: 'Nákupy: přidaná záložka Věrnostní karty ve stylu moderní peněženky. Karty se ukládají k domácnosti přes dashboard_layout bez nové DB tabulky.' },
@@ -7737,7 +7745,7 @@
   function renderHomecare(forcedTab = '') {
     const hdo = getHdoStatus(now);
     const tasks = [...state.homeTasks].sort((a, b) => Number(a.done) - Number(b.done));
-    const waste = [...state.waste].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+    const waste = getWasteRuntimeItems(state.waste).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
     const notes = [...state.notes].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     const warranties = sortedWarranties();
     const polishShopCount = buildPolishShopCalendarYear(polishShopSelectedYear()).filter((entry) => entry.status === 'closed').length;
@@ -13074,7 +13082,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 270))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 271))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -13104,7 +13112,7 @@
       activePackages: state.packages.filter((pkg) => pkg.status !== 'delivered'),
       openShopping: state.shopping.filter((item) => !item.done),
       openTasks: state.homeTasks.filter((task) => !task.done),
-      wasteSoon: state.waste.map((item) => ({ ...item, days: daysUntil(item.date) })).filter((item) => item.days !== null && item.days >= 0 && item.days <= 7),
+      wasteSoon: getUpcomingWasteRuntimeItems({ maxDays: 7 }),
       vehicleAlerts: getVehicleAlerts(),
       weather: normalizeWeatherState(state.weather)
     };
@@ -17778,8 +17786,80 @@
   }
 
 
+  function normalizeWasteRepeatRule(value) {
+    return ['none', 'weekly', 'biweekly', 'monthly', 'custom'].includes(value) ? value : 'none';
+  }
+
+  function isValidIsoDate(value) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').slice(0, 10));
+  }
+
   function wasteRepeatLabel(value) {
     return ({ none: 'jednorázově', weekly: 'týdně', biweekly: 'každé 2 týdny', monthly: 'měsíčně', custom: 'vlastní opakování' })[value || 'none'] || 'jednorázově';
+  }
+
+  function getNextWasteDate(dateIso, repeatRule = 'none', referenceIso = todayISO()) {
+    const date = String(dateIso || '').slice(0, 10);
+    if (!isValidIsoDate(date)) return '';
+    const rule = normalizeWasteRepeatRule(repeatRule);
+    if (rule === 'none' || rule === 'custom') return date;
+    const currentDaysUntil = daysUntil(date);
+    if (currentDaysUntil === null || currentDaysUntil >= 0) return date;
+
+    if (rule === 'weekly' || rule === 'biweekly') {
+      const stepDays = rule === 'biweekly' ? 14 : 7;
+      const startTime = Date.parse(`${date}T00:00:00Z`);
+      const referenceTime = Date.parse(`${String(referenceIso || todayISO()).slice(0, 10)}T00:00:00Z`);
+      if (!Number.isFinite(startTime) || !Number.isFinite(referenceTime)) return date;
+      const diffDays = Math.max(0, Math.floor((referenceTime - startTime) / 86400000));
+      const periods = Math.max(1, Math.ceil(diffDays / stepDays));
+      return addDaysIso(date, periods * stepDays) || date;
+    }
+
+    if (rule === 'monthly') {
+      let nextDate = date;
+      for (let guard = 0; guard < 240 && daysUntil(nextDate) !== null && daysUntil(nextDate) < 0; guard += 1) {
+        const moved = addMonthsIso(nextDate, 1);
+        if (!moved || moved === nextDate) break;
+        nextDate = moved;
+      }
+      return nextDate;
+    }
+
+    return date;
+  }
+
+  function getWasteRuntimeItem(item) {
+    const baseDate = String(item?.date || '').slice(0, 10);
+    const nextDate = getNextWasteDate(baseDate, item?.repeatRule || item?.repeat_rule || 'none');
+    return {
+      ...item,
+      originalDate: baseDate,
+      date: nextDate || baseDate,
+      days: daysUntil(nextDate || baseDate),
+      isProjected: Boolean(nextDate && baseDate && nextDate !== baseDate)
+    };
+  }
+
+  function getWasteRuntimeItems(items = state.waste || []) {
+    return (items || []).map(getWasteRuntimeItem);
+  }
+
+  function getUpcomingWasteRuntimeItems({ maxDays = null, includeUnscheduled = false, limit = null } = {}) {
+    let items = getWasteRuntimeItems()
+      .filter((item) => (includeUnscheduled && item.days === null) || (item.days !== null && item.days >= 0));
+    if (maxDays !== null && maxDays !== undefined) items = items.filter((item) => item.days === null || item.days <= Number(maxDays));
+    items = items.sort((a, b) => (a.days ?? 9999) - (b.days ?? 9999));
+    return limit ? items.slice(0, Number(limit)) : items;
+  }
+
+  function normalizeWasteStorageItems(items = []) {
+    return (items || []).map((item) => ({
+      ...item,
+      repeatRule: normalizeWasteRepeatRule(item?.repeatRule || item?.repeat_rule || 'none'),
+      notifyBeforeHours: item?.notifyBeforeHours === '' || item?.notifyBeforeHours === undefined ? 12 : Number(item.notifyBeforeHours),
+      enabled: item?.enabled !== false
+    }));
   }
 
   function cloudWastePayload(item, userId) {
@@ -17855,8 +17935,8 @@
       showToast(error.message || 'Svoz odpadu se nepovedlo načíst');
       return;
     }
-    const localOnly = state.waste.filter((item) => !item.cloudId);
-    const cloudItems = (data || []).map((item) => ({
+    const localOnly = normalizeWasteStorageItems(state.waste.filter((item) => !item.cloudId));
+    const cloudItems = normalizeWasteStorageItems((data || []).map((item) => ({
       id: state.waste.find((entry) => entry.cloudId === item.id)?.id || `waste-cloud-${item.id}`,
       cloudId: item.id,
       householdId: currentHouseholdId(),
@@ -17868,7 +17948,7 @@
       notifyBeforeHours: item.notify_before_hours ?? 12,
       enabled: item.is_enabled !== false,
       note: item.note || ''
-    }));
+    })));
     state.waste = [...cloudItems, ...localOnly];
     state.cloud.lastSyncAt = new Date().toISOString();
     touchState();
@@ -17912,7 +17992,7 @@
       createdAt: new Date().toISOString(),
       type: normalizeText(data.type),
       date: normalizeText(data.date),
-      repeatRule: data.repeatRule || 'none',
+      repeatRule: normalizeWasteRepeatRule(data.repeatRule || 'none'),
       notifyBeforeHours: data.notifyBeforeHours === '' || data.notifyBeforeHours === undefined ? 12 : Number(data.notifyBeforeHours),
       enabled: true,
       note: normalizeText(data.note)
@@ -18773,7 +18853,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 85, appBuild: 270, mode: 'rich-demo-v270', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 85, appBuild: 271, mode: 'rich-demo-v271', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -18926,7 +19006,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 270, mode: 'shopping-loyalty-edit-sync-v270', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 271, mode: 'waste-repeat-next-date-v271', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -22359,7 +22439,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 270
+        appBuild: 271
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -22969,7 +23049,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-270-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-271-${todayISO()}.json`; 
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -23413,7 +23493,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_270</span>
+          <span class="badge">Domácnost+ v.0.1_271</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
