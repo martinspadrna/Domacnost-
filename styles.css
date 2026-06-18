@@ -18899,3 +18899,120 @@ main {
   margin-top: 0 !important;
   align-self: center !important;
 }
+
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   Domácnost+ v.0.1_288 – Home: odstranit DVOJITÝ padding (příčina mezery u lišty)
+   
+   Nalezeno: .app-frame má vlastní padding-bottom (nav-visual-height + 18px), který
+   platí i v home módu (selektor bez :not). Sčítal se s paddingem na .app-shell →
+   vznikla velká mezera, hero se roztáhla jen do poloviny obrazovky.
+   
+   Řešení: v home módu drží rezervu pro lištu JEN .app-shell. Všechny vnitřní
+   kontejnery (.app-frame, main, .home-clean-frame, .dashboard-empty-home) mají
+   padding-bottom: 0, aby se hero roztáhla na celý zbylý prostor až k liště.
+   ════════════════════════════════════════════════════════════════════════════════ */
+
+.app-shell.home-app-shell .app-frame,
+.app-shell.home-app-shell .app-frame.home-clean-frame,
+.app-shell.home-app-shell .home-clean-frame,
+.app-shell.home-app-shell .home-clean-frame main,
+.app-shell.home-app-shell main,
+.app-shell.home-app-shell .dashboard-empty-home,
+.app-shell.home-app-shell .dashboard-v10 {
+  padding-bottom: 0 !important;
+  padding-top: 0 !important;
+  margin-bottom: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* app-frame v home nesmí být omezený šířkou na střed bez výšky –
+   zaručit, že je plnohodnotný flex sloupec na 100 % výšky */
+.app-shell.home-app-shell .app-frame,
+.app-shell.home-app-shell .app-frame.home-clean-frame {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+}
+
+/* Page-head ("Špadrnovi") jen svou výšku, zbytek patří hero */
+.app-shell.home-app-shell main > .page-head,
+.app-shell.home-app-shell .home-page-head {
+  flex: 0 0 auto !important;
+  margin-bottom: 8px !important;
+}
+
+/* Pojistka: hero karta dostane VŠECHEN zbylý vertikální prostor */
+.app-shell.home-app-shell .dashboard-empty-home > .home-minimal-hero {
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   Domácnost+ v.0.1_288b – Mobilní override (poslední slovo pro telefon)
+   
+   Na mobilu (≤720px) existuje víc konkurujících @media bloků s různými hodnotami
+   padding-bottom (v278: 78+8px, v284, atd). Tento blok je úplně poslední v souboru
+   a obalený stejným media query → má konečné slovo. Sjednocuje padding i flex.
+   ════════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 720px) {
+  .app-shell.home-app-shell {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100svh !important;
+    min-height: 100svh !important;
+    max-height: 100svh !important;
+    overflow: hidden !important;
+    /* Rezerva = výška lišty (78) + odsazení lišty od spodu + malá mezera */
+    padding-bottom: calc(78px + max(2px, calc(env(safe-area-inset-bottom, 0px) - 24px)) + 6px) !important;
+  }
+
+  /* Celý vnitřní řetězec: flex sloupec, plná výška, žádný vlastní spodní padding */
+  .app-shell.home-app-shell .app-frame,
+  .app-shell.home-app-shell .home-clean-frame,
+  .app-shell.home-app-shell .home-clean-frame main,
+  .app-shell.home-app-shell main,
+  .app-shell.home-app-shell .dashboard-empty-home {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding-bottom: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Page-head bere jen svou výšku */
+  .app-shell.home-app-shell .home-page-head,
+  .app-shell.home-app-shell main > .page-head {
+    flex: 0 0 auto !important;
+  }
+
+  /* HERO: dostane všechen zbylý prostor – pro všech 0–10 panelů */
+  .app-shell.home-app-shell .home-minimal-hero {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: hidden !important;
+  }
+
+  /* Vnitřní grid hero vyplní kartu */
+  .app-shell.home-app-shell .home-minimal-hero .station-hero-main {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+}
