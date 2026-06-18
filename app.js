@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_286';
+  const APP_VERSION = 'Domácnost+ v.0.1_287';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -700,8 +700,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 286,
-      mode: 'performance-stabilization-v286',
+      appBuild: 287,
+      mode: 'performance-stabilization-v287',
       createdAt: '',
       updatedAt: ''
     },
@@ -1621,8 +1621,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 286,
-      mode: 'performance-stabilization-v286',
+      appBuild: 287,
+      mode: 'performance-stabilization-v287',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -5318,6 +5318,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_287', note: 'Home doladění: hero karta se nyní dotáhne těsně ke spodní liště (zmenšena rezerva, height:100% napříč řetězcem). Text v panelech se už neořezává v půlce řádku – počet řádků se přizpůsobí výšce buňky (3 řádky u mála panelů, 2 u 9–10). Ikony zarovnány na střed.' },
       { title: 'Domácnost+ v.0.1_286', note: 'Definitivní oprava Home: aktivní oblast se nyní roztáhne až ke spodní liště, takže je vždy vidět všech až 10 panelů (dřív byly poslední 1–2 schované za "neviditelnou stěnou"). Příčina: 18 konkurujících padding-bottom pravidel – sjednoceno do jednoho s nejvyšší prioritou. Hero používá nepřerušený flex řetězec od app-shell po dlaždice.' },
       { title: 'Domácnost+ v.0.1_285', note: 'Sjednocení UI: jednotné design tokeny (barvy, rohy, povrchy), konzistentní tlačítka, badge, záložky a vstupy napříč celou aplikací. Garantovaná čitelnost textu v light i dark režimu. Výkon: odebrán drahý blur(28px) z opakovaných prvků seznamů (hlavní příčina sekání při otevírání modulů) – nahrazen levnějším pozadím, plus izolace vrstev (contain: paint) pro plynulejší scroll.' },
       { title: 'Domácnost+ v.0.1_284', note: 'Home layout finále: spodní lišta o kousek níž, hero karta VŽDY vyplní celou plochu až ke spodní liště (2 i 10 panelů). Při jen čase+počasí (count-0) je dělení vertikální – čas nad počasím. Lichý počet panelů: poslední panel přes celou šířku.' },
@@ -13581,7 +13582,7 @@
         <div class="settings-panel panel-data grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 286))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 287))}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -19352,7 +19353,7 @@
     ];
 
     return {
-      meta: { schemaVersion: 85, appBuild: 286, mode: 'rich-demo-v286', createdAt, updatedAt: nowIso },
+      meta: { schemaVersion: 85, appBuild: 287, mode: 'rich-demo-v287', createdAt, updatedAt: nowIso },
       settings: {
         ...DEFAULT_STATE.settings,
         dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
@@ -19505,7 +19506,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 286, mode: 'performance-stabilization-v286', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 287, mode: 'performance-stabilization-v287', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -22971,7 +22972,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 286
+        appBuild: 287
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -24054,7 +24055,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_286</span>
+          <span class="badge">Domácnost+ v.0.1_287</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

@@ -18810,3 +18810,92 @@ main {
   max-height: none !important;
   overflow: hidden !important;
 }
+
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   Domácnost+ v.0.1_287 – Home doladění: dotáhnout k liště + neořezávat text
+   
+   Po v286 jsou všechny panely vidět, ale: (1) hero nedosahuje úplně k liště
+   (flex: 1 1 auto + height:auto se nedotáhne), (2) text v horních panelech je
+   ořezaný, protože line-clamp:3 nepasuje na nižší buňku.
+   ════════════════════════════════════════════════════════════════════════════════ */
+
+/* (1) Dotáhnout řetězec na plnou výšku – height:100% místo auto */
+.app-shell.home-app-shell .app-frame,
+.app-shell.home-app-shell .home-clean-frame,
+.app-shell.home-app-shell .home-clean-frame main,
+.app-shell.home-app-shell .dashboard-empty-home {
+  height: 100% !important;
+  flex: 1 1 auto !important;
+}
+
+/* Hero: explicitní height:100% donutí roztažení až k paddingu (nad lištu) */
+.app-shell.home-app-shell .home-minimal-hero {
+  height: 100% !important;
+  flex: 1 1 auto !important;
+}
+
+/* Zmenšit rezervu pod hero – lišta plave nad obsahem, stačí menší mezera.
+   Lišta: výška 78px sedí na bottom ~ (safe-area − 18px, min 2px).
+   Hero má skončit těsně nad lištou: rezerva = výška + odsazení + 4px. */
+:root {
+  --home-bottom-reserve: calc(78px + max(2px, calc(env(safe-area-inset-bottom, 0px) - 24px)) + 4px) !important;
+}
+
+/* (2) Text v panelech – adaptivní počet řádků podle výšky buňky.
+   Místo pevného line-clamp:3 necháme text téct a clampneme měkčeji,
+   aby se poslední řádek neořízl v půlce. */
+.app-shell.home-app-shell .home-minimal-hero .station-summary-copy {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.app-shell.home-app-shell .home-minimal-hero .station-summary-copy span,
+.app-shell.home-app-shell .home-minimal-hero .station-summary-copy small {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+  line-clamp: 3 !important;
+  overflow: hidden !important;
+  line-height: 1.22 !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Hodně panelů = nižší buňky → 2 řádky, ať se text neořízne v půlce */
+.app-shell.home-app-shell .home-hero-count-7 .station-summary-copy span,
+.app-shell.home-app-shell .home-hero-count-7 .station-summary-copy small,
+.app-shell.home-app-shell .home-hero-count-8 .station-summary-copy span,
+.app-shell.home-app-shell .home-hero-count-8 .station-summary-copy small,
+.app-shell.home-app-shell .home-hero-count-9 .station-summary-copy span,
+.app-shell.home-app-shell .home-hero-count-9 .station-summary-copy small,
+.app-shell.home-app-shell .home-hero-count-10 .station-summary-copy span,
+.app-shell.home-app-shell .home-hero-count-10 .station-summary-copy small {
+  -webkit-line-clamp: 2 !important;
+  line-clamp: 2 !important;
+  line-height: 1.2 !important;
+}
+
+/* Titulek panelu (strong) ať se nezalomí přes víc řádků a nebere místo textu */
+.app-shell.home-app-shell .home-minimal-hero .station-summary-copy strong {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 1 !important;
+  line-clamp: 1 !important;
+  overflow: hidden !important;
+  line-height: 1.2 !important;
+}
+
+/* Menší vnitřní padding panelů, ať je víc místa na text */
+.app-shell.home-app-shell .home-minimal-hero .station-summary-item {
+  padding: 9px 11px !important;
+  align-items: center !important;
+}
+
+/* Ikona panelu zarovnaná na střed svisle (ne na vršek) */
+.app-shell.home-app-shell .home-minimal-hero .station-summary-icon {
+  margin-top: 0 !important;
+  align-self: center !important;
+}
