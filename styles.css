@@ -18332,3 +18332,301 @@ body.home-active {
   padding: clamp(7px, 1.9vw, 12px) !important;
   overflow: hidden !important;
 }
+
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   Domácnost+ v.0.1_285 – SJEDNOCENÍ UI + ČITELNOST (Design unification layer)
+   
+   Cíl: po desítkách inkrementálních patchů sjednotit vzhled napříč celou aplikací
+   a zaručit čitelnost v light i dark režimu. Tato vrstva je ZÁMĚRNĚ poslední
+   v souboru, aby harmonizovala povrchy bez přepisování fungujícího layoutu.
+   
+   Princip: konzistentní tokeny pro povrchy (karty, panely, řádky, tlačítka),
+   jednotné rohy, jednotné kontrasty textu. Žádné nové barvy – jen disciplína.
+   ════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── A. Rozšířené design tokeny ────────────────────────────────────────────── */
+:root {
+  /* Povrchy – jednotná průhlednost pro vnořené prvky */
+  --surface-1: rgba(255, 255, 255, 0.62);   /* karty */
+  --surface-2: rgba(255, 255, 255, 0.42);   /* vnořené řádky/panely */
+  --surface-3: rgba(255, 255, 255, 0.30);   /* nejhlubší vrstva */
+  --surface-hover: rgba(53, 116, 240, 0.08);
+  --surface-active: rgba(53, 116, 240, 0.13);
+  --border-soft: rgba(80, 104, 140, 0.16);
+  --border-strong: rgba(80, 104, 140, 0.26);
+  /* Text – garantovaný kontrast */
+  --text-strong: #0d1a2e;
+  --text-body: #1d2d44;
+  --text-muted: #5a6b85;
+  /* Akcenty pro stavy (čitelné na světlém i tmavém) */
+  --accent-primary: #2563eb;
+  --accent-good: #0e8c5f;
+  --accent-warn: #c2620a;
+  --accent-bad: #d92547;
+  /* Jednotné rohy */
+  --r-card: 24px;
+  --r-panel: 20px;
+  --r-row: 16px;
+  --r-chip: 999px;
+  --r-btn: 16px;
+}
+
+[data-theme="dark"] {
+  --surface-1: rgba(255, 255, 255, 0.07);
+  --surface-2: rgba(255, 255, 255, 0.05);
+  --surface-3: rgba(255, 255, 255, 0.035);
+  --surface-hover: rgba(122, 176, 255, 0.12);
+  --surface-active: rgba(122, 176, 255, 0.18);
+  --border-soft: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.20);
+  --text-strong: #f3f8ff;
+  --text-body: #e3ecfa;
+  --text-muted: #aab8ce;
+  --accent-primary: #7ab0ff;
+  --accent-good: #34d399;
+  --accent-warn: #fbbf24;
+  --accent-bad: #fb7185;
+}
+
+/* ── B. Sjednocení textových barev (čitelnost v obou režimech) ─────────────── */
+/* Nadpisy a silné texty v kartách/panelech */
+.card h2, .card h3,
+.overview-panel h2, .overview-panel h3,
+.item-title,
+.card-header h2, .card-header h3 {
+  color: var(--text-strong);
+}
+
+/* Tělo / popisky / meta */
+.card-header p,
+.item-meta,
+.page-subtitle,
+.inline-note {
+  color: var(--text-muted);
+}
+
+/* ── C. Badge – jednotný a čitelný v obou režimech ─────────────────────────── */
+.badge {
+  border: 1px solid var(--border-soft);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-weight: 800;
+}
+.badge.good { color: var(--accent-good); border-color: color-mix(in srgb, var(--accent-good) 32%, transparent); background: color-mix(in srgb, var(--accent-good) 12%, transparent); }
+.badge.warn { color: var(--accent-warn); border-color: color-mix(in srgb, var(--accent-warn) 32%, transparent); background: color-mix(in srgb, var(--accent-warn) 12%, transparent); }
+.badge.bad  { color: var(--accent-bad);  border-color: color-mix(in srgb, var(--accent-bad) 32%, transparent);  background: color-mix(in srgb, var(--accent-bad) 12%, transparent); }
+
+[data-theme="dark"] .badge.good { color: var(--accent-good); }
+[data-theme="dark"] .badge.warn { color: var(--accent-warn); }
+[data-theme="dark"] .badge.bad  { color: var(--accent-bad); }
+
+/* ── D. Jednotné sekční záložky (section-tab) ──────────────────────────────── */
+.section-tab {
+  border: 1px solid var(--border-soft);
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+.section-tab.active {
+  color: var(--text-strong);
+  border-color: color-mix(in srgb, var(--accent-primary) 42%, transparent);
+  background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+}
+.section-tab em {
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+}
+
+/* ── E. Jednotná tlačítka ──────────────────────────────────────────────────── */
+/* Primary – výrazný gradient, bílý text (sedí na modré, OK v obou režimech) */
+.primary-btn {
+  border: 0;
+  border-radius: var(--r-btn);
+  background: linear-gradient(135deg, #2f73ff, #5b9bff);
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 12px 28px rgba(47, 115, 255, 0.24), inset 0 1px 0 rgba(255,255,255,.30);
+}
+[data-theme="dark"] .primary-btn {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: #0b1220;
+}
+
+/* Ghost – jemné, čitelné v obou režimech */
+.ghost-btn {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-btn);
+  background: var(--surface-2);
+  color: var(--text-body);
+  font-weight: 750;
+}
+.ghost-btn:active { background: var(--surface-active); }
+
+/* Danger – červená, čitelná */
+.danger-btn {
+  border: 1px solid color-mix(in srgb, var(--accent-bad) 36%, transparent);
+  border-radius: var(--r-btn);
+  background: color-mix(in srgb, var(--accent-bad) 12%, transparent);
+  color: var(--accent-bad);
+  font-weight: 800;
+}
+
+/* Quick chip / module chip – jednotné */
+.quick-chip, .module-chip {
+  border: 1px solid var(--border-soft);
+  background: var(--surface-2);
+  color: var(--text-body);
+  font-weight: 750;
+}
+.quick-chip.active, .module-chip.active {
+  border-color: color-mix(in srgb, var(--accent-primary) 42%, transparent);
+  background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+  color: var(--text-strong);
+}
+
+/* ── F. Jednotné rohy povrchů ──────────────────────────────────────────────── */
+.card { border-radius: var(--r-card); }
+.item { border-radius: var(--r-row); }
+
+/* ── G. Jednotné vstupy (input/select/textarea) – čitelné v obou režimech ──── */
+input, select, textarea {
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface-1);
+  color: var(--text-body);
+}
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted);
+  opacity: .72;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent-primary) 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 18%, transparent);
+}
+
+/* ── H. Empty stavy – čitelné, konzistentní ────────────────────────────────── */
+.empty {
+  border: 1px dashed var(--border-strong);
+  color: var(--text-muted);
+}
+
+/* ── I. DARK MÓD – plošná oprava čitelnosti na všech modulových panelech ───── */
+/* Garantuje, že silné texty na kartách jsou vždy světlé v dark, tmavé v light */
+[data-theme="dark"] .card strong,
+[data-theme="dark"] .overview-panel strong,
+[data-theme="dark"] .item strong,
+[data-theme="dark"] .item-title,
+[data-theme="dark"] .card h2,
+[data-theme="dark"] .card h3 {
+  color: var(--text-strong);
+}
+[data-theme="dark"] .card p,
+[data-theme="dark"] .card span,
+[data-theme="dark"] .item-meta,
+[data-theme="dark"] .card-header p {
+  color: var(--text-muted);
+}
+
+/* Light mód – zaručit tmavý text na světlých kartách (proti dědění bílé) */
+[data-theme="light"] .card strong,
+[data-theme="light"] .overview-panel strong,
+[data-theme="light"] .item strong,
+[data-theme="light"] .item-title {
+  color: var(--text-strong);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   Domácnost+ v.0.1_285 – VÝKON: omezení backdrop-filter na opakovaných prvcích
+   
+   Příčina sekání při otevírání modulů: blur(28px) byl aplikován na .item,
+   .station-summary-item a .section-tab. Seznam s 20+ položkami = 20+ drahých
+   blur operací na každý frame. Na mobilním GPU to způsobuje viditelné sekání.
+   
+   Řešení: blur necháme JEN na velkých kontejnerech (karty, panely, nav).
+   Malé opakované prvky dostanou plné/poloplné pozadí – vizuálně téměř shodné,
+   výkonově řádově levnější.
+   ════════════════════════════════════════════════════════════════════════════════ */
+
+/* Zrušit drahý blur na opakovaných malých prvcích */
+.item,
+.station-summary-item,
+.section-tab,
+.badge,
+.quick-chip,
+.module-chip,
+.mini-stat,
+.sync-overview-row,
+.action-details,
+.subscription-pay-row,
+.subscription-service-item,
+.calendar-source-list .item,
+.hdo-module-row,
+.hdo-overview-table-row {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Light: položky dostanou neprůhlednější pozadí (kompenzace za ztrátu blur) */
+[data-theme="light"] .item,
+[data-theme="light"] .station-summary-item,
+[data-theme="light"] .sync-overview-row,
+[data-theme="light"] .action-details {
+  background: rgba(255, 255, 255, 0.78);
+}
+[data-theme="light"] .section-tab,
+[data-theme="light"] .badge,
+[data-theme="light"] .quick-chip,
+[data-theme="light"] .module-chip {
+  background: rgba(255, 255, 255, 0.74);
+}
+
+/* Dark: položky dostanou neprůhlednější tmavé pozadí */
+[data-theme="dark"] .item,
+[data-theme="dark"] .station-summary-item,
+[data-theme="dark"] .sync-overview-row,
+[data-theme="dark"] .action-details {
+  background: rgba(26, 38, 58, 0.82);
+}
+[data-theme="dark"] .section-tab,
+[data-theme="dark"] .badge,
+[data-theme="dark"] .quick-chip,
+[data-theme="dark"] .module-chip {
+  background: rgba(30, 43, 64, 0.78);
+}
+
+/* Stínu na malých prvcích ubrat blur poloměr (levnější paint při scrollu) */
+.item,
+.station-summary-item,
+.section-tab,
+.badge {
+  box-shadow: 0 4px 12px rgba(31, 54, 88, 0.06);
+}
+[data-theme="dark"] .item,
+[data-theme="dark"] .station-summary-item,
+[data-theme="dark"] .section-tab,
+[data-theme="dark"] .badge {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+/* Velké kontejnery: blur zachován, ale o něco nižší poloměr (rychlejší).
+   Home hero vyjmuta – ponechává si svůj silnější glass blur. */
+.card:not(.home-minimal-hero) {
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+}
+
+/* GPU akcelerace pro scrollované oblasti – plynulejší scroll */
+.app-shell,
+main {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Snížit překreslování – izolace vrstev u hlavních povrchů
+   (home hero vyjmuta – má složité glass pseudo-prvky které by se ořízly) */
+.card:not(.home-minimal-hero),
+.overview-panel,
+.nav-shell {
+  contain: paint;
+}
