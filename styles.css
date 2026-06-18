@@ -5,20 +5,12 @@
   --muted: #667085;
   --muted-2: #98a2b3;
   --line: rgba(80, 104, 140, 0.16);
-  --card: rgba(255, 255, 255, 0.68);
-  --card-strong: rgba(255, 255, 255, 0.86);
-  --glass: rgba(255, 255, 255, 0.52);
   --primary: #3574f0;
   --primary-2: #64a7ff;
   --good: #0e9f6e;
   --warn: #d97706;
   --bad: #e11d48;
   --shadow: 0 18px 60px rgba(45, 70, 110, 0.16);
-  --shadow-soft: 0 10px 30px rgba(45, 70, 110, 0.10);
-  --radius-xl: 28px;
-  --radius-lg: 22px;
-  --radius-md: 16px;
-  --nav-height: 76px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -2318,12 +2310,6 @@ button {
 }
 
 /* Domácnost+ v.0.1_51 – kompaktnější layout a rychlé přehledy */
-:root {
-  --radius-xl: 22px;
-  --radius-lg: 18px;
-  --radius-md: 14px;
-  --nav-height: 70px;
-}
 .app-shell {
   padding: max(12px, env(safe-area-inset-top, 0px)) 12px calc(var(--nav-height) + var(--safe-bottom) + 12px);
 }
@@ -4253,10 +4239,6 @@ body.overview-open {
 
 /* Domácnost+ v.0.1_96 – první globální iOS / liquid glass polish */
 :root {
-  --ios-glass: rgba(255, 255, 255, 0.46);
-  --ios-glass-strong: rgba(255, 255, 255, 0.72);
-  --ios-glass-edge: rgba(255, 255, 255, 0.68);
-  --ios-glass-shadow: 0 18px 54px rgba(31, 54, 88, 0.14);
   --ios-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.62);
 }
 [data-theme="dark"] {
@@ -5237,10 +5219,6 @@ textarea {
 }
 
 /* Domácnost+ v.0.1_96 – pevně ukotvený spodní panel */
-:root {
-  --nav-fixed-gap: max(8px, env(safe-area-inset-bottom, 0px));
-}
-
 .app-shell {
   padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 28px) !important;
 }
@@ -5271,10 +5249,6 @@ textarea {
 }
 
 /* Domácnost+ v.0.1_96 – nižší spodní panel a oprava detailů z Home */
-:root {
-  --nav-fixed-gap: max(2px, calc(env(safe-area-inset-bottom, 0px) - 8px));
-}
-
 .app-shell {
   padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 18px) !important;
 }
@@ -5322,10 +5296,6 @@ textarea {
 }
 
 /* Domácnost+ v.0.1_96 – spodní panel níž + bezpečné rychlé detaily z Home */
-:root {
-  --nav-fixed-gap: max(-6px, calc(env(safe-area-inset-bottom, 0px) - 22px));
-}
-
 .app-shell {
   padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 10px) !important;
 }
@@ -12485,16 +12455,6 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 }
 
 /* Domácnost+ v.0.1_165 – glass iOS polish, kompaktnější kalendář a věrnější sady ikon */
-:root {
-  --card: rgba(255, 255, 255, 0.34);
-  --card-strong: rgba(255, 255, 255, 0.48);
-  --glass: rgba(255, 255, 255, 0.20);
-  --shadow-soft: 0 12px 30px rgba(31, 54, 88, 0.08);
-  --ios-glass: rgba(255, 255, 255, 0.30);
-  --ios-glass-strong: rgba(255, 255, 255, 0.46);
-  --ios-glass-edge: rgba(255, 255, 255, 0.62);
-  --ios-glass-shadow: 0 18px 42px rgba(31, 54, 88, 0.10);
-}
 [data-theme="dark"] {
   --card: rgba(16, 24, 39, 0.34);
   --card-strong: rgba(18, 28, 46, 0.46);
@@ -13431,8 +13391,6 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 /* Domácnost+ v.0.1_217 – iPhone/PWA Home safe-area hotfix */
 :root {
   --app-vh: 100svh;
-  --nav-bottom-lock: max(8px, env(safe-area-inset-bottom, 0px));
-  --home-nav-reserve-bottom: max(0px, calc(env(safe-area-inset-bottom, 0px) - 22px));
 }
 
 @media (max-width: 720px) {
@@ -13479,11 +13437,6 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 
 
 /* Domácnost+ v.0.1_218 – Finance stabilizace + iPhone/PWA spodní lišta */
-:root {
-  --nav-bottom-lock: 0px;
-  --home-nav-reserve-bottom: 0px;
-}
-
 @media (max-width: 720px) {
   .nav-shell {
     bottom: var(--nav-bottom-lock) !important;
@@ -13672,11 +13625,6 @@ form[data-busy="true"] button[type="submit"] {
 /* Domácnost+ v.0.1_220 – hotfix spodní lišty po v218
    v218 ji na iOS posouval moc nízko záporným bottomem. Tady ji držíme dole,
    ale nikdy ji nepouštíme pod spodní hranu displeje / home indicator. */
-:root {
-  --nav-bottom-lock: max(6px, calc(env(safe-area-inset-bottom, 0px) - 30px));
-  --home-nav-reserve-bottom: 0px;
-}
-
 @media (max-width: 720px) {
   .nav-shell {
     bottom: var(--nav-bottom-lock) !important;
@@ -13736,11 +13684,6 @@ form[data-busy="true"] button[type="submit"] {
 }
 
 /* Domácnost+ v.0.1_220 – stabilní spodní lišta + plynulé přejetí aktivní volby */
-:root {
-  --nav-bottom-lock: 2px;
-  --home-nav-reserve-bottom: 0px;
-}
-
 @media (max-width: 720px) {
   .nav-shell {
     bottom: var(--nav-bottom-lock) !important;
@@ -13831,9 +13774,7 @@ form[data-busy="true"] button[type="submit"] {
    Cíl: bez skoku spodní lišty po prvním kliknutí, název o trochu výš,
    ale bez zvětšování Home panelů, aby spodní řada nezajížděla pod navigaci. */
 :root {
-  --nav-bottom-lock: 0px;
   --home-compact-head-offset: -12px;
-  --home-compact-height: calc(var(--app-vh) - var(--nav-height) - 150px);
 }
 
 @media (max-width: 720px) {
@@ -13917,6 +13858,29 @@ form[data-busy="true"] button[type="submit"] {
       --nav-bottom-lock: -8px;
     }
   }
+}
+
+/* Sloučené top-level :root proměnné — konsolidováno z rozptýlených bloků */
+:root {
+  --card: rgba(255, 255, 255, 0.34);
+  --card-strong: rgba(255, 255, 255, 0.48);
+  --glass: rgba(255, 255, 255, 0.20);
+  --shadow-soft: 0 12px 30px rgba(31, 54, 88, 0.08);
+  --ios-glass: rgba(255, 255, 255, 0.30);
+  --ios-glass-strong: rgba(255, 255, 255, 0.46);
+  --ios-glass-edge: rgba(255, 255, 255, 0.62);
+  --ios-glass-shadow: 0 18px 42px rgba(31, 54, 88, 0.10);
+  --radius-xl: 22px;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --nav-height: 70px;
+  --nav-fixed-gap: max(-6px, calc(env(safe-area-inset-bottom, 0px) - 22px));
+  --nav-bottom-lock: 0px;
+  --home-nav-reserve-bottom: 0px;
+  --home-compact-height: calc(var(--app-vh) - var(--nav-height) - 150px);
+  --home-bottom-reserve: calc(78px + max(2px, calc(env(safe-area-inset-bottom, 0px) - 24px)) + 4px) !important;
+  --nav-motion-duration: 2.2s;
+  --nav-motion-ease: cubic-bezier(.14, .78, .16, 1);
 }
 
 @media (max-width: 390px) {
@@ -14156,12 +14120,6 @@ form[data-busy="true"] button[type="submit"] {
    - název domácnosti nesmí být oříznutý nahoře,
    - spodní lišta má držet stabilní výšku a nižší iOS pozici,
    - animace aktivní položky má přejet pomaleji a plynuleji. */
-:root {
-  --nav-bottom-lock: 0px;
-  --nav-motion-duration: 1.15s;
-  --nav-motion-ease: cubic-bezier(.18, .88, .18, 1);
-}
-
 @media (max-width: 720px) {
   .nav-shell {
     bottom: var(--nav-bottom-lock) !important;
@@ -14268,11 +14226,6 @@ form[data-busy="true"] button[type="submit"] {
 /* Domácnost+ v.0.1_225 – iPhone/PWA layout hotfix
    Stabilizuje spodní navigaci bez záporného bottomu, přidává přesnou rezervu Home
    a opravuje finance měsícový filtr bez přetékání. */
-:root {
-  --nav-motion-duration: 1.65s;
-  --nav-motion-ease: cubic-bezier(.16, .86, .16, 1);
-}
-
 @media (max-width: 720px) {
   .app-shell {
     padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
@@ -14445,8 +14398,6 @@ form[data-busy="true"] button[type="submit"] {
   --nav-visual-height-v226: 86px;
   --nav-inner-height-v226: 68px;
   --nav-bottom-gap-v226: max(4px, calc(env(safe-area-inset-bottom, 0px) - 26px));
-  --nav-motion-duration: 2.12s;
-  --nav-motion-ease: cubic-bezier(.14, .78, .16, 1);
 }
 
 @media (max-width: 720px) {
@@ -14688,8 +14639,6 @@ form[data-busy="true"] button[type="submit"] {
   --nav-visual-height-v230: 78px;
   --nav-inner-height-v230: 62px;
   --nav-bottom-gap-v230: 6px;
-  --nav-motion-duration: 2.2s;
-  --nav-motion-ease: cubic-bezier(.14, .78, .16, 1);
 }
 
 @media (max-width: 720px) {
@@ -14904,8 +14853,6 @@ form[data-busy="true"] button[type="submit"] {
   --nav-inner-height-v232: 60px;
   --nav-bottom-gap-v232: 0px;
   --nav-vv-shift: 0px;
-  --nav-motion-duration: 2.35s;
-  --nav-motion-ease: cubic-bezier(.12, .76, .14, 1);
 }
 
 @media (max-width: 720px) {
@@ -15170,8 +15117,6 @@ form[data-busy="true"] button[type="submit"] {
   --nav-visual-height-v234: 76px;
   --nav-inner-height-v234: 62px;
   --nav-bottom-gap-v234: max(0px, calc(env(safe-area-inset-bottom, 0px) - 30px));
-  --nav-motion-duration: 2.2s;
-  --nav-motion-ease: cubic-bezier(.14, .78, .16, 1);
 }
 
 body {
@@ -18645,11 +18590,6 @@ main {
    roztažení hero pro VŠECH 0–10 panelů. Žádné další konkurující bloky už nejsou.
    ════════════════════════════════════════════════════════════════════════════════ */
 
-/* Jednotná rezervace pro spodní lištu: výška lišty (78px) + její odsazení + 6px mezera */
-:root {
-  --home-bottom-reserve: calc(78px + max(2px, calc(env(safe-area-inset-bottom, 0px) - 18px)) + 6px);
-}
-
 /* App-shell v home: flex sloupec, který roztáhne hero na celý zbylý prostor */
 .app-shell.home-app-shell {
   display: flex !important;
@@ -18833,13 +18773,6 @@ main {
 .app-shell.home-app-shell .home-minimal-hero {
   height: 100% !important;
   flex: 1 1 auto !important;
-}
-
-/* Zmenšit rezervu pod hero – lišta plave nad obsahem, stačí menší mezera.
-   Lišta: výška 78px sedí na bottom ~ (safe-area − 18px, min 2px).
-   Hero má skončit těsně nad lištou: rezerva = výška + odsazení + 4px. */
-:root {
-  --home-bottom-reserve: calc(78px + max(2px, calc(env(safe-area-inset-bottom, 0px) - 24px)) + 4px) !important;
 }
 
 /* (2) Text v panelech – adaptivní počet řádků podle výšky buňky.
