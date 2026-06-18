@@ -12151,7 +12151,7 @@ html[data-theme="dark"][data-color-scheme="royal"] { --primary: #60a5fa; --prima
 }
 
 .app-shell.home-app-shell .station-summary-count-3 .station-summary-item:nth-child(3) {
-  grid-column: auto !important;
+  grid-column: 1 / -1 !important;
 }
 
 .app-shell.home-app-shell .hero-time {
@@ -18137,5 +18137,198 @@ body.home-active {
   min-height: 0 !important;
   max-height: none !important;
   padding: clamp(6px, 1.8vw, 10px) !important;
+  overflow: hidden !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Domácnost+ v.0.1_284 – Home layout FINAL
+   - Spodní lišta níž
+   - Hero VŽDY vyplní celou plochu až ke spodní liště (count 0–10)
+   - count-0 (jen čas+počasí): VERTIKÁLNÍ dělení (nad sebou)
+   - count 1+: clock-row (čas+počasí) + panely, vše roztaženo na plochu
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Spodní lišta o kousek níž (mobil) ─────────────────────────────────── */
+@media (max-width: 720px) {
+  .nav-shell {
+    bottom: max(2px, calc(env(safe-area-inset-bottom, 0px) - 18px)) !important;
+  }
+}
+
+/* ── 2. Menší padding-bottom pod hero, aby dosáhla blíž k liště ───────────── */
+@media (max-width: 720px) {
+  .app-shell.home-app-shell {
+    padding-bottom: calc(var(--nav-v278-shell-height, 78px) + max(2px, calc(env(safe-area-inset-bottom, 0px) - 18px)) + 8px) !important;
+  }
+}
+
+/* ── 3. Hero karta: VŽDY flexibilní, vyplní zbylý prostor (count 0–10) ────── */
+@media (max-width: 720px) {
+  .app-shell.home-app-shell .home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-0.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-1.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-2.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-3.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-4.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-5.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-6.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-7.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-8.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-9.home-minimal-hero,
+  .app-shell.home-app-shell .home-hero-count-10.home-minimal-hero {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: hidden !important;
+  }
+}
+
+/* Dashboard wrapper také flex, aby hero dostala celou výšku */
+.app-shell.home-app-shell .dashboard-empty-home {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* ── 4. count-0: VERTIKÁLNÍ dělení – čas NAD počasím, na celou plochu ─────── */
+.app-shell.home-app-shell .home-hero-count-0 .station-hero-main {
+  display: grid !important;
+  grid-template-rows: 1fr !important;
+  grid-template-columns: 1fr !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.app-shell.home-app-shell .home-hero-count-0 .station-clock-area,
+.app-shell.home-app-shell .home-hero-count-0 .hero-clock-row {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+/* Tady je klíč: count-0 řádek je dvouřádkový grid (clock nahoře, weather dole) */
+.app-shell.home-app-shell .home-hero-count-0 .hero-clock-row {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  gap: 9px !important;
+  align-items: stretch !important;
+}
+
+.app-shell.home-app-shell .home-hero-count-0 .hero-clock-button,
+.app-shell.home-app-shell .home-hero-count-0 .hero-weather-pill {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+/* ── 5. Station-hero-main: 1. řádek = clock+weather, zbytek = panely ──────── */
+/* Pro VŠECHNY počty 1–10: první řádek (clock-row) + řádky panelů */
+
+.app-shell.home-app-shell .home-minimal-hero .station-hero-main {
+  display: grid !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  align-items: stretch !important;
+}
+
+/* Počet řádků = 1 (clock) + ceil(count/2) řádků panelů */
+.app-shell.home-app-shell .home-hero-count-1 .station-hero-main,
+.app-shell.home-app-shell .home-hero-count-2 .station-hero-main {
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) !important;
+}
+.app-shell.home-app-shell .home-hero-count-3 .station-hero-main,
+.app-shell.home-app-shell .home-hero-count-4 .station-hero-main {
+  grid-template-rows: minmax(0, 1fr) repeat(2, minmax(0, 1fr)) !important;
+}
+.app-shell.home-app-shell .home-hero-count-5 .station-hero-main,
+.app-shell.home-app-shell .home-hero-count-6 .station-hero-main {
+  grid-template-rows: minmax(0, 1fr) repeat(3, minmax(0, 1fr)) !important;
+}
+.app-shell.home-app-shell .home-hero-count-7 .station-hero-main,
+.app-shell.home-app-shell .home-hero-count-8 .station-hero-main {
+  grid-template-rows: minmax(0, 1fr) repeat(4, minmax(0, 1fr)) !important;
+}
+.app-shell.home-app-shell .home-hero-count-9 .station-hero-main,
+.app-shell.home-app-shell .home-hero-count-10 .station-hero-main {
+  grid-template-rows: minmax(0, 1fr) repeat(5, minmax(0, 1fr)) !important;
+}
+
+/* clock-row vždy první řádek, vodorovně čas+počasí, na celou výšku řádku */
+.app-shell.home-app-shell .home-minimal-hero .station-clock-area {
+  grid-row: 1 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+.app-shell.home-app-shell .home-minimal-hero:not(.home-hero-count-0) .hero-clock-row {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: 1fr !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  gap: 9px !important;
+  align-items: stretch !important;
+}
+
+/* ── 6. Station-summary (panely): zbytek řádků, 2 sloupce, na celou plochu ── */
+.app-shell.home-app-shell .home-minimal-hero .station-summary {
+  grid-row: 2 / -1 !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  gap: 9px !important;
+  overflow: hidden !important;
+}
+
+/* Počet řádků panelů = ceil(count/2) */
+.app-shell.home-app-shell .station-summary-count-1,
+.app-shell.home-app-shell .station-summary-count-2 {
+  grid-template-rows: repeat(1, minmax(0, 1fr)) !important;
+}
+.app-shell.home-app-shell .station-summary-count-3,
+.app-shell.home-app-shell .station-summary-count-4 {
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+}
+.app-shell.home-app-shell .station-summary-count-5,
+.app-shell.home-app-shell .station-summary-count-6 {
+  grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+}
+.app-shell.home-app-shell .station-summary-count-7,
+.app-shell.home-app-shell .station-summary-count-8 {
+  grid-template-rows: repeat(4, minmax(0, 1fr)) !important;
+}
+.app-shell.home-app-shell .station-summary-count-9,
+.app-shell.home-app-shell .station-summary-count-10 {
+  grid-template-rows: repeat(5, minmax(0, 1fr)) !important;
+}
+
+/* Lichý počet: poslední panel přes celou šířku (count-1, 3, 5, 7, 9) */
+.app-shell.home-app-shell .station-summary-count-1 .station-summary-item:last-child,
+.app-shell.home-app-shell .station-summary-count-3 .station-summary-item:last-child,
+.app-shell.home-app-shell .station-summary-count-5 .station-summary-item:last-child,
+.app-shell.home-app-shell .station-summary-count-7 .station-summary-item:last-child,
+.app-shell.home-app-shell .station-summary-count-9 .station-summary-item:last-child {
+  grid-column: 1 / -1 !important;
+}
+
+/* Všechny panely vyplní celou buňku */
+.app-shell.home-app-shell .home-minimal-hero .station-summary-item,
+.app-shell.home-app-shell .home-minimal-hero .hero-clock-button,
+.app-shell.home-app-shell .home-minimal-hero .hero-weather-pill {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: clamp(7px, 1.9vw, 12px) !important;
   overflow: hidden !important;
 }
