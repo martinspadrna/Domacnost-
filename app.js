@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_281';
+  const APP_VERSION = 'Domácnost+ v.0.1_282';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -2592,6 +2592,8 @@
         const navSweepEnd = navMotion ? Math.max(navMotionFromIndex, activeBottomNavIndex) : -1;
         const isHomeModule = active.id === 'home';
         app?.classList?.toggle('home-app-shell', isHomeModule);
+        document.documentElement.classList.toggle('home-active', isHomeModule);
+        document.body.classList.toggle('home-active', isHomeModule);
         const pageTitle = isHomeModule ? householdName() : active.label;
         const pageSubtitle = isHomeModule ? '' : getModuleSubtitle(active.id);
         const moduleRenderStartedAt = performance?.now ? performance.now() : Date.now();
@@ -3324,11 +3326,6 @@
       const nextHdo = findNextHdoWindow(now);
       body = `
         <div class="overview-status ${hdo.active ? 'good' : 'warn'}"><strong>${hdo.active ? 'Nízký tarif právě běží' : 'Nízký tarif teď neběží'}</strong><span>${escapeHtml(hdo.message)}</span></div>
-        ${renderOverviewSummary([
-          { label: 'Okna', value: rows.length },
-          { label: 'Aktivní', value: enabledRows.length, tone: enabledRows.length ? 'good' : '' },
-          { label: 'Další změna', value: hdo.active ? 'běží' : nextHdo ? humanDuration(nextHdo.diffMinutes) : '—' }
-        ])}
         ${rows.length ? renderHdoOverviewTables(rows) : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard ukáže aktuální stav i další přepnutí.', nav: 'hdo', tab: '', label: 'Nastavit HDO' })}
       `;
     } else if (type === 'calendar') {
@@ -5321,6 +5318,7 @@
 
   function renderNextPlanCard() {
     const steps = [
+      { title: 'Domácnost+ v.0.1_282', note: 'Opravy UI: Home nepůjde scrollovat (html/body overflow:hidden), ikony na panelech větší, popis na panelech až 3 řádky, z HDO přehledu odebrána redundantní statistická okna, bílý text má všude tmavší pozadí (weather pill light mód), výrazněji označení dlužníků v Předplatném.' },
       { title: 'Domácnost+ v.0.1_281', note: 'Výkonová stabilizace: méně synchronního ukládání do localStorage, odloženější autosync, rychlejší otevření HDO/Odpadu/Záruk/Svátků PL a Předplatné renderuje jen aktivní záložku.' },
       { title: 'Domácnost+ v.0.1_280', note: 'UI stabilizace: Home bez scrollu, větší počasí, kalendářový panel ukazuje čas, ztmavené HDO a Předplatné, odstraněný modul Balíky z frontendu, nižší karty věrnostních karet a pevnější spodní dock.' },
       { title: 'Domácnost+ v.0.1_279', note: 'Výkonová stabilizace: Garáž a Finance renderují jen aktivní záložku, přidané měření pomalých renderů do konzole a omezení zbytečného skládání těžkých panelů při otevření modulů.' },
@@ -13195,9 +13193,10 @@
 
   function renderSubscriptionPersonSummary(row) {
     const tone = row.debt ? 'warn' : row.expected ? 'good' : '';
+    const debtLabel = row.debt ? `⚠️ dluží ${formatCurrency(row.debt)}` : row.expected ? 'zaplaceno / OK' : 'bez služeb';
     return `
-      <div class="item compact-item subscription-person-summary ${row.debt ? 'subscription-debt' : ''}">
-        <div class="item-top"><div class="item-title">${escapeHtml(row.person.name)}</div><span class="badge ${tone}">${row.debt ? `dluží ${formatCurrency(row.debt)}` : row.expected ? 'zaplaceno / OK' : 'bez služeb'}</span></div>
+      <div class="item compact-item subscription-person-summary ${row.debt ? 'subscription-debt subscription-debt-prominent' : ''}">
+        <div class="item-top"><div class="item-title">${row.debt ? `<strong class="subscription-debtor-name">${escapeHtml(row.person.name)}</strong>` : escapeHtml(row.person.name)}</div><span class="badge ${tone} ${row.debt ? 'subscription-debt-badge' : ''}">${debtLabel}</span></div>
         <div class="item-meta">Má platit ${formatCurrency(row.expected)} · započteno ${formatCurrency(row.paid)}${row.directPaid !== row.paid ? ` · z toho platba ${formatCurrency(row.directPaid)} + kredit ${formatCurrency(row.creditApplied)}` : ''}${row.overpaid ? ` · přeplatek dál ${formatCurrency(row.overpaid)}` : ''}${row.future ? ` · předplaceno ${formatCurrency(row.future)}` : ''}</div>
       </div>`;
   }
@@ -24051,7 +24050,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_281</span>
+          <span class="badge">Domácnost+ v.0.1_282</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
