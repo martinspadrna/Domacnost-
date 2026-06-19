@@ -22421,7 +22421,15 @@
       if (showMessage) showToast('Supabase knihovna není načtená');
       return null;
     }
-    const { data, error } = await client.auth.getUser();
+    let data, error;
+    try {
+      const result = await client.auth.getUser();
+      data = result.data;
+      error = result.error;
+    } catch (fetchError) {
+      console.warn('Cloud session check failed (network)', fetchError);
+      return null;
+    }
     try {
       const sessionResult = await client.auth.getSession?.();
       const token = sessionResult?.data?.session?.access_token;
@@ -22430,10 +22438,13 @@
       console.warn('Realtime auth refresh failed', sessionError);
     }
     if (error || !data?.user) {
-      resetSignedOutAppState();
-      saveState();
-      if (showMessage) showToast('Nejsi přihlášený');
-      render();
+      const isNetworkError = error && (!error.status || error.status < 400 || error.status >= 500);
+      if (!isNetworkError) {
+        resetSignedOutAppState();
+        saveState();
+        if (showMessage) showToast('Nejsi přihlášený');
+        render();
+      }
       return null;
     }
     const previousUserId = state.cloud?.userId || '';
