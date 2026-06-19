@@ -1158,7 +1158,7 @@
     };
   }
 
-  let utilsInstance;
+  var utilsInstance;
   function getUtils() {
     if (utilsInstance) return utilsInstance;
     const factory = window.DomacnostUtils?.createUtils;
