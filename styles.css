@@ -93,11 +93,6 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
-.app-shell {
-  min-height: 100svh;
-  padding: max(18px, env(safe-area-inset-top, 0px)) 16px calc(var(--nav-height) + var(--safe-bottom) + 20px);
-}
-
 .app-frame {
   width: min(1320px, 100%);
   margin: 0 auto;
@@ -2310,9 +2305,6 @@ button {
 }
 
 /* Domácnost+ v.0.1_51 – kompaktnější layout a rychlé přehledy */
-.app-shell {
-  padding: max(12px, env(safe-area-inset-top, 0px)) 12px calc(var(--nav-height) + var(--safe-bottom) + 12px);
-}
 .topbar {
   margin-bottom: 12px;
   padding: 9px 10px;
@@ -11946,13 +11938,6 @@ html[data-theme="dark"][data-color-scheme="royal"] { --primary: #60a5fa; --prima
 }
 
 /* Domácnost+ v.0.1_159 – Home přes celou plochu, stejné panely, RaK styl spodní lišty */
-.app-shell.home-app-shell {
-  height: 100svh !important;
-  min-height: 100svh !important;
-  overflow: hidden !important;
-  padding: max(28px, calc(env(safe-area-inset-top, 0px) + 10px)) 14px calc(var(--nav-height) + var(--safe-bottom) + 18px) !important;
-}
-
 .app-shell.home-app-shell .home-clean-frame,
 .app-shell.home-app-shell .home-clean-frame main {
   display: flex !important;
@@ -13346,12 +13331,6 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 /* Domácnost+ v.0.1_217 – iPhone/PWA Home safe-area hotfix */
 :root {
   --app-vh: 100svh;
-}
-
-.app-shell.home-app-shell {
-  height: var(--app-vh) !important;
-  min-height: var(--app-vh) !important;
-  padding-bottom: calc(var(--nav-height) + var(--home-nav-reserve-bottom) + 6px) !important;
 }
 
 .app-shell.home-app-shell .home-clean-frame,
@@ -15038,6 +15017,8 @@ body {
 }
 
 .app-shell {
+  min-height: 100svh;
+  padding: max(12px, env(safe-area-inset-top, 0px)) 12px calc(var(--nav-height) + var(--safe-bottom) + 12px);
   padding-bottom: calc(var(--nav-height) + max(20px, env(safe-area-inset-bottom, 0px)) + 18px) !important;
 }
 
@@ -16715,14 +16696,6 @@ body {
 }
 
 /* Domácnost+ v.0.1_281 – navazuje na UI kontrast a přidává výkonovou stabilizaci */
-.app-shell.home-app-shell {
-  height: 100svh !important;
-  max-height: 100svh !important;
-  overflow: hidden !important;
-  overscroll-behavior: none !important;
-  padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px) !important;
-}
-
 .app-shell.home-app-shell .home-clean-frame,
 .app-shell.home-app-shell .home-clean-frame main,
 .app-shell.home-app-shell .dashboard-empty-home {
@@ -17688,7 +17661,8 @@ main {
   min-height: 100svh !important;
   max-height: 100svh !important;
   overflow: hidden !important;
-  padding-bottom: var(--home-bottom-reserve) !important;
+  overscroll-behavior: none !important;
+  padding: max(28px, calc(env(safe-area-inset-top, 0px) + 10px)) 14px var(--home-bottom-reserve) !important;
 }
 
 /* Celý řetězec kontejnerů musí být flex-column, aby se výška propsala dolů */
