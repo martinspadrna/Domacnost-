@@ -1158,9 +1158,18 @@
     };
   }
 
-  function uid() {
-    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+  let utilsInstance;
+  function getUtils() {
+    if (utilsInstance) return utilsInstance;
+    const factory = window.DomacnostUtils?.createUtils;
+    if (typeof factory !== 'function') throw new Error('Utils nejsou načtené');
+    utilsInstance = factory({});
+    return utilsInstance;
   }
+  function uid() { return getUtils().uid(); }
+  function safeParse(json, fallback) { return getUtils().safeParse(json, fallback); }
+  function structuredCloneSafe(value) { return getUtils().structuredCloneSafe(value); }
+  function normalizeText(value) { return getUtils().normalizeText(value); }
 
   function localISODate(date = new Date(), timeZone = APP_TIME_ZONE) {
     const safeDate = toSafeDate(date, new Date());
@@ -1522,14 +1531,6 @@
     const date = new Date();
     date.setDate(date.getDate() + Number(days || 0));
     return localISODate(date, APP_TIME_ZONE);
-  }
-
-  function safeParse(json, fallback) {
-    try {
-      return JSON.parse(json) ?? fallback;
-    } catch {
-      return fallback;
-    }
   }
 
   function loadState() {
@@ -1907,11 +1908,6 @@
     saveActiveProfileUiSettingsSnapshot();
     cloudSaveUserVisualSettings(false).catch((error) => console.warn('Cloud visual settings save failed', error));
     if (showMessage) showToast(state.cloud?.userId ? 'Vzhled uložen na účet' : 'Vzhled uložen v zařízení');
-  }
-
-  function structuredCloneSafe(value) {
-    if (typeof structuredClone === 'function') return structuredClone(value);
-    return JSON.parse(JSON.stringify(value));
   }
 
   function createProfile(name, role = 'member', householdId = '') {
@@ -2418,10 +2414,6 @@
     const target = new Date(`${dateISO}T00:00:00`);
     if (Number.isNaN(target.getTime())) return null;
     return Math.ceil((target - start) / 86400000);
-  }
-
-  function normalizeText(value) {
-    return String(value || '').trim();
   }
 
   function getFormData(form) {

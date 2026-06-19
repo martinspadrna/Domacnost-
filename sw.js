@@ -5,6 +5,7 @@ const APP_ASSETS = [
   './styles.css',
   './icon-assets.css',
   './shopping.css',
+  './utils.js',
   './shopping-utils.js',
   './shopping-render.js',
   './shopping-actions.js',
@@ -34,6 +35,7 @@ const CORE_FALLBACKS = {
   '/sw.js': './sw.js',
   '/icon-assets.css': './icon-assets.css',
   '/shopping.css': './shopping.css',
+  '/utils.js': './utils.js',
   '/shopping-utils.js': './shopping-utils.js',
   '/shopping-render.js': './shopping-render.js',
   '/shopping-actions.js': './shopping-actions.js'
