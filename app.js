@@ -1158,103 +1158,35 @@
     };
   }
 
-  function uid() {
-    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+  var utilsInstance;
+  function getUtils() {
+    if (utilsInstance) return utilsInstance;
+    const factory = window.DomacnostUtils?.createUtils;
+    if (typeof factory !== 'function') throw new Error('Utils nejsou načtené');
+    utilsInstance = factory({ timeZone: APP_TIME_ZONE });
+    return utilsInstance;
   }
+  function uid() { return getUtils().uid(); }
+  function safeParse(json, fallback) { return getUtils().safeParse(json, fallback); }
+  function structuredCloneSafe(value) { return getUtils().structuredCloneSafe(value); }
+  function normalizeText(value) { return getUtils().normalizeText(value); }
+  function escapeHtml(value) { return getUtils().escapeHtml(value); }
+  function easterSundayDate(year) { return getUtils().easterSundayDate(year); }
+  function addDaysIso(isoDate, days) { return getUtils().addDaysIso(isoDate, days); }
+  function addMonthsIso(isoDate, months = 1) { return getUtils().addMonthsIso(isoDate, months); }
+  function addYearsIso(isoDate, years = 2) { return getUtils().addYearsIso(isoDate, years); }
+  function toSafeDate(value, fallback = null) { return getUtils().toSafeDate(value, fallback); }
+  function formatDate(value, options = {}) { return getUtils().formatDate(value, options); }
+  function formatCurrency(value) { return getUtils().formatCurrency(value); }
+  function formatBytes(value) { return getUtils().formatBytes(value); }
+  function localISODate(date = new Date(), timeZone = APP_TIME_ZONE) { return getUtils().localISODate(date, timeZone); }
+  function todayISO() { return getUtils().todayISO(); }
+  function czechPublicHolidayName(isoDate) { return getUtils().czechPublicHolidayName(isoDate); }
+  function isCzechPublicHolidayDate(date) { return getUtils().isCzechPublicHolidayDate(date); }
+  function parseDateValue(value) { return getUtils().parseDateValue(value); }
+  function formatDateTime(value) { return getUtils().formatDateTime(value); }
+  function daysUntil(dateISO) { return getUtils().daysUntil(dateISO); }
 
-  function localISODate(date = new Date(), timeZone = APP_TIME_ZONE) {
-    const safeDate = toSafeDate(date, new Date());
-    const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).formatToParts(safeDate).reduce((acc, part) => {
-      if (part.type !== 'literal') acc[part.type] = part.value;
-      return acc;
-    }, {});
-    return `${parts.year}-${parts.month}-${parts.day}`;
-  }
-
-  function todayISO() {
-    return localISODate(new Date(), APP_TIME_ZONE);
-  }
-
-  function easterSundayDate(year) {
-    const y = Number(year);
-    if (!Number.isInteger(y) || y < 1900 || y > 2200) return null;
-    const a = y % 19;
-    const b = Math.floor(y / 100);
-    const c = y % 100;
-    const d = Math.floor(b / 4);
-    const e = b % 4;
-    const f = Math.floor((b + 8) / 25);
-    const g = Math.floor((b - f + 1) / 3);
-    const h = (19 * a + b - d - g + 15) % 30;
-    const i = Math.floor(c / 4);
-    const k = c % 4;
-    const l = (32 + 2 * e + 2 * i - h - k) % 7;
-    const m = Math.floor((a + 11 * h + 22 * l) / 451);
-    const month = Math.floor((h + l - 7 * m + 114) / 31);
-    const day = ((h + l - 7 * m + 114) % 31) + 1;
-    return new Date(Date.UTC(y, month - 1, day));
-  }
-
-  function addDaysIso(isoDate, days) {
-    const [year, month, day] = String(isoDate || '').slice(0, 10).split('-').map(Number);
-    if (!year || !month || !day) return '';
-    const date = new Date(Date.UTC(year, month - 1, day));
-    date.setUTCDate(date.getUTCDate() + Number(days || 0));
-    return date.toISOString().slice(0, 10);
-  }
-
-  function addMonthsIso(isoDate, months = 1) {
-    const [year, month, day] = String(isoDate || '').slice(0, 10).split('-').map(Number);
-    if (!year || !month || !day) return '';
-    const targetMonthIndex = month - 1 + Number(months || 0);
-    const lastDayOfTargetMonth = new Date(Date.UTC(year, targetMonthIndex + 1, 0)).getUTCDate();
-    const date = new Date(Date.UTC(year, targetMonthIndex, Math.min(day, lastDayOfTargetMonth)));
-    return date.toISOString().slice(0, 10);
-  }
-
-  function addYearsIso(isoDate, years = 2) {
-    const [year, month, day] = String(isoDate || '').slice(0, 10).split('-').map(Number);
-    if (!year || !month || !day) return '';
-    const date = new Date(Date.UTC(year, month - 1, day));
-    date.setUTCFullYear(date.getUTCFullYear() + Number(years || 0));
-    return date.toISOString().slice(0, 10);
-  }
-
-  function czechPublicHolidayName(isoDate) {
-    const value = String(isoDate || '').slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
-    const fixed = {
-      '01-01': 'Nový rok / Den obnovy samostatného českého státu',
-      '05-01': 'Svátek práce',
-      '05-08': 'Den vítězství',
-      '07-05': 'Cyril a Metoděj',
-      '07-06': 'Jan Hus',
-      '09-28': 'Den české státnosti',
-      '10-28': 'Den vzniku samostatného československého státu',
-      '11-17': 'Den boje za svobodu a demokracii',
-      '12-24': 'Štědrý den',
-      '12-25': '1. svátek vánoční',
-      '12-26': '2. svátek vánoční'
-    };
-    const fixedName = fixed[value.slice(5)];
-    if (fixedName) return fixedName;
-    const year = Number(value.slice(0, 4));
-    const easter = easterSundayDate(year);
-    if (!easter) return '';
-    const easterIso = easter.toISOString().slice(0, 10);
-    if (value === addDaysIso(easterIso, -2)) return 'Velký pátek';
-    if (value === addDaysIso(easterIso, 1)) return 'Velikonoční pondělí';
-    return '';
-  }
-
-  function isCzechPublicHolidayDate(date) {
-    return Boolean(czechPublicHolidayName(localISODate(date, APP_TIME_ZONE)));
-  }
 
   function normalizePolishShopState(value = {}) {
     const raw = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -1522,14 +1454,6 @@
     const date = new Date();
     date.setDate(date.getDate() + Number(days || 0));
     return localISODate(date, APP_TIME_ZONE);
-  }
-
-  function safeParse(json, fallback) {
-    try {
-      return JSON.parse(json) ?? fallback;
-    } catch {
-      return fallback;
-    }
   }
 
   function loadState() {
@@ -1907,11 +1831,6 @@
     saveActiveProfileUiSettingsSnapshot();
     cloudSaveUserVisualSettings(false).catch((error) => console.warn('Cloud visual settings save failed', error));
     if (showMessage) showToast(state.cloud?.userId ? 'Vzhled uložen na účet' : 'Vzhled uložen v zařízení');
-  }
-
-  function structuredCloneSafe(value) {
-    if (typeof structuredClone === 'function') return structuredClone(value);
-    return JSON.parse(JSON.stringify(value));
   }
 
   function createProfile(name, role = 'member', householdId = '') {
@@ -2336,93 +2255,6 @@
     scheduleCloudAutosync('save');
   }
 
-  function escapeHtml(value) {
-    return String(value ?? '')
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
-  }
-
-  function formatDate(value, options = {}) {
-    if (!value) return '—';
-    const date = new Date(`${value}T00:00:00`);
-    if (Number.isNaN(date.getTime())) return '—';
-    return new Intl.DateTimeFormat('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric', ...options }).format(date);
-  }
-
-  function parseDateValue(value) {
-    if (value instanceof Date) return Number.isFinite(value.getTime()) ? value : null;
-    if (typeof value === 'number') {
-      const date = new Date(value);
-      return Number.isFinite(date.getTime()) ? date : null;
-    }
-    const text = normalizeText(value);
-    if (!text) return null;
-    const iso = text.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
-    if (iso) {
-      const date = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
-      return Number.isFinite(date.getTime()) ? date : null;
-    }
-    const cz = text.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})/);
-    if (cz) {
-      const year = Number(cz[3].length === 2 ? `20${cz[3]}` : cz[3]);
-      const date = new Date(year, Number(cz[2]) - 1, Number(cz[1]));
-      return Number.isFinite(date.getTime()) ? date : null;
-    }
-    const parsed = new Date(text);
-    return Number.isFinite(parsed.getTime()) ? parsed : null;
-  }
-
-  function toSafeDate(value, fallback = null) {
-    if (value instanceof Date) return Number.isFinite(value.getTime()) ? value : fallback;
-    if (typeof value === 'number') {
-      const date = new Date(value);
-      return Number.isFinite(date.getTime()) ? date : fallback;
-    }
-    if (typeof value === 'string' && value.trim()) {
-      const date = new Date(value);
-      return Number.isFinite(date.getTime()) ? date : fallback;
-    }
-    return fallback;
-  }
-
-  function formatDateTime(value) {
-    const date = toSafeDate(value);
-    if (!date) return '—';
-    return new Intl.DateTimeFormat('cs-CZ', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    }).format(date);
-  }
-
-  function formatCurrency(value) {
-    const number = Number(value || 0);
-    return new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK', maximumFractionDigits: 0 }).format(number);
-  }
-
-  function formatBytes(value) {
-    const bytes = Number(value || 0);
-    if (!bytes) return '0 B';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1048576) return `${(bytes / 1024).toFixed(1).replace('.', ',')} kB`;
-    return `${(bytes / 1048576).toFixed(1).replace('.', ',')} MB`;
-  }
-
-  function daysUntil(dateISO) {
-    if (!dateISO) return null;
-    const start = new Date(todayISO());
-    const target = new Date(`${dateISO}T00:00:00`);
-    if (Number.isNaN(target.getTime())) return null;
-    return Math.ceil((target - start) / 86400000);
-  }
-
-  function normalizeText(value) {
-    return String(value || '').trim();
-  }
 
   function getFormData(form) {
     const data = new FormData(form);
@@ -19076,6 +18908,9 @@
     }
     if (isExistingAccountSignUpResponse(data, null)) return 'existing-account';
     const user = data?.user;
+    if (isDemoOnlyState()) {
+      getCollectionNames().forEach((collection) => { state[collection] = []; });
+    }
     if (!data?.session || !user) {
       state.cloud = {
         ...(state.cloud || {}),
@@ -19111,6 +18946,9 @@
     const { data: authData, error } = await client.auth.signInWithPassword({ email, password });
     if (error) return showToast(error.message || 'Přihlášení se nepovedlo');
     const user = authData?.user;
+    if (isDemoOnlyState()) {
+      getCollectionNames().forEach((collection) => { state[collection] = []; });
+    }
     state.settings.demoMode = false;
     state.cloud = {
       ...(state.cloud || {}),
@@ -22429,7 +22267,15 @@
       if (showMessage) showToast('Supabase knihovna není načtená');
       return null;
     }
-    const { data, error } = await client.auth.getUser();
+    let data, error;
+    try {
+      const result = await client.auth.getUser();
+      data = result.data;
+      error = result.error;
+    } catch (fetchError) {
+      console.warn('Cloud session check failed (network)', fetchError);
+      return null;
+    }
     try {
       const sessionResult = await client.auth.getSession?.();
       const token = sessionResult?.data?.session?.access_token;
@@ -22438,10 +22284,13 @@
       console.warn('Realtime auth refresh failed', sessionError);
     }
     if (error || !data?.user) {
-      resetSignedOutAppState();
-      saveState();
-      if (showMessage) showToast('Nejsi přihlášený');
-      render();
+      const isNetworkError = error && (!error.status || error.status < 400 || error.status >= 500);
+      if (!isNetworkError) {
+        resetSignedOutAppState();
+        saveState();
+        if (showMessage) showToast('Nejsi přihlášený');
+        render();
+      }
       return null;
     }
     const previousUserId = state.cloud?.userId || '';
