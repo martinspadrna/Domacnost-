@@ -18908,6 +18908,9 @@
     }
     if (isExistingAccountSignUpResponse(data, null)) return 'existing-account';
     const user = data?.user;
+    if (isDemoOnlyState()) {
+      getCollectionNames().forEach((collection) => { state[collection] = []; });
+    }
     if (!data?.session || !user) {
       state.cloud = {
         ...(state.cloud || {}),
@@ -18943,6 +18946,9 @@
     const { data: authData, error } = await client.auth.signInWithPassword({ email, password });
     if (error) return showToast(error.message || 'Přihlášení se nepovedlo');
     const user = authData?.user;
+    if (isDemoOnlyState()) {
+      getCollectionNames().forEach((collection) => { state[collection] = []; });
+    }
     state.settings.demoMode = false;
     state.cloud = {
       ...(state.cloud || {}),
