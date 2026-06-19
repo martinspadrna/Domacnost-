@@ -5218,29 +5218,7 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_96 – pevně ukotvený spodní panel */
-.app-shell {
-  padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 28px) !important;
-}
 
-.nav-shell {
-  position: fixed !important;
-  left: 50% !important;
-  right: auto !important;
-  bottom: var(--nav-fixed-gap) !important;
-  z-index: 1000 !important;
-  width: min(620px, calc(100vw - 20px)) !important;
-  margin: 0 !important;
-  transform: translate3d(-50%, 0, 0) !important;
-  will-change: transform;
-  contain: layout paint;
-}
-
-@media (max-width: 420px) {
-  .nav-shell {
-    width: calc(100vw - 16px) !important;
-  }
-}
 
 @supports (height: 100dvh) {
   body {
@@ -5248,14 +5226,6 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_96 – nižší spodní panel a oprava detailů z Home */
-.app-shell {
-  padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 18px) !important;
-}
-
-.nav-shell {
-  bottom: var(--nav-fixed-gap) !important;
-}
 
 .overview-backdrop {
   z-index: 1800;
@@ -5295,14 +5265,6 @@ textarea {
   }
 }
 
-/* Domácnost+ v.0.1_96 – spodní panel níž + bezpečné rychlé detaily z Home */
-.app-shell {
-  padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 10px) !important;
-}
-
-.nav-shell {
-  bottom: var(--nav-fixed-gap) !important;
-}
 
 .overview-backdrop {
   z-index: 2200 !important;
@@ -11309,18 +11271,11 @@ html[data-icon-theme="rak"] .module-illustration-slot,
   margin-bottom: 2px !important;
 }
 
-.nav-item {
-  min-height: 62px !important;
-  gap: 4px !important;
-}
 
 .nav-item span:last-child {
   font-size: .82rem !important;
 }
 
-.nav-shell {
-  padding: 9px 8px 10px !important;
-}
 
 @media (max-width: 640px) {
   .home-clean-frame .home-page-head,
@@ -13393,17 +13348,6 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   --app-vh: 100svh;
 }
 
-@media (max-width: 720px) {
-  :root {
-    --nav-bottom-lock: max(0px, calc(env(safe-area-inset-bottom, 0px) - 34px));
-  }
-}
-
-.nav-shell {
-  bottom: var(--nav-bottom-lock) !important;
-  transform: translate3d(-50%, 0, 0) !important;
-}
-
 .app-shell.home-app-shell {
   height: var(--app-vh) !important;
   min-height: var(--app-vh) !important;
@@ -13436,43 +13380,6 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 }
 
 
-/* Domácnost+ v.0.1_218 – Finance stabilizace + iPhone/PWA spodní lišta */
-@media (max-width: 720px) {
-  .nav-shell {
-    bottom: var(--nav-bottom-lock) !important;
-    transform: translate3d(-50%, 0, 0) !important;
-  }
-}
-
-@supports (-webkit-touch-callout: none) {
-  @media (max-width: 720px) {
-    :root {
-      --nav-bottom-lock: -24px;
-      --home-nav-reserve-bottom: 0px;
-    }
-
-    .app-shell {
-      padding-bottom: calc(var(--nav-height) + 2px) !important;
-    }
-
-    .app-shell.home-app-shell {
-      padding-bottom: calc(var(--nav-height) + 2px) !important;
-    }
-
-    .home-hero-count-0.home-minimal-hero,
-    .home-hero-count-1.home-minimal-hero,
-    .home-hero-count-2.home-minimal-hero,
-    .home-hero-count-3.home-minimal-hero,
-    .home-hero-count-4.home-minimal-hero,
-    .home-hero-count-5.home-minimal-hero,
-    .home-hero-count-6.home-minimal-hero,
-    .home-hero-count-7.home-minimal-hero,
-    .home-hero-count-8.home-minimal-hero {
-      height: calc(var(--app-vh) - var(--nav-height) + 6px) !important;
-      max-height: calc(var(--app-vh) - var(--nav-height) + 6px) !important;
-    }
-  }
-}
 
 .finance-overview-head {
   margin-bottom: 12px;
@@ -13622,98 +13529,6 @@ form[data-busy="true"] button[type="submit"] {
 }
 
 
-/* Domácnost+ v.0.1_220 – hotfix spodní lišty po v218
-   v218 ji na iOS posouval moc nízko záporným bottomem. Tady ji držíme dole,
-   ale nikdy ji nepouštíme pod spodní hranu displeje / home indicator. */
-@media (max-width: 720px) {
-  .nav-shell {
-    bottom: var(--nav-bottom-lock) !important;
-    transform: translate3d(-50%, 0, 0) !important;
-    max-height: calc(100svh - 12px);
-  }
-
-  .app-shell,
-  .app-shell.home-app-shell {
-    padding-bottom: calc(var(--nav-height) + 12px) !important;
-  }
-
-  .home-hero-count-0.home-minimal-hero,
-  .home-hero-count-1.home-minimal-hero,
-  .home-hero-count-2.home-minimal-hero,
-  .home-hero-count-3.home-minimal-hero,
-  .home-hero-count-4.home-minimal-hero,
-  .home-hero-count-5.home-minimal-hero,
-  .home-hero-count-6.home-minimal-hero,
-  .home-hero-count-7.home-minimal-hero,
-  .home-hero-count-8.home-minimal-hero {
-    height: calc(var(--app-vh) - var(--nav-height) - 18px) !important;
-    max-height: calc(var(--app-vh) - var(--nav-height) - 18px) !important;
-  }
-}
-
-@supports (-webkit-touch-callout: none) {
-  @media (max-width: 720px) {
-    :root {
-      --nav-bottom-lock: max(6px, calc(env(safe-area-inset-bottom, 0px) - 30px));
-      --home-nav-reserve-bottom: 0px;
-    }
-
-    .nav-shell {
-      bottom: var(--nav-bottom-lock) !important;
-      transform: translate3d(-50%, 0, 0) !important;
-    }
-
-    .app-shell,
-    .app-shell.home-app-shell {
-      padding-bottom: calc(var(--nav-height) + 12px) !important;
-    }
-
-    .home-hero-count-0.home-minimal-hero,
-    .home-hero-count-1.home-minimal-hero,
-    .home-hero-count-2.home-minimal-hero,
-    .home-hero-count-3.home-minimal-hero,
-    .home-hero-count-4.home-minimal-hero,
-    .home-hero-count-5.home-minimal-hero,
-    .home-hero-count-6.home-minimal-hero,
-    .home-hero-count-7.home-minimal-hero,
-    .home-hero-count-8.home-minimal-hero {
-      height: calc(var(--app-vh) - var(--nav-height) - 18px) !important;
-      max-height: calc(var(--app-vh) - var(--nav-height) - 18px) !important;
-    }
-  }
-}
-
-/* Domácnost+ v.0.1_220 – stabilní spodní lišta + plynulé přejetí aktivní volby */
-@media (max-width: 720px) {
-  .nav-shell {
-    bottom: var(--nav-bottom-lock) !important;
-    transform: translate3d(-50%, 0, 0) !important;
-    will-change: transform;
-  }
-
-  .app-shell.home-app-shell {
-    padding-top: max(18px, calc(env(safe-area-inset-top, 0px) + 1px)) !important;
-    padding-bottom: calc(var(--nav-height) + 10px) !important;
-  }
-
-  .app-shell.home-app-shell .home-page-head {
-    margin-top: -6px !important;
-    margin-bottom: 6px !important;
-  }
-
-  .app-shell.home-app-shell .home-hero-count-0.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-1.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-2.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-3.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-4.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-5.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-6.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-7.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-8.home-minimal-hero {
-    height: calc(var(--app-vh) - var(--nav-height) - 10px) !important;
-    max-height: calc(var(--app-vh) - var(--nav-height) - 10px) !important;
-  }
-}
 
 .nav-scroll {
   isolation: isolate !important;
@@ -13770,95 +13585,6 @@ form[data-busy="true"] button[type="submit"] {
 }
 
 
-/* Domácnost+ v.0.1_221 – Home/nav layout hotfix po v220
-   Cíl: bez skoku spodní lišty po prvním kliknutí, název o trochu výš,
-   ale bez zvětšování Home panelů, aby spodní řada nezajížděla pod navigaci. */
-:root {
-  --home-compact-head-offset: -12px;
-}
-
-@media (max-width: 720px) {
-  .nav-shell {
-    bottom: var(--nav-bottom-lock) !important;
-    transform: translate3d(-50%, 0, 0) !important;
-    max-height: none !important;
-    will-change: transform;
-  }
-
-  .app-shell.home-app-shell {
-    padding-top: max(12px, calc(env(safe-area-inset-top, 0px) - 4px)) !important;
-    padding-bottom: calc(var(--nav-height) + 18px) !important;
-  }
-
-  .app-shell.home-app-shell .home-clean-frame,
-  .app-shell.home-app-shell .home-clean-frame main {
-    min-height: 0 !important;
-    height: auto !important;
-  }
-
-  .app-shell.home-app-shell .home-page-head,
-  .home-clean-frame .home-page-head,
-  .home-page-head {
-    margin-top: var(--home-compact-head-offset) !important;
-    margin-bottom: 8px !important;
-    padding-top: 0 !important;
-  }
-
-  .app-shell.home-app-shell .home-page-head .page-title {
-    line-height: .9 !important;
-  }
-
-  .app-shell.home-app-shell .home-hero-count-0.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-1.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-2.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-3.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-4.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-5.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-6.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-7.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-8.home-minimal-hero {
-    height: clamp(560px, var(--home-compact-height), 650px) !important;
-    max-height: clamp(560px, var(--home-compact-height), 650px) !important;
-    min-height: 0 !important;
-  }
-
-  .app-shell.home-app-shell .home-hero-count-5 .station-hero-main,
-  .app-shell.home-app-shell .home-hero-count-6 .station-hero-main,
-  .app-shell.home-app-shell .home-hero-count-7 .station-hero-main,
-  .app-shell.home-app-shell .home-hero-count-8 .station-hero-main {
-    grid-template-rows: minmax(102px, 1.03fr) repeat(4, minmax(86px, 1fr)) !important;
-    gap: 7px !important;
-  }
-
-  .app-shell.home-app-shell .station-summary,
-  .app-shell.home-app-shell .home-minimal-hero .station-summary {
-    gap: 8px !important;
-  }
-
-  .app-shell.home-app-shell .station-summary-item {
-    min-height: 0 !important;
-  }
-
-  .nav-active-runner {
-    transition: transform .68s cubic-bezier(.2, .86, .18, 1), width .68s cubic-bezier(.2, .86, .18, 1), opacity .24s ease !important;
-  }
-
-  .nav-item .nav-icon,
-  .nav-item .nav-icon.mini-module-icon,
-  .nav-item .nav-icon.module-illustration-slot {
-    transition: transform .42s cubic-bezier(.2, .86, .18, 1), filter .42s ease, width .42s ease, height .42s ease, color .42s ease !important;
-  }
-}
-
-@supports (-webkit-touch-callout: none) {
-  @media (max-width: 720px) {
-    :root {
-      /* v218 mělo -24px a zajíždělo pod displej; v219/220 bylo zase moc vysoko.
-         -8px je jemný iOS posun dolů bez schování popisků pod home indicator. */
-      --nav-bottom-lock: -8px;
-    }
-  }
-}
 
 /* Sloučené top-level :root proměnné — konsolidováno z rozptýlených bloků */
 :root {
@@ -13874,8 +13600,6 @@ form[data-busy="true"] button[type="submit"] {
   --radius-lg: 18px;
   --radius-md: 14px;
   --nav-height: 70px;
-  --nav-fixed-gap: max(-6px, calc(env(safe-area-inset-bottom, 0px) - 22px));
-  --nav-bottom-lock: 0px;
   --home-nav-reserve-bottom: 0px;
   --home-compact-height: calc(var(--app-vh) - var(--nav-height) - 150px);
   --home-bottom-reserve: calc(78px + max(2px, calc(env(safe-area-inset-bottom, 0px) - 24px)) + 4px) !important;
@@ -14116,196 +13840,6 @@ form[data-busy="true"] button[type="submit"] {
   }
 }
 
-/* Domácnost+ v.0.1_225 – čistý build + finální doladění Home/nav po v223
-   - název domácnosti nesmí být oříznutý nahoře,
-   - spodní lišta má držet stabilní výšku a nižší iOS pozici,
-   - animace aktivní položky má přejet pomaleji a plynuleji. */
-@media (max-width: 720px) {
-  .nav-shell {
-    bottom: var(--nav-bottom-lock) !important;
-    height: 88px !important;
-    min-height: 88px !important;
-    max-height: 88px !important;
-    padding: 8px !important;
-    transform: translate3d(-50%, 0, 0) !important;
-    overflow: hidden !important;
-    contain: layout paint !important;
-  }
-
-  .nav-scroll {
-    height: 100% !important;
-    min-height: 0 !important;
-    align-items: stretch !important;
-  }
-
-  .nav-item {
-    height: 100% !important;
-    min-height: 0 !important;
-    padding-block: 5px !important;
-    transform: none !important;
-  }
-
-  .nav-item.active {
-    transform: none !important;
-  }
-
-  .app-shell.home-app-shell {
-    padding-top: max(16px, calc(env(safe-area-inset-top, 0px) + 0px)) !important;
-    padding-bottom: calc(88px + 12px) !important;
-  }
-
-  .app-shell.home-app-shell .home-page-head,
-  .home-clean-frame .home-page-head,
-  .home-page-head {
-    margin-top: -7px !important;
-    margin-bottom: 4px !important;
-    min-height: 42px !important;
-    padding-top: 2px !important;
-    overflow: visible !important;
-  }
-
-  .app-shell.home-app-shell .home-page-head .page-title,
-  .home-clean-frame .home-page-head .page-title {
-    line-height: 1.12 !important;
-    padding-top: 2px !important;
-    padding-bottom: 2px !important;
-    overflow: hidden !important;
-  }
-
-  .app-shell.home-app-shell .home-hero-count-5 .station-hero-main,
-  .app-shell.home-app-shell .home-hero-count-6 .station-hero-main,
-  .app-shell.home-app-shell .home-hero-count-7 .station-hero-main,
-  .app-shell.home-app-shell .home-hero-count-8 .station-hero-main {
-    gap: 7px !important;
-    grid-template-rows: minmax(96px, 1.02fr) repeat(4, minmax(78px, 1fr)) !important;
-  }
-
-  .nav-active-runner {
-    transition:
-      transform var(--nav-motion-duration) var(--nav-motion-ease),
-      width var(--nav-motion-duration) var(--nav-motion-ease),
-      opacity .32s ease !important;
-  }
-
-  .nav-item .nav-icon,
-  .nav-item .nav-icon.mini-module-icon,
-  .nav-item .nav-icon.module-illustration-slot {
-    transition:
-      transform .82s var(--nav-motion-ease),
-      filter .82s ease,
-      width .82s ease,
-      height .82s ease,
-      color .82s ease !important;
-  }
-}
-
-@supports (-webkit-touch-callout: none) {
-  @media (max-width: 720px) {
-    :root {
-      --nav-bottom-lock: -14px;
-    }
-  }
-}
-
-@media (max-width: 390px) {
-  .app-shell.home-app-shell .home-hero-count-0.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-1.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-2.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-3.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-4.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-5.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-6.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-7.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-8.home-minimal-hero {
-    height: clamp(500px, calc(var(--app-vh) - 244px), 606px) !important;
-    max-height: clamp(500px, calc(var(--app-vh) - 244px), 606px) !important;
-  }
-}
-
-
-/* Domácnost+ v.0.1_225 – iPhone/PWA layout hotfix
-   Stabilizuje spodní navigaci bez záporného bottomu, přidává přesnou rezervu Home
-   a opravuje finance měsícový filtr bez přetékání. */
-@media (max-width: 720px) {
-  .app-shell {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  .nav-shell {
-    bottom: 0 !important;
-    height: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
-    min-height: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
-    max-height: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
-    padding: 8px 8px max(8px, env(safe-area-inset-bottom, 0px)) !important;
-    overflow: visible !important;
-    transform: translate3d(-50%, 0, 0) !important;
-  }
-
-  .nav-scroll {
-    height: 74px !important;
-    min-height: 74px !important;
-    max-height: 74px !important;
-    overflow: visible !important;
-  }
-
-  .nav-item {
-    height: 74px !important;
-    min-height: 74px !important;
-    max-height: 74px !important;
-    padding-block: 5px !important;
-  }
-
-  .app-shell.home-app-shell {
-    padding-top: max(12px, env(safe-area-inset-top, 0px)) !important;
-    padding-bottom: calc(102px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  .app-shell.home-app-shell .home-page-head,
-  .home-clean-frame .home-page-head,
-  .home-page-head {
-    margin-top: -3px !important;
-    margin-bottom: 7px !important;
-    min-height: 44px !important;
-    padding-top: 1px !important;
-    overflow: visible !important;
-  }
-
-  .app-shell.home-app-shell .home-page-head .page-title,
-  .home-clean-frame .home-page-head .page-title {
-    line-height: 1.18 !important;
-    padding-top: 3px !important;
-    padding-bottom: 3px !important;
-    overflow: visible !important;
-  }
-
-  .app-shell.home-app-shell .home-hero-count-0.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-1.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-2.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-3.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-4.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-5.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-6.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-7.home-minimal-hero,
-  .app-shell.home-app-shell .home-hero-count-8.home-minimal-hero {
-    height: clamp(470px, calc(var(--app-vh) - 286px), 590px) !important;
-    max-height: clamp(470px, calc(var(--app-vh) - 286px), 590px) !important;
-  }
-
-  .app-shell.home-app-shell .home-hero-count-5 .station-hero-main,
-  .app-shell.home-app-shell .home-hero-count-6 .station-hero-main,
-  .app-shell.home-app-shell .home-hero-count-7 .station-hero-main,
-  .app-shell.home-app-shell .home-hero-count-8 .station-hero-main {
-    gap: 7px !important;
-    grid-template-rows: minmax(88px, .98fr) repeat(4, minmax(72px, 1fr)) !important;
-  }
-}
-
-@supports (-webkit-touch-callout: none) {
-  @media (max-width: 720px) {
-    :root { --nav-bottom-lock: 0px; }
-    .nav-shell { bottom: 0 !important; }
-  }
-}
 
 .nav-active-runner {
   opacity: 0;
