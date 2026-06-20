@@ -22536,7 +22536,10 @@
       const client = getSupabaseClient();
       if (client) {
         const { error: exchangeError } = await client.auth.exchangeCodeForSession(code).catch((e) => ({ error: e }));
-        if (exchangeError) console.warn('OAuth code exchange failed', exchangeError);
+        if (exchangeError) {
+          console.warn('OAuth code exchange failed', exchangeError);
+          alert('Exchange error: ' + (exchangeError?.message || exchangeError?.name || JSON.stringify(exchangeError)));
+        }
       }
     }
     const user = await refreshCloudSession(false);
