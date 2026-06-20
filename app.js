@@ -2274,6 +2274,7 @@
   }
 
   function shouldShowStartChoice() {
+    if (onboardingMode === 'reset-password') return true;
     if (isDemoOnlyState()) return !demoRuntimeActive;
     if (!hasUsableAppSession()) {
       if (state.cloud?.status === 'email-confirmation') onboardingMode = 'account';
