@@ -22532,14 +22532,21 @@
   async function handleGoogleAuthReturn() {
     await new Promise((resolve) => window.setTimeout(resolve, 650));
     const code = new URLSearchParams(window.location.search || '').get('code');
-    const _hash = window.location.hash || '';
-    alert('DEBUG login: code=' + (code ? code.slice(0,15)+'…' : 'NULL') + ' search=' + window.location.search.slice(0,50) + ' hash=' + _hash.slice(0,60));
-    if (code) {
-      const client = getSupabaseClient();
-      if (client) {
-        const { data: exData, error: exchangeError } = await client.auth.exchangeCodeForSession(code).catch((e) => ({ error: e }));
-        alert('Exchange: error=' + (exchangeError ? (exchangeError.message || exchangeError.status || JSON.stringify(exchangeError)) : 'none') + ' session=' + (exData?.session ? 'YES' : 'NO'));
+    const hashParams = new URLSearchParams((window.location.hash || '').slice(1));
+    const client = getSupabaseClient();
+    if (client) {
+      if (code) {
+        // PKCE flow: exchange authorization code for session
+        const { error: exchangeError } = await client.auth.exchangeCodeForSession(code).catch((e) => ({ error: e }));
         if (exchangeError) console.warn('OAuth code exchange failed', exchangeError);
+      } else {
+        // Implicit flow: tokens arrive in URL hash (#access_token=...)
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        if (accessToken) {
+          const { error: sessionError } = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' }).catch((e) => ({ error: e }));
+          if (sessionError) console.warn('OAuth implicit session set failed', sessionError);
+        }
       }
     }
     const user = await refreshCloudSession(false);
@@ -22652,10 +22659,11 @@
     if (!isAuthReturnUrl()) return;
     const search = new URLSearchParams(window.location.search || '');
     if (search.get('auth') === 'google' || (search.has('code') && search.has('state'))) {
-      // sessionStorage is cleared on iOS PWA when returning from OAuth redirect,
-      // so also treat URL with ?code= as genuine when there's no existing session
+      // sessionStorage is cleared on iOS PWA when returning from OAuth redirect.
+      // Also support implicit flow where tokens come in URL hash (#access_token=...).
+      const _oauthHash = window.location.hash || '';
       const isGenuineOAuthReturn = sessionStorage.getItem(ONBOARDING_GOOGLE_INTENT_KEY) !== null
-        || (search.has('code') && !hasStoredSupabaseSession());
+        || ((search.has('code') || _oauthHash.includes('access_token=')) && !hasStoredSupabaseSession());
       if (isGenuineOAuthReturn) {
         await handleGoogleAuthReturn();
       }
