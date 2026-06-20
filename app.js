@@ -18974,6 +18974,9 @@
     if (!email || !password) return showToast('Vyplň e-mail a heslo');
     const client = getSupabaseClient();
     if (!client) return showToast('Supabase knihovna není načtená');
+    // Clear any stale session locally before signing in — prevents old Google OAuth
+    // tokens from racing with autoRefreshToken and wiping the new session.
+    await client.auth.signOut({ scope: 'local' }).catch(() => {});
     const { data: authData, error } = await client.auth.signInWithPassword({ email, password });
     if (error) return showToast(error.message || 'Přihlášení se nepovedlo');
     const user = authData?.user;
@@ -22385,6 +22388,7 @@
   async function cloudLogin(email, password) {
     const client = getSupabaseClient();
     if (!client) return showToast('Supabase knihovna není načtená');
+    await client.auth.signOut({ scope: 'local' }).catch(() => {});
     const { data, error } = await client.auth.signInWithPassword({ email: normalizeText(email), password: String(password || '') });
     if (error) return showToast(error.message || 'Přihlášení se nepovedlo');
     const user = data?.user;
