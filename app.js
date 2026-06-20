@@ -22525,6 +22525,14 @@
 
   async function handleGoogleAuthReturn() {
     await new Promise((resolve) => window.setTimeout(resolve, 650));
+    const code = new URLSearchParams(window.location.search || '').get('code');
+    if (code) {
+      const client = getSupabaseClient();
+      if (client) {
+        const { error: exchangeError } = await client.auth.exchangeCodeForSession(code).catch((e) => ({ error: e }));
+        if (exchangeError) console.warn('OAuth code exchange failed', exchangeError);
+      }
+    }
     const user = await refreshCloudSession(false);
     if (!user) {
       showToast('Google přihlášení se nevrátilo do aplikace. Zkontroluj Supabase Auth Google provider.');
