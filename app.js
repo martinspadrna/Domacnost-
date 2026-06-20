@@ -13569,6 +13569,7 @@
   }
 
   function resetSignedOutAppState() {
+    console.error('RESET-LOGOUT', new Error().stack);
     const visualSettings = getVisualSettingsSnapshot();
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('homeWeb.activeModule');
