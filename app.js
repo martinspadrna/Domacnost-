@@ -3234,34 +3234,7 @@
     applyVisualSettings();
 
     if (onboardingMode === 'choice') {
-      app.innerHTML = `
-        <div class="onboarding-screen">
-          <section class="onboarding-card onboarding-choice-card compact-auth-card">
-            <div class="onboarding-hero compact-auth-hero">
-              <div class="brand-mark big logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
-              <div>
-                <span class="badge">${escapeHtml(APP_VERSION)}</span>
-                <h1>Domácnost+</h1>
-              </div>
-            </div>
-
-            <div class="grid two onboarding-choice-grid compact-login-grid">
-              <article class="card flat choice-tile">
-                <div class="choice-icon">🔐</div>
-                <h2>Přihlášení</h2>
-                <button class="primary-btn" type="button" data-action="onboarding-mode" data-mode="account">Přihlásit se</button>
-              </article>
-              <article class="card flat choice-tile">
-                <div class="choice-icon">🏡</div>
-                <h2>Demo</h2>
-                <button class="ghost-btn" type="button" data-action="start-demo">Spustit demo</button>
-              </article>
-            </div>
-          </section>
-        </div>
-        <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
-      `;
-      return;
+      onboardingMode = 'account';
     }
 
     if (onboardingMode === 'reset-password') {
@@ -3354,43 +3327,23 @@
 
           <div class="grid two compact-auth-grid">
             <section class="card flat">
-              <div class="card-header"><div><h2>Přihlášení přes e-mail</h2></div></div>
+              <div class="card-header"><div><h2>Přihlášení</h2></div></div>
               <form data-form="onboarding-login" class="stack-form">
                 ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
                 ${field('Heslo', 'password', 'password', 'heslo', true)}
-                <div class="form-actions"><button class="primary-btn" type="submit">Přihlásit e-mailem</button></div>
+                <div class="form-actions"><button class="primary-btn" type="submit">Přihlásit se</button></div>
               </form>
               <form data-form="onboarding-forgot-password" class="stack-form" style="margin-top:0.75rem;border-top:1px solid var(--border);padding-top:0.75rem">
-                <div class="small-muted" style="margin-bottom:0.4rem">Zapomenuté heslo / Google účet</div>
+                <div class="small-muted" style="margin-bottom:0.4rem">Zapomenuté heslo</div>
                 ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
                 <div class="form-actions"><button class="ghost-btn" type="submit">Odeslat odkaz pro reset</button></div>
               </form>
             </section>
 
             <section class="card flat">
-              <div class="card-header"><div><h2>Přihlášení přes Google</h2></div></div>
-              <button class="oauth-btn google-oauth-btn full-width" type="button" data-action="cloud-oauth-google" data-intent="login">
-                <span aria-hidden="true">G</span>
-                <strong>Přihlásit přes Google</strong>
-              </button>
-            </section>
-
-            <section class="card flat">
-              <div class="card-header"><div><h2>Registrace e-mailem</h2></div></div>
+              <div class="card-header"><div><h2>Nový účet</h2></div></div>
               <button class="primary-btn full-width" type="button" data-action="onboarding-mode" data-mode="register">Registrovat e-mailem</button>
             </section>
-
-            <section class="card flat">
-              <div class="card-header"><div><h2>Registrace přes Google</h2></div></div>
-              <button class="oauth-btn google-oauth-btn full-width" type="button" data-action="cloud-oauth-google" data-intent="register">
-                <span aria-hidden="true">G</span>
-                <strong>Registrovat přes Google</strong>
-              </button>
-            </section>
-          </div>
-
-          <div class="form-actions onboarding-actions">
-            <button class="ghost-btn" type="button" data-action="onboarding-mode" data-mode="choice">Zpět</button>
           </div>
         </section>
       </div>
