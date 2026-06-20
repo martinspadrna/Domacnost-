@@ -3274,6 +3274,8 @@
               <div class="card-header"><div><h2>Nastav nové heslo</h2></div></div>
               <form data-form="onboarding-set-new-password" class="stack-form">
                 ${field('Nové heslo', 'password', 'password', 'min. 6 znaků', true)}
+                ${field('Nový e-mail (volitelné)', 'newEmail', 'email', 'nový@email.cz — nech prázdné pro zachování')}
+                <div class="small-muted" style="margin-top:-0.25rem">Změna e-mailu vyžaduje potvrzení kliknutím na odkaz v novém e-mailu.</div>
                 <div class="form-actions"><button class="primary-btn" type="submit">Uložit heslo</button></div>
               </form>
             </section>
@@ -18735,7 +18737,7 @@
       'onboarding-google-setup': () => completeGoogleOnboardingSetup(data),
       'onboarding-login': () => loginExistingHouseholdFromOnboarding(data),
       'onboarding-forgot-password': () => cloudForgotPassword(data.email),
-      'onboarding-set-new-password': () => cloudSetNewPassword(data.password),
+      'onboarding-set-new-password': () => cloudSetNewPassword(data.password, data.newEmail),
       'household-settings': async () => {
         state.household.name = normalizeText(data.householdName) || 'Domácnost';
         touchState();
@@ -22355,14 +22357,24 @@
     showToast('Odkaz pro reset hesla odeslán na ' + normalEmail);
   }
 
-  async function cloudSetNewPassword(password) {
+  async function cloudSetNewPassword(password, newEmail) {
     const pwd = String(password || '');
     if (pwd.length < 6) return showToast('Heslo musí mít alespoň 6 znaků');
     const client = getSupabaseClient();
     if (!client) return showToast('Supabase knihovna není načtená');
     const { error } = await client.auth.updateUser({ password: pwd });
     if (error) return showToast(error.message || 'Nastavení hesla se nepovedlo');
-    showToast('Heslo nastaveno. Nyní se přihlas e-mailem a heslem.');
+    const trimmedEmail = normalizeText(newEmail || '').toLowerCase();
+    if (trimmedEmail) {
+      const { error: emailError } = await client.auth.updateUser({ email: trimmedEmail });
+      if (emailError) {
+        showToast('Heslo uloženo. Změna e-mailu se nepovedla: ' + (emailError.message || 'chyba'));
+      } else {
+        showToast('Heslo uloženo. Potvrď nový e-mail kliknutím na odkaz odeslaný na ' + trimmedEmail);
+      }
+    } else {
+      showToast('Heslo nastaveno. Přihlas se e-mailem a heslem.');
+    }
     onboardingMode = 'account';
     sessionStorage.setItem('domacnostPlus.onboardingMode', 'account');
     clearAuthReturnUrl(true);
