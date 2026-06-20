@@ -22285,7 +22285,8 @@
     }
     if (error || !data?.user) {
       const isNetworkError = error && (!error.status || error.status < 400 || error.status >= 500);
-      if (!isNetworkError) {
+      const silentFail = !error && !data?.user;
+      if (!isNetworkError && !(silentFail && hasStoredSupabaseSession())) {
         resetSignedOutAppState();
         saveState();
         if (showMessage) showToast('Nejsi přihlášený');
