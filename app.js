@@ -22267,26 +22267,21 @@
       if (showMessage) showToast('Supabase knihovna není načtená');
       return null;
     }
-    let data, error;
+    let session, sessionError;
     try {
-      const result = await client.auth.getUser();
-      data = result.data;
-      error = result.error;
+      const result = await client.auth.getSession();
+      session = result.data?.session;
+      sessionError = result.error;
     } catch (fetchError) {
       console.warn('Cloud session check failed (network)', fetchError);
       return null;
     }
-    try {
-      const sessionResult = await client.auth.getSession?.();
-      const token = sessionResult?.data?.session?.access_token;
-      if (token && client.realtime?.setAuth) client.realtime.setAuth(token);
-    } catch (sessionError) {
-      console.warn('Realtime auth refresh failed', sessionError);
+    if (session?.access_token && client.realtime?.setAuth) {
+      try { client.realtime.setAuth(session.access_token); } catch {}
     }
-    if (error || !data?.user) {
-      const isNetworkError = error && (!error.status || error.status < 400 || error.status >= 500);
-      const silentFail = !error && !data?.user;
-      if (!isNetworkError && !(silentFail && hasStoredSupabaseSession())) {
+    if (sessionError || !session?.user) {
+      const isNetworkError = sessionError && (!sessionError.status || sessionError.status < 400 || sessionError.status >= 500);
+      if (!isNetworkError && !hasStoredSupabaseSession()) {
         resetSignedOutAppState();
         saveState();
         if (showMessage) showToast('Nejsi přihlášený');
@@ -22294,22 +22289,23 @@
       }
       return null;
     }
+    const user = session.user;
     const previousUserId = state.cloud?.userId || '';
-    if (previousUserId && previousUserId !== data.user.id) {
-      resetLocalWorkspaceForCloudUser(data.user, { previousUserId, force: true });
+    if (previousUserId && previousUserId !== user.id) {
+      resetLocalWorkspaceForCloudUser(user, { previousUserId, force: true });
     }
     state.cloud = {
       ...(state.cloud || {}),
       supabaseUrl: SUPABASE_URL,
       provider: 'supabase',
       status: 'signed-in',
-      userId: data.user.id,
-      email: data.user.email || ''
+      userId: user.id,
+      email: user.email || ''
     };
     saveState();
     if (showMessage) showToast('Stav účtu obnoven');
     render();
-    return data.user;
+    return user;
   }
 
   async function cloudLogin(email, password) {
