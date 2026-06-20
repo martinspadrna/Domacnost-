@@ -22683,6 +22683,7 @@
     if (search.has('code') && search.has('state')) return true;
     if (search.get('type') === 'signup') return true;
     if (search.get('type') === 'recovery') return true;
+    if (search.get('token_hash') && search.get('type')) return true;
     const hash = window.location.hash || '';
     return hash.includes('access_token=') || hash.includes('refresh_token=') || hash.includes('type=signup');
   }
@@ -22726,14 +22727,23 @@
     if (!isAuthReturnUrl()) return;
     const search = new URLSearchParams(window.location.search || '');
     if (search.get('type') === 'recovery') {
-      // Password reset link clicked — set session from hash tokens and show set-password form
-      const recoveryHash = new URLSearchParams((window.location.hash || '').slice(1));
-      const accessToken = recoveryHash.get('access_token');
-      const refreshToken = recoveryHash.get('refresh_token');
-      if (accessToken) {
-        const client = getSupabaseClient();
-        if (client) {
-          await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' }).catch(() => {});
+      // Password reset link clicked — establish session then show set-password form.
+      // Supabase v2 uses token_hash in query string; older versions use #access_token in hash.
+      const client = getSupabaseClient();
+      if (client) {
+        const tokenHash = search.get('token_hash');
+        if (tokenHash) {
+          // New Supabase format: verify OTP with token_hash
+          const { error: otpErr } = await client.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash }).catch((e) => ({ error: e }));
+          if (otpErr) console.warn('Recovery verifyOtp failed', otpErr);
+        } else {
+          // Older format: tokens in URL hash
+          const recoveryHash = new URLSearchParams((window.location.hash || '').slice(1));
+          const accessToken = recoveryHash.get('access_token');
+          const refreshToken = recoveryHash.get('refresh_token');
+          if (accessToken) {
+            await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' }).catch(() => {});
+          }
         }
       }
       onboardingMode = 'reset-password';
