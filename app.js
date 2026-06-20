@@ -13569,8 +13569,6 @@
   }
 
   function resetSignedOutAppState() {
-    const _stack = (new Error().stack || '').split('\n').slice(1, 5).join('\n');
-    alert('LOGOUT DEBUG:\n' + _stack);
     const visualSettings = getVisualSettingsSnapshot();
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('homeWeb.activeModule');
@@ -22259,7 +22257,12 @@
     });
 
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      alert('SW UPDATE RELOAD');
+      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        pwaUpdateAvailable = true;
+        render();
+        showToast('Nová verze k dispozici – obnovte stránku');
+        return;
+      }
       window.location.reload();
     });
   }
@@ -22646,7 +22649,10 @@
     if (!isAuthReturnUrl()) return;
     const search = new URLSearchParams(window.location.search || '');
     if (search.get('auth') === 'google' || (search.has('code') && search.has('state'))) {
-      const isGenuineOAuthReturn = sessionStorage.getItem(ONBOARDING_GOOGLE_INTENT_KEY) !== null;
+      // sessionStorage is cleared on iOS PWA when returning from OAuth redirect,
+      // so also treat URL with ?code= as genuine when there's no existing session
+      const isGenuineOAuthReturn = sessionStorage.getItem(ONBOARDING_GOOGLE_INTENT_KEY) !== null
+        || (search.has('code') && !hasStoredSupabaseSession());
       if (isGenuineOAuthReturn) {
         await handleGoogleAuthReturn();
       }
