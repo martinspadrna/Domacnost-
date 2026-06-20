@@ -22685,7 +22685,7 @@
     if (search.get('type') === 'recovery') return true;
     if (search.get('token_hash') && search.get('type')) return true;
     const hash = window.location.hash || '';
-    return hash.includes('access_token=') || hash.includes('refresh_token=') || hash.includes('type=signup');
+    return hash.includes('access_token=') || hash.includes('refresh_token=') || hash.includes('type=signup') || hash.includes('type=recovery');
   }
 
   function hasGoogleCalendarReturnUrl() {
@@ -22726,23 +22726,20 @@
     }
     if (!isAuthReturnUrl()) return;
     const search = new URLSearchParams(window.location.search || '');
-    if (search.get('type') === 'recovery') {
-      alert('RECOVERY URL:\nsearch=' + window.location.search.slice(0, 100) + '\nhash=' + (window.location.hash || '').slice(0, 80));
+    const hashParams = new URLSearchParams((window.location.hash || '').slice(1));
+    const isRecovery = search.get('type') === 'recovery' || search.get('token_hash') || hashParams.get('type') === 'recovery';
+    if (isRecovery) {
       const client = getSupabaseClient();
       if (client) {
         const tokenHash = search.get('token_hash');
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
         if (tokenHash) {
           const { error: otpErr } = await client.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash }).catch((e) => ({ error: e }));
-          alert('verifyOtp: ' + (otpErr ? (otpErr.message || JSON.stringify(otpErr)) : 'OK'));
-        } else {
-          const recoveryHash = new URLSearchParams((window.location.hash || '').slice(1));
-          const accessToken = recoveryHash.get('access_token');
-          const refreshToken = recoveryHash.get('refresh_token');
-          alert('no token_hash. accessToken=' + (accessToken ? accessToken.slice(0,20)+'…' : 'NULL'));
-          if (accessToken) {
-            const { error: sErr } = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' }).catch((e) => ({ error: e }));
-            alert('setSession: ' + (sErr ? (sErr.message || JSON.stringify(sErr)) : 'OK'));
-          }
+          if (otpErr) console.warn('Recovery verifyOtp failed', otpErr);
+        } else if (accessToken) {
+          const { error: sErr } = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' }).catch((e) => ({ error: e }));
+          if (sErr) console.warn('Recovery setSession failed', sErr);
         }
       }
       onboardingMode = 'reset-password';
