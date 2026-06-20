@@ -1040,6 +1040,7 @@
   let pendingServiceWorker = null;
   let pwaUpdateAvailable = false;
   let onboardingMode = sessionStorage.getItem('domacnostPlus.onboardingMode') || 'choice';
+  let recoveryModeActive = false; // true only during current page load after recovery link click
   const ONBOARDING_GOOGLE_INTENT_KEY = 'domacnostPlus.googleAuthIntent';
   let cloudWarmStartDone = false;
   let cloudRealtimeChannel = null;
@@ -2274,7 +2275,7 @@
   }
 
   function shouldShowStartChoice() {
-    if (onboardingMode === 'reset-password') return true;
+    if (recoveryModeActive && onboardingMode === 'reset-password') return true;
     if (isDemoOnlyState()) return !demoRuntimeActive;
     if (!hasUsableAppSession()) {
       if (state.cloud?.status === 'email-confirmation') onboardingMode = 'account';
@@ -13578,6 +13579,14 @@
         detectSessionInUrl: false
       }
     });
+    // When Supabase silently signs out (e.g. refresh token rejected after email change),
+    // re-render immediately so the login page shows instead of the app being stuck in
+    // a broken half-authenticated state until the next user interaction.
+    supabaseClientInstance.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        render();
+      }
+    });
     return supabaseClientInstance;
   }
 
@@ -13604,7 +13613,7 @@
     localStorage.removeItem('domacnostPlus.moduleTabs');
     sessionStorage.removeItem(DEMO_SESSION_KEY);
     sessionStorage.removeItem(ONBOARDING_GOOGLE_INTENT_KEY);
-    sessionStorage.setItem('domacnostPlus.onboardingMode', 'choice');
+    sessionStorage.removeItem('domacnostPlus.onboardingMode');
     state = migrateState(mergeState(DEFAULT_STATE, {}));
     runtimeStateRef = state;
     state.settings = { ...(state.settings || {}), ...visualSettings };
@@ -13612,6 +13621,7 @@
     state.profiles = [];
     state.activeProfileId = '';
     state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, provider: 'supabase', status: 'offline', userId: '', email: '', householdId: '', households: [], invitations: [] };
+    recoveryModeActive = false;
     onboardingMode = 'choice';
     demoRuntimeActive = false;
     activeModule = 'home';
@@ -22379,9 +22389,13 @@
     } else {
       showToast('Heslo nastaveno. Přihlas se e-mailem a heslem.');
     }
+    // End the one-time recovery session so the user must log in with email+password.
+    // This prevents the recovery token from being reused or silently expiring mid-session.
+    recoveryModeActive = false;
     onboardingMode = 'account';
-    sessionStorage.setItem('domacnostPlus.onboardingMode', 'account');
+    sessionStorage.removeItem('domacnostPlus.onboardingMode');
     clearAuthReturnUrl(true);
+    await client.auth.signOut().catch(() => {});
     render();
   }
 
@@ -22747,8 +22761,9 @@
           if (sErr) console.warn('Recovery setSession failed', sErr);
         }
       }
+      recoveryModeActive = true;
       onboardingMode = 'reset-password';
-      sessionStorage.setItem('domacnostPlus.onboardingMode', 'reset-password');
+      sessionStorage.removeItem('domacnostPlus.onboardingMode');
       clearAuthReturnUrl(true);
       render();
       return;
