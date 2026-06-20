@@ -22259,6 +22259,7 @@
     });
 
     navigator.serviceWorker.addEventListener('controllerchange', () => {
+      alert('SW UPDATE RELOAD');
       window.location.reload();
     });
   }
