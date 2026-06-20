@@ -22727,22 +22727,21 @@
     if (!isAuthReturnUrl()) return;
     const search = new URLSearchParams(window.location.search || '');
     if (search.get('type') === 'recovery') {
-      // Password reset link clicked — establish session then show set-password form.
-      // Supabase v2 uses token_hash in query string; older versions use #access_token in hash.
+      alert('RECOVERY URL:\nsearch=' + window.location.search.slice(0, 100) + '\nhash=' + (window.location.hash || '').slice(0, 80));
       const client = getSupabaseClient();
       if (client) {
         const tokenHash = search.get('token_hash');
         if (tokenHash) {
-          // New Supabase format: verify OTP with token_hash
           const { error: otpErr } = await client.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash }).catch((e) => ({ error: e }));
-          if (otpErr) console.warn('Recovery verifyOtp failed', otpErr);
+          alert('verifyOtp: ' + (otpErr ? (otpErr.message || JSON.stringify(otpErr)) : 'OK'));
         } else {
-          // Older format: tokens in URL hash
           const recoveryHash = new URLSearchParams((window.location.hash || '').slice(1));
           const accessToken = recoveryHash.get('access_token');
           const refreshToken = recoveryHash.get('refresh_token');
+          alert('no token_hash. accessToken=' + (accessToken ? accessToken.slice(0,20)+'…' : 'NULL'));
           if (accessToken) {
-            await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' }).catch(() => {});
+            const { error: sErr } = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' }).catch((e) => ({ error: e }));
+            alert('setSession: ' + (sErr ? (sErr.message || JSON.stringify(sErr)) : 'OK'));
           }
         }
       }
