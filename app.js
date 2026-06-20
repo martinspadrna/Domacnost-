@@ -22532,14 +22532,13 @@
   async function handleGoogleAuthReturn() {
     await new Promise((resolve) => window.setTimeout(resolve, 650));
     const code = new URLSearchParams(window.location.search || '').get('code');
+    alert('DEBUG login: code=' + (code ? code.slice(0,15)+'…' : 'NULL') + ' url=' + window.location.search.slice(0,60));
     if (code) {
       const client = getSupabaseClient();
       if (client) {
-        const { error: exchangeError } = await client.auth.exchangeCodeForSession(code).catch((e) => ({ error: e }));
-        if (exchangeError) {
-          console.warn('OAuth code exchange failed', exchangeError);
-          alert('Exchange error: ' + (exchangeError?.message || exchangeError?.name || JSON.stringify(exchangeError)));
-        }
+        const { data: exData, error: exchangeError } = await client.auth.exchangeCodeForSession(code).catch((e) => ({ error: e }));
+        alert('Exchange: error=' + (exchangeError ? (exchangeError.message || exchangeError.status || JSON.stringify(exchangeError)) : 'none') + ' session=' + (exData?.session ? 'YES' : 'NO'));
+        if (exchangeError) console.warn('OAuth code exchange failed', exchangeError);
       }
     }
     const user = await refreshCloudSession(false);
