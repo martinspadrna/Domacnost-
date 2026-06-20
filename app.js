@@ -13546,7 +13546,7 @@
         storageKey: SUPABASE_STORAGE_KEY,
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: false
       }
     });
     return supabaseClientInstance;
@@ -22635,7 +22635,10 @@
     if (!isAuthReturnUrl()) return;
     const search = new URLSearchParams(window.location.search || '');
     if (search.get('auth') === 'google' || (search.has('code') && search.has('state'))) {
-      await handleGoogleAuthReturn();
+      const isGenuineOAuthReturn = sessionStorage.getItem(ONBOARDING_GOOGLE_INTENT_KEY) !== null;
+      if (isGenuineOAuthReturn) {
+        await handleGoogleAuthReturn();
+      }
       clearAuthReturnUrl(true);
       return;
     }
