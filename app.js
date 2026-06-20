@@ -3262,6 +3262,27 @@
       return;
     }
 
+    if (onboardingMode === 'reset-password') {
+      app.innerHTML = `
+        <div class="onboarding-screen">
+          <section class="onboarding-card compact-auth-card">
+            <div class="onboarding-hero compact-auth-hero">
+              <div class="brand-mark big logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
+              <div><h1>Nové heslo</h1></div>
+            </div>
+            <section class="card flat">
+              <div class="card-header"><div><h2>Nastav nové heslo</h2></div></div>
+              <form data-form="onboarding-set-new-password" class="stack-form">
+                ${field('Nové heslo', 'password', 'password', 'min. 6 znaků', true)}
+                <div class="form-actions"><button class="primary-btn" type="submit">Uložit heslo</button></div>
+              </form>
+            </section>
+          </section>
+        </div>
+        <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
+      `;
+      return;
+    }
     if (onboardingMode === 'register' || onboardingMode === 'google-setup') {
       const isGoogleSetup = onboardingMode === 'google-setup';
       const email = state.cloud?.email || '';
@@ -3334,6 +3355,11 @@
                 ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
                 ${field('Heslo', 'password', 'password', 'heslo', true)}
                 <div class="form-actions"><button class="primary-btn" type="submit">Přihlásit e-mailem</button></div>
+              </form>
+              <form data-form="onboarding-forgot-password" class="stack-form" style="margin-top:0.75rem;border-top:1px solid var(--border);padding-top:0.75rem">
+                <div class="small-muted" style="margin-bottom:0.4rem">Zapomenuté heslo / Google účet</div>
+                ${field('E-mail', 'email', 'email', 'email@domena.cz', true)}
+                <div class="form-actions"><button class="ghost-btn" type="submit">Odeslat odkaz pro reset</button></div>
               </form>
             </section>
 
@@ -18708,6 +18734,8 @@
       onboarding: () => completeOnboarding(data),
       'onboarding-google-setup': () => completeGoogleOnboardingSetup(data),
       'onboarding-login': () => loginExistingHouseholdFromOnboarding(data),
+      'onboarding-forgot-password': () => cloudForgotPassword(data.email),
+      'onboarding-set-new-password': () => cloudSetNewPassword(data.password),
       'household-settings': async () => {
         state.household.name = normalizeText(data.householdName) || 'Domácnost';
         touchState();
@@ -22315,6 +22343,32 @@
     return user;
   }
 
+  async function cloudForgotPassword(email) {
+    const normalEmail = normalizeText(email || '').toLowerCase();
+    if (!normalEmail) return showToast('Vyplň e-mail');
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const { error } = await client.auth.resetPasswordForEmail(normalEmail, {
+      redirectTo: `${APP_PUBLIC_URL}?type=recovery`
+    });
+    if (error) return showToast(error.message || 'Odeslání se nepovedlo');
+    showToast('Odkaz pro reset hesla odeslán na ' + normalEmail);
+  }
+
+  async function cloudSetNewPassword(password) {
+    const pwd = String(password || '');
+    if (pwd.length < 6) return showToast('Heslo musí mít alespoň 6 znaků');
+    const client = getSupabaseClient();
+    if (!client) return showToast('Supabase knihovna není načtená');
+    const { error } = await client.auth.updateUser({ password: pwd });
+    if (error) return showToast(error.message || 'Nastavení hesla se nepovedlo');
+    showToast('Heslo nastaveno. Nyní se přihlas e-mailem a heslem.');
+    onboardingMode = 'account';
+    sessionStorage.setItem('domacnostPlus.onboardingMode', 'account');
+    clearAuthReturnUrl(true);
+    render();
+  }
+
   async function cloudLogin(email, password) {
     const client = getSupabaseClient();
     if (!client) return showToast('Supabase knihovna není načtená');
@@ -22616,6 +22670,7 @@
     if (search.get('auth') === 'google') return true;
     if (search.has('code') && search.has('state')) return true;
     if (search.get('type') === 'signup') return true;
+    if (search.get('type') === 'recovery') return true;
     const hash = window.location.hash || '';
     return hash.includes('access_token=') || hash.includes('refresh_token=') || hash.includes('type=signup');
   }
@@ -22658,6 +22713,23 @@
     }
     if (!isAuthReturnUrl()) return;
     const search = new URLSearchParams(window.location.search || '');
+    if (search.get('type') === 'recovery') {
+      // Password reset link clicked — set session from hash tokens and show set-password form
+      const recoveryHash = new URLSearchParams((window.location.hash || '').slice(1));
+      const accessToken = recoveryHash.get('access_token');
+      const refreshToken = recoveryHash.get('refresh_token');
+      if (accessToken) {
+        const client = getSupabaseClient();
+        if (client) {
+          await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' }).catch(() => {});
+        }
+      }
+      onboardingMode = 'reset-password';
+      sessionStorage.setItem('domacnostPlus.onboardingMode', 'reset-password');
+      clearAuthReturnUrl(true);
+      render();
+      return;
+    }
     if (search.get('auth') === 'google' || (search.has('code') && search.has('state'))) {
       // sessionStorage is cleared on iOS PWA when returning from OAuth redirect.
       // Also support implicit flow where tokens come in URL hash (#access_token=...).
