@@ -22532,7 +22532,8 @@
   async function handleGoogleAuthReturn() {
     await new Promise((resolve) => window.setTimeout(resolve, 650));
     const code = new URLSearchParams(window.location.search || '').get('code');
-    alert('DEBUG login: code=' + (code ? code.slice(0,15)+'…' : 'NULL') + ' url=' + window.location.search.slice(0,60));
+    const _hash = window.location.hash || '';
+    alert('DEBUG login: code=' + (code ? code.slice(0,15)+'…' : 'NULL') + ' search=' + window.location.search.slice(0,50) + ' hash=' + _hash.slice(0,60));
     if (code) {
       const client = getSupabaseClient();
       if (client) {
