@@ -22267,6 +22267,7 @@
       if (showMessage) showToast('Supabase knihovna není načtená');
       return null;
     }
+    const hadStoredSession = hasStoredSupabaseSession();
     let session, sessionError;
     try {
       const result = await client.auth.getSession();
@@ -22281,10 +22282,10 @@
     }
     if (sessionError || !session?.user) {
       const isNetworkError = sessionError && (!sessionError.status || sessionError.status < 400 || sessionError.status >= 500);
-      if (!isNetworkError && !hasStoredSupabaseSession()) {
+      if (showMessage && !isNetworkError && !hadStoredSession) {
         resetSignedOutAppState();
         saveState();
-        if (showMessage) showToast('Nejsi přihlášený');
+        showToast('Nejsi přihlášený');
         render();
       }
       return null;
