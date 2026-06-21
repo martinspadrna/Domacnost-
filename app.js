@@ -707,7 +707,7 @@
     },
     settings: {
       theme: 'light',
-      iconTheme: 'ios',
+      iconTheme: 'sticker-ui',
       colorScheme: 'sky',
       dashboardNote: 'Domácí přehled je připravený na cloud. Každý si nastaví vlastní domácnost, profily a zapnuté moduly.',
       cloudEnabled: false,
@@ -18766,6 +18766,53 @@
   }
 
 
+
+  async function registerCloudHouseholdFromOnboarding(email, password) {
+    const client = getSupabaseClient();
+    if (!client) return 'local-only';
+    const { data, error } = await client.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: getAuthRedirectUrl(),
+        data: {
+          app_name: 'Domácnost+',
+          household_name: householdName(),
+          owner_profile_name: currentProfile()?.name || ''
+        }
+      }
+    });
+    if (error) {
+      if (isExistingAccountSignUpResponse(data, error)) return 'existing-account';
+      showToast(error.message || 'Registrace se nepovedla');
+      return 'local-only';
+    }
+    if (isExistingAccountSignUpResponse(data, null)) return 'existing-account';
+    const user = data?.user;
+    if (!data?.session || !user) {
+      state.cloud = {
+        ...(state.cloud || {}),
+        supabaseUrl: SUPABASE_URL,
+        provider: 'supabase',
+        status: 'email-confirmation',
+        userId: user?.id || '',
+        email
+      };
+      saveState();
+      return 'email-confirmation';
+    }
+    state.cloud = {
+      ...(state.cloud || {}),
+      supabaseUrl: SUPABASE_URL,
+      provider: 'supabase',
+      status: 'signed-in',
+      userId: user.id,
+      email: user.email || email
+    };
+    saveState();
+    await bootstrapCloudHousehold(false);
+    return state.cloud?.householdId ? 'bootstrapped' : 'signed-in';
+  }
 
   async function loginExistingHouseholdFromOnboarding(data) {
     const email = normalizeText(data.email).toLowerCase();
