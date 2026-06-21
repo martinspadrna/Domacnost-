@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   'use strict';
 
   try {
@@ -503,7 +503,7 @@
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_v7jeuZC-MNUEO5nfE5xcUQ_Pu9pT-X_';
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
   const APP_PUBLIC_URL = 'https://domacnost-plus.vercel.app/';
-  const DEMO_SESSION_KEY = 'domacnostPlus.demoStartedThisSession';
+
   const BRAND_ICON_SRC = './icons/domacnost-plus-icon-180.png';
 
   const MANAGED_MODULE_IDS = MODULES
@@ -967,14 +967,14 @@
   runtimeStateRef = state;
   mergeVisualSettings({ ...readLocalVisualSettings(), ...(state.settings || {}) });
   applyVisualSettings();
-  let demoRuntimeActive = false;
+
   let activeModule = 'home';
   let activeOverview = null;
   let pendingNavMotion = null;
   let lastRenderedBottomNavId = 'home';
   let navRunnerCurrentBottomId = 'home';
   let polishShopAutoRefreshInFlight = false;
-  let moduleTabs = isStoredDemoState(state) ? {} : (safeParse(localStorage.getItem('domacnostPlus.moduleTabs'), {}) || {});
+  let moduleTabs = safeParse(localStorage.getItem('domacnostPlus.moduleTabs'), {}) || {};
   let garageVehicleId = null;
   let garageHistoryYearFilter = 'all';
   let garageHistoryTypeFilter = 'all';
@@ -1041,7 +1041,7 @@
   let pwaUpdateAvailable = false;
   let onboardingMode = sessionStorage.getItem('domacnostPlus.onboardingMode') || 'choice';
   let recoveryModeActive = false; // true only during current page load after recovery link click
-  const ONBOARDING_GOOGLE_INTENT_KEY = 'domacnostPlus.googleAuthIntent';
+
   let cloudWarmStartDone = false;
   let cloudRealtimeChannel = null;
   let cloudRealtimeHouseholdId = '';
@@ -1406,7 +1406,7 @@
   }
 
   function schedulePolishShopHolidaysAutoRefresh() {
-    if (polishShopAutoRefreshInFlight || !navigator.onLine || isDemoOnlyState()) return;
+    if (polishShopAutoRefreshInFlight || !navigator.onLine) return;
     if (!shouldAutoRefreshPolishShopHolidays()) return;
     polishShopAutoRefreshInFlight = true;
     runWhenUiQuiet(() => {
@@ -2193,7 +2193,6 @@
   }
 
   function writeStateSnapshotNow() {
-    if (isDemoOnlyState()) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       lastStatePersistAt = Date.now();
@@ -2204,7 +2203,6 @@
   }
 
   function persistStateSnapshot(options = {}) {
-    if (isDemoOnlyState()) return;
     statePersistDirty = true;
     const immediate = options.immediate === true;
     if (pendingStatePersistTimer) {
@@ -2250,7 +2248,6 @@
   function saveState(options = {}) {
     // Demo je jen dočasný sandbox. Nikdy ho neukládáme do localStorage,
     // aby se všem při každém spuštění ukázala stejná plná demo domácnost.
-    if (isDemoOnlyState()) return;
     if (state?.meta) state.meta.updatedAt = new Date().toISOString();
     persistStateSnapshot({ immediate: options.immediate === true });
     scheduleCloudAutosync('save');
@@ -2270,16 +2267,11 @@
     return result;
   }
 
-  function isDemoOnlyState() {
-    return Boolean(state?.settings?.demoMode || state?.cloud?.provider === 'demo' || state?.cloud?.status === 'demo');
-  }
-
   function shouldShowStartChoice() {
     if (recoveryModeActive && onboardingMode === 'reset-password') return true;
-    if (isDemoOnlyState()) return !demoRuntimeActive;
     if (!hasUsableAppSession()) {
       if (state.cloud?.status === 'email-confirmation') onboardingMode = 'account';
-      else if (onboardingMode !== 'google-setup') onboardingMode = sessionStorage.getItem('domacnostPlus.onboardingMode') || 'choice';
+      else onboardingMode = sessionStorage.getItem('domacnostPlus.onboardingMode') || 'choice';
       return true;
     }
     if (!state.household?.isConfigured) return true;
@@ -2341,7 +2333,7 @@
   }
 
   function scheduleBootCloudWarmStart() {
-    if (cloudWarmStartTimer || isDemoOnlyState()) return;
+    if (cloudWarmStartTimer) return;
     cloudWarmStartTimer = runWhenMainThreadFree(() => {
       cloudWarmStartTimer = null;
       cloudWarmStartLoad(false).catch((error) => console.warn('Cloud warm start failed', error));
@@ -2349,7 +2341,7 @@
   }
 
   function scheduleBootCloudMaintenance() {
-    if (bootCloudMaintenanceTimer || !cloudReady() || isDemoOnlyState()) return;
+    if (bootCloudMaintenanceTimer || !cloudReady()) return;
     bootCloudMaintenanceTimer = runWhenUiQuiet(() => {
       bootCloudMaintenanceTimer = null;
       scheduleCloudAutosync('boot-idle');
@@ -2357,7 +2349,7 @@
   }
 
   function scheduleBootBackgroundCloudLoad() {
-    if (bootBackgroundCloudLoadTimer || !cloudReady() || isDemoOnlyState()) return;
+    if (bootBackgroundCloudLoadTimer || !cloudReady()) return;
     bootBackgroundCloudLoadTimer = runWhenUiQuiet(() => {
       bootBackgroundCloudLoadTimer = null;
       cloudBackgroundLoadAllModules(false).catch((error) => console.warn('Background cloud load failed', error));
@@ -2366,7 +2358,7 @@
 
   function scheduleLazyCloudLoadForModule(moduleId, options = {}) {
     const id = String(moduleId || '');
-    if (!id || id === 'home' || id === MORE_MODULE.id || !cloudReady() || isDemoOnlyState()) return;
+    if (!id || id === 'home' || id === MORE_MODULE.id || !cloudReady()) return;
     if (lazyModuleCloudLoads.get(id) === 'loaded' || lazyModuleCloudLoads.get(id) === 'loading') return;
     lazyModuleCloudLoads.set(id, 'loading');
     runWhenUiQuiet(async () => {
@@ -2414,7 +2406,7 @@
         const visibleModules = getVisibleModules();
         const selectableModules = [...visibleModules, MORE_MODULE];
         if (!selectableModules.some((module) => module.id === activeModule)) activeModule = 'home';
-        if (!isDemoOnlyState()) localStorage.setItem('homeWeb.activeModule', activeModule);
+      localStorage.setItem('homeWeb.activeModule', activeModule);
 
         const active = selectableModules.find((module) => module.id === activeModule) || visibleModules[0];
         const bottomNavModules = getBottomNavModules();
@@ -2486,7 +2478,7 @@
   }
 
   function renderDemoReadOnlyBanner() {
-    if (!isDemoOnlyState()) return '';
+    return '';
     return `
       <section class="card demo-readonly-banner desktop-span-2">
         <div class="item-top">
@@ -2623,7 +2615,7 @@
       shoppingSwipeStart = null;
       document.body.classList.remove('overview-open');
     }
-    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
     render();
     keepActiveSectionTabsCentered('smooth');
   }
@@ -3260,10 +3252,8 @@
       `;
       return;
     }
-    if (onboardingMode === 'register' || onboardingMode === 'google-setup') {
-      const isGoogleSetup = onboardingMode === 'google-setup';
-      const email = state.cloud?.email || '';
-      const profileName = currentProfile()?.name || (email ? email.split('@')[0] : 'Já');
+    if (onboardingMode === 'register') {
+      const profileName = currentProfile()?.name || 'Já';
       app.innerHTML = `
         <div class="onboarding-screen">
           <section class="onboarding-card compact-auth-card">
@@ -3278,15 +3268,13 @@
             ${renderEmailConfirmationCard()}
 
             <section class="card flat">
-              <form data-form="${isGoogleSetup ? 'onboarding-google-setup' : 'onboarding'}" class="stack-form">
+              <form data-form="onboarding" class="stack-form">
                 ${field('Název domácnosti', 'householdName', 'text', 'Doma / Rodina / Byt', true)}
-                ${isGoogleSetup ? `<input type="hidden" name="email" value="${escapeHtml(email)}">` : field('E-mail vlastníka', 'email', 'email', 'email@domena.cz', true)}
-                ${isGoogleSetup ? '' : `
-                  <div class="form-grid two">
+                ${field('E-mail vlastníka', 'email', 'email', 'email@domena.cz', true)}
+                <div class="form-grid two">
                     ${field('Heslo', 'password', 'password', 'min. 6 znaků', true)}
                     ${field('Heslo znovu', 'passwordConfirm', 'password', 'pro kontrolu', true)}
                   </div>
-                `}
                 <div class="form-grid two">
                   ${field('Hlavní profil', 'profilePrimary', 'text', profileName, true)}
                   ${field('Druhý profil', 'profileSecondary', 'text', 'Manželka')}
@@ -3353,20 +3341,6 @@
 
 
 
-  function renderOAuthButtons() {
-    return `
-      <div class="oauth-block">
-        <div class="oauth-divider"><span>nebo rychleji</span></div>
-        <div class="oauth-actions single">
-          <button class="oauth-btn google-oauth-btn" type="button" data-action="cloud-oauth-google">
-            <span aria-hidden="true">G</span>
-            <strong>Pokračovat přes Google</strong>
-          </button>
-        </div>
-        <div class="small-muted oauth-note">Google přihlášení slouží jen pro účet. Kalendář se připojuje samostatně v nastavení zdrojů.</div>
-      </div>
-    `;
-  }
 
 
   function renderEmailConfirmationCard() {
@@ -4596,7 +4570,6 @@
 
   let weatherFetchPromise = null;
   async function ensureWeatherFresh(force = false) {
-    if (isDemoOnlyState()) return;
     state.weather = normalizeWeatherState(state.weather);
     const updatedAt = Date.parse(state.weather.updatedAt || '');
     if (!force && state.weather.current && updatedAt && Date.now() - updatedAt < WEATHER_CACHE_MS) return;
@@ -4975,7 +4948,6 @@
     ].slice(0, 9);
 
     if (!rows.length) {
-      if (isDemoOnlyState()) return renderEmpty('Zatím tu není nic důležitého. Jakmile přidáš kalendář, smlouvy, úkoly nebo auto, dashboard se začne plnit sám.');
       const progress = getStarterSetupProgress();
       const nextStep = progress.nextStep || { nav: 'calendar', tab: 'add' };
       return renderEmptyCta({
@@ -5040,7 +5012,6 @@
   }
 
   function renderSetupChecklist() {
-    if (isDemoOnlyState()) return '';
     const progress = getStarterSetupProgress();
     const steps = progress.orderedSteps;
     return `
@@ -9348,7 +9319,7 @@
     const exists = readingGroups().find((group) => normalizeKey(group.name) === normalizeKey(name));
     if (exists) {
       readingsMeterToolPage = 'prices';
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
+      localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
       showToast('Skupina už existuje');
       render();
       return;
@@ -9357,7 +9328,7 @@
     state.readingGroups = [...readingGroups(), normalizeReadingGroup({ id: `reading-group-${uid()}`, name, createdAt: now, updatedAt: now })];
     form?.reset?.();
     readingsMeterToolPage = 'prices';
-    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
+      localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
     await persistReadingsState('Skupina přidaná');
   }
 
@@ -9374,7 +9345,7 @@
     state.readingGroups = groups.filter((item) => item.id !== cleanId);
     state.readingMeters = readingsMeters(true).map((meter) => meter.groupId === cleanId ? { ...meter, groupId: DEFAULT_READING_GROUP_ID, updatedAt } : meter);
     readingsMeterToolPage = 'prices';
-    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
+      localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
     await persistReadingsState('Skupina smazaná');
   }
 
@@ -9410,7 +9381,7 @@
     state.readingMeters = [...readingsMeters(true), meter];
     form?.reset?.();
     readingsMeterToolPage = '';
-    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
+      localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
     await persistReadingsState('Měřidlo přidané');
   }
 
@@ -9455,7 +9426,7 @@
     if (!updated.name) return showToast('Doplň název měřidla');
     state.readingMeters = readingsMeters(true).map((item) => item.id === original.id ? updated : item);
     readingsEditingMeterId = '';
-    if (!isDemoOnlyState()) localStorage.removeItem('domacnostPlus.readingsEditingMeterId');
+      localStorage.removeItem('domacnostPlus.readingsEditingMeterId');
     await persistReadingsState('Měřidlo uložené');
   }
 
@@ -9920,7 +9891,7 @@
       state.readingMeters = [...readingsMeters(true), ...result.meters];
       state.readings = [...readingsEntries(), ...result.entries];
       moduleTabs = { ...(moduleTabs || {}), readings: 'meters' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       if (fileInput) fileInput.value = '';
       await persistReadingsState(`Import hotový: ${result.meters.length} měřidel, ${result.entries.length} odečtů`);
     } catch (error) {
@@ -13564,8 +13535,6 @@
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('homeWeb.activeModule');
     localStorage.removeItem('domacnostPlus.moduleTabs');
-    sessionStorage.removeItem(DEMO_SESSION_KEY);
-    sessionStorage.removeItem(ONBOARDING_GOOGLE_INTENT_KEY);
     sessionStorage.removeItem('domacnostPlus.onboardingMode');
     state = migrateState(mergeState(DEFAULT_STATE, {}));
     runtimeStateRef = state;
@@ -13576,7 +13545,6 @@
     state.cloud = { ...(state.cloud || {}), supabaseUrl: SUPABASE_URL, provider: 'supabase', status: 'offline', userId: '', email: '', householdId: '', households: [], invitations: [] };
     recoveryModeActive = false;
     onboardingMode = 'choice';
-    demoRuntimeActive = false;
     activeModule = 'home';
     moduleTabs = {};
   }
@@ -13629,7 +13597,6 @@
     runtimeStateRef = state;
     state.household.isConfigured = false;
     state.cloud = { ...(state.cloud || {}), status: 'offline', userId: '', email: '', householdId: '' };
-    sessionStorage.removeItem(DEMO_SESSION_KEY);
     sessionStorage.setItem('domacnostPlus.onboardingMode', 'choice');
     onboardingMode = 'choice';
     activeModule = 'home';
@@ -13637,30 +13604,6 @@
     showToast('Účet byl smazán');
   }
 
-  async function cloudOAuthSignIn(provider = 'google', intent = 'login') {
-    const client = getSupabaseClient();
-    if (!client?.auth?.signInWithOAuth) return showToast('Supabase OAuth není dostupný');
-    if (provider !== 'google') return showToast('Teď je připravené jen Google přihlášení');
-    sessionStorage.setItem(ONBOARDING_GOOGLE_INTENT_KEY, intent === 'register' ? 'register' : 'login');
-    try {
-      const { data, error } = await client.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${APP_PUBLIC_URL}?auth=google`,
-          scopes: 'openid email profile https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.calendarlist.readonly',
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent'
-          }
-        }
-      });
-      if (error) return showToast(error.message || 'Google přihlášení se nepovedlo');
-      if (data?.url) window.location.href = data.url;
-    } catch (error) {
-      console.warn('Google OAuth sign-in failed', error);
-      showToast('Google přihlášení se nepovedlo spustit');
-    }
-  }
 
   function renderCloudHouseholdManager() {
     const households = Array.isArray(state.cloud?.households) ? state.cloud.households : [];
@@ -13992,7 +13935,6 @@
   }
 
   function isRealHouseholdStarterState() {
-    if (isDemoOnlyState()) return false;
     const counts = [
       state.calendar?.length || 0,
       state.packages?.length || 0,
@@ -15629,7 +15571,7 @@
   }
 
   function scheduleShoppingCloudRefresh(reason = 'auto', options = {}) {
-    if (!cloudReady() || isDemoOnlyState()) return;
+    if (!cloudReady()) return;
     if (activeModule !== 'shopping') return;
     if (document.hidden) return;
     const minAgeMs = Number(options.minAgeMs ?? 45000);
@@ -17027,10 +16969,10 @@
   }
 
   function scheduleGoogleCalendarAutoSync(reason = 'auto', options = {}) {
-    if (googleCalendarAutoSyncTimer || googleCalendarAutoSyncRunning || !cloudReady() || isDemoOnlyState()) return;
+    if (googleCalendarAutoSyncTimer || googleCalendarAutoSyncRunning || !cloudReady()) return;
     googleCalendarAutoSyncTimer = runWhenUiQuiet(async () => {
       googleCalendarAutoSyncTimer = null;
-      if (googleCalendarAutoSyncRunning || !cloudReady() || isDemoOnlyState()) return;
+      if (googleCalendarAutoSyncRunning || !cloudReady()) return;
       googleCalendarAutoSyncRunning = true;
       try {
         let sources = getCalendarSources();
@@ -18637,7 +18579,7 @@
         garageCalcVehicleId = data.vehicleId || garageCalcVehicleId;
         garageTripCalcResult = { vehicleId: garageCalcVehicleId, distance, consumption, fuelPrice, liters, total: liters * fuelPrice };
         moduleTabs = { ...(moduleTabs || {}), garage: 'calculator' };
-        if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+        localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
         render();
       },
       'add-fuel': async () => {
@@ -18698,7 +18640,7 @@
       'add-contract-file': () => addContractFiles(form),
       'fuelio-preview': () => previewFuelioImport(form),
       onboarding: () => completeOnboarding(data),
-      'onboarding-google-setup': () => completeGoogleOnboardingSetup(data),
+
       'onboarding-login': () => loginExistingHouseholdFromOnboarding(data),
       'onboarding-forgot-password': () => cloudForgotPassword(data.email),
       'onboarding-set-new-password': () => cloudSetNewPassword(data.password, data.newEmail),
@@ -18805,10 +18747,8 @@
     state.activeProfileId = state.profiles[0]?.id || '';
     state.enabledModules = normalizeModuleList(data.modules);
     state.settings.dashboardNote = DEFAULT_STATE.settings.dashboardNote;
-    state.settings.demoMode = false;
     state.settings.bottomNavIds = normalizeBottomNavIds(DEFAULT_BOTTOM_NAV_IDS, state.enabledModules);
     activeModule = 'home';
-    sessionStorage.removeItem(DEMO_SESSION_KEY);
     touchState();
     saveState();
 
@@ -18826,110 +18766,6 @@
   }
 
 
-  async function completeGoogleOnboardingSetup(data) {
-    const user = await refreshCloudSession(false);
-    if (!user) return showToast('Google účet není přihlášený. Spusť registraci přes Google znovu.');
-
-    const householdId = `household-${uid()}`;
-    const extraNames = normalizeText(data.profilesExtra)
-      .split(',')
-      .map((name) => normalizeText(name))
-      .filter(Boolean);
-    const names = [data.profilePrimary, data.profileSecondary]
-      .map(normalizeText)
-      .filter(Boolean)
-      .concat(extraNames);
-    const uniqueNames = [...new Set(names.length ? names : [googleDisplayNameFromUser(user)])];
-
-    state.household = {
-      id: householdId,
-      name: normalizeText(data.householdName) || 'Moje domácnost',
-      isConfigured: true,
-      createdAt: new Date().toISOString()
-    };
-    state.profiles = uniqueNames.map((name, index) => createProfile(name, index === 0 ? 'owner' : 'member', householdId));
-    state.activeProfileId = state.profiles[0]?.id || '';
-    state.enabledModules = normalizeModuleList(data.modules);
-    state.settings.dashboardNote = DEFAULT_STATE.settings.dashboardNote;
-    state.settings.demoMode = false;
-    state.settings.bottomNavIds = normalizeBottomNavIds(DEFAULT_BOTTOM_NAV_IDS, state.enabledModules);
-    state.cloud = {
-      ...(state.cloud || {}),
-      supabaseUrl: SUPABASE_URL,
-      provider: 'supabase',
-      status: 'signed-in',
-      userId: user.id,
-      email: user.email || state.cloud?.email || ''
-    };
-    activeModule = 'home';
-    sessionStorage.removeItem(DEMO_SESSION_KEY);
-    sessionStorage.removeItem(ONBOARDING_GOOGLE_INTENT_KEY);
-    touchState();
-    saveState();
-
-    const createdHouseholdId = await bootstrapCloudHousehold(false);
-    if (createdHouseholdId) {
-      await cloudLoadAllModules(false, { skipRealtimeSetup: true, silentWhenOffline: true });
-      onboardingMode = 'choice';
-      sessionStorage.removeItem('domacnostPlus.onboardingMode');
-      render();
-      showToast('Google účet a domácnost jsou připravené');
-      return;
-    }
-    render();
-    showToast('Domácnost je nastavená lokálně, cloud napojení půjde opravit v nastavení');
-  }
-
-  async function registerCloudHouseholdFromOnboarding(email, password) {
-    const client = getSupabaseClient();
-    if (!client) return 'local-only';
-    const { data, error } = await client.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: getAuthRedirectUrl(),
-        data: {
-          app_name: 'Domácnost+',
-          household_name: householdName(),
-          owner_profile_name: currentProfile()?.name || ''
-        }
-      }
-    });
-    if (error) {
-      if (isExistingAccountSignUpResponse(data, error)) return 'existing-account';
-      showToast(error.message || 'Registrace se nepovedla');
-      return 'local-only';
-    }
-    if (isExistingAccountSignUpResponse(data, null)) return 'existing-account';
-    const user = data?.user;
-    if (isDemoOnlyState()) {
-      getCollectionNames().forEach((collection) => { state[collection] = []; });
-    }
-    if (!data?.session || !user) {
-      state.cloud = {
-        ...(state.cloud || {}),
-        supabaseUrl: SUPABASE_URL,
-        provider: 'supabase',
-        status: 'email-confirmation',
-        userId: user?.id || '',
-        email
-      };
-      saveState();
-      return 'email-confirmation';
-    }
-    state.settings.demoMode = false;
-    state.cloud = {
-      ...(state.cloud || {}),
-      supabaseUrl: SUPABASE_URL,
-      provider: 'supabase',
-      status: 'signed-in',
-      userId: user.id,
-      email: user.email || email
-    };
-    saveState();
-    await bootstrapCloudHousehold(false);
-    return state.cloud?.householdId ? 'bootstrapped' : 'signed-in';
-  }
 
   async function loginExistingHouseholdFromOnboarding(data) {
     const email = normalizeText(data.email).toLowerCase();
@@ -18943,10 +18779,6 @@
     const { data: authData, error } = await client.auth.signInWithPassword({ email, password });
     if (error) return showToast(error.message || 'Přihlášení se nepovedlo');
     const user = authData?.user;
-    if (isDemoOnlyState()) {
-      getCollectionNames().forEach((collection) => { state[collection] = []; });
-    }
-    state.settings.demoMode = false;
     state.cloud = {
       ...(state.cloud || {}),
       supabaseUrl: SUPABASE_URL,
@@ -18974,7 +18806,6 @@
     await cloudLoadAllModules(false);
     onboardingMode = 'choice';
     sessionStorage.removeItem('domacnostPlus.onboardingMode');
-    sessionStorage.removeItem(DEMO_SESSION_KEY);
     activeModule = 'home';
     touchState();
     saveState();
@@ -18982,268 +18813,6 @@
     showToast('Domácnost načtena');
   }
 
-  function startDemoHome() {
-    const demo = createDemoState();
-    state = migrateState(mergeState(DEFAULT_STATE, demo));
-    runtimeStateRef = state;
-    state.settings.demoMode = true;
-    state.cloud = {
-      ...(state.cloud || {}),
-      supabaseUrl: SUPABASE_URL,
-      provider: 'demo',
-      status: 'demo',
-      userId: '',
-      email: '',
-      householdId: '',
-      lastSyncAt: '',
-      households: [],
-      invitations: []
-    };
-    onboardingMode = 'choice';
-    demoRuntimeActive = true;
-    sessionStorage.removeItem('domacnostPlus.onboardingMode');
-    sessionStorage.setItem(DEMO_SESSION_KEY, '1');
-    activeModule = 'home';
-    moduleTabs = {};
-    touchState();
-    render();
-    showToast('Spuštěná demo domácnost · změny se neukládají');
-  }
-
-  function exitDemoHome() {
-    demoRuntimeActive = false;
-    onboardingMode = 'choice';
-    sessionStorage.removeItem(DEMO_SESSION_KEY);
-    sessionStorage.removeItem('domacnostPlus.onboardingMode');
-    localStorage.setItem('homeWeb.activeModule', 'home');
-    activeModule = 'home';
-    moduleTabs = {};
-    state = migrateState(mergeState(DEFAULT_STATE, {}));
-    runtimeStateRef = state;
-    applyVisualSettings();
-    render();
-    showToast('Demo ukončeno · můžeš se přihlásit nebo znovu spustit demo');
-  }
-
-  function createDemoState() {
-    const nowIso = new Date().toISOString();
-    const householdId = `demo-household-${uid()}`;
-    const petrId = `demo-profile-petr-${uid()}`;
-    const janaId = `demo-profile-jana-${uid()}`;
-    const elaId = `demo-profile-ela-${uid()}`;
-    const babickaId = `demo-profile-babicka-${uid()}`;
-    const carOctaviaId = `demo-car-octavia-${uid()}`;
-    const carCityId = `demo-car-city-${uid()}`;
-    const accountMain = `demo-account-main-${uid()}`;
-    const accountSavings = `demo-account-savings-${uid()}`;
-    const accountCash = `demo-account-cash-${uid()}`;
-    const accountHoliday = `demo-account-holiday-${uid()}`;
-    const accountGrandma = `demo-account-grandma-${uid()}`;
-    const accountGrandmaSavings = `demo-account-grandma-savings-${uid()}`;
-    const createdAt = '2024-02-12T08:30:00.000Z';
-    const addDays = (days) => {
-      const date = new Date();
-      date.setDate(date.getDate() + days);
-      return date.toISOString().slice(0, 10);
-    };
-    const daysFromNow = addDays;
-    const daysAgo = (days) => addDays(-days);
-    const isoAt = (days, hour = 9, minute = 0) => {
-      const date = new Date();
-      date.setDate(date.getDate() + days);
-      date.setHours(hour, minute, 0, 0);
-      return date.toISOString();
-    };
-    const make = (base) => ({ id: uid(), householdId, createdAt: isoAt(-Math.floor(Math.random() * 420), 8, 15), ...base });
-
-    const profiles = [
-      { id: petrId, householdId, name: 'Petr', color: 'blue', role: 'owner', createdAt },
-      { id: janaId, householdId, name: 'Jana', color: 'violet', role: 'admin', createdAt },
-      { id: elaId, householdId, name: 'Eliška', color: 'pink', role: 'member', createdAt: isoAt(-410) },
-      { id: babickaId, householdId, name: 'Babička', color: 'green', role: 'member', createdAt: isoAt(-360) }
-    ];
-
-    const calendar = [
-      make({ profileId: petrId, title: 'Dentální hygiena', date: daysFromNow(1), time: '09:30', endTime: '10:15', type: 'event', location: 'Ordinace', note: 'Vzít kartičku pojišťovny' }),
-      make({ profileId: janaId, title: 'Třídní schůzky', date: daysFromNow(3), time: '17:00', endTime: '18:00', type: 'family', location: 'Škola', note: 'Probrat školu v přírodě' }),
-      make({ profileId: petrId, title: 'Servis auta', date: daysFromNow(8), time: '08:00', endTime: '10:00', type: 'event', location: 'Autoservis', note: 'Oleje + filtry' }),
-      make({ profileId: janaId, title: 'Narozeniny mamky', date: daysFromNow(16), time: '15:00', type: 'family', location: 'U rodičů', note: 'Koupit kytku' }),
-      make({ profileId: petrId, title: 'Dovolená Beskydy', date: daysFromNow(42), time: '', type: 'holiday', location: 'Beskydy', note: 'Zarezervovaná chata' }),
-      make({ profileId: elaId, title: 'Kroužek keramika', date: daysFromNow(5), time: '16:00', endTime: '17:30', type: 'family', location: 'DDM', note: 'Zaplatit pololetí' }),
-      make({ profileId: babickaId, title: 'Kontrola u doktora', date: daysFromNow(11), time: '11:00', type: 'event', location: 'Poliklinika', note: 'Odvoz autem' })
-    ];
-    ['Kino', 'Výlet na hrad', 'Rodinný oběd', 'Kontrola komína', 'Revize kotle', 'Zubař Eliška', 'Návštěva', 'Platba pojistky', 'Školní besídka', 'Dovolená záloha', 'Veterina Rex', 'Servis kol'].forEach((title, index) => {
-      calendar.push(make({ profileId: index % 2 ? janaId : petrId, title, date: addDays(index * 6 - 70), time: index % 3 === 0 ? '09:00' : index % 3 === 1 ? '16:30' : '', type: index % 4 === 0 ? 'family' : 'event', location: index % 2 ? 'Město' : '', note: index % 2 ? 'Historická demo událost' : '' }));
-    });
-
-    const packages = [
-      make({ profileId: janaId, title: 'Boty z e-shopu', carrier: 'zasilkovna', tracking: 'Z1234567890', status: 'pickup', expectedDate: daysFromNow(0), pickupPlace: 'Z-BOX u obchodu', url: '', note: 'Vyzvednout dnes' }),
-      make({ profileId: petrId, title: 'Filtry do vysavače', carrier: 'ppl', tracking: 'PPL987654321', status: 'transit', expectedDate: daysFromNow(2), pickupPlace: '', url: '', note: 'Do garáže' }),
-      make({ profileId: janaId, title: 'Drogerie', carrier: 'balikovna', tracking: 'BVK452981736', status: 'new', expectedDate: daysFromNow(4), pickupPlace: 'Balíkovna Coop', url: '', note: 'Prací gel v akci' }),
-      make({ profileId: petrId, title: 'Náhradní filtr do auta', carrier: 'dpd', tracking: 'DPD778812450', status: 'delivered', expectedDate: daysAgo(7), pickupPlace: '', url: '', note: 'Doručeno minulý týden' }),
-      make({ profileId: janaId, title: 'Dárek pro Elišku', carrier: 'gls', tracking: 'GLS99881233', status: 'problem', expectedDate: daysFromNow(1), pickupPlace: '', url: '', note: 'Změna adresy' })
-    ];
-
-    const shoppingNames = [
-      ['Mléko', 2, 'l', 'Mléčné', false], ['Rohlíky', 12, 'ks', 'Pečivo', false], ['Banány', 1.5, 'kg', 'Ovoce a zelenina', false], ['Rajčata', 1, 'kg', 'Ovoce a zelenina', false], ['Kuřecí maso', 1.2, 'kg', 'Maso a uzeniny', false], ['Tablety do myčky', 1, 'bal', 'Drogerie', true], ['Toaletní papír', 1, 'bal', 'Drogerie', false], ['Granule Rex', 5, 'kg', 'Zvířata', false], ['Káva', 2, 'bal', 'Trvanlivé', true], ['Zelenina mražená', 3, 'bal', 'Mražené', true], ['Pytle na odpad', 1, 'role', 'Domácnost', false], ['Paralen', 1, 'bal', 'Lékárna', true]
-    ];
-    const shopping = shoppingNames.map(([name, quantity, unit, category, done], index) => make({ profileId: index % 2 ? janaId : petrId, name, quantity, unit, category, note: done ? 'Už koupeno v demo historii' : '', done, doneAt: done ? isoAt(-index, 18, 0) : '', createdAt: isoAt(-index * 2, 10, 0) }));
-    const shoppingStats = {};
-    ['Mléko','Rohlíky','Banány','Rajčata','Jogurt','Máslo','Tablety do myčky','Granule Rex','Káva','Toaletní papír','Kuřecí maso','Sýr plátkový'].forEach((name, index) => {
-      shoppingStats[normalizeKey(name)] = { name, unit: index % 3 === 0 ? 'ks' : index % 3 === 1 ? 'bal' : 'kg', category: index < 6 ? 'Potraviny' : 'Domácnost', count: 28 - index * 2, lastUsedAt: isoAt(-index, 12, 0) };
-    });
-
-    const hdoWindows = [
-      make({ profileId: petrId, start: '02:00', end: '06:00', days: [0,1,2,3,4,5,6], enabled: true, note: 'Noční nízký tarif' }),
-      make({ profileId: petrId, start: '13:00', end: '15:00', days: [1,2,3,4,5], enabled: true, note: 'Odpolední okno po–pá' }),
-      make({ profileId: petrId, start: '22:00', end: '23:30', days: [0,6], enabled: true, note: 'Víkendové dohřátí' })
-    ];
-
-    const waste = [
-      make({ profileId: petrId, type: 'Plast', date: daysFromNow(1), repeat: 'biweekly', notifyBeforeHours: 12, note: 'Večer vyvézt žlutou' }),
-      make({ profileId: petrId, type: 'Směsný odpad', date: daysFromNow(4), repeat: 'weekly', notifyBeforeHours: 12, note: '' }),
-      make({ profileId: janaId, type: 'Papír', date: daysFromNow(7), repeat: 'monthly', notifyBeforeHours: 24, note: 'Složit krabice v garáži' }),
-      make({ profileId: janaId, type: 'Bioodpad', date: daysFromNow(3), repeat: 'weekly', notifyBeforeHours: 8, note: 'Hnědá nádoba za bránou' }),
-      make({ profileId: petrId, type: 'Sklo', date: daysFromNow(18), repeat: 'monthly', notifyBeforeHours: 24, note: 'Odvézt tašku skla do kontejneru' })
-    ];
-
-    const homeTasks = [
-      make({ profileId: petrId, title: 'Vyměnit filtr digestoře', category: 'udrzba', priority: 'normal', due: daysFromNow(5), note: 'Filtr je ve skříni', done: false }),
-      make({ profileId: janaId, title: 'Objednat kadeřnici', category: 'ostatni', priority: 'low', due: daysFromNow(10), note: '', done: false }),
-      make({ profileId: petrId, title: 'Zaplatit zálohu dovolené', category: 'finance', priority: 'high', due: daysFromNow(2), note: 'Podklady v e-mailu', done: false }),
-      make({ profileId: janaId, title: 'Připravit věci na sběrný dvůr', category: 'domacnost', priority: 'normal', due: daysFromNow(9), note: 'Staré elektro + krabice', done: false }),
-      make({ profileId: petrId, title: 'Umýt auto', category: 'auto', priority: 'low', due: daysAgo(8), note: 'Hotovo minulý týden', done: true, doneAt: isoAt(-7, 18, 0) }),
-      make({ profileId: janaId, title: 'Vytřídit dětské oblečení', category: 'domacnost', priority: 'normal', due: daysAgo(20), note: 'Část šla na charitu', done: true, doneAt: isoAt(-18, 20, 0) })
-    ];
-    ['Zalít kytky', 'Objednat granule', 'Zkontrolovat pojistku auta', 'Vyčistit filtr sušičky', 'Záloha fotek na NAS', 'Vyměnit baterie v ovladači', 'Zkontrolovat lékárničku', 'Vyčistit odpad v koupelně'].forEach((title, index) => {
-      homeTasks.push(make({ profileId: index % 2 ? janaId : petrId, title, category: index % 3 === 0 ? 'udrzba' : index % 3 === 1 ? 'domacnost' : 'zdravi', priority: index % 5 === 0 ? 'high' : 'normal', due: addDays(index * 4 - 12), note: index % 2 ? 'Opakovaný demo úkol' : '', done: index < 3, doneAt: index < 3 ? isoAt(-index * 3, 19, 0) : '' }));
-    });
-
-    const warranties = [
-      make({ profileId: petrId, name: 'Pračka se sušičkou', store: 'Datart', category: 'Spotřebič', price: 14990, purchaseDate: daysAgo(220), warrantyUntil: addYearsIso(daysAgo(220), 2), status: 'active', note: 'Účtenka v e-mailu, řešit čištění filtru.' }),
-      make({ profileId: janaId, name: 'Telefon Jana', store: 'Alza', category: 'Elektronika', price: 11990, purchaseDate: daysAgo(540), warrantyUntil: addYearsIso(daysAgo(540), 3), status: 'active', note: 'Prodloužená záruka na 3 roky.' }),
-      make({ profileId: petrId, name: 'Robotický vysavač', store: 'Mall', category: 'Domácnost', price: 7990, purchaseDate: daysAgo(690), warrantyUntil: addYearsIso(daysAgo(690), 2), status: 'claim', note: 'Reklamace: hlučnější kartáč, číslo RMA-2026-042.' })
-    ];
-
-    const vehicles = [
-      make({ id: carOctaviaId, profileId: petrId, name: 'Škoda Octavia', brand: 'Škoda', model: 'Octavia', plate: '1AB 2345', fuelType: 'diesel', odometer: '184500', technicalInspectionUntil: daysFromNow(90), insuranceUntil: daysFromNow(45), nextServiceKm: '190000', nextServiceDate: daysFromNow(30), note: 'Rodinné auto' }),
-      make({ id: carCityId, profileId: janaId, name: 'Hyundai i20', brand: 'Hyundai', model: 'i20', plate: '2CD 9876', fuelType: 'gasoline', odometer: '76200', technicalInspectionUntil: daysFromNow(210), insuranceUntil: daysFromNow(160), nextServiceKm: '80000', nextServiceDate: daysFromNow(80), note: 'Městské auto' })
-    ];
-    const fuel = [];
-    for (let i = 0; i < 18; i += 1) {
-      const vehicleId = i % 3 === 0 ? carCityId : carOctaviaId;
-      const baseKm = vehicleId === carOctaviaId ? 176400 : 70500;
-      const liters = vehicleId === carOctaviaId ? 45 + (i % 5) * 1.7 : 32 + (i % 4) * 1.4;
-      fuel.push(make({ profileId: vehicleId === carOctaviaId ? petrId : janaId, vehicleId, date: daysAgo(20 + i * 18), odometer: String(baseKm + i * (vehicleId === carOctaviaId ? 460 : 310)), liters: Number(liters.toFixed(1)), price: Math.round(liters * (36 + (i % 4))), note: i % 4 === 0 ? 'Plná nádrž' : 'Běžné tankování' }));
-    }
-    const services = [
-      make({ profileId: petrId, vehicleId: carOctaviaId, date: daysAgo(60), title: 'Výměna oleje', price: 4200, note: 'Olej + filtry' }),
-      make({ profileId: petrId, vehicleId: carOctaviaId, date: daysAgo(190), title: 'Pneumatiky', price: 14800, note: 'Letní sada' }),
-      make({ profileId: janaId, vehicleId: carCityId, date: daysAgo(95), title: 'STK + emise', price: 2300, note: 'Bez závad' }),
-      make({ profileId: janaId, vehicleId: carCityId, date: daysAgo(35), title: 'Brzdy přední', price: 6200, note: 'Destičky + kotouče' })
-    ];
-
-    const contracts = [
-      make({ profileId: petrId, name: 'Pojištění auta Octavia', type: 'car_insurance', provider: 'Demo pojišťovna', number: 'AUTO-2026-001', validFrom: daysAgo(180), validTo: daysFromNow(45), amount: 8400, frequency: 'yearly', note: 'Navazuje na Garáž' }),
-      make({ profileId: janaId, name: 'Pojištění domácnosti', type: 'home_insurance', provider: 'Bezpečný domov', number: 'DOM-88421', validFrom: daysAgo(260), validTo: daysFromNow(70), amount: 3200, frequency: 'yearly', note: 'Hlídáno před výročím' }),
-      make({ profileId: petrId, name: 'Internet domácnost', type: 'internet', provider: 'DemoNet', number: 'NET-5544', validFrom: daysAgo(400), validTo: daysFromNow(120), amount: 599, frequency: 'monthly', note: 'Optika 1 Gb/s' }),
-      make({ profileId: petrId, name: 'Elektřina', type: 'electricity', provider: 'Energie Demo', number: 'EL-2025-77', validFrom: daysAgo(300), validTo: daysFromNow(22), amount: 3850, frequency: 'monthly', note: 'Brzy zkontrolovat ceník' }),
-      make({ profileId: janaId, name: 'Mobil Jana', type: 'mobile', provider: 'Operátor+', number: 'TEL-3312', validFrom: daysAgo(500), validTo: daysFromNow(300), amount: 649, frequency: 'monthly', note: '' }),
-      make({ profileId: petrId, name: 'Streamovací služba', type: 'subscription', provider: 'Stream Demo', number: 'SUB-908', validFrom: daysAgo(80), validTo: daysFromNow(285), amount: 239, frequency: 'monthly', note: 'Rodinný tarif' })
-    ];
-
-    const accountDefs = [
-      { id: accountMain, profileId: petrId, name: 'Domácí účet', accountType: 'bank', openingBalance: 24800, ownerLabel: 'Petr + Jana', note: 'Hlavní provoz domácnosti' },
-      { id: accountSavings, profileId: petrId, name: 'Rezerva / spoření', accountType: 'savings', openingBalance: 118000, ownerLabel: 'Domácnost', note: 'Peníze bokem' },
-      { id: accountCash, profileId: janaId, name: 'Hotovost doma', accountType: 'cash', openingBalance: 3600, ownerLabel: 'Domácnost', note: 'Obálka v šuplíku' },
-      { id: accountHoliday, profileId: janaId, name: 'Obálka dovolená', accountType: 'envelope', openingBalance: 18500, ownerLabel: 'Dovolená', note: 'Rezerva na léto' },
-      { id: accountGrandma, profileId: babickaId, name: 'Babička – u nás', accountType: 'person', openingBalance: 0, ownerLabel: 'Babička', note: 'Spravované peníze, které chodí na náš účet' },
-      { id: accountGrandmaSavings, profileId: babickaId, name: 'Babička – spoření', accountType: 'savings', openingBalance: 42000, ownerLabel: 'Babička', note: 'Peníze bokem pro babičku' }
-    ];
-    const financeAccounts = accountDefs.map((account) => make({ ...account, currentBalance: account.openingBalance, includeInTotal: true }));
-    const finance = [];
-    for (let month = 0; month < 14; month += 1) {
-      const base = month * 31;
-      finance.push(make({ profileId: petrId, type: 'income', title: 'Výplata Petr', amount: 42500 + (month % 3) * 1200, date: daysAgo(base + 7), category: 'salary', accountId: accountMain, paymentMethod: 'bank_transfer', note: month === 0 ? 'Aktuální měsíc' : '' }));
-      finance.push(make({ profileId: janaId, type: 'income', title: 'Výplata Jana', amount: 31800 + (month % 2) * 900, date: daysAgo(base + 9), category: 'salary', accountId: accountMain, paymentMethod: 'bank_transfer', note: '' }));
-      finance.push(make({ profileId: babickaId, type: 'income', title: 'Důchod babička', amount: 17480, date: daysAgo(base + 10), category: 'salary', accountId: accountGrandma, paymentMethod: 'bank_transfer', note: 'Připsáno na náš účet, vedeno odděleně' }));
-      finance.push(make({ profileId: babickaId, type: 'expense', title: 'Babička – nájem', amount: 6200, date: daysAgo(base + 11), category: 'housing', accountId: accountGrandma, paymentMethod: 'bank_transfer', note: 'Strženo za nájem' }));
-      finance.push(make({ profileId: babickaId, type: 'expense', title: 'Babička – energie', amount: 2800, date: daysAgo(base + 11), category: 'energy', accountId: accountGrandma, paymentMethod: 'bank_transfer', note: 'Záloha energie' }));
-      finance.push(make({ profileId: babickaId, type: 'expense', title: 'Babička – hotovost', amount: month % 2 ? 3000 : 2500, date: daysAgo(base + 13), category: 'other_expense', accountId: accountGrandma, paymentMethod: 'cash', note: 'Vybráno v hotovosti' }));
-      finance.push(make({ profileId: babickaId, type: 'transfer', title: 'Babička – bokem na spoření', amount: month % 3 === 0 ? 2000 : 1500, date: daysAgo(base + 15), category: 'other_expense', accountId: accountGrandma, transferAccountId: accountGrandmaSavings, paymentMethod: 'bank_transfer', note: 'Přesun na spořicí účet' }));
-      finance.push(make({ profileId: petrId, type: 'expense', title: 'Nájem / hypotéka', amount: 14500, date: daysAgo(base + 12), category: 'housing', accountId: accountMain, paymentMethod: 'bank_transfer', note: '' }));
-      finance.push(make({ profileId: janaId, type: 'expense', title: 'Potraviny', amount: 4200 + (month % 4) * 360, date: daysAgo(base + 3), category: 'groceries', accountId: accountMain, paymentMethod: 'card', note: 'Velký nákup' }));
-      finance.push(make({ profileId: petrId, type: 'expense', title: 'Energie', amount: 3850, date: daysAgo(base + 14), category: 'energy', accountId: accountMain, paymentMethod: 'direct_debit', note: '' }));
-      finance.push(make({ profileId: petrId, type: 'transfer', title: 'Přesun do rezervy', amount: month % 2 ? 4500 : 6000, date: daysAgo(base + 17), category: 'other_expense', accountId: accountMain, transferAccountId: accountSavings, paymentMethod: 'bank_transfer', note: 'Automaticky bokem' }));
-      if (month < 8) finance.push(make({ profileId: janaId, type: 'transfer', title: 'Dovolená obálka', amount: 2500, date: daysAgo(base + 19), category: 'other_expense', accountId: accountMain, transferAccountId: accountHoliday, paymentMethod: 'bank_transfer', note: 'Letní rezerva' }));
-    }
-    ['Lékárna', 'Kino', 'Restaurace', 'Školní výlet', 'Pojistka auto', 'Servis auta', 'Dárek narozeniny', 'Drogerie'].forEach((title, index) => {
-      finance.push(make({ profileId: index % 2 ? janaId : petrId, type: 'expense', title, amount: [680, 920, 1450, 1200, 8400, 4200, 1800, 760][index], date: addDays(index * -9 - 2), category: ['health','fun','restaurant','kids','contracts','car','other_expense','drugstore'][index], accountId: accountMain, paymentMethod: index % 2 ? 'card' : 'bank_transfer', note: index === 4 ? 'Roční platba' : '' }));
-    });
-
-    const coupons = [
-      make({ profileId: janaId, store: 'Drogerie', code: 'JARO15', discount: '15 %', expiry: daysFromNow(12), note: 'Použít na tablety do myčky', used: false }),
-      make({ profileId: petrId, store: 'Alza', code: 'DOPRAVA0', discount: 'doprava zdarma', expiry: daysFromNow(4), note: 'Na filtr do auta', used: false }),
-      make({ profileId: janaId, store: 'Lékárna', code: 'LETO10', discount: '10 %', expiry: daysFromNow(30), note: '', used: false }),
-      make({ profileId: petrId, store: 'Sport', code: 'BOTY20', discount: '20 %', expiry: daysAgo(9), note: 'Už použito', used: true })
-    ];
-
-    return {
-      meta: { schemaVersion: 85, appBuild: 288, mode: 'rich-demo-v288', createdAt, updatedAt: nowIso },
-      settings: {
-        ...DEFAULT_STATE.settings,
-        dashboardNote: 'Demo domácnost je záměrně naplněná historií. Ukazuje, jak Domácnost+ vypadá po dlouhém aktivním používání.',
-        bottomNavIds: ['home', 'calendar', 'shopping', 'hdo', 'finance'],
-        dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGET_IDS],
-        demoMode: true
-      },
-      household: { id: householdId, name: 'Demo domácnost Královi', isConfigured: true, createdAt },
-      profiles,
-      activeProfileId: petrId,
-      enabledModules: [...MANAGED_MODULE_IDS],
-      calendar,
-      packages,
-      coupons,
-      hdoWindows,
-      shopping,
-      shoppingCatalogCustom: [
-        make({ profileId: petrId, name: 'Granule Rex', defaultUnit: 'kg', category: 'Zvířata', source: 'household' }),
-        make({ profileId: janaId, name: 'Káva Guatemala', defaultUnit: 'bal', category: 'Trvanlivé', source: 'household' }),
-        make({ profileId: janaId, name: 'Jogurty Eliška', defaultUnit: 'ks', category: 'Mléčné', source: 'household' })
-      ],
-      shoppingStats,
-      hdoCloud: { settingId: '', loadedAt: '' },
-      shoppingCloud: { units: [], categories: [], catalog: [], activeListId: '', loadedAt: '' },
-      wasteCloud: { types: [], loadedAt: '' },
-      parcelsCloud: { loadedAt: '' },
-      parcelLookup: { phone: '', email: '', postalCode: '', address: '', consent: false, lastSearchAt: '', lastResult: '', lastError: '' },
-      tasksCloud: { loadedAt: '' },
-      calendarCloud: { sources: [], loadedAt: '', sourcesLoadedAt: '', googleConnection: null, googleCalendars: [], googleCalendarsLoadedAt: '', googleLastSyncAt: '' },
-      waste,
-      homeTasks,
-      notes: [
-        make({ profileId: petrId, text: 'V garáži dochází zimní směs do ostřikovačů.' }),
-        make({ profileId: janaId, text: 'Na příští týden domluvit návštěvu babičky.' }),
-        make({ profileId: petrId, text: 'Po výplatě zkontrolovat rezervu a obálku dovolená.' }),
-        make({ profileId: janaId, text: 'Koupit nové filtry do konvice, poslední je nasazený.' })
-      ],
-      warranties,
-      vehicles,
-      fuel,
-      services,
-      contracts,
-      contractFiles: [],
-      warrantyFiles: [],
-      financeAccounts,
-      finance,
-      financeCloud: { categories: [], accountsLoadedAt: '', loadedAt: '', monthFilter: todayISO().slice(0, 7), typeFilter: 'all' },
-      householdExtrasCloud: { loadedAt: '' },
-      weather: makeDemoWeatherState(),
-      pwa: { installed: false, lastUpdateCheck: '', lastInstallPrompt: '', diagnostics: null },
-      cloud: { supabaseUrl: SUPABASE_URL, provider: 'demo', userId: '', email: '', householdId: '', lastSyncAt: '', status: 'demo', households: [], invitations: [] },
-      householdWorkspaces: {}
-    };
-  }
   async function cloudAddProfile(profile) {
     if (!cloudReady() || !profile) return null;
     const client = getSupabaseClient();
@@ -20020,7 +19589,7 @@
     financeEditId = '';
     financeCopyId = '';
     moduleTabs = { ...(moduleTabs || {}), finance: 'add' };
-    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
     render();
     const form = document.querySelector('[data-form="add-finance"]');
     if (!form) return;
@@ -20138,7 +19707,7 @@
     if (!template) return showToast('Šablona nenalezená');
     financeTemplateEditId = template.id;
     moduleTabs = { ...(moduleTabs || {}), finance: 'add' };
-    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
     render();
   }
 
@@ -20179,7 +19748,7 @@
     financeCopyId = id;
     financeEditId = '';
     moduleTabs = { ...(moduleTabs || {}), finance: 'add' };
-    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
     render();
     keepActiveSectionTabsCentered('smooth');
     const schedule = window.requestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
@@ -20246,7 +19815,7 @@
     financeEditId = id;
     financeCopyId = '';
     moduleTabs = { ...(moduleTabs || {}), finance: 'add' };
-    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
     render();
     keepActiveSectionTabsCentered('smooth');
     const schedule = window.requestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
@@ -20258,7 +19827,7 @@
     if (!account) return;
     financeAccountEditId = id;
     moduleTabs = { ...(moduleTabs || {}), finance: 'accounts' };
-    if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
     render();
     keepActiveSectionTabsCentered('smooth');
     const schedule = window.requestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
@@ -20564,7 +20133,7 @@
   }
 
   function scheduleCloudAutosync(source = 'save') {
-    if (!cloudReady() || isDemoOnlyState()) return;
+    if (!cloudReady()) return;
     if (state.cloud?.autoSyncEnabled === false) return;
     if (cloudAutosyncRunning || cloudRealtimeReloading || suppressToastDepth > 0) return;
     const pending = cloudLocalPendingCount();
@@ -20596,7 +20165,6 @@
       if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
       return false;
     }
-    if (isDemoOnlyState()) return false;
     if (cloudAutosyncTimer) {
       window.clearTimeout(cloudAutosyncTimer);
       cloudAutosyncTimer = null;
@@ -20679,7 +20247,7 @@
   }
 
   function scheduleCloudRealtimeRefresh(source = 'cloud') {
-    if (!cloudReady() || isDemoOnlyState()) return;
+    if (!cloudReady()) return;
     if (cloudRealtimeReloadTimer) window.clearTimeout(cloudRealtimeReloadTimer);
     state.cloud = {
       ...(state.cloud || {}),
@@ -20689,7 +20257,7 @@
     };
     saveState();
     cloudRealtimeReloadTimer = window.setTimeout(async () => {
-      if (cloudRealtimeReloading || !cloudReady() || isDemoOnlyState()) return;
+      if (cloudRealtimeReloading || !cloudReady()) return;
       cloudRealtimeReloading = true;
       try {
         await withMutedToasts(() => cloudLoadAllModules(false, { skipRealtimeSetup: true }));
@@ -20714,7 +20282,7 @@
   }
 
   function setupCloudRealtimeSubscriptions(force = false) {
-    if (!cloudReady() || isDemoOnlyState()) {
+    if (!cloudReady()) {
       disposeCloudRealtime();
       return false;
     }
@@ -20960,7 +20528,7 @@
 
   async function cloudWarmStartLoad(showMessage = false, force = false) {
     return withDeferredRender(async () => {
-      if ((cloudWarmStartDone && !force) || isDemoOnlyState()) return;
+      if ((cloudWarmStartDone && !force)) return;
       const user = await refreshCloudSession(false);
       if (!user) return;
       cloudWarmStartDone = true;
@@ -21127,10 +20695,8 @@
         activeOverview = null;
         activeModule = 'calendar';
         moduleTabs = { ...(moduleTabs || {}), calendar: 'overview' };
-        if (!isDemoOnlyState()) {
-          localStorage.setItem('homeWeb.activeModule', activeModule);
-          localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
-        }
+        localStorage.setItem('homeWeb.activeModule', activeModule);
+        localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
         render();
         keepActiveNavCentered('smooth');
         keepActiveSectionTabsCentered('smooth');
@@ -21178,14 +20744,6 @@
       if (onboardingMode === 'choice') sessionStorage.removeItem('domacnostPlus.onboardingMode');
       else sessionStorage.setItem('domacnostPlus.onboardingMode', onboardingMode);
       render();
-      return;
-    }
-    if (action === 'start-demo') {
-      startDemoHome();
-      return;
-    }
-    if (action === 'exit-demo') {
-      exitDemoHome();
       return;
     }
     if (action === 'toggle-theme') {
@@ -21341,10 +20899,6 @@
       setCloudAutosyncEnabled(state.cloud?.autoSyncEnabled === false);
       return;
     }
-    if (action === 'cloud-oauth-google') {
-      cloudOAuthSignIn('google', button.dataset.intent || 'login');
-      return;
-    }
     if (action === 'google-calendar-start') {
       googleCalendarStart({ cleanup: true });
       return;
@@ -21403,7 +20957,7 @@
       if (action === 'calendar-month-prev') calendarViewMonth = shiftCalendarMonth(calendarViewMonth, -1);
       if (action === 'calendar-month-next') calendarViewMonth = shiftCalendarMonth(calendarViewMonth, 1);
       if (action === 'calendar-month-today') calendarViewMonth = todayISO().slice(0, 7);
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.calendarViewMonth', calendarViewMonth);
+      localStorage.setItem('domacnostPlus.calendarViewMonth', calendarViewMonth);
       render();
       return;
     }
@@ -21488,7 +21042,7 @@
       garageEditRecord = null;
       garageModal = null;
       moduleTabs = { ...(moduleTabs || {}), garage: 'overview' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       touchState();
       saveState();
       render();
@@ -21522,7 +21076,7 @@
       garageVehicleId = button.dataset.id || garageVehicleId;
       garageStatsVehicleId = garageVehicleId;
       moduleTabs = { ...(moduleTabs || {}), garage: 'overview' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
       return;
     }
@@ -21532,9 +21086,9 @@
       garageEditRecord = null;
       activeOverview = null;
       activeModule = 'garage';
-      if (!isDemoOnlyState()) localStorage.setItem('homeWeb.activeModule', activeModule);
+      localStorage.setItem('homeWeb.activeModule', activeModule);
       moduleTabs = { ...(moduleTabs || {}), garage: 'detail' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       const garageTarget = button.dataset.garageTarget || '';
       render();
       keepActiveSectionTabsCentered('smooth');
@@ -21544,7 +21098,7 @@
     if (action === 'select-contract') {
       activeContractId = button.dataset.id;
       moduleTabs = { ...(moduleTabs || {}), contracts: 'detail' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
       keepActiveSectionTabsCentered('smooth');
       return;
@@ -21735,9 +21289,9 @@
     if (action === 'set-reading-meter-tool') {
       const tool = button.dataset.tool || '';
       readingsMeterToolPage = readingsMeterToolPage === tool ? '' : tool;
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
+      localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
       moduleTabs = { ...(moduleTabs || {}), readings: 'meters' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
       return;
     }
@@ -21750,10 +21304,8 @@
       readingsEntryMeterId = button.dataset.id || readingsEntryMeterId;
       readingsEntryDrawerOpen = true;
       moduleTabs = { ...(moduleTabs || {}), readings: 'entry' };
-      if (!isDemoOnlyState()) {
-        localStorage.setItem('domacnostPlus.readingsEntryMeterId', readingsEntryMeterId);
-        localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
-      }
+      localStorage.setItem('domacnostPlus.readingsEntryMeterId', readingsEntryMeterId);
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
       return;
     }
@@ -21772,12 +21324,10 @@
     if (action === 'toggle-reading-meter-edit') {
       const id = button.dataset.id || '';
       readingsEditingMeterId = readingsEditingMeterId === id ? '' : id;
-      if (!isDemoOnlyState()) {
-        if (readingsEditingMeterId) localStorage.setItem('domacnostPlus.readingsEditingMeterId', readingsEditingMeterId);
-        else localStorage.removeItem('domacnostPlus.readingsEditingMeterId');
-      }
+      if (readingsEditingMeterId) localStorage.setItem('domacnostPlus.readingsEditingMeterId', readingsEditingMeterId);
+      else localStorage.removeItem('domacnostPlus.readingsEditingMeterId');
       moduleTabs = { ...(moduleTabs || {}), readings: 'meters' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
       return;
     }
@@ -22010,10 +21560,6 @@
       const ok = setupCloudRealtimeSubscriptions(true);
       showToast(ok ? 'Živá synchronizace zapnutá' : 'Realtime zatím nejde zapnout');
       render();
-      return;
-    }
-    if (action === 'cloud-oauth-signin') {
-      cloudOAuthSignIn(button.dataset.provider || 'google', button.dataset.intent || 'login');
       return;
     }
     if (action === 'cloud-logout') {
@@ -22494,7 +22040,7 @@
     const nextUserId = user?.id || '';
     if (!force && (!nextUserId || previousUserId === nextUserId)) return false;
 
-    if (previousUserId && previousUserId !== nextUserId && !isDemoOnlyState()) {
+    if (previousUserId && previousUserId !== nextUserId) {
       state.householdWorkspaces = {
         ...(state.householdWorkspaces || {}),
         [previousUserId]: captureCurrentHouseholdWorkspace()
@@ -22518,7 +22064,6 @@
     resetCloudModuleCachesForUserSwitch();
     state.settings = {
       ...(state.settings || {}),
-      demoMode: false,
       cloudEnabled: true,
       dashboardWidgets: [],
       homeHeroItems: [],
@@ -22546,113 +22091,10 @@
     return true;
   }
 
-  function ensureLocalHouseholdForGoogleAuth(user) {
-    if (!state.household?.isConfigured) {
-      state.household = {
-        ...(state.household || {}),
-        id: state.household?.id || `household-${uid()}`,
-        name: state.household?.name || 'Moje domácnost',
-        isConfigured: true,
-        createdAt: state.household?.createdAt || new Date().toISOString()
-      };
-    }
-    if (!Array.isArray(state.profiles) || !state.profiles.length) {
-      const profile = createProfile(googleDisplayNameFromUser(user), 'owner', state.household.id);
-      state.profiles = [profile];
-      state.activeProfileId = profile.id;
-    }
-    dedupeProfilesState();
-    state.settings.demoMode = false;
-    state.enabledModules = normalizeModuleList(state.enabledModules?.length ? state.enabledModules : MANAGED_MODULE_IDS);
-    state.settings.bottomNavIds = normalizeBottomNavIds(state.settings.bottomNavIds || DEFAULT_BOTTOM_NAV_IDS, state.enabledModules);
-  }
-
-  async function handleGoogleAuthReturn() {
-    await new Promise((resolve) => window.setTimeout(resolve, 650));
-    const code = new URLSearchParams(window.location.search || '').get('code');
-    const hashParams = new URLSearchParams((window.location.hash || '').slice(1));
-    const client = getSupabaseClient();
-    if (client) {
-      if (code) {
-        // PKCE flow: exchange authorization code for session
-        const { error: exchangeError } = await client.auth.exchangeCodeForSession(code).catch((e) => ({ error: e }));
-        if (exchangeError) console.warn('OAuth code exchange failed', exchangeError);
-      } else {
-        // Implicit flow: tokens arrive in URL hash (#access_token=...)
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
-        if (accessToken) {
-          const { error: sessionError } = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' }).catch((e) => ({ error: e }));
-          if (sessionError) console.warn('OAuth implicit session set failed', sessionError);
-        }
-      }
-    }
-    const user = await refreshCloudSession(false);
-    if (!user) {
-      showToast('Google přihlášení se nevrátilo do aplikace. Zkontroluj Supabase Auth Google provider.');
-      return;
-    }
-
-    const intent = sessionStorage.getItem(ONBOARDING_GOOGLE_INTENT_KEY) || 'login';
-    if (intent === 'register') {
-      resetLocalWorkspaceForCloudUser(user, { force: true });
-      state.household = {
-        ...(state.household || {}),
-        id: state.household?.id || `household-${uid()}`,
-        name: '',
-        isConfigured: false,
-        createdAt: state.household?.createdAt || new Date().toISOString()
-      };
-      state.profiles = [createProfile(googleDisplayNameFromUser(user), 'owner', state.household.id)];
-      state.activeProfileId = state.profiles[0]?.id || '';
-      state.settings.demoMode = false;
-      onboardingMode = 'google-setup';
-      sessionStorage.setItem('domacnostPlus.onboardingMode', 'google-setup');
-      sessionStorage.removeItem(DEMO_SESSION_KEY);
-      touchState();
-      saveState();
-      clearAuthReturnUrl(true);
-      render();
-      showToast('Google účet je přihlášený. Dokonči nastavení domácnosti.');
-      return;
-    }
-
-    ensureLocalHouseholdForGoogleAuth(user);
-    saveState();
-    const households = await cloudLoadHouseholds(false);
-    if (!households.length) {
-      onboardingMode = 'google-setup';
-      sessionStorage.setItem('domacnostPlus.onboardingMode', 'google-setup');
-      sessionStorage.removeItem(DEMO_SESSION_KEY);
-      clearAuthReturnUrl(true);
-      render();
-      showToast('Google účet zatím nemá domácnost. Dokonči nastavení domácnosti.');
-      return;
-    } else if (!state.cloud?.householdId) {
-      const preferredHousehold = pickBestCloudHousehold(households);
-      state.cloud.householdId = preferredHousehold.id;
-      state.household = { ...(state.household || {}), id: preferredHousehold.id, name: preferredHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
-    }
-    if (state.cloud?.householdId) {
-      await cloudLoadProfilesForCurrentHousehold();
-      await cloudLoadAllModules(false, { skipRealtimeSetup: true, silentWhenOffline: true });
-      activeModule = 'home';
-    }
-    onboardingMode = 'choice';
-    sessionStorage.removeItem('domacnostPlus.onboardingMode');
-    sessionStorage.removeItem(ONBOARDING_GOOGLE_INTENT_KEY);
-    sessionStorage.removeItem(DEMO_SESSION_KEY);
-    touchState();
-    saveState();
-    render();
-    showToast('Přihlášeno přes Google');
-  }
 
   function isAuthReturnUrl() {
     const search = new URLSearchParams(window.location.search || '');
     if (search.get('auth') === 'confirmed') return true;
-    if (search.get('auth') === 'google') return true;
-    if (search.has('code') && search.has('state')) return true;
     if (search.get('type') === 'signup') return true;
     if (search.get('type') === 'recovery') return true;
     if (search.get('token_hash') && search.get('type')) return true;
@@ -22677,7 +22119,7 @@
       const result = params.get('googleCalendar');
       activeModule = 'calendar';
       moduleTabs = { ...(moduleTabs || {}), calendar: 'sources' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
       const reason = params.get('reason') || '';
       if (result === 'connected') {
@@ -22719,18 +22161,6 @@
       sessionStorage.removeItem('domacnostPlus.onboardingMode');
       clearAuthReturnUrl(true);
       render();
-      return;
-    }
-    if (search.get('auth') === 'google' || (search.has('code') && search.has('state'))) {
-      // sessionStorage is cleared on iOS PWA when returning from OAuth redirect.
-      // Also support implicit flow where tokens come in URL hash (#access_token=...).
-      const _oauthHash = window.location.hash || '';
-      const isGenuineOAuthReturn = sessionStorage.getItem(ONBOARDING_GOOGLE_INTENT_KEY) !== null
-        || ((search.has('code') || _oauthHash.includes('access_token=')) && !hasStoredSupabaseSession());
-      if (isGenuineOAuthReturn) {
-        await handleGoogleAuthReturn();
-      }
-      clearAuthReturnUrl(true);
       return;
     }
     await new Promise((resolve) => window.setTimeout(resolve, 450));
@@ -23720,7 +23150,7 @@
       activeModule = nextModule;
       if (nav.dataset.targetTab && nav.dataset.nav !== 'homecare') {
         moduleTabs = { ...(moduleTabs || {}), [activeModule]: nav.dataset.targetTab };
-        if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+        localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       }
       render();
       if (activeModule === 'shopping') scheduleShoppingCloudRefresh('shopping-open', { delay: 700, minAgeMs: 8000, quietMs: 700 });
@@ -23790,9 +23220,9 @@
     if (readingEntryMeterSelect) {
       readingsEntryMeterId = readingEntryMeterSelect.value || readingsEntryMeterId;
       readingsEntryDrawerOpen = true;
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.readingsEntryMeterId', readingsEntryMeterId);
+      localStorage.setItem('domacnostPlus.readingsEntryMeterId', readingsEntryMeterId);
       moduleTabs = { ...(moduleTabs || {}), readings: 'entry' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
       return;
     }
@@ -23805,13 +23235,11 @@
         const checked = [...app.querySelectorAll('[data-reading-detail-filter="compare"]:checked')].map((input) => input.value).filter(Boolean);
         readingsCompareMeterIds = checked;
       }
-      if (!isDemoOnlyState()) {
-        localStorage.setItem('domacnostPlus.readingsDetailMeterId', readingsDetailMeterId);
-        localStorage.setItem('domacnostPlus.readingsDetailPeriod', readingsDetailPeriod);
-        localStorage.setItem('domacnostPlus.readingsCompareMeterIds', JSON.stringify(readingsCompareMeterIds));
-      }
+      localStorage.setItem('domacnostPlus.readingsDetailMeterId', readingsDetailMeterId);
+      localStorage.setItem('domacnostPlus.readingsDetailPeriod', readingsDetailPeriod);
+      localStorage.setItem('domacnostPlus.readingsCompareMeterIds', JSON.stringify(readingsCompareMeterIds));
       moduleTabs = { ...(moduleTabs || {}), readings: 'detail' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
       return;
     }
@@ -23838,7 +23266,7 @@
       garageVehicleId = garageOverviewVehicle.value || garageVehicleId;
       garageStatsVehicleId = garageVehicleId;
       moduleTabs = { ...(moduleTabs || {}), garage: 'overview' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
       return;
     }
@@ -23862,7 +23290,7 @@
       garageCalcVehicleId = garageCalcVehicle.value || '';
       garageTripCalcResult = null;
       moduleTabs = { ...(moduleTabs || {}), garage: 'calculator' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
       return;
     }
@@ -23872,7 +23300,7 @@
       if (garageStatsFilter.dataset.garageStatsFilter === 'period') garageStatsPeriodFilter = garageStatsFilter.value || 'last12';
       if (garageStatsFilter.dataset.garageStatsFilter === 'type') garageStatsTypeFilter = garageStatsFilter.value || 'all';
       moduleTabs = { ...(moduleTabs || {}), garage: 'stats' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
       return;
     }
@@ -23907,13 +23335,11 @@
         const checked = [...app.querySelectorAll('[data-reading-detail-filter="compare"]:checked')].map((input) => input.value).filter(Boolean);
         readingsCompareMeterIds = checked;
       }
-      if (!isDemoOnlyState()) {
-        localStorage.setItem('domacnostPlus.readingsDetailMeterId', readingsDetailMeterId);
-        localStorage.setItem('domacnostPlus.readingsDetailPeriod', readingsDetailPeriod);
-        localStorage.setItem('domacnostPlus.readingsCompareMeterIds', JSON.stringify(readingsCompareMeterIds));
-      }
+      localStorage.setItem('domacnostPlus.readingsDetailMeterId', readingsDetailMeterId);
+      localStorage.setItem('domacnostPlus.readingsDetailPeriod', readingsDetailPeriod);
+      localStorage.setItem('domacnostPlus.readingsCompareMeterIds', JSON.stringify(readingsCompareMeterIds));
       moduleTabs = { ...(moduleTabs || {}), readings: 'detail' };
-      if (!isDemoOnlyState()) localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       render();
       return;
     }
