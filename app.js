@@ -992,6 +992,7 @@
   let filePreviewModal = null;
   let activeWarrantyDetailId = null;
   let visualSettingsDrawerOpen = false;
+  let googleCalendarDetailsOpen = false;
   let couponEditId = '';
   let loyaltyCardEditId = '';
   let loyaltyCardSearchTerm = '';
@@ -5434,7 +5435,7 @@
     const statusNote = googleCalendarStatusNote(connection);
     const googleSources = sourceList.filter((source) => normalizeCalendarSourceProvider(source.provider) === 'google');
     return `
-      <details class="compact-edit-details google-calendar-connector calendar-google-details">
+      <details class="compact-edit-details google-calendar-connector calendar-google-details" ${googleCalendarDetailsOpen ? 'open' : ''}>
         <summary><span>Google kalendář</span><em>${escapeHtml(googleCalendarStatusLabel(connection))}</em></summary>
         <div class="google-calendar-connector-body">
           <div class="cloud-status-grid compact-cloud-stats google-calendar-stats">
@@ -7951,8 +7952,8 @@
             <div><h2>HDO / nízký tarif</h2><p>${escapeHtml(hdo.message)}</p></div>
             <span class="badge ${hdo.active ? 'good' : 'warn'}">${hdo.active ? 'běží' : 'neběží'} · ${state.hdoWindows.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
           </div>
-          <details class="compact-edit-details hdo-manual-details">
-            <summary><span>Ruční zadání časů</span><em>funguje pořád stejně</em></summary>
+          <details class="compact-edit-details hdo-manual-details" open>
+            <summary><span>Zadání časů HDO</span><em>přidat časové okno nízkého tarifu</em></summary>
             <form data-form="add-hdo" class="compact-form hdo-manual-form">
               <div class="form-grid two">
                 ${field('Název okna', 'label', 'text', 'např. Večerní tarif', true)}
@@ -8027,8 +8028,8 @@
             <div><h2>HDO / nízký tarif</h2><p>${escapeHtml(hdo.message)}</p></div>
             <span class="badge ${hdo.active ? 'good' : 'warn'}">${hdo.active ? 'běží' : 'neběží'} · ${state.hdoWindows.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
           </div>
-          <details class="compact-edit-details hdo-manual-details">
-            <summary><span>Ruční zadání časů</span><em>funguje pořád stejně</em></summary>
+          <details class="compact-edit-details hdo-manual-details" open>
+            <summary><span>Zadání časů HDO</span><em>přidat časové okno nízkého tarifu</em></summary>
             <form data-form="add-hdo" class="compact-form hdo-manual-form">
               <div class="form-grid two">
                 ${field('Název okna', 'label', 'text', 'např. Večerní tarif', true)}
@@ -20587,6 +20588,7 @@
         state.cloud.householdId = preferredHousehold.id;
         state.household = { ...(state.household || {}), id: preferredHousehold.id, name: preferredHousehold.name || state.household?.name || 'Domácnost', isConfigured: true };
       }
+      if (!state.cloud?.householdId) maybeRestoreHouseholdFromMeta(user);
       if (!state.cloud?.householdId && state.household?.isConfigured) {
         await bootstrapCloudHousehold(false);
       }
@@ -21642,6 +21644,31 @@
       if (current - lastTouchEnd <= 300 && !isEditableTarget(event.target)) event.preventDefault();
       lastTouchEnd = current;
     }, { passive: false });
+
+    let swipeStartX = 0;
+    let swipeStartY = 0;
+    document.addEventListener('touchstart', (event) => {
+      if (event.touches.length !== 1) return;
+      swipeStartX = event.touches[0].clientX;
+      swipeStartY = event.touches[0].clientY;
+    }, { passive: true });
+    document.addEventListener('touchend', (event) => {
+      if (event.changedTouches.length !== 1) return;
+      const dx = event.changedTouches[0].clientX - swipeStartX;
+      const dy = event.changedTouches[0].clientY - swipeStartY;
+      if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.8) return;
+      if (isEditableTarget(event.target)) return;
+      if (event.target.closest('.nav-shell, .overview-drawer, .app-modal, details, input, select, textarea, [data-no-swipe]')) return;
+      const modules = getBottomNavModules();
+      const currentIndex = modules.findIndex((m) => m.id === activeModule);
+      const baseIndex = currentIndex >= 0 ? currentIndex : modules.findIndex((m) => m.id === getActiveBottomNavId(activeModule));
+      const nextIndex = dx < 0 ? Math.min(baseIndex + 1, modules.length - 1) : Math.max(baseIndex - 1, 0);
+      if (nextIndex !== baseIndex) {
+        const target = modules[nextIndex];
+        const navBtn = document.querySelector(`.nav-item[data-nav="${target.id}"]`);
+        if (navBtn) navBtn.click();
+      }
+    }, { passive: true });
   }
 
   function addDiagnostic(checks, label, status, message) {
@@ -22007,6 +22034,17 @@
     showToast('Ověřovací e-mail znovu odeslán');
   }
 
+  function maybeRestoreHouseholdFromMeta(user) {
+    if (state.household?.isConfigured) return;
+    const meta = user?.user_metadata || {};
+    if (!meta.household_name) return;
+    const householdId = `household-${uid()}`;
+    const ownerName = normalizeText(meta.owner_profile_name || user?.email?.split('@')[0] || 'Já') || 'Já';
+    state.household = { id: householdId, name: normalizeText(meta.household_name) || 'Moje domácnost', isConfigured: true, createdAt: new Date().toISOString() };
+    state.profiles = [createProfile(ownerName, 'owner', householdId)];
+    state.activeProfileId = state.profiles[0]?.id || '';
+  }
+
   async function cloudCheckEmailConfirmation() {
     const user = await refreshCloudSession(false);
     if (!user) {
@@ -22014,6 +22052,7 @@
       return;
     }
     state.cloud = { ...(state.cloud || {}), status: 'signed-in', userId: user.id, email: user.email || state.cloud?.email || '' };
+    maybeRestoreHouseholdFromMeta(user);
     const households = await cloudLoadHouseholds(false);
     if (households.length && !state.cloud.householdId) {
       const preferredHousehold = pickBestCloudHousehold(households);
@@ -23144,6 +23183,7 @@
     if (!(details instanceof HTMLDetailsElement)) return;
     if (details.matches('.settings-visual-details')) visualSettingsDrawerOpen = details.open;
     if (details.matches('.loyalty-add-details')) loyaltyAddDetailsOpen = details.open;
+    if (details.matches('.calendar-google-details')) googleCalendarDetailsOpen = details.open;
   }, true);
 
   app.addEventListener('click', (event) => {
