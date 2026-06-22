@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_289';
+  const APP_VERSION = 'Domácnost+ v.0.1_290';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -700,8 +700,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 289,
-      mode: 'performance-stabilization-v289',
+      appBuild: 290,
+      mode: 'performance-stabilization-v290',
       createdAt: '',
       updatedAt: ''
     },
@@ -1548,8 +1548,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 289,
-      mode: 'performance-stabilization-v289',
+      appBuild: 290,
+      mode: 'performance-stabilization-v290',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -22854,6 +22854,9 @@
       return;
     }
 
+    const weatherLocationPick = event.target.closest('[data-weather-location-pick]');
+    if (weatherLocationPick) { getWeatherModule().handleLocationPick(weatherLocationPick); return; }
+
     const action = event.target.closest('[data-action]');
     if (action) {
       try {
@@ -23000,6 +23003,8 @@
   });
 
   app.addEventListener('input', (event) => {
+    const weatherLocationSearch = event.target.closest('[data-weather-location-search]');
+    if (weatherLocationSearch) { getWeatherModule().handleLocationSearchInput(weatherLocationSearch); return; }
     const loyaltySearchInput = event.target.closest('[data-loyalty-search]');
     if (loyaltySearchInput) {
       loyaltyCardSearchTerm = loyaltySearchInput.value || '';

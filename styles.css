@@ -12387,6 +12387,53 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 .weather-settings-details {
   margin-top: 12px;
 }
+.weather-location-field {
+  grid-column: span 2;
+}
+.weather-autocomplete-wrapper {
+  position: relative;
+}
+.weather-autocomplete-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--card-strong, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.weather-autocomplete-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.weather-autocomplete-item:last-child {
+  border-bottom: none;
+}
+.weather-autocomplete-item:hover,
+.weather-autocomplete-item:focus {
+  background: var(--glass, rgba(0, 0, 0, 0.06));
+  outline: none;
+}
+.weather-autocomplete-status {
+  padding: 10px 14px;
+  color: var(--text-muted, var(--text));
+  font-size: 0.875rem;
+  opacity: 0.7;
+}
 .google-calendar-connector-body {
   padding: 0 12px 12px;
 }
