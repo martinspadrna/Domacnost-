@@ -10,6 +10,7 @@
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
   const APP_VERSION = 'Domácnost+ v.0.1_300';
+  const APP_BUILD = 300;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1037,7 +1038,6 @@
   let toastTimer = null;
   let now = new Date();
   let supabaseClientInstance = null;
-  const authDebugLog = [];
   let deferredInstallPrompt = null;
   let serviceWorkerRegistration = null;
   let pendingServiceWorker = null;
@@ -1483,13 +1483,14 @@
       }
     }
 
-    const best = candidates
+    const current = candidates.find((candidate) => candidate.key === STORAGE_KEY && candidate.value);
+    const best = current || candidates
       .sort((a, b) => b.score - a.score)
       .find((candidate) => candidate.value);
 
     if (best) {
       const migrated = migrateState(mergeState(DEFAULT_STATE, best.value), { fromLegacy: best.key !== STORAGE_KEY });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      storePersistedState(migrated);
       return migrated;
     }
 
@@ -2169,12 +2170,33 @@
 
   function writeStateSnapshotNow() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      storePersistedState(state);
       lastStatePersistAt = Date.now();
       statePersistDirty = false;
     } catch (error) {
       console.warn('State persist failed', error);
     }
+  }
+
+  function createPersistedStateSnapshot(source) {
+    return { ...source, householdWorkspaces: {} };
+  }
+
+  function cleanupLegacyStateStorage() {
+    LEGACY_STORAGE_KEYS.forEach((key) => {
+      try { localStorage.removeItem(key); } catch {}
+    });
+  }
+
+  function storePersistedState(source) {
+    const serialized = JSON.stringify(createPersistedStateSnapshot(source));
+    try {
+      localStorage.setItem(STORAGE_KEY, serialized);
+    } catch (error) {
+      cleanupLegacyStateStorage();
+      localStorage.setItem(STORAGE_KEY, serialized);
+    }
+    cleanupLegacyStateStorage();
   }
 
   function persistStateSnapshot(options = {}) {
@@ -2245,20 +2267,11 @@
   function shouldShowStartChoice() {
     if (recoveryModeActive && onboardingMode === 'reset-password') return true;
     if (!hasUsableAppSession()) {
-      const why = state.cloud?.status !== 'signed-in' ? `status:${state.cloud?.status}` : !state.cloud?.userId ? 'noUserId' : `storage:${hasStoredSupabaseSession() ? 'ok' : 'EMPTY'}`;
-      const ts = new Date().toLocaleTimeString('cs-CZ');
-      const entry = `${ts} LOGIN shown — ${why} | isConf:${state.household?.isConfigured}`;
-      authDebugLog.push(entry); if (authDebugLog.length > 30) authDebugLog.shift();
       if (state.cloud?.status === 'email-confirmation') onboardingMode = 'account';
       else onboardingMode = sessionStorage.getItem('domacnostPlus.onboardingMode') || 'choice';
       return true;
     }
-    if (!state.household?.isConfigured) {
-      const ts = new Date().toLocaleTimeString('cs-CZ');
-      const entry = `${ts} LOGIN shown — household not configured`;
-      authDebugLog.push(entry); if (authDebugLog.length > 30) authDebugLog.shift();
-      return true;
-    }
+    if (!state.household?.isConfigured) return true;
     return false;
   }
 
@@ -2278,9 +2291,11 @@
         <section class="onboarding-card compact-auth-card">
           <div class="onboarding-hero compact-auth-hero">
             <div class="brand-mark big logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
-            <span class="badge good">přihlášení nalezeno</span>
-            <h1>Obnovuji domácnost</h1>
-            <p>Načítám uložené přihlášení a poslední data domácnosti.</p>
+            <div>
+              <span class="badge good">přihlášení nalezeno</span>
+              <h1>Obnovuji domácnost</h1>
+              <p>Načítám uložené přihlášení a poslední data domácnosti.</p>
+            </div>
           </div>
           <div class="boot-loading-line" aria-hidden="true"><span></span></div>
         </section>
@@ -3326,12 +3341,6 @@
     }
 
     app.innerHTML = `
-      ${authDebugLog.length ? `<div style="position:fixed;top:12px;right:12px;z-index:9999">
-        <details>
-          <summary style="font-size:0.72rem;background:var(--warn,#f59e0b);color:#000;padding:4px 10px;border-radius:20px;cursor:pointer;list-style:none;font-weight:600">Auth log (${authDebugLog.length})</summary>
-          <div style="position:absolute;right:0;top:2rem;width:min(94vw,420px);font-size:0.65rem;font-family:monospace;white-space:pre-wrap;line-height:1.7;padding:0.6rem;background:var(--bg-1,#fff);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.25);overflow-y:auto;max-height:60vh">${authDebugLog.map(escapeHtml).join('\n')}</div>
-        </details>
-      </div>` : ''}
       <div class="onboarding-screen">
         <section class="onboarding-card compact-auth-card">
           <div class="onboarding-hero compact-auth-hero">
@@ -5240,7 +5249,7 @@
             <button class="ghost-btn" type="button" data-action="calendar-month-next">›</button>
           </div>
         </div>
-        <div class="calendar-grid" role="table" aria-label="Kalendář ${escapeHtml(calendarMonthTitle(month))}">
+        <div class="calendar-grid" data-no-swipe role="table" aria-label="Kalendář ${escapeHtml(calendarMonthTitle(month))}">
           <div class="calendar-weekdays" role="row">
             ${dayNames.map((day) => `<div class="calendar-weekday" role="columnheader">${day}</div>`).join('')}
           </div>
@@ -13033,13 +13042,9 @@
         </div>
 
         <div class="settings-panel panel-data grid two">
-          ${authDebugLog.length ? `<section class="card compact-settings-card desktop-span-2">
-            <div class="card-header"><div><h2>Auth log</h2><p>Posledních ${authDebugLog.length} auth událostí (nejnovější dole). Pošli tento výpis.</p></div><span class="badge warn">debug</span></div>
-            <div style="font-size:0.72rem;font-family:monospace;white-space:pre-wrap;line-height:1.6;overflow-x:auto;max-height:260px;overflow-y:auto">${authDebugLog.map(escapeHtml).join('\n')}</div>
-          </section>` : ''}
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
-            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 288))}</strong></div></div>
+            <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${APP_BUILD}</strong></div></div>
             <div class="form-actions compact-actions">
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
@@ -13182,13 +13187,8 @@
     // TOKEN_REFRESHED / SIGNED_IN: always re-render so the app surfaces again
     //   after a successful token refresh that followed a brief SIGNED_OUT.
     supabaseClientInstance.auth.onAuthStateChange((event, session) => {
-      const ts = new Date().toLocaleTimeString('cs-CZ');
       const stored = hasStoredSupabaseSession();
       const onLogin = shouldShowStartChoice();
-      const entry = `${ts} ${event} | storage:${stored ? 'ok' : 'EMPTY'} | onLogin:${onLogin} | status:${state.cloud?.status || '?'} | uid:${session?.user?.id?.slice(0,8) || 'none'} | exp:${session?.expires_at || '-'}`;
-      authDebugLog.push(entry);
-      if (authDebugLog.length > 30) authDebugLog.shift();
-      console.warn('[AUTH]', entry);
 
       if (event === 'SIGNED_OUT') {
         if (stored) return; // tokens still present → transient SIGNED_OUT before TOKEN_REFRESHED
@@ -18666,7 +18666,7 @@
   }
 
   function touchState() {
-    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: 288, mode: 'performance-stabilization-v288', updatedAt: new Date().toISOString() };
+    state.meta = { ...(state.meta || {}), schemaVersion: 85, appBuild: APP_BUILD, mode: 'performance-stabilization-v300', updatedAt: new Date().toISOString() };
   }
 
   async function addItem(collection, item) {
@@ -22148,7 +22148,7 @@
           typeFilter: financeTypeFilter()
         },
         updatedAt: new Date().toISOString(),
-        appBuild: 288
+        appBuild: APP_BUILD
       },
       weather_location: {
         ...normalizeWeatherLocation(state.weather?.location),
@@ -22291,7 +22291,7 @@
     saveHouseholdWorkspace();
     const { data: household, error: householdError } = await client
       .from('households')
-      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: 269, schema_version: 85, created_by: user.id, ...householdUiPayload() })
+      .insert({ name: cleanName, timezone: 'Europe/Prague', app_build: APP_BUILD, schema_version: 85, created_by: user.id, ...householdUiPayload() })
       .select('id, name')
       .single();
     if (householdError) return showToast(householdError.message || 'Domácnost se nepovedla vytvořit');
@@ -22505,7 +22505,7 @@
         .insert({
           name: householdName(),
           timezone: 'Europe/Prague',
-          app_build: 269,
+          app_build: APP_BUILD,
           schema_version: 85,
           created_by: user.id,
           ...householdUiPayload()
@@ -22758,7 +22758,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-281-${todayISO()}.json`; 
+    link.download = `domacnost-plus-v0-1-300-${todayISO()}.json`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -23233,7 +23233,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">Domácnost+ v.0.1_288</span>
+          <span class="badge">${APP_VERSION}</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>

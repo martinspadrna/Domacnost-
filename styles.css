@@ -5350,6 +5350,11 @@ textarea {
   background: color-mix(in srgb, var(--line), transparent 35%);
 }
 
+.onboarding-screen > .compact-auth-card {
+  justify-self: center;
+  max-width: min(980px, calc(100vw - 24px));
+}
+
 .boot-loading-line span {
   display: block;
   width: 42%;
@@ -8277,6 +8282,8 @@ textarea {
     overflow-x: auto;
     padding-bottom: 6px;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    overscroll-behavior-x: contain;
   }
 
   .calendar-weekdays,
