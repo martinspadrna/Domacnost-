@@ -25,6 +25,7 @@
     const WEATHER_CHMI_FUNCTION = deps.WEATHER_CHMI_FUNCTION || 'weather-chmi-forecast';
 
     let weatherFetchPromise = null;
+    let locationSearchTimer = null;
 
     function normalizeWeatherLocation(location) {
       const source = location && typeof location === 'object' ? location : WEATHER_DEFAULT_LOCATION;
@@ -174,6 +175,98 @@
       }).join('')}</div>`;
     }
 
+    async function searchWeatherLocations(query) {
+      try {
+        const clean = normalizeText(query);
+        if (!clean) return [];
+        const params = new URLSearchParams({ name: clean, count: '8', language: 'cs', format: 'json' });
+        const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${params.toString()}`, { cache: 'no-store' });
+        if (!response.ok) return [];
+        const data = await response.json();
+        return Array.isArray(data.results) ? data.results : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function renderLocationAutocompleteField(location) {
+      const displayValue = [location.name, location.country].filter(Boolean).join(', ');
+      return `<div class="form-group weather-location-field">
+        <label>Místo</label>
+        <div class="weather-autocomplete-wrapper">
+          <input type="text" data-weather-location-search value="${escapeHtml(displayValue)}" placeholder="Hledej město…" autocomplete="off" spellcheck="false">
+          <div class="weather-autocomplete-dropdown" data-weather-autocomplete hidden></div>
+        </div>
+        <input type="hidden" name="locationName" value="${escapeHtml(location.name)}">
+        <input type="hidden" name="locationCountry" value="${escapeHtml(location.country)}">
+        <input type="hidden" name="locationLat" value="${escapeHtml(String(location.latitude))}">
+        <input type="hidden" name="locationLon" value="${escapeHtml(String(location.longitude))}">
+      </div>`;
+    }
+
+    function handleLocationSearchInput(inputEl) {
+      const form = inputEl.closest('form');
+      if (!form) return;
+      const query = normalizeText(inputEl.value);
+      const dropdown = form.querySelector('[data-weather-autocomplete]');
+      const saveBtn = form.querySelector('[data-weather-save-btn]');
+      const hiddenLat = form.querySelector('input[name="locationLat"]');
+      const hiddenLon = form.querySelector('input[name="locationLon"]');
+
+      if (hiddenLat) hiddenLat.value = '';
+      if (hiddenLon) hiddenLon.value = '';
+      if (saveBtn) saveBtn.disabled = true;
+
+      clearTimeout(locationSearchTimer);
+
+      if (!query || query.length < 2) {
+        if (dropdown) { dropdown.innerHTML = ''; dropdown.hidden = true; }
+        return;
+      }
+
+      if (dropdown) {
+        dropdown.innerHTML = '<div class="weather-autocomplete-status">Hledám…</div>';
+        dropdown.hidden = false;
+      }
+
+      locationSearchTimer = setTimeout(async () => {
+        const results = await searchWeatherLocations(query);
+        if (!dropdown) return;
+        if (!results.length) {
+          dropdown.innerHTML = '<div class="weather-autocomplete-status">Žádné výsledky</div>';
+          return;
+        }
+        dropdown.innerHTML = results.map((r) => {
+          const label = [r.name, r.admin1, r.country].filter(Boolean).join(', ');
+          return `<button type="button" class="weather-autocomplete-item" data-weather-location-pick data-name="${escapeHtml(r.name)}" data-country="${escapeHtml(r.country_code || r.country || '')}" data-lat="${escapeHtml(String(r.latitude))}" data-lon="${escapeHtml(String(r.longitude))}">${escapeHtml(label)}</button>`;
+        }).join('');
+      }, 400);
+    }
+
+    function handleLocationPick(pickBtn) {
+      const form = pickBtn.closest('form');
+      if (!form) return;
+      const { name, country, lat, lon } = pickBtn.dataset;
+
+      const displayInput = form.querySelector('[data-weather-location-search]');
+      if (displayInput) displayInput.value = [name, country].filter(Boolean).join(', ');
+
+      const hName = form.querySelector('input[name="locationName"]');
+      const hCountry = form.querySelector('input[name="locationCountry"]');
+      const hLat = form.querySelector('input[name="locationLat"]');
+      const hLon = form.querySelector('input[name="locationLon"]');
+      if (hName) hName.value = name || '';
+      if (hCountry) hCountry.value = country || '';
+      if (hLat) hLat.value = lat || '';
+      if (hLon) hLon.value = lon || '';
+
+      const saveBtn = form.querySelector('[data-weather-save-btn]');
+      if (saveBtn) saveBtn.disabled = false;
+
+      const dropdown = form.querySelector('[data-weather-autocomplete]');
+      if (dropdown) { dropdown.innerHTML = ''; dropdown.hidden = true; }
+    }
+
     function renderWeatherPage() {
       const weather = normalizeWeatherState(getWeatherState());
       const current = weather.current || {};
@@ -222,12 +315,9 @@
             <form data-form="weather-settings" class="compact-form">
               <div class="form-grid two">
                 ${selectField('Zdroj', 'weatherSource', WEATHER_PROVIDER_OPTIONS, normalizeWeatherSource(weather.source))}
-                ${field('Místo', 'locationName', 'text', 'Hostinné', true, location.name)}
-                ${field('Země', 'country', 'text', 'CZ', false, location.country)}
-                ${field('Šířka', 'latitude', 'number', '50,5407', false, location.latitude)}
-                ${field('Délka', 'longitude', 'number', '15,7233', false, location.longitude)}
+                ${renderLocationAutocompleteField(location)}
               </div>
-              <div class="form-actions compact-actions"><button class="primary-btn" type="submit">Uložit a načíst počasí</button><button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit počasí</button></div>
+              <div class="form-actions compact-actions"><button class="primary-btn" type="submit" data-weather-save-btn>Uložit a načíst počasí</button><button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit počasí</button></div>
             </form>
           </details>
         </section>
@@ -383,17 +473,19 @@
 
     async function saveWeatherSettings(data, form) {
       try {
-        let location;
-        const rawLatitude = String(data.latitude ?? '').trim();
-        const rawLongitude = String(data.longitude ?? '').trim();
-        const latitude = Number(rawLatitude.replace(',', '.'));
-        const longitude = Number(rawLongitude.replace(',', '.'));
-        const weatherSource = normalizeWeatherSource(data.weatherSource || getWeatherState()?.source || 'chmi');
-        if (rawLatitude && rawLongitude && Number.isFinite(latitude) && Number.isFinite(longitude)) {
-          location = { name: normalizeText(data.locationName) || WEATHER_DEFAULT_LOCATION.name, country: normalizeText(data.country) || '', latitude, longitude };
-        } else {
-          location = await findWeatherLocationByName(data.locationName || data.city || WEATHER_DEFAULT_LOCATION.name);
+        const lat = Number(String(data.locationLat || '').replace(',', '.'));
+        const lon = Number(String(data.locationLon || '').replace(',', '.'));
+        if (!Number.isFinite(lat) || !Number.isFinite(lon) || !normalizeText(data.locationName)) {
+          showToast('Vyber město ze seznamu');
+          return;
         }
+        const location = {
+          name: normalizeText(data.locationName),
+          country: normalizeText(data.locationCountry || ''),
+          latitude: lat,
+          longitude: lon
+        };
+        const weatherSource = normalizeWeatherSource(data.weatherSource || getWeatherState()?.source || 'chmi');
         setWeatherState({ ...normalizeWeatherState(getWeatherState()), location, current: null, daily: [], hourly: [], updatedAt: '', error: '', source: weatherSource });
         touchState();
         saveState();
@@ -417,7 +509,9 @@
       renderWeatherAnimeIcon,
       renderWeatherPage,
       ensureWeatherFresh,
-      saveWeatherSettings
+      saveWeatherSettings,
+      handleLocationSearchInput,
+      handleLocationPick
     };
   }
 
