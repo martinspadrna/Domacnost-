@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_294';
+  const APP_VERSION = 'Domácnost+ v.0.1_295';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -700,7 +700,7 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 294,
+      appBuild: 295,
       mode: 'performance-stabilization-v294',
       createdAt: '',
       updatedAt: ''
@@ -1548,7 +1548,7 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 294,
+      appBuild: 295,
       mode: 'performance-stabilization-v294',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
@@ -5998,6 +5998,7 @@
       touchState,
       cloudSaveHouseholdUiSettings,
       getSupabaseClient,
+      getSupabaseClientIfReady: () => supabaseClientInstance,
       showToast,
       normalizeText,
       escapeHtml,

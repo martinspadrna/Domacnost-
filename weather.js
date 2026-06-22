@@ -10,6 +10,7 @@
     const touchState = deps.touchState || (() => {});
     const cloudSaveHouseholdUiSettings = deps.cloudSaveHouseholdUiSettings || (() => Promise.resolve(false));
     const getSupabaseClient = deps.getSupabaseClient || (() => null);
+    const getSupabaseClientIfReady = deps.getSupabaseClientIfReady || (() => null);
     const showToast = deps.showToast || (() => {});
     const normalizeText = deps.normalizeText || ((value) => String(value || '').trim());
     const escapeHtml = deps.escapeHtml || ((value) => String(value ?? ''));
@@ -356,7 +357,11 @@
     }
 
     async function fetchChmiWeatherForLocation(location) {
-      const client = getSupabaseClient();
+      // Use only an already-initialised client — never force-create one here.
+      // Creating the Supabase client triggers its auto-refresh machinery; on iOS
+      // the network may not be ready at first render and the refresh fails → SIGNED_OUT.
+      // The warmstart (6.2 s) creates the client properly once the network is stable.
+      const client = getSupabaseClientIfReady();
       if (!client?.functions?.invoke) throw new Error('ČHMÚ backend zatím není dostupný');
       const normalizedLocation = normalizeWeatherLocation(location);
       const body = {
