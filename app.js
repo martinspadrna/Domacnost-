@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_296';
+  const APP_VERSION = 'Domácnost+ v.0.1_297';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -700,7 +700,7 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 296,
+      appBuild: 297,
       mode: 'performance-stabilization-v294',
       createdAt: '',
       updatedAt: ''
@@ -1549,7 +1549,7 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 296,
+      appBuild: 297,
       mode: 'performance-stabilization-v294',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
@@ -3309,6 +3309,12 @@
           </div>
         </section>
       </div>
+      ${authDebugLog.length ? `<section style="margin:1rem auto;max-width:600px;padding:0 1rem">
+        <details open>
+          <summary style="font-size:0.78rem;color:var(--text-muted,#888);cursor:pointer">Auth log (${authDebugLog.length} událostí) — pošli screenshot</summary>
+          <div style="font-size:0.68rem;font-family:monospace;white-space:pre-wrap;line-height:1.7;margin-top:0.5rem;padding:0.5rem;background:var(--bg-2,#f0f4ff);border-radius:8px;overflow-x:auto">${authDebugLog.map(escapeHtml).join('\n')}</div>
+        </details>
+      </section>` : ''}
       <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
     `;
   }
