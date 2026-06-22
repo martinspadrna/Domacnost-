@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_295';
+  const APP_VERSION = 'Domácnost+ v.0.1_296';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -700,7 +700,7 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 295,
+      appBuild: 296,
       mode: 'performance-stabilization-v294',
       createdAt: '',
       updatedAt: ''
@@ -1037,6 +1037,7 @@
   let toastTimer = null;
   let now = new Date();
   let supabaseClientInstance = null;
+  const authDebugLog = [];
   let deferredInstallPrompt = null;
   let serviceWorkerRegistration = null;
   let pendingServiceWorker = null;
@@ -1548,7 +1549,7 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 295,
+      appBuild: 296,
       mode: 'performance-stabilization-v294',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
@@ -12975,6 +12976,10 @@
         </div>
 
         <div class="settings-panel panel-data grid two">
+          ${authDebugLog.length ? `<section class="card compact-settings-card desktop-span-2">
+            <div class="card-header"><div><h2>Auth log</h2><p>Posledních ${authDebugLog.length} auth událostí (nejnovější dole). Pošli tento výpis.</p></div><span class="badge warn">debug</span></div>
+            <div style="font-size:0.72rem;font-family:monospace;white-space:pre-wrap;line-height:1.6;overflow-x:auto;max-height:260px;overflow-y:auto">${authDebugLog.map(escapeHtml).join('\n')}</div>
+          </section>` : ''}
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
             <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${escapeHtml(String(state.meta?.appBuild || 288))}</strong></div></div>
@@ -13119,10 +13124,18 @@
     //   a token refresh and Supabase will fire TOKEN_REFRESHED shortly after.
     // TOKEN_REFRESHED / SIGNED_IN: always re-render so the app surfaces again
     //   after a successful token refresh that followed a brief SIGNED_OUT.
-    supabaseClientInstance.auth.onAuthStateChange((event) => {
+    supabaseClientInstance.auth.onAuthStateChange((event, session) => {
+      const ts = new Date().toLocaleTimeString('cs-CZ');
+      const stored = hasStoredSupabaseSession();
+      const onLogin = shouldShowStartChoice();
+      const entry = `${ts} ${event} | storage:${stored ? 'ok' : 'EMPTY'} | onLogin:${onLogin} | uid:${session?.user?.id?.slice(0,8) || 'none'} | exp:${session?.expires_at || '-'}`;
+      authDebugLog.push(entry);
+      if (authDebugLog.length > 30) authDebugLog.shift();
+      console.warn('[AUTH]', entry);
+
       if (event === 'SIGNED_OUT') {
-        if (hasStoredSupabaseSession()) return;
-        if (shouldShowStartChoice()) return; // already on login screen — leave it alone
+        if (stored) return;
+        if (onLogin) return; // already on login screen — leave it alone
         render();
       } else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
         render();
