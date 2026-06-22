@@ -12399,7 +12399,7 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   left: 0;
   right: 0;
   z-index: 100;
-  background: var(--card-strong, rgba(20, 28, 48, 0.96));
+  background: var(--bg-2, #f8fbff);
   backdrop-filter: blur(24px) saturate(140%);
   -webkit-backdrop-filter: blur(24px) saturate(140%);
   border: 1px solid var(--border);

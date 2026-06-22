@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_291';
+  const APP_VERSION = 'Domácnost+ v.0.1_292';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -700,8 +700,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 291,
-      mode: 'performance-stabilization-v291',
+      appBuild: 292,
+      mode: 'performance-stabilization-v292',
       createdAt: '',
       updatedAt: ''
     },
@@ -1548,8 +1548,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 291,
-      mode: 'performance-stabilization-v291',
+      appBuild: 292,
+      mode: 'performance-stabilization-v292',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -13110,11 +13110,16 @@
         detectSessionInUrl: false
       }
     });
-    // When Supabase silently signs out (e.g. refresh token rejected after email change),
-    // re-render immediately so the login page shows instead of the app being stuck in
-    // a broken half-authenticated state until the next user interaction.
+    // React to Supabase auth state changes.
+    // SIGNED_OUT: only re-render (show login) when the session is truly gone from storage.
+    //   A temporary SIGNED_OUT during token refresh still has a stored session — don't
+    //   kick the user out for a transient network blip.
+    // TOKEN_REFRESHED / SIGNED_IN: re-render so the app recovers automatically after
+    //   a successful token refresh that followed a brief SIGNED_OUT.
     supabaseClientInstance.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
+        if (!hasStoredSupabaseSession()) render();
+      } else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
         render();
       }
     });
