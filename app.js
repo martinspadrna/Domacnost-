@@ -962,6 +962,7 @@
   const iconHtmlCache = new Map();
   let runtimeStateRef = null;
   let forceLightVisualRecovery = false;
+  let weatherInstance = null;
 
   let state = loadState();
   runtimeStateRef = state;
@@ -1028,7 +1029,6 @@
   let shoppingToolkitInstance = null;
   let shoppingRendererInstance = null;
   let shoppingActionsInstance = null;
-  let weatherInstance = null;
   let shoppingAutoRefreshTimer = 0;
   let shoppingCloudRefreshInFlight = false;
   let shoppingLastAutoRefreshAt = 0;
