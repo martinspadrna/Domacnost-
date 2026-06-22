@@ -5341,6 +5341,36 @@ textarea {
   margin-bottom: 18px;
 }
 
+.boot-loading-line {
+  width: min(320px, 72vw);
+  height: 4px;
+  margin: 4px auto 0;
+  overflow: hidden;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--line), transparent 35%);
+}
+
+.boot-loading-line span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  animation: bootLoadingSlide 1.05s ease-in-out infinite;
+}
+
+@keyframes bootLoadingSlide {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(350%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-loading-line span {
+    width: 100%;
+    animation: none;
+  }
+}
+
 .compact-login-grid .choice-tile,
 .compact-auth-grid .card.flat {
   min-height: 0;

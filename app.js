@@ -1046,6 +1046,7 @@
   let recoveryModeActive = false; // true only during current page load after recovery link click
 
   let cloudWarmStartDone = false;
+  let bootCloudResumeChecked = false;
   let cloudRealtimeChannel = null;
   let cloudRealtimeHouseholdId = '';
   let cloudRealtimeReloadTimer = null;
@@ -2261,6 +2262,32 @@
     return false;
   }
 
+  function shouldShowCloudResumeScreen() {
+    if (recoveryModeActive) return false;
+    if (bootCloudResumeChecked || cloudWarmStartDone) return false;
+    if (!hasStoredSupabaseSession()) return false;
+    if (hasUsableAppSession() && state.household?.isConfigured) return false;
+    return true;
+  }
+
+  function renderCloudResumeScreen() {
+    if (!app) return;
+    app.classList.remove('home-app-shell');
+    app.innerHTML = `
+      <div class="onboarding-screen">
+        <section class="onboarding-card compact-auth-card">
+          <div class="onboarding-hero compact-auth-hero">
+            <div class="brand-mark big logo-mark"><img src="${BRAND_ICON_SRC}" alt="Domácnost+" loading="eager"></div>
+            <span class="badge good">přihlášení nalezeno</span>
+            <h1>Obnovuji domácnost</h1>
+            <p>Načítám uložené přihlášení a poslední data domácnosti.</p>
+          </div>
+          <div class="boot-loading-line" aria-hidden="true"><span></span></div>
+        </section>
+      </div>
+    `;
+  }
+
   function withDeferredRender(callback) {
     renderDeferDepth += 1;
     const finish = () => {
@@ -2319,11 +2346,15 @@
     if (cloudWarmStartTimer) return;
     // If we believe the user is signed in (saved state), start eagerly so the
     // household loads quickly and the "not configured" login flash is minimised.
-    const isLikelySignedIn = state.cloud?.status === 'signed-in' && Boolean(state.cloud?.userId);
-    const delay = isLikelySignedIn ? 200 : 6200;
+    const isLikelySignedIn = hasStoredSupabaseSession() || (state.cloud?.status === 'signed-in' && Boolean(state.cloud?.userId));
+    const delay = isLikelySignedIn ? 0 : 6200;
     cloudWarmStartTimer = runWhenMainThreadFree(() => {
       cloudWarmStartTimer = null;
-      cloudWarmStartLoad(false).catch((error) => console.warn('Cloud warm start failed', error));
+      cloudWarmStartLoad(false).catch((error) => {
+        bootCloudResumeChecked = true;
+        requestRender();
+        console.warn('Cloud warm start failed', error);
+      });
     }, { delay, timeout: 9000 });
   }
 
@@ -2340,7 +2371,7 @@
     bootBackgroundCloudLoadTimer = runWhenUiQuiet(() => {
       bootBackgroundCloudLoadTimer = null;
       cloudBackgroundLoadAllModules(false).catch((error) => console.warn('Background cloud load failed', error));
-    }, { delay: 60000, quietMs: 4200, timeout: 15000 });
+    }, { delay: 2500, quietMs: 900, timeout: 15000 });
   }
 
   function scheduleLazyCloudLoadForModule(moduleId, options = {}) {
@@ -2381,6 +2412,13 @@
     renderInProgress = true;
     try {
       applyVisualSettings();
+      if (shouldShowCloudResumeScreen()) {
+        activeOverview = null;
+        document.body.classList.toggle('overview-open', false);
+        renderCloudResumeScreen();
+        if (app) app.setAttribute?.('data-boot-ok', '1');
+        return;
+      }
       const showStartChoice = shouldShowStartChoice();
       if (showStartChoice) activeOverview = null;
       document.body.classList.toggle('overview-open', Boolean(activeOverview || garageModal || calendarDetailEventId || filePreviewModal || activeWarrantyDetailId || shoppingDoneModalOpen || loyaltyCardPreviewId || loyaltyCardMenuId));
@@ -20246,7 +20284,13 @@
   async function cloudWarmStartLoad(showMessage = false, force = false) {
     return withDeferredRender(async () => {
       if ((cloudWarmStartDone && !force)) return;
-      const user = await refreshCloudSession(false);
+      let user = null;
+      try {
+        user = await refreshCloudSession(false);
+      } finally {
+        bootCloudResumeChecked = true;
+        if (!user) requestRender();
+      }
       if (!user) return;
       cloudWarmStartDone = true;
       await cloudLoadUserVisualSettings(false);
@@ -20261,11 +20305,15 @@
       if (!state.cloud?.householdId && state.household?.isConfigured) {
         await bootstrapCloudHousehold(false);
       }
-      if (!state.cloud?.householdId) return;
+      if (!state.cloud?.householdId) {
+        requestRender();
+        return;
+      }
       await yieldToMainThread();
       await cloudLoadHouseholdUiSettings(false);
       await yieldToMainThread();
       await cloudLoadProfilesForCurrentHousehold();
+      saveState({ immediate: true });
       requestRender();
       scheduleBootBackgroundCloudLoad();
       scheduleBootCloudMaintenance();
@@ -20309,6 +20357,7 @@
           }
         }
       });
+      if (ok > 0) saveState({ immediate: true });
       if (renderAfter) requestRender();
       if (showMessage) showToast(`Modul načten z cloudu: ${ok}/${loaders.length}`);
       return ok > 0;
@@ -20332,7 +20381,7 @@
     setupCloudRealtimeSubscriptions(false);
     state.cloud.lastSyncAt = new Date().toISOString();
     touchState();
-    saveState();
+    saveState({ immediate: true });
     requestRender();
     scheduleGoogleCalendarAutoSync('background-load', { delay: 6000 });
     if (showMessage) showToast(`Cloud pozadí načteno: ${ok}/${moduleOrder.length}`);
@@ -20374,7 +20423,7 @@
       }
       state.cloud.lastSyncAt = new Date().toISOString();
       touchState();
-      saveState();
+      saveState({ immediate: true });
       requestRender();
       if (!options.skipRealtimeSetup) setupCloudRealtimeSubscriptions(false);
       if (showMessage) showToast(`Cloud načten: ${ok}/${loaders.length} částí`);
