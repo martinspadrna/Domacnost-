@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_292';
+  const APP_VERSION = 'Domácnost+ v.0.1_293';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -700,8 +700,8 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 292,
-      mode: 'performance-stabilization-v292',
+      appBuild: 293,
+      mode: 'performance-stabilization-v293',
       createdAt: '',
       updatedAt: ''
     },
@@ -1548,8 +1548,8 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 292,
-      mode: 'performance-stabilization-v292',
+      appBuild: 293,
+      mode: 'performance-stabilization-v293',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
     };
@@ -13111,15 +13111,20 @@
       }
     });
     // React to Supabase auth state changes.
-    // SIGNED_OUT: only re-render (show login) when the session is truly gone from storage.
-    //   A temporary SIGNED_OUT during token refresh still has a stored session — don't
-    //   kick the user out for a transient network blip.
-    // TOKEN_REFRESHED / SIGNED_IN: re-render so the app recovers automatically after
-    //   a successful token refresh that followed a brief SIGNED_OUT.
+    // On iOS PWA resume, Supabase sometimes fires SIGNED_OUT transiently while
+    // refreshing an expired access token — the refresh token is still valid and
+    // TOKEN_REFRESHED follows within ~1–2 s.  We hold off rendering the login
+    // screen for 1500 ms so a fast recovery path can cancel it.
+    let pendingSignOutRender = null;
     supabaseClientInstance.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
-        if (!hasStoredSupabaseSession()) render();
+        if (hasStoredSupabaseSession()) return; // storage intact — transient, ignore
+        clearTimeout(pendingSignOutRender);
+        pendingSignOutRender = setTimeout(() => {
+          if (!hasUsableAppSession()) render();
+        }, 1500);
       } else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+        clearTimeout(pendingSignOutRender);
         render();
       }
     });
@@ -23076,6 +23081,10 @@
       return;
     }
     scheduleShoppingCloudRefresh('app-visible', { delay: 700, minAgeMs: 15000 });
+    // On iOS PWA, proactively refresh the auth session when the app comes to
+    // the foreground — this runs before Supabase's own visibility handler and
+    // reduces the chance of a transient SIGNED_OUT during token refresh.
+    if (hasUsableAppSession()) refreshCloudSession(false);
   });
 
   window.addEventListener('pagehide', () => {
