@@ -1,4 +1,4 @@
-const CACHE_NAME = 'domacnost-plus-v0-1-288';
+const CACHE_NAME = 'domacnost-plus-v0-1-289';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const APP_ASSETS = [
   './shopping-utils.js',
   './shopping-render.js',
   './shopping-actions.js',
+  './weather.js',
   './app.js',
   './sw.js',
   './manifest.webmanifest',
