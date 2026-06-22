@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_298';
+  const APP_VERSION = 'Domácnost+ v.0.1_299';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -700,7 +700,7 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 298,
+      appBuild: 299,
       mode: 'performance-stabilization-v294',
       createdAt: '',
       updatedAt: ''
@@ -1549,7 +1549,7 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 298,
+      appBuild: 299,
       mode: 'performance-stabilization-v294',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
@@ -2244,11 +2244,20 @@
   function shouldShowStartChoice() {
     if (recoveryModeActive && onboardingMode === 'reset-password') return true;
     if (!hasUsableAppSession()) {
+      const why = state.cloud?.status !== 'signed-in' ? `status:${state.cloud?.status}` : !state.cloud?.userId ? 'noUserId' : `storage:${hasStoredSupabaseSession() ? 'ok' : 'EMPTY'}`;
+      const ts = new Date().toLocaleTimeString('cs-CZ');
+      const entry = `${ts} LOGIN shown — ${why} | isConf:${state.household?.isConfigured}`;
+      authDebugLog.push(entry); if (authDebugLog.length > 30) authDebugLog.shift();
       if (state.cloud?.status === 'email-confirmation') onboardingMode = 'account';
       else onboardingMode = sessionStorage.getItem('domacnostPlus.onboardingMode') || 'choice';
       return true;
     }
-    if (!state.household?.isConfigured) return true;
+    if (!state.household?.isConfigured) {
+      const ts = new Date().toLocaleTimeString('cs-CZ');
+      const entry = `${ts} LOGIN shown — household not configured`;
+      authDebugLog.push(entry); if (authDebugLog.length > 30) authDebugLog.shift();
+      return true;
+    }
     return false;
   }
 
@@ -13134,7 +13143,7 @@
       const ts = new Date().toLocaleTimeString('cs-CZ');
       const stored = hasStoredSupabaseSession();
       const onLogin = shouldShowStartChoice();
-      const entry = `${ts} ${event} | storage:${stored ? 'ok' : 'EMPTY'} | onLogin:${onLogin} | uid:${session?.user?.id?.slice(0,8) || 'none'} | exp:${session?.expires_at || '-'}`;
+      const entry = `${ts} ${event} | storage:${stored ? 'ok' : 'EMPTY'} | onLogin:${onLogin} | status:${state.cloud?.status || '?'} | uid:${session?.user?.id?.slice(0,8) || 'none'} | exp:${session?.expires_at || '-'}`;
       authDebugLog.push(entry);
       if (authDebugLog.length > 30) authDebugLog.shift();
       console.warn('[AUTH]', entry);
@@ -13143,7 +13152,21 @@
         if (stored) return;
         if (onLogin) return; // already on login screen — leave it alone
         render();
-      } else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+      } else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        if (!session?.user) return;
+        // Sync app state with the confirmed Supabase session so render() can
+        // correctly show the app instead of the login screen.
+        if (state.cloud?.status !== 'signed-in' || !state.cloud?.userId) {
+          state.cloud = {
+            ...(state.cloud || {}),
+            supabaseUrl: SUPABASE_URL,
+            provider: 'supabase',
+            status: 'signed-in',
+            userId: session.user.id,
+            email: session.user.email || state.cloud?.email || ''
+          };
+          saveState();
+        }
         render();
       }
     });
