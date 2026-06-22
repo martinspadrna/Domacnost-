@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_299';
+  const APP_VERSION = 'Domácnost+ v.0.1_300';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -700,7 +700,7 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 299,
+      appBuild: 300,
       mode: 'performance-stabilization-v294',
       createdAt: '',
       updatedAt: ''
@@ -1549,7 +1549,7 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 299,
+      appBuild: 300,
       mode: 'performance-stabilization-v294',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
@@ -2317,10 +2317,14 @@
 
   function scheduleBootCloudWarmStart() {
     if (cloudWarmStartTimer) return;
+    // If we believe the user is signed in (saved state), start eagerly so the
+    // household loads quickly and the "not configured" login flash is minimised.
+    const isLikelySignedIn = state.cloud?.status === 'signed-in' && Boolean(state.cloud?.userId);
+    const delay = isLikelySignedIn ? 200 : 6200;
     cloudWarmStartTimer = runWhenMainThreadFree(() => {
       cloudWarmStartTimer = null;
       cloudWarmStartLoad(false).catch((error) => console.warn('Cloud warm start failed', error));
-    }, { delay: 6200, timeout: 9000 });
+    }, { delay, timeout: 9000 });
   }
 
   function scheduleBootCloudMaintenance() {
@@ -13149,9 +13153,13 @@
       console.warn('[AUTH]', entry);
 
       if (event === 'SIGNED_OUT') {
-        if (stored) return;
-        if (onLogin) return; // already on login screen — leave it alone
-        render();
+        if (stored) return; // tokens still present → transient SIGNED_OUT before TOKEN_REFRESHED
+        // Supabase confirmed the session is gone. Reset our state so next render shows login.
+        if (state.cloud?.status === 'signed-in') {
+          state.cloud = { ...(state.cloud || {}), status: 'offline' };
+          saveState();
+        }
+        if (!onLogin) render(); // only re-render if not already on the login screen
       } else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         if (!session?.user) return;
         // Sync app state with the confirmed Supabase session so render() can
@@ -13186,7 +13194,10 @@
   }
 
   function hasUsableAppSession() {
-    return Boolean(state.cloud?.status === 'signed-in' && state.cloud?.userId && hasStoredSupabaseSession());
+    // Do NOT check hasStoredSupabaseSession() here — iOS can clear localStorage without warning,
+    // and Supabase fires SIGNED_OUT when the session is truly gone. We rely on state.cloud.status
+    // (set to 'offline' by the SIGNED_OUT handler) as the authoritative "logged out" signal.
+    return Boolean(state.cloud?.status === 'signed-in' && state.cloud?.userId);
   }
 
   function resetSignedOutAppState() {
