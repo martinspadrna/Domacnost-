@@ -9,7 +9,7 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_297';
+  const APP_VERSION = 'Domácnost+ v.0.1_298';
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -700,7 +700,7 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 297,
+      appBuild: 298,
       mode: 'performance-stabilization-v294',
       createdAt: '',
       updatedAt: ''
@@ -1549,7 +1549,7 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 297,
+      appBuild: 298,
       mode: 'performance-stabilization-v294',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
@@ -3275,6 +3275,12 @@
     }
 
     app.innerHTML = `
+      ${authDebugLog.length ? `<div style="position:fixed;top:12px;right:12px;z-index:9999">
+        <details>
+          <summary style="font-size:0.72rem;background:var(--warn,#f59e0b);color:#000;padding:4px 10px;border-radius:20px;cursor:pointer;list-style:none;font-weight:600">Auth log (${authDebugLog.length})</summary>
+          <div style="position:absolute;right:0;top:2rem;width:min(94vw,420px);font-size:0.65rem;font-family:monospace;white-space:pre-wrap;line-height:1.7;padding:0.6rem;background:var(--bg-1,#fff);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.25);overflow-y:auto;max-height:60vh">${authDebugLog.map(escapeHtml).join('\n')}</div>
+        </details>
+      </div>` : ''}
       <div class="onboarding-screen">
         <section class="onboarding-card compact-auth-card">
           <div class="onboarding-hero compact-auth-hero">
@@ -3309,12 +3315,6 @@
           </div>
         </section>
       </div>
-      ${authDebugLog.length ? `<section style="margin:1rem auto;max-width:600px;padding:0 1rem">
-        <details open>
-          <summary style="font-size:0.78rem;color:var(--text-muted,#888);cursor:pointer">Auth log (${authDebugLog.length} událostí) — pošli screenshot</summary>
-          <div style="font-size:0.68rem;font-family:monospace;white-space:pre-wrap;line-height:1.7;margin-top:0.5rem;padding:0.5rem;background:var(--bg-2,#f0f4ff);border-radius:8px;overflow-x:auto">${authDebugLog.map(escapeHtml).join('\n')}</div>
-        </details>
-      </section>` : ''}
       <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
     `;
   }
