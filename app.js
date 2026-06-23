@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_300';
-  const APP_BUILD = 300;
+  const APP_VERSION = 'Domácnost+ v.0.1_301';
+  const APP_BUILD = 301;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -492,8 +492,11 @@
   const BOTTOM_NAV_CUSTOM_MAX = 4;
   const MORE_MODULE = { id: 'more', label: 'Více', icon: '⚙️' };
   const FILE_DB_NAME = 'homeWebOfflineFiles.v1';
+  const FILE_DB_VERSION = 3;
   const FILE_STORE_CONTRACTS = 'contractFiles';
   const FILE_STORE_WARRANTIES = 'warrantyFiles';
+  const FILE_STORE_APP_STATE = 'appState';
+  const APP_STATE_IDB_KEY = 'primary';
   const CONTRACT_FILE_MAX_BYTES = 15 * 1024 * 1024;
   const CONTRACT_FILE_ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
   const WARRANTY_FILE_MAX_BYTES = 15 * 1024 * 1024;
@@ -701,7 +704,7 @@
   const DEFAULT_STATE = {
     meta: {
       schemaVersion: 85,
-      appBuild: 300,
+      appBuild: APP_BUILD,
       mode: 'performance-stabilization-v294',
       createdAt: '',
       updatedAt: ''
@@ -1551,7 +1554,7 @@
 
     migrated.meta = {
       schemaVersion: 85,
-      appBuild: 300,
+      appBuild: APP_BUILD,
       mode: 'performance-stabilization-v294',
       createdAt: migrated.meta?.createdAt || timestamp,
       updatedAt: migrated.meta?.updatedAt || timestamp
@@ -2175,6 +2178,14 @@
       statePersistDirty = false;
     } catch (error) {
       console.warn('State persist failed', error);
+    }
+    // Durable backup — survives iOS localStorage quota failures so the next launch
+    // can show the data instantly instead of waiting for a cloud round-trip.
+    try {
+      const serialized = JSON.stringify(createPersistedStateSnapshot(state));
+      putStoredAppStateJson(serialized).catch((error) => console.warn('IndexedDB state persist failed', error));
+    } catch (error) {
+      console.warn('IndexedDB snapshot build failed', error);
     }
   }
 
@@ -14005,7 +14016,7 @@
         reject(new Error('IndexedDB není dostupné'));
         return;
       }
-      const request = indexedDB.open(FILE_DB_NAME, 2);
+      const request = indexedDB.open(FILE_DB_NAME, FILE_DB_VERSION);
       request.onupgradeneeded = () => {
         const db = request.result;
         if (!db.objectStoreNames.contains(FILE_STORE_CONTRACTS)) {
@@ -14013,6 +14024,9 @@
         }
         if (!db.objectStoreNames.contains(FILE_STORE_WARRANTIES)) {
           db.createObjectStore(FILE_STORE_WARRANTIES, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(FILE_STORE_APP_STATE)) {
+          db.createObjectStore(FILE_STORE_APP_STATE, { keyPath: 'id' });
         }
       };
       request.onsuccess = () => resolve(request.result);
@@ -14104,6 +14118,44 @@
 
   async function deleteStoredWarrantyFile(id) {
     await withNamedFileStore(FILE_STORE_WARRANTIES, 'readwrite', (store) => store.delete(id));
+  }
+
+  // Durable app-state backup in IndexedDB. localStorage on iOS has a small (~5 MB)
+  // quota and silently drops the main state when it's exceeded, so we keep a copy
+  // here (much larger quota, survives across launches) and restore it on boot.
+  async function putStoredAppStateJson(json) {
+    await withNamedFileStore(FILE_STORE_APP_STATE, 'readwrite', (store) => store.put({ id: APP_STATE_IDB_KEY, json, savedAt: Date.now() }));
+  }
+
+  async function getStoredAppStateJson() {
+    const db = await openFilesDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(FILE_STORE_APP_STATE, 'readonly');
+      const request = tx.objectStore(FILE_STORE_APP_STATE).get(APP_STATE_IDB_KEY);
+      request.onsuccess = () => resolve(request.result?.json || null);
+      request.onerror = () => reject(request.error || new Error('Stav nejde načíst z IndexedDB'));
+      tx.oncomplete = () => db.close();
+      tx.onerror = () => db.close();
+    });
+  }
+
+  async function hydrateStateFromIndexedDb() {
+    // Only needed when the synchronous localStorage restore didn't yield a usable
+    // workspace (typically iOS, where the big state exceeds the localStorage quota).
+    if (state.household?.isConfigured && hasUsableAppSession()) return false;
+    let json = null;
+    try { json = await getStoredAppStateJson(); } catch { return false; }
+    if (!json) return false;
+    // The cloud may have configured a fresher state while we were reading IndexedDB.
+    if (state.household?.isConfigured && hasUsableAppSession()) return false;
+    const parsed = safeParse(json, null);
+    if (!parsed || typeof parsed !== 'object') return false;
+    const candidate = migrateState(mergeState(DEFAULT_STATE, parsed));
+    if (!candidate.household?.isConfigured) return false;
+    state = candidate;
+    runtimeStateRef = state;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(createPersistedStateSnapshot(state))); } catch {}
+    return true;
   }
 
   function sanitizeStorageFileName(name) {
@@ -22758,7 +22810,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-300-${todayISO()}.json`;
+    link.download = `domacnost-plus-v0-1-301-${todayISO()}.json`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -23219,6 +23271,14 @@
   render();
   scheduleBootCloudWarmStart();
   handleInitialAuthReturn().catch((error) => console.warn('Auth return handling failed', error));
+  // If localStorage didn't restore a usable workspace (iOS quota), pull the durable
+  // IndexedDB copy and re-render — this shows cached data in ~tens of ms instead of
+  // waiting several seconds for the cloud.
+  if (!state.household?.isConfigured) {
+    hydrateStateFromIndexedDb()
+      .then((restored) => { if (restored) requestRender(); })
+      .catch((error) => console.warn('IndexedDB hydrate failed', error));
+  }
 
   } catch (error) {
     console.error('Domácnost+ boot failed', error);
