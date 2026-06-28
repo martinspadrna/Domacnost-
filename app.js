@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_302';
-  const APP_BUILD = 302;
+  const APP_VERSION = 'Domácnost+ v.0.1_303';
+  const APP_BUILD = 303;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -969,6 +969,8 @@
   let weatherInstance = null;
   let notesInstance = null;
   let warrantyInstance = null;
+  let hdoInstance = null;
+  let wasteInstance = null;
 
   let state = loadState();
   runtimeStateRef = state;
@@ -2804,13 +2806,7 @@
   }
 
   function renderWasteOverviewItem(item) {
-    return renderOverviewItem({
-      title: `${item.type} odpad`,
-      badge: item.days === null ? 'bez data' : dueBadge(item.days),
-      badgeClass: item.days !== null && item.days <= 1 ? 'warn' : '',
-      meta: `Svoz ${formatDate(item.date)}${item.note ? ` · ${item.note}` : ''}`,
-      icon: '♻️'
-    });
+    return getWasteModule().renderWasteOverviewItem(item);
   }
 
   function renderOverviewDrawer() {
@@ -3094,82 +3090,8 @@
     return map[type] || { nav: type || 'tasks', tab: '' };
   }
 
-  function hdoAppliesToNormalDays(item) {
-    const days = sanitizeHdoDays(item?.days);
-    return days.some((day) => day >= 1 && day <= 5);
-  }
-
-  function hdoAppliesToWeekendHoliday(item) {
-    const days = sanitizeHdoDays(item?.days);
-    return days.includes(0) || days.includes(6);
-  }
-
-  function renderHdoOverviewTable(title, subtitle, rows = []) {
-    const cleanRows = sortHdoWindowsForOverview(rows);
-    return `
-      <div class="hdo-overview-table-card">
-        <div class="hdo-overview-table-head">
-          <strong>${escapeHtml(title)}</strong>
-          <span>${escapeHtml(subtitle)}</span>
-        </div>
-        ${cleanRows.length ? `
-          <div class="hdo-overview-table" role="table" aria-label="${escapeHtml(title)}">
-            <div class="hdo-overview-table-row hdo-overview-table-row-head" role="row">
-              <span role="columnheader">Čas</span>
-              <span role="columnheader">Název</span>
-              <span role="columnheader">Stav</span>
-            </div>
-            ${cleanRows.map((item) => {
-              const isValidTime = timeToMinutes(item.start) !== null && timeToMinutes(item.end) !== null;
-              return `
-                <div class="hdo-overview-table-row" role="row">
-                  <span role="cell"><strong>${escapeHtml(isValidTime ? hdoWindowTimeLabel(item) : 'zkontrolovat')}</strong></span>
-                  <span role="cell">${escapeHtml(item.label || 'HDO okno')}</span>
-                  <span role="cell"><em class="hdo-overview-state ${item.enabled && isValidTime ? 'good' : 'warn'}">${item.enabled && isValidTime ? 'aktivní' : item.enabled ? 'čas?' : 'vypnuto'}</em></span>
-                </div>`;
-            }).join('')}
-          </div>` : `<div class="inline-note compact-note">Pro tuhle skupinu není nastavené žádné okno.</div>`}
-      </div>`;
-  }
-
   function renderHdoOverviewTables(rows = []) {
-    const safeRows = getSafeHdoWindows().length ? rows : [];
-    const normalRows = safeRows.filter(hdoAppliesToNormalDays);
-    const weekendRows = safeRows.filter(hdoAppliesToWeekendHoliday);
-    return `
-      <div class="hdo-overview-table-grid">
-        ${renderHdoOverviewTable('Normální dny', 'Po–Pá', normalRows)}
-        ${renderHdoOverviewTable('Víkend + svátky', 'Sobota, neděle a české svátky', weekendRows)}
-      </div>`;
-  }
-
-
-  function renderHdoModuleTable(title, subtitle, rows = []) {
-    const cleanRows = sortHdoWindowsForOverview(rows);
-    return `
-      <div class="hdo-overview-table-card hdo-module-table-card">
-        <div class="hdo-overview-table-head">
-          <strong>${escapeHtml(title)}</strong>
-          <span>${escapeHtml(subtitle)}</span>
-        </div>
-        ${cleanRows.length ? `<div class="list hdo-module-list">${cleanRows.map((item) => `
-          <div class="item hdo-module-row">
-            <div class="item-top"><div class="item-title">${escapeHtml(item.label)}</div><span class="badge ${item.enabled ? 'good' : ''}">${item.enabled ? 'aktivní' : 'vypnuto'}</span></div>
-            <div class="item-meta">${escapeHtml(item.start)}–${escapeHtml(item.end)} · ${escapeHtml(daysLabel(item.days))}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
-            <div class="item-actions"><button class="ghost-btn" type="button" data-action="toggle-hdo" data-id="${item.id}">${item.enabled ? 'Vypnout' : 'Zapnout'}</button>${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-hdo" data-id="${item.id}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-hdo" data-id="${item.id}">Smazat</button></div>
-          </div>`).join('')}</div>` : `<div class="inline-note compact-note">Pro tuhle skupinu není nastavené žádné okno.</div>`}
-      </div>`;
-  }
-
-  function renderHdoModuleTables(rows = []) {
-    const safeRows = getSafeHdoWindows().length ? rows : [];
-    const normalRows = safeRows.filter(hdoAppliesToNormalDays);
-    const weekendRows = safeRows.filter(hdoAppliesToWeekendHoliday);
-    return `
-      <div class="hdo-overview-table-grid hdo-module-table-grid">
-        ${renderHdoModuleTable('Normální dny', 'Po–Pá', normalRows)}
-        ${renderHdoModuleTable('Víkend + svátky', 'Sobota, neděle a české svátky', weekendRows)}
-      </div>`;
+    return getHdoModule().renderHdoOverviewTables(rows);
   }
 
   function renderOverviewContent(type) {
@@ -3934,39 +3856,7 @@
   }
 
   function getHdoHeroPresentation(ctx, options = {}) {
-    const safeDate = toSafeDate(now, new Date());
-    const minuteNow = safeDate.getHours() * 60 + safeDate.getMinutes();
-    const extraLimit = options.density === 'large' ? 5 : options.density === 'medium' ? 2 : 0;
-    const allEnabled = getSafeHdoWindows().filter((entry) => entry.enabled && timeToMinutes(entry.start) !== null && timeToMinutes(entry.end) !== null);
-    const enabledToday = allEnabled.filter((entry) => hdoWindowMatchesDate(entry, safeDate));
-    const enabled = enabledToday.length ? enabledToday : allEnabled;
-    const extraRows = extraLimit ? sortHdoWindowsForOverview(enabled).slice(0, extraLimit).map((entry) => hdoWindowTimeLabel(entry)) : [];
-    const active = enabledToday.find((entry) => isTimeInWindow(minuteNow, entry.start, entry.end));
-    if (active) {
-      const endMinutes = timeToMinutes(active.end);
-      let diff = endMinutes - minuteNow;
-      if (diff <= 0) diff += 1440;
-      return {
-        metric: 'Běží',
-        text: `do ${active.end}`,
-        detail: `ještě ${humanDuration(diff)}`,
-        chips: [daysLabel(active.days)],
-        extraRows,
-        tone: 'good'
-      };
-    }
-    const next = findNextHdoWindow(safeDate);
-    if (next) {
-      return {
-        metric: `za ${humanDuration(next.diffMinutes)}`,
-        text: hdoWindowTimeLabel(next.item),
-        detail: '',
-        chips: [daysLabel(next.item.days)],
-        extraRows,
-        tone: 'warn'
-      };
-    }
-    return { metric: '—', text: 'HDO není nastavené', detail: 'Přidej okna nízkého tarifu', chips: [], extraRows: [], tone: 'neutral' };
+    return getHdoModule().getHdoHeroPresentation(ctx, options);
   }
 
 
@@ -6173,6 +6063,69 @@
     return warrantyInstance;
   }
 
+  function getHdoModule() {
+    if (hdoInstance) return hdoInstance;
+    const factory = window.DomacnostHdo?.createHdo;
+    if (!factory) throw new Error('hdo.js není načtený');
+    hdoInstance = factory({
+      getState: () => state,
+      getNow: () => now,
+      escapeHtml,
+      normalizeText,
+      uid,
+      field,
+      selectField,
+      renderEmptyCta,
+      showToast,
+      saveState,
+      render,
+      touchState,
+      currentHouseholdId,
+      currentProfileId,
+      toSafeDate,
+      timeToMinutes,
+      isTimeInWindow,
+      humanDuration,
+      daysLabel,
+      isCzechPublicHolidayDate,
+      daysModeToArray,
+      getSupabaseClient,
+      refreshCloudSession
+    });
+    return hdoInstance;
+  }
+
+  function getWasteModule() {
+    if (wasteInstance) return wasteInstance;
+    const factory = window.DomacnostWaste?.createWaste;
+    if (!factory) throw new Error('waste.js není načtený');
+    wasteInstance = factory({
+      getState: () => state,
+      escapeHtml,
+      normalizeText,
+      uid,
+      todayISO,
+      daysUntil,
+      formatDate,
+      field,
+      selectField,
+      renderEmptyCta,
+      renderOverviewItem,
+      dueBadge,
+      showToast,
+      saveState,
+      render,
+      touchState,
+      currentHouseholdId,
+      currentProfileId,
+      addDaysIso,
+      addMonthsIso,
+      getSupabaseClient,
+      refreshCloudSession
+    });
+    return wasteInstance;
+  }
+
   function renderCouponItem(coupon) {
     const left = daysUntil(coupon.expiry);
     const badgeClass = left === null ? '' : left < 0 ? 'bad' : left <= 7 ? 'warn' : 'good';
@@ -7112,57 +7065,8 @@
       <div class="grid two module-tabbed homecare-tab-${escapeHtml(tab)} homecare-fast-tab">
         ${panelHtml}
       </div>`;
-    if (fastForcedTab === 'hdo') {
-      const hdo = getHdoStatus(now);
-      return wrapFastHomecarePanel('hdo', `
-        <section class="card homecare-panel panel-hdo">
-          <div class="card-header">
-            <div><h2>HDO / nízký tarif</h2><p>${escapeHtml(hdo.message)}</p></div>
-            <span class="badge ${hdo.active ? 'good' : 'warn'}">${hdo.active ? 'běží' : 'neběží'} · ${state.hdoWindows.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
-          </div>
-          <details class="compact-edit-details hdo-manual-details" open>
-            <summary><span>Zadání časů HDO</span><em>přidat časové okno nízkého tarifu</em></summary>
-            <form data-form="add-hdo" class="compact-form hdo-manual-form">
-              <div class="form-grid two">
-                ${field('Název okna', 'label', 'text', 'např. Večerní tarif', true)}
-                ${hdoTimeField('Od', 'start', '0600 nebo 06:00', true)}
-                ${hdoTimeField('Do', 'end', '2200 nebo 22:00', true)}
-                ${selectField('Dny', 'daysMode', [['all', 'Každý den'], ['workdays', 'Po–Pá'], ['weekend', 'Víkend']])}
-              </div>
-              <div class="form-actions"><button class="primary-btn" type="submit">Přidat HDO okno</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-hdo">Načíst cloud HDO</button>' : ''}${state.cloud?.householdId && state.hdoWindows.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-hdo">Odeslat lokální HDO (${state.hdoWindows.filter((item) => !item.cloudId).length})</button>` : ''}</div>
-            </form>
-          </details>
-          <div style="height:14px"></div>
-          ${state.hdoWindows.length ? renderHdoModuleTables(sortHdoWindowsForOverview(getSafeHdoWindows())) : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard začne ukazovat aktuální stav.', nav: 'hdo', tab: '', label: 'Nastavit HDO' })}
-        </section>`);
-    }
-    if (fastForcedTab === 'waste') {
-      const waste = getWasteRuntimeItems(state.waste).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
-      return wrapFastHomecarePanel('waste', `
-        <section class="card homecare-panel panel-waste">
-          <div class="card-header">
-            <div><h2>Odpad</h2><p>Svoz odpadu s přípravou na připomínky.</p></div>
-            <span class="badge ${waste.some((item) => item.cloudId) ? 'good' : ''}">${waste.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
-          </div>
-          <form data-form="add-waste">
-            <div class="form-grid two">
-              ${field('Typ', 'type', 'text', 'plast / papír / komunál', true)}
-              ${field('Datum svozu', 'date', 'date', '', true)}
-              ${selectField('Opakování', 'repeatRule', [['none', 'Jednorázově'], ['weekly', 'Týdně'], ['biweekly', 'Každé 2 týdny'], ['monthly', 'Měsíčně']])}
-              ${field('Upozornit předem (hod)', 'notifyBeforeHours', 'number', '12')}
-              ${field('Poznámka', 'note', 'text', 'volitelné')}
-            </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat svoz</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-waste">Načíst cloud odpad</button>' : ''}${state.cloud?.householdId && waste.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-waste">Odeslat lokální svozy (${waste.filter((item) => !item.cloudId).length})</button>` : ''}</div>
-          </form>
-          <div style="height:14px"></div>
-          ${waste.length ? `<div class="list">${waste.map((item) => `
-            <div class="item">
-              <div class="item-top"><div class="item-title">${escapeHtml(item.type)}</div><span class="badge ${daysUntil(item.date) <= 1 ? 'warn' : ''}">${formatDate(item.date)}</span></div>
-              <div class="item-meta">${escapeHtml(wasteRepeatLabel(item.repeatRule))}${item.notifyBeforeHours ? ` · připomenout ${escapeHtml(String(item.notifyBeforeHours))} h předem` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
-              <div class="item-actions">${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-waste" data-id="${escapeHtml(item.id)}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-waste" data-id="${escapeHtml(item.id)}">Smazat</button></div>
-            </div>`).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej první svoz a aplikace ho ukáže v přehledu Dnes a brzy.', nav: 'waste', tab: '', label: 'Přidat svoz' })}
-        </section>`);
-    }
+    if (fastForcedTab === 'hdo') return wrapFastHomecarePanel('hdo', getHdoModule().renderHdoPanel());
+    if (fastForcedTab === 'waste') return wrapFastHomecarePanel('waste', getWasteModule().renderWastePanel());
     if (fastForcedTab === 'warranties') return wrapFastHomecarePanel('warranties', renderWarrantiesPanel(sortedWarranties()));
     if (fastForcedTab === 'polish-holidays') return wrapFastHomecarePanel('polish-holidays', renderPolishHolidaysPanel());
     const hdo = getHdoStatus(now);
@@ -7191,51 +7095,9 @@
         { id: 'polish-holidays', label: 'Svátky PL', icon: '🇵🇱', count: polishShopCount }
       ], 'hdo') : ''}
       <div class="grid two module-tabbed homecare-tab-${activeHomecareTab}">
-        <section class="card homecare-panel panel-hdo">
-          <div class="card-header">
-            <div><h2>HDO / nízký tarif</h2><p>${escapeHtml(hdo.message)}</p></div>
-            <span class="badge ${hdo.active ? 'good' : 'warn'}">${hdo.active ? 'běží' : 'neběží'} · ${state.hdoWindows.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
-          </div>
-          <details class="compact-edit-details hdo-manual-details" open>
-            <summary><span>Zadání časů HDO</span><em>přidat časové okno nízkého tarifu</em></summary>
-            <form data-form="add-hdo" class="compact-form hdo-manual-form">
-              <div class="form-grid two">
-                ${field('Název okna', 'label', 'text', 'např. Večerní tarif', true)}
-                ${hdoTimeField('Od', 'start', '0600 nebo 06:00', true)}
-                ${hdoTimeField('Do', 'end', '2200 nebo 22:00', true)}
-                ${selectField('Dny', 'daysMode', [['all', 'Každý den'], ['workdays', 'Po–Pá'], ['weekend', 'Víkend']])}
-              </div>
-              <div class="form-actions"><button class="primary-btn" type="submit">Přidat HDO okno</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-hdo">Načíst cloud HDO</button>' : ''}${state.cloud?.householdId && state.hdoWindows.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-hdo">Odeslat lokální HDO (${state.hdoWindows.filter((item) => !item.cloudId).length})</button>` : ''}</div>
-            </form>
-          </details>
-          <div style="height:14px"></div>
-          ${state.hdoWindows.length ? renderHdoModuleTables(sortHdoWindowsForOverview(getSafeHdoWindows())) : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard začne ukazovat aktuální stav.', nav: 'hdo', tab: '', label: 'Nastavit HDO' })}
-        </section>
+        ${getHdoModule().renderHdoPanel()}
 
-        <section class="card homecare-panel panel-waste">
-          <div class="card-header">
-            <div><h2>Odpad</h2><p>Svoz odpadu s přípravou na připomínky.</p></div>
-            <span class="badge ${waste.some((item) => item.cloudId) ? 'good' : ''}">${waste.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
-          </div>
-          <form data-form="add-waste">
-            <div class="form-grid two">
-              ${field('Typ', 'type', 'text', 'plast / papír / komunál', true)}
-              ${field('Datum svozu', 'date', 'date', '', true)}
-              ${selectField('Opakování', 'repeatRule', [['none', 'Jednorázově'], ['weekly', 'Týdně'], ['biweekly', 'Každé 2 týdny'], ['monthly', 'Měsíčně']])}
-              ${field('Upozornit předem (hod)', 'notifyBeforeHours', 'number', '12')}
-              ${field('Poznámka', 'note', 'text', 'volitelné')}
-            </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat svoz</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-waste">Načíst cloud odpad</button>' : ''}${state.cloud?.householdId && waste.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-waste">Odeslat lokální svozy (${waste.filter((item) => !item.cloudId).length})</button>` : ''}</div>
-          </form>
-          <div style="height:14px"></div>
-          ${waste.length ? `<div class="list">${waste.map((item) => `
-            <div class="item">
-              <div class="item-top"><div class="item-title">${escapeHtml(item.type)}</div><span class="badge ${daysUntil(item.date) <= 1 ? 'warn' : ''}">${formatDate(item.date)}</span></div>
-              <div class="item-meta">${escapeHtml(wasteRepeatLabel(item.repeatRule))}${item.notifyBeforeHours ? ` · připomenout ${escapeHtml(String(item.notifyBeforeHours))} h předem` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
-              <div class="item-actions">${state.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-waste" data-id="${item.id}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-waste" data-id="${item.id}">Smazat</button></div>
-            </div>
-          `).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej první svoz a aplikace ho ukáže v přehledu Dnes a brzy.', nav: 'waste', tab: '', label: 'Přidat svoz' })}
-        </section>
+        ${getWasteModule().renderWastePanel()}
 
         ${getNotesModule().renderNotebookPanel()}
 
@@ -13026,15 +12888,7 @@
     `;
   }
 
-  function hdoTimeField(label, name, placeholder = '06:00', required = false, value = '') {
-    const inputId = `field-${name}-${Math.random().toString(36).slice(2, 7)}`;
-    return `
-      <div class="field">
-        <label for="${inputId}">${escapeHtml(label)}</label>
-        <input class="input" id="${inputId}" name="${name}" type="text" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(value)}" ${required ? 'required' : ''} inputmode="numeric" pattern="[0-9:]*" autocomplete="off" data-hdo-time-input>
-      </div>
-    `;
-  }
+  // hdoTimeField presunut do hdo.js
 
   function selectField(label, name, options, selected = '') {
     const selectId = `field-${name}-${Math.random().toString(36).slice(2, 7)}`;
@@ -13274,39 +13128,8 @@
     return new Intl.DateTimeFormat('cs-CZ', { weekday: 'short', day: 'numeric', month: 'numeric' }).format(date);
   }
 
-  function hdoWindowMatchesDate(item, date) {
-    const safeDate = toSafeDate(date, new Date());
-    if (!safeDate || !Number.isFinite(safeDate.getTime())) return false;
-    const days = sanitizeHdoDays(item?.days);
-    if (days.includes(safeDate.getDay())) return true;
-    const isHoliday = isCzechPublicHolidayDate(safeDate);
-    const hasWeekend = days.includes(0) || days.includes(6);
-    return isHoliday && hasWeekend;
-  }
-
   function getHdoStatus(date) {
-    const safeDate = toSafeDate(date, new Date());
-    if (!safeDate || !Number.isFinite(safeDate.getTime())) {
-      return { active: false, label: 'není nastaveno', message: 'HDO se teď nepovedlo spočítat. Zkontroluj časová okna.' };
-    }
-    const day = safeDate.getDay();
-    const minutesNow = safeDate.getHours() * 60 + safeDate.getMinutes();
-    const enabled = getSafeHdoWindows().filter((item) => item.enabled && hdoWindowMatchesDate(item, safeDate) && timeToMinutes(item.start) !== null && timeToMinutes(item.end) !== null);
-    const active = enabled.find((item) => isTimeInWindow(minutesNow, item.start, item.end));
-    if (active) {
-      return {
-        active: true,
-        label: active.label,
-        message: `Právě běží ${active.label} (${hdoWindowTimeLabel(active)}).`
-      };
-    }
-    const next = findNextHdoWindow(safeDate);
-    if (!next) return { active: false, label: 'není nastaveno', message: 'Není nastavené žádné aktivní HDO okno.' };
-    return {
-      active: false,
-      label: next.item.label,
-      message: `Další nízký tarif: ${next.item.label} za ${humanDuration(next.diffMinutes)} (${hdoWindowTimeLabel(next.item)}).`
-    };
+    return getHdoModule().getHdoStatus(date);
   }
 
   function isTimeInWindow(minutesNow, start, end) {
@@ -13328,75 +13151,19 @@
   }
 
   function sanitizeHdoDays(days) {
-    if (!Array.isArray(days)) return [];
-    return [...new Set(days.map((day) => Number(day)).filter((day) => Number.isInteger(day) && day >= 0 && day <= 6))].sort((a, b) => a - b);
-  }
-
-  function normalizeHdoWindowView(item) {
-    if (!item || typeof item !== 'object') return null;
-    const start = normalizeHdoTimeInput(item.start || item.start_time || item.from || '');
-    const end = normalizeHdoTimeInput(item.end || item.end_time || item.to || '');
-    return {
-      ...item,
-      label: normalizeText(item.label || item.title || 'HDO okno') || 'HDO okno',
-      start,
-      end,
-      days: sanitizeHdoDays(item.days),
-      enabled: item.enabled !== false && item.is_enabled !== false
-    };
+    return getHdoModule().sanitizeHdoDays(days);
   }
 
   function getSafeHdoWindows() {
-    return (Array.isArray(state.hdoWindows) ? state.hdoWindows : [])
-      .map(normalizeHdoWindowView)
-      .filter(Boolean);
-  }
-
-  function hdoWindowSortWeight(item) {
-    const days = sanitizeHdoDays(item?.days);
-    const hasWorkday = days.some((day) => day >= 1 && day <= 5);
-    const hasWeekend = days.some((day) => day === 0 || day === 6);
-    if (hasWorkday && !hasWeekend) return 0;
-    if (hasWorkday && hasWeekend) return 1;
-    if (hasWeekend) return 2;
-    return 3;
+    return getHdoModule().getSafeHdoWindows();
   }
 
   function sortHdoWindowsForOverview(rows = []) {
-    return [...rows].sort((a, b) => {
-      const groupDiff = hdoWindowSortWeight(a) - hdoWindowSortWeight(b);
-      if (groupDiff) return groupDiff;
-      const timeDiff = (timeToMinutes(a?.start) ?? 9999) - (timeToMinutes(b?.start) ?? 9999);
-      if (timeDiff) return timeDiff;
-      return String(a?.label || '').localeCompare(String(b?.label || ''), 'cs');
-    });
-  }
-
-  function hdoWindowTimeLabel(item) {
-    const start = item?.start || '—';
-    const end = item?.end || '—';
-    return `${start}–${end}`;
+    return getHdoModule().sortHdoWindowsForOverview(rows);
   }
 
   function findNextHdoWindow(date) {
-    const base = toSafeDate(date, new Date());
-    if (!base || !Number.isFinite(base.getTime())) return null;
-    const windows = getSafeHdoWindows().filter((item) => item.enabled && item.days.length);
-    if (!windows.length) return null;
-    const candidates = [];
-    windows.forEach((item) => {
-      const startMinutes = timeToMinutes(item.start);
-      if (startMinutes === null) return;
-      for (let offset = 0; offset <= 7; offset += 1) {
-        const candidate = new Date(base);
-        candidate.setDate(base.getDate() + offset);
-        if (!hdoWindowMatchesDate(item, candidate)) continue;
-        candidate.setHours(Math.floor(startMinutes / 60), startMinutes % 60, 0, 0);
-        const diffMinutes = Math.round((candidate.getTime() - base.getTime()) / 60000);
-        if (Number.isFinite(diffMinutes) && diffMinutes > 0) candidates.push({ item, diffMinutes });
-      }
-    });
-    return candidates.sort((a, b) => a.diffMinutes - b.diffMinutes)[0] || null;
+    return getHdoModule().findNextHdoWindow(date);
   }
 
   function humanDuration(minutes) {
@@ -16492,233 +16259,24 @@
     showToast('Balík smazán');
   }
 
-  function cloudHdoDaysToDb(days) {
-    const list = Array.isArray(days) ? days : [];
-    return list.map((day) => Number(day) === 0 ? 7 : Number(day)).filter((day) => day >= 1 && day <= 7);
+  function cloudLoadHdoData(showMessage = true) {
+    return getHdoModule().cloudLoadHdoData(showMessage);
   }
 
-  function cloudHdoDaysFromDb(days) {
-    const list = Array.isArray(days) ? days : [];
-    return list.map((day) => Number(day) === 7 ? 0 : Number(day)).filter((day) => day >= 0 && day <= 6);
+  function cloudSyncHdoById(id) {
+    return getHdoModule().cloudSyncHdoById(id);
   }
 
-  async function ensureCloudHdoSetting() {
-    const client = getSupabaseClient();
-    if (!client || !state.cloud?.householdId) return null;
-    const user = await refreshCloudSession(false);
-    if (!user) return null;
-    if (state.hdoCloud?.settingId) return state.hdoCloud.settingId;
-    const payload = {
-      household_id: state.cloud.householdId,
-      title: 'HDO / nízký tarif',
-      created_by: user.id,
-      updated_by: user.id
-    };
-    const { data, error } = await client
-      .from('hdo_settings')
-      .upsert(payload, { onConflict: 'household_id' })
-      .select('id')
-      .single();
-    if (error) {
-      showToast(error.message || 'Nastavení HDO se nepovedlo založit v cloudu');
-      return null;
-    }
-    state.hdoCloud = { ...(state.hdoCloud || {}), settingId: data.id, loadedAt: new Date().toISOString() };
-    return data.id;
-  }
-
-  function cloudHdoPayload(item, settingId, userId) {
-    return {
-      household_id: state.cloud.householdId,
-      setting_id: settingId,
-      label: item.label || null,
-      days: cloudHdoDaysToDb(item.days),
-      start_time: item.start || '00:00',
-      end_time: item.end || '00:00',
-      is_enabled: item.enabled !== false,
-      source: 'manual',
-      created_by: item.cloudId ? undefined : userId,
-      updated_by: userId
-    };
-  }
-
-  async function cloudAddHdoWindow(item) {
-    const client = getSupabaseClient();
-    if (!client || !state.cloud?.householdId) return null;
-    const user = await refreshCloudSession(false);
-    if (!user) return null;
-    const settingId = await ensureCloudHdoSetting();
-    if (!settingId) return null;
-    const payload = cloudHdoPayload(item, settingId, user.id);
-    const { data, error } = await client.from('hdo_windows').insert(payload).select('id').single();
-    if (error) {
-      showToast(error.message || 'HDO okno se nepovedlo uložit do cloudu');
-      return null;
-    }
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return data;
-  }
-
-  async function cloudUpdateHdoWindow(item) {
-    const client = getSupabaseClient();
-    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
-    const user = await refreshCloudSession(false);
-    if (!user) return false;
-    const settingId = await ensureCloudHdoSetting();
-    if (!settingId) return false;
-    const payload = cloudHdoPayload(item, settingId, user.id);
-    delete payload.created_by;
-    const { error } = await client.from('hdo_windows').update(payload).eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
-    if (error) {
-      showToast(error.message || 'HDO okno se nepovedlo aktualizovat v cloudu');
-      return false;
-    }
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return true;
-  }
-
-  async function cloudDeleteHdoWindow(item) {
-    const client = getSupabaseClient();
-    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
-    const { error } = await client.from('hdo_windows').delete().eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
-    if (error) {
-      showToast(error.message || 'HDO okno se nepovedlo smazat z cloudu');
-      return false;
-    }
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return true;
-  }
-
-  async function cloudLoadHdoData(showMessage = true) {
-    const client = getSupabaseClient();
-    if (!client || !state.cloud?.householdId) {
-      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
-      return;
-    }
-    const { data: settings, error: settingsError } = await client
-      .from('hdo_settings')
-      .select('id,title,note')
-      .eq('household_id', state.cloud.householdId)
-      .maybeSingle();
-    if (settingsError) {
-      showToast(settingsError.message || 'HDO nastavení se nepovedlo načíst');
-      return;
-    }
-    if (settings?.id) {
-      state.hdoCloud = {
-        ...(state.hdoCloud || {}),
-        settingId: settings.id,
-        loadedAt: new Date().toISOString()
-      };
-    }
-    const { data, error } = await client
-      .from('hdo_windows')
-      .select('id,label,days,start_time,end_time,is_enabled')
-      .eq('household_id', state.cloud.householdId)
-      .order('start_time', { ascending: true });
-    if (error) {
-      showToast(error.message || 'HDO okna se nepovedlo načíst');
-      return;
-    }
-    const localOnly = state.hdoWindows.filter((item) => !item.cloudId);
-    const cloudItems = (data || []).map((item) => ({
-      id: `hdo-cloud-${item.id}`,
-      cloudId: item.id,
-      householdId: state.household.id,
-      profileId: currentProfileId(),
-      label: item.label || 'HDO okno',
-      start: String(item.start_time || '').slice(0, 5),
-      end: String(item.end_time || '').slice(0, 5),
-      days: cloudHdoDaysFromDb(item.days),
-      enabled: item.is_enabled !== false,
-      createdAt: new Date().toISOString()
-    }));
-    state.hdoWindows = [...cloudItems, ...localOnly];
-    state.cloud.lastSyncAt = new Date().toISOString();
-    touchState();
-    saveState();
-    render();
-    if (showMessage) showToast(`Načteno HDO oken: ${cloudItems.length}`);
-  }
-
-  async function cloudSyncHdoById(id) {
-    const item = state.hdoWindows.find((entry) => entry.id === id);
-    if (!item) return;
-    const saved = item.cloudId ? await cloudUpdateHdoWindow(item) : await cloudAddHdoWindow(item);
-    if (saved?.id) item.cloudId = saved.id;
-    touchState();
-    saveState();
-    render();
-    showToast(item.cloudId ? 'HDO uloženo do cloudu' : 'HDO se nepovedlo odeslat');
-  }
-
-  async function cloudSyncLocalHdo() {
-    const local = state.hdoWindows.filter((item) => !item.cloudId);
-    let synced = 0;
-    for (const item of local) {
-      const saved = await cloudAddHdoWindow(item);
-      if (saved?.id) {
-        item.cloudId = saved.id;
-        synced += 1;
-      }
-    }
-    touchState();
-    saveState();
-    render();
-    showToast(synced ? `Odesláno HDO oken: ${synced}` : 'Žádné HDO se nepovedlo odeslat');
-  }
-
-  function normalizeHdoTimeInput(value) {
-    const raw = normalizeText(value).replace(/\s+/g, '');
-    if (!raw) return '';
-    const colon = raw.match(/^(\d{1,2}):(\d{1,2})$/);
-    if (colon) {
-      const h = Number(colon[1]);
-      const m = Number(colon[2]);
-      if (h >= 0 && h <= 23 && m >= 0 && m <= 59) return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    }
-    const digits = raw.replace(/\D/g, '');
-    if (digits.length === 3 || digits.length === 4) {
-      const h = Number(digits.slice(0, -2));
-      const m = Number(digits.slice(-2));
-      if (h >= 0 && h <= 23 && m >= 0 && m <= 59) return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    }
-    if (digits.length <= 2) {
-      const h = Number(digits);
-      if (h >= 0 && h <= 23) return `${String(h).padStart(2, '0')}:00`;
-    }
-    return '';
+  function cloudSyncLocalHdo() {
+    return getHdoModule().cloudSyncLocalHdo();
   }
 
   function formatHdoTimeInputLive(input, event = {}) {
-    if (!input) return;
-    const raw = String(input.value || '');
-    if (!raw) return;
-    if (raw.includes(':')) {
-      const [h = '', m = ''] = raw.split(':');
-      input.value = `${h.replace(/\D/g, '').slice(0, 2)}:${m.replace(/\D/g, '').slice(0, 2)}`;
-      return;
-    }
-    const digits = raw.replace(/\D/g, '').slice(0, 4);
-    if (!digits) {
-      input.value = '';
-      return;
-    }
-    if (digits.length === 2 && !String(event.inputType || '').startsWith('delete')) {
-      input.value = `${digits}:`;
-      return;
-    }
-    if (digits.length > 2) {
-      input.value = `${digits.slice(0, 2)}:${digits.slice(2, 4)}`;
-      return;
-    }
-    input.value = digits;
+    return getHdoModule().formatHdoTimeInputLive(input, event);
   }
 
   function normalizeHdoTimeInputOnBlur(input) {
-    if (!input) return;
-    const normalized = normalizeHdoTimeInput(input.value);
-    if (normalized) input.value = normalized;
+    return getHdoModule().normalizeHdoTimeInputOnBlur(input);
   }
 
 
@@ -16734,289 +16292,49 @@
     return getWarrantyModule().deleteWarranty(id);
   }
 
-  async function addHdoWindowFromForm(data, form) {
-    const start = normalizeHdoTimeInput(data.start);
-    const end = normalizeHdoTimeInput(data.end);
-    if (!start || !end) return showToast('Zadej čas HDO jako 0600 nebo 06:00');
-    const item = {
-      id: uid(),
-      householdId: currentHouseholdId(),
-      profileId: currentProfileId(),
-      createdAt: new Date().toISOString(),
-      label: normalizeText(data.label),
-      start,
-      end,
-      days: daysModeToArray(data.daysMode),
-      enabled: true
-    };
-    const saved = await cloudAddHdoWindow(item);
-    if (saved?.id) item.cloudId = saved.id;
-    state.hdoWindows.push(item);
-    touchState();
-    saveState();
-    form?.reset();
-    render();
-    showToast(item.cloudId ? 'HDO okno uloženo do cloudu' : 'HDO okno uloženo lokálně');
+  function addHdoWindowFromForm(data, form) {
+    return getHdoModule().addHdoWindowFromForm(data, form);
   }
 
-  async function toggleHdoWindow(id) {
-    const item = state.hdoWindows.find((entry) => entry.id === id);
-    if (!item) return;
-    item.enabled = !item.enabled;
-    const ok = await cloudUpdateHdoWindow(item);
-    if (!ok) {
-      item.enabled = !item.enabled;
-      return;
-    }
-    touchState();
-    saveState();
-    render();
+  function toggleHdoWindow(id) {
+    return getHdoModule().toggleHdoWindow(id);
   }
 
-  async function deleteHdoWindow(id) {
-    const item = state.hdoWindows.find((entry) => entry.id === id);
-    if (!item) return;
-    const ok = await cloudDeleteHdoWindow(item);
-    if (!ok) return;
-    state.hdoWindows = state.hdoWindows.filter((entry) => entry.id !== id);
-    touchState();
-    saveState();
-    render();
-    showToast('HDO okno smazáno');
+  function deleteHdoWindow(id) {
+    return getHdoModule().deleteHdoWindow(id);
   }
 
-
-  function normalizeWasteRepeatRule(value) {
-    return ['none', 'weekly', 'biweekly', 'monthly', 'custom'].includes(value) ? value : 'none';
-  }
-
-  function isValidIsoDate(value) {
-    return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').slice(0, 10));
-  }
-
-  function wasteRepeatLabel(value) {
-    return ({ none: 'jednorázově', weekly: 'týdně', biweekly: 'každé 2 týdny', monthly: 'měsíčně', custom: 'vlastní opakování' })[value || 'none'] || 'jednorázově';
-  }
-
-  function getNextWasteDate(dateIso, repeatRule = 'none', referenceIso = todayISO()) {
-    const date = String(dateIso || '').slice(0, 10);
-    if (!isValidIsoDate(date)) return '';
-    const rule = normalizeWasteRepeatRule(repeatRule);
-    if (rule === 'none' || rule === 'custom') return date;
-    const currentDaysUntil = daysUntil(date);
-    if (currentDaysUntil === null || currentDaysUntil >= 0) return date;
-
-    if (rule === 'weekly' || rule === 'biweekly') {
-      const stepDays = rule === 'biweekly' ? 14 : 7;
-      const startTime = Date.parse(`${date}T00:00:00Z`);
-      const referenceTime = Date.parse(`${String(referenceIso || todayISO()).slice(0, 10)}T00:00:00Z`);
-      if (!Number.isFinite(startTime) || !Number.isFinite(referenceTime)) return date;
-      const diffDays = Math.max(0, Math.floor((referenceTime - startTime) / 86400000));
-      const periods = Math.max(1, Math.ceil(diffDays / stepDays));
-      return addDaysIso(date, periods * stepDays) || date;
-    }
-
-    if (rule === 'monthly') {
-      let nextDate = date;
-      for (let guard = 0; guard < 240 && daysUntil(nextDate) !== null && daysUntil(nextDate) < 0; guard += 1) {
-        const moved = addMonthsIso(nextDate, 1);
-        if (!moved || moved === nextDate) break;
-        nextDate = moved;
-      }
-      return nextDate;
-    }
-
-    return date;
-  }
-
-  function getWasteRuntimeItem(item) {
-    const baseDate = String(item?.date || '').slice(0, 10);
-    const nextDate = getNextWasteDate(baseDate, item?.repeatRule || item?.repeat_rule || 'none');
-    return {
-      ...item,
-      originalDate: baseDate,
-      date: nextDate || baseDate,
-      days: daysUntil(nextDate || baseDate),
-      isProjected: Boolean(nextDate && baseDate && nextDate !== baseDate)
-    };
-  }
-
-  function getWasteRuntimeItems(items = state.waste || []) {
-    return (items || []).map(getWasteRuntimeItem);
-  }
-
-  function getUpcomingWasteRuntimeItems({ maxDays = null, includeUnscheduled = false, limit = null } = {}) {
-    let items = getWasteRuntimeItems()
-      .filter((item) => (includeUnscheduled && item.days === null) || (item.days !== null && item.days >= 0));
-    if (maxDays !== null && maxDays !== undefined) items = items.filter((item) => item.days === null || item.days <= Number(maxDays));
-    items = items.sort((a, b) => (a.days ?? 9999) - (b.days ?? 9999));
-    return limit ? items.slice(0, Number(limit)) : items;
-  }
 
   function normalizeWasteStorageItems(items = []) {
-    return (items || []).map((item) => ({
-      ...item,
-      repeatRule: normalizeWasteRepeatRule(item?.repeatRule || item?.repeat_rule || 'none'),
-      notifyBeforeHours: item?.notifyBeforeHours === '' || item?.notifyBeforeHours === undefined ? 12 : Number(item.notifyBeforeHours),
-      enabled: item?.enabled !== false
-    }));
+    return getWasteModule().normalizeWasteStorageItems(items);
   }
 
-  function cloudWastePayload(item, userId) {
-    return {
-      household_id: state.cloud.householdId,
-      title: item.type || 'Svoz odpadu',
-      pickup_date: item.date || todayISO(),
-      repeat_rule: item.repeatRule || 'none',
-      repeat_interval: item.repeatRule === 'biweekly' ? 2 : 1,
-      notify_before_hours: item.notifyBeforeHours === '' || item.notifyBeforeHours === undefined ? 12 : Number(item.notifyBeforeHours),
-      is_enabled: item.enabled !== false,
-      note: item.note || null,
-      created_by: item.cloudId ? undefined : userId,
-      updated_by: userId
-    };
+  function getWasteRuntimeItems(items) {
+    return getWasteModule().getWasteRuntimeItems(items);
   }
 
-  async function cloudAddWaste(item) {
-    const client = getSupabaseClient();
-    if (!client || !state.cloud?.householdId) return null;
-    const user = await refreshCloudSession(false);
-    if (!user) return null;
-    const payload = cloudWastePayload(item, user.id);
-    const { data, error } = await client.from('waste_schedules').insert(payload).select('id').single();
-    if (error) {
-      showToast(error.message || 'Svoz se nepovedlo uložit do cloudu');
-      return null;
-    }
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return data;
+  function getUpcomingWasteRuntimeItems(options = {}) {
+    return getWasteModule().getUpcomingWasteRuntimeItems(options);
   }
 
-  async function cloudUpdateWaste(item) {
-    const client = getSupabaseClient();
-    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
-    const user = await refreshCloudSession(false);
-    if (!user) return false;
-    const payload = cloudWastePayload(item, user.id);
-    delete payload.created_by;
-    const { error } = await client.from('waste_schedules').update(payload).eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
-    if (error) {
-      showToast(error.message || 'Svoz se nepovedlo upravit v cloudu');
-      return false;
-    }
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return true;
+  function cloudLoadWaste(showMessage = true) {
+    return getWasteModule().cloudLoadWaste(showMessage);
   }
 
-  async function cloudDeleteWaste(item) {
-    const client = getSupabaseClient();
-    if (!client || !item?.cloudId || !state.cloud?.householdId) return true;
-    const { error } = await client.from('waste_schedules').delete().eq('id', item.cloudId).eq('household_id', state.cloud.householdId);
-    if (error) {
-      showToast(error.message || 'Svoz se nepovedlo smazat z cloudu');
-      return false;
-    }
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return true;
+  function cloudSyncWasteById(id) {
+    return getWasteModule().cloudSyncWasteById(id);
   }
 
-  async function cloudLoadWaste(showMessage = true) {
-    const client = getSupabaseClient();
-    if (!client || !state.cloud?.householdId) {
-      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
-      return;
-    }
-    const { data, error } = await client
-      .from('waste_schedules')
-      .select('id,title,pickup_date,repeat_rule,notify_before_hours,is_enabled,note')
-      .eq('household_id', state.cloud.householdId)
-      .order('pickup_date', { ascending: true });
-    if (error) {
-      showToast(error.message || 'Svoz odpadu se nepovedlo načíst');
-      return;
-    }
-    const localOnly = normalizeWasteStorageItems(state.waste.filter((item) => !item.cloudId));
-    const cloudItems = normalizeWasteStorageItems((data || []).map((item) => ({
-      id: state.waste.find((entry) => entry.cloudId === item.id)?.id || `waste-cloud-${item.id}`,
-      cloudId: item.id,
-      householdId: currentHouseholdId(),
-      profileId: currentProfileId(),
-      createdAt: new Date().toISOString(),
-      type: item.title || 'Svoz odpadu',
-      date: item.pickup_date || '',
-      repeatRule: item.repeat_rule || 'none',
-      notifyBeforeHours: item.notify_before_hours ?? 12,
-      enabled: item.is_enabled !== false,
-      note: item.note || ''
-    })));
-    state.waste = [...cloudItems, ...localOnly];
-    state.cloud.lastSyncAt = new Date().toISOString();
-    touchState();
-    saveState();
-    render();
-    if (showMessage) showToast(`Načteno svozů: ${cloudItems.length}`);
+  function cloudSyncLocalWaste() {
+    return getWasteModule().cloudSyncLocalWaste();
   }
 
-  async function cloudSyncWasteById(id) {
-    const item = state.waste.find((entry) => entry.id === id);
-    if (!item) return;
-    const saved = item.cloudId ? await cloudUpdateWaste(item) : await cloudAddWaste(item);
-    if (saved?.id) item.cloudId = saved.id;
-    touchState();
-    saveState();
-    render();
-    showToast(item.cloudId ? 'Svoz uložen do cloudu' : 'Svoz se nepovedlo odeslat');
+  function addWasteFromForm(data, form) {
+    return getWasteModule().addWasteFromForm(data, form);
   }
 
-  async function cloudSyncLocalWaste() {
-    const local = state.waste.filter((item) => !item.cloudId);
-    let synced = 0;
-    for (const item of local) {
-      const saved = await cloudAddWaste(item);
-      if (saved?.id) {
-        item.cloudId = saved.id;
-        synced += 1;
-      }
-    }
-    touchState();
-    saveState();
-    render();
-    showToast(synced ? `Odesláno svozů: ${synced}` : 'Žádný svoz se nepovedlo odeslat');
-  }
-
-  async function addWasteFromForm(data, form) {
-    const item = {
-      id: uid(),
-      householdId: currentHouseholdId(),
-      profileId: currentProfileId(),
-      createdAt: new Date().toISOString(),
-      type: normalizeText(data.type),
-      date: normalizeText(data.date),
-      repeatRule: normalizeWasteRepeatRule(data.repeatRule || 'none'),
-      notifyBeforeHours: data.notifyBeforeHours === '' || data.notifyBeforeHours === undefined ? 12 : Number(data.notifyBeforeHours),
-      enabled: true,
-      note: normalizeText(data.note)
-    };
-    const saved = await cloudAddWaste(item);
-    if (saved?.id) item.cloudId = saved.id;
-    state.waste.push(item);
-    touchState();
-    saveState();
-    form?.reset();
-    render();
-    showToast(item.cloudId ? 'Svoz uložen do cloudu' : 'Svoz uložen lokálně');
-  }
-
-  async function deleteWaste(id) {
-    const item = state.waste.find((entry) => entry.id === id);
-    if (!item) return;
-    const ok = await cloudDeleteWaste(item);
-    if (!ok) return;
-    state.waste = state.waste.filter((entry) => entry.id !== id);
-    touchState();
-    saveState();
-    render();
-    showToast('Svoz smazán');
+  function deleteWaste(id) {
+    return getWasteModule().deleteWaste(id);
   }
 
 
@@ -21610,7 +20928,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-302-${todayISO()}.json`;
+    link.download = `domacnost-plus-v0-1-303-${todayISO()}.json`;
     document.body.appendChild(link);
     link.click();
     link.remove();
