@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_301';
-  const APP_BUILD = 301;
+  const APP_VERSION = 'Domácnost+ v.0.1_302';
+  const APP_BUILD = 302;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1038,7 +1038,7 @@
   let shoppingAutoRefreshTimer = 0;
   let shoppingCloudRefreshInFlight = false;
   let shoppingLastAutoRefreshAt = 0;
-  let warrantyFormDraft = safeParse(sessionStorage.getItem('domacnostPlus.warrantyDraft'), null) || null;
+  // warrantyFormDraft je nyni modulova promenna ve warranty.js
   let calendarDetailEventId = null;
   let toastTimer = null;
   let now = new Date();
@@ -6122,6 +6122,57 @@
     return notesInstance;
   }
 
+  function getWarrantyModule() {
+    if (warrantyInstance) return warrantyInstance;
+    const factory = window.DomacnostWarranty?.createWarranty;
+    if (!factory) throw new Error('warranty.js není načtený');
+    warrantyInstance = factory({
+      getState: () => state,
+      getActiveWarrantyDetailId: () => activeWarrantyDetailId,
+      sessionStorage,
+      normalizeKey,
+      normalizeText,
+      uid,
+      todayISO,
+      addYearsIso,
+      daysUntil,
+      formatDate,
+      formatCurrency,
+      formatBytes,
+      escapeHtml,
+      field,
+      selectField,
+      renderOverviewSummary,
+      renderEmptyCta,
+      getFormData,
+      cloudReady,
+      cloudSaveHouseholdUiSettings,
+      getSupabaseClient,
+      refreshCloudSession,
+      showToast,
+      sanitizeStorageFileName,
+      currentHouseholdId,
+      currentProfileId,
+      touchState,
+      saveState,
+      render,
+      putStoredWarrantyFile,
+      getStoredWarrantyFile,
+      deleteStoredWarrantyFile,
+      showFilePreviewModal,
+      cloudAddExtraItem,
+      cloudUpdateExtraItem,
+      cloudDeleteExtraItem,
+      WARRANTY_STATUS_OPTIONS,
+      WARRANTY_YEARS_OPTIONS,
+      WARRANTY_FILE_ALLOWED_MIME,
+      WARRANTY_FILE_MAX_BYTES,
+      WARRANTY_IMAGE_MAX_DIMENSION,
+      WARRANTY_IMAGE_JPEG_QUALITY
+    });
+    return warrantyInstance;
+  }
+
   function renderCouponItem(coupon) {
     const left = daysUntil(coupon.expiry);
     const badgeClass = left === null ? '' : left < 0 ? 'bad' : left <= 7 ? 'warn' : 'good';
@@ -6857,298 +6908,35 @@
   }
 
   function normalizeWarrantyStatus(value) {
-    const key = normalizeKey(value || 'active');
-    return WARRANTY_STATUS_OPTIONS.some(([id]) => id === key) ? key : 'active';
-  }
-
-  function warrantyStatusLabel(value) {
-    return WARRANTY_STATUS_OPTIONS.find(([id]) => id === normalizeWarrantyStatus(value))?.[1] || 'Aktivní';
+    return getWarrantyModule().normalizeWarrantyStatus(value);
   }
 
   function normalizeWarrantyYears(value, purchaseDate = '') {
-    const parsed = Number.parseInt(String(value || '').replace(/\D/g, ''), 10);
-    if (Number.isFinite(parsed)) return Math.min(10, Math.max(2, parsed));
-    return warrantyYearsFromDates(purchaseDate, '') || 2;
-  }
-
-  function warrantyYearsFromDates(purchaseDate = '', warrantyUntil = '') {
-    if (!purchaseDate || !warrantyUntil) return 0;
-    const start = new Date(`${purchaseDate}T00:00:00`);
-    const end = new Date(`${warrantyUntil}T00:00:00`);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return 0;
-    const approx = Math.round((end.getTime() - start.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-    return Math.min(10, Math.max(2, approx || 2));
-  }
-
-  function warrantyFileCount(warrantyId) {
-    return (state.warrantyFiles || []).filter((file) => file.warrantyId === warrantyId).length;
-  }
-
-  function warrantyFilesFor(warrantyId) {
-    return (state.warrantyFiles || []).filter((file) => file.warrantyId === warrantyId).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
-  }
-
-  function primaryWarrantyFile(warrantyId) {
-    return warrantyFilesFor(warrantyId)[0] || null;
+    return getWarrantyModule().normalizeWarrantyYears(value, purchaseDate);
   }
 
   function normalizeWarrantyItem(item = {}) {
-    const purchaseDate = normalizeText(item.purchaseDate || item.purchase_date || item.date || todayISO());
-    const rawUntil = normalizeText(item.warrantyUntil || item.warranty_until || item.until || '');
-    const warrantyYears = normalizeWarrantyYears(item.warrantyYears || item.warranty_years || warrantyYearsFromDates(purchaseDate, rawUntil) || 2, purchaseDate);
-    const warrantyUntil = rawUntil || addYearsIso(purchaseDate, warrantyYears);
-    return {
-      id: item.id || `warranty-${uid()}`,
-      householdId: item.householdId || '',
-      profileId: item.profileId || '',
-      cloudId: item.cloudId || item.cloud_id || '',
-      createdAt: item.createdAt || item.created_at || new Date().toISOString(),
-      updatedAt: item.updatedAt || item.updated_at || '',
-      name: normalizeText(item.name || item.title) || 'Věc v záruce',
-      store: normalizeText(item.store || item.seller || ''),
-      category: '',
-      price: normalizeText(item.price || ''),
-      purchaseDate,
-      warrantyYears,
-      warrantyUntil,
-      status: normalizeWarrantyStatus(item.status),
-      note: normalizeText(item.note || item.notes || '')
-    };
+    return getWarrantyModule().normalizeWarrantyItem(item);
   }
 
   function normalizeWarranties(items = []) {
-    return Array.isArray(items) ? items.map(normalizeWarrantyItem).filter((item) => item.name) : [];
-  }
-
-  function warrantyDraftValue(name, fallback = '') {
-    if (!warrantyFormDraft || typeof warrantyFormDraft !== 'object') return fallback;
-    return Object.prototype.hasOwnProperty.call(warrantyFormDraft, name) ? (warrantyFormDraft[name] || '') : fallback;
-  }
-
-  function warrantyDraftHasUserInput() {
-    if (!warrantyFormDraft || typeof warrantyFormDraft !== 'object') return false;
-    return ['name', 'store', 'price', 'purchaseDate', 'warrantyYears', 'warrantyUntil', 'status', 'note'].some((key) => {
-      const value = normalizeText(warrantyFormDraft[key]);
-      if (!value) return false;
-      if (key === 'purchaseDate' && value === todayISO()) return false;
-      if (key === 'warrantyYears' && value === '2') return false;
-      if (key === 'warrantyUntil' && value === addYearsIso(todayISO(), 2)) return false;
-      if (key === 'status' && value === 'active') return false;
-      return true;
-    });
-  }
-
-  function saveWarrantyDraftFromForm(form) {
-    if (!form || !form.matches?.('form[data-form="add-warranty"]')) return;
-    const data = getFormData(form);
-    warrantyFormDraft = {
-      name: normalizeText(data.name),
-      store: normalizeText(data.store),
-      price: normalizeText(data.price),
-      purchaseDate: normalizeText(data.purchaseDate),
-      warrantyYears: normalizeText(data.warrantyYears),
-      warrantyUntil: normalizeText(data.warrantyUntil),
-      status: normalizeText(data.status),
-      note: normalizeText(data.note)
-    };
-    sessionStorage.setItem('domacnostPlus.warrantyDraft', JSON.stringify(warrantyFormDraft));
-  }
-
-  function clearWarrantyDraft() {
-    warrantyFormDraft = null;
-    sessionStorage.removeItem('domacnostPlus.warrantyDraft');
-  }
-
-  function isWarrantyFormActive() {
-    const form = document.querySelector?.('form[data-form="add-warranty"]');
-    if (!form) return false;
-    return form.contains(document.activeElement) || warrantyDraftHasUserInput();
-  }
-
-  function warrantyTone(item) {
-    if (item.status === 'archived' || item.status === 'done') return 'good';
-    if (item.status === 'claim') return 'warn';
-    const days = daysUntil(item.warrantyUntil);
-    if (days === null) return '';
-    if (days < 0) return 'bad';
-    if (days <= 30) return 'warn';
-    return 'good';
-  }
-
-  function warrantyBadge(item) {
-    if (item.status === 'claim') return 'reklamace';
-    if (item.status === 'done') return 'vyřešeno';
-    if (item.status === 'archived') return 'archiv';
-    const days = daysUntil(item.warrantyUntil);
-    if (days === null) return 'bez data';
-    if (days < 0) return 'po záruce';
-    if (days === 0) return 'končí dnes';
-    if (days <= 30) return `končí za ${days} d`;
-    return `zbývá ${days} d`;
+    return getWarrantyModule().normalizeWarranties(items);
   }
 
   function sortedWarranties() {
-    return normalizeWarranties(state.warranties)
-      .sort((a, b) => {
-        const aArchived = ['archived', 'done'].includes(a.status) ? 1 : 0;
-        const bArchived = ['archived', 'done'].includes(b.status) ? 1 : 0;
-        if (aArchived !== bArchived) return aArchived - bArchived;
-        return String(a.warrantyUntil || '9999').localeCompare(String(b.warrantyUntil || '9999'));
-      });
+    return getWarrantyModule().sortedWarranties();
   }
 
-  function renderWarrantyFileItem(file, options = {}) {
-    const deletable = options.deletable !== false;
-    return `
-      <div class="warranty-file-row">
-        <button class="ghost-btn file-open-btn" type="button" data-action="open-warranty-file" data-id="${escapeHtml(file.id)}">${escapeHtml(file.fileName || 'Příloha')}</button>
-        <span class="item-meta">${escapeHtml(file.fileType || 'soubor')} · ${formatBytes(file.size)}${file.cloudId ? ' · cloud' : ' · lokálně'}</span>
-        ${deletable ? `<button class="danger-btn mini-danger-btn" type="button" data-action="delete-warranty-file" data-id="${escapeHtml(file.id)}" aria-label="Smazat přílohu">×</button>` : ''}
-      </div>
-    `;
-  }
-
-  function renderWarrantyItem(item) {
-    const fileCount = warrantyFileCount(item.id);
-    const firstFile = primaryWarrantyFile(item.id);
-    const meta = [
-      item.store,
-      item.price ? formatCurrency(item.price) : '',
-      `koupeno ${formatDate(item.purchaseDate)}`,
-      `${item.warrantyYears || 2} roky`,
-      `do ${formatDate(item.warrantyUntil)}`,
-      fileCount ? `${fileCount} příloh` : 'bez příloh',
-      warrantyStatusLabel(item.status)
-    ].filter(Boolean).join(' · ');
-    return `
-      <div class="item warranty-item">
-        <div class="item-top">
-          <div class="item-title">🧾 ${escapeHtml(item.name)}</div>
-          <span class="badge ${warrantyTone(item)}">${escapeHtml(warrantyBadge(item))}</span>
-        </div>
-        <div class="item-meta">${escapeHtml(meta)}</div>
-        ${item.note ? `<div class="inline-note compact-note">${escapeHtml(item.note)}</div>` : ''}
-        <div class="item-actions compact-actions warranty-item-actions">
-          ${firstFile ? `<button class="ghost-btn" type="button" data-action="open-warranty-file" data-id="${escapeHtml(firstFile.id)}">Otevřít soubor</button>` : ''}
-          <button class="ghost-btn" type="button" data-action="open-warranty-detail" data-id="${escapeHtml(item.id)}">Detail</button>
-        </div>
-      </div>
-    `;
+  function saveWarrantyDraftFromForm(form) {
+    return getWarrantyModule().saveWarrantyDraftFromForm(form);
   }
 
   function renderWarrantyDetailModal() {
-    if (!activeWarrantyDetailId) return '';
-    const item = normalizeWarranties(state.warranties).find((entry) => entry.id === activeWarrantyDetailId);
-    if (!item) return '';
-    const files = warrantyFilesFor(item.id);
-    const purchaseDate = item.purchaseDate || todayISO();
-    const warrantyYears = normalizeWarrantyYears(item.warrantyYears || warrantyYearsFromDates(purchaseDate, item.warrantyUntil) || 2, purchaseDate);
-    const warrantyUntil = item.warrantyUntil || addYearsIso(purchaseDate, warrantyYears);
-    return `
-      <div class="app-modal-backdrop warranty-detail-backdrop" data-modal-backdrop role="presentation">
-        <section class="app-modal warranty-detail-modal" role="dialog" aria-modal="true" aria-labelledby="warranty-detail-title">
-          <div class="app-modal-head warranty-detail-head">
-            <div>
-              <span class="badge ${warrantyTone(item)}">${escapeHtml(warrantyBadge(item))}</span>
-              <h2 id="warranty-detail-title">${escapeHtml(item.name)}</h2>
-              <p>${escapeHtml([item.store, item.price ? formatCurrency(item.price) : '', `do ${formatDate(item.warrantyUntil)}`].filter(Boolean).join(' · '))}</p>
-            </div>
-            <button class="icon-btn" type="button" data-action="close-modal" aria-label="Zavřít detail záruky">×</button>
-          </div>
-
-          <div class="modal-detail-grid warranty-detail-summary">
-            <div class="modal-detail-card"><span>Koupeno</span><strong>${escapeHtml(formatDate(item.purchaseDate))}</strong></div>
-            <div class="modal-detail-card"><span>Záruka do</span><strong>${escapeHtml(formatDate(item.warrantyUntil))}</strong></div>
-            <div class="modal-detail-card"><span>Délka</span><strong>${escapeHtml(String(item.warrantyYears || 2))} roky</strong></div>
-            <div class="modal-detail-card"><span>Přílohy</span><strong>${files.length}</strong></div>
-          </div>
-
-          <details class="compact-edit-details warranty-detail-edit" open>
-            <summary><span>Upravit údaje</span><em>všechny hodnoty záruky</em></summary>
-            <form data-form="edit-warranty" data-id="${escapeHtml(item.id)}" class="compact-form warranty-form">
-              <div class="form-grid two">
-                ${field('Věc', 'name', 'text', 'televize / pračka / telefon', true, item.name)}
-                ${field('Obchod', 'store', 'text', 'Alza / Datart / Kaufland', false, item.store)}
-                ${field('Cena', 'price', 'text', 'volitelné', false, item.price, 'decimal')}
-                ${field('Datum koupě', 'purchaseDate', 'date', '', true, purchaseDate)}
-                ${selectField('Délka záruky', 'warrantyYears', WARRANTY_YEARS_OPTIONS, String(warrantyYears))}
-                ${field('Záruka do', 'warrantyUntil', 'date', 'automaticky podle délky', false, warrantyUntil)}
-                ${selectField('Stav', 'status', WARRANTY_STATUS_OPTIONS, item.status)}
-                ${field('Poznámka / reklamace', 'note', 'text', 'reklamace, domluva', false, item.note)}
-              </div>
-              <div class="form-actions modal-actions"><button class="primary-btn" type="submit">Uložit změny</button></div>
-            </form>
-          </details>
-
-          <details class="compact-edit-details warranty-detail-files" open>
-            <summary><span>Přílohy</span><em>${files.length ? `${files.length} souborů` : 'fotka / PDF'}</em></summary>
-            ${files.length ? `<div class="warranty-file-list">${files.map((file) => renderWarrantyFileItem(file)).join('')}</div>` : '<div class="item-meta">Bez přílohy</div>'}
-            <form data-form="add-warranty-files" data-warranty-id="${escapeHtml(item.id)}" class="compact-form warranty-file-form">
-              <label class="field"><span>Přidat fotku / PDF</span><input class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf"></label>
-              <div class="form-actions compact-actions"><button class="ghost-btn" type="submit">Přidat přílohu</button></div>
-            </form>
-          </details>
-
-          <details class="compact-edit-details danger-zone warranty-detail-danger">
-            <summary><span>Smazat záruku</span><em>nevratná akce</em></summary>
-            <div class="hint-box danger-hint">Smaže se záruka i její vazby na přílohy.</div>
-            <div class="form-actions modal-actions"><button class="danger-btn" type="button" data-action="delete-warranty" data-id="${escapeHtml(item.id)}">Smazat záruku</button></div>
-          </details>
-        </section>
-      </div>
-    `;
+    return getWarrantyModule().renderWarrantyDetailModal();
   }
 
   function renderWarrantiesPanel(warranties) {
-    const draftPurchaseDate = warrantyDraftValue('purchaseDate', todayISO()) || todayISO();
-    const draftWarrantyYears = normalizeWarrantyYears(warrantyDraftValue('warrantyYears', '2'), draftPurchaseDate);
-    const draftWarrantyUntil = warrantyDraftValue('warrantyUntil', addYearsIso(draftPurchaseDate, draftWarrantyYears)) || addYearsIso(draftPurchaseDate, draftWarrantyYears);
-    const draftStatus = warrantyDraftValue('status', 'active') || 'active';
-    const activeItems = warranties.filter((item) => !['archived', 'done'].includes(item.status));
-    const claimCount = warranties.filter((item) => item.status === 'claim').length;
-    const endingSoon = warranties.filter((item) => {
-      const days = daysUntil(item.warrantyUntil);
-      return item.status === 'active' && days !== null && days >= 0 && days <= 30;
-    }).length;
-    const expired = warranties.filter((item) => {
-      const days = daysUntil(item.warrantyUntil);
-      return item.status === 'active' && days !== null && days < 0;
-    }).length;
-    return `
-      <section class="card homecare-panel panel-warranties">
-        <div class="card-header">
-          <div><h2>Záruky</h2><p>Koupené věci, konec záruky a poznámky třeba k reklamaci.</p></div>
-          <span class="badge ${state.cloud?.householdId ? 'good' : ''}">${state.cloud?.householdId ? 'sdílené v domácnosti' : 'lokálně'}</span>
-        </div>
-        <details class="action-details compact-edit-details warranty-add-details">
-          <summary><span>Přidat novou záruku</span><em>účtenka, fotka/PDF, délka záruky</em></summary>
-          <form data-form="add-warranty" class="compact-form warranty-form">
-            <div class="form-grid two">
-              ${field('Věc', 'name', 'text', 'televize / pračka / telefon', true, warrantyDraftValue('name', ''))}
-              ${field('Obchod', 'store', 'text', 'Alza / Datart / Kaufland', false, warrantyDraftValue('store', ''))}
-              ${field('Cena', 'price', 'text', 'volitelné', false, warrantyDraftValue('price', ''), 'decimal')}
-              ${field('Datum koupě', 'purchaseDate', 'date', '', true, draftPurchaseDate)}
-              ${selectField('Délka záruky', 'warrantyYears', WARRANTY_YEARS_OPTIONS, String(draftWarrantyYears))}
-              ${field('Záruka do', 'warrantyUntil', 'date', 'automaticky podle délky', false, draftWarrantyUntil)}
-              ${selectField('Stav', 'status', WARRANTY_STATUS_OPTIONS, draftStatus)}
-              ${field('Poznámka / reklamace', 'note', 'text', 'např. reklamováno, číslo reklamace, domluva', false, warrantyDraftValue('note', ''))}
-            </div>
-            <label class="field warranty-file-add-field"><span>Fotka / PDF účtenky</span><input class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf"></label>
-            <div class="inline-note compact-note">Základ je 2 roky. Fotky se před uložením automaticky zmenší tak, aby zůstal čitelný text. PDF se nechává beze změny.</div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat záruku</button></div>
-          </form>
-        </details>
-        <div style="height:12px"></div>
-        ${renderOverviewSummary([
-          { label: 'Aktivní', value: activeItems.length },
-          { label: 'Do 30 dnů', value: endingSoon, tone: endingSoon ? 'warn' : '' },
-          { label: 'Reklamace', value: claimCount, tone: claimCount ? 'warn' : '' },
-          { label: 'Po záruce', value: expired, tone: expired ? 'bad' : '' }
-        ])}
-        <div style="height:14px"></div>
-        ${warranties.length ? `<div class="list warranty-list">${warranties.map(renderWarrantyItem).join('')}</div>` : renderEmptyCta({ icon: '🧾', title: 'Záruky jsou prázdné', text: 'Přidej první koupenou věc. Konec záruky se předvyplní na 2 roky od nákupu.', nav: 'warranties', tab: '', label: 'Přidat záruku' })}
-      </section>
-    `;
+    return getWarrantyModule().renderWarrantiesPanel(warranties);
   }
 
   function polishShopEntryBadge(entry) {
@@ -14104,329 +13892,24 @@
   }
 
 
-  async function ensureCloudWarrantySnapshot() {
-    if (!cloudReady()) return false;
-    return cloudSaveHouseholdUiSettings(false);
+  function cloudLoadWarrantyFiles(showMessage = false) {
+    return getWarrantyModule().cloudLoadWarrantyFiles(showMessage);
   }
 
-  function isAllowedWarrantyFile(file) {
-    if (!file) return false;
-    const name = String(file.name || '').toLowerCase();
-    const type = String(file.type || '').toLowerCase();
-    if (WARRANTY_FILE_ALLOWED_MIME.has(type)) return true;
-    return ['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'].some((ext) => name.endsWith(ext));
+  function cloudSyncLocalWarrantyFiles(showMessage = true) {
+    return getWarrantyModule().cloudSyncLocalWarrantyFiles(showMessage);
   }
 
-  function warrantyFileValidationMessage(file) {
-    if (!file) return 'Soubor není dostupný';
-    if (file.size > WARRANTY_FILE_MAX_BYTES) return `${file.name || 'Soubor'} je větší než 15 MB`;
-    if (!isAllowedWarrantyFile(file)) return `${file.name || 'Soubor'} není podporovaný typ. Použij PDF nebo fotku.`;
-    return '';
+  function addWarrantyFiles(form) {
+    return getWarrantyModule().addWarrantyFiles(form);
   }
 
-  function shouldCompressWarrantyImage(file) {
-    if (!file) return false;
-    const type = String(file.type || '').toLowerCase();
-    const name = String(file.name || '').toLowerCase();
-    if (!type.startsWith('image/')) return false;
-    if (type.includes('heic') || type.includes('heif') || name.endsWith('.heic') || name.endsWith('.heif')) return false;
-    return ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(type) || /\.(jpe?g|png|webp)$/i.test(name);
+  function openWarrantyFile(id) {
+    return getWarrantyModule().openWarrantyFile(id);
   }
 
-  function warrantyCompressedFileName(name = 'uctenka') {
-    const clean = String(name || 'uctenka').replace(/\.[^.]+$/, '').replace(/[^a-z0-9-_]+/gi, '-').replace(/^-+|-+$/g, '') || 'uctenka';
-    return `${clean}-zmenseno.jpg`;
-  }
-
-  function loadWarrantyImage(file) {
-    return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(file);
-      const image = new Image();
-      image.onload = () => {
-        URL.revokeObjectURL(url);
-        resolve(image);
-      };
-      image.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error('Obrázek se nepovedlo načíst'));
-      };
-      image.src = url;
-    });
-  }
-
-  async function compressWarrantyImageFile(file) {
-    if (!shouldCompressWarrantyImage(file)) return file;
-    try {
-      const image = await loadWarrantyImage(file);
-      const width = image.naturalWidth || image.width || 0;
-      const height = image.naturalHeight || image.height || 0;
-      if (!width || !height) return file;
-      const scale = Math.min(1, WARRANTY_IMAGE_MAX_DIMENSION / Math.max(width, height));
-      const targetWidth = Math.max(1, Math.round(width * scale));
-      const targetHeight = Math.max(1, Math.round(height * scale));
-      if (scale >= 1 && file.size <= 900 * 1024) return file;
-      const canvas = document.createElement('canvas');
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-      const context = canvas.getContext('2d', { alpha: false });
-      if (!context) return file;
-      context.fillStyle = '#ffffff';
-      context.fillRect(0, 0, targetWidth, targetHeight);
-      context.drawImage(image, 0, 0, targetWidth, targetHeight);
-      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', WARRANTY_IMAGE_JPEG_QUALITY));
-      if (!blob || !blob.size || blob.size >= file.size) return file;
-      return new File([blob], warrantyCompressedFileName(file.name), { type: 'image/jpeg', lastModified: file.lastModified || Date.now() });
-    } catch (error) {
-      console.warn('Warranty image compression failed', error);
-      return file;
-    }
-  }
-
-  async function prepareWarrantyFileForSave(file) {
-    return compressWarrantyImageFile(file);
-  }
-
-  async function cloudUploadWarrantyFile(warranty, file) {
-    const client = getSupabaseClient();
-    if (!client || !state.cloud?.householdId || !warranty?.id) return null;
-    const user = await refreshCloudSession(false);
-    if (!user) return null;
-    await ensureCloudWarrantySnapshot();
-    const storagePath = `${state.cloud.householdId}/${warranty.id}/${Date.now()}-${uid()}-${sanitizeStorageFileName(file.name)}`;
-    const { error: uploadError } = await client.storage
-      .from('warranty-files')
-      .upload(storagePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: file.type || 'application/octet-stream'
-      });
-    if (uploadError) {
-      showToast(uploadError.message || 'Přílohu záruky se nepovedlo nahrát');
-      return null;
-    }
-    const { data, error } = await client
-      .from('household_warranty_files')
-      .insert({
-        household_id: state.cloud.householdId,
-        warranty_key: warranty.id,
-        bucket_id: 'warranty-files',
-        storage_path: storagePath,
-        file_name: file.name || 'příloha',
-        mime_type: file.type || null,
-        file_size: file.size || 0,
-        source: file.type && file.type.startsWith('image/') ? 'camera' : 'upload',
-        created_by: user.id
-      })
-      .select('id,household_id,warranty_key,storage_path,file_name,mime_type,file_size,source,created_at')
-      .single();
-    if (error) {
-      await client.storage.from('warranty-files').remove([storagePath]).catch?.(() => {});
-      showToast(error.message || 'Metadata přílohy záruky se nepovedlo uložit');
-      return null;
-    }
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return mapCloudWarrantyFile(data);
-  }
-
-  function mapCloudWarrantyFile(item) {
-    const warranty = state.warranties.find((entry) => entry.id === item.warranty_key);
-    if (!warranty) return null;
-    const existing = state.warrantyFiles.find((file) => file.cloudId === item.id);
-    return {
-      id: existing?.id || `warranty-file-cloud-${item.id}`,
-      cloudId: item.id,
-      householdId: currentHouseholdId(),
-      profileId: currentProfileId(),
-      warrantyId: warranty.id,
-      storagePath: item.storage_path,
-      bucketId: 'warranty-files',
-      fileName: item.file_name || 'příloha',
-      fileType: item.mime_type || 'soubor',
-      size: item.file_size || 0,
-      source: item.source || 'upload',
-      createdAt: item.created_at || new Date().toISOString()
-    };
-  }
-
-  async function cloudLoadWarrantyFiles(showMessage = false) {
-    const client = getSupabaseClient();
-    if (!client || !state.cloud?.householdId) return false;
-    const user = await refreshCloudSession(false);
-    if (!user) return false;
-    const { data, error } = await client
-      .from('household_warranty_files')
-      .select('id,household_id,warranty_key,storage_path,file_name,mime_type,file_size,source,created_at')
-      .eq('household_id', state.cloud.householdId)
-      .order('created_at', { ascending: false });
-    if (error) {
-      if (showMessage) showToast(error.message || 'Přílohy záruk se nepovedlo načíst');
-      return false;
-    }
-    const cloudFiles = (data || []).map((item) => mapCloudWarrantyFile(item)).filter(Boolean);
-    const localOnly = (state.warrantyFiles || []).filter((file) => !file.cloudId);
-    state.warrantyFiles = [...localOnly, ...cloudFiles];
-    state.cloud.lastSyncAt = new Date().toISOString();
-    touchState();
-    saveState();
-    if (showMessage) {
-      render();
-      showToast('Cloud přílohy záruk načtené');
-    }
-    return true;
-  }
-
-  async function addWarrantyFilesToWarranty(warranty, files = []) {
-    if (!warranty || !files.length) return { added: 0, failed: 0 };
-    const useCloudStorage = cloudReady();
-    let added = 0;
-    let failed = 0;
-    for (const originalFile of files) {
-      const file = await prepareWarrantyFileForSave(originalFile);
-      const validationMessage = warrantyFileValidationMessage(file);
-      if (validationMessage) {
-        failed += 1;
-        showToast(validationMessage);
-        continue;
-      }
-      if (useCloudStorage) {
-        const cloudFile = await cloudUploadWarrantyFile(warranty, file);
-        if (cloudFile) {
-          state.warrantyFiles = state.warrantyFiles.filter((entry) => entry.cloudId !== cloudFile.cloudId);
-          state.warrantyFiles.push(cloudFile);
-          added += 1;
-        } else failed += 1;
-        continue;
-      }
-      if (!('indexedDB' in window)) {
-        failed += 1;
-        showToast('Prohlížeč nepodporuje IndexedDB');
-        continue;
-      }
-      const id = `warranty-file-${uid()}`;
-      const createdAt = new Date().toISOString();
-      const meta = {
-        id,
-        householdId: currentHouseholdId(),
-        profileId: currentProfileId(),
-        warrantyId: warranty.id,
-        fileName: file.name || 'příloha',
-        fileType: file.type || 'soubor',
-        size: file.size || 0,
-        createdAt
-      };
-      await putStoredWarrantyFile({ ...meta, blob: file });
-      state.warrantyFiles.push(meta);
-      added += 1;
-    }
-    return { added, failed };
-  }
-
-  async function addWarrantyFiles(form) {
-    const warrantyId = form.dataset.warrantyId;
-    const warranty = state.warranties.find((item) => item.id === warrantyId);
-    const input = form.querySelector('input[type="file"]');
-    const files = [...(input?.files || [])];
-    if (!warranty || !files.length) return showToast('Vyber soubor');
-    const { added, failed } = await addWarrantyFilesToWarranty(warranty, files);
-    touchState();
-    saveState();
-    if (input) input.value = '';
-    render();
-    if (added && cloudReady()) showToast(failed ? `Do cloudu nahráno ${added}, neprošlo ${failed}` : 'Příloha záruky nahraná do cloudu');
-    else if (added) showToast(added === 1 ? 'Příloha záruky uložená lokálně' : `Lokálně přidáno příloh: ${added}`);
-    else showToast('Přílohu se nepovedlo přidat');
-  }
-
-  async function cloudSyncLocalWarrantyFiles(showMessage = true) {
-    if (!cloudReady()) {
-      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
-      return 0;
-    }
-    const localFiles = (state.warrantyFiles || []).filter((file) => !file.cloudId);
-    if (!localFiles.length) return 0;
-    let uploaded = 0;
-    let missing = 0;
-    let failed = 0;
-    for (const meta of localFiles) {
-      const warranty = state.warranties.find((item) => item.id === meta.warrantyId);
-      if (!warranty) { failed += 1; continue; }
-      let stored = null;
-      try { stored = await getStoredWarrantyFile(meta.id); } catch { stored = null; }
-      const blob = stored?.blob;
-      if (!blob) { missing += 1; continue; }
-      const fileName = meta.fileName || stored.fileName || 'priloha';
-      const fileType = meta.fileType || stored.fileType || blob.type || 'application/octet-stream';
-      const uploadFile = (typeof File !== 'undefined' && blob instanceof File) ? blob : new File([blob], fileName, { type: fileType });
-      const cloudFile = await cloudUploadWarrantyFile(warranty, uploadFile);
-      if (!cloudFile?.cloudId) { failed += 1; continue; }
-      state.warrantyFiles = state.warrantyFiles.filter((file) => file.id !== meta.id && file.cloudId !== cloudFile.cloudId);
-      state.warrantyFiles.push({ ...cloudFile, id: meta.id, createdAt: meta.createdAt || cloudFile.createdAt });
-      deleteStoredWarrantyFile(meta.id).catch(() => {});
-      uploaded += 1;
-    }
-    if (uploaded) state.cloud.lastSyncAt = new Date().toISOString();
-    touchState();
-    saveState();
-    if (showMessage) {
-      render();
-      const details = [uploaded ? `${uploaded} nahráno` : '', missing ? `${missing} nemá soubor v tomto prohlížeči` : '', failed ? `${failed} chyba` : ''].filter(Boolean).join(' · ');
-      showToast(details || 'Přílohy záruk se nepodařilo dohnat');
-    }
-    return uploaded;
-  }
-
-  async function openCloudWarrantyFile(meta, download = false) {
-    const client = getSupabaseClient();
-    if (!client || !meta?.storagePath) return showToast('Cloud příloha není dostupná');
-    const { data, error } = await client.storage
-      .from('warranty-files')
-      .createSignedUrl(meta.storagePath, 300, download ? { download: meta.fileName || 'priloha' } : undefined);
-    if (error || !data?.signedUrl) return showToast(error?.message || 'Dočasný odkaz nejde vytvořit');
-    if (download) {
-      const link = document.createElement('a');
-      link.href = data.signedUrl;
-      link.download = meta.fileName || 'priloha';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      return;
-    }
-    showFilePreviewModal({ url: data.signedUrl, name: meta.fileName || 'Příloha záruky', type: meta.fileType || meta.mimeType || '', source: 'Záruky' });
-  }
-
-  async function openWarrantyFile(id) {
-    const meta = state.warrantyFiles.find((file) => file.id === id);
-    if (meta?.cloudId) return openCloudWarrantyFile(meta, false);
-    try {
-      const record = await getStoredWarrantyFile(id);
-      if (!record?.blob) return showToast('Soubor není v tomto prohlížeči dostupný');
-      const url = URL.createObjectURL(record.blob);
-      showFilePreviewModal({ url, objectUrl: url, name: meta?.fileName || record.fileName || 'Příloha záruky', type: meta?.fileType || record.fileType || record.blob.type || '', source: 'Záruky' });
-    } catch {
-      showToast('Soubor nejde otevřít');
-    }
-  }
-
-  async function deleteWarrantyFile(id) {
-    const meta = state.warrantyFiles.find((file) => file.id === id);
-    if (!meta) return;
-    const ok = window.confirm(meta.cloudId ? 'Smazat přílohu záruky z cloudu?' : 'Smazat přílohu záruky z tohoto zařízení?');
-    if (!ok) return;
-    if (meta.cloudId) {
-      const client = getSupabaseClient();
-      if (!client || !state.cloud?.householdId) return showToast('Cloud není dostupný');
-      const { error: dbError } = await client.from('household_warranty_files').delete().eq('id', meta.cloudId).eq('household_id', state.cloud.householdId);
-      if (dbError) return showToast(dbError.message || 'Metadata přílohy se nepovedlo smazat');
-      if (meta.storagePath) await client.storage.from('warranty-files').remove([meta.storagePath]).catch?.(() => {});
-      state.cloud.lastSyncAt = new Date().toISOString();
-    } else {
-      deleteStoredWarrantyFile(id).catch(() => {});
-    }
-    state.warrantyFiles = state.warrantyFiles.filter((file) => file.id !== id);
-    touchState();
-    saveState();
-    render();
-    showToast('Příloha záruky smazána');
+  function deleteWarrantyFile(id) {
+    return getWarrantyModule().deleteWarrantyFile(id);
   }
 
   function normalizeKey(value) {
@@ -17239,155 +16722,16 @@
   }
 
 
-  async function addWarrantyFromForm(data, form) {
-    if (form?.dataset?.saving === 'true') {
-      showToast('Záruka se právě ukládá…');
-      return;
-    }
-    if (form) {
-      form.dataset.saving = 'true';
-      form.querySelectorAll('button[type="submit"]').forEach((button) => {
-        button.disabled = true;
-        button.dataset.originalText = button.textContent || '';
-        button.textContent = 'Ukládám…';
-      });
-    }
-    try {
-      const purchaseDate = normalizeText(data.purchaseDate) || todayISO();
-      const warrantyYears = normalizeWarrantyYears(data.warrantyYears || 2, purchaseDate);
-      const item = normalizeWarrantyItem({
-        id: uid(),
-        householdId: currentHouseholdId(),
-        profileId: currentProfileId(),
-        createdAt: new Date().toISOString(),
-        name: data.name,
-        store: data.store,
-        price: data.price,
-        purchaseDate,
-        warrantyYears,
-        warrantyUntil: normalizeText(data.warrantyUntil) || addYearsIso(purchaseDate, warrantyYears),
-        status: data.status || 'active',
-        note: data.note
-      });
-      state.warranties = normalizeWarranties([...(state.warranties || []), item]);
-      let savedItem = state.warranties.find((entry) => entry.id === item.id) || item;
-      touchState();
-      saveState();
-      if (cloudReady()) {
-        try {
-          const saved = await cloudAddExtraItem('warranties', savedItem);
-          if (saved?.id) {
-            savedItem.cloudId = saved.id;
-            state.warranties = normalizeWarranties(state.warranties).map((entry) => entry.id === savedItem.id ? { ...entry, cloudId: saved.id } : entry);
-            savedItem = state.warranties.find((entry) => entry.id === item.id) || savedItem;
-            touchState();
-            saveState();
-          }
-        } catch (error) {
-          console.warn('Warranty cloud add failed', error);
-          showToast('Záruka je uložená lokálně, cloud se zkusí znovu automaticky');
-        }
-      }
-      const input = form?.querySelector?.('input[type="file"]');
-      const files = [...(input?.files || [])];
-      let fileResult = { added: 0, failed: 0 };
-      if (files.length) {
-        try {
-          fileResult = await addWarrantyFilesToWarranty(savedItem, files);
-        } catch (error) {
-          console.warn('Warranty file add failed', error);
-          showToast('Záruka je uložená, ale příloha se nepovedla přidat');
-          fileResult.failed += files.length;
-        }
-      }
-      touchState();
-      saveState();
-      if (cloudReady()) {
-        try {
-          await cloudSyncLocalWarrantyFiles(false);
-        } catch (error) {
-          console.warn('Warranty file follow-up sync failed', error);
-        }
-      }
-      clearWarrantyDraft();
-      form?.reset();
-      const purchase = form?.querySelector?.('[name="purchaseDate"]');
-      const years = form?.querySelector?.('[name="warrantyYears"]');
-      const until = form?.querySelector?.('[name="warrantyUntil"]');
-      if (purchase) purchase.value = todayISO();
-      if (years) years.value = '2';
-      if (until) until.value = addYearsIso(todayISO(), 2);
-      render();
-      if (files.length && fileResult.added) showToast(fileResult.failed ? 'Záruka uložená, část příloh se nepovedla' : 'Záruka a příloha uložená');
-      else showToast(files.length ? 'Záruka uložená, příloha se nepovedla' : 'Záruka uložena');
-    } finally {
-      if (form) {
-        delete form.dataset.saving;
-        form.querySelectorAll('button[type="submit"]').forEach((button) => {
-          button.disabled = false;
-          if (button.dataset.originalText) button.textContent = button.dataset.originalText;
-          delete button.dataset.originalText;
-        });
-      }
-    }
+  function addWarrantyFromForm(data, form) {
+    return getWarrantyModule().addWarrantyFromForm(data, form);
   }
 
-  async function updateWarrantyFromForm(data, form) {
-    const id = form?.dataset?.id || '';
-    const existing = (state.warranties || []).find((item) => item.id === id);
-    if (!existing) return showToast('Záruka nenalezena');
-    const purchaseDate = normalizeText(data.purchaseDate) || existing.purchaseDate || todayISO();
-    const warrantyYears = normalizeWarrantyYears(data.warrantyYears || existing.warrantyYears || 2, purchaseDate);
-    const updated = normalizeWarrantyItem({
-      ...existing,
-      name: normalizeText(data.name) || existing.name,
-      store: normalizeText(data.store),
-      price: normalizeText(data.price),
-      purchaseDate,
-      warrantyYears,
-      warrantyUntil: normalizeText(data.warrantyUntil) || addYearsIso(purchaseDate, warrantyYears),
-      status: normalizeWarrantyStatus(data.status),
-      note: normalizeText(data.note),
-      updatedAt: new Date().toISOString()
-    });
-    state.warranties = normalizeWarranties(state.warranties).map((item) => item.id === id ? updated : item);
-    touchState();
-    saveState();
-    if (cloudReady()) {
-      const current = state.warranties.find((item) => item.id === id) || updated;
-      if (current.cloudId) await cloudUpdateExtraItem('warranties', current);
-      else {
-        const saved = await cloudAddExtraItem('warranties', current);
-        if (saved?.id) {
-          state.warranties = normalizeWarranties(state.warranties).map((item) => item.id === id ? { ...item, cloudId: saved.id } : item);
-          touchState();
-          saveState();
-        }
-      }
-    }
-    render();
-    showToast('Záruka upravena');
+  function updateWarrantyFromForm(data, form) {
+    return getWarrantyModule().updateWarrantyFromForm(data, form);
   }
 
-  async function deleteWarranty(id) {
-    const before = (state.warranties || []).length;
-    const warranty = state.warranties.find((item) => item.id === id);
-    if (warranty?.cloudId) {
-      const ok = await cloudDeleteExtraItem('warranties', warranty);
-      if (!ok) return;
-    }
-    state.warranties = normalizeWarranties(state.warranties).filter((item) => item.id !== id);
-    if (state.warranties.length === before) return;
-    const files = (state.warrantyFiles || []).filter((file) => file.warrantyId === id);
-    for (const file of files) {
-      if (!file.cloudId) deleteStoredWarrantyFile(file.id).catch(() => {});
-    }
-    state.warrantyFiles = (state.warrantyFiles || []).filter((file) => file.warrantyId !== id);
-    touchState();
-    saveState();
-    if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
-    render();
-    showToast('Záruka smazána');
+  function deleteWarranty(id) {
+    return getWarrantyModule().deleteWarranty(id);
   }
 
   async function addHdoWindowFromForm(data, form) {
@@ -22266,7 +21610,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-301-${todayISO()}.json`;
+    link.download = `domacnost-plus-v0-1-302-${todayISO()}.json`;
     document.body.appendChild(link);
     link.click();
     link.remove();
