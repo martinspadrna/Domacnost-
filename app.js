@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_309';
-  const APP_BUILD = 309;
+  const APP_VERSION = 'Domácnost+ v.0.1_310';
+  const APP_BUILD = 310;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -2400,12 +2400,29 @@
     }, { delay: 42000, quietMs: 3600, timeout: 9000 });
   }
 
-  function scheduleBootBackgroundCloudLoad() {
+  function scheduleBootBackgroundCloudLoad(options = {}) {
     if (bootBackgroundCloudLoadTimer || !cloudReady()) return;
     bootBackgroundCloudLoadTimer = runWhenUiQuiet(() => {
       bootBackgroundCloudLoadTimer = null;
-      cloudBackgroundLoadAllModules(false).catch((error) => console.warn('Background cloud load failed', error));
+      cloudBackgroundLoadAllModules(false, options).catch((error) => console.warn('Background cloud load failed', error));
     }, { delay: 2500, quietMs: 900, timeout: 15000 });
+  }
+
+  // Fires sooner than scheduleBootBackgroundCloudLoad so the Home widgets refresh
+  // from the cloud within ~hundreds of ms after warm start (instead of ~seconds).
+  // Owns triggering the full background load afterwards, passing skipModules so
+  // priority modules aren't fetched twice.
+  function scheduleBootHomePriorityCloudLoad() {
+    if (!cloudReady()) return;
+    runWhenUiQuiet(async () => {
+      let loaded = [];
+      try {
+        loaded = await cloudLoadHomePriorityModules(false);
+      } catch (error) {
+        console.warn('Priority home cloud load failed', error);
+      }
+      scheduleBootBackgroundCloudLoad({ skipModules: loaded });
+    }, { delay: 400, quietMs: 400, timeout: 6000 });
   }
 
   function scheduleLazyCloudLoadForModule(moduleId, options = {}) {
@@ -14855,7 +14872,9 @@
       await cloudLoadProfilesForCurrentHousehold();
       saveState({ immediate: true });
       requestRender();
-      scheduleBootBackgroundCloudLoad();
+      // Home hero panely obnovíme dřív; priority loader po dokončení sám spustí
+      // klasický background load pro zbytek modulů (s předaným skipModules).
+      scheduleBootHomePriorityCloudLoad();
       scheduleBootCloudMaintenance();
       scheduleGoogleCalendarAutoSync('boot', { delay: 26000 });
       if (showMessage) showToast('Cloud domácnost připravená, data se dočítají na pozadí');
@@ -14904,11 +14923,69 @@
     });
   }
 
-  async function cloudBackgroundLoadAllModules(showMessage = false) {
+  // Maps Home hero panel ids to the modules whose cloud loaders back their data.
+  // Some Home widgets share a single loader (coupons/loyaltyCards ride on shopping,
+  // which pulls household UI settings that include those collections).
+  function getPriorityCloudModulesForHome() {
+    const heroToModule = {
+      calendar: 'calendar',
+      shopping: 'shopping',
+      coupons: 'shopping',
+      loyaltyCards: 'shopping',
+      hdo: 'hdo',
+      waste: 'waste',
+      readings: 'readings',
+      tasks: 'tasks',
+      warranties: 'warranties',
+      polishHolidays: 'polishHolidays',
+      garage: 'garage',
+      contracts: 'contracts',
+      finance: 'finance',
+      subscriptions: 'subscriptions'
+    };
+    const heroIds = normalizeHomeHeroIds(state.settings?.homeHeroItems);
+    const result = [];
+    heroIds.forEach((id) => {
+      const moduleId = heroToModule[id];
+      if (moduleId && !result.includes(moduleId)) result.push(moduleId);
+    });
+    return result;
+  }
+
+  // Cloud loader for modules whose data drives the current Home panels. Fires from
+  // scheduleBootHomePriorityCloudLoad() shortly after warm start so the Home widgets
+  // catch up to fresh cloud data seconds before the full background load reaches them.
+  // Returns the list of attempted module ids (used by the background load's skipModules
+  // to avoid duplicate work).
+  async function cloudLoadHomePriorityModules(showMessage = false) {
+    if (!state.cloud?.userId || !state.cloud?.householdId) return [];
+    const moduleIds = getPriorityCloudModulesForHome();
+    if (!moduleIds.length) return [];
+    return withDeferredRender(async () => {
+      let ok = 0;
+      for (const moduleId of moduleIds) {
+        await yieldToMainThread();
+        try {
+          const loaded = await cloudLoadModuleForNav(moduleId, false, { renderAfter: false });
+          if (loaded) ok += 1;
+        } catch (error) {
+          console.warn('Priority home module load failed', moduleId, error);
+        }
+      }
+      if (ok > 0) saveState({ immediate: true });
+      requestRender();
+      if (showMessage) showToast(`Home priority načteno: ${ok}/${moduleIds.length}`);
+      return moduleIds;
+    });
+  }
+
+  async function cloudBackgroundLoadAllModules(showMessage = false, options = {}) {
     if (!state.cloud?.userId || !state.cloud?.householdId) return false;
     const moduleOrder = ['shopping', 'calendar', 'finance', 'hdo', 'waste', 'readings', 'tasks', 'warranties', 'polishHolidays', 'garage', 'contracts', 'subscriptions'];
+    const skipModules = new Set(Array.isArray(options.skipModules) ? options.skipModules : []);
     let ok = 0;
     for (const moduleId of moduleOrder) {
+      if (skipModules.has(moduleId)) continue;
       await yieldToMainThread();
       try {
         const loaded = await cloudLoadModuleForNav(moduleId, false, { renderAfter: false });
@@ -14924,7 +15001,7 @@
     saveState({ immediate: true });
     requestRender();
     scheduleGoogleCalendarAutoSync('background-load', { delay: 6000 });
-    if (showMessage) showToast(`Cloud pozadí načteno: ${ok}/${moduleOrder.length}`);
+    if (showMessage) showToast(`Cloud pozadí načteno: ${ok}/${moduleOrder.length - skipModules.size}`);
     return true;
   }
 
