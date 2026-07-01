@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_313';
-  const APP_BUILD = 313;
+  const APP_VERSION = 'Domácnost+ v.0.1_314';
+  const APP_BUILD = 314;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -14598,14 +14598,27 @@
     household_warranty_files: ['warrantyFiles']
   };
 
-  function runRealtimeLoaderByKey(key) {
-    if (key === 'profiles') return cloudLoadProfilesForCurrentHousehold();
-    if (key === 'households') return cloudLoadHouseholds(false);
-    if (key === 'warrantyFiles') return cloudLoadWarrantyFiles(false);
-    if (key.startsWith('extras:')) {
-      return cloudLoadExtraCollection(key.slice('extras:'.length), false);
+  async function runRealtimeLoaderByKey(key) {
+    let result;
+    if (key === 'profiles') {
+      result = await cloudLoadProfilesForCurrentHousehold();
+    } else if (key === 'households') {
+      result = await cloudLoadHouseholds(false);
+    } else if (key === 'warrantyFiles') {
+      result = await cloudLoadWarrantyFiles(false);
+    } else if (key.startsWith('extras:')) {
+      result = await cloudLoadExtraCollection(key.slice('extras:'.length), false);
+    } else {
+      result = await cloudLoadModuleForNav(key, false, { renderAfter: false });
     }
-    return cloudLoadModuleForNav(key, false, { renderAfter: false });
+    // Explicitní false/null = selhání → throw dřív, aby se rozjel full-reload
+    // fallback v runCloudRealtimeReloadTick. `undefined` je kompatibilní úspěch,
+    // protože některé starší loadery (cloudLoadProfilesForCurrentHousehold aj.)
+    // nic nevracejí ani při úspěchu.
+    if (result === false || result === null) {
+      throw new Error(`Realtime loader '${key}' reported failure`);
+    }
+    return result;
   }
 
   function collectRealtimeLoaderKeys(sources) {
@@ -14642,26 +14655,50 @@
     }
   }
 
-  function scheduleCloudRealtimeRefresh(source = 'cloud') {
-    if (!cloudReady()) return;
-    cloudRealtimePendingSources.add(String(source || 'cloud'));
+  // Armuje (nebo znovu armuje) debounce timer pro realtime refresh. Sdílený
+  // vstup ze schedulery i finally klauzule — díky tomu se logika neduplikuje
+  // a nemůže vzniknout dvojitý běžící timer.
+  function armCloudRealtimeReloadTimer(delay = 1200) {
     if (cloudRealtimeReloadTimer) window.clearTimeout(cloudRealtimeReloadTimer);
-    state.cloud = {
-      ...(state.cloud || {}),
-      realtimeStatus: 'refreshing',
-      realtimeSource: describeRealtimeSources(cloudRealtimePendingSources),
-      lastRealtimeAt: new Date().toISOString()
-    };
-    saveState();
-    cloudRealtimeReloadTimer = window.setTimeout(async () => {
-      cloudRealtimeReloadTimer = null;
-      if (cloudRealtimeReloading || !cloudReady()) return;
-      cloudRealtimeReloading = true;
-      const sources = new Set(cloudRealtimePendingSources);
+    cloudRealtimeReloadTimer = window.setTimeout(runCloudRealtimeReloadTick, delay);
+  }
+
+  async function runCloudRealtimeReloadTick() {
+    cloudRealtimeReloadTimer = null;
+    // Po odhlášení / přepnutí domácnosti zbytek pending zdrojů zahodíme,
+    // ať zastaralé eventy nedrží starý stav.
+    if (!cloudReady()) {
       cloudRealtimePendingSources.clear();
-      const sourcesLabel = describeRealtimeSources(sources);
+      return;
+    }
+    // Pokud předchozí reload ještě běží, čekáme krátký retry — pending sources
+    // musí přežít, aby se změny neztratily. Bez tohoto retry zůstal Set viset
+    // dokud nepřišel další realtime event.
+    if (cloudRealtimeReloading) {
+      armCloudRealtimeReloadTimer(300);
+      return;
+    }
+    if (cloudRealtimePendingSources.size === 0) return;
+    cloudRealtimeReloading = true;
+    const sources = new Set(cloudRealtimePendingSources);
+    cloudRealtimePendingSources.clear();
+    const sourcesLabel = describeRealtimeSources(sources);
+    try {
+      await withMutedToasts(() => runCloudRealtimeRefresh(sources));
+      state.cloud = {
+        ...(state.cloud || {}),
+        realtimeStatus: 'online',
+        realtimeSource: sourcesLabel,
+        lastRealtimeAt: new Date().toISOString()
+      };
+      touchState();
+      saveState({ immediate: true });
+      requestRender();
+    } catch (error) {
+      // Cílený refresh selhal — zkusíme full reload, aby data nezůstala zatuhlá.
+      console.warn('Targeted realtime refresh failed, falling back to full reload', error);
       try {
-        await withMutedToasts(() => runCloudRealtimeRefresh(sources));
+        await withMutedToasts(() => cloudLoadAllModules(false, { skipRealtimeSetup: true }));
         state.cloud = {
           ...(state.cloud || {}),
           realtimeStatus: 'online',
@@ -14671,29 +14708,31 @@
         touchState();
         saveState({ immediate: true });
         requestRender();
-      } catch (error) {
-        // Cílený refresh selhal — zkusíme full reload, aby data nezůstala zatuhlá.
-        console.warn('Targeted realtime refresh failed, falling back to full reload', error);
-        try {
-          await withMutedToasts(() => cloudLoadAllModules(false, { skipRealtimeSetup: true }));
-          state.cloud = {
-            ...(state.cloud || {}),
-            realtimeStatus: 'online',
-            realtimeSource: sourcesLabel,
-            lastRealtimeAt: new Date().toISOString()
-          };
-          touchState();
-          saveState({ immediate: true });
-          requestRender();
-        } catch (fallbackError) {
-          console.warn('Realtime cloud refresh failed', fallbackError);
-          state.cloud = { ...(state.cloud || {}), realtimeStatus: 'channel_error' };
-          saveState();
-        }
-      } finally {
-        cloudRealtimeReloading = false;
+      } catch (fallbackError) {
+        console.warn('Realtime cloud refresh failed', fallbackError);
+        state.cloud = { ...(state.cloud || {}), realtimeStatus: 'channel_error' };
+        saveState();
       }
-    }, 1200);
+    } finally {
+      cloudRealtimeReloading = false;
+      // Přišly další zdroje během běhu? Naplánuj krátký retry, ať se neztratí.
+      if (cloudRealtimePendingSources.size > 0 && !cloudRealtimeReloadTimer && cloudReady()) {
+        armCloudRealtimeReloadTimer(300);
+      }
+    }
+  }
+
+  function scheduleCloudRealtimeRefresh(source = 'cloud') {
+    if (!cloudReady()) return;
+    cloudRealtimePendingSources.add(String(source || 'cloud'));
+    state.cloud = {
+      ...(state.cloud || {}),
+      realtimeStatus: 'refreshing',
+      realtimeSource: describeRealtimeSources(cloudRealtimePendingSources),
+      lastRealtimeAt: new Date().toISOString()
+    };
+    saveState();
+    armCloudRealtimeReloadTimer(1200);
   }
 
   function setupCloudRealtimeSubscriptions(force = false) {
