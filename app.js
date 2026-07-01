@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_318';
-  const APP_BUILD = 318;
+  const APP_VERSION = 'Domácnost+ v.0.1_319';
+  const APP_BUILD = 319;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -14703,21 +14703,11 @@
     cloudRealtimePendingSources.clear();
     const sourcesLabel = describeRealtimeSources(sources);
     try {
-      await withMutedToasts(() => runCloudRealtimeRefresh(sources));
-      state.cloud = {
-        ...(state.cloud || {}),
-        realtimeStatus: 'online',
-        realtimeSource: sourcesLabel,
-        lastRealtimeAt: new Date().toISOString()
-      };
-      touchState();
-      saveState({ immediate: true });
-      requestRender();
-    } catch (error) {
-      // Cílený refresh selhal — zkusíme full reload, aby data nezůstala zatuhlá.
-      console.warn('Targeted realtime refresh failed, falling back to full reload', error);
-      try {
-        await withMutedToasts(() => cloudLoadAllModules(false, { skipRealtimeSetup: true }));
+      // withDeferredRender: dílčí requestRender() z jednotlivých loaderů
+      // uvnitř runCloudRealtimeRefresh se sesbírají do jednoho flushe
+      // po nastavení realtime statusu.
+      await withDeferredRender(async () => {
+        await withMutedToasts(() => runCloudRealtimeRefresh(sources));
         state.cloud = {
           ...(state.cloud || {}),
           realtimeStatus: 'online',
@@ -14727,6 +14717,26 @@
         touchState();
         saveState({ immediate: true });
         requestRender();
+      });
+    } catch (error) {
+      // Cílený refresh selhal — zkusíme full reload, aby data nezůstala zatuhlá.
+      console.warn('Targeted realtime refresh failed, falling back to full reload', error);
+      try {
+        // Fallback taky batchujeme — cloudLoadAllModules má vlastní
+        // withDeferredRender, ale externí wrapper zajistí, že náš
+        // závěrečný state.cloud update projde stejným flushem.
+        await withDeferredRender(async () => {
+          await withMutedToasts(() => cloudLoadAllModules(false, { skipRealtimeSetup: true }));
+          state.cloud = {
+            ...(state.cloud || {}),
+            realtimeStatus: 'online',
+            realtimeSource: sourcesLabel,
+            lastRealtimeAt: new Date().toISOString()
+          };
+          touchState();
+          saveState({ immediate: true });
+          requestRender();
+        });
       } catch (fallbackError) {
         console.warn('Realtime cloud refresh failed', fallbackError);
         state.cloud = { ...(state.cloud || {}), realtimeStatus: 'channel_error' };
@@ -15212,30 +15222,36 @@
 
   async function cloudBackgroundLoadAllModules(showMessage = false, options = {}) {
     if (!state.cloud?.userId || !state.cloud?.householdId) return false;
-    // polishHolidays vynecháno — modul se v cloudu nepersistuje, drží se lokálně
-    // a plní se z veřejného API date.nager.at.
-    const moduleOrder = ['shopping', 'calendar', 'finance', 'hdo', 'waste', 'readings', 'tasks', 'warranties', 'garage', 'contracts', 'subscriptions'];
-    const skipModules = new Set(Array.isArray(options.skipModules) ? options.skipModules : []);
-    let ok = 0;
-    for (const moduleId of moduleOrder) {
-      if (skipModules.has(moduleId)) continue;
-      await yieldToMainThread();
-      try {
-        const loaded = await cloudLoadModuleForNav(moduleId, false, { renderAfter: false });
-        if (loaded) ok += 1;
-      } catch (error) {
-        console.warn('Background module load failed', moduleId, error);
+    // Celý background load je obalen do withDeferredRender, takže
+    // cloudLoadModuleForNav volané uvnitř mohou volně žádat o render,
+    // ale skutečný flush proběhne až po dokončení celé smyčky. Bez toho
+    // se během ~10 modulů mohl udělat render několikrát za sebou.
+    return withDeferredRender(async () => {
+      // polishHolidays vynecháno — modul se v cloudu nepersistuje, drží se lokálně
+      // a plní se z veřejného API date.nager.at.
+      const moduleOrder = ['shopping', 'calendar', 'finance', 'hdo', 'waste', 'readings', 'tasks', 'warranties', 'garage', 'contracts', 'subscriptions'];
+      const skipModules = new Set(Array.isArray(options.skipModules) ? options.skipModules : []);
+      let ok = 0;
+      for (const moduleId of moduleOrder) {
+        if (skipModules.has(moduleId)) continue;
+        await yieldToMainThread();
+        try {
+          const loaded = await cloudLoadModuleForNav(moduleId, false, { renderAfter: false });
+          if (loaded) ok += 1;
+        } catch (error) {
+          console.warn('Background module load failed', moduleId, error);
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 120));
       }
-      await new Promise((resolve) => window.setTimeout(resolve, 120));
-    }
-    setupCloudRealtimeSubscriptions(false);
-    state.cloud.lastSyncAt = new Date().toISOString();
-    touchState();
-    saveState({ immediate: true });
-    requestRender();
-    scheduleGoogleCalendarAutoSync('background-load', { delay: 6000 });
-    if (showMessage) showToast(`Cloud pozadí načteno: ${ok}/${moduleOrder.length - skipModules.size}`);
-    return true;
+      setupCloudRealtimeSubscriptions(false);
+      state.cloud.lastSyncAt = new Date().toISOString();
+      touchState();
+      saveState({ immediate: true });
+      requestRender();
+      scheduleGoogleCalendarAutoSync('background-load', { delay: 6000 });
+      if (showMessage) showToast(`Cloud pozadí načteno: ${ok}/${moduleOrder.length - skipModules.size}`);
+      return true;
+    });
   }
 
   async function cloudLoadAllModules(showMessage = true, options = {}) {
@@ -17573,7 +17589,9 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `domacnost-plus-v0-1-306-${todayISO()}.json`;
+    // Odvozeno z APP_BUILD, aby export filename vždy odpovídal aktuální
+    // verzi appky a nemusel se hlídat ručně při každém bumpu.
+    link.download = `domacnost-plus-v0-1-${APP_BUILD}-${todayISO()}.json`;
     document.body.appendChild(link);
     link.click();
     link.remove();
