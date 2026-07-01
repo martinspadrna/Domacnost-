@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_312';
-  const APP_BUILD = 312;
+  const APP_VERSION = 'Domácnost+ v.0.1_313';
+  const APP_BUILD = 313;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1057,6 +1057,10 @@
   let cloudRealtimeHouseholdId = '';
   let cloudRealtimeReloadTimer = null;
   let cloudRealtimeReloading = false;
+  // Akumulace zdrojů (tabulek), které přišly během jednoho debounce okna.
+  // Set zajišťuje dedup a přežije trailing debounce reset timeru — do jednoho
+  // refreshe se zpracují všechny nashromážděné zdroje najednou.
+  const cloudRealtimePendingSources = new Set();
   let cloudAutosyncTimer = null;
   let cloudAutosyncRunning = false;
   let homeHeroEditMode = false;
@@ -14562,39 +14566,132 @@
     cloudRealtimeChannel = null;
     cloudRealtimeHouseholdId = '';
     cloudRealtimeReloading = false;
+    cloudRealtimePendingSources.clear();
+  }
+
+  // Mapa Supabase tabulek na cílené loader klíče. Více tabulek stejného modulu
+  // se mapuje na stejný klíč, takže v jednom debounce okně po dedup přes Set
+  // spustíme každý loader nejvýš jednou. Neznámý zdroj = fallback na full reload.
+  const REALTIME_TABLE_LOADERS = {
+    shopping_lists: ['shopping'],
+    shopping_list_items: ['shopping'],
+    profiles: ['profiles'],
+    household_members: ['households', 'profiles'],
+    contracts: ['contracts'],
+    contract_files: ['contracts'],
+    vehicles: ['garage'],
+    fuel_logs: ['garage'],
+    service_logs: ['garage'],
+    hdo_settings: ['hdo'],
+    hdo_windows: ['hdo'],
+    waste_types: ['waste'],
+    waste_schedules: ['waste'],
+    household_tasks: ['tasks'],
+    task_events: ['tasks'],
+    calendar_events: ['calendar'],
+    calendar_sources: ['calendar'],
+    finance_accounts: ['finance'],
+    finance_transactions: ['finance'],
+    household_notes: ['extras:notes'],
+    household_coupons: ['extras:coupons'],
+    household_warranties: ['extras:warranties'],
+    household_warranty_files: ['warrantyFiles']
+  };
+
+  function runRealtimeLoaderByKey(key) {
+    if (key === 'profiles') return cloudLoadProfilesForCurrentHousehold();
+    if (key === 'households') return cloudLoadHouseholds(false);
+    if (key === 'warrantyFiles') return cloudLoadWarrantyFiles(false);
+    if (key.startsWith('extras:')) {
+      return cloudLoadExtraCollection(key.slice('extras:'.length), false);
+    }
+    return cloudLoadModuleForNav(key, false, { renderAfter: false });
+  }
+
+  function collectRealtimeLoaderKeys(sources) {
+    const keys = new Set();
+    let hasUnknown = false;
+    sources.forEach((source) => {
+      const mapping = REALTIME_TABLE_LOADERS[source];
+      if (!mapping) {
+        hasUnknown = true;
+        return;
+      }
+      mapping.forEach((key) => keys.add(key));
+    });
+    return { keys: [...keys], hasUnknown };
+  }
+
+  function describeRealtimeSources(sources) {
+    const arr = [...sources];
+    if (!arr.length) return 'cloud';
+    if (arr.length <= 3) return arr.join(', ');
+    return `${arr.length} zdrojů`;
+  }
+
+  async function runCloudRealtimeRefresh(sources) {
+    const { keys, hasUnknown } = collectRealtimeLoaderKeys(sources);
+    if (hasUnknown || !keys.length) {
+      // Neznámý source nebo žádné mapování — bezpečný full reload,
+      // aby data nezůstala zatuhlá pro tabulku, kterou zatím nemapujeme.
+      await cloudLoadAllModules(false, { skipRealtimeSetup: true });
+      return;
+    }
+    for (const key of keys) {
+      await runRealtimeLoaderByKey(key);
+    }
   }
 
   function scheduleCloudRealtimeRefresh(source = 'cloud') {
     if (!cloudReady()) return;
+    cloudRealtimePendingSources.add(String(source || 'cloud'));
     if (cloudRealtimeReloadTimer) window.clearTimeout(cloudRealtimeReloadTimer);
     state.cloud = {
       ...(state.cloud || {}),
       realtimeStatus: 'refreshing',
-      realtimeSource: source,
+      realtimeSource: describeRealtimeSources(cloudRealtimePendingSources),
       lastRealtimeAt: new Date().toISOString()
     };
     saveState();
     cloudRealtimeReloadTimer = window.setTimeout(async () => {
+      cloudRealtimeReloadTimer = null;
       if (cloudRealtimeReloading || !cloudReady()) return;
       cloudRealtimeReloading = true;
+      const sources = new Set(cloudRealtimePendingSources);
+      cloudRealtimePendingSources.clear();
+      const sourcesLabel = describeRealtimeSources(sources);
       try {
-        await withMutedToasts(() => cloudLoadAllModules(false, { skipRealtimeSetup: true }));
+        await withMutedToasts(() => runCloudRealtimeRefresh(sources));
         state.cloud = {
           ...(state.cloud || {}),
           realtimeStatus: 'online',
-          realtimeSource: source,
+          realtimeSource: sourcesLabel,
           lastRealtimeAt: new Date().toISOString()
         };
         touchState();
-        saveState();
-        render();
+        saveState({ immediate: true });
+        requestRender();
       } catch (error) {
-        console.warn('Realtime cloud refresh failed', error);
-        state.cloud = { ...(state.cloud || {}), realtimeStatus: 'channel_error' };
-        saveState();
+        // Cílený refresh selhal — zkusíme full reload, aby data nezůstala zatuhlá.
+        console.warn('Targeted realtime refresh failed, falling back to full reload', error);
+        try {
+          await withMutedToasts(() => cloudLoadAllModules(false, { skipRealtimeSetup: true }));
+          state.cloud = {
+            ...(state.cloud || {}),
+            realtimeStatus: 'online',
+            realtimeSource: sourcesLabel,
+            lastRealtimeAt: new Date().toISOString()
+          };
+          touchState();
+          saveState({ immediate: true });
+          requestRender();
+        } catch (fallbackError) {
+          console.warn('Realtime cloud refresh failed', fallbackError);
+          state.cloud = { ...(state.cloud || {}), realtimeStatus: 'channel_error' };
+          saveState();
+        }
       } finally {
         cloudRealtimeReloading = false;
-        cloudRealtimeReloadTimer = null;
       }
     }, 1200);
   }
