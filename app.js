@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_317';
-  const APP_BUILD = 317;
+  const APP_VERSION = 'Domácnost+ v.0.1_318';
+  const APP_BUILD = 318;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -14615,7 +14615,10 @@
       // domácnosti (subscriptions, readings, loyaltyCards…).
       result = await cloudLoadHouseholds(false);
     } else if (key === 'householdUi') {
-      result = await cloudLoadHouseholdUiSettings(false);
+      // Realtime dispatcher řídí render sám po dokončení všech loaderů
+      // (runCloudRealtimeReloadTick), takže intermediate render z loaderu
+      // by byl duplicitní.
+      result = await cloudLoadHouseholdUiSettings(false, { renderAfter: false });
     } else if (key === 'warrantyFiles') {
       result = await cloudLoadWarrantyFiles(false);
     } else if (key.startsWith('extras:')) {
@@ -15034,7 +15037,9 @@
         return;
       }
       await yieldToMainThread();
-      await cloudLoadHouseholdUiSettings(false);
+      // renderAfter:false — warm start dělá závěrečný requestRender() sám
+      // pod řádkem, mezikrok by byl duplicitní.
+      await cloudLoadHouseholdUiSettings(false, { renderAfter: false });
       await yieldToMainThread();
       await cloudLoadProfilesForCurrentHousehold();
       saveState({ immediate: true });
@@ -15051,6 +15056,11 @@
   async function cloudLoadModuleForNav(moduleId, showMessage = false, options = {}) {
     if (!state.cloud?.userId || !state.cloud?.householdId) return false;
     const renderAfter = options.renderAfter !== false;
+    // Malý wrapper — priority/background/realtime běhy modulu vždy chtějí
+    // sdílený household UI loader bez vlastního renderu. Závěrečný render
+    // řídí volající (cloudLoadModuleForNav pod renderAfter, případně vyšší
+    // orchestrátor v priority/background/realtime cyklu).
+    const loadHouseholdUiForModule = () => cloudLoadHouseholdUiSettings(false, { renderAfter: false });
     // Loader mapa je striktně dělená podle skutečného cloud zdroje:
     //   - households.dashboard_layout (přes cloudLoadHouseholdUiSettings):
     //     readings, subscriptions, loyaltyCards, visualSettings,
@@ -15066,7 +15076,7 @@
     //     a plní se z veřejného API date.nager.at.
     const map = {
       calendar: [cloudLoadCalendarSources, cloudLoadCalendar],
-      shopping: [cloudLoadHouseholdUiSettings, cloudLoadShoppingData],
+      shopping: [loadHouseholdUiForModule, cloudLoadShoppingData],
       hdo: [cloudLoadHdoData],
       waste: [cloudLoadWaste],
       // Modul "Zápisník" v UI kombinuje household_tasks (vlastní tabulka
@@ -15084,11 +15094,11 @@
       // Předplatné je uložené v households.dashboard_layout
       // (subscriptions/subscriptionPeople/subscriptionPayments/
       // subscriptionSettings), ne v extras.
-      subscriptions: [cloudLoadHouseholdUiSettings],
+      subscriptions: [loadHouseholdUiForModule],
       // Odečty (readingGroups/readingMeters/readings/readingPrices/
       // readingDeposits/readingBilling) jsou taky součást
       // households.dashboard_layout, ne samostatná tabulka.
-      readings: [cloudLoadHouseholdUiSettings],
+      readings: [loadHouseholdUiForModule],
       // Poznámky sedí v household_notes (extras) — cílený loader,
       // ne batch cloudLoadExtraCollections.
       notes: [() => cloudLoadExtraCollection('notes', false)],
@@ -15097,7 +15107,7 @@
       coupons: [() => cloudLoadExtraCollection('coupons', false)],
       // Věrnostní karty jsou v household UI settings layoutu,
       // ne v extras.
-      loyaltyCards: [cloudLoadHouseholdUiSettings],
+      loyaltyCards: [loadHouseholdUiForModule],
       weather: []
     };
     const loaders = map[moduleId] || [];
@@ -15236,7 +15246,9 @@
       }
       const loaders = [
         cloudLoadUserVisualSettings,
-        cloudLoadHouseholdUiSettings,
+        // cloudLoadAllModules dělá závěrečný requestRender() ve svém konci,
+        // takže intermediate render z household UI loaderu by byl duplicitní.
+        () => cloudLoadHouseholdUiSettings(false, { renderAfter: false }),
         cloudLoadProfilesForCurrentHousehold,
         cloudLoadShoppingData,
         cloudLoadContracts,
@@ -16980,7 +16992,7 @@
     return true;
   }
 
-  async function cloudLoadHouseholdUiSettings(showMessage = false) {
+  async function cloudLoadHouseholdUiSettings(showMessage = false, options = {}) {
     if (!cloudReady()) return false;
     const client = getSupabaseClient();
     if (!client) return false;
@@ -16999,7 +17011,12 @@
       state.cloud.lastSyncAt = new Date().toISOString();
       touchState();
       saveState();
-      render();
+      // Loader teď načítá data pro několik Home widgetů (readings,
+      // subscriptions, loyaltyCards + shopping UI settings), takže priority/
+      // background/realtime běhy volají s renderAfter:false, aby se
+      // nepřekreslovalo mezi jednotlivými moduly. Default (bez options nebo
+      // { renderAfter: undefined }) renderuje jako dřív pro přímé použití.
+      if (options.renderAfter !== false) render();
     }
     if (showMessage) showToast('Nastavení hlavní obrazovky načtené');
     return true;
