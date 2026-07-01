@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_307';
-  const APP_BUILD = 306;
+  const APP_VERSION = 'Domácnost+ v.0.1_308';
+  const APP_BUILD = 308;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -679,7 +679,7 @@
   ];
 
 
-  const ASSET_ICON_IDS = ['home', 'calendar', 'weather', 'packages', 'shopping', 'homecare', 'garage', 'contracts', 'finance', 'subscriptions', 'settings', 'coupons', 'hdo', 'waste', 'tasks', 'notes', 'warranties', 'polishHolidays', 'more'];
+  const ASSET_ICON_IDS = ['home', 'calendar', 'weather', 'shopping', 'homecare', 'garage', 'contracts', 'finance', 'subscriptions', 'settings', 'coupons', 'hdo', 'waste', 'tasks', 'notes', 'warranties', 'polishHolidays', 'more'];
   const ASSET_ICON_MODULE_IDS = new Set(ASSET_ICON_IDS);
   const ASSET_ICON_THEMES = {
     'ios': { surface: 'soft', pathPrefix: './icons/module-icons/' },
@@ -732,7 +732,6 @@
     activeProfileId: '',
     enabledModules: [...MANAGED_MODULE_IDS],
     calendar: [],
-    packages: [],
     coupons: [],
     loyaltyCards: [],
     loyaltyCardsCloud: { loadedAt: '', pendingAt: '', errorAt: '', error: '' },
@@ -745,8 +744,6 @@
     shoppingCloud: { units: [], categories: [], catalog: [], activeListId: '', loadedAt: '' },
     hdoCloud: { settingId: '', loadedAt: '' },
     wasteCloud: { types: [], loadedAt: '' },
-    parcelsCloud: { loadedAt: '' },
-    parcelLookup: { phone: '', email: '', postalCode: '', address: '', consent: false, lastSearchAt: '', lastResult: '', lastError: '' },
     tasksCloud: { loadedAt: '' },
     calendarCloud: { sources: [], loadedAt: '', sourcesLoadedAt: '', googleConnection: null, googleCalendars: [], googleCalendarsLoadedAt: '', googleLastSyncAt: '' },
     shoppingStats: {},
@@ -928,7 +925,6 @@
     'waste_schedules',
     'household_tasks',
     'task_events',
-    'parcels',
     'calendar_events',
     'calendar_sources',
     'finance_accounts',
@@ -1552,6 +1548,12 @@
 
   function migrateState(input, options = {}) {
     const migrated = structuredCloneSafe(input || DEFAULT_STATE);
+    // Odstraň legacy klíče po odstraněných modulech, které mohly přežít v uloženém stavu.
+    // mergeState() kopíruje i klíče chybějící v DEFAULT_STATE, takže starý stav by je jinak
+    // znovu propašoval do runtime state a odtud i zpět do storage.
+    delete migrated.packages;
+    delete migrated.parcelsCloud;
+    delete migrated.parcelLookup;
     const timestamp = new Date().toISOString();
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
     forceLightVisualRecovery = Boolean(previousAppBuild && previousAppBuild < 264 && normalizeAppTheme(migrated.settings?.theme) === 'dark');
@@ -1627,10 +1629,6 @@
     migrated.hdoCloud = migrated.hdoCloud && typeof migrated.hdoCloud === 'object' && !Array.isArray(migrated.hdoCloud)
       ? { settingId: migrated.hdoCloud.settingId || '', loadedAt: migrated.hdoCloud.loadedAt || '' }
       : { ...DEFAULT_STATE.hdoCloud };
-    migrated.parcelsCloud = migrated.parcelsCloud && typeof migrated.parcelsCloud === 'object' && !Array.isArray(migrated.parcelsCloud)
-      ? { loadedAt: migrated.parcelsCloud.loadedAt || '' }
-      : { ...DEFAULT_STATE.parcelsCloud };
-    migrated.parcelLookup = normalizeParcelLookupSettings(migrated.parcelLookup);
     migrated.householdWorkspaces = migrated.householdWorkspaces && typeof migrated.householdWorkspaces === 'object' && !Array.isArray(migrated.householdWorkspaces) ? migrated.householdWorkspaces : {};
     migrated.cloud.households = Array.isArray(migrated.cloud?.households) ? migrated.cloud.households : [];
     migrated.cloud.invitations = Array.isArray(migrated.cloud?.invitations) ? migrated.cloud.invitations : [];
@@ -1935,7 +1933,7 @@
   }
 
   function getCollectionNames() {
-    return ['calendar', 'packages', 'coupons', 'hdoWindows', 'shopping', 'shoppingLists', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'readingGroups', 'readingMeters', 'readings', 'notes', 'warranties', 'warrantyFiles', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'finance', 'financeAccounts', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
+    return ['calendar', 'coupons', 'hdoWindows', 'shopping', 'shoppingLists', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'readingGroups', 'readingMeters', 'readings', 'notes', 'warranties', 'warrantyFiles', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'finance', 'financeAccounts', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
   }
 
   function normalizeModuleList(value) {
@@ -2194,7 +2192,13 @@
   }
 
   function createPersistedStateSnapshot(source) {
-    return { ...source, householdWorkspaces: {} };
+    const snapshot = { ...source, householdWorkspaces: {} };
+    // Pojistka: kdyby se legacy klíče dostaly do runtime state jinou cestou než přes migrateState(),
+    // nesmí se dostat zpět do storage.
+    delete snapshot.packages;
+    delete snapshot.parcelsCloud;
+    delete snapshot.parcelLookup;
+    return snapshot;
   }
 
   function cleanupLegacyStateStorage() {
@@ -2717,16 +2721,6 @@
     `;
   }
 
-  function renderPackageOverviewItem(pkg) {
-    const status = packageStatus(pkg.status);
-    return renderOverviewItem({
-      title: pkg.title || carrierLabel(pkg.carrier) || 'Balík',
-      badge: status.label,
-      badgeClass: status.kind,
-      meta: [carrierLabel(pkg.carrier), pkg.tracking, pkg.expectedDate ? `doručení ${formatDate(pkg.expectedDate)}` : '', pkg.pickupPlace, pkg.note, pkg.cloudId ? 'cloud' : 'lokálně'].filter(Boolean).join(' · '),
-      icon: '📦'
-    });
-  }
 
   function renderShoppingOverviewItem(item) {
     const amount = [item.quantity || item.amount || 1, item.unit || 'ks'].filter(Boolean).join(' ');
@@ -3090,12 +3084,6 @@
       const categoryCount = new Set(openItems.map((item) => item.category || 'Ostatní')).size;
       const rows = openItems.slice(0,10);
       body = `${renderOverviewSummary([{ label: 'Koupit', value: openItems.length }, { label: 'Hotovo', value: doneCount, tone: doneCount ? 'good' : '' }, { label: 'Kategorie', value: categoryCount }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map(renderShoppingOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '🛒', title: 'Nákup je prázdný', text: 'Přidej položku z katalogu nebo vlastní položku domácnosti.', nav: 'shopping', tab: 'list', label: 'Přidat položku' })}`;
-    } else if (type === 'packages') {
-      const activePackages = state.packages.filter((item) => !['delivered', 'archived'].includes(item.status));
-      const deliveredCount = state.packages.filter((item) => item.status === 'delivered').length;
-      const carrierCount = new Set(activePackages.map((item) => carrierLabel(item.carrier) || item.carrier || 'jiný')).size;
-      const rows = activePackages.slice(0,8);
-      body = `${renderOverviewSummary([{ label: 'Aktivní', value: activePackages.length }, { label: 'Doručené', value: deliveredCount, tone: deliveredCount ? 'good' : '' }, { label: 'Dopravci', value: carrierCount }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map(renderPackageOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '📦', title: 'Žádný aktivní balík', text: 'Přidej zásilku ručně. Později půjde automatika přes bezpečný backend.', nav: 'packages', tab: 'add', label: 'Přidat balík' })}`;
     } else if (type === 'contracts') {
       const sortedContracts = state.contracts.map((contract) => ({...contract, days: daysUntil(contract.validTo)})).sort((a,b)=>(a.days ?? 9999)-(b.days ?? 9999));
       const overdueCount = sortedContracts.filter((contract) => contract.days !== null && contract.days < 0).length;
@@ -3430,7 +3418,6 @@
       .filter((event) => event.date === todayISO())
       .sort((a, b) => calendarEventStartMs(a) - calendarEventStartMs(b));
     const upcomingEvents = calendarPanelEvents.slice(0, 6);
-    const activePackages = state.packages.filter((pkg) => pkg.status !== 'delivered');
     const hdo = getHdoStatus(now);
     const urgentContracts = state.contracts
       .map((contract) => ({ ...contract, days: daysUntil(contract.validTo) }))
@@ -3448,7 +3435,7 @@
     ensureWeatherFresh(false);
     normalizeGarageRuntimeState({ persist: false });
     const weather = normalizeWeatherState(state.weather);
-    const dashboardContext = { hdo, todayEvents, upcomingEvents, calendarPanelEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, weather, notes: state.notes, coupons: state.coupons, contracts: state.contracts };
+    const dashboardContext = { hdo, todayEvents, upcomingEvents, calendarPanelEvents, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, weather, notes: state.notes, coupons: state.coupons, contracts: state.contracts };
     const selectedHeroItems = normalizeHomeHeroIds(state.settings?.homeHeroItems);
     const heroCount = selectedHeroItems.length;
 
@@ -3661,11 +3648,6 @@
         tone: isRunning ? 'good' : next ? 'warn' : 'neutral'
       };
     }
-    if (id === 'packages') {
-      const active = ctx.activePackages || [];
-      const currentPackage = homeCycleItem(active, 45);
-      return { ...base, metric: active.length, text: currentPackage ? firstTitle(currentPackage, 'Balík') : 'Žádný aktivní balík', detail: currentPackage ? normalizeText(currentPackage.statusLabel || packageStatus(currentPackage.status).label || currentPackage.carrier || currentPackage.trackingNumber || currentPackage.tracking || 'sledovat zásilku') : 'Nový balík přidáš ručně', extraRows: detailRows(active, (entry) => `${carrierLabel(entry.carrier) || 'Balík'} · ${firstTitle(entry, entry.tracking || 'zásilka')}`), live: active.length > 1, tone: active.length ? 'warn' : 'good' };
-    }
     if (id === 'shopping') {
       const open = ctx.openShopping || [];
       const currentShopping = homeCycleItem(open, 45);
@@ -3871,7 +3853,6 @@
   function getHomeIconKind(id) {
     return {
       calendar: 'calendar',
-      packages: 'package',
       shopping: 'cart',
       coupons: 'tag',
       loyaltyCards: 'tag',
@@ -3897,7 +3878,6 @@
     return {
       weather: 'weather',
       calendar: 'calendar',
-      packages: 'packages',
       shopping: 'shopping',
       homecare: 'homecare',
       garage: 'garage',
@@ -4013,7 +3993,6 @@
       home: ['#2563EB', '#93C5FD', '#F59E0B'],
       weather: ['#0EA5E9', '#FACC15', '#FFFFFF'],
       calendar: ['#EF4444', '#FDE68A', '#2563EB'],
-      packages: ['#D97706', '#FDBA74', '#7C2D12'],
       shopping: ['#10B981', '#A7F3D0', '#0F766E'],
       homecare: ['#8B5CF6', '#DDD6FE', '#F59E0B'],
       garage: ['#2563EB', '#BFDBFE', '#334155'],
@@ -4066,7 +4045,6 @@
       home: '<path class="icon-primary" d="M14 31 32 15l18 16v20a3 3 0 0 1-3 3H36V40h-8v14H17a3 3 0 0 1-3-3Z"/><path class="icon-line" d="M10 32 32 12l22 20M42 22v-7h7v13"/>',
       weather: '<circle class="icon-accent" cx="25" cy="24" r="10"/><path class="icon-primary" d="M24 47h22a10 10 0 0 0 .7-20 13 13 0 0 0-24.4 4.7A8 8 0 0 0 24 47Z"/><path class="icon-line" d="M13 24h-4M18 12l-3-3M32 8V4"/>',
       calendar: '<rect class="icon-primary" x="15" y="17" width="34" height="34" rx="8"/><path class="icon-accent" d="M15 25h34v-3a5 5 0 0 0-5-5H20a5 5 0 0 0-5 5Z"/><path class="icon-line light" d="M23 12v10M41 12v10M24 33h4M31 33h4M38 33h4M24 41h4M31 41h4M38 41h4"/>',
-      packages: '<path class="icon-primary" d="m15 22 17-10 17 10v20L32 52 15 42Z"/><path class="icon-line light" d="M15 22 32 32l17-10M32 32v20M24 17l17 10"/>',
       shopping: '<path class="icon-primary" d="M17 25h30l-3 23H20Z"/><path class="icon-line light" d="M23 25v-4a9 9 0 0 1 18 0v4"/><path class="icon-accent" d="M30 35c5-7 11-5 15-5-1 7-6 12-15 13Z"/>',
       homecare: '<path class="icon-primary" d="M19 49V29h26v20Z"/><path class="icon-accent" d="M25 44h14V32H25Z"/><path class="icon-line" d="M18 29 32 18l14 11M44 49H20M43 29v-8"/>',
       garage: '<path class="icon-primary" d="M14 49V27l18-12 18 12v22Z"/><path class="icon-secondary" d="M21 34h22v15H21Z"/><path class="icon-line" d="M25 45h14M22 38h20"/><path class="icon-accent" d="M24 44c2-5 3-6 8-6s6 1 8 6Z"/>',
@@ -4093,7 +4071,6 @@
       home: `<svg viewBox="0 0 24 24"><path d="M4 11.2 12 4l8 7.2v8.8a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z" fill="#3B82F6"/><path d="M7 12.5h10" stroke="#BFDBFE" stroke-width="1.8" stroke-linecap="round"/><path d="M16.8 5.8 18 8l2.3 1.1-2.3 1.1L16.8 12l-1.1-1.8-2.2-1.1 2.2-1.1Z" fill="#FACC15"/></svg>`,
       weather: `<svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="4" fill="#FBBF24"/><path d="M12.8 15.5a3.7 3.7 0 0 1 1-7.2 4.3 4.3 0 0 1 8.2 1.7 3.4 3.4 0 0 1-.4 6.8z" fill="#93C5FD"/><path d="M14 18h6" stroke="#60A5FA" stroke-width="1.8" stroke-linecap="round"/></svg>`,
       calendar: `<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="4" fill="#2563EB"/><path d="M3 9h18" stroke="#BFDBFE" stroke-width="2"/><rect x="5" y="5" width="14" height="4" rx="2" fill="#EF4444"/><circle cx="15.5" cy="15" r="2.2" fill="#FCA5A5"/><circle cx="15.5" cy="15" r="1.2" fill="#DC2626"/></svg>`,
-      packages: `<svg viewBox="0 0 24 24"><path d="m12 3 8 4v10l-8 4-8-4V7z" fill="#F59E0B"/><path d="M12 3v8l8-4M12 11 4 7" stroke="#FDE68A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 6.2 16 10.2" stroke="#92400E" stroke-width="1.5"/></svg>`,
       shopping: `<svg viewBox="0 0 24 24"><path d="M5 9h14l-1.4 8.2a1 1 0 0 1-1 .8H8.4a1 1 0 0 1-1-.8z" fill="#2563EB"/><path d="M8 9V7a4 4 0 0 1 8 0v2" stroke="#60A5FA" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="19" r="1.5" fill="#1E3A8A"/><circle cx="16" cy="19" r="1.5" fill="#1E3A8A"/><circle cx="11" cy="13" r="1.6" fill="#EF4444"/><path d="M14.5 12h3" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round"/></svg>`,
       coupons: `<svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H20v4a2 2 0 0 0 0 4v4H6.5A2.5 2.5 0 0 1 4 15.5z" fill="#A855F7"/><path d="M12.2 8.5v7" stroke="#E9D5FF" stroke-width="1.8" stroke-dasharray="1.5 1.5" stroke-linecap="round"/><path d="M8 12h2.5M8 9.5h6.5" stroke="#F3E8FF" stroke-width="1.8" stroke-linecap="round"/></svg>`,
       hdo: `<svg viewBox="0 0 24 24"><path d="M12 3.5A6.5 6.5 0 0 0 8 15c1 .7 1.6 1.6 1.7 2.8h4.6c.1-1.2.7-2.1 1.7-2.8A6.5 6.5 0 0 0 12 3.5Z" fill="#FBBF24"/><path d="m13 7.5-3 4h2.2l-1.2 5 4-6H13z" fill="#F59E0B"/><path d="M10 20h4M10.5 22h3" stroke="#1D4ED8" stroke-width="1.8" stroke-linecap="round"/></svg>`,
@@ -4119,7 +4096,6 @@
   function getGlassIconSvg(kind) {
     const icons = {
       calendar: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3.2"/><path d="M7.5 3.8v3.4M16.5 3.8v3.4M3.5 9.5h17M8 13h3M13 13h3M8 17h3"/></svg>`,
-      package: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="M12 21V12m8-4.5-8 4.5-8-4.5M8 5l8 4.5"/></svg>`,
       cart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="19" r="1.8"/><circle cx="17" cy="19" r="1.8"/><path d="M4 5h2l2.1 8.2a1 1 0 0 0 1 .8h7.9a1 1 0 0 0 1-.8L20 8H7"/></svg>`,
       tag: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11V5.7A2.2 2.2 0 0 1 5.7 3.5H11l8.5 8.5a2.2 2.2 0 0 1 0 3.1l-4.4 4.4a2.2 2.2 0 0 1-3.1 0L3.5 11Z"/><circle cx="8" cy="8" r="1.4"/></svg>`,
       bulb: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M8.5 14.5c-1.4-1-2.5-2.8-2.5-5A6 6 0 0 1 12 3.5a6 6 0 0 1 6 6c0 2.2-1 4-2.5 5-.9.7-1.5 1.6-1.5 2.5h-4c0-.9-.6-1.8-1.5-2.5Z"/></svg>`,
@@ -4145,7 +4121,6 @@
     };
     const illustratedIcons = {
       calendar: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCalBody" x1="10" x2="54" y1="12" y2="56"><stop stop-color="#7DD3FC"/><stop offset="1" stop-color="#2563EB"/></linearGradient></defs><rect x="10" y="14" width="44" height="40" rx="13" fill="url(#icCalBody)"/><rect x="14" y="23" width="36" height="27" rx="8" fill="#FFFFFF" fill-opacity=".95"/><rect x="10" y="14" width="44" height="15" rx="13" fill="#60A5FA"/><path d="M22 10v9M42 10v9" stroke="#EFF6FF" stroke-width="4" stroke-linecap="round"/><circle cx="23" cy="36" r="4" fill="#22C55E"/><circle cx="33" cy="36" r="4" fill="#F59E0B"/><circle cx="43" cy="36" r="4" fill="#EF4444"/><path d="M18 51c8-5 18-5 28 0" stroke="#1D4ED8" stroke-opacity=".32" stroke-width="3" stroke-linecap="round"/></svg>`,
-      package: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icPkg" x1="12" x2="52" y1="9" y2="55"><stop stop-color="#FDBA74"/><stop offset="1" stop-color="#EA580C"/></linearGradient></defs><path d="M13 21 32 10l19 11v22L32 54 13 43Z" fill="url(#icPkg)"/><path d="m13 21 19 11 19-11M32 32v22" stroke="#FFF7ED" stroke-opacity=".9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 16 41 27" stroke="#7C2D12" stroke-opacity=".35" stroke-width="4" stroke-linecap="round"/><path d="M16 43c7 5 15 8 24 7" stroke="#FED7AA" stroke-opacity=".7" stroke-width="3" stroke-linecap="round"/></svg>`,
       cart: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icCart" x1="13" x2="50" y1="14" y2="49"><stop stop-color="#67E8F9"/><stop offset="1" stop-color="#0891B2"/></linearGradient></defs><path d="M12 17h8l5 23h22l6-17H24" fill="none" stroke="#0E7490" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 23h28l-5 17H28Z" fill="url(#icCart)"/><circle cx="30" cy="50" r="5" fill="#22C55E"/><circle cx="47" cy="50" r="5" fill="#F59E0B"/><path d="M31 28h15" stroke="#ECFEFF" stroke-width="3" stroke-linecap="round"/></svg>`,
       tag: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="icTag" x1="12" x2="52" y1="12" y2="52"><stop stop-color="#F0ABFC"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs><path d="M13 32V17a4 4 0 0 1 4-4h15l19 19a5 5 0 0 1 0 7L39 51a5 5 0 0 1-7 0Z" fill="url(#icTag)"/><circle cx="24" cy="24" r="5" fill="#FFFFFF" fill-opacity=".95"/><path d="M33 25h10M25 35h18" stroke="#FDF4FF" stroke-width="4" stroke-linecap="round"/><path d="M16 35 31 50" stroke="#581C87" stroke-opacity=".22" stroke-width="5" stroke-linecap="round"/></svg>`,
       bulb: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><radialGradient id="icBulbGlow" cx="50%" cy="33%" r="60%"><stop stop-color="#FEF3C7"/><stop offset=".55" stop-color="#FACC15"/><stop offset="1" stop-color="#F97316"/></radialGradient></defs><path d="M32 8c-12 0-20 9-20 20 0 8 4 13 10 17v3h20v-3c6-4 10-9 10-17C52 17 44 8 32 8Z" fill="url(#icBulbGlow)"/><path d="M24 52h16M27 58h10" stroke="#92400E" stroke-width="5" stroke-linecap="round"/><path d="M24 29c2-7 7-10 14-10" stroke="#FFF7AD" stroke-width="4" stroke-linecap="round"/><path d="M18 9 13 4M46 9l5-5M55 28h6M3 28h6" stroke="#FBBF24" stroke-width="4" stroke-linecap="round"/></svg>`,
@@ -4164,7 +4139,6 @@
     };
     const standaloneIcons = {
       calendar: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M13 18h38c3 0 5 2 5 5v29c0 3-2 5-5 5H13c-3 0-5-2-5-5V23c0-3 2-5 5-5Z" fill="#F8FAFC"/><path d="M13 18h38c3 0 5 2 5 5v9H8v-9c0-3 2-5 5-5Z" fill="#EF4444"/><path d="M16 9v14" fill="none" class="anime-icon-line" stroke="#334155" stroke-width="4" stroke-linecap="round"/><path d="M28 9v14" fill="none" class="anime-icon-line" stroke="#334155" stroke-width="4" stroke-linecap="round"/><path d="M40 9v14" fill="none" class="anime-icon-line" stroke="#334155" stroke-width="4" stroke-linecap="round"/><path d="M17 38h6v5h-6zM29 38h6v5h-6zM41 38h6v5h-6zM17 48h6v5h-6zM29 48h6v5h-6z" fill="#DBEAFE"/><circle cx="44" cy="50" r="6" fill="#F97316"/><path d="M42 50h4M44 48v4" fill="none" class="anime-icon-line" stroke="#FFF7ED" stroke-width="2.6" stroke-linecap="round"/><path d="M10 31h46" fill="none" class="anime-icon-line" stroke="#CBD5E1" stroke-width="2"/><path d="M18 14c6-4 20-5 31 1" fill="none" class="anime-icon-line" stroke="#FFFFFF" stroke-opacity=".58" stroke-width="3" stroke-linecap="round"/><path d="M53 13c4-1 7 1 8 4-4 2-8 1-8-4Z" fill="#F9A8D4"/><path d="M48 9c3-3 7-3 10-1-2 4-6 5-10 1Z" fill="#FBCFE8"/></svg>`,
-      package: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M12 22 32 12l20 10v26L32 59 12 48Z" fill="#D97706"/><path d="M12 22 32 32v27L12 48Z" fill="#B7791F"/><path d="M52 22 32 32v27l20-11Z" fill="#92400E"/><path d="M12 22 32 12l20 10-20 10Z" fill="#F59E0B"/><path d="m22 17 20 10M32 32l10-5v10l-4 2-2-6-4 2Z" fill="none" class="anime-icon-line" stroke="#FDE68A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="33" width="13" height="9" rx="2" fill="#FEF3C7"/><path d="M18 36h7M18 39h5" fill="none" class="anime-icon-line" stroke="#92400E" stroke-width="1.8" stroke-linecap="round"/><path d="M37 47h8M41 43v8" fill="none" class="anime-icon-line" stroke="#FED7AA" stroke-width="2.6" stroke-linecap="round"/></svg>`,
       cart: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M12 27h42l-5 24H17Z" fill="#0284C7"/><path d="M16 31h34l-3 16H19Z" fill="#38BDF8"/><path d="M16 28c1-8 8-13 16-13s15 5 16 13" fill="none" class="anime-icon-line" stroke="#075985" stroke-width="4" stroke-linecap="round"/><path d="M23 31v17M32 31v17M41 31v17" fill="none" class="anime-icon-line" stroke="#075985" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/><circle cx="22" cy="53" r="4" fill="#0F172A"/><circle cx="45" cy="53" r="4" fill="#0F172A"/><path d="M23 20c0-5 4-9 8-9 2 4 1 9-3 12" fill="#22C55E"/><path d="M35 20c2-6 8-8 13-6-1 6-6 9-12 9" fill="#84CC16"/><circle cx="32" cy="25" r="5" fill="#EF4444"/><path d="M42 16h9l-4 19h-9Z" fill="#F59E0B"/><path d="M44 17h9" fill="none" class="anime-icon-line" stroke="#FEF3C7" stroke-width="3" stroke-linecap="round"/></svg>`,
       tag: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M8 22c0-4 3-7 7-7h34c4 0 7 3 7 7v6c-4 1-6 4-6 8s2 7 6 8v6c0 4-3 7-7 7H15c-4 0-7-3-7-7v-6c4-1 6-4 6-8s-2-7-6-8Z" fill="#A855F7"/><path d="M12 23c0-2 2-4 4-4h34c2 0 3 1 4 3-9 3-20 5-42 5Z" fill="#C084FC"/><path d="M39 18v37" fill="none" class="anime-icon-line" stroke="#F5D0FE" stroke-width="2.4" stroke-dasharray="3 4" stroke-linecap="round"/><text x="18" y="39" font-size="12" font-family="Arial, sans-serif" font-weight="900" fill="#FFFFFF">%</text><path d="M18 46h14" fill="none" class="anime-icon-line" stroke="#F5D0FE" stroke-width="3" stroke-linecap="round"/><path d="M46 27h5M46 34h5M46 41h5" fill="none" class="anime-icon-line" stroke="#E9D5FF" stroke-width="2" stroke-linecap="round"/><path d="M58 12l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" fill="#C084FC"/></svg>`,
       bulb: `<svg class="anime-module-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6c-12 0-21 9-21 21 0 8 4 14 11 18v3h20v-3c7-4 11-10 11-18C53 15 44 6 32 6Z" fill="#FDE68A"/><path d="M19 26c0-8 6-14 14-15 7 1 12 7 12 15 0 7-4 12-10 16H25c-4-4-6-9-6-16Z" fill="#FACC15"/><path d="M27 25h10l-5 9h7L28 48l3-11h-6Z" fill="#FFFFFF" fill-opacity=".9"/><path d="M24 49h16v5H24Z" fill="#475569"/><path d="M27 56h10" fill="none" class="anime-icon-line" stroke="#1E293B" stroke-width="5" stroke-linecap="round"/><path d="M23 16c3-4 7-6 12-6" fill="none" class="anime-icon-line" stroke="#FFF7AD" stroke-width="4" stroke-linecap="round"/><path d="M11 9l5 5M52 9l-5 5M6 29h7M51 29h7M13 51l5-5M51 51l-5-5" fill="none" class="anime-icon-line" stroke="#FBBF24" stroke-width="3.5" stroke-linecap="round"/></svg>`,
@@ -4201,9 +4175,8 @@
   async function ensureWeatherFresh(force = false) { return getWeatherModule().ensureWeatherFresh(force); }
   async function saveWeatherSettings(data, form) { return getWeatherModule().saveWeatherSettings(data, form); }
 
-  function getDashboardFocusItems({ hdo, todayEvents, upcomingEvents, activePackages, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts }) {
+  function getDashboardFocusItems({ hdo, todayEvents, upcomingEvents, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts }) {
     const firstEvent = todayEvents[0] || upcomingEvents[0];
-    const firstPackage = activePackages[0];
     const firstContract = urgentContracts[0];
     const firstTask = openTasks[0];
     const firstWaste = wasteSoon[0];
@@ -4798,205 +4771,6 @@
 
   function renderEventList(events, withDelete) {
     return getCalendarModule().renderEventList(events, withDelete);
-  }
-
-
-  function normalizeParcelLookupSettings(input = {}) {
-    const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
-    const phone = normalizeText(source.phone).replace(/[^+0-9]/g, '').slice(0, 24);
-    const email = normalizeText(source.email).toLowerCase().slice(0, 120);
-    const postalCode = normalizeText(source.postalCode || source.postal_code).replace(/\s+/g, ' ').slice(0, 16);
-    const address = normalizeText(source.address).slice(0, 220);
-    return {
-      phone,
-      email,
-      postalCode,
-      address,
-      consent: source.consent === true || source.consent === 'on' || source.consent === 'true',
-      lastSearchAt: normalizeText(source.lastSearchAt || source.last_search_at),
-      lastResult: normalizeText(source.lastResult || source.last_result).slice(0, 240),
-      lastError: normalizeText(source.lastError || source.last_error).slice(0, 240)
-    };
-  }
-
-  function getParcelLookupSettings() {
-    state.parcelLookup = normalizeParcelLookupSettings(state.parcelLookup);
-    return state.parcelLookup;
-  }
-
-  function hasParcelLookupContact(lookup = getParcelLookupSettings()) {
-    return Boolean(lookup.phone || lookup.email);
-  }
-
-  function renderParcelLookupContactSummary(lookup = getParcelLookupSettings()) {
-    const rows = [
-      ['Telefon', lookup.phone || 'není nastavený'],
-      ['E-mail', lookup.email || 'není nastavený'],
-      ['PSČ', lookup.postalCode || 'volitelné'],
-      ['Adresa', lookup.address || 'volitelná']
-    ];
-    return `<div class="package-lookup-summary">${rows.map(([label, value]) => `<div class="mini-stat"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('')}</div>`;
-  }
-
-  function renderParcelLookupPanel() {
-    const lookup = getParcelLookupSettings();
-    const cloudReady = Boolean(state.cloud?.householdId);
-    const canSearch = hasParcelLookupContact(lookup) && lookup.consent;
-    return `
-      <section class="card desktop-span-2 packages-panel panel-discovery package-lookup-panel">
-        <div class="card-header">
-          <div>
-            <h2>Automatické hledání podle telefonu a e-mailu</h2>
-            <p>Zadej údaje, na které ti chodí zásilky. Frontend je jen bezpečně uloží; reálné dotazy na dopravce musí běžet přes backend.</p>
-          </div>
-          <span class="badge ${canSearch ? 'good' : ''}">${canSearch ? 'připraveno' : 'nastavit údaje'}</span>
-        </div>
-        ${renderParcelLookupContactSummary(lookup)}
-        <form data-form="parcel-lookup-settings" class="compact-form parcel-lookup-form">
-          <div class="form-grid two">
-            ${field('Telefon', 'phone', 'tel', '+420...', false, lookup.phone)}
-            ${field('E-mail', 'email', 'email', 'mail@example.cz', false, lookup.email)}
-            ${field('PSČ', 'postalCode', 'text', 'např. 543 71', false, lookup.postalCode)}
-            ${field('Adresa / město', 'address', 'text', 'volitelné upřesnění', false, lookup.address)}
-          </div>
-          <label class="check-row parcel-consent-row">
-            <input type="checkbox" name="consent" ${lookup.consent ? 'checked' : ''}>
-            <span>Souhlasím, aby aplikace tyto údaje použila pro hledání zásilek přes bezpečný backend.</span>
-          </label>
-          <div class="form-actions">
-            <button class="primary-btn" type="submit">Uložit údaje</button>
-            <button class="ghost-btn" type="button" data-action="parcel-discovery-search">Zkusit automaticky najít zásilky</button>
-            ${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-parcels">Načíst cloud balíky</button>' : ''}
-          </div>
-        </form>
-        <div class="inline-note">
-          ${lookup.lastSearchAt ? `Poslední pokus: ${escapeHtml(formatDateTime(lookup.lastSearchAt))}. ` : ''}
-          ${lookup.lastResult ? escapeHtml(lookup.lastResult) : 'Teď je připravený bezpečný základ. Backend je nasazený jako první pokus. Bez oficiálního API dopravce nemusí najít nic jen podle kontaktu.'}
-          ${lookup.lastError ? `<br><span class="danger-text">${escapeHtml(lookup.lastError)}</span>` : ''}
-        </div>
-      </section>
-    `;
-  }
-
-  function renderPackages() {
-    const packages = [...state.packages].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
-    const activePackages = packages.filter((pkg) => !['delivered', 'archived'].includes(pkg.status));
-    const deliveredPackages = packages.filter((pkg) => ['delivered', 'archived'].includes(pkg.status));
-    const cloudReady = Boolean(state.cloud?.householdId);
-    const localOnly = packages.filter((pkg) => !pkg.cloudId).length;
-    const cloudCount = packages.filter((pkg) => pkg.cloudId).length;
-    const lookup = getParcelLookupSettings();
-    const activePackagesTab = getModuleTab('packages', hasParcelLookupContact(lookup) ? 'active' : 'discovery');
-    return `
-      ${renderSectionTabs('packages', [
-        { id: 'active', label: 'Aktivní', icon: '📦', count: activePackages.length },
-        { id: 'discovery', label: 'Hledání', icon: '🔎' },
-        { id: 'add', label: 'Ručně', icon: '➕' },
-        { id: 'archive', label: 'Doručené', icon: '✅', count: deliveredPackages.length }
-      ], hasParcelLookupContact(lookup) ? 'active' : 'discovery')}
-      <div class="grid two module-tabbed packages-tab-${activePackagesTab}" data-tab-area="packages">
-        <section class="card desktop-span-2 packages-panel panel-active">
-          <div class="card-header">
-            <div><h2>Aktivní balíky</h2><p>Vepředu jsou jen zásilky, které ještě řešíš. Automatické hledání je v samostatné záložce Hledání.</p></div>
-            <span class="badge ${cloudCount ? 'good' : ''}">${packages.length} celkem · ${cloudCount} cloud</span>
-          </div>
-          <div class="cloud-status-grid compact-cloud-stats">
-            <div class="mini-stat"><span>Aktivní</span><strong>${activePackages.length}</strong></div>
-            <div class="mini-stat"><span>K vyzvednutí</span><strong>${activePackages.filter((pkg) => ['pickup', 'ready_pickup'].includes(pkg.status)).length}</strong></div>
-            <div class="mini-stat"><span>Cloud</span><strong>${cloudCount}</strong></div>
-            <div class="mini-stat"><span>Lokálně</span><strong>${localOnly}</strong></div>
-          </div>
-          ${activePackages.length ? `<div class="list compact-list">${activePackages.map(renderPackageItem).join('')}</div>` : renderEmptyCta({ icon: '📦', title: 'Žádný aktivní balík', text: 'Nastav telefon/e-mail pro hledání, nebo přidej zásilku ručně.', nav: 'packages', tab: hasParcelLookupContact(lookup) ? 'add' : 'discovery', label: hasParcelLookupContact(lookup) ? 'Přidat ručně' : 'Nastavit hledání' })}
-        </section>
-
-        ${renderParcelLookupPanel()}
-
-        <section class="card packages-panel panel-add">
-          <div class="card-header">
-            <div><h2>Přidat ručně</h2><p>Když už znáš číslo zásilky, ručně ho uložíš sem.</p></div>
-            <span class="badge ${packages.some((pkg) => pkg.cloudId) ? 'good' : ''}">${packages.some((pkg) => pkg.cloudId) ? 'cloud' : 'lokálně'}</span>
-          </div>
-          <form data-form="add-package">
-            <div class="form-grid two">
-              ${selectField('Dopravce', 'carrier', [['zasilkovna','Zásilkovna'], ['balikovna','Balíkovna'], ['ceska_posta','Česká pošta'], ['ppl','PPL'], ['dpd','DPD'], ['gls','GLS'], ['one','One by Allegro'], ['alza','Alza'], ['other','Jiný']])}
-              ${field('Číslo zásilky', 'tracking', 'text', 'např. Z123456789', true)}
-              ${field('Název / obchod', 'title', 'text', 'např. Temu / Alza / dárek')}
-              ${selectField('Stav', 'status', [['new', 'Nový'], ['transit', 'Na cestě'], ['pickup', 'K vyzvednutí'], ['delivered', 'Doručeno'], ['problem', 'Problém']])}
-              ${field('Předpoklad doručení', 'expectedDate', 'date', '')}
-              ${field('Výdejní místo', 'pickupPlace', 'text', 'volitelné')}
-              ${field('Odkaz na tracking', 'url', 'url', 'volitelné')}
-              ${field('Poznámka', 'note', 'text', 'co to je / poznámka')}
-            </div>
-            <div class="form-actions">
-              <button class="primary-btn" type="submit">Přidat balík</button>
-              ${cloudReady ? '<button class="ghost-btn" type="button" data-action="cloud-load-parcels">Načíst cloud balíky</button>' : ''}
-              ${cloudReady && localOnly ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-parcels">Odeslat lokální (${localOnly})</button>` : ''}
-            </div>
-          </form>
-          <div class="inline-note">Balíky jsou při cloudu oddělené podle domácnosti. Cizí domácnost neuvidí tvoje tracking čísla ani poznámky.</div>
-        </section>
-
-        <section class="card desktop-span-2 packages-panel panel-archive">
-          <div class="card-header"><div><h2>Doručené / archiv</h2><p>Hotové balíky jsou mimo hlavní přehled, aby aktivní část zůstala krátká.</p></div></div>
-          ${deliveredPackages.length ? `<div class="list compact-list">${deliveredPackages.slice(0, 30).map(renderPackageItem).join('')}</div>` : renderEmptyCta({ icon: '✅', title: 'Archiv je prázdný', text: 'Doručené balíky se sem přesunou automaticky po označení jako doručené.' })}
-        </section>
-      </div>
-    `;
-  }
-
-
-  function renderPackageItem(pkg) {
-    const status = packageStatus(pkg.status);
-    return `
-      <div class="item">
-        <div class="item-top">
-          <div class="item-title">${escapeHtml(pkg.title || carrierLabel(pkg.carrier) || 'Balík')}</div>
-          <span class="badge ${status.kind}">${escapeHtml(status.label)}</span>
-        </div>
-        <div class="item-meta">${escapeHtml(carrierLabel(pkg.carrier))} · ${escapeHtml(pkg.tracking)}${pkg.expectedDate ? ` · doručení ${formatDate(pkg.expectedDate)}` : ''}${pkg.pickupPlace ? ` · ${escapeHtml(pkg.pickupPlace)}` : ''}${pkg.note ? ` · ${escapeHtml(pkg.note)}` : ''}${pkg.cloudId ? ' · cloud' : ' · lokálně'}</div>
-        <div class="item-actions">
-          <button class="ghost-btn" type="button" data-action="copy" data-value="${escapeHtml(pkg.tracking)}">Kopírovat číslo</button>
-          ${pkg.url ? `<a class="ghost-btn" href="${escapeHtml(pkg.url)}" target="_blank" rel="noopener">Tracking</a>` : ''}
-          <button class="ghost-btn" type="button" data-action="package-status" data-id="${pkg.id}" data-status="pickup">K vyzvednutí</button>
-          <button class="ghost-btn" type="button" data-action="package-status" data-id="${pkg.id}" data-status="delivered">Doručeno</button>
-          ${state.cloud?.householdId && !pkg.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-parcel" data-id="${pkg.id}">Odeslat</button>` : ''}
-          <button class="danger-btn" type="button" data-action="delete-package" data-id="${pkg.id}">Smazat</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function packageStatus(status) {
-    const map = {
-      new: { label: 'Nový', kind: '' },
-      transit: { label: 'Na cestě', kind: '' },
-      in_transit: { label: 'Na cestě', kind: '' },
-      pickup: { label: 'K vyzvednutí', kind: 'good' },
-      ready_pickup: { label: 'K vyzvednutí', kind: 'good' },
-      delivered: { label: 'Doručeno', kind: 'good' },
-      problem: { label: 'Problém', kind: 'bad' },
-      archived: { label: 'Archiv', kind: '' }
-    };
-    return map[status] || map.new;
-  }
-
-  function carrierLabel(value) {
-    const map = {
-      zasilkovna: 'Zásilkovna', balikovna: 'Balíkovna', ceska_posta: 'Česká pošta', ppl: 'PPL', dpd: 'DPD', gls: 'GLS', one: 'One by Allegro', alza: 'Alza', other: 'Jiný'
-    };
-    return map[value] || value || 'Jiný';
-  }
-
-  function parcelStatusToCloud(status) {
-    if (status === 'transit') return 'in_transit';
-    if (status === 'pickup') return 'ready_pickup';
-    return status || 'new';
-  }
-
-  function parcelStatusFromCloud(status) {
-    if (status === 'in_transit') return 'transit';
-    if (status === 'ready_pickup') return 'pickup';
-    return status || 'new';
   }
 
 
@@ -10829,7 +10603,6 @@
       todayEvents: upcomingCalendarEvents(now).filter((event) => event.date === todayISO()),
       upcomingEvents: upcomingCalendarEvents(now).slice(0, 6),
       calendarPanelEvents: upcomingCalendarEvents(now),
-      activePackages: state.packages.filter((pkg) => pkg.status !== 'delivered'),
       openShopping: state.shopping.filter((item) => !item.done),
       openTasks: state.homeTasks.filter((task) => !task.done),
       wasteSoon: getUpcomingWasteRuntimeItems({ maxDays: 7 }),
@@ -11395,7 +11168,6 @@
   function isRealHouseholdStarterState() {
     const counts = [
       state.calendar?.length || 0,
-      state.packages?.length || 0,
       state.shopping?.length || 0,
       state.homeTasks?.length || 0,
       state.waste?.length || 0,
@@ -13690,33 +13462,6 @@
   }
 
 
-  // Sdílený helper pro čtení chybové hlášky z Supabase Edge Functions.
-  // Používá se z parcelly (parcel-lookup edge). Kalendář má vlastní kopii v modulu.
-  async function readFunctionErrorMessage(error, fallback = 'Backend zatím není připravený') {
-    if (!error) return fallback;
-    const context = error.context;
-    try {
-      if (context?.clone && typeof context.clone === 'function') {
-        const cloned = context.clone();
-        const body = await cloned.json().catch(() => null);
-        const message = body?.error || body?.message || body?.hint;
-        if (message) return message;
-      }
-      if (context?.json && typeof context.json === 'function') {
-        const body = await context.json().catch(() => null);
-        const message = body?.error || body?.message || body?.hint;
-        if (message) return message;
-      }
-      if (context?.text && typeof context.text === 'function') {
-        const text = await context.text().catch(() => '');
-        if (text) return text.slice(0, 220);
-      }
-    } catch (_) {
-      // Supabase FunctionsHttpError nemusí vždy dovolit přečíst body odpovědi.
-    }
-    return error.message || fallback;
-  }
-
   // Google OAuth + edge funkce jsou přesunuté do calendar.js (ČÁST B).
   // Tady zůstávají jen wrappery pro external callery (boot, akční handlery,
   // handleInitialAuthReturn a google-calendar-save-sources form dispatch).
@@ -13781,305 +13526,6 @@
     return getCalendarModule().deleteCalendarEvent(id);
   }
 
-
-  function cloudParcelPayload(pkg, userId) {
-    return {
-      household_id: state.cloud.householdId,
-      profile_id: pkg.profileId && String(pkg.profileId).startsWith('profile-') ? null : pkg.profileId || null,
-      title: pkg.title || pkg.note || carrierLabel(pkg.carrier) || 'Balík',
-      carrier: pkg.carrier || 'other',
-      tracking_number: pkg.tracking || '',
-      tracking_url: pkg.url || null,
-      status: parcelStatusToCloud(pkg.status),
-      expected_date: pkg.expectedDate || null,
-      pickup_place: pkg.pickupPlace || null,
-      note: pkg.note || null,
-      source: pkg.source || 'manual',
-      created_by: pkg.cloudId ? undefined : userId,
-      updated_by: userId
-    };
-  }
-
-  async function cloudAddParcel(pkg) {
-    const client = getSupabaseClient();
-    if (!client || !state.cloud?.householdId) return null;
-    const user = await refreshCloudSession(false);
-    if (!user) return null;
-    const { data, error } = await client.from('parcels').insert(cloudParcelPayload(pkg, user.id)).select('id').single();
-    if (error) {
-      showToast(error.message || 'Balík se nepovedlo uložit do cloudu');
-      return null;
-    }
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return data;
-  }
-
-  async function cloudUpdateParcel(pkg) {
-    const client = getSupabaseClient();
-    if (!client || !pkg?.cloudId || !state.cloud?.householdId) return true;
-    const user = await refreshCloudSession(false);
-    if (!user) return false;
-    const payload = cloudParcelPayload(pkg, user.id);
-    delete payload.created_by;
-    const { error } = await client.from('parcels').update(payload).eq('id', pkg.cloudId).eq('household_id', state.cloud.householdId);
-    if (error) {
-      showToast(error.message || 'Balík se nepovedlo upravit v cloudu');
-      return false;
-    }
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return true;
-  }
-
-  async function cloudDeleteParcel(pkg) {
-    const client = getSupabaseClient();
-    if (!client || !pkg?.cloudId || !state.cloud?.householdId) return true;
-    const { error } = await client.from('parcels').delete().eq('id', pkg.cloudId).eq('household_id', state.cloud.householdId);
-    if (error) {
-      showToast(error.message || 'Cloud balík se nepovedlo smazat');
-      return false;
-    }
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return true;
-  }
-
-  async function cloudLoadParcels(showMessage = true) {
-    const client = getSupabaseClient();
-    if (!client || !state.cloud?.householdId) {
-      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
-      return;
-    }
-    const { data, error } = await client
-      .from('parcels')
-      .select('id,title,carrier,tracking_number,tracking_url,status,expected_date,pickup_place,note,created_at')
-      .eq('household_id', state.cloud.householdId)
-      .order('created_at', { ascending: false });
-    if (error) {
-      showToast(error.message || 'Balíky se nepovedlo načíst');
-      return;
-    }
-    const localOnly = state.packages.filter((pkg) => !pkg.cloudId);
-    const cloudItems = (data || []).map((item) => ({
-      id: state.packages.find((pkg) => pkg.cloudId === item.id)?.id || `parcel-cloud-${item.id}`,
-      cloudId: item.id,
-      householdId: currentHouseholdId(),
-      profileId: currentProfileId(),
-      createdAt: item.created_at || new Date().toISOString(),
-      title: item.title || '',
-      carrier: item.carrier || 'other',
-      tracking: item.tracking_number || '',
-      url: item.tracking_url || '',
-      status: parcelStatusFromCloud(item.status),
-      expectedDate: item.expected_date || '',
-      pickupPlace: item.pickup_place || '',
-      note: item.note || ''
-    }));
-    state.packages = [...localOnly, ...cloudItems];
-    state.parcelsCloud = { ...(state.parcelsCloud || {}), loadedAt: new Date().toISOString() };
-    state.cloud.lastSyncAt = new Date().toISOString();
-    touchState();
-    saveState();
-    render();
-    if (showMessage) showToast(`Načteno balíků: ${cloudItems.length}`);
-  }
-
-  async function cloudSyncParcelById(id) {
-    const pkg = state.packages.find((item) => item.id === id);
-    if (!pkg) return;
-    const saved = pkg.cloudId ? await cloudUpdateParcel(pkg) : await cloudAddParcel(pkg);
-    if (saved?.id) pkg.cloudId = saved.id;
-    touchState();
-    saveState();
-    render();
-    showToast(pkg.cloudId ? 'Balík uložen do cloudu' : 'Balík se nepovedlo odeslat');
-  }
-
-  async function cloudSyncLocalParcels() {
-    const local = state.packages.filter((pkg) => !pkg.cloudId);
-    let synced = 0;
-    for (const pkg of local) {
-      const saved = await cloudAddParcel(pkg);
-      if (saved?.id) {
-        pkg.cloudId = saved.id;
-        synced += 1;
-      }
-    }
-    touchState();
-    saveState();
-    render();
-    showToast(synced ? `Odesláno balíků: ${synced}` : 'Žádný balík se nepovedlo odeslat');
-  }
-
-  async function saveParcelLookupSettingsFromForm(data, form) {
-    const lookup = normalizeParcelLookupSettings({
-      phone: data.phone,
-      email: data.email,
-      postalCode: data.postalCode,
-      address: data.address,
-      consent: Boolean(form?.querySelector?.('[name="consent"]')?.checked),
-      lastSearchAt: state.parcelLookup?.lastSearchAt || '',
-      lastResult: state.parcelLookup?.lastResult || '',
-      lastError: ''
-    });
-    state.parcelLookup = lookup;
-    touchState();
-    saveState();
-    await cloudSaveHouseholdUiSettings(false);
-    render();
-    showToast(cloudReady() ? 'Údaje pro hledání balíků uložené' : 'Údaje uložené lokálně');
-  }
-
-  function normalizeDiscoveredParcel(input = {}) {
-    const source = input && typeof input === 'object' ? input : {};
-    const tracking = normalizeText(source.tracking || source.trackingNumber || source.tracking_number || source.code || source.number);
-    if (!tracking) return null;
-    return {
-      id: uid(),
-      householdId: currentHouseholdId(),
-      profileId: currentProfileId(),
-      createdAt: new Date().toISOString(),
-      title: normalizeText(source.title || source.store || source.sender || source.name) || carrierLabel(source.carrier) || 'Nalezený balík',
-      carrier: normalizeText(source.carrier || source.provider) || 'other',
-      tracking,
-      status: parcelStatusFromCloud(source.status || 'new'),
-      url: normalizeText(source.url || source.trackingUrl || source.tracking_url),
-      expectedDate: normalizeText(source.expectedDate || source.expected_date),
-      pickupPlace: normalizeText(source.pickupPlace || source.pickup_place),
-      note: normalizeText(source.note || source.description || 'Nalezeno podle telefonu/e-mailu'),
-      source: 'parcel_lookup'
-    };
-  }
-
-  async function runParcelDiscoverySearch() {
-    const lookup = getParcelLookupSettings();
-    if (!hasParcelLookupContact(lookup)) {
-      showToast('Nejdřív zadej telefon nebo e-mail');
-      setModuleTab('packages', 'discovery');
-      render();
-      return;
-    }
-    if (!lookup.consent) {
-      showToast('Potvrď souhlas s hledáním podle těchto údajů');
-      setModuleTab('packages', 'discovery');
-      render();
-      return;
-    }
-    if (!cloudReady()) {
-      state.parcelLookup = { ...lookup, lastSearchAt: new Date().toISOString(), lastResult: '', lastError: 'Pro automatické hledání je potřeba přihlášená cloudová domácnost.' };
-      touchState();
-      saveState();
-      render();
-      showToast('Hledání podle údajů potřebuje cloudovou domácnost');
-      return;
-    }
-    const client = getSupabaseClient();
-    if (!client?.functions?.invoke) {
-      state.parcelLookup = { ...lookup, lastSearchAt: new Date().toISOString(), lastResult: '', lastError: 'Supabase Functions nejsou dostupné.' };
-      touchState();
-      saveState();
-      render();
-      showToast('Automatické hledání je momentálně nedostupné');
-      return;
-    }
-    const user = await refreshCloudSession(false);
-    if (!user) {
-      showToast('Nejdřív se přihlas');
-      return;
-    }
-    try {
-      showToast('Hledám zásilky přes bezpečný backend…');
-      const { data, error } = await client.functions.invoke('parcel-discovery-search', {
-        body: {
-          householdId: state.cloud.householdId,
-          profileId: currentProfileId(),
-          lookup: {
-            phone: lookup.phone,
-            email: lookup.email,
-            postalCode: lookup.postalCode,
-            address: lookup.address,
-            consent: lookup.consent
-          },
-          phone: lookup.phone,
-          email: lookup.email,
-          postalCode: lookup.postalCode,
-          address: lookup.address,
-          consent: lookup.consent
-        }
-      });
-      if (error || data?.error || data?.ok === false) {
-        const message = data?.error || data?.message || await readFunctionErrorMessage(error, 'Automatické hledání je nasazené, ale podle samotného kontaktu nemusí najít zásilky');
-        state.parcelLookup = { ...lookup, lastSearchAt: new Date().toISOString(), lastResult: '', lastError: message };
-        touchState();
-        saveState();
-        render();
-        showToast(message);
-        return;
-      }
-      const discovered = Array.isArray(data?.parcels) ? data.parcels.map(normalizeDiscoveredParcel).filter(Boolean) : [];
-      let added = 0;
-      for (const parcel of discovered) {
-        const duplicate = state.packages.some((pkg) => normalizeText(pkg.tracking).toLowerCase() === parcel.tracking.toLowerCase() && parcel.tracking);
-        if (duplicate) continue;
-        const saved = await cloudAddParcel(parcel);
-        if (saved?.id) parcel.cloudId = saved.id;
-        state.packages.push(parcel);
-        added += 1;
-      }
-      const result = added
-        ? `Nalezeno a přidáno balíků: ${added}`
-        : (normalizeText(data?.message) || 'Automatické hledání proběhlo, ale nenašlo nové zásilky.');
-      state.parcelLookup = { ...lookup, lastSearchAt: new Date().toISOString(), lastResult: result, lastError: '' };
-      state.parcelsCloud = { ...(state.parcelsCloud || {}), loadedAt: new Date().toISOString() };
-      touchState();
-      saveState();
-      render();
-      showToast(result);
-    } catch (error) {
-      const message = error?.message || 'Hledání balíků se nepovedlo';
-      state.parcelLookup = { ...lookup, lastSearchAt: new Date().toISOString(), lastResult: '', lastError: message };
-      touchState();
-      saveState();
-      render();
-      showToast(message);
-    }
-  }
-
-  async function addPackageFromForm(data, form) {
-    const item = {
-      id: uid(),
-      householdId: currentHouseholdId(),
-      profileId: currentProfileId(),
-      createdAt: new Date().toISOString(),
-      title: normalizeText(data.title) || normalizeText(data.note) || carrierLabel(data.carrier),
-      carrier: data.carrier || 'other',
-      tracking: normalizeText(data.tracking),
-      status: data.status || 'new',
-      url: normalizeText(data.url),
-      expectedDate: normalizeText(data.expectedDate),
-      pickupPlace: normalizeText(data.pickupPlace),
-      note: normalizeText(data.note),
-      source: 'manual'
-    };
-    const saved = await cloudAddParcel(item);
-    if (saved?.id) item.cloudId = saved.id;
-    state.packages.push(item);
-    touchState();
-    saveState();
-    form?.reset();
-    render();
-    showToast(item.cloudId ? 'Balík uložen do cloudu' : 'Balík uložen lokálně');
-  }
-
-  async function deletePackage(id) {
-    const item = state.packages.find((pkg) => pkg.id === id);
-    if (!item) return;
-    const ok = await cloudDeleteParcel(item);
-    if (!ok) return;
-    state.packages = state.packages.filter((pkg) => pkg.id !== id);
-    touchState();
-    saveState();
-    render();
-    showToast('Balík smazán');
-  }
 
   function cloudLoadHdoData(showMessage = true) {
     return getHdoModule().cloudLoadHdoData(showMessage);
@@ -14201,8 +13647,6 @@
       'add-event': () => addEventFromForm(data, form),
       'add-calendar-source': () => addCalendarSourceFromForm(data, form),
       'google-calendar-save-sources': () => saveGoogleCalendarSourcesFromForm(form),
-      'add-package': () => addPackageFromForm(data, form),
-      'parcel-lookup-settings': () => saveParcelLookupSettingsFromForm(data, form),
       'add-shopping': () => addShoppingFromForm(data, form),
       'add-shopping-list': () => addShoppingListFromForm(data, form),
       'add-shopping-catalog-item': () => addShoppingCatalogItemFromForm(data, form),
@@ -15311,7 +14755,6 @@
         cloudSyncLocalHdo,
         cloudSyncLocalWaste,
         cloudSyncLocalTasks,
-        cloudSyncLocalParcels,
         cloudSyncLocalCalendarSources,
         cloudSyncLocalCalendar,
         cloudSyncLocalFinanceAccounts,
@@ -15684,18 +15127,6 @@
       if (closeLoyaltyMenuAfterCopy) render();
       return;
     }
-    if (action === 'package-status') {
-      const pkg = state.packages.find((item) => item.id === button.dataset.id);
-      if (pkg) {
-        pkg.status = button.dataset.status;
-        cloudUpdateParcel(pkg).then(() => {
-          touchState();
-          saveState();
-          render();
-        });
-      }
-      return;
-    }
     if (action === 'cloud-load-all') {
       cloudLoadAllModules(true);
       return;
@@ -15789,26 +15220,6 @@
     if (action === 'calendar-event-detail') {
       calendarDetailEventId = button.dataset.id || '';
       render();
-      return;
-    }
-    if (action === 'parcel-discovery-search') {
-      runParcelDiscoverySearch();
-      return;
-    }
-    if (action === 'cloud-load-parcels') {
-      cloudLoadParcels(true);
-      return;
-    }
-    if (action === 'cloud-sync-local-parcels') {
-      cloudSyncLocalParcels();
-      return;
-    }
-    if (action === 'cloud-sync-parcel') {
-      cloudSyncParcelById(button.dataset.id);
-      return;
-    }
-    if (action === 'delete-package') {
-      deletePackage(button.dataset.id);
       return;
     }
     if (action === 'set-profile') {
@@ -16869,7 +16280,6 @@
         dashboardWidgets: structuredCloneSafe(state.settings?.dashboardWidgets || []),
         theme: state.settings?.theme || 'light'
       },
-      parcelLookup: structuredCloneSafe(state.parcelLookup || DEFAULT_STATE.parcelLookup),
       loyaltyCards: structuredCloneSafe(normalizeLoyaltyCards(state.loyaltyCards || [])),
       loyaltyCardsCloud: structuredCloneSafe(state.loyaltyCardsCloud || DEFAULT_STATE.loyaltyCardsCloud),
       readingPrices: structuredCloneSafe(state.readingPrices || DEFAULT_STATE.readingPrices),
@@ -16887,8 +16297,6 @@
     state.shoppingCloud = structuredCloneSafe(DEFAULT_STATE.shoppingCloud);
     state.hdoCloud = structuredCloneSafe(DEFAULT_STATE.hdoCloud);
     state.wasteCloud = structuredCloneSafe(DEFAULT_STATE.wasteCloud);
-    state.parcelsCloud = structuredCloneSafe(DEFAULT_STATE.parcelsCloud);
-    state.parcelLookup = structuredCloneSafe(DEFAULT_STATE.parcelLookup);
     state.tasksCloud = structuredCloneSafe(DEFAULT_STATE.tasksCloud);
     state.calendarCloud = structuredCloneSafe(DEFAULT_STATE.calendarCloud);
     state.financeCloud = structuredCloneSafe(DEFAULT_STATE.financeCloud);
@@ -17148,9 +16556,6 @@
       if (/^\d{4}-\d{2}$/.test(String(layout.subscriptionSettings.month || ''))) state.settings.subscriptionMonth = String(layout.subscriptionSettings.month);
       if (['all', 'unpaid', 'debtors'].includes(layout.subscriptionSettings.paymentFilter)) state.settings.subscriptionPaymentFilter = layout.subscriptionSettings.paymentFilter;
     }
-    if (layout.parcelLookup && typeof layout.parcelLookup === 'object') {
-      state.parcelLookup = normalizeParcelLookupSettings({ ...state.parcelLookup, ...layout.parcelLookup });
-    }
     if (Array.isArray(layout.loyaltyCards)) {
       state.loyaltyCards = mergeLoyaltyCards(state.loyaltyCards || [], layout.loyaltyCards);
       state.loyaltyCardsCloud = { ...(state.loyaltyCardsCloud || {}), loadedAt: new Date().toISOString(), pendingAt: '' };
@@ -17198,7 +16603,6 @@
           month: subscriptionSelectedMonth(),
           paymentFilter: subscriptionPaymentFilter()
         },
-        parcelLookup: normalizeParcelLookupSettings(state.parcelLookup),
         loyaltyCards: normalizeLoyaltyCards(state.loyaltyCards || []),
         financeTemplates: normalizeFinanceTemplates(state.financeTemplates || []),
         financeSettings: {
@@ -17274,7 +16678,6 @@
       household: structuredCloneSafe(state.household),
       profiles: structuredCloneSafe(state.profiles),
       activeProfileId: state.activeProfileId,
-      parcelLookup: structuredCloneSafe(state.parcelLookup || DEFAULT_STATE.parcelLookup),
       loyaltyCards: structuredCloneSafe(normalizeLoyaltyCards(state.loyaltyCards || [])),
       loyaltyCardsCloud: structuredCloneSafe(state.loyaltyCardsCloud || DEFAULT_STATE.loyaltyCardsCloud),
       readingPrices: structuredCloneSafe(state.readingPrices || DEFAULT_STATE.readingPrices),
@@ -17294,7 +16697,6 @@
       state.household = structuredCloneSafe(snapshot.household || state.household);
       state.profiles = structuredCloneSafe(snapshot.profiles || []);
       state.activeProfileId = snapshot.activeProfileId || state.profiles[0]?.id || '';
-      state.parcelLookup = normalizeParcelLookupSettings(snapshot.parcelLookup || state.parcelLookup);
       state.loyaltyCards = normalizeLoyaltyCards(snapshot.loyaltyCards || state.loyaltyCards || []);
       state.loyaltyCardsCloud = structuredCloneSafe(snapshot.loyaltyCardsCloud || state.loyaltyCardsCloud || DEFAULT_STATE.loyaltyCardsCloud);
       state.readingPrices = normalizeReadingPrices(snapshot.readingPrices || state.readingPrices);
@@ -17312,7 +16714,6 @@
       };
       state.profiles = [createProfile(currentProfile()?.name || 'Já', 'owner', state.household.id)];
       state.activeProfileId = state.profiles[0]?.id || '';
-      state.parcelLookup = structuredCloneSafe(DEFAULT_STATE.parcelLookup);
       state.loyaltyCards = [];
       state.loyaltyCardsCloud = structuredCloneSafe(DEFAULT_STATE.loyaltyCardsCloud);
       state.readingPrices = normalizeReadingPrices(DEFAULT_STATE.readingPrices);

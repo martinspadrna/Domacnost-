@@ -2414,9 +2414,6 @@ button {
 .calendar-tab-sources .calendar-panel:not(.panel-sources),
 .calendar-tab-add .calendar-panel:not(.panel-add),
 .calendar-tab-history .calendar-panel:not(.panel-history),
-.packages-tab-active .packages-panel:not(.panel-active),
-.packages-tab-add .packages-panel:not(.panel-add),
-.packages-tab-archive .packages-panel:not(.panel-archive),
 .garage-tab-overview .garage-panel:not(.panel-overview),
 .garage-tab-detail .garage-panel:not(.panel-detail),
 .garage-tab-add .garage-panel:not(.panel-add),
@@ -8095,13 +8092,6 @@ textarea {
     linear-gradient(180deg, rgba(168,85,247,.20), rgba(168,85,247,.08)) !important;
 }
 
-.glass-icon-package.station-summary-icon {
-  color: #f97316 !important;
-  background:
-    radial-gradient(circle at 30% 22%, rgba(255,255,255,.92), rgba(255,255,255,.22) 32%, transparent 46%),
-    linear-gradient(180deg, rgba(249,115,22,.20), rgba(249,115,22,.08)) !important;
-}
-
 .glass-icon-cart.station-summary-icon {
   color: #06b6d4 !important;
   background:
@@ -8247,12 +8237,6 @@ textarea {
   background:
     radial-gradient(circle at 30% 22%, rgba(255,255,255,.96), rgba(255,255,255,.30) 30%, transparent 46%),
     linear-gradient(180deg, rgba(219,234,254,.90), rgba(59,130,246,.16)) !important;
-}
-.glass-icon-package.station-summary-icon {
-  color: #f97316 !important;
-  background:
-    radial-gradient(circle at 30% 22%, rgba(255,255,255,.96), rgba(255,255,255,.30) 30%, transparent 46%),
-    linear-gradient(180deg, rgba(255,237,213,.90), rgba(249,115,22,.16)) !important;
 }
 .glass-icon-cart.station-summary-icon {
   color: #06b6d4 !important;
@@ -8431,7 +8415,6 @@ textarea {
 .glass-icon-calendar.station-summary-icon,
 .glass-icon-note.station-summary-icon,
 .glass-icon-doc.station-summary-icon { color: #2563eb !important; }
-.glass-icon-package.station-summary-icon { color: #f97316 !important; }
 .glass-icon-cart.station-summary-icon { color: #06b6d4 !important; }
 .glass-icon-tag.station-summary-icon { color: #a855f7 !important; }
 .glass-icon-plug.station-summary-icon,
@@ -8608,7 +8591,6 @@ textarea {
 }
 
 .glass-icon-calendar.station-summary-icon { color: #2f7dff !important; }
-.glass-icon-package.station-summary-icon { color: #ff8a1f !important; }
 .glass-icon-cart.station-summary-icon { color: #00a8c8 !important; }
 .glass-icon-tag.station-summary-icon { color: #a855f7 !important; }
 .glass-icon-bulb.station-summary-icon { color: #f5b301 !important; }
@@ -15162,45 +15144,8 @@ body {
   }
 }
 
-/* v0.1_244 Balíky: hledání podle telefonu/e-mailu */
-.package-lookup-panel {
-  overflow: hidden;
-}
-.package-lookup-summary {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin: 12px 0 16px;
-}
-.parcel-lookup-form .field input {
-  width: 100%;
-  min-width: 0;
-}
-.parcel-consent-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin: 12px 0 4px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(15,23,42,.28);
-  color: var(--muted);
-  line-height: 1.35;
-}
-.parcel-consent-row input {
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  flex: 0 0 auto;
-}
 .danger-text {
   color: #fecaca;
-}
-@media (max-width: 760px) {
-  .package-lookup-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 /* Domácnost+ v.0.1_246 – Předplatné: chytré platby a stabilní měsíc */
