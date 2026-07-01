@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_310';
-  const APP_BUILD = 310;
+  const APP_VERSION = 'Domácnost+ v.0.1_311';
+  const APP_BUILD = 311;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1075,6 +1075,7 @@
   let cloudWarmStartTimer = null;
   let bootCloudMaintenanceTimer = null;
   let bootBackgroundCloudLoadTimer = null;
+  let bootHomePriorityCloudLoadTimer = null;
   let lastUserInteractionAt = Date.now();
   const UI_INTERACTION_QUIET_MS = 1400;
   const lazyModuleCloudLoads = new Map();
@@ -2411,16 +2412,20 @@
   // Fires sooner than scheduleBootBackgroundCloudLoad so the Home widgets refresh
   // from the cloud within ~hundreds of ms after warm start (instead of ~seconds).
   // Owns triggering the full background load afterwards, passing skipModules so
-  // priority modules aren't fetched twice.
+  // priority modules aren't fetched twice. Timer guard prevents a second warm
+  // start / login-force from firing another priority load in parallel.
   function scheduleBootHomePriorityCloudLoad() {
-    if (!cloudReady()) return;
-    runWhenUiQuiet(async () => {
+    if (bootHomePriorityCloudLoadTimer || !cloudReady()) return;
+    bootHomePriorityCloudLoadTimer = runWhenUiQuiet(async () => {
+      bootHomePriorityCloudLoadTimer = null;
       let loaded = [];
       try {
         loaded = await cloudLoadHomePriorityModules(false);
       } catch (error) {
         console.warn('Priority home cloud load failed', error);
       }
+      // Only skip modules that actually succeeded — partial priority failures
+      // must still be retried by the background load.
       scheduleBootBackgroundCloudLoad({ skipModules: loaded });
     }, { delay: 400, quietMs: 400, timeout: 6000 });
   }
@@ -14955,27 +14960,29 @@
   // Cloud loader for modules whose data drives the current Home panels. Fires from
   // scheduleBootHomePriorityCloudLoad() shortly after warm start so the Home widgets
   // catch up to fresh cloud data seconds before the full background load reaches them.
-  // Returns the list of attempted module ids (used by the background load's skipModules
-  // to avoid duplicate work).
+  // Returns ONLY the module ids that actually succeeded — the caller uses the result
+  // as skipModules for the background load, so a partially failed priority load must
+  // let the background retry the ones that didn't come through.
   async function cloudLoadHomePriorityModules(showMessage = false) {
     if (!state.cloud?.userId || !state.cloud?.householdId) return [];
     const moduleIds = getPriorityCloudModulesForHome();
     if (!moduleIds.length) return [];
     return withDeferredRender(async () => {
-      let ok = 0;
+      const loadedModuleIds = [];
       for (const moduleId of moduleIds) {
         await yieldToMainThread();
         try {
           const loaded = await cloudLoadModuleForNav(moduleId, false, { renderAfter: false });
-          if (loaded) ok += 1;
+          if (loaded) loadedModuleIds.push(moduleId);
         } catch (error) {
+          // Don't add to loadedModuleIds — background load will retry this module.
           console.warn('Priority home module load failed', moduleId, error);
         }
       }
-      if (ok > 0) saveState({ immediate: true });
+      if (loadedModuleIds.length > 0) saveState({ immediate: true });
       requestRender();
-      if (showMessage) showToast(`Home priority načteno: ${ok}/${moduleIds.length}`);
-      return moduleIds;
+      if (showMessage) showToast(`Home priority načteno: ${loadedModuleIds.length}/${moduleIds.length}`);
+      return loadedModuleIds;
     });
   }
 
