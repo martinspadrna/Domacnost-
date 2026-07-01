@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_316';
-  const APP_BUILD = 316;
+  const APP_VERSION = 'Domácnost+ v.0.1_317';
+  const APP_BUILD = 317;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -15051,22 +15051,47 @@
   async function cloudLoadModuleForNav(moduleId, showMessage = false, options = {}) {
     if (!state.cloud?.userId || !state.cloud?.householdId) return false;
     const renderAfter = options.renderAfter !== false;
+    // Loader mapa je striktně dělená podle skutečného cloud zdroje:
+    //   - households.dashboard_layout (přes cloudLoadHouseholdUiSettings):
+    //     readings, subscriptions, loyaltyCards, visualSettings,
+    //     financeTemplates, weather_location, dashboard widgety, home hero
+    //     panely, profile UI, vehicleIconColors.
+    //   - Cílené extra tabulky (přes cloudLoadExtraCollection s konkrétním
+    //     klíčem, ne batch cloudLoadExtraCollections): coupons, notes,
+    //     warranties.
+    //   - Vlastní tabulky/loadery: calendar, shopping, hdo, waste, garage,
+    //     contracts, finance, tasks (household_tasks + task_events).
+    //   - polishHolidays není cloud modul — polishShopClosures se
+    //     nepersistuje ani do household UI ani do extras, drží se lokálně
+    //     a plní se z veřejného API date.nager.at.
     const map = {
       calendar: [cloudLoadCalendarSources, cloudLoadCalendar],
       shopping: [cloudLoadHouseholdUiSettings, cloudLoadShoppingData],
       hdo: [cloudLoadHdoData],
       waste: [cloudLoadWaste],
-      tasks: [cloudLoadTasks, cloudLoadExtraCollections],
+      // Modul "Zápisník" v UI kombinuje household_tasks (vlastní tabulka
+      // přes cloudLoadTasks) a poznámky uložené v household_notes (extras).
+      // notes.js:notebookPages() čte přímo z state.notes, takže bez
+      // extra:notes by Home widget "Zápisník" neviděl aktuální stránky.
+      tasks: [cloudLoadTasks, () => cloudLoadExtraCollection('notes', false)],
       // Warranties: nejdřív konkrétní kolekce z household_warranties,
       // potom přílohy (soubory). Předchozí duplicitní klíč přepisoval
       // první definici, takže samotné záruky se nenačítaly.
       warranties: [() => cloudLoadExtraCollection('warranties', false), cloudLoadWarrantyFiles],
-      polishHolidays: [cloudLoadExtraCollections],
       garage: [cloudLoadGarageData],
       contracts: [cloudLoadContracts, cloudLoadContractFiles],
       finance: [cloudLoadFinance],
-      subscriptions: [cloudLoadExtraCollections],
-      notes: [cloudLoadExtraCollections],
+      // Předplatné je uložené v households.dashboard_layout
+      // (subscriptions/subscriptionPeople/subscriptionPayments/
+      // subscriptionSettings), ne v extras.
+      subscriptions: [cloudLoadHouseholdUiSettings],
+      // Odečty (readingGroups/readingMeters/readings/readingPrices/
+      // readingDeposits/readingBilling) jsou taky součást
+      // households.dashboard_layout, ne samostatná tabulka.
+      readings: [cloudLoadHouseholdUiSettings],
+      // Poznámky sedí v household_notes (extras) — cílený loader,
+      // ne batch cloudLoadExtraCollections.
+      notes: [() => cloudLoadExtraCollection('notes', false)],
       // Slevové kódy žijí v household_coupons (extras), ne v nákupním
       // seznamu — táhneme přímo cílenou kolekci, ne shopping loader.
       coupons: [() => cloudLoadExtraCollection('coupons', false)],
@@ -15115,8 +15140,12 @@
   }
 
   // Maps Home hero panel ids to the modules whose cloud loaders back their data.
-  // coupons/loyaltyCards mají vlastní modulový loader — coupons jde přes cílenou
-  // extras kolekci (household_coupons), loyaltyCards přes household UI settings.
+  //   - households.dashboard_layout: readings, subscriptions, loyaltyCards
+  //   - Cílené extras tabulky: coupons, notes, warranties
+  //   - Vlastní tabulky: calendar, shopping, hdo, waste, garage, contracts,
+  //     finance, tasks
+  // polishHolidays není v mapě — modul se nepersistuje v cloudu, není důvod
+  // ho tahat na priority ani background loadu.
   function getPriorityCloudModulesForHome() {
     const heroToModule = {
       calendar: 'calendar',
@@ -15128,7 +15157,6 @@
       readings: 'readings',
       tasks: 'tasks',
       warranties: 'warranties',
-      polishHolidays: 'polishHolidays',
       garage: 'garage',
       contracts: 'contracts',
       finance: 'finance',
@@ -15174,7 +15202,9 @@
 
   async function cloudBackgroundLoadAllModules(showMessage = false, options = {}) {
     if (!state.cloud?.userId || !state.cloud?.householdId) return false;
-    const moduleOrder = ['shopping', 'calendar', 'finance', 'hdo', 'waste', 'readings', 'tasks', 'warranties', 'polishHolidays', 'garage', 'contracts', 'subscriptions'];
+    // polishHolidays vynecháno — modul se v cloudu nepersistuje, drží se lokálně
+    // a plní se z veřejného API date.nager.at.
+    const moduleOrder = ['shopping', 'calendar', 'finance', 'hdo', 'waste', 'readings', 'tasks', 'warranties', 'garage', 'contracts', 'subscriptions'];
     const skipModules = new Set(Array.isArray(options.skipModules) ? options.skipModules : []);
     let ok = 0;
     for (const moduleId of moduleOrder) {
