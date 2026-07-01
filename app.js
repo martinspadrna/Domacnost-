@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_311';
-  const APP_BUILD = 311;
+  const APP_VERSION = 'Domácnost+ v.0.1_312';
+  const APP_BUILD = 312;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -14895,15 +14895,22 @@
       hdo: [cloudLoadHdoData],
       waste: [cloudLoadWaste],
       tasks: [cloudLoadTasks, cloudLoadExtraCollections],
-      warranties: [cloudLoadExtraCollections, cloudLoadWarrantyFiles],
+      // Warranties: nejdřív konkrétní kolekce z household_warranties,
+      // potom přílohy (soubory). Předchozí duplicitní klíč přepisoval
+      // první definici, takže samotné záruky se nenačítaly.
+      warranties: [() => cloudLoadExtraCollection('warranties', false), cloudLoadWarrantyFiles],
       polishHolidays: [cloudLoadExtraCollections],
       garage: [cloudLoadGarageData],
       contracts: [cloudLoadContracts, cloudLoadContractFiles],
       finance: [cloudLoadFinance],
       subscriptions: [cloudLoadExtraCollections],
       notes: [cloudLoadExtraCollections],
-      coupons: [cloudLoadExtraCollections],
-      warranties: [cloudLoadWarrantyFiles],
+      // Slevové kódy žijí v household_coupons (extras), ne v nákupním
+      // seznamu — táhneme přímo cílenou kolekci, ne shopping loader.
+      coupons: [() => cloudLoadExtraCollection('coupons', false)],
+      // Věrnostní karty jsou v household UI settings layoutu,
+      // ne v extras.
+      loyaltyCards: [cloudLoadHouseholdUiSettings],
       weather: []
     };
     const loaders = map[moduleId] || [];
@@ -14929,14 +14936,14 @@
   }
 
   // Maps Home hero panel ids to the modules whose cloud loaders back their data.
-  // Some Home widgets share a single loader (coupons/loyaltyCards ride on shopping,
-  // which pulls household UI settings that include those collections).
+  // coupons/loyaltyCards mají vlastní modulový loader — coupons jde přes cílenou
+  // extras kolekci (household_coupons), loyaltyCards přes household UI settings.
   function getPriorityCloudModulesForHome() {
     const heroToModule = {
       calendar: 'calendar',
       shopping: 'shopping',
-      coupons: 'shopping',
-      loyaltyCards: 'shopping',
+      coupons: 'coupons',
+      loyaltyCards: 'loyaltyCards',
       hdo: 'hdo',
       waste: 'waste',
       readings: 'readings',
