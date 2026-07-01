@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_315';
-  const APP_BUILD = 315;
+  const APP_VERSION = 'Domácnost+ v.0.1_316';
+  const APP_BUILD = 316;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -14595,7 +14595,14 @@
     household_notes: ['extras:notes'],
     household_coupons: ['extras:coupons'],
     household_warranties: ['extras:warranties'],
-    household_warranty_files: ['warrantyFiles']
+    household_warranty_files: ['warrantyFiles'],
+    // Tabulka households sama drží dashboard_layout (subscriptions, readings,
+    // loyaltyCards, visualSettings, financeTemplates, weather_location, ...).
+    // Kanál pro ni subscribujeme separátně s filtrem id=eq.<householdId> (viz
+    // setupCloudRealtimeSubscriptions), sem stačí namapovat cílený loader.
+    // POZOR: 'householdUi' je vlastní klíč, neplést s 'households', který jde
+    // z household_members a volá cloudLoadHouseholds() pro seznam domácností.
+    households: ['householdUi']
   };
 
   async function runRealtimeLoaderByKey(key) {
@@ -14603,7 +14610,12 @@
     if (key === 'profiles') {
       result = await cloudLoadProfilesForCurrentHousehold();
     } else if (key === 'households') {
+      // Seznam domácností pro přepínač / household_members změny — nezaměnit
+      // s 'householdUi' níže, který obnovuje dashboard_layout aktuální
+      // domácnosti (subscriptions, readings, loyaltyCards…).
       result = await cloudLoadHouseholds(false);
+    } else if (key === 'householdUi') {
+      result = await cloudLoadHouseholdUiSettings(false);
     } else if (key === 'warrantyFiles') {
       result = await cloudLoadWarrantyFiles(false);
     } else if (key.startsWith('extras:')) {
@@ -14763,6 +14775,16 @@
         (payload) => scheduleCloudRealtimeRefresh(payload?.table || table)
       );
     });
+    // Tabulka households má primární klíč 'id', ne 'household_id', takže ji
+    // nelze přidat do REALTIME_CLOUD_TABLES loopu (ten filtruje household_id=
+    // eq.X). Subscribujeme separátně s filtrem id=eq.<householdId>. Realtime
+    // change (typicky UPDATE dashboard_layout / weather_location) spustí
+    // cílený loader householdUi → cloudLoadHouseholdUiSettings(false).
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'households', filter: `id=eq.${householdId}` },
+      (payload) => scheduleCloudRealtimeRefresh(payload?.table || 'households')
+    );
     cloudRealtimeChannel = channel;
     channel.subscribe((status) => {
       const key = String(status || '').toLowerCase();
