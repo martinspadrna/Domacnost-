@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_308';
-  const APP_BUILD = 308;
+  const APP_VERSION = 'Domácnost+ v.0.1_309';
+  const APP_BUILD = 309;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -11563,22 +11563,61 @@
     });
   }
 
+  // Decides whether the IndexedDB snapshot is strictly better than the current runtime state.
+  // The check runs both after reading IDB and re-runs at swap time, so a cloud login that
+  // lands between the read and the swap cannot be overwritten by a stale offline snapshot.
+  function shouldHydrateStateFromIndexedDb(candidate, currentState) {
+    if (!candidate || typeof candidate !== 'object') return false;
+    if (!candidate.household?.isConfigured) return false;
+    if (isStoredDemoState(candidate)) return false;
+
+    const curUserId = currentState?.cloud?.userId || '';
+    const candUserId = candidate?.cloud?.userId || '';
+    const curHouseholdId = currentState?.cloud?.householdId || '';
+    const candHouseholdId = candidate?.cloud?.householdId || '';
+
+    // Cloud identity guards. Don't swap between different users/households, and don't
+    // downgrade a state that already carries a cloud identity to a signed-out snapshot
+    // (that would cause a login flash for an authenticated user).
+    if (curUserId && candUserId && curUserId !== candUserId) return false;
+    if (curHouseholdId && candHouseholdId && curHouseholdId !== candHouseholdId) return false;
+    if (curUserId && !candUserId) return false;
+    if (curHouseholdId && !candHouseholdId) return false;
+
+    // Fresh install / no usable current workspace → candidate wins immediately.
+    if (!currentState?.household?.isConfigured) return true;
+
+    // Candidate must be strictly better than current — either by score or by module data volume.
+    const currentScore = scoreStoredState(currentState);
+    const candidateScore = scoreStoredState(candidate);
+    if (candidateScore > currentScore) return true;
+
+    // Tie-breaker: candidate carries more module data than current (typical case where
+    // localStorage kept only the household config after an iOS quota purge, but IDB still
+    // has the full arrays).
+    const collections = getCollectionNames();
+    const currentCount = collections.reduce((sum, c) => sum + (Array.isArray(currentState[c]) ? currentState[c].length : 0), 0);
+    const candidateCount = collections.reduce((sum, c) => sum + (Array.isArray(candidate[c]) ? candidate[c].length : 0), 0);
+    return candidateCount > currentCount;
+  }
+
   async function hydrateStateFromIndexedDb() {
-    // Only needed when the synchronous localStorage restore didn't yield a usable
-    // workspace (typically iOS, where the big state exceeds the localStorage quota).
-    if (state.household?.isConfigured && hasUsableAppSession()) return false;
+    // Always attempt IDB read on boot. shouldHydrateStateFromIndexedDb() decides whether the
+    // candidate is actually better than the current state (fresh install, iOS-quota-purged
+    // localStorage, or module arrays emptied by a partial write) — otherwise we no-op so a
+    // stale IDB snapshot can't overwrite a fresher cloud/localStorage state.
     let json = null;
     try { json = await getStoredAppStateJson(); } catch { return false; }
     if (!json) return false;
-    // The cloud may have configured a fresher state while we were reading IndexedDB.
-    if (state.household?.isConfigured && hasUsableAppSession()) return false;
     const parsed = safeParse(json, null);
     if (!parsed || typeof parsed !== 'object') return false;
     const candidate = migrateState(mergeState(DEFAULT_STATE, parsed));
-    if (!candidate.household?.isConfigured) return false;
+    // Re-check against the CURRENT runtime state — the cloud may have signed in and pulled
+    // a newer state while we were reading IDB. shouldHydrateStateFromIndexedDb catches that.
+    if (!shouldHydrateStateFromIndexedDb(candidate, state)) return false;
     state = candidate;
     runtimeStateRef = state;
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(createPersistedStateSnapshot(state))); } catch {}
+    try { storePersistedState(state); } catch {}
     return true;
   }
 
@@ -17678,14 +17717,15 @@
   render();
   scheduleBootCloudWarmStart();
   handleInitialAuthReturn().catch((error) => console.warn('Auth return handling failed', error));
-  // If localStorage didn't restore a usable workspace (iOS quota), pull the durable
-  // IndexedDB copy and re-render — this shows cached data in ~tens of ms instead of
-  // waiting several seconds for the cloud.
-  if (!state.household?.isConfigured) {
-    hydrateStateFromIndexedDb()
-      .then((restored) => { if (restored) requestRender(); })
-      .catch((error) => console.warn('IndexedDB hydrate failed', error));
-  }
+  // Always try to pull the durable IndexedDB snapshot. shouldHydrateStateFromIndexedDb()
+  // inside decides whether the candidate is actually better than the current runtime state
+  // (fresh install, iOS-quota-purged localStorage, or module arrays emptied by a partial
+  // write) — otherwise it's a no-op, so a stale IDB snapshot can't overwrite a fresher
+  // cloud/localStorage state. This fixes the case where localStorage restored the
+  // household config but Home showed empty panels because the module arrays were gone.
+  hydrateStateFromIndexedDb()
+    .then((restored) => { if (restored) requestRender(); })
+    .catch((error) => console.warn('IndexedDB hydrate failed', error));
 
   } catch (error) {
     console.error('Domácnost+ boot failed', error);
