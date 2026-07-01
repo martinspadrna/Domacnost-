@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_319';
-  const APP_BUILD = 319;
+  const APP_VERSION = 'Domácnost+ v.0.1_320';
+  const APP_BUILD = 320;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1048,6 +1048,7 @@
   let serviceWorkerRegistration = null;
   let pendingServiceWorker = null;
   let pwaUpdateAvailable = false;
+  let pwaControllerReloadTriggered = false;
   let onboardingMode = sessionStorage.getItem('domacnostPlus.onboardingMode') || 'choice';
   let recoveryModeActive = false; // true only during current page load after recovery link click
 
@@ -10600,6 +10601,7 @@
         </div>
 
         <div class="settings-panel panel-data grid two">
+          ${renderPwaUpdateStatusCard()}
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Data</h2><p>Export/import pro přenos nebo zálohu. Přílohy smluv a záruk jsou zvlášť v IndexedDB/Supabase Storage.</p></div><span class="badge">${escapeHtml(APP_VERSION)}</span></div>
             <div class="cloud-status-grid compact-cloud-stats"><div class="mini-stat"><span>Verze aplikace</span><strong>${escapeHtml(APP_VERSION)}</strong></div><div class="mini-stat"><span>Build</span><strong>${APP_BUILD}</strong></div></div>
@@ -11096,6 +11098,59 @@
           </div>
         `).join('')}
       </div>
+    `;
+  }
+
+  // Kompaktní karta pro Nastavení → Data. Zobrazuje release/cache stav
+  // a nabízí přesně tři akce, které user může chtít po update problémech:
+  // Zkontrolovat aktualizaci, Použít novou verzi (jen když čeká waiting SW)
+  // a Vyčistit cache aplikace (jen naše cache klíče). Bohatší diagnostika
+  // ikon/manifestu zůstává v renderPwaInstallCard v Cloud/PWA sekci.
+  function renderPwaUpdateStatusCard() {
+    const swSupported = 'serviceWorker' in navigator;
+    const swReady = Boolean(serviceWorkerRegistration);
+    const swControlling = Boolean(navigator.serviceWorker?.controller);
+    const lastCheck = state.pwa?.lastUpdateCheck ? formatDateTime(state.pwa.lastUpdateCheck) : 'zatím neprobíhla';
+    const lastClear = state.pwa?.lastCacheClearAt ? formatDateTime(state.pwa.lastCacheClearAt) : '';
+    let statusTone = 'good';
+    let statusLabel = 'aktuální';
+    let statusNote = 'Verze v prohlížeči odpovídá poslednímu deployi.';
+    if (!swSupported) {
+      statusTone = 'warn';
+      statusLabel = 'SW nedostupný';
+      statusNote = 'Prohlížeč nepodporuje Service Worker nebo běžíš z lokálního souboru. Automatické aktualizace nefungují.';
+    } else if (!swReady) {
+      statusTone = '';
+      statusLabel = 'SW se registruje';
+      statusNote = 'Service worker se ještě neregistroval — dej mu pár sekund po prvním otevření.';
+    } else if (pwaUpdateAvailable) {
+      statusTone = 'warn';
+      statusLabel = 'nová verze čeká';
+      statusNote = 'Stáhla se novější verze aplikace. Použij „Použít novou verzi" a stránka se obnoví.';
+    } else if (!swControlling) {
+      statusTone = '';
+      statusLabel = 'první instalace SW';
+      statusNote = 'Service worker je registrovaný, ale ještě nekontroluje stránku. Update se aktivuje po dalším reloadu.';
+    }
+    return `
+      <section class="card compact-settings-card">
+        <div class="card-header">
+          <div><h2>Aktualizace a cache</h2><p>Kontrola nové verze a bezpečné vyčištění PWA cache. Data domácnosti se nemažou.</p></div>
+          <span class="badge ${statusTone}">${escapeHtml(statusLabel)}</span>
+        </div>
+        <div class="cloud-status-grid compact-cloud-stats">
+          <div class="mini-stat"><span>Verze</span><strong>${escapeHtml(APP_VERSION)}</strong></div>
+          <div class="mini-stat"><span>Build</span><strong>${APP_BUILD}</strong></div>
+          <div class="mini-stat"><span>Cache klíč</span><strong>${escapeHtml(PWA_EXPECTED_CACHE)}</strong></div>
+          <div class="mini-stat"><span>Poslední kontrola</span><strong>${escapeHtml(lastCheck)}</strong></div>
+        </div>
+        <div class="inline-note">${escapeHtml(statusNote)}${lastClear ? ` Cache naposled vyčištěná ${escapeHtml(lastClear)}.` : ''}</div>
+        <div class="form-actions compact-actions">
+          <button class="ghost-btn" type="button" data-action="pwa-check-update">Zkontrolovat aktualizaci</button>
+          ${pwaUpdateAvailable ? '<button class="primary-btn" type="button" data-action="pwa-apply-update">Použít novou verzi</button>' : ''}
+          <button class="ghost-btn" type="button" data-action="pwa-clear-cache">Vyčistit cache aplikace</button>
+        </div>
+      </section>
     `;
   }
 
@@ -16327,12 +16382,30 @@
     showToast(bad ? `Diagnostika našla ${bad} chyb` : warn ? `Diagnostika hotová, ${warn} upozornění` : 'Diagnostika OK');
   }
 
+  // Přesně stejný filtr, jako používá boot fallback v index.html
+  // (key.indexOf('domacnost-plus-') === 0). Cizí cache jiných PWA na stejném
+  // originu se nesmí smazat — jen naše.
+  const PWA_CACHE_PREFIX = 'domacnost-plus-';
+  const PWA_EXPECTED_CACHE = `${PWA_CACHE_PREFIX}v0-1-${APP_BUILD}`;
+
+  async function listAppCacheKeys() {
+    if (!('caches' in window)) return [];
+    try {
+      const keys = await caches.keys();
+      return keys.filter((key) => key.startsWith(PWA_CACHE_PREFIX));
+    } catch {
+      return [];
+    }
+  }
+
   async function clearPwaCacheAndReload() {
     try {
-      if ('caches' in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.filter((key) => key.includes('domacnost-plus')).map((key) => caches.delete(key)));
+      const appKeys = await listAppCacheKeys();
+      if (appKeys.length) {
+        await Promise.all(appKeys.map((key) => caches.delete(key)));
       }
+      state.pwa = { ...(state.pwa || {}), lastCacheClearAt: new Date().toISOString() };
+      saveState();
       if (serviceWorkerRegistration) await serviceWorkerRegistration.update();
       showToast('Cache vyčištěná, načítám znovu');
       window.setTimeout(() => window.location.reload(), 500);
@@ -16428,6 +16501,11 @@
     });
 
     navigator.serviceWorker.addEventListener('controllerchange', () => {
+      // Guard proti reload smyčce: kdyby controllerchange přišel víckrát
+      // těsně za sebou (nebo mezitím, co běží reload), pustíme reload
+      // jen jednou.
+      if (pwaControllerReloadTriggered) return;
+      pwaControllerReloadTriggered = true;
       if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
         pwaUpdateAvailable = true;
         render();
