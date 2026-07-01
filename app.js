@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_314';
-  const APP_BUILD = 314;
+  const APP_VERSION = 'Domácnost+ v.0.1_315';
+  const APP_BUILD = 315;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -14609,7 +14609,11 @@
     } else if (key.startsWith('extras:')) {
       result = await cloudLoadExtraCollection(key.slice('extras:'.length), false);
     } else {
-      result = await cloudLoadModuleForNav(key, false, { renderAfter: false });
+      // strictLoaderResults: cloudLoadModuleForNav vrátí false, když jakýkoli
+      // inner loader zareportuje explicitní false/null — bez toho by se
+      // částečně vadný modul (např. finance s prázdným rowset kvůli síti)
+      // maskoval jako úspěšný cílený refresh a fallback by se nespustil.
+      result = await cloudLoadModuleForNav(key, false, { renderAfter: false, strictLoaderResults: true });
     }
     // Explicitní false/null = selhání → throw dřív, aby se rozjel full-reload
     // fallback v runCloudRealtimeReloadTick. `undefined` je kompatibilní úspěch,
@@ -15051,15 +15055,27 @@
     };
     const loaders = map[moduleId] || [];
     if (!loaders.length) return false;
+    const strictLoaderResults = options.strictLoaderResults === true;
     return withDeferredRender(async () => {
       let ok = 0;
+      let failed = 0;
       await withMutedToasts(async () => {
         for (const loader of loaders) {
           await yieldToMainThread();
           try {
-            await loader(false);
-            ok += 1;
+            const result = await loader(false);
+            // Explicitní false / null = loader reportuje selhání. Ostatní
+            // hodnoty (undefined nebo cokoli truthy) berem jako úspěch —
+            // starší loadery (cloudLoadHouseholdUiSettings apod.) nic
+            // nevracejí ani při úspěšném běhu.
+            if (result === false || result === null) {
+              failed += 1;
+              console.warn('Lazy cloud module loader reported failure', moduleId);
+            } else {
+              ok += 1;
+            }
           } catch (error) {
+            failed += 1;
             console.warn('Lazy cloud module failed', moduleId, error);
           }
         }
@@ -15067,6 +15083,11 @@
       if (ok > 0) saveState({ immediate: true });
       if (renderAfter) requestRender();
       if (showMessage) showToast(`Modul načten z cloudu: ${ok}/${loaders.length}`);
+      // Strict režim (realtime): jakýkoli neuspěch jednoho loaderu shodí
+      // celý modul na false, aby se rozjel plný fallback. UI/lazy režim
+      // (default) toleruje dílčí neúspěchy — stačí, když aspoň jeden
+      // loader modulu prošel.
+      if (strictLoaderResults && failed > 0) return false;
       return ok > 0;
     });
   }
