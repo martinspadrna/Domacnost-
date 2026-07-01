@@ -40,13 +40,13 @@ const app = readOrFail(appPath);
 const index = readOrFail(indexPath);
 const sw = readOrFail(swPath);
 
-// APP_VERSION 'Domácnost+ v.0.1_320'
+// APP_VERSION = 'Domácnost+ v.0.1_<build>'
 const versionMatch = requireMatch(
   app,
   /const APP_VERSION = 'Domácnost\+ v\.0\.1_(\d+)';/,
   'APP_VERSION v app.js'
 );
-// APP_BUILD 320
+// APP_BUILD = <build>
 const buildMatch = requireMatch(
   app,
   /const APP_BUILD = (\d+);/,
@@ -65,14 +65,14 @@ if (versionMatch && buildMatch) {
   const expectedQuery = `0-1-${buildNumber}`;
   const expectedCache = `domacnost-plus-v0-1-${buildNumber}`;
 
-  // index.html title <title>Domácnost+ v.0.1_320</title>
+  // index.html title <title>Domácnost+ v.0.1_<build></title>
   if (!index.includes(`Domácnost+ v.0.1_${buildNumber}`)) {
     errors.push(`index.html neobsahuje 'Domácnost+ v.0.1_${buildNumber}' (title / boot fallback).`);
   } else {
     notes.push(`index.html: verze title match ${buildNumber}.`);
   }
 
-  // index.html query strings ?v=0-1-320
+  // index.html query strings ?v=0-1-<build>
   const queryHits = [...index.matchAll(/\?v=0-1-(\d+)/g)];
   if (!queryHits.length) {
     errors.push(`index.html neobsahuje žádné ?v=0-1-... script tagy.`);
@@ -88,14 +88,26 @@ if (versionMatch && buildMatch) {
     }
   }
 
-  // sw.js CACHE_NAME = 'domacnost-plus-v0-1-320'
-  const cacheMatch = requireMatch(sw, /const CACHE_NAME = '([^']+)';/, 'CACHE_NAME v sw.js');
-  if (cacheMatch) {
-    if (cacheMatch[1] !== expectedCache) {
-      errors.push(`sw.js CACHE_NAME='${cacheMatch[1]}' neodpovídá '${expectedCache}'.`);
-    } else {
-      notes.push(`sw.js: CACHE_NAME=${expectedCache}.`);
-    }
+  // sw.js CACHE_NAME. Od v0.1_321 to je template literal
+  //   const CACHE_NAME = `${CACHE_PREFIX}v0-1-<build>`;
+  // takže regex bere backticky i single quotes (single quote varianta
+  // je ponechána pro zpětnou kompatibilitu s dřívějším tvarem).
+  const cacheTemplateMatch = sw.match(/const CACHE_NAME = `\$\{CACHE_PREFIX\}v0-1-(\d+)`;/);
+  const cacheLiteralMatch = sw.match(/const CACHE_NAME = 'domacnost-plus-v0-1-(\d+)';/);
+  const cacheBuildStr = cacheTemplateMatch?.[1] || cacheLiteralMatch?.[1];
+  if (!cacheBuildStr) {
+    errors.push(
+      'sw.js: nenašel jsem CACHE_NAME v očekávaném tvaru ' +
+        '(`${CACHE_PREFIX}v0-1-<build>` nebo \'domacnost-plus-v0-1-<build>\').'
+    );
+  } else if (cacheBuildStr !== buildNumber) {
+    errors.push(`sw.js CACHE_NAME build=${cacheBuildStr} neodpovídá APP_BUILD=${buildNumber}.`);
+  } else {
+    notes.push(`sw.js: CACHE_NAME rozřešeno na ${expectedCache}.`);
+  }
+  // Prefix musí existovat, jinak by šablona v CACHE_NAME nesedla ke cleanup filteru.
+  if (cacheTemplateMatch && !/const CACHE_PREFIX = 'domacnost-plus-';/.test(sw)) {
+    errors.push("sw.js: CACHE_NAME používá CACHE_PREFIX, ale chybí const CACHE_PREFIX = 'domacnost-plus-'.");
   }
 
   // Export filename derived from APP_BUILD.
