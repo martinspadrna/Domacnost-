@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'domacnost-plus-';
-const CACHE_NAME = `${CACHE_PREFIX}v0-1-322`;
+const CACHE_NAME = `${CACHE_PREFIX}v0-1-323`;
 const APP_ASSETS = [
   './',
   './index.html',
@@ -18,6 +18,7 @@ const APP_ASSETS = [
   './finance.js',
   './subscriptions.js',
   './calendar.js',
+  './pwa.js',
   './app.js',
   './sw.js',
   './manifest.webmanifest',

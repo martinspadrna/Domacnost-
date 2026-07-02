@@ -137,16 +137,20 @@ if (manifestSource) {
   }
 }
 
-// Kontrola 5: PWA akce v app.js.
+// Kontrola 5: PWA akce zaregistrované.
+// Od v0.1_323 render karet žije v pwa.js (viz createPwa factory), action
+// dispatcher zůstává v app.js. Renderovací tlačítka hledáme v obou.
 const app = readOrFail('app.js', 'app.js');
+const pwaModule = readOrFail('pwa.js', 'pwa.js');
 if (app) {
+  const renderHaystack = `${app}\n${pwaModule}`;
   const pwaActions = ['pwa-check-update', 'pwa-apply-update', 'pwa-clear-cache'];
   pwaActions.forEach((action) => {
-    const inRender = new RegExp(`data-action="${action}"`).test(app);
+    const inRender = new RegExp(`data-action="${action}"`).test(renderHaystack);
     const inDispatch = new RegExp(`action === '${action}'`).test(app);
-    if (!inRender) errors.push(`app.js: chybí render tlačítko s data-action="${action}".`);
+    if (!inRender) errors.push(`app.js/pwa.js: chybí render tlačítko s data-action="${action}".`);
     if (!inDispatch) errors.push(`app.js: chybí action handler pro '${action}'.`);
-    if (inRender && inDispatch) notes.push(`app.js: PWA akce ${action} zaregistrovaná (render + dispatch).`);
+    if (inRender && inDispatch) notes.push(`PWA akce ${action} zaregistrovaná (render v app.js/pwa.js + dispatch v app.js).`);
   });
 }
 
