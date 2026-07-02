@@ -53,6 +53,7 @@
 
     const FINANCE_CATEGORY_OPTIONS = deps.FINANCE_CATEGORY_OPTIONS || [];
     const DEFAULT_FINANCE_TEMPLATES = deps.DEFAULT_FINANCE_TEMPLATES || [];
+    let financeLoanEditId = '';
 
     function renderFinanceOverviewItem(item) {
       const isIncome = item.type === 'income';
@@ -105,6 +106,86 @@
           byId.set(String(template.id || contentKey), template);
         });
       return [...byId.values()];
+    }
+
+    function normalizeFinanceLoan(loan = {}) {
+      const id = normalizeText(loan.id) || `finance-loan-${uid()}`;
+      const principal = Math.max(0, decimalValue(loan.principal ?? loan.originalAmount));
+      const currentBalance = Math.max(0, decimalValue(loan.currentBalance ?? loan.balance ?? principal));
+      const interestRate = Math.max(0, decimalValue(loan.interestRate ?? loan.apr));
+      const monthlyPayment = Math.max(0, decimalValue(loan.monthlyPayment ?? loan.payment));
+      const remainingMonths = Math.max(0, Math.round(Number(loan.remainingMonths ?? loan.monthsLeft ?? 0)) || 0);
+      return {
+        id,
+        householdId: loan.householdId || currentHouseholdId(),
+        profileId: loan.profileId || currentProfileId(),
+        createdAt: loan.createdAt || new Date().toISOString(),
+        updatedAt: loan.updatedAt || loan.createdAt || new Date().toISOString(),
+        name: normalizeText(loan.name || loan.title) || 'Půjčka',
+        lender: normalizeText(loan.lender),
+        loanType: normalizeText(loan.loanType || loan.type) || 'consumer',
+        principal,
+        currentBalance,
+        interestRate,
+        monthlyPayment,
+        remainingMonths,
+        startDate: normalizeText(loan.startDate),
+        nextPaymentDate: normalizeText(loan.nextPaymentDate),
+        earlyRepaymentFee: Math.max(0, decimalValue(loan.earlyRepaymentFee ?? loan.payoffFee)),
+        note: normalizeText(loan.note)
+      };
+    }
+
+    function normalizeFinanceLoans(loans = []) {
+      return (Array.isArray(loans) ? loans : [])
+        .map(normalizeFinanceLoan)
+        .filter((loan) => loan.name && (loan.currentBalance > 0 || loan.monthlyPayment > 0 || loan.principal > 0));
+    }
+
+    function mergeFinanceLoans(localLoans = [], cloudLoans = [], options = {}) {
+      const preferLocal = options.preferLocal === true;
+      const byId = new Map();
+      const put = (loan, source) => {
+        const normalized = normalizeFinanceLoan(loan);
+        const key = String(normalized.id);
+        const existing = byId.get(key);
+        if (!existing) {
+          byId.set(key, { ...normalized, _source: source });
+          return;
+        }
+        const existingTime = Date.parse(existing.updatedAt || existing.createdAt || '') || 0;
+        const nextTime = Date.parse(normalized.updatedAt || normalized.createdAt || '') || 0;
+        if (preferLocal && source === 'local') byId.set(key, { ...normalized, _source: source });
+        else if (nextTime >= existingTime) byId.set(key, { ...normalized, _source: source });
+      };
+      normalizeFinanceLoans(cloudLoans).forEach((loan) => put(loan, 'cloud'));
+      normalizeFinanceLoans(localLoans).forEach((loan) => put(loan, 'local'));
+      return [...byId.values()].map(({ _source, ...loan }) => loan);
+    }
+
+    function getFinanceLoans() {
+      getState().financeLoans = normalizeFinanceLoans(getState().financeLoans || []);
+      return [...getState().financeLoans].sort((a, b) => Number(b.currentBalance || 0) - Number(a.currentBalance || 0) || a.name.localeCompare(b.name, 'cs'));
+    }
+
+    function financeLoanMonthlyPayment(balance, annualRate, months) {
+      const principal = Math.max(0, Number(balance || 0));
+      const count = Math.max(0, Math.round(Number(months || 0)) || 0);
+      if (!principal || !count) return 0;
+      const monthlyRate = Math.max(0, Number(annualRate || 0)) / 100 / 12;
+      if (!monthlyRate) return principal / count;
+      const factor = Math.pow(1 + monthlyRate, count);
+      return principal * monthlyRate * factor / (factor - 1);
+    }
+
+    function financeLoanProjection(loan) {
+      const normalized = normalizeFinanceLoan(loan);
+      const payment = normalized.monthlyPayment || financeLoanMonthlyPayment(normalized.currentBalance, normalized.interestRate, normalized.remainingMonths);
+      const months = normalized.remainingMonths || (payment > 0 ? Math.ceil(normalized.currentBalance / payment) : 0);
+      const remainingPayments = payment * months;
+      const payoffCost = normalized.currentBalance + normalized.earlyRepaymentFee;
+      const interestLeft = Math.max(0, remainingPayments - normalized.currentBalance);
+      return { loan: normalized, payment, months, remainingPayments, payoffCost, interestLeft };
     }
 
     function mergeFinanceTemplates(localTemplates = [], cloudTemplates = [], options = {}) {
@@ -352,6 +433,125 @@
       `;
     }
 
+    function renderFinanceLoanForm(loan = null) {
+      const item = loan ? normalizeFinanceLoan(loan) : {
+        loanType: 'consumer',
+        name: '',
+        lender: '',
+        principal: '',
+        currentBalance: '',
+        interestRate: '',
+        monthlyPayment: '',
+        remainingMonths: '',
+        earlyRepaymentFee: '',
+        nextPaymentDate: '',
+        note: ''
+      };
+      const isEdit = Boolean(loan);
+      return `
+        <form data-form="${isEdit ? 'update-finance-loan' : 'add-finance-loan'}" ${isEdit ? `data-id="${escapeHtml(item.id)}"` : ''} class="compact-form finance-loan-form">
+          <div class="form-grid two">
+            ${field('Název půjčky', 'name', 'text', 'např. Auto / spotřebák / hypotéka', true, item.name || '')}
+            ${field('Banka / věřitel', 'lender', 'text', 'např. Air Bank', false, item.lender || '')}
+            ${selectField('Typ', 'loanType', [['consumer', 'Spotřebitelská'], ['mortgage', 'Hypotéka'], ['car', 'Auto'], ['credit', 'Kreditka / kontokorent'], ['other', 'Jiná']], item.loanType || 'consumer')}
+            ${field('Původní jistina', 'principal', 'number', 'např. 250000', false, item.principal || '')}
+            ${field('Aktuální zůstatek', 'currentBalance', 'number', 'např. 184000', true, item.currentBalance || '')}
+            ${field('Úrok % p.a.', 'interestRate', 'number', 'např. 7,9', false, item.interestRate || '')}
+            ${field('Měsíční splátka', 'monthlyPayment', 'number', 'např. 4200', true, item.monthlyPayment || '')}
+            ${field('Zbývá měsíců', 'remainingMonths', 'number', 'např. 48', true, item.remainingMonths || '')}
+            ${field('Poplatek za splacení', 'earlyRepaymentFee', 'number', 'volitelné', false, item.earlyRepaymentFee || '')}
+            ${field('Další splátka', 'nextPaymentDate', 'date', '', false, item.nextPaymentDate || '')}
+            ${field('Poznámka', 'note', 'text', 'volitelné', false, item.note || '')}
+          </div>
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">${isEdit ? 'Uložit půjčku' : 'Přidat půjčku'}</button>
+            ${isEdit ? '<button class="ghost-btn" type="button" data-action="finance-loan-edit-cancel">Zrušit úpravu</button>' : ''}
+          </div>
+        </form>
+      `;
+    }
+
+    function renderFinanceLoanItem(loan) {
+      const projection = financeLoanProjection(loan);
+      const typeLabel = { consumer: 'spotřebitelská', mortgage: 'hypotéka', car: 'auto', credit: 'kredit', other: 'jiná' }[loan.loanType] || 'půjčka';
+      return `
+        <div class="item compact-item finance-loan-item">
+          <div class="item-top">
+            <div class="item-title">💳 ${escapeHtml(loan.name)}</div>
+            <span class="badge ${projection.payoffCost ? 'warn' : ''}">${formatCurrency(loan.currentBalance)}</span>
+          </div>
+          <div class="item-meta">${escapeHtml(loan.lender || typeLabel)} · splátka ${formatCurrency(projection.payment)} · zbývá ${projection.months} měs. · doplatit ${formatCurrency(projection.payoffCost)}${loan.interestRate ? ` · ${loan.interestRate}% p.a.` : ''}${loan.note ? ` · ${escapeHtml(loan.note)}` : ''}</div>
+          <div class="item-actions">
+            <button class="ghost-btn" type="button" data-action="finance-loan-edit" data-id="${escapeHtml(loan.id)}">Upravit</button>
+            <button class="danger-btn" type="button" data-action="delete-finance-loan" data-id="${escapeHtml(loan.id)}">Smazat</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderFinanceRefinanceResult(result) {
+      if (!result) return '';
+      const tone = result.savings > 0 ? 'good' : result.savings < 0 ? 'bad' : '';
+      return `
+        <div class="kpi-grid compact-kpi-grid refinance-result-grid">
+          <div class="kpi"><strong>${formatCurrency(result.currentMonthlyPayment)}</strong><span>současné splátky</span></div>
+          <div class="kpi"><strong>${formatCurrency(result.newMonthlyPayment)}</strong><span>nová splátka</span></div>
+          <div class="kpi ${tone}"><strong>${formatCurrency(result.savings)}</strong><span>${result.savings >= 0 ? 'odhad úspory' : 'o tolik dražší'}</span></div>
+          <div class="kpi"><strong>${result.breakEvenMonths ? `${result.breakEvenMonths} měs.` : '—'}</strong><span>návratnost poplatků</span></div>
+        </div>
+        <div class="inline-note compact-note">Refinancovaná jistina ${formatCurrency(result.newPrincipal)} · starý doplatek ${formatCurrency(result.currentTotalCost)} · nový doplatek ${formatCurrency(result.newTotalCost)}. Výpočet je orientační, bez pojištění a přesného amortizačního kalendáře banky.</div>
+      `;
+    }
+
+    function renderFinanceRefinancePanel(loans = getFinanceLoans()) {
+      const result = getState().financeRefinanceResult || null;
+      if (!loans.length) return renderEmpty('Přidej aspoň jednu půjčku a kalkulačka refinancování se zobrazí.');
+      return `
+        <section class="card finance-panel panel-loans">
+          <div class="card-header"><div><h2>Refinancování</h2><p>Vyber půjčky, zadej novou sazbu a délku. Appka porovná současné zbývající splátky s novou půjčkou.</p></div><span class="badge">orientačně</span></div>
+          <form data-form="finance-refinance" class="compact-form">
+            <div class="quick-chip-row">
+              ${loans.map((loan) => `<label class="pill-check"><input type="checkbox" name="loanIds" value="${escapeHtml(loan.id)}" checked><span>${escapeHtml(loan.name)} · ${formatCurrency(loan.currentBalance)}</span></label>`).join('')}
+            </div>
+            <div class="form-grid two">
+              ${field('Nový úrok % p.a.', 'interestRate', 'number', 'např. 5,9', true)}
+              ${field('Nová délka v měsících', 'months', 'number', 'např. 48', true)}
+              ${field('Nový poplatek / náklady', 'setupFee', 'number', 'např. 2000', false)}
+              ${field('Poznámka', 'note', 'text', 'volitelné')}
+            </div>
+            <div class="form-actions"><button class="primary-btn" type="submit">Spočítat refinancování</button></div>
+          </form>
+          ${renderFinanceRefinanceResult(result)}
+        </section>
+      `;
+    }
+
+    function renderFinanceLoansPanel() {
+      const loans = getFinanceLoans();
+      const editingLoan = financeLoanEditId ? loans.find((loan) => loan.id === financeLoanEditId) || null : null;
+      const projections = loans.map(financeLoanProjection);
+      const totalBalance = projections.reduce((sum, row) => sum + row.loan.currentBalance, 0);
+      const totalPayment = projections.reduce((sum, row) => sum + row.payment, 0);
+      const totalPayoff = projections.reduce((sum, row) => sum + row.payoffCost, 0);
+      return `
+        <section class="card desktop-span-2 finance-panel panel-loans">
+          <div class="card-header"><div><h2>Půjčky</h2><p>Aktuální zůstatky, splátky a podklady pro refinancování.</p></div><span class="badge">${loans.length}</span></div>
+          <div class="kpi-grid compact-kpi-grid">
+            <div class="kpi"><strong>${formatCurrency(totalBalance)}</strong><span>aktuální zůstatek</span></div>
+            <div class="kpi"><strong>${formatCurrency(totalPayment)}</strong><span>měsíční splátky</span></div>
+            <div class="kpi"><strong>${formatCurrency(totalPayoff)}</strong><span>doplatek včetně poplatků</span></div>
+          </div>
+          ${loans.length ? `<div class="list compact-list">${loans.map(renderFinanceLoanItem).join('')}</div>` : renderEmptyCta({ icon: '💳', title: 'Zatím žádná půjčka', text: 'Zadej zůstatek, splátku a zbývající měsíce. Pak půjde spočítat refinancování.', nav: 'finance', tab: 'loans', label: 'Přidat půjčku' })}
+          ${editingLoan ? `<div class="inline-edit-card"><h3>Upravit půjčku</h3>${renderFinanceLoanForm(editingLoan)}</div>` : ''}
+          <details class="action-details compact-edit-details finance-form-drawer" ${editingLoan ? '' : 'open'}>
+            <summary><span>Přidat půjčku</span><em>zůstatek, úrok, splátka, zbývající měsíce</em></summary>
+            ${renderFinanceLoanForm(null)}
+          </details>
+        </section>
+        ${renderFinanceRefinancePanel(loans)}
+      `;
+    }
+
     function renderFinance() {
       const accounts = financeAccountsSorted();
       const selectedMonth = financeSelectedMonth();
@@ -363,6 +563,7 @@
       const tabs = renderSectionTabs('finance', [
         { id: 'summary', label: 'Přehled', icon: '💰', count: monthItems.length },
         { id: 'accounts', label: 'Účty', icon: '🏦', count: accounts.length },
+        { id: 'loans', label: 'Půjčky', icon: '💳', count: getFinanceLoans().length },
         { id: 'add', label: 'Přidat', icon: '➕' },
         { id: 'analysis', label: 'Souhrny', icon: '📊' }
       ], 'summary');
@@ -404,6 +605,8 @@
               </form>
             </details>
           </section>`;
+      } else if (activeFinanceTab === 'loans') {
+        content = renderFinanceLoansPanel();
       } else if (activeFinanceTab === 'add') {
         content = `
           ${renderFinanceCopyPanel()}
@@ -1467,6 +1670,114 @@
       showToast(next.cloudId ? 'Účet upraven v cloudu' : 'Účet upraven lokálně');
     }
 
+    function persistFinanceLoans(toast = '') {
+      touchState();
+      saveState({ immediate: true });
+      render();
+      if (toast) showToast(toast);
+      if (cloudReady()) {
+        cloudSaveHouseholdUiSettings(false)
+          .catch((error) => {
+            console.warn('Finance loans autosync failed', error);
+            persistStateSnapshot();
+            showToast('Půjčky jsou uložené lokálně, cloud se zkusí později');
+          });
+      }
+    }
+
+    function addFinanceLoanFromForm(data, form) {
+      const loan = normalizeFinanceLoan(data);
+      if (!loan.name || !(loan.currentBalance > 0) || !(loan.monthlyPayment > 0) || !(loan.remainingMonths > 0)) {
+        return showToast('Doplň název, zůstatek, splátku a zbývající měsíce');
+      }
+      getState().financeLoans = normalizeFinanceLoans([...(getState().financeLoans || []), loan]);
+      form?.reset?.();
+      persistFinanceLoans('Půjčka přidaná');
+    }
+
+    function updateFinanceLoanFromForm(id, data, form) {
+      const list = getFinanceLoans();
+      const index = list.findIndex((loan) => loan.id === id);
+      if (index < 0) return showToast('Půjčku se nepovedlo najít');
+      const current = list[index];
+      const next = normalizeFinanceLoan({
+        ...current,
+        ...data,
+        id: current.id,
+        createdAt: current.createdAt,
+        updatedAt: new Date().toISOString()
+      });
+      if (!next.name || !(next.currentBalance > 0) || !(next.monthlyPayment > 0) || !(next.remainingMonths > 0)) {
+        return showToast('Doplň název, zůstatek, splátku a zbývající měsíce');
+      }
+      list[index] = next;
+      getState().financeLoans = normalizeFinanceLoans(list);
+      financeLoanEditId = '';
+      form?.reset?.();
+      persistFinanceLoans('Půjčka upravená');
+    }
+
+    function setFinanceLoanEdit(id) {
+      financeLoanEditId = financeLoanEditId === id ? '' : String(id || '');
+      writeFinanceModuleTab('loans');
+      render();
+      keepActiveSectionTabsCentered('smooth');
+      const schedule = window.requestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
+      schedule(() => document.querySelector('[data-form="update-finance-loan"], [data-form="add-finance-loan"]')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }));
+    }
+
+    function deleteFinanceLoan(id) {
+      const loan = getFinanceLoans().find((item) => item.id === id);
+      if (!loan) return;
+      if (typeof window !== 'undefined' && !window.confirm(`Smazat půjčku „${loan.name}“?`)) return;
+      getState().financeLoans = getFinanceLoans().filter((item) => item.id !== id);
+      if (financeLoanEditId === id) financeLoanEditId = '';
+      getState().financeRefinanceResult = null;
+      persistFinanceLoans('Půjčka smazaná');
+    }
+
+    function calculateFinanceRefinance(data, form) {
+      const selectedIds = Array.isArray(data.loanIds) ? data.loanIds : data.loanIds ? [data.loanIds] : [];
+      const selected = getFinanceLoans().filter((loan) => selectedIds.includes(loan.id));
+      if (!selected.length) return showToast('Vyber aspoň jednu půjčku');
+      const interestRate = decimalValue(data.interestRate);
+      const months = Math.max(0, Math.round(Number(data.months || 0)) || 0);
+      const setupFee = Math.max(0, decimalValue(data.setupFee));
+      if (!(months > 0)) return showToast('Zadej novou délku v měsících');
+      const projections = selected.map(financeLoanProjection);
+      const currentMonthlyPayment = projections.reduce((sum, row) => sum + row.payment, 0);
+      const currentTotalCost = projections.reduce((sum, row) => sum + row.remainingPayments, 0);
+      const payoffFees = projections.reduce((sum, row) => sum + row.loan.earlyRepaymentFee, 0);
+      const balance = projections.reduce((sum, row) => sum + row.loan.currentBalance, 0);
+      const newPrincipal = balance + payoffFees + setupFee;
+      const newMonthlyPayment = financeLoanMonthlyPayment(newPrincipal, interestRate, months);
+      const newTotalCost = newMonthlyPayment * months;
+      const savings = currentTotalCost - newTotalCost;
+      const monthlySaving = currentMonthlyPayment - newMonthlyPayment;
+      const breakEvenMonths = monthlySaving > 0 && (payoffFees + setupFee) > 0 ? Math.ceil((payoffFees + setupFee) / monthlySaving) : 0;
+      getState().financeRefinanceResult = {
+        createdAt: new Date().toISOString(),
+        loanIds: selectedIds,
+        interestRate,
+        months,
+        setupFee,
+        payoffFees,
+        balance,
+        newPrincipal,
+        currentMonthlyPayment,
+        currentTotalCost,
+        newMonthlyPayment,
+        newTotalCost,
+        savings,
+        breakEvenMonths,
+        note: normalizeText(data.note)
+      };
+      touchState();
+      saveState();
+      render();
+      showToast(savings > 0 ? `Refinancování vychází o ${formatCurrency(savings)} lépe` : 'Refinancování podle zadaných parametrů nevychází lépe');
+    }
+
     async function cloudSyncFinanceAccountById(id) {
       const account = getState().financeAccounts.find((entry) => entry.id === id);
       if (!account) return;
@@ -1569,6 +1880,8 @@
       financeCloudPendingCount,
       mergeFinanceTemplates,
       normalizeFinanceTemplates,
+      mergeFinanceLoans,
+      normalizeFinanceLoans,
       financeTemplateDefinitions,
       // render
       renderFinance,
@@ -1595,6 +1908,11 @@
       addFinanceAccountFromForm,
       updateFinanceAccountFromForm,
       addManagedFinanceSetFromForm,
+      addFinanceLoanFromForm,
+      updateFinanceLoanFromForm,
+      setFinanceLoanEdit,
+      deleteFinanceLoan,
+      calculateFinanceRefinance,
       // cloud
       cloudLoadFinance,
       cloudSyncFinanceById,

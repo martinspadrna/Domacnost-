@@ -1,0 +1,36 @@
+#!/bin/sh
+set -eu
+
+echo "Domacnost+ pre-commit: full check pipeline"
+
+if command -v npm >/dev/null 2>&1; then
+  npm run check
+  exit $?
+fi
+
+NODE_BIN=""
+if [ -n "${USERPROFILE:-}" ]; then
+  USER_HOME="$USERPROFILE"
+  if command -v cygpath >/dev/null 2>&1; then
+    USER_HOME="$(cygpath -u "$USERPROFILE")"
+  fi
+  CANDIDATE="$USER_HOME/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe"
+  if [ -x "$CANDIDATE" ]; then
+    NODE_BIN="$CANDIDATE"
+  fi
+fi
+
+if [ -z "$NODE_BIN" ] && command -v node >/dev/null 2>&1; then
+  NODE_BIN="node"
+fi
+
+if [ -z "$NODE_BIN" ]; then
+  echo "Nenalezen npm ani node. Spusť ručně: npm run check" >&2
+  exit 1
+fi
+
+"$NODE_BIN" tools/check-syntax.mjs
+"$NODE_BIN" tools/check-release.mjs
+"$NODE_BIN" tools/check-static-smoke.mjs
+"$NODE_BIN" tools/check-memoization.mjs
+"$NODE_BIN" tools/check-app-wiring.mjs

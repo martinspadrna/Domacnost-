@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_330';
-  const APP_BUILD = 330;
+  const APP_VERSION = 'Domácnost+ v.0.1_331';
+  const APP_BUILD = 331;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -27,6 +27,7 @@
     { id: 'hdo', label: 'HDO', icon: '💡' },
     { id: 'waste', label: 'Odpad', icon: '♻️' },
     { id: 'readings', label: 'Odečty', icon: '📊' },
+    { id: 'pool', label: 'Bazén', icon: '🏊' },
     { id: 'tasks', label: 'Zápisník', icon: '🗒️' },
     { id: 'warranties', label: 'Záruky', icon: '🧾' },
     { id: 'polishHolidays', label: 'Svátky PL', icon: '🇵🇱' },
@@ -524,6 +525,7 @@
     { id: 'hdo', label: 'HDO', icon: '💡', overview: 'hdo', metric: (ctx) => ctx.hdo.active ? 'Běží' : 'Ne', text: () => 'HDO' },
     { id: 'waste', label: 'Odpad', icon: '♻️', overview: 'waste', metric: (ctx) => ctx.wasteSoon.length, text: () => 'svoz do 7 dnů' },
     { id: 'readings', label: 'Odečty', icon: '📊', nav: 'readings', tab: 'overview', metric: () => readingsMeters().length, text: () => 'měřidel' },
+    { id: 'pool', label: 'Bazén', icon: '🏊', nav: 'pool', tab: '', metric: () => formatPoolVolume(poolVolumeM3(state.pool)), text: () => 'objem vody' },
     { id: 'tasks', label: 'Zápisník', icon: '🗒️', overview: 'tasks', metric: (ctx) => (ctx.openTasks?.length || 0) + notebookPages().length, text: () => 'úkoly a stránky' },
     { id: 'warranties', label: 'Záruky', icon: '🧾', nav: 'warranties', tab: '', metric: () => state.warranties.filter((item) => item.status !== 'archived').length, text: () => 'záruky' },
     { id: 'polishHolidays', label: 'PL svátky', icon: '🇵🇱', nav: 'polishHolidays', tab: '', metric: () => polishShopHeroMetric(), text: () => polishShopHeroText() },
@@ -769,6 +771,9 @@
     finance: [],
     financeAccounts: [],
     financeTemplates: [],
+    financeLoans: [],
+    financeRefinanceResult: null,
+    pool: {},
     subscriptions: [],
     subscriptionPeople: [],
     subscriptionPayments: [],
@@ -970,6 +975,7 @@
   let hdoInstance = null;
   let wasteInstance = null;
   let financeInstance = null;
+  let poolInstance = null;
   let subscriptionsInstance = null;
   let calendarInstance = null;
 
@@ -1672,7 +1678,7 @@
     }
 
     migrated.enabledModules = normalizeModuleList(migrated.enabledModules);
-    ['hdo', 'waste', 'readings', 'tasks', 'warranties', 'polishHolidays'].forEach((id) => {
+    ['hdo', 'waste', 'readings', 'pool', 'tasks', 'warranties', 'polishHolidays'].forEach((id) => {
       if (!migrated.enabledModules.includes(id)) migrated.enabledModules.push(id);
     });
     if (!migrated.enabledModules.includes('weather')) migrated.enabledModules = ['weather', ...migrated.enabledModules];
@@ -1718,6 +1724,9 @@
     migrated.loyaltyCards = normalizeLoyaltyCards(migrated.loyaltyCards || []);
     migrated.loyaltyCardsCloud = migrated.loyaltyCardsCloud && typeof migrated.loyaltyCardsCloud === 'object' && !Array.isArray(migrated.loyaltyCardsCloud) ? { loadedAt: migrated.loyaltyCardsCloud.loadedAt || '', pendingAt: migrated.loyaltyCardsCloud.pendingAt || '', errorAt: migrated.loyaltyCardsCloud.errorAt || '', error: migrated.loyaltyCardsCloud.error || '' } : { ...DEFAULT_STATE.loyaltyCardsCloud };
     migrated.financeTemplates = normalizeFinanceTemplates(migrated.financeTemplates);
+    migrated.financeLoans = normalizeFinanceLoans(migrated.financeLoans);
+    migrated.financeRefinanceResult = migrated.financeRefinanceResult && typeof migrated.financeRefinanceResult === 'object' ? migrated.financeRefinanceResult : null;
+    migrated.pool = normalizePoolState(migrated.pool);
 
     const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
     migrated.vehicles = migrated.vehicles.map((vehicle) => {
@@ -1949,7 +1958,7 @@
   }
 
   function getCollectionNames() {
-    return ['calendar', 'coupons', 'hdoWindows', 'shopping', 'shoppingLists', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'readingGroups', 'readingMeters', 'readings', 'notes', 'warranties', 'warrantyFiles', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'finance', 'financeAccounts', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
+    return ['calendar', 'coupons', 'hdoWindows', 'shopping', 'shoppingLists', 'shoppingCatalogCustom', 'homeTasks', 'waste', 'readingGroups', 'readingMeters', 'readings', 'notes', 'warranties', 'warrantyFiles', 'vehicles', 'fuel', 'services', 'contracts', 'contractFiles', 'finance', 'financeAccounts', 'financeLoans', 'subscriptions', 'subscriptionPeople', 'subscriptionPayments'];
   }
 
   function normalizeModuleList(value) {
@@ -3347,6 +3356,7 @@
       hdo: 'Nízký tarif, aktuální stav a další přepnutí.',
       waste: 'Svoz odpadu, nejbližší termíny a připomínky.',
       readings: 'Odečty elektřiny, plynu a vody, spotřeba, graf a odhad nákladů.',
+      pool: 'Objem vody, poslední měření pH a orientační dávka pH přípravku.',
       tasks: 'Poznámky a úkoly v jednom čistém zápisníku.',
       warranties: 'Záruky, účtenky a hlídání konce záruky.',
       polishHolidays: 'Polské svátky a dny, kdy můžou být zavřené obchody.',
@@ -3373,6 +3383,7 @@
       hdo: () => renderHomecare('hdo'),
       waste: () => renderHomecare('waste'),
       readings: renderReadings,
+      pool: renderPool,
       tasks: () => renderHomecare('tasks'),
       warranties: () => renderHomecare('warranties'),
       polishHolidays: () => renderHomecare('polish-holidays'),
@@ -3896,6 +3907,7 @@
       hdo: 'bulb',
       waste: 'recycle',
       readings: 'coins',
+      pool: 'weather-rain',
       tasks: 'check',
       notes: 'note',
       warranties: 'receipt',
@@ -3927,6 +3939,7 @@
       hdo: 'hdo',
       waste: 'waste',
       readings: 'readings',
+      pool: 'weather',
       tasks: 'tasks',
       notes: 'notes',
       warranties: 'warranties',
@@ -5309,6 +5322,29 @@
       DEFAULT_FINANCE_TEMPLATES
     });
     return financeInstance;
+  }
+
+  function getPoolModule() {
+    if (poolInstance) return poolInstance;
+    const factory = window.DomacnostPool?.createPool;
+    if (!factory) throw new Error('pool.js není načtený');
+    poolInstance = factory({
+      getState: () => state,
+      normalizeText,
+      escapeHtml,
+      decimalValue,
+      field,
+      selectField,
+      renderEmptyCta,
+      formatDateTime,
+      touchState,
+      saveState,
+      render,
+      showToast,
+      cloudReady,
+      cloudSaveHouseholdUiSettings
+    });
+    return poolInstance;
   }
 
   function getSubscriptionsModule() {
@@ -10403,8 +10439,42 @@
     return getFinanceModule().mergeFinanceTemplates(localTemplates, cloudTemplates, options);
   }
 
+  function normalizeFinanceLoans(loans) {
+    return getFinanceModule().normalizeFinanceLoans(loans);
+  }
+
+  function mergeFinanceLoans(localLoans, cloudLoans, options) {
+    return getFinanceModule().mergeFinanceLoans(localLoans, cloudLoans, options);
+  }
+
   function renderFinance() {
     return getFinanceModule().renderFinance();
+  }
+
+  function normalizePoolState(value) {
+    return getPoolModule().normalizePoolState(value);
+  }
+
+  function poolVolumeM3(value) {
+    return getPoolModule().poolVolumeM3(value);
+  }
+
+  function formatPoolVolume(value) {
+    const number = Number(value || 0);
+    if (!Number.isFinite(number) || number <= 0) return '0 m³';
+    return `${number.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} m³`;
+  }
+
+  function renderPool() {
+    return getPoolModule().renderPool();
+  }
+
+  function savePoolFromForm(data, form) {
+    return getPoolModule().savePoolFromForm(data, form);
+  }
+
+  function poolPhDose(value) {
+    return getPoolModule().poolPhDose(value);
   }
 
 
@@ -13921,6 +13991,7 @@
       },
       'add-profile': () => addProfile(data.name, data.role),
       'weather-settings': () => saveWeatherSettings(data, form),
+      'pool-settings': () => savePoolFromForm(data, form),
       'import-data': () => importData(data.json),
       'cloud-login': () => cloudLogin(data.email, data.password),
       'cloud-signup': () => cloudSignUp(data.email, data.password),
@@ -13934,6 +14005,9 @@
       'update-finance-template': () => updateFinanceTemplateFromForm(form.dataset.id, data, form),
       'add-finance': () => addFinanceFromForm(data, form),
       'update-finance': () => updateFinanceFromForm(form.dataset.id, data, form),
+      'add-finance-loan': () => addFinanceLoanFromForm(data, form),
+      'update-finance-loan': () => updateFinanceLoanFromForm(form.dataset.id, data, form),
+      'finance-refinance': () => calculateFinanceRefinance(data, form),
       'copy-finance': () => copyFinanceToMonths(form.dataset.id, data, form),
       'finance-month-filter': () => setFinanceMonth(data.month),
       'add-subscription-person': () => addSubscriptionPersonFromForm(data, form),
@@ -14414,6 +14488,18 @@
     return getFinanceModule().updateFinanceFromForm(id, data, form);
   }
 
+  function addFinanceLoanFromForm(data, form) {
+    return getFinanceModule().addFinanceLoanFromForm(data, form);
+  }
+
+  function updateFinanceLoanFromForm(id, data, form) {
+    return getFinanceModule().updateFinanceLoanFromForm(id, data, form);
+  }
+
+  function calculateFinanceRefinance(data, form) {
+    return getFinanceModule().calculateFinanceRefinance(data, form);
+  }
+
   function copyFinanceToMonths(id, data, form) {
     return getFinanceModule().copyFinanceToMonths(id, data, form);
   }
@@ -14472,6 +14558,14 @@
 
   function deleteFinanceTransaction(id) {
     return getFinanceModule().deleteFinanceTransaction(id);
+  }
+
+  function setFinanceLoanEdit(id) {
+    return getFinanceModule().setFinanceLoanEdit(id);
+  }
+
+  function deleteFinanceLoan(id) {
+    return getFinanceModule().deleteFinanceLoan(id);
   }
 
   function fillFinanceTemplate(templateId) {
@@ -15151,7 +15245,7 @@
       warranties: [() => cloudLoadExtraCollection('warranties', false), cloudLoadWarrantyFiles],
       garage: [cloudLoadGarageData],
       contracts: [cloudLoadContracts, cloudLoadContractFiles],
-      finance: [cloudLoadFinance],
+      finance: [loadHouseholdUiForModule, cloudLoadFinance],
       // Předplatné je uložené v households.dashboard_layout
       // (subscriptions/subscriptionPeople/subscriptionPayments/
       // subscriptionSettings), ne v extras.
@@ -15160,6 +15254,7 @@
       // readingDeposits/readingBilling) jsou taky součást
       // households.dashboard_layout, ne samostatná tabulka.
       readings: [loadHouseholdUiForModule],
+      pool: [loadHouseholdUiForModule],
       // Poznámky sedí v household_notes (extras) — cílený loader,
       // ne batch cloudLoadExtraCollections.
       notes: [() => cloudLoadExtraCollection('notes', false)],
@@ -15226,6 +15321,7 @@
       hdo: 'hdo',
       waste: 'waste',
       readings: 'readings',
+      pool: 'pool',
       tasks: 'tasks',
       warranties: 'warranties',
       garage: 'garage',
@@ -15280,7 +15376,7 @@
     return withDeferredRender(async () => {
       // polishHolidays vynecháno — modul se v cloudu nepersistuje, drží se lokálně
       // a plní se z veřejného API date.nager.at.
-      const moduleOrder = ['shopping', 'calendar', 'finance', 'hdo', 'waste', 'readings', 'tasks', 'warranties', 'garage', 'contracts', 'subscriptions'];
+      const moduleOrder = ['shopping', 'calendar', 'finance', 'hdo', 'waste', 'readings', 'pool', 'tasks', 'warranties', 'garage', 'contracts', 'subscriptions'];
       const skipModules = new Set(Array.isArray(options.skipModules) ? options.skipModules : []);
       let ok = 0;
       for (const moduleId of moduleOrder) {
@@ -16159,6 +16255,18 @@
       fillFinanceTemplate(button.dataset.template);
       return;
     }
+    if (action === 'finance-loan-edit') {
+      setFinanceLoanEdit(button.dataset.id);
+      return;
+    }
+    if (action === 'finance-loan-edit-cancel') {
+      setFinanceLoanEdit('');
+      return;
+    }
+    if (action === 'delete-finance-loan') {
+      deleteFinanceLoan(button.dataset.id);
+      return;
+    }
     if (action === 'subscription-month-prev') {
       shiftSubscriptionMonth(-1);
       return;
@@ -16830,6 +16938,13 @@
       state.financeTemplates = mergeFinanceTemplates(state.financeTemplates || [], layout.financeTemplates, { preferLocal: Boolean(state.financeCloud?.templatesPendingAt) });
       state.financeCloud = { ...(state.financeCloud || {}), templatesLoadedAt: new Date().toISOString() };
     }
+    if (Array.isArray(layout.financeLoans)) {
+      state.financeLoans = mergeFinanceLoans(state.financeLoans || [], layout.financeLoans);
+      state.financeCloud = { ...(state.financeCloud || {}), loansLoadedAt: new Date().toISOString() };
+    }
+    if (layout.pool && typeof layout.pool === 'object' && !Array.isArray(layout.pool)) {
+      state.pool = normalizePoolState({ ...(state.pool || {}), ...layout.pool });
+    }
     if (layout.financeSettings && typeof layout.financeSettings === 'object') {
       if (/^\d{4}-\d{2}$/.test(String(layout.financeSettings.month || ''))) state.financeCloud = { ...(state.financeCloud || {}), monthFilter: String(layout.financeSettings.month) };
       if (['all', 'income', 'expense', 'transfer'].includes(layout.financeSettings.typeFilter)) state.financeCloud = { ...(state.financeCloud || {}), typeFilter: layout.financeSettings.typeFilter };
@@ -16869,6 +16984,8 @@
         },
         loyaltyCards: normalizeLoyaltyCards(state.loyaltyCards || []),
         financeTemplates: normalizeFinanceTemplates(state.financeTemplates || []),
+        financeLoans: normalizeFinanceLoans(state.financeLoans || []),
+        pool: normalizePoolState(state.pool || {}),
         financeSettings: {
           month: financeSelectedMonth(),
           typeFilter: financeTypeFilter()
@@ -17751,6 +17868,12 @@
     const financeMonthInput = event.target.closest('form[data-form="finance-month-filter"] input[name="month"]');
     if (financeMonthInput) {
       setFinanceMonth(financeMonthInput.value);
+      return;
+    }
+    const poolShapeSelect = event.target.closest('form[data-form="pool-settings"] select[name="shape"]');
+    if (poolShapeSelect) {
+      state.pool = normalizePoolState({ ...(state.pool || {}), shape: poolShapeSelect.value });
+      render();
       return;
     }
     const subscriptionMonthInput = event.target.closest('form[data-form="subscription-month-filter"] input[name="month"]');
