@@ -455,6 +455,55 @@ async function run() {
     if (moreOk) ok('Více: nastavení a skupiny modulů renderují.');
 
     await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.more-settings-card[data-nav="settings"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    const settingsCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const settings = document.querySelector('.settings-tabbed[data-tab-area="settings"]');
+        document.querySelector('.section-tabs [data-area="settings"][data-tab="data"]')?.click();
+        const card = document.querySelector('.compact-settings-card');
+        const cardStyle = card ? getComputedStyle(card) : null;
+        const visualChoice = document.querySelector('.visual-choice-card');
+        const visualChoiceStyle = visualChoice ? getComputedStyle(visualChoice) : null;
+        const importDrawer = document.querySelector('.panel-data .settings-form-drawer');
+        if (importDrawer) importDrawer.open = true;
+        const importTextarea = document.querySelector('.panel-data textarea[name="json"]');
+        const importTextareaStyle = importTextarea ? getComputedStyle(importTextarea) : null;
+        return {
+          settings: Boolean(settings),
+          settingsClass: settings?.className || '',
+          compactCardCount: document.querySelectorAll('.compact-settings-card').length,
+          visualChoiceCount: document.querySelectorAll('.visual-choice-card').length,
+          settingsText: (settings?.innerText || '').slice(0, 220),
+          cardSurface: Boolean(cardStyle && parseFloat(cardStyle.borderTopLeftRadius) >= 16),
+          cardDisplay: cardStyle?.display || '',
+          cardRadius: cardStyle?.borderTopLeftRadius || '',
+          cardBackground: cardStyle?.backgroundColor || '',
+          visualChoiceSurface: Boolean(visualChoiceStyle && visualChoiceStyle.display === 'grid' && parseFloat(visualChoiceStyle.borderTopLeftRadius) >= 16),
+          visualChoiceDisplay: visualChoiceStyle?.display || '',
+          visualChoiceRadius: visualChoiceStyle?.borderTopLeftRadius || '',
+          dataPanel: Boolean(document.querySelector('.settings-tab-data .panel-data, .panel-data')),
+          importDrawer: Boolean(importDrawer),
+          importTextarea: Boolean(importTextareaStyle && parseFloat(importTextareaStyle.minHeight) >= 120)
+        };
+      })()`
+    });
+    const settingsValue = settingsCheck.result?.value || {};
+    if (process.env.E2E_DEBUG === '1') {
+      console.log('DEBUG settings:', JSON.stringify(settingsValue, null, 2));
+    }
+    let settingsOk = true;
+    if (!settingsValue.settings) { fail('Nastavení nerenderuje settings-tabbed layout.'); settingsOk = false; }
+    if (!settingsValue.cardSurface) { fail('Nastavení karty nemají sjednocený povrch.'); settingsOk = false; }
+    if (!settingsValue.visualChoiceSurface) { fail('Nastavení vzhledu nemá nový grid povrch voleb.'); settingsOk = false; }
+    if (!settingsValue.dataPanel) { fail('Nastavení Data panel není dostupný.'); settingsOk = false; }
+    if (!settingsValue.importDrawer) { fail('Nastavení Data nemá import drawer.'); settingsOk = false; }
+    if (!settingsValue.importTextarea) { fail('Import JSON textarea nemá stabilní výšku.'); settingsOk = false; }
+    if (settingsOk) ok('Nastavení: karty, volby vzhledu a import dat renderují v novém povrchu.');
+
+    await page.send('Runtime.evaluate', {
       expression: `document.querySelector('[data-nav="pool"]')?.click()`
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 500));

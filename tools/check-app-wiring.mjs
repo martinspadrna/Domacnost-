@@ -139,6 +139,9 @@ if (styles) {
   expect(styles, '/* Domácnost+ – jednotné detailní a grafové povrchy */', 'styles.css: existuje finální blok pro detailní/grafové povrchy.');
   expect(styles, '.consumption-chart,\n.pool-chart,\n.garage-line-chart,\n.readings-line-chart svg', 'styles.css: grafy mají stabilní responzivní rozměry.');
   expect(styles, '.garage-stats-kpis {\n    grid-template-columns: repeat(2, minmax(0, 1fr));', 'styles.css: KPI gridy mají společné mobilní pravidlo.');
+  expect(styles, '/* Domácnost+ – jednotné Nastavení, importy a dlouhé formuláře */', 'styles.css: existuje finální blok pro Nastavení/formuláře.');
+  expect(styles, '.settings-tabbed .textarea {\n  min-height: 148px;', 'styles.css: import/dlouhé textarea mají stabilní výšku.');
+  expect(styles, '.visual-choice-card,\n.module-toggle,\n.switch-row,\n.cloud-household-row,\n.install-step,\n.pwa-diagnostic-item {\n  display: grid;', 'styles.css: settings volby a řádky sdílí nový grid povrch.');
   expect(styles, '.form-actions,\n  .item-actions,\n  .finance-filter-chips', 'styles.css: společné akční lišty používají mobilní rail.');
   expect(styles, '.garage-history-toolbar {\n    display: flex;', 'styles.css: garážové filtry používají mobilní rail.');
   expect(styles, '.module-cockpit-metrics,\n  .module-cockpit-actions', 'styles.css: cockpit metriky a akce sdílí mobilní rail.');

@@ -19531,3 +19531,279 @@ main {
     grid-template-columns: 1fr;
   }
 }
+
+/* Domácnost+ – jednotné Nastavení, importy a dlouhé formuláře */
+.settings-tabbed,
+.settings-panel,
+.settings-panel > .card,
+.compact-settings-card,
+.visual-settings-card,
+.dashboard-settings-card,
+.cloud-card,
+.pwa-card,
+.auth-setup-card,
+.danger-zone {
+  min-width: 0;
+}
+
+.settings-panel {
+  align-items: start;
+}
+
+.compact-settings-card,
+.visual-settings-card,
+.dashboard-settings-card,
+.cloud-card,
+.pwa-card,
+.auth-setup-card,
+.danger-zone,
+.cloud-household-panel,
+.cloud-invitations-panel,
+.cloud-auth-grid > form,
+.visual-settings-group,
+.module-toggle,
+.visual-choice-card,
+.switch-row,
+.profile-chip,
+.cloud-household-row,
+.install-step,
+.pwa-diagnostic-summary,
+.pwa-diagnostic-item,
+.hint-box,
+.inline-note {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 8px 22px rgba(31, 41, 55, 0.052);
+}
+
+[data-theme="dark"] .compact-settings-card,
+[data-theme="dark"] .visual-settings-card,
+[data-theme="dark"] .dashboard-settings-card,
+[data-theme="dark"] .cloud-card,
+[data-theme="dark"] .pwa-card,
+[data-theme="dark"] .auth-setup-card,
+[data-theme="dark"] .danger-zone,
+[data-theme="dark"] .cloud-household-panel,
+[data-theme="dark"] .cloud-invitations-panel,
+[data-theme="dark"] .cloud-auth-grid > form,
+[data-theme="dark"] .visual-settings-group,
+[data-theme="dark"] .module-toggle,
+[data-theme="dark"] .visual-choice-card,
+[data-theme="dark"] .switch-row,
+[data-theme="dark"] .profile-chip,
+[data-theme="dark"] .cloud-household-row,
+[data-theme="dark"] .install-step,
+[data-theme="dark"] .pwa-diagnostic-summary,
+[data-theme="dark"] .pwa-diagnostic-item,
+[data-theme="dark"] .hint-box,
+[data-theme="dark"] .inline-note {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+}
+
+.settings-tabbed .card-header,
+.settings-tabbed .card-header > div,
+.settings-tabbed .field,
+.settings-tabbed .field label,
+.settings-tabbed .input,
+.settings-tabbed .select,
+.settings-tabbed .textarea,
+.settings-tabbed .form-grid,
+.settings-tabbed .cloud-auth-grid,
+.settings-tabbed .visual-choice-grid,
+.settings-tabbed .module-toggle-grid,
+.settings-tabbed .switch-list,
+.settings-tabbed .profile-list,
+.settings-tabbed .cloud-household-list {
+  min-width: 0;
+}
+
+.settings-tabbed .card-header h2,
+.settings-tabbed .card-header p,
+.switch-row-copy,
+.switch-row-copy strong,
+.switch-row-copy em,
+.profile-chip strong,
+.profile-chip span,
+.cloud-household-row strong,
+.cloud-household-row span,
+.visual-choice-card strong,
+.visual-choice-card em,
+.module-toggle strong,
+.module-toggle em,
+.install-step strong,
+.install-step span,
+.pwa-diagnostic-summary strong,
+.pwa-diagnostic-summary span,
+.pwa-diagnostic-item strong,
+.pwa-diagnostic-item span,
+.hint-box,
+.inline-note {
+  overflow-wrap: anywhere;
+}
+
+.settings-tabbed .card-header p,
+.switch-row-copy em,
+.profile-chip span,
+.cloud-household-row span,
+.visual-choice-card em,
+.module-toggle em,
+.install-step span,
+.pwa-diagnostic-summary span,
+.pwa-diagnostic-item span {
+  color: var(--muted);
+  line-height: 1.32;
+}
+
+.settings-form-drawer,
+.settings-enabled-modules-details,
+.settings-visual-details,
+.cloud-household-create-details {
+  min-width: 0;
+}
+
+.settings-tabbed .textarea {
+  min-height: 148px;
+  resize: vertical;
+}
+
+.visual-choice-grid,
+.module-toggle-grid,
+.switch-list,
+.profile-list,
+.cloud-household-list,
+.install-steps,
+.pwa-diagnostic-summary,
+.pwa-diagnostic-list {
+  display: grid;
+  gap: 8px;
+}
+
+.visual-choice-card,
+.module-toggle,
+.switch-row,
+.profile-chip,
+.cloud-household-row,
+.install-step,
+.pwa-diagnostic-item {
+  min-height: 58px;
+}
+
+.visual-choice-card,
+.module-toggle,
+.switch-row,
+.cloud-household-row,
+.install-step,
+.pwa-diagnostic-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+}
+
+.profile-chip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+}
+
+.profile-chip > button:first-child,
+.switch-row-copy,
+.cloud-household-row > div,
+.visual-choice-card > strong,
+.module-toggle > strong {
+  min-width: 0;
+}
+
+.visual-choice-card.active,
+.module-toggle.active,
+.switch-row.active,
+.profile-chip.active,
+.cloud-household-row.active {
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--line));
+  background: color-mix(in srgb, var(--primary) 10%, rgba(255, 255, 255, 0.68));
+}
+
+[data-theme="dark"] .visual-choice-card.active,
+[data-theme="dark"] .module-toggle.active,
+[data-theme="dark"] .switch-row.active,
+[data-theme="dark"] .profile-chip.active,
+[data-theme="dark"] .cloud-household-row.active {
+  background: color-mix(in srgb, var(--primary) 18%, rgba(255, 255, 255, 0.07));
+}
+
+.cloud-auth-grid > form,
+.visual-settings-group {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.settings-tabbed .input,
+.settings-tabbed .select,
+.settings-tabbed .textarea {
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (max-width: 720px) {
+  .settings-tabbed,
+  .settings-panel.grid.two,
+  .settings-panel.grid.three,
+  .settings-panel.grid.four,
+  .settings-tabbed .grid.two,
+  .settings-tabbed .grid.three,
+  .settings-tabbed .grid.four {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .compact-settings-card,
+  .visual-settings-card,
+  .dashboard-settings-card,
+  .cloud-card,
+  .pwa-card,
+  .auth-setup-card,
+  .danger-zone,
+  .cloud-household-panel,
+  .cloud-invitations-panel,
+  .cloud-auth-grid > form,
+  .visual-settings-group,
+  .module-toggle,
+  .visual-choice-card,
+  .switch-row,
+  .profile-chip,
+  .cloud-household-row,
+  .install-step,
+  .pwa-diagnostic-summary,
+  .pwa-diagnostic-item {
+    border-radius: 16px;
+  }
+
+  .visual-choice-card,
+  .module-toggle,
+  .switch-row,
+  .cloud-household-row,
+  .install-step,
+  .pwa-diagnostic-item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .visual-choice-card > .badge,
+  .module-toggle > .badge,
+  .switch-row > .badge,
+  .cloud-household-row > .badge,
+  .cloud-household-row > .item-actions,
+  .ios-switch {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .settings-tabbed .textarea {
+    min-height: 132px;
+  }
+}
