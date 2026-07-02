@@ -355,6 +355,12 @@ async function run() {
           appRoot: Boolean(document.querySelector('#app')),
           versionOk: document.title.includes('v.0.1_${expectedBuild}') || text.includes('v.0.1_${expectedBuild}'),
           bootError: Boolean(document.querySelector('.module-error-card, .app-boot-error')),
+          homeRedesign: Boolean(document.querySelector('.home-dashboard-redesign')),
+          homeDaily: Boolean(document.querySelector('[data-dashboard-widget="daily"]')),
+          homePrimary: Boolean(document.querySelector('.home-primary-action')),
+          homeStatusCount: document.querySelectorAll('.home-status-card').length,
+          homeAttention: Boolean(document.querySelector('.home-attention-list')),
+          homeModules: Boolean(document.querySelector('.home-module-strip .home-module-shortcut')),
           navPool: Boolean(document.querySelector('[data-nav="pool"]')),
           navFinance: Boolean(document.querySelector('[data-nav="finance"]')),
           navContracts: Boolean(document.querySelector('[data-nav="contracts"]')),
@@ -371,10 +377,16 @@ async function run() {
     if (!initialValue.appRoot) { fail('Chybí #app root.'); bootOk = false; }
     if (!initialValue.versionOk) { fail(`Na stránce/title není v0.1_${expectedBuild}.`); bootOk = false; }
     if (initialValue.bootError) { fail('Po bootu je vidět module/app error card.'); bootOk = false; }
+    if (!initialValue.homeRedesign) { fail('Home nepoužívá nový home-dashboard-redesign layout.'); bootOk = false; }
+    if (!initialValue.homeDaily) { fail('Home neobsahuje denní přehled.'); bootOk = false; }
+    if (!initialValue.homePrimary) { fail('Home neobsahuje hlavní akční kartu.'); bootOk = false; }
+    if (initialValue.homeStatusCount < 4) { fail('Home nemá čtyři stavové karty.'); bootOk = false; }
+    if (!initialValue.homeAttention) { fail('Home neobsahuje seznam Dnes a brzy.'); bootOk = false; }
+    if (!initialValue.homeModules) { fail('Home neobsahuje zkratky modulů.'); bootOk = false; }
     if (!initialValue.navPool) { fail('Po seed bootu není dostupná navigace Bazén.'); bootOk = false; }
     if (!initialValue.navFinance) { fail('Po seed bootu není dostupná navigace Finance.'); bootOk = false; }
     if (!initialValue.navContracts) { fail('Po seed bootu není dostupná navigace Smlouvy.'); bootOk = false; }
-    if (bootOk) ok('boot: app root, verze, Finance, Bazén i Smlouvy navigace dostupné.');
+    if (bootOk) ok('boot: nový Home, app root, verze, Finance, Bazén i Smlouvy navigace dostupné.');
 
     await page.send('Runtime.evaluate', {
       expression: `document.querySelector('[data-nav="pool"]')?.click()`

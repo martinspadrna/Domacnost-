@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_335';
-  const APP_BUILD = 335;
+  const APP_VERSION = 'Domácnost+ v.0.1_336';
+  const APP_BUILD = 336;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -2488,6 +2488,7 @@
 
       if (showStartChoice) {
         app?.classList?.remove('home-app-shell');
+        app?.classList?.remove('home-redesign-shell');
         renderOnboarding();
         if (app) app.setAttribute?.('data-boot-ok', '1');
       } else {
@@ -2506,6 +2507,7 @@
         const navSweepEnd = navMotion ? Math.max(navMotionFromIndex, activeBottomNavIndex) : -1;
         const isHomeModule = active.id === 'home';
         app?.classList?.toggle('home-app-shell', isHomeModule);
+        app?.classList?.toggle('home-redesign-shell', isHomeModule);
         document.documentElement.classList.toggle('home-active', isHomeModule);
         document.body.classList.toggle('home-active', isHomeModule);
         const pageTitle = isHomeModule ? householdName() : active.label;
@@ -3464,8 +3466,8 @@
     const heroCount = selectedHeroItems.length;
 
     return `
-      <div class="dashboard-v10 dashboard-empty-home">
-        <section class="card hero-card station-hero home-minimal-hero home-hero-count-${heroCount} ${homeHeroEditMode ? 'home-hero-editing' : ''}">
+      <div class="dashboard-v10 home-dashboard-redesign">
+        <section class="card hero-card station-hero home-daily-hero ${homeHeroEditMode ? 'home-hero-editing' : ''}">
           <div class="station-hero-main">
             <div class="station-clock-area">
               ${homeHeroEditMode ? `<button class="primary-btn home-hero-edit-done-overlay" type="button" data-action="home-hero-edit-done">Hotovo</button>` : ''}
@@ -3480,8 +3482,328 @@
             ${heroCount ? `<div class="station-summary station-summary-count-${heroCount} ${homeHeroEditMode ? 'station-summary-editing' : ''}">${renderHomeHeroSummaryItems(dashboardContext)}</div>` : ''}
           </div>
         </section>
+        ${renderHomeDailyOverview(dashboardContext)}
       </div>
     `;
+  }
+
+  function renderHomeDailyOverview(ctx) {
+    const attentionItems = buildHomeAttentionItems(ctx);
+    const primary = attentionItems[0] || buildHomeFallbackAction(ctx);
+    const rows = attentionItems.slice(primary ? 1 : 0, 7);
+    return `
+      <section class="card home-command-card dashboard-widget-block" data-dashboard-widget="daily">
+        <div class="home-command-head">
+          <div>
+            <span class="section-kicker">Domů</span>
+            <h2>Denní přehled</h2>
+          </div>
+          <button class="ghost-btn mini-btn" type="button" data-nav="more">Všechny moduly</button>
+        </div>
+        ${primary ? renderHomePrimaryAction(primary) : ''}
+        <div class="home-status-grid">
+          ${renderHomeStatusCards(ctx)}
+        </div>
+      </section>
+      <section class="card home-agenda-card dashboard-widget-block" data-dashboard-widget="agenda">
+        <div class="card-header compact-card-header">
+          <div><h2>Dnes a brzy</h2><p>Události, úkoly, svozy, smlouvy a auta na jednom místě.</p></div>
+          <span class="badge ${attentionItems.length ? 'warn' : 'good'}">${attentionItems.length ? `${attentionItems.length} položek` : 'klid'}</span>
+        </div>
+        <div class="home-attention-list">
+          ${rows.length ? rows.map(renderHomeAttentionItem).join('') : renderHomeQuietState(ctx)}
+        </div>
+      </section>
+      <section class="card home-modules-card dashboard-widget-block" data-dashboard-widget="modules">
+        <div class="card-header compact-card-header">
+          <div><h2>Oblasti domácnosti</h2><p>Rychlý vstup do zapnutých částí bez přeplněné spodní lišty.</p></div>
+          <button class="ghost-btn mini-btn" type="button" data-nav="settings" data-target-tab="modules">Upravit</button>
+        </div>
+        <div class="home-module-strip">
+          ${renderHomeModuleShortcuts(ctx.visibleModules)}
+        </div>
+      </section>
+    `;
+  }
+
+  function buildHomeAttentionItems(ctx) {
+    const rows = [];
+    const add = (item) => rows.push({
+      icon: item.icon || '•',
+      title: normalizeText(item.title),
+      meta: normalizeText(item.meta),
+      badge: normalizeText(item.badge),
+      tone: item.tone || '',
+      nav: item.nav || '',
+      tab: item.tab || '',
+      overview: item.overview || item.nav || '',
+      rank: Number.isFinite(item.rank) ? item.rank : 5
+    });
+
+    (ctx.todayEvents || []).slice(0, 3).forEach((event) => {
+      const running = calendarEventIsRunning(event, now);
+      add({
+        icon: '📅',
+        title: event.title || 'Událost',
+        meta: calendarEventMetaLabel(event, now),
+        badge: running ? 'běží' : 'dnes',
+        tone: running ? 'good' : '',
+        nav: 'calendar',
+        tab: 'overview',
+        rank: running ? 0 : 2
+      });
+    });
+
+    (ctx.upcomingEvents || [])
+      .filter((event) => event.date !== todayISO())
+      .slice(0, 2)
+      .forEach((event) => add({
+        icon: '📅',
+        title: event.title || 'Událost',
+        meta: calendarEventMetaLabel(event, now),
+        badge: 'brzy',
+        tone: '',
+        nav: 'calendar',
+        tab: 'overview',
+        rank: 5
+      }));
+
+    (ctx.openTasks || []).slice(0, 3).forEach((task) => {
+      const days = task.due ? daysUntil(task.due) : null;
+      add({
+        icon: '✓',
+        title: task.title || 'Úkol',
+        meta: `${task.due ? `Termín ${formatDate(task.due)}` : 'Bez termínu'}${task.note ? ` · ${task.note}` : ''}`,
+        badge: task.due ? dueBadge(days) : 'úkol',
+        tone: days !== null && days <= 2 ? 'warn' : '',
+        overview: 'tasks',
+        rank: days !== null && days <= 0 ? 1 : days !== null && days <= 2 ? 2 : 4
+      });
+    });
+
+    (ctx.wasteSoon || []).slice(0, 2).forEach((item) => add({
+      icon: '♻',
+      title: `${item.type || 'Svoz'} odpad`,
+      meta: `${formatDate(item.date)}${item.note ? ` · ${item.note}` : ''}`,
+      badge: dueBadge(item.days),
+      tone: item.days <= 1 ? 'warn' : '',
+      overview: 'waste',
+      rank: item.days <= 1 ? 1 : 3
+    }));
+
+    (ctx.urgentContracts || []).slice(0, 3).forEach((contract) => add({
+      icon: '📄',
+      title: contract.name || 'Smlouva',
+      meta: `${contract.provider || 'Bez poskytovatele'} · platnost do ${formatDate(contract.validTo)}`,
+      badge: dueBadge(contract.days),
+      tone: contract.days < 0 ? 'bad' : contract.days <= 14 ? 'warn' : '',
+      overview: 'contracts',
+      rank: contract.days < 0 ? 0 : contract.days <= 14 ? 1 : 3
+    }));
+
+    (ctx.vehicleAlerts || []).slice(0, 3).forEach((alert) => add({
+      icon: '🚗',
+      title: alert.title,
+      meta: alert.meta,
+      badge: dueBadge(alert.days),
+      tone: alert.days < 0 ? 'bad' : alert.days <= 30 ? 'warn' : '',
+      overview: 'garage',
+      rank: alert.days < 0 ? 0 : 2
+    }));
+
+    const poolItem = buildHomePoolAttentionItem();
+    if (poolItem) add(poolItem);
+
+    const finance = financeMonthSummary();
+    if (finance.balance < 0) {
+      add({
+        icon: '💰',
+        title: 'Finance tento měsíc',
+        meta: `Příjmy ${formatCurrency(finance.income)} · výdaje ${formatCurrency(finance.expense)}`,
+        badge: formatCurrency(finance.balance),
+        tone: 'warn',
+        overview: 'finance',
+        rank: 3
+      });
+    }
+
+    if ((ctx.openShopping || []).length) {
+      add({
+        icon: '🛒',
+        title: 'Nákup',
+        meta: ctx.openShopping.slice(0, 3).map((item) => item.name).filter(Boolean).join(' · ') || 'Položky čekají v seznamu',
+        badge: `${ctx.openShopping.length} koupit`,
+        tone: 'warn',
+        overview: 'shopping',
+        rank: 4
+      });
+    }
+
+    if (ctx.hdo?.active) {
+      add({
+        icon: '💡',
+        title: 'Nízký tarif běží',
+        meta: ctx.hdo.message,
+        badge: ctx.hdo.label,
+        tone: 'good',
+        overview: 'hdo',
+        rank: 6
+      });
+    }
+
+    return rows
+      .filter((item) => item.title)
+      .sort((a, b) => a.rank - b.rank || String(a.title).localeCompare(String(b.title), 'cs'))
+      .slice(0, 12);
+  }
+
+  function buildHomePoolAttentionItem() {
+    const pool = normalizePoolState(state.pool || {});
+    const volume = poolVolumeM3(pool);
+    const dose = getPoolModule().poolPhDose(pool);
+    if (dose.status !== 'minus' && dose.status !== 'plus') return null;
+    const grams = Math.max(0, Math.round(Number(dose.grams || 0)));
+    const gramsLabel = grams >= 1000 ? `${(grams / 1000).toLocaleString('cs-CZ', { maximumFractionDigits: 2 })} kg` : `${grams.toLocaleString('cs-CZ')} g`;
+    return {
+      icon: '🏊',
+      title: dose.label,
+      meta: `Bazén ${formatPoolVolume(volume)} · pH ${pool.ph || '—'} → ${pool.targetPh || 7.2}`,
+      badge: gramsLabel,
+      tone: 'warn',
+      nav: 'pool',
+      rank: 2
+    };
+  }
+
+  function buildHomeFallbackAction(ctx) {
+    const progress = getStarterSetupProgress();
+    if (progress.nextStep && progress.doneCount < progress.total) {
+      return {
+        icon: progress.nextStep.icon || '✨',
+        title: progress.nextStep.title || 'Dokončit nastavení',
+        meta: progress.nextStep.note || 'Základ domácnosti ještě není úplně hotový.',
+        badge: `${progress.doneCount}/${progress.total}`,
+        tone: 'warn',
+        nav: progress.nextStep.nav || 'settings',
+        tab: progress.nextStep.tab || '',
+        rank: 9
+      };
+    }
+    return {
+      icon: ctx.hdo?.active ? '💡' : '✓',
+      title: ctx.hdo?.active ? 'Nízký tarif běží' : 'Doma je klid',
+      meta: ctx.hdo?.active ? ctx.hdo.message : 'Nic akutního teď nečeká.',
+      badge: ctx.hdo?.active ? ctx.hdo.label : 'OK',
+      tone: ctx.hdo?.active ? 'good' : 'good',
+      overview: ctx.hdo?.active ? 'hdo' : 'important',
+      rank: 9
+    };
+  }
+
+  function renderHomePrimaryAction(item) {
+    return `
+      <button class="home-primary-action ${item.tone || ''}" type="button" ${homeActionAttrs(item)}>
+        <span class="home-primary-icon">${escapeHtml(item.icon)}</span>
+        <span class="home-primary-copy">
+          <em>${item.tone === 'bad' ? 'Nutné' : item.tone === 'warn' ? 'Pozor' : 'Teď'}</em>
+          <strong>${escapeHtml(item.title)}</strong>
+          <small>${escapeHtml(item.meta)}</small>
+        </span>
+        <span class="badge ${item.tone || ''}">${escapeHtml(item.badge || 'otevřít')}</span>
+      </button>
+    `;
+  }
+
+  function renderHomeStatusCards(ctx) {
+    const finance = financeMonthSummary();
+    const subscriptions = subscriptionMonthSummary();
+    const pool = normalizePoolState(state.pool || {});
+    const dose = getPoolModule().poolPhDose(pool);
+    const houseAlerts = (ctx.vehicleAlerts?.length || 0) + (dose.status === 'minus' || dose.status === 'plus' ? 1 : 0);
+    const cards = [
+      {
+        icon: '💡',
+        label: 'Teď',
+        value: ctx.hdo.active ? 'HDO běží' : 'Bez HDO',
+        note: ctx.hdo.message || weatherLocationLabel() || 'Aktuální stav domácnosti.',
+        tone: ctx.hdo.active ? 'good' : '',
+        overview: 'hdo'
+      },
+      {
+        icon: '📅',
+        label: 'Dnes',
+        value: `${(ctx.todayEvents?.length || 0) + (ctx.wasteSoon?.length || 0)}`,
+        note: `${ctx.todayEvents?.length || 0} událostí · ${ctx.wasteSoon?.length || 0} svozů do týdne`,
+        tone: (ctx.todayEvents?.length || 0) || (ctx.wasteSoon?.length || 0) ? 'warn' : 'good',
+        overview: 'calendar'
+      },
+      {
+        icon: '💰',
+        label: 'Peníze',
+        value: formatCurrency(finance.balance),
+        note: subscriptions.owed ? `Předplatné: chybí ${formatCurrency(subscriptions.owed)}` : `Měsíc ${financeMonthLabel()}`,
+        tone: finance.balance < 0 || subscriptions.owed ? 'warn' : 'good',
+        overview: 'finance'
+      },
+      {
+        icon: '🏠',
+        label: 'Domov',
+        value: houseAlerts ? `${houseAlerts} upozornění` : 'Klid',
+        note: dose.status === 'minus' || dose.status === 'plus' ? `${dose.label} pro bazén` : `${garageOwnedVehicles().length} aut · ${state.contracts.length} smluv`,
+        tone: houseAlerts ? 'warn' : 'good',
+        overview: houseAlerts ? 'garage' : 'important'
+      }
+    ];
+    return cards.map((card) => `
+      <button class="home-status-card ${card.tone || ''}" type="button" ${homeActionAttrs(card)}>
+        <span>${escapeHtml(card.icon)}</span>
+        <em>${escapeHtml(card.label)}</em>
+        <strong>${escapeHtml(card.value)}</strong>
+        <small>${escapeHtml(card.note)}</small>
+      </button>
+    `).join('');
+  }
+
+  function renderHomeAttentionItem(item) {
+    return `
+      <button class="home-attention-item ${item.tone || ''}" type="button" ${homeActionAttrs(item)}>
+        <span class="home-attention-icon">${escapeHtml(item.icon)}</span>
+        <span class="home-attention-copy"><strong>${escapeHtml(item.title)}</strong><em>${escapeHtml(item.meta)}</em></span>
+        <span class="badge ${item.tone || ''}">${escapeHtml(item.badge || 'otevřít')}</span>
+      </button>
+    `;
+  }
+
+  function renderHomeQuietState(ctx) {
+    return `
+      <button class="home-attention-item good" type="button" data-action="open-overview" data-overview="important">
+        <span class="home-attention-icon">✓</span>
+        <span class="home-attention-copy"><strong>Nic akutního</strong><em>${escapeHtml(ctx.hdo?.message || 'Domácnost nemá žádné blízké upozornění.')}</em></span>
+        <span class="badge good">OK</span>
+      </button>
+    `;
+  }
+
+  function renderHomeModuleShortcuts(visibleModules = []) {
+    const modules = visibleModules
+      .filter((module) => !['home', 'settings', 'weather'].includes(module.id))
+      .slice(0, 12);
+    return modules.map((module) => {
+      const stats = getModuleStats(module.id);
+      return `
+        <button class="home-module-shortcut" type="button" data-nav="${escapeHtml(module.id)}">
+          ${renderModuleIllustration(module.id, { size: 'tab', slotClass: 'home-module-shortcut-icon', label: module.label })}
+          <span><strong>${escapeHtml(module.label)}</strong><em>${stats.count} ${escapeHtml(stats.label)}</em></span>
+        </button>
+      `;
+    }).join('');
+  }
+
+  function homeActionAttrs(item = {}) {
+    if (item.nav) {
+      return `data-nav="${escapeHtml(item.nav)}"${item.tab ? ` data-target-tab="${escapeHtml(item.tab)}"` : ''}`;
+    }
+    return `data-action="open-overview" data-overview="${escapeHtml(item.overview || 'important')}"`;
   }
 
   function homeCycleIndex(length, seconds = 45) {
