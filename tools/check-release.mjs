@@ -5,7 +5,7 @@
 // sedí ke stejnému buildu. Nenulový exit code = neshoda k nápravě.
 // Spustit: node tools/check-release.mjs
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
@@ -14,6 +14,7 @@ const projectRoot = resolve(scriptDir, '..');
 const appPath = resolve(projectRoot, 'app.js');
 const indexPath = resolve(projectRoot, 'index.html');
 const swPath = resolve(projectRoot, 'sw.js');
+const pwaPath = resolve(projectRoot, 'pwa.js');
 
 const errors = [];
 const notes = [];
@@ -39,6 +40,13 @@ function requireMatch(source, regex, label) {
 const app = readOrFail(appPath);
 const index = readOrFail(indexPath);
 const sw = readOrFail(swPath);
+// pwa.js je od v0.1_323 součástí release surface — pokud ho index.html
+// načítá, musí existovat a projít release kontrolou pro PWA_EXPECTED_CACHE.
+const indexReferencesPwa = /<script\s+src="\.\/pwa\.js\?/.test(index);
+const pwa = indexReferencesPwa ? readOrFail(pwaPath) : '';
+if (indexReferencesPwa && !existsSync(pwaPath)) {
+  errors.push('index.html načítá ./pwa.js, ale soubor v repu chybí.');
+}
 
 // APP_VERSION = 'Domácnost+ v.0.1_<build>'
 const versionMatch = requireMatch(
@@ -121,10 +129,27 @@ if (versionMatch && buildMatch) {
     notes.push(`app.js: export filename odvozený z APP_BUILD (${buildNumber}).`);
   }
 
-  // PWA_EXPECTED_CACHE v app.js by měl matchovat sw.js CACHE_NAME
-  const pwaExpectedRegex = /const PWA_EXPECTED_CACHE = `\$\{PWA_CACHE_PREFIX\}v0-1-\$\{APP_BUILD\}`;/;
-  if (!pwaExpectedRegex.test(app)) {
-    notes.push(`app.js: PWA_EXPECTED_CACHE nemá odvozený tvar (informativní, není hard fail).`);
+  // PWA_EXPECTED_CACHE se od v0.1_323 sleduje v pwa.js (createPwa factory).
+  // Musí být přesně `${PWA_CACHE_PREFIX}v0-1-${APP_BUILD}` — jinak by cache
+  // klíč zobrazený v UI nesedl na skutečný CACHE_NAME v sw.js.
+  if (indexReferencesPwa) {
+    const pwaExpectedRegex = /const PWA_EXPECTED_CACHE = `\$\{PWA_CACHE_PREFIX\}v0-1-\$\{APP_BUILD\}`;/;
+    const pwaPrefixRegex = /const PWA_CACHE_PREFIX = 'domacnost-plus-';/;
+    if (!pwa) {
+      errors.push('pwa.js: nedá se přečíst, ačkoli index.html ho načítá.');
+    } else {
+      if (!pwaPrefixRegex.test(pwa)) {
+        errors.push("pwa.js: chybí const PWA_CACHE_PREFIX = 'domacnost-plus-'.");
+      }
+      if (!pwaExpectedRegex.test(pwa)) {
+        errors.push(
+          'pwa.js: chybí const PWA_EXPECTED_CACHE = `${PWA_CACHE_PREFIX}v0-1-${APP_BUILD}`.'
+        );
+      }
+      if (pwaPrefixRegex.test(pwa) && pwaExpectedRegex.test(pwa)) {
+        notes.push('pwa.js: PWA_CACHE_PREFIX + PWA_EXPECTED_CACHE odvozené z APP_BUILD.');
+      }
+    }
   }
 
   // Ochrana proti zbytkům předchozí verze na release surface.

@@ -51,6 +51,7 @@ function stripQuery(href) {
 
 // Kontrola 1: lokální CSS/JS z index.html.
 const index = readOrFail('index.html', 'index.html');
+const indexLocalAssets = []; // pro cross-check s sw.js APP_ASSETS
 if (index) {
   const cssHits = [...index.matchAll(/<link\s+rel="stylesheet"\s+href="([^"]+)"/g)];
   const jsHits = [...index.matchAll(/<script\s+src="([^"]+)"/g)];
@@ -64,11 +65,12 @@ if (index) {
     const clean = stripQuery(href).replace(/^\.\//, '');
     if (!clean) return;
     if (checkFileExists(clean, `index.html ${kind}`)) checkedLocal += 1;
+    indexLocalAssets.push(clean);
   });
   notes.push(`index.html: ${checkedLocal} lokálních CSS/JS souborů existuje.`);
 }
 
-// Kontrola 2: APP_ASSETS z sw.js.
+// Kontrola 2: APP_ASSETS z sw.js + cross-check s indexLocalAssets.
 const swSource = readOrFail('sw.js', 'sw.js');
 if (swSource) {
   const appAssetsMatch = swSource.match(/const APP_ASSETS\s*=\s*\[([\s\S]*?)\];/);
@@ -86,6 +88,20 @@ if (swSource) {
         if (checkFileExists(clean, 'sw.js APP_ASSETS')) checkedAssets += 1;
       });
       notes.push(`sw.js: ${checkedAssets} APP_ASSETS souborů existuje.`);
+
+      // Cross-check: každý lokální CSS/JS z index.html musí být v APP_ASSETS,
+      // jinak by offline start dotahoval modul ze sítě (nebo padl). Extrakce
+      // jako v323 pwa.js by bez tohoto checku nechala zapomenout na APP_ASSETS
+      // až do dalšího offline testu.
+      const appAssetsNormalized = new Set(paths.map((p) => p.replace(/^\.\//, '')));
+      const missing = indexLocalAssets.filter((a) => !appAssetsNormalized.has(a));
+      if (missing.length) {
+        errors.push(
+          `sw.js APP_ASSETS neobsahuje ${missing.length} souborů, které index.html načítá: ${missing.join(', ')}. Offline start by je stáhl ze sítě.`
+        );
+      } else if (indexLocalAssets.length) {
+        notes.push(`sw.js APP_ASSETS pokrývá všech ${indexLocalAssets.length} lokálních CSS/JS z index.html.`);
+      }
     }
   }
 
