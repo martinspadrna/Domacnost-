@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_326';
-  const APP_BUILD = 326;
+  const APP_VERSION = 'Domácnost+ v.0.1_327';
+  const APP_BUILD = 327;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1002,6 +1002,11 @@
   let activeWarrantyDetailId = null;
   let visualSettingsDrawerOpen = false;
   let googleCalendarDetailsOpen = false;
+  // Garáž „Přidat auto": rozbalené pomocné details (předvyplnění / technický
+  // list) si drží stav přes render, aby je autosync/realtime rerender
+  // nezavíral uprostřed vyplňování. Jen lokální UI stav, do cloudu se neukládá.
+  let garagePresetToolOpen = false;
+  let garageTechnicalFieldsOpen = false;
   let couponEditId = '';
   let loyaltyCardEditId = '';
   let loyaltyCardSearchTerm = '';
@@ -8855,7 +8860,7 @@
   function renderVehiclePresetTool() {
     const brandOptions = [['', 'Nejdřív vyber značku…'], ...garagePresetBrands().map((brand) => [brand, brand])];
     return `
-      <details class="action-details compact-edit-details garage-preset-tool">
+      <details class="action-details compact-edit-details garage-preset-tool" ${garagePresetToolOpen ? 'open' : ''}>
         <summary><span>Předvyplnit podle auta</span><em>značka → model → motorizace, vše abecedně</em></summary>
         <div class="form-grid three garage-preset-grid">
           ${garagePresetSelectField('Značka', 'vehiclePresetBrand', brandOptions, '', false, 'data-garage-preset-step="brand"')}
@@ -8870,7 +8875,7 @@
 
   function renderVehicleTechnicalFields(vehicle = {}) {
     return `
-      <details class="action-details compact-edit-details garage-technical-fields">
+      <details class="action-details compact-edit-details garage-technical-fields" ${garageTechnicalFieldsOpen ? 'open' : ''}>
         <summary><span>Technický list auta</span><em>údaje z TP / technického listu</em></summary>
         <div class="form-grid two">
           ${field('Značka', 'brand', 'text', 'Škoda', false, vehicle.brand || '')}
@@ -9049,6 +9054,36 @@
     return entries;
   }
 
+  // Spotřeba se počítá VŽDY z tankování (rozdíl km mezi tankováními), NIKDY
+  // z celkového nájezdu auta od výroby. První tankování je baseline — neznáme
+  // km ujeté před ním, takže se jeho litry do spotřeby nezapočítávají, slouží
+  // jen jako počáteční kilometrový stav.
+  //   - Aktuální = litry posledního tankování / (km poslední − km předchozí) × 100
+  //   - Dlouhodobá = součet litrů od 2. tankování / (km poslední − km první) × 100
+  // Ošetřeno: chybějící/nulové km nebo litry, nulový/záporný rozdíl km, jen
+  // jedno tankování. Appka neeviduje plnou/neplnou nádrž, takže výsledek je
+  // orientační (počítá se ze všech dostupných tankování s platnými km a litry).
+  function garageFuelConsumptionStats(fuelRows = []) {
+    const rows = sortFuelRows(fuelRows).filter((row) => Number(row.odometer || 0) > 0);
+    if (rows.length < 2) {
+      return { current: null, longTerm: null, hasEnoughData: false };
+    }
+    const first = rows[0];
+    const prev = rows[rows.length - 2];
+    const last = rows[rows.length - 1];
+
+    const lastLiters = Number(last.liters || 0);
+    const currentDistance = Number(last.odometer || 0) - Number(prev.odometer || 0);
+    const current = lastLiters > 0 && currentDistance > 0 ? (lastLiters / currentDistance) * 100 : null;
+
+    let litersSinceFirst = 0;
+    for (let i = 1; i < rows.length; i += 1) litersSinceFirst += Number(rows[i].liters || 0);
+    const totalDistance = Number(last.odometer || 0) - Number(first.odometer || 0);
+    const longTerm = litersSinceFirst > 0 && totalDistance > 0 ? (litersSinceFirst / totalDistance) * 100 : null;
+
+    return { current, longTerm, hasEnoughData: true };
+  }
+
   function garageVehicleAnalytics(vehicle) {
     const { fuelRows, serviceRows } = garageRowsForVehicle(vehicle?.id);
     const stats = getVehicleStats(fuelRows, serviceRows);
@@ -9081,7 +9116,12 @@
       endKnownKm,
       latestFuel: fuelRows[fuelRows.length - 1] || null,
       latestPricePerLiter: fuelRows.length ? fuelPricePerLiter(fuelRows[fuelRows.length - 1]) : null,
-      latestConsumption: entries.length ? entries[entries.length - 1].consumption : null,
+      // Aktuální i dlouhodobá spotřeba přímo z garageFuelConsumptionStats
+      // (přes getVehicleStats) — z tankování, ne z celkového nájezdu.
+      latestConsumption: stats.currentConsumption,
+      currentConsumption: stats.currentConsumption,
+      longTermConsumption: stats.averageConsumption,
+      consumptionReady: stats.currentConsumption !== null || stats.averageConsumption !== null,
       averageConsumption: stats.averageConsumption,
       fuelCountTotal: fuelRows.length,
       fuelCountThisMonth: thisMonthFuel.length,
@@ -9297,11 +9337,11 @@
       <section class="garage-dashboard-panel garage-fuel-dashboard-panel">
         <div class="card-header compact-card-header"><div><h2>Palivo</h2><p>${escapeHtml(vehicle.name)} · přehled podle tankování a kilometrů</p></div></div>
         <div class="detail-stack compact-detail-stack garage-fuel-lines">
-          <div class="stat-line"><span>Poslední spotřeba</span><strong>${formatLitreValue(analytics.latestConsumption)}</strong></div>
+          <div class="stat-line"><span>Aktuální spotřeba</span><strong>${analytics.currentConsumption !== null ? formatLitreValue(analytics.currentConsumption) : 'čeká na další tankování'}</strong></div>
+          <div class="stat-line"><span>Dlouhodobý průměr</span><strong>${analytics.longTermConsumption !== null ? formatLitreValue(analytics.longTermConsumption) : 'čeká na další tankování'}</strong></div>
           <div class="stat-line"><span>Poslední cena l/Kč</span><strong>${analytics.latestPricePerLiter ? escapeHtml(formatFuelPricePerLiter(analytics.latestPricePerLiter)) : '—'}</strong></div>
-          <div class="stat-line"><span>Průměrná celková spotřeba</span><strong>${formatLitreValue(analytics.averageConsumption)}</strong></div>
         </div>
-        <div class="garage-chart-carousel" aria-label="Grafy paliva">
+        <div class="garage-chart-carousel" data-no-swipe aria-label="Grafy paliva">
           ${renderGarageLineChart('Cena tankování', 'Kč/litr podle posledních tankování', priceChartPoints, 'Přidej aspoň dvě tankování s cenou za litr.', [
             { label: 'Průměr', value: avgPrice ? formatFuelPricePerLiter(avgPrice) : '—' },
             { label: 'Poslední', value: analytics.latestPricePerLiter ? formatFuelPricePerLiter(analytics.latestPricePerLiter) : '—' },
@@ -9645,7 +9685,7 @@
     return `
       <div class="garage-detail-chart-section">
         <div class="garage-stat-block-head"><h3>Graf spotřeby</h3><p>Stejný styl jako přehled. První graf je poslední rok, druhý celá doba evidence.</p></div>
-        <div class="garage-chart-carousel garage-detail-chart-carousel" aria-label="Grafy spotřeby auta">
+        <div class="garage-chart-carousel garage-detail-chart-carousel" data-no-swipe aria-label="Grafy spotřeby auta">
           ${renderGarageLineChart('Poslední rok', 'spotřeba l/100 km', lastYearPoints, 'Za poslední rok není dost tankování s km a litry.', [
             { label: 'Průměr', value: formatLitreValue(avg(lastYearValues)) },
             { label: 'Poslední', value: lastYearValues.length ? formatLitreValue(lastYearValues[lastYearValues.length - 1]) : '—' },
@@ -9787,15 +9827,17 @@
   }
 
   function getVehicleStats(fuelRows, serviceRows) {
+    // Řadíme podle kilometrů — deltas mezi tankováními musí jít vzestupně,
+    // jinak by neseřazený vstup (řazení podle data / pořadí vložení) dal
+    // záporné rozdíly a rozbil totalKm i spotřebu.
+    const rows = sortFuelRows(fuelRows);
     let km = 0;
-    let liters = 0;
-    for (let index = 1; index < fuelRows.length; index += 1) {
-      const previous = Number(fuelRows[index - 1].odometer || 0);
-      const current = Number(fuelRows[index].odometer || 0);
-      const rowLiters = Number(fuelRows[index].liters || 0);
+    for (let index = 1; index < rows.length; index += 1) {
+      const previous = Number(rows[index - 1].odometer || 0);
+      const current = Number(rows[index].odometer || 0);
+      const rowLiters = Number(rows[index].liters || 0);
       if (current > previous && rowLiters > 0) {
         km += current - previous;
-        liters += rowLiters;
       }
     }
     const currentYear = new Date().getFullYear();
@@ -9803,8 +9845,12 @@
     const serviceCost = serviceRows.reduce((sum, item) => sum + Number(item.price || 0), 0);
     const thisYearFuel = fuelRows.filter((item) => Number(String(item.date || '').slice(0, 4)) === currentYear).reduce((sum, item) => sum + Number(item.price || 0), 0);
     const thisYearService = serviceRows.filter((item) => Number(String(item.date || '').slice(0, 4)) === currentYear).reduce((sum, item) => sum + Number(item.price || 0), 0);
+    // averageConsumption = dlouhodobý průměr z tankování (viz
+    // garageFuelConsumptionStats), NE z celkového nájezdu auta.
+    const consumption = garageFuelConsumptionStats(rows);
     return {
-      averageConsumption: km > 0 ? (liters / km) * 100 : null,
+      averageConsumption: consumption.longTerm,
+      currentConsumption: consumption.current,
       fuelCost,
       serviceCost,
       thisYearCost: thisYearFuel + thisYearService,
@@ -15956,7 +16002,13 @@
       const dy = event.changedTouches[0].clientY - swipeStartY;
       if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.8) return;
       if (isEditableTarget(event.target)) return;
-      if (event.target.closest('.nav-shell, .overview-drawer, .app-modal, details, input, select, textarea, [data-no-swipe]')) return;
+      // Swipe uvnitř formuláře nebo horizontálně scrollovatelného bloku (grafy,
+      // karusely) nesmí přepnout spodní navigaci na jiný modul. `form` chrání
+      // add-vehicle panel (uživatel scrolluje dlouhý formulář, diagonální gesto
+      // dřív navigovalo pryč a panel „zmizel"). `[data-no-swipe]` na garage
+      // chart carouselech chrání horizontální scroll grafů — stejný pattern
+      // jako u kalendářové mřížky.
+      if (event.target.closest('.nav-shell, .overview-drawer, .app-modal, details, form, input, select, textarea, [data-no-swipe]')) return;
       const modules = getBottomNavModules();
       const currentIndex = modules.findIndex((m) => m.id === activeModule);
       const baseIndex = currentIndex >= 0 ? currentIndex : modules.findIndex((m) => m.id === getActiveBottomNavId(activeModule));
@@ -17277,6 +17329,8 @@
     if (details.matches('.settings-visual-details')) visualSettingsDrawerOpen = details.open;
     if (details.matches('.loyalty-add-details')) loyaltyAddDetailsOpen = details.open;
     if (details.matches('.calendar-google-details')) googleCalendarDetailsOpen = details.open;
+    if (details.matches('.garage-preset-tool')) garagePresetToolOpen = details.open;
+    if (details.matches('.garage-technical-fields')) garageTechnicalFieldsOpen = details.open;
   }, true);
 
   app.addEventListener('click', (event) => {
