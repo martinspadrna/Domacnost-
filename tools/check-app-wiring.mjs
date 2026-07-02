@@ -127,6 +127,9 @@ if (styles) {
   expect(styles, '/* Domácnost+ – jednotný obsah modulů */', 'styles.css: existuje finální blok pro jednotný obsah modulů.');
   expect(styles, '.grid.two.module-tabbed,\n  .grid.three.module-tabbed', 'styles.css: module-tabbed má mobilní jednosloupcové pravidlo.');
   expect(styles, '.module-tabbed > .card {\n    grid-column: auto;', 'styles.css: module-tabbed umí na desktopu vrátit běžné karty do gridu.');
+  expect(styles, '/* Domácnost+ – jednotné rozbalovací formuláře */', 'styles.css: existuje finální blok pro rozbalovací formuláře.');
+  expect(styles, '.action-details > summary,\n.compact-edit-details > summary', 'styles.css: action-details a compact-edit-details sdílí summary layout.');
+  expect(styles, '.inline-edit-card {\n  display: grid;', 'styles.css: inline edit panely mají nový grid povrch.');
   expect(styles, '.form-actions,\n  .item-actions,\n  .finance-filter-chips', 'styles.css: společné akční lišty používají mobilní rail.');
   expect(styles, '.garage-history-toolbar {\n    display: flex;', 'styles.css: garážové filtry používají mobilní rail.');
   expect(styles, '.module-cockpit-metrics,\n  .module-cockpit-actions', 'styles.css: cockpit metriky a akce sdílí mobilní rail.');

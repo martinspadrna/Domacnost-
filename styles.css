@@ -18857,3 +18857,127 @@ main {
     grid-column: 1 / -1;
   }
 }
+
+/* Domácnost+ – jednotné rozbalovací formuláře */
+.action-details,
+.compact-edit-details,
+.inline-edit-card {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42), 0 12px 30px rgba(31, 41, 55, 0.06);
+}
+
+[data-theme="dark"] .action-details,
+[data-theme="dark"] .compact-edit-details,
+[data-theme="dark"] .inline-edit-card {
+  background: rgba(255, 255, 255, 0.055);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 14px 34px rgba(0, 0, 0, 0.16);
+}
+
+.action-details,
+.compact-edit-details {
+  overflow: hidden;
+}
+
+.action-details > summary,
+.compact-edit-details > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.action-details > summary::-webkit-details-marker,
+.compact-edit-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.action-details > summary::after,
+.compact-edit-details > summary::after {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(53, 116, 240, 0.11);
+  color: var(--primary);
+  content: "⌄";
+  font-weight: 950;
+  line-height: 1;
+  transition: transform .18s ease, background .18s ease;
+}
+
+.action-details[open] > summary::after,
+.compact-edit-details[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.action-details > summary span,
+.compact-edit-details > summary span {
+  overflow: hidden;
+  color: var(--text);
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action-details > summary em,
+.compact-edit-details > summary em {
+  display: block;
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: .76rem;
+  font-style: normal;
+  font-weight: 750;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action-details > form,
+.action-details > .grid,
+.action-details > .compact-form,
+.compact-edit-details > form,
+.compact-edit-details > .grid,
+.compact-edit-details > .compact-form {
+  padding: 0 14px 14px;
+}
+
+.inline-edit-card {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 14px;
+}
+
+.inline-edit-card h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+@media (max-width: 430px) {
+  .action-details > summary,
+  .compact-edit-details > summary {
+    min-height: 46px;
+    padding: 10px 12px;
+  }
+
+  .action-details > form,
+  .action-details > .grid,
+  .action-details > .compact-form,
+  .compact-edit-details > form,
+  .compact-edit-details > .grid,
+  .compact-edit-details > .compact-form,
+  .inline-edit-card {
+    padding-inline: 12px;
+  }
+}
