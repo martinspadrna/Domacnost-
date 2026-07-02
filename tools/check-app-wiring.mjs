@@ -108,9 +108,13 @@ if (app && contracts && index && sw) {
 
 if (app) {
   expect(app, 'function isHorizontallyScrollableTarget', 'app.js: swipe guard umí poznat horizontálně scrollovatelný blok.');
+  expect(app, 'const NAVIGATION_SWIPE_IGNORE_SELECTOR', 'app.js: swipe guard má centrální seznam chráněných oblastí.');
   expect(app, 'function isNavigationSwipeIgnoredTarget', 'app.js: navigační swipe má jednotný ignore helper.');
   expect(app, 'swipeStartTarget', 'app.js: navigační swipe kontroluje i místo začátku gesta.');
   expect(app, 'isNavigationSwipeIgnoredTarget(event.target) || isNavigationSwipeIgnoredTarget(swipeStartTarget)', 'app.js: swipe navigace ignoruje start i konec v chráněném bloku.');
+  expect(app, "'.form-actions'", 'app.js: formulářové akce jsou chráněné proti swipe přepnutí.');
+  expect(app, "'.finance-toolbar'", 'app.js: finance toolbar je chráněný proti swipe přepnutí.');
+  expect(app, "'.garage-history-toolbar'", 'app.js: garážové filtry jsou chráněné proti swipe přepnutí.');
   expect(app, 'aria-label="Záložky modulu" data-no-swipe', 'app.js: společné modulové záložky jsou chráněné proti swipe přepnutí.');
   expect(app, 'data-module-cockpit="${escapeHtml(moduleId)}" data-no-swipe', 'app.js: module cockpit je chráněný proti swipe přepnutí.');
   expect(app, '<div class="module-cockpit-metrics" data-no-swipe>', 'app.js: cockpit metriky jsou chráněné proti swipe přepnutí.');
@@ -119,6 +123,8 @@ if (app) {
 
 if (styles) {
   expect(styles, '.section-tabs {\n  display: flex;', 'styles.css: společné modulové záložky používají horizontální rail.');
+  expect(styles, '.form-actions,\n  .item-actions,\n  .finance-filter-chips', 'styles.css: společné akční lišty používají mobilní rail.');
+  expect(styles, '.garage-history-toolbar {\n    display: flex;', 'styles.css: garážové filtry používají mobilní rail.');
   expect(styles, '.module-cockpit-metrics,\n  .module-cockpit-actions', 'styles.css: cockpit metriky a akce sdílí mobilní rail.');
   expect(styles, 'overscroll-behavior-x: contain;', 'styles.css: cockpit rail drží horizontální posun uvnitř panelu.');
   expect(styles, 'scroll-snap-type: x proximity;', 'styles.css: cockpit rail má jemné snapování položek.');

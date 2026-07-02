@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_343';
-  const APP_BUILD = 343;
+  const APP_VERSION = 'Domácnost+ v.0.1_344';
+  const APP_BUILD = 344;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -16347,8 +16347,35 @@
     return false;
   }
 
+  const NAVIGATION_SWIPE_IGNORE_SELECTOR = [
+    '.nav-shell',
+    '.overview-drawer',
+    '.app-modal',
+    '.form-actions',
+    '.item-actions',
+    '.section-tabs',
+    '.module-cockpit',
+    '.finance-toolbar',
+    '.finance-filter-chips',
+    '.calendar-month-toolbar',
+    '.calendar-month-actions',
+    '.garage-history-toolbar',
+    '.loyalty-toolbar',
+    '.readings-meter-tool-tabs',
+    '.polish-shop-toolbar',
+    '.overview-actions',
+    '.modal-actions',
+    '.compact-actions',
+    'details',
+    'form',
+    'input',
+    'select',
+    'textarea',
+    '[data-no-swipe]'
+  ].join(', ');
+
   function isNavigationSwipeIgnoredTarget(target) {
-    return Boolean(target?.closest?.('.nav-shell, .overview-drawer, .app-modal, details, form, input, select, textarea, [data-no-swipe]'))
+    return Boolean(target?.closest?.(NAVIGATION_SWIPE_IGNORE_SELECTOR))
       || isHorizontallyScrollableTarget(target);
   }
 

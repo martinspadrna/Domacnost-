@@ -18722,3 +18722,75 @@ main {
     flex-basis: min(72vw, 220px);
   }
 }
+
+/* Domácnost+ v.0.1_344 – společné mobilní akční lišty */
+@media (max-width: 720px) {
+  .form-actions,
+  .item-actions,
+  .finance-filter-chips,
+  .calendar-month-actions,
+  .loyalty-toolbar,
+  .readings-meter-tool-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-inline: -4px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 2px 4px 6px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .form-actions::-webkit-scrollbar,
+  .item-actions::-webkit-scrollbar,
+  .finance-filter-chips::-webkit-scrollbar,
+  .calendar-month-actions::-webkit-scrollbar,
+  .loyalty-toolbar::-webkit-scrollbar,
+  .readings-meter-tool-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .form-actions > button,
+  .form-actions > .primary-btn,
+  .form-actions > .ghost-btn,
+  .form-actions > .danger-btn,
+  .form-actions > .badge,
+  .item-actions > button,
+  .item-actions > .primary-btn,
+  .item-actions > .ghost-btn,
+  .item-actions > .danger-btn,
+  .finance-filter-chips > button,
+  .calendar-month-actions > button,
+  .loyalty-toolbar > button,
+  .readings-meter-tool-tabs > button {
+    flex: 0 0 auto;
+    max-width: min(78vw, 260px);
+    scroll-snap-align: start;
+    white-space: nowrap;
+  }
+
+  .garage-history-toolbar {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-inline: -4px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 2px 4px 6px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .garage-history-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .garage-history-toolbar .compact-select-field,
+  .garage-history-toolbar .garage-history-count {
+    flex: 0 0 min(62vw, 220px);
+    scroll-snap-align: start;
+  }
+}

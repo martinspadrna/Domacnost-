@@ -489,6 +489,8 @@ async function run() {
         const actionsStyle = actionsRail ? getComputedStyle(actionsRail) : null;
         const sectionTabs = document.querySelector('.section-tabs[aria-label="Záložky modulu"]');
         const sectionTabsStyle = sectionTabs ? getComputedStyle(sectionTabs) : null;
+        const financeFormActions = document.querySelector('form[data-form="finance-refinance"] .form-actions');
+        const financeFormActionsStyle = financeFormActions ? getComputedStyle(financeFormActions) : null;
         return {
           cockpit: Boolean(document.querySelector('[data-module-cockpit="finance"]')),
           cockpitNoSwipe: Boolean(document.querySelector('[data-module-cockpit="finance"][data-no-swipe]')),
@@ -497,6 +499,7 @@ async function run() {
           actionRailScrollable: Boolean(actionsRail && actionsStyle && /auto|scroll/.test(actionsStyle.overflowX) && actionsRail.scrollWidth > actionsRail.clientWidth),
           tabsNoSwipe: Boolean(sectionTabs?.hasAttribute('data-no-swipe')),
           tabsScrollable: Boolean(sectionTabs && sectionTabsStyle && /auto|scroll/.test(sectionTabsStyle.overflowX) && sectionTabs.scrollWidth > sectionTabs.clientWidth),
+          formActionsRail: Boolean(financeFormActionsStyle && /auto|scroll/.test(financeFormActionsStyle.overflowX) && financeFormActionsStyle.flexWrap === 'nowrap' && financeFormActionsStyle.overscrollBehaviorX === 'contain'),
           loanForm: Boolean(document.querySelector('form[data-form="add-finance-loan"]')),
           refinanceForm: Boolean(document.querySelector('form[data-form="finance-refinance"]')),
           loanText: text.includes('Smoke půjčka') && text.includes('Refinancování')
@@ -515,6 +518,7 @@ async function run() {
     if (!financeValue.actionRailScrollable) { fail('Finance cockpit akce nejsou na mobilu vodorovně posuvné.'); financeOk = false; }
     if (!financeValue.tabsNoSwipe) { fail('Finance modulové záložky nejsou chráněné proti swipe přepnutí.'); financeOk = false; }
     if (!financeValue.tabsScrollable) { fail('Finance modulové záložky nejsou na mobilu vodorovně posuvné.'); financeOk = false; }
+    if (!financeValue.formActionsRail) { fail('Finance formulářové akce nemají mobilní rail chování.'); financeOk = false; }
     if (!financeValue.loanForm) { fail('Finance/Půjčky nerenderují add-finance-loan formulář.'); financeOk = false; }
     if (!financeValue.refinanceForm) { fail('Finance/Půjčky nerenderují finance-refinance formulář.'); financeOk = false; }
     if (!financeValue.loanText) { fail('Finance/Půjčky neukazují seed půjčku/refinancování.'); financeOk = false; }
