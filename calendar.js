@@ -120,8 +120,48 @@
       return !source || source.isEnabled !== false;
     }
 
+    // Cache pro visibleCalendarEvents() a upcomingCalendarEvents(). Signature
+    // bere state.calendar (id/cloudId/sourceId/date/time/endDate/endTime/
+    // updatedAt) + calendarCloud.sources (id/cloudId + isEnabled), takže
+    // změna zdrojů nebo jejich toggle invaliduje stejně jako edit události.
+    // Cache padne i po reassignu state (loadState / hydrate) — signature
+    // z čerstvého getState() nesedne k předchozí.
+    let cachedCalendarSignature = '';
+    let cachedVisibleEvents = null;
+    let cachedUpcomingRefKey = null;
+    let cachedUpcomingList = null;
+
+    function computeCalendarSignature() {
+      const events = getState().calendar || [];
+      const sources = getCalendarSources();
+      const eventParts = new Array(events.length);
+      for (let i = 0; i < events.length; i += 1) {
+        const e = events[i] || {};
+        eventParts[i] = `${e.id || ''}:${e.cloudId || ''}:${e.sourceId || ''}:${e.date || ''}:${e.time || ''}:${e.endDate || ''}:${e.endTime || ''}:${e.updatedAt || ''}`;
+      }
+      const sourceParts = new Array(sources.length);
+      for (let i = 0; i < sources.length; i += 1) {
+        const s = sources[i] || {};
+        sourceParts[i] = `${s.id || ''}:${s.cloudId || ''}:${s.isEnabled !== false ? '1' : '0'}`;
+      }
+      return `${events.length}#${eventParts.join('|')}##${sources.length}#${sourceParts.join('|')}`;
+    }
+
+    function ensureCalendarFresh() {
+      const sig = computeCalendarSignature();
+      if (sig !== cachedCalendarSignature) {
+        cachedCalendarSignature = sig;
+        cachedVisibleEvents = null;
+        cachedUpcomingRefKey = null;
+        cachedUpcomingList = null;
+      }
+    }
+
     function visibleCalendarEvents() {
-      return (getState().calendar || []).filter((event) => isCalendarSourceEnabled(event.sourceId));
+      ensureCalendarFresh();
+      if (cachedVisibleEvents) return cachedVisibleEvents;
+      cachedVisibleEvents = (getState().calendar || []).filter((event) => isCalendarSourceEnabled(event.sourceId));
+      return cachedVisibleEvents;
     }
 
     function calendarSourceName(sourceId) {
@@ -224,7 +264,19 @@
     }
 
     function upcomingCalendarEvents(referenceDate = getNow()) {
-      return sortCalendarEventsByStart(visibleCalendarEvents().filter((event) => calendarEventIsRelevant(event, referenceDate)));
+      ensureCalendarFresh();
+      const refMs = toSafeDate(referenceDate, new Date()).getTime();
+      // Klíč na minuty: v jednom renderu se často volá s "now" vytvořeným
+      // opakovaně (různé getTime v desítkách ms). Per-minute klíč dedupuje
+      // volání v témže renderu; rozdíl <60 s výsledek fakticky nemění
+      // (calendarEventIsRelevant test na koncový čas události v ms).
+      const refKey = Number.isFinite(refMs) ? Math.floor(refMs / 60000) : 0;
+      if (cachedUpcomingRefKey === refKey && cachedUpcomingList) return cachedUpcomingList;
+      cachedUpcomingList = sortCalendarEventsByStart(
+        visibleCalendarEvents().filter((event) => calendarEventIsRelevant(event, referenceDate))
+      );
+      cachedUpcomingRefKey = refKey;
+      return cachedUpcomingList;
     }
 
     function calendarEventTimeLabel(event, referenceDate = getNow()) {

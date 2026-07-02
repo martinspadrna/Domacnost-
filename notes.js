@@ -110,17 +110,54 @@
       });
     }
 
+    // Cache pro notebookPages() a legacyQuickNotes() sdílí jednu signature
+    // z state.notes. Signature bere id/cloudId/updatedAt/createdAt/text.length
+    // + prvních 96 znaků textu (parseNotebookNote sáhne stejně jen na text).
+    // Full text v signature by zabil benefit; substring + délka chytnou
+    // typickou úpravu (přidání/ubrání znaku, změna prefixu JSON stringu).
+    // Cache invaliduje, když se cokoli z těchto polí změní — jak po saveState
+    // po edit, tak po reassignu state (loadState / hydrate).
+    let cachedNotesSignature = '';
+    let cachedNotebookPages = null;
+    let cachedLegacyQuickNotes = null;
+
+    function computeNotesSignature() {
+      const notes = getState().notes || [];
+      const parts = new Array(notes.length);
+      for (let i = 0; i < notes.length; i += 1) {
+        const n = notes[i] || {};
+        const text = String(n.text || '');
+        parts[i] = `${n.id || ''}|${n.cloudId || ''}|${n.updatedAt || ''}|${n.createdAt || ''}|${text.length}|${text.slice(0, 96)}`;
+      }
+      return `${notes.length}#${parts.join('||')}`;
+    }
+
+    function ensureNotesFresh() {
+      const sig = computeNotesSignature();
+      if (sig !== cachedNotesSignature) {
+        cachedNotesSignature = sig;
+        cachedNotebookPages = null;
+        cachedLegacyQuickNotes = null;
+      }
+    }
+
     function notebookPages() {
-      return (getState().notes || [])
+      ensureNotesFresh();
+      if (cachedNotebookPages) return cachedNotebookPages;
+      cachedNotebookPages = (getState().notes || [])
         .map(parseNotebookNote)
         .filter(Boolean)
         .sort((a, b) => `${a.section} ${a.title}`.localeCompare(`${b.section} ${b.title}`, 'cs'));
+      return cachedNotebookPages;
     }
 
     function legacyQuickNotes() {
-      return (getState().notes || [])
+      ensureNotesFresh();
+      if (cachedLegacyQuickNotes) return cachedLegacyQuickNotes;
+      cachedLegacyQuickNotes = (getState().notes || [])
         .filter((note) => !parseNotebookNote(note))
         .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      return cachedLegacyQuickNotes;
     }
 
     function notebookSections(pages = notebookPages()) {

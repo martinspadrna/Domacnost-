@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_324';
-  const APP_BUILD = 324;
+  const APP_VERSION = 'Domácnost+ v.0.1_325';
+  const APP_BUILD = 325;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -10449,11 +10449,15 @@
 
 
   function renderDashboardSettings() {
+    // Jedno volání upcomingCalendarEvents(now) — reuse pro today/upcoming/panel.
+    // Cache v calendar.js by dnes tři volání sloučila, ale explicitní dedup je
+    // rychlejší (bez signature scanu) a čitelnější.
+    const calendarPanelEvents = upcomingCalendarEvents(now);
     const previewCtx = {
       hdo: getHdoStatus(now),
-      todayEvents: upcomingCalendarEvents(now).filter((event) => event.date === todayISO()),
-      upcomingEvents: upcomingCalendarEvents(now).slice(0, 6),
-      calendarPanelEvents: upcomingCalendarEvents(now),
+      todayEvents: calendarPanelEvents.filter((event) => event.date === todayISO()),
+      upcomingEvents: calendarPanelEvents.slice(0, 6),
+      calendarPanelEvents,
       openShopping: state.shopping.filter((item) => !item.done),
       openTasks: state.homeTasks.filter((task) => !task.done),
       wasteSoon: getUpcomingWasteRuntimeItems({ maxDays: 7 }),
