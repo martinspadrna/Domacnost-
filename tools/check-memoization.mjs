@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Domácnost+ memoization safety check.
+// Domácnost+ memoization + výpočtové invarianty check.
 // Bez npm závislostí — chrání proti regresi memoization invalidation
-// zavedené v v0.1_325 a zpevněné v v0.1_326.
+// (v0.1_325/326) a segmentového výpočtu spotřeby v Garáži (v0.1_328).
 //
 // Kontroly:
 //   1. notes.js NEpoužívá slabý fingerprint `text.slice(0, 96)` v kódu
@@ -10,6 +10,8 @@
 //   3. calendar.js signature zahrnuje title (e.title) — je to tie-breaker
 //      v sortCalendarEventsByStart, bez něj by přejmenování události se
 //      stejným časem nechalo staré pořadí z cache.
+//   4. app.js garageFuelConsumptionStats počítá segmentově — reuse
+//      garageFuelEntryMetrics, ne z celkového nájezdu (lastKm − firstKm).
 //
 // Spustit: node tools/check-memoization.mjs
 
@@ -91,7 +93,34 @@ if (calendarSource) {
   }
 }
 
-console.log('Memoization safety check pro Domácnost+');
+// Kontrola app.js — garageFuelConsumptionStats segmentový výpočet.
+const appSource = readOrFail('app.js');
+if (appSource) {
+  const fnMatch = appSource.match(/function garageFuelConsumptionStats\([\s\S]*?\n {2}\}/);
+  if (!fnMatch) {
+    errors.push('app.js: nenašel jsem garageFuelConsumptionStats().');
+  } else {
+    const body = fnMatch[0];
+    if (!/garageFuelEntryMetrics\(/.test(body)) {
+      errors.push(
+        'app.js: garageFuelConsumptionStats nepoužívá garageFuelEntryMetrics — ' +
+          'spotřeba se musí počítat z platných segmentů mezi tankováními, ne ad-hoc.'
+      );
+    } else {
+      notes.push('app.js: garageFuelConsumptionStats počítá segmentově (garageFuelEntryMetrics).');
+    }
+    // Denominátor dlouhodobé spotřeby nesmí být (lastKm − firstKm) — řádky
+    // bez litrů by zvětšovaly jmenovatel. Hlídáme, že se scitají segmentove km.
+    if (/last\.odometer[\s\S]*?-[\s\S]*?first\.odometer/.test(body)) {
+      errors.push(
+        'app.js: garageFuelConsumptionStats používá (last − first) odometer jako ' +
+          'jmenovatel. Dlouhodobý průměr musí dělit součtem km platných segmentů.'
+      );
+    }
+  }
+}
+
+console.log('Memoization + výpočtové invarianty pro Domácnost+');
 notes.forEach((line) => console.log(`  ok: ${line}`));
 if (errors.length) {
   console.error('\nProblémy:');

@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_327';
-  const APP_BUILD = 327;
+  const APP_VERSION = 'Domácnost+ v.0.1_328';
+  const APP_BUILD = 328;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -719,6 +719,7 @@
       dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGET_IDS],
       homeHeroItems: [...DEFAULT_HOME_HERO_IDS],
       vehicleIconColors: {},
+      vehicleServicePlans: {},
       profileUiSettings: {},
       polishShopShowNonTradingSundays: false
     },
@@ -1007,6 +1008,10 @@
   // nezavíral uprostřed vyplňování. Jen lokální UI stav, do cloudu se neukládá.
   let garagePresetToolOpen = false;
   let garageTechnicalFieldsOpen = false;
+  // Servisní plán: otevřený details + id právě upravované položky. Přežije
+  // render stejně jako v327 opravené panely — lokální UI stav.
+  let garageServicePlanOpen = false;
+  let garageServicePlanEditId = '';
   let couponEditId = '';
   let loyaltyCardEditId = '';
   let loyaltyCardSearchTerm = '';
@@ -1586,6 +1591,7 @@
       dashboardWidgets: [],
       homeHeroItems: previousAppBuild && previousAppBuild < 74 ? [] : normalizeHomeHeroIds(migrated.settings?.homeHeroItems),
       vehicleIconColors: normalizeVehicleIconColorMap(migrated.settings?.vehicleIconColors),
+      vehicleServicePlans: normalizeVehicleServicePlanMap(migrated.settings?.vehicleServicePlans),
       profileUiSettings: normalizeProfileUiSettingsMap(migrated.settings?.profileUiSettings, migrated.enabledModules)
     };
     if (forceLightVisualRecovery) {
@@ -4465,6 +4471,20 @@
           meta: `Aktuálně ${currentKm} km · další servis při ${nextKm} km`
         });
       }
+      // Servisní plán: upozorni na položky po termínu / brzy.
+      const planKm = getVehicleCurrentOdometer(vehicle, garageRowsForVehicle(vehicle.id).fuelRows, garageRowsForVehicle(vehicle.id).serviceRows);
+      getVehicleServicePlan(vehicle.id).forEach((item) => {
+        const status = computeServicePlanStatus(item, planKm);
+        if (status.tone === 'bad' || status.tone === 'warn') {
+          alerts.push({
+            days: status.tone === 'bad' ? -1 : 20,
+            vehicleId: vehicle.id,
+            iconColor: vehicle.iconColor,
+            title: `${item.label}: ${vehicle.name}`,
+            meta: `Servisní plán · ${status.detail}`
+          });
+        }
+      });
     });
     return alerts.sort((a, b) => a.days - b.days);
   }
@@ -9024,6 +9044,97 @@
     return values.length ? Math.max(...values) : 0;
   }
 
+  // Servisní plán auta — položky jako olej, filtry, brzdy atd. s intervalem
+  // km / měsíců. Ukládá se v households.dashboard_layout.vehicleServicePlans
+  // (mapa vehicleId → pole položek), takže žádná nová DB tabulka/migrace.
+  const SERVICE_PLAN_TYPE_OPTIONS = [
+    ['oil', 'Olej'],
+    ['filters', 'Filtry'],
+    ['brakes', 'Brzdy'],
+    ['tires', 'Pneu'],
+    ['timing', 'Rozvody'],
+    ['stk', 'STK'],
+    ['custom', 'Vlastní položka']
+  ];
+
+  function servicePlanTypeLabel(type) {
+    const found = SERVICE_PLAN_TYPE_OPTIONS.find(([value]) => value === type);
+    return found ? found[1] : 'Servis';
+  }
+
+  function normalizeServicePlanItem(item = {}) {
+    const type = SERVICE_PLAN_TYPE_OPTIONS.some(([value]) => value === item.type) ? item.type : 'custom';
+    const label = normalizeText(item.label) || (type === 'custom' ? 'Vlastní položka' : servicePlanTypeLabel(type));
+    const intervalKm = Math.max(0, Math.round(Number(item.intervalKm || 0)) || 0);
+    const intervalMonths = Math.max(0, Math.round(Number(item.intervalMonths || 0)) || 0);
+    const lastKm = Math.max(0, Math.round(Number(item.lastKm || 0)) || 0);
+    return {
+      id: normalizeText(item.id) || uid(),
+      type,
+      label,
+      intervalKm,
+      intervalMonths,
+      lastKm,
+      lastDate: normalizeText(item.lastDate || item.last_date),
+      note: normalizeText(item.note).slice(0, 240)
+    };
+  }
+
+  function normalizeVehicleServicePlanMap(map = {}) {
+    const source = map && typeof map === 'object' && !Array.isArray(map) ? map : {};
+    const result = {};
+    Object.keys(source).forEach((vehicleId) => {
+      const list = Array.isArray(source[vehicleId]) ? source[vehicleId] : [];
+      const items = list.map(normalizeServicePlanItem).filter((item) => item.intervalKm || item.intervalMonths || item.lastKm || item.lastDate || item.note || item.type !== 'custom');
+      if (items.length) result[String(vehicleId)] = items;
+    });
+    return result;
+  }
+
+  function getVehicleServicePlan(vehicleId) {
+    const map = state.settings?.vehicleServicePlans;
+    const list = map && typeof map === 'object' ? map[String(vehicleId)] : null;
+    return Array.isArray(list) ? list.map(normalizeServicePlanItem) : [];
+  }
+
+  // Vrací nejhorší (nejnaléhavější) stav z km i časového intervalu.
+  //   tone: 'good' | 'warn' | 'bad' | '' (bez intervalu)
+  function computeServicePlanStatus(item, currentKm = 0) {
+    const parts = [];
+    if (item.intervalKm > 0 && item.lastKm > 0) {
+      const nextKm = item.lastKm + item.intervalKm;
+      const kmLeft = nextKm - Number(currentKm || 0);
+      if (Number(currentKm || 0) <= 0) {
+        parts.push({ rank: 1, tone: '', text: `další při ${formatKm(nextKm)}` });
+      } else if (kmLeft < 0) {
+        parts.push({ rank: 3, tone: 'bad', text: `po km o ${formatKm(Math.abs(kmLeft))}` });
+      } else if (kmLeft <= 1500) {
+        parts.push({ rank: 2, tone: 'warn', text: `brzy · ${formatKm(kmLeft)} do servisu` });
+      } else {
+        parts.push({ rank: 0, tone: 'good', text: `${formatKm(kmLeft)} do servisu` });
+      }
+    }
+    if (item.intervalMonths > 0 && item.lastDate) {
+      const nextDate = addMonthsIso(item.lastDate, item.intervalMonths);
+      const daysLeft = daysUntil(nextDate);
+      if (daysLeft === null) {
+        // neplatné datum — přeskoč
+      } else if (daysLeft < 0) {
+        parts.push({ rank: 3, tone: 'bad', text: `po termínu ${Math.abs(daysLeft)} dní` });
+      } else if (daysLeft <= 45) {
+        parts.push({ rank: 2, tone: 'warn', text: `brzy · ${dueBadge(daysLeft)}` });
+      } else {
+        parts.push({ rank: 0, tone: 'good', text: `do ${formatDate(nextDate)}` });
+      }
+    }
+    if (!parts.length) {
+      return { tone: '', label: 'interval nenastavený', detail: 'Doplň interval km nebo měsíců a poslední servis.' };
+    }
+    const worst = parts.sort((a, b) => b.rank - a.rank)[0];
+    const label = worst.rank >= 3 ? 'po termínu' : worst.rank === 2 ? 'brzy' : worst.rank === 0 ? 'OK' : 'naplánováno';
+    return { tone: worst.tone, label, detail: parts.map((part) => part.text).join(' · ') };
+  }
+
   function garageMonthKey(value) {
     return String(value || '').slice(0, 7);
   }
@@ -9054,33 +9165,31 @@
     return entries;
   }
 
-  // Spotřeba se počítá VŽDY z tankování (rozdíl km mezi tankováními), NIKDY
-  // z celkového nájezdu auta od výroby. První tankování je baseline — neznáme
-  // km ujeté před ním, takže se jeho litry do spotřeby nezapočítávají, slouží
-  // jen jako počáteční kilometrový stav.
-  //   - Aktuální = litry posledního tankování / (km poslední − km předchozí) × 100
-  //   - Dlouhodobá = součet litrů od 2. tankování / (km poslední − km první) × 100
-  // Ošetřeno: chybějící/nulové km nebo litry, nulový/záporný rozdíl km, jen
-  // jedno tankování. Appka neeviduje plnou/neplnou nádrž, takže výsledek je
-  // orientační (počítá se ze všech dostupných tankování s platnými km a litry).
+  // Spotřeba se počítá VŽDY z platných SEGMENTŮ mezi tankováními (rozdíl km),
+  // NIKDY z celkového nájezdu auta od výroby. Segment je platný jen když
+  // current.odometer > previous.odometer a current.liters > 0 — reuse přesně
+  // stejné garageFuelEntryMetrics, které plní grafy, historii i KPI, aby
+  // všechno počítalo shodně. První tankování je baseline (neznáme km ujeté
+  // před ním); jeho litry se do spotřeby nezapočítávají.
+  //   - Aktuální = spotřeba posledního platného segmentu.
+  //   - Dlouhodobá = Σ(liters platných segmentů) / Σ(km platných segmentů) × 100.
+  //     Dělíme součtem km platných segmentů, NE (lastKm − firstKm) — řádky
+  //     bez litrů nebo s neplatným km nesmí zvětšovat jmenovatel.
+  // Když není žádný platný segment, current i longTerm = null.
+  // Appka neeviduje plnou/neplnou nádrž, takže výsledek je orientační.
   function garageFuelConsumptionStats(fuelRows = []) {
-    const rows = sortFuelRows(fuelRows).filter((row) => Number(row.odometer || 0) > 0);
-    if (rows.length < 2) {
+    const entries = garageFuelEntryMetrics(fuelRows);
+    if (!entries.length) {
       return { current: null, longTerm: null, hasEnoughData: false };
     }
-    const first = rows[0];
-    const prev = rows[rows.length - 2];
-    const last = rows[rows.length - 1];
-
-    const lastLiters = Number(last.liters || 0);
-    const currentDistance = Number(last.odometer || 0) - Number(prev.odometer || 0);
-    const current = lastLiters > 0 && currentDistance > 0 ? (lastLiters / currentDistance) * 100 : null;
-
-    let litersSinceFirst = 0;
-    for (let i = 1; i < rows.length; i += 1) litersSinceFirst += Number(rows[i].liters || 0);
-    const totalDistance = Number(last.odometer || 0) - Number(first.odometer || 0);
-    const longTerm = litersSinceFirst > 0 && totalDistance > 0 ? (litersSinceFirst / totalDistance) * 100 : null;
-
+    const current = entries[entries.length - 1].consumption;
+    let litersSum = 0;
+    let kmSum = 0;
+    for (const entry of entries) {
+      litersSum += Number(entry.liters || 0);
+      kmSum += Number(entry.km || 0);
+    }
+    const longTerm = litersSum > 0 && kmSum > 0 ? (litersSum / kmSum) * 100 : null;
     return { current, longTerm, hasEnoughData: true };
   }
 
@@ -9645,7 +9754,7 @@
           <div class="item-title">⛽ ${formatDate(item.date)}</div>
           <span class="badge">${escapeHtml(item.odometer || '—')} km</span>
         </div>
-        <div class="item-meta">${escapeHtml(item.liters || 0)} l · ${formatCurrency(item.price)}${fuelPricePerLiter(item) ? ` · ${escapeHtml(formatFuelPricePerLiter(fuelPricePerLiter(item)))}` : ''}${garageFuelConsumptionForItem(item) ? ` · spotřeba ${formatLitreValue(garageFuelConsumptionForItem(item))}` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div>
+        <div class="item-meta">${Number(item.liters || 0) > 0 ? `${escapeHtml(item.liters)} l` : 'litry nezadané'} · ${formatCurrency(item.price)}${fuelPricePerLiter(item) ? ` · ${escapeHtml(formatFuelPricePerLiter(fuelPricePerLiter(item)))}` : ''}${garageFuelConsumptionForItem(item) ? ` · spotřeba ${formatLitreValue(garageFuelConsumptionForItem(item))}` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div>
         <div class="item-actions">
           <button class="ghost-btn" type="button" data-action="edit-garage-record" data-collection="fuel" data-id="${item.id}">Upravit</button>
           <button class="danger-btn" type="button" data-action="delete" data-collection="fuel" data-id="${item.id}">Smazat</button>
@@ -9732,6 +9841,125 @@
     `;
   }
 
+  // Zapíše/upraví položku servisního plánu do state.settings.vehicleServicePlans
+  // (mapa vehicleId → pole). Perzistence jde přes household UI settings
+  // (dashboard_layout), žádná nová DB tabulka. Otevřený details zůstává otevřený.
+  async function saveServicePlanItemFromForm(vehicleId, editId, data) {
+    const vid = String(vehicleId || garageVehicleId || '');
+    if (!vid) return showToast('Nejdřív vyber auto');
+    const item = normalizeServicePlanItem({
+      id: editId || uid(),
+      type: data.type,
+      label: data.label,
+      intervalKm: data.intervalKm,
+      intervalMonths: data.intervalMonths,
+      lastKm: data.lastKm,
+      lastDate: data.lastDate,
+      note: data.note
+    });
+    if (!item.intervalKm && !item.intervalMonths) return showToast('Doplň interval km nebo měsíců');
+    const map = { ...(state.settings.vehicleServicePlans && typeof state.settings.vehicleServicePlans === 'object' ? state.settings.vehicleServicePlans : {}) };
+    const list = Array.isArray(map[vid]) ? map[vid].map(normalizeServicePlanItem) : [];
+    const existingIndex = editId ? list.findIndex((entry) => entry.id === editId) : -1;
+    if (existingIndex >= 0) list[existingIndex] = item;
+    else list.push(item);
+    map[vid] = list;
+    state.settings.vehicleServicePlans = normalizeVehicleServicePlanMap(map);
+    garageServicePlanEditId = '';
+    garageServicePlanOpen = true;
+    touchState();
+    saveState();
+    if (cloudReady()) cloudSaveHouseholdUiSettings(false);
+    render();
+    showToast(editId ? 'Servisní položka upravená' : 'Servisní položka přidaná');
+  }
+
+  function deleteServicePlanItem(vehicleId, itemId) {
+    const vid = String(vehicleId || garageVehicleId || '');
+    const map = { ...(state.settings.vehicleServicePlans && typeof state.settings.vehicleServicePlans === 'object' ? state.settings.vehicleServicePlans : {}) };
+    if (!Array.isArray(map[vid])) return;
+    map[vid] = map[vid].map(normalizeServicePlanItem).filter((entry) => entry.id !== itemId);
+    state.settings.vehicleServicePlans = normalizeVehicleServicePlanMap(map);
+    if (garageServicePlanEditId === itemId) garageServicePlanEditId = '';
+    garageServicePlanOpen = true;
+    touchState();
+    saveState();
+    if (cloudReady()) cloudSaveHouseholdUiSettings(false);
+    render();
+    showToast('Servisní položka smazaná');
+  }
+
+  function renderVehicleServicePlanItem(item, currentKm) {
+    const status = computeServicePlanStatus(item, currentKm);
+    const isEditing = garageServicePlanEditId === item.id;
+    const intervalBits = [
+      item.intervalKm ? `${formatKm(item.intervalKm)}` : '',
+      item.intervalMonths ? `${item.intervalMonths} měs.` : ''
+    ].filter(Boolean).join(' / ') || 'bez intervalu';
+    const lastBits = [
+      item.lastKm ? `${formatKm(item.lastKm)}` : '',
+      item.lastDate ? formatDate(item.lastDate) : ''
+    ].filter(Boolean).join(' · ') || 'nezadáno';
+    return `
+      <div class="item service-plan-item">
+        <div class="item-top">
+          <div class="item-title">${escapeHtml(item.label)}</div>
+          <span class="badge ${status.tone}">${escapeHtml(status.label)}</span>
+        </div>
+        <div class="item-meta">${escapeHtml(status.detail)}</div>
+        <div class="item-meta">Interval: ${escapeHtml(intervalBits)} · Naposledy: ${escapeHtml(lastBits)}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</div>
+        <div class="item-actions">
+          <button class="ghost-btn" type="button" data-action="edit-service-plan-item" data-id="${escapeHtml(item.id)}">${isEditing ? 'Zavřít úpravu' : 'Upravit'}</button>
+          <button class="danger-btn" type="button" data-action="delete-service-plan-item" data-vehicle-id="${escapeHtml(item.vehicleIdForEdit || '')}" data-id="${escapeHtml(item.id)}">Smazat</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderVehicleServicePlanForm(vehicle, editItem = null) {
+    const item = editItem || { type: 'oil', label: '', intervalKm: '', intervalMonths: '', lastKm: '', lastDate: '', note: '' };
+    return `
+      <form data-form="service-plan-item" data-vehicle-id="${escapeHtml(vehicle.id)}" data-edit-id="${escapeHtml(editItem ? editItem.id : '')}" class="compact-form service-plan-form">
+        <div class="form-grid two">
+          ${selectField('Položka', 'type', SERVICE_PLAN_TYPE_OPTIONS, item.type)}
+          ${field('Vlastní název (u vlastní položky)', 'label', 'text', 'např. Klimatizace', false, item.label || '')}
+          ${field('Interval km', 'intervalKm', 'number', 'např. 15000', false, item.intervalKm || '')}
+          ${field('Interval měsíců', 'intervalMonths', 'number', 'např. 12', false, item.intervalMonths || '')}
+          ${field('Naposledy při km', 'lastKm', 'number', 'např. 82000', false, item.lastKm || '')}
+          ${field('Naposledy datum', 'lastDate', 'date', '', false, item.lastDate || '')}
+          ${field('Poznámka', 'note', 'text', 'volitelné', false, item.note || '')}
+        </div>
+        <div class="form-actions compact-actions">
+          <button class="primary-btn" type="submit">${editItem ? 'Uložit změny' : 'Přidat do plánu'}</button>
+          ${editItem ? '<button class="ghost-btn" type="button" data-action="cancel-service-plan-edit">Zrušit úpravu</button>' : ''}
+        </div>
+      </form>
+    `;
+  }
+
+  function renderVehicleServicePlan(vehicle, currentKm) {
+    const plan = getVehicleServicePlan(vehicle.id).map((item) => ({ ...item, vehicleIdForEdit: vehicle.id }));
+    const editItem = garageServicePlanEditId ? plan.find((item) => item.id === garageServicePlanEditId) || null : null;
+    const counts = plan.reduce((acc, item) => {
+      const tone = computeServicePlanStatus(item, currentKm).tone;
+      if (tone === 'bad') acc.over += 1;
+      else if (tone === 'warn') acc.soon += 1;
+      return acc;
+    }, { over: 0, soon: 0 });
+    const summaryBadge = counts.over ? `${counts.over} po termínu` : counts.soon ? `${counts.soon} brzy` : plan.length ? 'vše OK' : 'prázdné';
+    const summaryTone = counts.over ? 'bad' : counts.soon ? 'warn' : plan.length ? 'good' : '';
+    return `
+      <details class="action-details compact-edit-details garage-service-plan-details" data-garage-detail="service-plan" ${garageServicePlanOpen ? 'open' : ''}>
+        <summary><span>Servisní plán</span><em>olej, filtry, brzdy, pneu, rozvody, STK…</em></summary>
+        <div class="service-plan-body">
+          <div class="card-subheader compact-subheader"><div><h3>Servisní plán auta</h3><p>Další termín se počítá z aktuálních ${formatKm(currentKm)} a dnešního data.</p></div><span class="badge ${summaryTone}">${escapeHtml(summaryBadge)}</span></div>
+          ${plan.length ? `<div class="list compact-list service-plan-list">${plan.map((item) => renderVehicleServicePlanItem(item, currentKm)).join('')}</div>` : '<div class="inline-note">Zatím žádná položka. Přidej olej, filtry, brzdy nebo vlastní servisní úkon a hlídej interval.</div>'}
+          ${renderVehicleServicePlanForm(vehicle, editItem)}
+        </div>
+      </details>
+    `;
+  }
+
   function renderVehicleDetail(vehicle) {
     const fuelRows = sortFuelRows(state.fuel.filter((item) => item.vehicleId === vehicle.id));
     const serviceRows = state.services.filter((item) => item.vehicleId === vehicle.id).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
@@ -9787,6 +10015,7 @@
         </div>
       </div>
       ${renderGarageDetailCharts(vehicle, fuelRows)}
+      ${renderVehicleServicePlan(vehicle, analytics.currentKm)}
       ${renderGarageHistory(vehicle, fuelRows, serviceRows)}
       <details class="action-details compact-edit-details" data-garage-detail="vehicle-settings">
         <summary><span>Upravit údaje auta</span><em>termíny, km, servisní intervaly</em></summary>
@@ -13570,6 +13799,7 @@
         showToast(vehicle.cloudId ? 'Auto uloženo do cloudu' : 'Auto uloženo lokálně');
       },
       'update-vehicle': () => updateVehicle(form.dataset.vehicleId, data),
+      'service-plan-item': () => saveServicePlanItemFromForm(form.dataset.vehicleId, form.dataset.editId, data),
       'garage-trip-calc': () => {
         const distance = decimalValue(data.distance);
         const consumption = decimalValue(data.consumption);
@@ -15465,6 +15695,23 @@
       openGarageDetailPanel(button.dataset.garageTarget || '');
       return;
     }
+    if (action === 'edit-service-plan-item') {
+      const id = button.dataset.id || '';
+      garageServicePlanEditId = garageServicePlanEditId === id ? '' : id;
+      garageServicePlanOpen = true;
+      render();
+      return;
+    }
+    if (action === 'cancel-service-plan-edit') {
+      garageServicePlanEditId = '';
+      garageServicePlanOpen = true;
+      render();
+      return;
+    }
+    if (action === 'delete-service-plan-item') {
+      deleteServicePlanItem(button.dataset.vehicleId || garageVehicleId, button.dataset.id || '');
+      return;
+    }
     if (action === 'garage-select-overview-vehicle') {
       garageVehicleId = button.dataset.id || garageVehicleId;
       garageStatsVehicleId = garageVehicleId;
@@ -16494,6 +16741,9 @@
         vehicle.iconColor = normalizeVehicleIconColor(vehicle.iconColor || vehicleIconColorFromSettings(vehicle));
       });
     }
+    if (layout.vehicleServicePlans && typeof layout.vehicleServicePlans === 'object') {
+      state.settings.vehicleServicePlans = normalizeVehicleServicePlanMap(layout.vehicleServicePlans);
+    }
     if (Array.isArray(layout.warranties) && !(state.warranties || []).length) {
       state.warranties = normalizeWarranties(layout.warranties);
     }
@@ -16548,6 +16798,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
+        vehicleServicePlans: normalizeVehicleServicePlanMap(state.settings?.vehicleServicePlans),
         visualSettings: getVisualSettingsSnapshot(),
         profileUiSettings: getProfileUiSettingsSnapshot(),
         warrantyBackupCount: normalizeWarranties(state.warranties).length,
@@ -17331,6 +17582,7 @@
     if (details.matches('.calendar-google-details')) googleCalendarDetailsOpen = details.open;
     if (details.matches('.garage-preset-tool')) garagePresetToolOpen = details.open;
     if (details.matches('.garage-technical-fields')) garageTechnicalFieldsOpen = details.open;
+    if (details.matches('.garage-service-plan-details')) garageServicePlanOpen = details.open;
   }, true);
 
   app.addEventListener('click', (event) => {
