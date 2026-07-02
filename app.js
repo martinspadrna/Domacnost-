@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_328';
-  const APP_BUILD = 328;
+  const APP_VERSION = 'Domácnost+ v.0.1_329';
+  const APP_BUILD = 329;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -16493,6 +16493,10 @@
       readingPrices: structuredCloneSafe(state.readingPrices || DEFAULT_STATE.readingPrices),
       readingDeposits: structuredCloneSafe(state.readingDeposits || DEFAULT_STATE.readingDeposits),
       readingBilling: structuredCloneSafe(state.readingBilling || DEFAULT_STATE.readingBilling),
+      // Per-vehicle/per-household mapy — musí se ukládat s workspace, jinak
+      // by po přepnutí domácnosti zůstala v paměti mapa z předchozí.
+      vehicleServicePlans: structuredCloneSafe(normalizeVehicleServicePlanMap(state.settings?.vehicleServicePlans)),
+      vehicleIconColors: structuredCloneSafe(normalizeVehicleIconColorMap(state.settings?.vehicleIconColors)),
       collections: {}
     };
     getCollectionNames().forEach((collection) => {
@@ -16545,6 +16549,11 @@
       cloudEnabled: true,
       dashboardWidgets: [],
       homeHeroItems: [],
+      // Nový cloud uživatel = jiná domácnost → vyprázdni per-vehicle mapy,
+      // jinak by spread ...state.settings ponechal servisní plán / barvy
+      // z předchozího uživatele.
+      vehicleServicePlans: {},
+      vehicleIconColors: {},
       bottomNavIds: normalizeBottomNavIds(state.settings?.bottomNavIds || DEFAULT_BOTTOM_NAV_IDS, state.enabledModules)
     };
     state.enabledModules = normalizeModuleList(state.enabledModules?.length ? state.enabledModules : MANAGED_MODULE_IDS);
@@ -16900,6 +16909,9 @@
       readingPrices: structuredCloneSafe(state.readingPrices || DEFAULT_STATE.readingPrices),
       readingDeposits: structuredCloneSafe(state.readingDeposits || DEFAULT_STATE.readingDeposits),
       readingBilling: structuredCloneSafe(state.readingBilling || DEFAULT_STATE.readingBilling),
+      // Per-vehicle/per-household mapy — viz captureCurrentHouseholdWorkspace.
+      vehicleServicePlans: structuredCloneSafe(normalizeVehicleServicePlanMap(state.settings?.vehicleServicePlans)),
+      vehicleIconColors: structuredCloneSafe(normalizeVehicleIconColorMap(state.settings?.vehicleIconColors)),
       collections: {}
     };
     getCollectionNames().forEach((collection) => {
@@ -16919,6 +16931,10 @@
       state.readingPrices = normalizeReadingPrices(snapshot.readingPrices || state.readingPrices);
       state.readingDeposits = normalizeReadingDeposits(snapshot.readingDeposits || state.readingDeposits);
       state.readingBilling = normalizeReadingBilling(snapshot.readingBilling || state.readingBilling);
+      // Per-household vehicle mapy — z workspace snapshotu domácnosti, ne
+      // z předchozí domácnosti v paměti. Chybí-li ve starším snapshotu → {}.
+      state.settings.vehicleServicePlans = normalizeVehicleServicePlanMap(snapshot.vehicleServicePlans || {});
+      state.settings.vehicleIconColors = normalizeVehicleIconColorMap(snapshot.vehicleIconColors || {});
       getCollectionNames().forEach((collection) => {
         state[collection] = structuredCloneSafe(snapshot.collections?.[collection] || []);
       });
@@ -16936,6 +16952,10 @@
       state.readingPrices = normalizeReadingPrices(DEFAULT_STATE.readingPrices);
       state.readingDeposits = normalizeReadingDeposits(DEFAULT_STATE.readingDeposits);
       state.readingBilling = normalizeReadingBilling(DEFAULT_STATE.readingBilling);
+      // Nová/neznámá domácnost bez snapshotu → prázdné vehicle mapy, ať
+      // nezůstane servisní plán ani barvy z předchozí domácnosti.
+      state.settings.vehicleServicePlans = {};
+      state.settings.vehicleIconColors = {};
       getCollectionNames().forEach((collection) => { state[collection] = []; });
       state.shoppingStats = {};
     }

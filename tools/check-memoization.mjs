@@ -120,6 +120,32 @@ if (appSource) {
   }
 }
 
+// Kontrola app.js — vehicleServicePlans izolace mezi domácnostmi (v0.1_329).
+// Per-vehicle/per-household mapa musí být v capture/save/restore workspace
+// cestě, jinak po přepnutí domácnosti zůstane servisní plán z předchozí.
+if (appSource) {
+  const workspaceFns = [
+    'captureCurrentHouseholdWorkspace',
+    'saveHouseholdWorkspace',
+    'restoreHouseholdWorkspace'
+  ];
+  workspaceFns.forEach((fnName) => {
+    const match = appSource.match(new RegExp(`function ${fnName}\\([\\s\\S]*?\\n {2}\\}`));
+    if (!match) {
+      errors.push(`app.js: nenašel jsem ${fnName}().`);
+      return;
+    }
+    if (!/vehicleServicePlans/.test(match[0])) {
+      errors.push(
+        `app.js: ${fnName} neřeší vehicleServicePlans — servisní plán by po ` +
+          'přepnutí domácnosti zůstal z předchozí. Přidej ho do workspace cesty.'
+      );
+    } else {
+      notes.push(`app.js: ${fnName} izoluje vehicleServicePlans.`);
+    }
+  });
+}
+
 console.log('Memoization + výpočtové invarianty pro Domácnost+');
 notes.forEach((line) => console.log(`  ok: ${line}`));
 if (errors.length) {
