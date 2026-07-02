@@ -130,6 +130,9 @@ if (styles) {
   expect(styles, '/* Domácnost+ – jednotné rozbalovací formuláře */', 'styles.css: existuje finální blok pro rozbalovací formuláře.');
   expect(styles, '.action-details > summary,\n.compact-edit-details > summary', 'styles.css: action-details a compact-edit-details sdílí summary layout.');
   expect(styles, '.inline-edit-card {\n  display: grid;', 'styles.css: inline edit panely mají nový grid povrch.');
+  expect(styles, '/* Domácnost+ – jednotné seznamové položky */', 'styles.css: existuje finální blok pro seznamové položky.');
+  expect(styles, '.item-top {\n  display: grid;', 'styles.css: item-top používá stabilní grid řádek.');
+  expect(styles, '.compact-list .item-meta,\n.overview-list .item-meta', 'styles.css: kompaktní seznamy mají kontrolovaný ořez dlouhých metadat.');
   expect(styles, '.form-actions,\n  .item-actions,\n  .finance-filter-chips', 'styles.css: společné akční lišty používají mobilní rail.');
   expect(styles, '.garage-history-toolbar {\n    display: flex;', 'styles.css: garážové filtry používají mobilní rail.');
   expect(styles, '.module-cockpit-metrics,\n  .module-cockpit-actions', 'styles.css: cockpit metriky a akce sdílí mobilní rail.');

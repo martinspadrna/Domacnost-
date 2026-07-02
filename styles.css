@@ -18981,3 +18981,128 @@ main {
     padding-inline: 12px;
   }
 }
+
+/* Domácnost+ – jednotné seznamové položky */
+.list,
+.compact-list,
+.overview-list,
+.finance-movement-list,
+.readings-history-list,
+.calendar-source-list,
+.subscription-person-summary-list {
+  min-width: 0;
+}
+
+.compact-list,
+.overview-list,
+.finance-movement-list,
+.readings-history-list,
+.calendar-source-list,
+.subscription-person-summary-list {
+  gap: 8px;
+}
+
+.item,
+.compact-item,
+.finance-panel .item,
+.finance-panel .compact-item,
+.module-tabbed .item,
+.module-tabbed .compact-item,
+.file-row.compact-file-row,
+.subscription-service-item {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: 0 8px 22px rgba(31, 41, 55, 0.055);
+}
+
+[data-theme="dark"] .item,
+[data-theme="dark"] .compact-item,
+[data-theme="dark"] .finance-panel .item,
+[data-theme="dark"] .finance-panel .compact-item,
+[data-theme="dark"] .module-tabbed .item,
+[data-theme="dark"] .module-tabbed .compact-item,
+[data-theme="dark"] .file-row.compact-file-row,
+[data-theme="dark"] .subscription-service-item {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+}
+
+.item-top,
+.finance-panel .item-top,
+.module-tabbed .item-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+.item-title,
+.item-meta,
+.finance-item-title-text,
+.subscription-payment-item-title,
+.garage-vehicle-option-main,
+.file-row.compact-file-row strong,
+.file-row.compact-file-row em {
+  min-width: 0;
+}
+
+.item-title,
+.file-row.compact-file-row strong {
+  color: var(--text);
+  line-height: 1.24;
+  overflow-wrap: anywhere;
+}
+
+.item-meta,
+.file-row.compact-file-row em {
+  color: var(--muted);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.compact-list .item-meta,
+.overview-list .item-meta,
+.finance-movement-list .item-meta,
+.calendar-source-list .item-meta,
+.subscription-person-summary-list .item-meta {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.item-actions {
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .item,
+  .compact-item,
+  .finance-panel .item,
+  .finance-panel .compact-item,
+  .module-tabbed .item,
+  .module-tabbed .compact-item,
+  .file-row.compact-file-row,
+  .subscription-service-item {
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .item-top,
+  .finance-panel .item-top,
+  .module-tabbed .item-top {
+    gap: 8px;
+  }
+
+  .item-title {
+    font-size: .94rem;
+  }
+
+  .item-meta {
+    font-size: .78rem;
+  }
+}

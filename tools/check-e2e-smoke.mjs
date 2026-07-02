@@ -499,6 +499,12 @@ async function run() {
         const financeDetailsStyle = financeDetails ? getComputedStyle(financeDetails) : null;
         const financeDetailsSummary = financeDetails ? financeDetails.querySelector('summary') : null;
         const financeDetailsSummaryStyle = financeDetailsSummary ? getComputedStyle(financeDetailsSummary) : null;
+        const financeLoanItem = document.querySelector('.finance-loan-item');
+        const financeLoanItemStyle = financeLoanItem ? getComputedStyle(financeLoanItem) : null;
+        const financeLoanTop = financeLoanItem ? financeLoanItem.querySelector('.item-top') : null;
+        const financeLoanTopStyle = financeLoanTop ? getComputedStyle(financeLoanTop) : null;
+        const financeLoanMeta = financeLoanItem ? financeLoanItem.querySelector('.item-meta') : null;
+        const financeLoanMetaStyle = financeLoanMeta ? getComputedStyle(financeLoanMeta) : null;
         return {
           cockpit: Boolean(document.querySelector('[data-module-cockpit="finance"]')),
           cockpitNoSwipe: Boolean(document.querySelector('[data-module-cockpit="finance"][data-no-swipe]')),
@@ -512,6 +518,9 @@ async function run() {
           moduleCardsFit: Boolean(financeModuleRect && financeCards.length && financeCards.every((card) => card.getBoundingClientRect().width <= financeModuleRect.width + 1)),
           detailsSurface: Boolean(financeDetails?.open && financeDetailsStyle && parseFloat(financeDetailsStyle.borderTopLeftRadius) >= 18 && financeDetailsStyle.overflow === 'hidden'),
           detailsSummaryGrid: Boolean(financeDetailsSummaryStyle && financeDetailsSummaryStyle.display === 'grid' && parseFloat(financeDetailsSummaryStyle.minHeight) >= 46 && parseFloat(financeDetailsSummaryStyle.columnGap) >= 8),
+          loanItemSurface: Boolean(financeLoanItemStyle && parseFloat(financeLoanItemStyle.borderTopLeftRadius) >= 16 && financeLoanItemStyle.display === 'grid'),
+          loanItemTopGrid: Boolean(financeLoanTopStyle && financeLoanTopStyle.display === 'grid' && financeLoanTopStyle.gridTemplateColumns.trim().split(/\\s+/).length >= 2),
+          loanItemMetaClamp: Boolean(financeLoanMetaStyle && financeLoanMetaStyle.webkitLineClamp === '3'),
           loanForm: Boolean(document.querySelector('form[data-form="add-finance-loan"]')),
           refinanceForm: Boolean(document.querySelector('form[data-form="finance-refinance"]')),
           loanText: text.includes('Smoke půjčka') && text.includes('Refinancování')
@@ -535,6 +544,9 @@ async function run() {
     if (!financeValue.moduleCardsFit) { fail('Finance module-tabbed karty na mobilu přesahují šířku modulu.'); financeOk = false; }
     if (!financeValue.detailsSurface) { fail('Finance rozbalovací formulář nemá nový sjednocený povrch.'); financeOk = false; }
     if (!financeValue.detailsSummaryGrid) { fail('Finance rozbalovací formulář nemá nový summary layout.'); financeOk = false; }
+    if (!financeValue.loanItemSurface) { fail('Finance půjčka nemá nový sjednocený seznamový povrch.'); financeOk = false; }
+    if (!financeValue.loanItemTopGrid) { fail('Finance půjčka nemá nový item-top grid layout.'); financeOk = false; }
+    if (!financeValue.loanItemMetaClamp) { fail('Finance půjčka nemá kontrolovaný ořez metadat.'); financeOk = false; }
     if (!financeValue.loanForm) { fail('Finance/Půjčky nerenderují add-finance-loan formulář.'); financeOk = false; }
     if (!financeValue.refinanceForm) { fail('Finance/Půjčky nerenderují finance-refinance formulář.'); financeOk = false; }
     if (!financeValue.loanText) { fail('Finance/Půjčky neukazují seed půjčku/refinancování.'); financeOk = false; }
