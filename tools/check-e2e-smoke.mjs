@@ -341,6 +341,12 @@ async function run() {
     await page.open;
     await page.send('Page.enable');
     await page.send('Runtime.enable');
+    await page.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 2,
+      mobile: true
+    });
     await page.send('Page.addScriptToEvaluateOnNewDocument', { source: smokeSeedScript() });
     await page.send('Page.navigate', { url });
     await new Promise((resolveWait) => setTimeout(resolveWait, 2500));
@@ -436,10 +442,14 @@ async function run() {
       returnByValue: true,
       expression: `(() => {
         const text = document.body?.innerText || '';
+        const metricsRail = document.querySelector('[data-module-cockpit="pool"] .module-cockpit-metrics');
+        const metricsStyle = metricsRail ? getComputedStyle(metricsRail) : null;
         return {
           cockpit: Boolean(document.querySelector('[data-module-cockpit="pool"]')),
+          cockpitNoSwipe: Boolean(document.querySelector('[data-module-cockpit="pool"][data-no-swipe]')),
           cockpitMetrics: document.querySelectorAll('[data-module-cockpit="pool"] .module-cockpit-metric').length,
           cockpitActions: document.querySelectorAll('[data-module-cockpit="pool"] .module-cockpit-actions button').length,
+          metricRailScrollable: Boolean(metricsRail && metricsStyle && /auto|scroll/.test(metricsStyle.overflowX) && metricsRail.scrollWidth > metricsRail.clientWidth),
           form: Boolean(document.querySelector('form[data-form="pool-settings"]')),
           tempInput: Boolean(document.querySelector('form[data-form="pool-settings"] input[name="waterTempC"]')),
           volume: text.includes('21,6 m³') || text.includes('21.6 m³') || text.includes('objem vody'),
@@ -455,8 +465,10 @@ async function run() {
     }
     let poolOk = true;
     if (!poolValue.cockpit) { fail('Bazén nemá horní module cockpit.'); poolOk = false; }
+    if (!poolValue.cockpitNoSwipe) { fail('Bazén cockpit není chráněný proti swipe přepnutí modulu.'); poolOk = false; }
     if (poolValue.cockpitMetrics < 3) { fail('Bazén cockpit nemá metriky.'); poolOk = false; }
     if (poolValue.cockpitActions < 1) { fail('Bazén cockpit nemá rychlou akci.'); poolOk = false; }
+    if (!poolValue.metricRailScrollable) { fail('Bazén cockpit metriky nejsou na mobilu vodorovně posuvné.'); poolOk = false; }
     if (!poolValue.form) { fail('Bazén po kliknutí nerenderuje pool-settings formulář.'); poolOk = false; }
     if (!poolValue.tempInput) { fail('Bazén po kliknutí nemá vstup pro teplotu vody.'); poolOk = false; }
     if (!poolValue.volume) { fail('Bazén po kliknutí neukazuje objem vody.'); poolOk = false; }
@@ -473,10 +485,14 @@ async function run() {
       returnByValue: true,
       expression: `(() => {
         const text = document.body?.innerText || '';
+        const actionsRail = document.querySelector('[data-module-cockpit="finance"] .module-cockpit-actions');
+        const actionsStyle = actionsRail ? getComputedStyle(actionsRail) : null;
         return {
           cockpit: Boolean(document.querySelector('[data-module-cockpit="finance"]')),
+          cockpitNoSwipe: Boolean(document.querySelector('[data-module-cockpit="finance"][data-no-swipe]')),
           cockpitMetrics: document.querySelectorAll('[data-module-cockpit="finance"] .module-cockpit-metric').length,
           cockpitActions: document.querySelectorAll('[data-module-cockpit="finance"] .module-cockpit-actions button').length,
+          actionRailScrollable: Boolean(actionsRail && actionsStyle && /auto|scroll/.test(actionsStyle.overflowX) && actionsRail.scrollWidth > actionsRail.clientWidth),
           loanForm: Boolean(document.querySelector('form[data-form="add-finance-loan"]')),
           refinanceForm: Boolean(document.querySelector('form[data-form="finance-refinance"]')),
           loanText: text.includes('Smoke půjčka') && text.includes('Refinancování')
@@ -489,8 +505,10 @@ async function run() {
     }
     let financeOk = true;
     if (!financeValue.cockpit) { fail('Finance nemají horní module cockpit.'); financeOk = false; }
+    if (!financeValue.cockpitNoSwipe) { fail('Finance cockpit není chráněný proti swipe přepnutí modulu.'); financeOk = false; }
     if (financeValue.cockpitMetrics < 3) { fail('Finance cockpit nemá metriky.'); financeOk = false; }
     if (financeValue.cockpitActions < 3) { fail('Finance cockpit nemá rychlé akce.'); financeOk = false; }
+    if (!financeValue.actionRailScrollable) { fail('Finance cockpit akce nejsou na mobilu vodorovně posuvné.'); financeOk = false; }
     if (!financeValue.loanForm) { fail('Finance/Půjčky nerenderují add-finance-loan formulář.'); financeOk = false; }
     if (!financeValue.refinanceForm) { fail('Finance/Půjčky nerenderují finance-refinance formulář.'); financeOk = false; }
     if (!financeValue.loanText) { fail('Finance/Půjčky neukazují seed půjčku/refinancování.'); financeOk = false; }

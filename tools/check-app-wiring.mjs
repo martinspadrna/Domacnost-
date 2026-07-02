@@ -41,6 +41,7 @@ const contracts = read('contracts.js');
 const index = read('index.html');
 const sw = read('sw.js');
 const pkg = read('package.json');
+const styles = read('styles.css');
 
 if (app && finance) {
   expect(app, "financeLoans: []", 'app.js: financeLoans jsou ve výchozím stavu.');
@@ -110,6 +111,15 @@ if (app) {
   expect(app, 'function isNavigationSwipeIgnoredTarget', 'app.js: navigační swipe má jednotný ignore helper.');
   expect(app, 'swipeStartTarget', 'app.js: navigační swipe kontroluje i místo začátku gesta.');
   expect(app, 'isNavigationSwipeIgnoredTarget(event.target) || isNavigationSwipeIgnoredTarget(swipeStartTarget)', 'app.js: swipe navigace ignoruje start i konec v chráněném bloku.');
+  expect(app, 'data-module-cockpit="${escapeHtml(moduleId)}" data-no-swipe', 'app.js: module cockpit je chráněný proti swipe přepnutí.');
+  expect(app, '<div class="module-cockpit-metrics" data-no-swipe>', 'app.js: cockpit metriky jsou chráněné proti swipe přepnutí.');
+  expect(app, '<div class="module-cockpit-actions" data-no-swipe>', 'app.js: cockpit akce jsou chráněné proti swipe přepnutí.');
+}
+
+if (styles) {
+  expect(styles, '.module-cockpit-metrics,\n  .module-cockpit-actions', 'styles.css: cockpit metriky a akce sdílí mobilní rail.');
+  expect(styles, 'overscroll-behavior-x: contain;', 'styles.css: cockpit rail drží horizontální posun uvnitř panelu.');
+  expect(styles, 'scroll-snap-type: x proximity;', 'styles.css: cockpit rail má jemné snapování položek.');
 }
 
 if (pkg) {

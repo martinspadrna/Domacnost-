@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_341';
-  const APP_BUILD = 341;
+  const APP_VERSION = 'Domácnost+ v.0.1_342';
+  const APP_BUILD = 342;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -3359,7 +3359,7 @@
     const metrics = getModuleCockpitMetrics(moduleId, stats);
     const actions = getModuleCockpitActions(moduleId);
     return `
-      <section class="card module-cockpit module-cockpit-${escapeHtml(moduleId)}" data-module-cockpit="${escapeHtml(moduleId)}">
+      <section class="card module-cockpit module-cockpit-${escapeHtml(moduleId)}" data-module-cockpit="${escapeHtml(moduleId)}" data-no-swipe>
         <div class="module-cockpit-main">
           ${renderModuleIllustration(moduleId, { size: 'card', slotClass: 'module-cockpit-icon module-card-illustration-slot', extraClass: 'module-card-illustration', label: module.label })}
           <div class="module-cockpit-copy">
@@ -3368,7 +3368,7 @@
             <p>${escapeHtml(moduleCockpitNote(moduleId, stats.note || getModuleSubtitle(moduleId)))}</p>
           </div>
         </div>
-        <div class="module-cockpit-metrics">
+        <div class="module-cockpit-metrics" data-no-swipe>
           ${metrics.slice(0, 4).map((metric) => `
             <button class="module-cockpit-metric ${metric.tone || ''}" type="button" ${moduleCockpitActionAttrs(metric.nav || moduleId, metric.tab || '', metric.overview || '')}>
               <span>${escapeHtml(metric.label)}</span>
@@ -3377,7 +3377,7 @@
           `).join('')}
         </div>
         ${actions.length ? `
-          <div class="module-cockpit-actions">
+          <div class="module-cockpit-actions" data-no-swipe>
             ${actions.map((action, index) => `<button class="${index === 0 ? 'primary-btn' : 'ghost-btn'} mini-btn" type="button" ${moduleCockpitActionAttrs(action.nav || moduleId, action.tab || '', action.overview || '')}>${escapeHtml(action.label)}</button>`).join('')}
           </div>
         ` : ''}

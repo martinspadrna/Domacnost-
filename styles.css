@@ -18561,6 +18561,10 @@ main {
   gap: 8px;
 }
 
+.module-cockpit-actions .mini-btn {
+  min-height: 42px;
+}
+
 @media (min-width: 760px) {
   .home-dashboard-redesign {
     grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);
@@ -18672,8 +18676,26 @@ main {
     margin-bottom: 10px;
   }
 
+  .module-cockpit-metrics,
+  .module-cockpit-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    margin-inline: -4px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 2px 4px 6px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .module-cockpit-metric,
   .module-cockpit-actions .mini-btn {
-    flex: 1 1 auto;
+    flex: 0 0 min(46vw, 184px);
+    scroll-snap-align: start;
+  }
+
+  .module-cockpit-actions .mini-btn {
+    justify-content: center;
   }
 }
 
@@ -18692,7 +18714,8 @@ main {
     justify-self: start;
   }
 
-  .module-cockpit-metrics {
-    grid-template-columns: 1fr;
+  .module-cockpit-metric,
+  .module-cockpit-actions .mini-btn {
+    flex-basis: min(72vw, 220px);
   }
 }
