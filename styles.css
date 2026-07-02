@@ -18382,6 +18382,103 @@ main {
   border-radius: 16px;
 }
 
+.module-cockpit {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.module-cockpit-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.module-cockpit-icon {
+  width: 54px;
+  height: 54px;
+}
+
+.module-cockpit-copy {
+  min-width: 0;
+}
+
+.module-cockpit-copy h2 {
+  margin: 2px 0 3px;
+  overflow-wrap: anywhere;
+  font-size: clamp(1.2rem, 4vw, 1.65rem);
+  letter-spacing: 0;
+}
+
+.module-cockpit-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: .84rem;
+  line-height: 1.35;
+}
+
+.module-cockpit-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.module-cockpit-metric {
+  appearance: none;
+  -webkit-appearance: none;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  min-height: 62px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--text);
+  background: rgba(255,255,255,.36);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+[data-theme="dark"] .module-cockpit-metric {
+  background: rgba(255,255,255,.055);
+}
+
+.module-cockpit-metric.warn {
+  border-color: rgba(180,124,25,.3);
+}
+
+.module-cockpit-metric.bad {
+  border-color: rgba(210,76,76,.34);
+}
+
+.module-cockpit-metric.good {
+  border-color: rgba(28,154,89,.24);
+}
+
+.module-cockpit-metric span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.module-cockpit-metric strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+}
+
+.module-cockpit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 @media (min-width: 760px) {
   .home-dashboard-redesign {
     grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);
@@ -18410,6 +18507,19 @@ main {
   .home-module-strip {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+
+  .module-cockpit {
+    grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+    align-items: center;
+  }
+
+  .module-cockpit-main {
+    align-self: stretch;
+  }
+
+  .module-cockpit-actions {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (min-width: 1120px) {
@@ -18428,6 +18538,15 @@ main {
 
   .home-module-strip {
     grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .module-cockpit {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, .75fr) auto;
+  }
+
+  .module-cockpit-actions {
+    grid-column: auto;
+    justify-content: flex-end;
   }
 }
 
@@ -18466,6 +18585,14 @@ main {
     grid-column: 2;
     justify-self: start;
   }
+
+  .module-cockpit {
+    margin-bottom: 10px;
+  }
+
+  .module-cockpit-actions .mini-btn {
+    flex: 1 1 auto;
+  }
 }
 
 @media (max-width: 390px) {
@@ -18481,5 +18608,9 @@ main {
   .home-attention-item > .badge {
     grid-column: 2;
     justify-self: start;
+  }
+
+  .module-cockpit-metrics {
+    grid-template-columns: 1fr;
   }
 }

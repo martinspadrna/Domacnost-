@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_338';
-  const APP_BUILD = 338;
+  const APP_VERSION = 'Domácnost+ v.0.1_339';
+  const APP_BUILD = 339;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -2527,7 +2527,7 @@
                 </div>
                 ${renderPageActions(active.id)}
               </section>
-              ${renderDemoReadOnlyBanner()}${moduleHtml}
+              ${renderDemoReadOnlyBanner()}${renderModuleCockpit(active)}${moduleHtml}
             </main>
           </div>
 
@@ -3350,6 +3350,221 @@
 
   function renderPageActions(moduleId) {
     return '';
+  }
+
+  function renderModuleCockpit(module) {
+    const moduleId = String(module?.id || '');
+    if (!moduleId || ['home', 'more', 'settings'].includes(moduleId)) return '';
+    const stats = getModuleStats(moduleId);
+    const metrics = getModuleCockpitMetrics(moduleId, stats);
+    const actions = getModuleCockpitActions(moduleId);
+    return `
+      <section class="card module-cockpit module-cockpit-${escapeHtml(moduleId)}" data-module-cockpit="${escapeHtml(moduleId)}">
+        <div class="module-cockpit-main">
+          ${renderModuleIllustration(moduleId, { size: 'card', slotClass: 'module-cockpit-icon module-card-illustration-slot', extraClass: 'module-card-illustration', label: module.label })}
+          <div class="module-cockpit-copy">
+            <span class="section-kicker">${escapeHtml(module.label)}</span>
+            <h2>${escapeHtml(moduleCockpitTitle(moduleId, module.label))}</h2>
+            <p>${escapeHtml(moduleCockpitNote(moduleId, stats.note || getModuleSubtitle(moduleId)))}</p>
+          </div>
+        </div>
+        <div class="module-cockpit-metrics">
+          ${metrics.slice(0, 4).map((metric) => `
+            <button class="module-cockpit-metric ${metric.tone || ''}" type="button" ${moduleCockpitActionAttrs(metric.nav || moduleId, metric.tab || '', metric.overview || '')}>
+              <span>${escapeHtml(metric.label)}</span>
+              <strong>${escapeHtml(String(metric.value ?? '—'))}</strong>
+            </button>
+          `).join('')}
+        </div>
+        ${actions.length ? `
+          <div class="module-cockpit-actions">
+            ${actions.map((action, index) => `<button class="${index === 0 ? 'primary-btn' : 'ghost-btn'} mini-btn" type="button" ${moduleCockpitActionAttrs(action.nav || moduleId, action.tab || '', action.overview || '')}>${escapeHtml(action.label)}</button>`).join('')}
+          </div>
+        ` : ''}
+      </section>
+    `;
+  }
+
+  function moduleCockpitActionAttrs(nav, tab = '', overview = '') {
+    if (overview) return `data-action="open-overview" data-overview="${escapeHtml(overview)}"`;
+    return `data-nav="${escapeHtml(nav || 'home')}"${tab ? ` data-target-tab="${escapeHtml(tab)}"` : ''}`;
+  }
+
+  function moduleCockpitTitle(moduleId, fallback) {
+    const titles = {
+      weather: 'Počasí pro domácnost',
+      calendar: 'Kalendář a nejbližší dny',
+      shopping: 'Nákupy, kódy a karty',
+      hdo: 'Nízký tarif',
+      waste: 'Svoz odpadu',
+      readings: 'Odečty a spotřeba',
+      pool: 'Bazén a kvalita vody',
+      tasks: 'Zápisník a úkoly',
+      warranties: 'Záruky a účtenky',
+      polishHolidays: 'Polské svátky',
+      garage: 'Garáž a servis',
+      contracts: 'Smlouvy a pojistky',
+      finance: 'Finance domácnosti',
+      subscriptions: 'Předplatné a platby'
+    };
+    return titles[moduleId] || fallback || 'Modul';
+  }
+
+  function moduleCockpitNote(moduleId, fallback) {
+    const notes = {
+      calendar: 'Nejdřív přehled, potom rychlé přidání nebo zdroje kalendáře.',
+      shopping: 'Seznamy, katalog, slevové kódy a věrnostní karty z jednoho místa.',
+      garage: 'Auta, spotřeba, servisní plán a upozornění drží stejný přehled.',
+      finance: 'Pohyby, účty, půjčky i refinancování jsou rozdělené do jasných záložek.',
+      contracts: 'Platnosti a přílohy jsou oddělené, aby modul zůstal použitelný na mobilu.',
+      pool: 'Objem vody, poslední měření a dávkování pH jsou nahoře pohromadě.',
+      subscriptions: 'Služby, lidi a platby mají společný měsíční přehled.'
+    };
+    return notes[moduleId] || fallback || getModuleSubtitle(moduleId);
+  }
+
+  function getModuleCockpitActions(moduleId) {
+    const map = {
+      weather: [{ label: 'Otevřít počasí' }],
+      calendar: [{ label: 'Přehled', tab: 'overview' }, { label: 'Přidat', tab: 'add' }, { label: 'Zdroje', tab: 'sources' }],
+      shopping: [{ label: 'Seznamy', tab: 'list' }, { label: 'Katalog', tab: 'catalog' }, { label: 'Kódy', tab: 'coupons' }],
+      hdo: [{ label: 'Přehled', overview: 'hdo' }],
+      waste: [{ label: 'Přehled', overview: 'waste' }],
+      readings: [{ label: 'Přehled', tab: 'overview' }, { label: 'Odečet', tab: 'entry' }, { label: 'Měřidla', tab: 'meters' }],
+      pool: [{ label: 'Nastavit bazén' }],
+      tasks: [{ label: 'Zápisník', overview: 'tasks' }],
+      warranties: [{ label: 'Záruky' }],
+      polishHolidays: [{ label: 'Svátky PL' }],
+      garage: [{ label: 'Přehled', tab: 'overview' }, { label: 'Přidat auto', tab: 'add' }, { label: 'Statistiky', tab: 'stats' }],
+      contracts: [{ label: 'Přehled', tab: 'overview' }, { label: 'Přidat', tab: 'add' }, { label: 'Detail', tab: 'detail' }],
+      finance: [{ label: 'Přehled', tab: 'summary' }, { label: 'Pohyb', tab: 'add' }, { label: 'Půjčky', tab: 'loans' }],
+      subscriptions: [{ label: 'Přehled', tab: 'overview' }, { label: 'Služby', tab: 'services' }, { label: 'Platby', tab: 'payments' }]
+    };
+    return map[moduleId] || [{ label: 'Otevřít' }];
+  }
+
+  function getModuleCockpitMetrics(moduleId, fallbackStats = null) {
+    const base = fallbackStats || getModuleStats(moduleId);
+    const baseMetric = { label: base.label || 'položek', value: base.count ?? 0 };
+    if (moduleId === 'calendar') {
+      const events = upcomingCalendarEvents(now);
+      return [
+        { label: 'Dnes', value: events.filter((event) => event.date === todayISO()).length, tab: 'overview' },
+        { label: 'Do 7 dnů', value: events.filter((event) => event.date && daysUntil(event.date) !== null && daysUntil(event.date) <= 7).length, tab: 'overview' },
+        { label: 'Zdroje', value: getCalendarSources().length, tab: 'sources' }
+      ];
+    }
+    if (moduleId === 'shopping') {
+      return [
+        { label: 'Koupit', value: state.shopping.filter((item) => !item.done).length, tab: 'list', tone: state.shopping.some((item) => !item.done) ? 'warn' : 'good' },
+        { label: 'Seznamy', value: state.shoppingLists.length, tab: 'list' },
+        { label: 'Kódy', value: state.coupons.filter((item) => !item.used).length, tab: 'coupons' },
+        { label: 'Karty', value: getLoyaltyCards().length, tab: 'loyalty' }
+      ];
+    }
+    if (moduleId === 'hdo') {
+      const hdo = getHdoStatus(now);
+      return [
+        { label: 'Teď', value: hdo.active ? 'běží' : 'neběží', overview: 'hdo', tone: hdo.active ? 'good' : 'warn' },
+        { label: 'Oken', value: state.hdoWindows.length, overview: 'hdo' },
+        { label: 'Další', value: hdo.label || '—', overview: 'hdo' }
+      ];
+    }
+    if (moduleId === 'waste') {
+      const soon = getUpcomingWasteRuntimeItems({ maxDays: 7, limit: 12 });
+      return [
+        { label: 'Do týdne', value: soon.length, overview: 'waste', tone: soon.length ? 'warn' : 'good' },
+        { label: 'Plánů', value: state.waste.length, overview: 'waste' },
+        { label: 'Nejbližší', value: soon[0] ? dueBadge(soon[0].days) : '—', overview: 'waste' }
+      ];
+    }
+    if (moduleId === 'readings') {
+      const meters = readingsMeters();
+      return [
+        { label: 'Měřidla', value: meters.length, tab: 'meters' },
+        { label: 'Odečty', value: state.readings.length, tab: 'history' },
+        { label: 'Čeká', value: meters.filter((meter) => !readingMeterHasCompleteMonthEntry(meter)).length, tab: 'entry', tone: meters.some((meter) => !readingMeterHasCompleteMonthEntry(meter)) ? 'warn' : 'good' }
+      ];
+    }
+    if (moduleId === 'pool') {
+      const pool = normalizePoolState(state.pool || {});
+      const dose = getPoolModule().poolPhDose(pool);
+      return [
+        { label: 'Objem', value: formatPoolVolume(poolVolumeM3(pool)) },
+        { label: 'pH', value: pool.ph || '—', tone: dose.status === 'minus' || dose.status === 'plus' ? 'warn' : dose.status === 'ok' ? 'good' : '' },
+        { label: 'Měření', value: pool.measurements?.length || 0 }
+      ];
+    }
+    if (moduleId === 'tasks') {
+      const open = state.homeTasks.filter((task) => !task.done).length;
+      return [
+        { label: 'Úkoly', value: open, overview: 'tasks', tone: open ? 'warn' : 'good' },
+        { label: 'Stránky', value: notebookPages().length, overview: 'tasks' },
+        { label: 'Poznámky', value: state.notes.length, overview: 'tasks' }
+      ];
+    }
+    if (moduleId === 'warranties') {
+      const active = state.warranties.filter((item) => item.status !== 'archived').length;
+      return [
+        { label: 'Aktivní', value: active },
+        { label: 'Příloh', value: state.warrantyFiles.length },
+        { label: 'Celkem', value: state.warranties.length }
+      ];
+    }
+    if (moduleId === 'garage') {
+      const alerts = getVehicleAlerts();
+      return [
+        { label: 'Auta', value: garageOwnedVehicles().length, tab: 'overview' },
+        { label: 'Upozornění', value: alerts.length, tab: 'overview', tone: alerts.length ? 'warn' : 'good' },
+        { label: 'Tankování', value: state.fuel.length, tab: 'stats' },
+        { label: 'Servis', value: state.services.length, tab: 'detail' }
+      ];
+    }
+    if (moduleId === 'contracts') {
+      const urgent = state.contracts.filter((contract) => {
+        const days = daysUntil(contract.validTo);
+        return days !== null && days <= 45;
+      }).length;
+      return [
+        { label: 'Smlouvy', value: state.contracts.length, tab: 'overview' },
+        { label: 'Do 45 dnů', value: urgent, tab: 'overview', tone: urgent ? 'warn' : 'good' },
+        { label: 'Příloh', value: state.contractFiles.length, tab: 'detail' }
+      ];
+    }
+    if (moduleId === 'finance') {
+      const summary = financeMonthSummary();
+      return [
+        { label: 'Rozdíl', value: formatCurrency(summary.balance), tab: 'summary', tone: summary.balance < 0 ? 'warn' : 'good' },
+        { label: 'Účty', value: state.financeAccounts.length, tab: 'accounts' },
+        { label: 'Půjčky', value: state.financeLoans.length, tab: 'loans' }
+      ];
+    }
+    if (moduleId === 'subscriptions') {
+      const summary = subscriptionMonthSummary();
+      return [
+        { label: 'Služby', value: state.subscriptions.filter((item) => item.enabled !== false).length, tab: 'services' },
+        { label: 'Má se vrátit', value: formatCurrency(summary.expectedReturn), tab: 'overview' },
+        { label: 'Chybí', value: formatCurrency(summary.owed), tab: 'payments', tone: summary.owed ? 'warn' : 'good' }
+      ];
+    }
+    if (moduleId === 'polishHolidays') {
+      const next = nextPolishShopHomeEntry();
+      return [
+        { label: 'Další', value: next ? dueBadge(daysUntil(next.date)) : '—' },
+        { label: 'Rok', value: polishShopSelectedYear() },
+        { label: 'Zavřeno', value: buildPolishShopCalendarYear(polishShopSelectedYear()).filter((entry) => entry.status === 'closed').length }
+      ];
+    }
+    if (moduleId === 'weather') {
+      const weather = normalizeWeatherState(state.weather);
+      const current = weather.current || {};
+      return [
+        { label: 'Teď', value: weather.current ? roundWeather(current.temperature, '°') : '—', tone: weather.current ? 'good' : '' },
+        { label: 'Místo', value: weatherLocationLabel() || '—' },
+        { label: 'Zdroj', value: normalizeWeatherSource(state.weather?.source || 'chmi').toUpperCase() }
+      ];
+    }
+    return [baseMetric];
   }
 
   function renderModule(moduleId) {

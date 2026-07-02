@@ -427,6 +427,9 @@ async function run() {
       expression: `(() => {
         const text = document.body?.innerText || '';
         return {
+          cockpit: Boolean(document.querySelector('[data-module-cockpit="pool"]')),
+          cockpitMetrics: document.querySelectorAll('[data-module-cockpit="pool"] .module-cockpit-metric').length,
+          cockpitActions: document.querySelectorAll('[data-module-cockpit="pool"] .module-cockpit-actions button').length,
           form: Boolean(document.querySelector('form[data-form="pool-settings"]')),
           tempInput: Boolean(document.querySelector('form[data-form="pool-settings"] input[name="waterTempC"]')),
           volume: text.includes('21,6 m³') || text.includes('21.6 m³') || text.includes('objem vody'),
@@ -441,6 +444,9 @@ async function run() {
       console.log('DEBUG pool:', JSON.stringify(poolValue, null, 2));
     }
     let poolOk = true;
+    if (!poolValue.cockpit) { fail('Bazén nemá horní module cockpit.'); poolOk = false; }
+    if (poolValue.cockpitMetrics < 3) { fail('Bazén cockpit nemá metriky.'); poolOk = false; }
+    if (poolValue.cockpitActions < 1) { fail('Bazén cockpit nemá rychlou akci.'); poolOk = false; }
     if (!poolValue.form) { fail('Bazén po kliknutí nerenderuje pool-settings formulář.'); poolOk = false; }
     if (!poolValue.tempInput) { fail('Bazén po kliknutí nemá vstup pro teplotu vody.'); poolOk = false; }
     if (!poolValue.volume) { fail('Bazén po kliknutí neukazuje objem vody.'); poolOk = false; }
@@ -458,6 +464,9 @@ async function run() {
       expression: `(() => {
         const text = document.body?.innerText || '';
         return {
+          cockpit: Boolean(document.querySelector('[data-module-cockpit="finance"]')),
+          cockpitMetrics: document.querySelectorAll('[data-module-cockpit="finance"] .module-cockpit-metric').length,
+          cockpitActions: document.querySelectorAll('[data-module-cockpit="finance"] .module-cockpit-actions button').length,
           loanForm: Boolean(document.querySelector('form[data-form="add-finance-loan"]')),
           refinanceForm: Boolean(document.querySelector('form[data-form="finance-refinance"]')),
           loanText: text.includes('Smoke půjčka') && text.includes('Refinancování')
@@ -469,6 +478,9 @@ async function run() {
       console.log('DEBUG finance:', JSON.stringify(financeValue, null, 2));
     }
     let financeOk = true;
+    if (!financeValue.cockpit) { fail('Finance nemají horní module cockpit.'); financeOk = false; }
+    if (financeValue.cockpitMetrics < 3) { fail('Finance cockpit nemá metriky.'); financeOk = false; }
+    if (financeValue.cockpitActions < 3) { fail('Finance cockpit nemá rychlé akce.'); financeOk = false; }
     if (!financeValue.loanForm) { fail('Finance/Půjčky nerenderují add-finance-loan formulář.'); financeOk = false; }
     if (!financeValue.refinanceForm) { fail('Finance/Půjčky nerenderují finance-refinance formulář.'); financeOk = false; }
     if (!financeValue.loanText) { fail('Finance/Půjčky neukazují seed půjčku/refinancování.'); financeOk = false; }
@@ -483,6 +495,9 @@ async function run() {
       expression: `(() => {
         const text = document.body?.innerText || '';
         return {
+          cockpit: Boolean(document.querySelector('[data-module-cockpit="contracts"]')),
+          cockpitMetrics: document.querySelectorAll('[data-module-cockpit="contracts"] .module-cockpit-metric').length,
+          cockpitActions: document.querySelectorAll('[data-module-cockpit="contracts"] .module-cockpit-actions button').length,
           addForm: Boolean(document.querySelector('form[data-form="add-contract"]')),
           updateForm: Boolean(document.querySelector('form[data-form="update-contract"]')),
           fileForm: Boolean(document.querySelector('form[data-form="add-contract-file"]')),
@@ -492,6 +507,9 @@ async function run() {
     });
     const contractsValue = contractsCheck.result?.value || {};
     let contractsOk = true;
+    if (!contractsValue.cockpit) { fail('Smlouvy nemají horní module cockpit.'); contractsOk = false; }
+    if (contractsValue.cockpitMetrics < 3) { fail('Smlouvy cockpit nemá metriky.'); contractsOk = false; }
+    if (contractsValue.cockpitActions < 3) { fail('Smlouvy cockpit nemá rychlé akce.'); contractsOk = false; }
     if (!contractsValue.addForm) { fail('Smlouvy nerenderují add-contract formulář.'); contractsOk = false; }
     if (!contractsValue.updateForm) { fail('Smlouvy nerenderují update-contract formulář v detailu.'); contractsOk = false; }
     if (!contractsValue.fileForm) { fail('Smlouvy nerenderují add-contract-file formulář.'); contractsOk = false; }
