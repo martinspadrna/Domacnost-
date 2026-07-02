@@ -108,7 +108,7 @@
             }).join('')}
             <button class="shopping-list-chip shopping-list-add-chip" type="button" data-action="prompt-add-shopping-list" aria-label="Přidat nákupní seznam"><strong>＋</strong><span>nový seznam</span></button>
           </div>
-          ${activeListId ? `<div class="shopping-list-tools"><button class="ghost-btn danger-outline-btn" type="button" data-action="delete-shopping-list" data-id="${escapeHtml(activeListId)}" ${lists.length <= 1 ? 'disabled title="Poslední seznam nejde smazat"' : ''}>Smazat seznam</button></div>` : ''}
+          ${activeListId ? `<div class="shopping-list-tools"><button class="ghost-btn" type="button" data-action="prompt-rename-shopping-list" data-id="${escapeHtml(activeListId)}">Přejmenovat</button><button class="ghost-btn danger-outline-btn" type="button" data-action="delete-shopping-list" data-id="${escapeHtml(activeListId)}" ${lists.length <= 1 ? 'disabled title="Poslední seznam nejde smazat"' : ''}>Smazat seznam</button></div>` : ''}
 
           <div class="shopping-progress-card"><div><strong>${activeStats.open ? `${activeStats.open} koupit` : 'Nákup hotový'}</strong><span>${activeStats.done} hotovo · ${activeStats.total} celkem · ${escapeHtml(activeList?.name || 'seznam')}</span></div><div class="shopping-progress"><span style="width:${progress}%"></span></div></div>
 

@@ -242,6 +242,50 @@
       addShoppingListFromForm({ name }, null);
     }
 
+    // Přejmenování seznamu. Zachovává activeShoppingListId a položky — mění
+    // jen name + updatedAt. Lokálně vždy; v cloudu přes cloudUpdateShoppingList
+    // (pokud seznam ještě nemá cloudId, nejdřív cloudEnsureShoppingList).
+    async function renameShoppingList(id, rawName) {
+      deps.ensureShoppingListsReady?.();
+      const store = state();
+      const lists = deps.getShoppingLists?.() || store.shoppingLists || [];
+      const list = (store.shoppingLists || []).find((entry) => entry.id === id);
+      if (!list) return;
+      const name = normalizeText(rawName);
+      if (!name) return showToast('Název seznamu nesmí být prázdný');
+      const duplicate = lists.some((entry) => entry.id !== id && normalizeKey(entry.name) === normalizeKey(name));
+      if (duplicate) return showToast('Seznam s tímto názvem už existuje');
+      if (name === list.name) {
+        deps.closeShoppingTransientUi?.();
+        deps.requestRender?.();
+        return;
+      }
+      list.name = name;
+      list.updatedAt = new Date().toISOString();
+      deps.markShoppingRuntimeDirty?.();
+      // activeShoppingListId se nemění — přejmenování aktivní seznam neopouští.
+      persist('full');
+      if (deps.cloudReady?.() && deps.cloudUpdateShoppingList) {
+        let target = list;
+        if (!(list.cloudId || list.cloudListId) && deps.cloudEnsureShoppingList) {
+          await deps.cloudEnsureShoppingList(list);
+          target = (store.shoppingLists || []).find((entry) => entry.id === id) || list;
+        }
+        await deps.cloudUpdateShoppingList(target);
+      }
+      showToast(`Seznam přejmenován na ${name}`);
+    }
+
+    function promptRenameShoppingList(id) {
+      deps.ensureShoppingListsReady?.();
+      const store = state();
+      const list = (store.shoppingLists || []).find((entry) => entry.id === id);
+      if (!list) return;
+      const name = normalizeText(promptDialog('Nový název seznamu', list.name || ''));
+      if (!name || name === list.name) return;
+      renameShoppingList(id, name);
+    }
+
     function toggleQuantityEditor(id) {
       const next = deps.getQuantityEditId?.() === id ? '' : id;
       deps.setQuantityEditId?.(next);
@@ -388,6 +432,8 @@
       addShoppingListFromForm,
       setActiveShoppingList,
       deleteShoppingList,
+      renameShoppingList,
+      promptRenameShoppingList,
       promptAddShoppingList,
       toggleQuantityEditor,
       setDoneModalOpen,

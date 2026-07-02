@@ -120,10 +120,12 @@ if (appSource) {
   }
 }
 
-// Kontrola app.js — vehicleServicePlans izolace mezi domácnostmi (v0.1_329).
-// Per-vehicle/per-household mapa musí být v capture/save/restore workspace
-// cestě, jinak po přepnutí domácnosti zůstane servisní plán z předchozí.
+// Kontrola app.js — per-vehicle/per-household mapy izolace mezi domácnostmi
+// (v0.1_329/330). vehicleServicePlans i vehicleIconColors musí být v
+// capture/save/restore workspace cestě, jinak po přepnutí domácnosti zůstane
+// servisní plán / barvy z předchozí.
 if (appSource) {
+  const isolatedMaps = ['vehicleServicePlans', 'vehicleIconColors'];
   const workspaceFns = [
     'captureCurrentHouseholdWorkspace',
     'saveHouseholdWorkspace',
@@ -135,15 +137,33 @@ if (appSource) {
       errors.push(`app.js: nenašel jsem ${fnName}().`);
       return;
     }
-    if (!/vehicleServicePlans/.test(match[0])) {
-      errors.push(
-        `app.js: ${fnName} neřeší vehicleServicePlans — servisní plán by po ` +
-          'přepnutí domácnosti zůstal z předchozí. Přidej ho do workspace cesty.'
-      );
-    } else {
-      notes.push(`app.js: ${fnName} izoluje vehicleServicePlans.`);
-    }
+    isolatedMaps.forEach((mapName) => {
+      if (!new RegExp(mapName).test(match[0])) {
+        errors.push(
+          `app.js: ${fnName} neřeší ${mapName} — po přepnutí domácnosti by ` +
+            'zůstala mapa z předchozí. Přidej ho do workspace cesty.'
+        );
+      } else {
+        notes.push(`app.js: ${fnName} izoluje ${mapName}.`);
+      }
+    });
   });
+  // restoreHouseholdWorkspace bez snapshotu (else větev) musí obě mapy nulovat.
+  const restoreMatch = appSource.match(/function restoreHouseholdWorkspace\([\s\S]*?\n {2}\}/);
+  if (restoreMatch) {
+    const elseMatch = restoreMatch[0].match(/\}\s*else\s*\{[\s\S]*$/);
+    const elseBody = elseMatch ? elseMatch[0] : '';
+    isolatedMaps.forEach((mapName) => {
+      if (!new RegExp(`${mapName}\\s*=\\s*\\{\\s*\\}`).test(elseBody)) {
+        errors.push(
+          `app.js: restoreHouseholdWorkspace else větev (bez snapshotu) nenuluje ` +
+            `${mapName} na {} — nová domácnost by zdědila mapu z předchozí.`
+        );
+      } else {
+        notes.push(`app.js: restoreHouseholdWorkspace bez snapshotu nuluje ${mapName}.`);
+      }
+    });
+  }
 }
 
 console.log('Memoization + výpočtové invarianty pro Domácnost+');

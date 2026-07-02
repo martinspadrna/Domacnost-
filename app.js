@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_329';
-  const APP_BUILD = 329;
+  const APP_VERSION = 'Domácnost+ v.0.1_330';
+  const APP_BUILD = 330;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -5041,6 +5041,7 @@
       cloudUpdateShoppingItem,
       cloudDeleteShoppingItem,
       cloudArchiveShoppingList,
+      cloudUpdateShoppingList,
       cloudDeleteShoppingCatalogItem,
       cloudEnsureShoppingList,
       dedupeShoppingData,
@@ -10475,6 +10476,18 @@
     return getSubscriptionsModule().addSubscriptionFromForm(data, form);
   }
 
+  function updateSubscriptionServiceFromForm(id, data, form) {
+    return getSubscriptionsModule().updateSubscriptionServiceFromForm(id, data, form);
+  }
+
+  function setSubscriptionServiceEdit(id) {
+    return getSubscriptionsModule().setSubscriptionServiceEdit(id);
+  }
+
+  function subscriptionServiceDefaults(serviceKey) {
+    return getSubscriptionsModule().subscriptionServiceDefaults(serviceKey);
+  }
+
   function addSubscriptionShareFromForm(data, form) {
     return getSubscriptionsModule().addSubscriptionShareFromForm(data, form);
   }
@@ -12733,6 +12746,23 @@
     return true;
   }
 
+  async function cloudUpdateShoppingList(list) {
+    const client = getSupabaseClient();
+    const cloudListId = list?.cloudId || list?.cloudListId || '';
+    if (!client || !cloudListId || !state.cloud?.householdId) return true;
+    const { error } = await client
+      .from('shopping_lists')
+      .update({ name: list.name || 'Nákup', updated_at: new Date().toISOString() })
+      .eq('id', cloudListId)
+      .eq('household_id', state.cloud.householdId);
+    if (error) {
+      showToast(error.message || 'Cloud seznam se nepovedlo přejmenovat');
+      return false;
+    }
+    state.cloud.lastSyncAt = new Date().toISOString();
+    return true;
+  }
+
 
   async function cloudDeleteShoppingCatalogItem(item) {
     const client = getSupabaseClient();
@@ -13908,6 +13938,7 @@
       'finance-month-filter': () => setFinanceMonth(data.month),
       'add-subscription-person': () => addSubscriptionPersonFromForm(data, form),
       'add-subscription': () => addSubscriptionFromForm(data, form),
+      'update-subscription': () => updateSubscriptionServiceFromForm(form.dataset.id, data, form),
       'add-subscription-share': () => addSubscriptionShareFromForm(data, form),
       'add-subscription-payment': () => addSubscriptionPaymentFromForm(data, form),
       'subscription-month-filter': () => setSubscriptionMonth(data.month)
@@ -15842,6 +15873,10 @@
       promptAddShoppingList();
       return;
     }
+    if (action === 'prompt-rename-shopping-list') {
+      getShoppingActions().promptRenameShoppingList(button.dataset.id || '');
+      return;
+    }
     if (action === 'delete-shopping-list') {
       deleteShoppingList(button.dataset.id || '');
       return;
@@ -16162,6 +16197,14 @@
     }
     if (action === 'subscription-toggle-service') {
       toggleSubscriptionService(button.dataset.id);
+      return;
+    }
+    if (action === 'edit-subscription-service') {
+      setSubscriptionServiceEdit(button.dataset.id);
+      return;
+    }
+    if (action === 'cancel-subscription-edit') {
+      setSubscriptionServiceEdit('');
       return;
     }
     if (action === 'pwa-install') {
@@ -17713,6 +17756,21 @@
     const subscriptionMonthInput = event.target.closest('form[data-form="subscription-month-filter"] input[name="month"]');
     if (subscriptionMonthInput) {
       setSubscriptionMonth(subscriptionMonthInput.value);
+      return;
+    }
+    const subscriptionServiceSelect = event.target.closest('form[data-form="add-subscription"] select[name="serviceKey"], form[data-form="update-subscription"] select[name="serviceKey"]');
+    if (subscriptionServiceSelect) {
+      // Při výběru jiné služby předvyplň cenu / max míst / název, ale JEN když
+      // uživatel příslušné pole nechal prázdné — ručně zadané hodnoty se
+      // nepřepisují.
+      const serviceForm = subscriptionServiceSelect.form;
+      const defaults = subscriptionServiceDefaults(subscriptionServiceSelect.value || 'other');
+      const priceInput = serviceForm?.querySelector('[name="price"]');
+      const membersInput = serviceForm?.querySelector('[name="maxMembers"]');
+      const nameInput = serviceForm?.querySelector('[name="name"]');
+      if (priceInput && !String(priceInput.value || '').trim() && defaults.price > 0) priceInput.value = defaults.price;
+      if (membersInput && !String(membersInput.value || '').trim() && defaults.maxMembers > 0) membersInput.value = defaults.maxMembers;
+      if (nameInput && !String(nameInput.value || '').trim() && subscriptionServiceSelect.value !== 'other') nameInput.value = defaults.name;
       return;
     }
     const subscriptionPaymentControl = event.target.closest('form[data-form="add-subscription-payment"] select[name="subscriptionId"], form[data-form="add-subscription-payment"] select[name="personId"], form[data-form="add-subscription-payment"] input[name="month"]');

@@ -39,6 +39,10 @@
 
     const SUBSCRIPTION_SERVICE_OPTIONS = deps.SUBSCRIPTION_SERVICE_OPTIONS || [];
 
+    // Id právě upravované služby — inline edit panel. Lokální UI stav, přežije
+    // render (edit se otevírá/zavírá bez ztráty rozdělané úpravy).
+    let subscriptionServiceEditId = '';
+
     function normalizeSubscriptionServiceKey(serviceKey = '') {
       const key = normalizeText(serviceKey || 'other') || 'other';
       return key === 'voyo' ? 'oneplay' : key;
@@ -66,6 +70,18 @@
 
     function subscriptionServiceSelectOptions() {
       return SUBSCRIPTION_SERVICE_OPTIONS.map(([id, label, price, members]) => [id, `${label}${price ? ` · orientačně ${formatCurrency(price)}` : ''}${members ? ` · max ${members}` : ''}`]);
+    }
+
+    // Defaultní cena / max míst / název pro danou službu — pro autofill ve
+    // formuláři, když uživatel vybere jinou službu a pole nechal prázdné.
+    function subscriptionServiceDefaults(serviceKey = '') {
+      const key = normalizeSubscriptionServiceKey(serviceKey);
+      return {
+        key,
+        price: subscriptionServiceDefaultPrice(key),
+        maxMembers: subscriptionServiceDefaultMembers(key),
+        name: subscriptionServiceName(key, '')
+      };
     }
 
     function subscriptionSelectedMonth() {
@@ -721,17 +737,37 @@
         </details>`;
     }
 
+    function renderSubscriptionServiceEditForm(service) {
+      return `
+        <form data-form="update-subscription" data-id="${escapeHtml(service.id)}" class="compact-form subscription-service-edit-form">
+          <div class="form-grid two">
+            ${selectField('Služba', 'serviceKey', subscriptionServiceSelectOptions(), service.serviceKey)}
+            ${field('Vlastní název', 'name', 'text', 'vyplň jen u vlastní služby', false, service.name || '')}
+            ${field('Cena / měsíc', 'price', 'number', 'např. 319', false, service.price || '')}
+            ${field('Den stržení', 'billingDay', 'number', '1–31', false, service.billingDay || '')}
+            ${field('Max míst / členů', 'maxMembers', 'number', 'např. 5', false, service.maxMembers || '')}
+            ${field('Poznámka', 'note', 'text', 'např. rodinný tarif', false, service.note || '')}
+          </div>
+          <div class="form-actions compact-actions">
+            <button class="primary-btn" type="submit">Uložit změny</button>
+            <button class="ghost-btn" type="button" data-action="cancel-subscription-edit">Zrušit úpravu</button>
+          </div>
+        </form>`;
+    }
+
     function renderSubscriptionServiceItem(service) {
       const shares = service.shares || [];
       const shareTotal = shares.reduce((sum, share) => sum + decimalValue(share.amount), 0);
       const capacity = subscriptionCapacity(service);
       const capacityText = capacity.maxMembers ? `Obsazeno ${capacity.used}/${capacity.maxMembers} · volno ${capacity.free}` : `Obsazeno ${capacity.used} · bez limitu`;
+      const isEditing = subscriptionServiceEditId === service.id;
       return `
         <div class="item compact-item subscription-service-item ${service.enabled === false ? 'muted-item' : ''}">
           <div class="item-top"><div class="item-title subscription-service-title">${renderSubscriptionServiceIcon(service, { size: 'md' })}</div><span class="badge ${capacity.isFull ? 'warn' : service.enabled === false ? '' : 'good'}">${escapeHtml(capacityText)}</span></div>
           <div class="item-meta">Cena ${formatCurrency(service.price)} · den stržení ${service.billingDay}. · Sdílení ${formatCurrency(shareTotal)} / měsíc · tvoje část ${formatCurrency(Math.max(0, decimalValue(service.price) - shareTotal))}${service.note ? ` · ${escapeHtml(service.note)}` : ''}</div>
           ${shares.length ? `<div class="subscription-share-list">${shares.map((share) => `<span class="quick-chip static-chip">${escapeHtml(subscriptionPersonName(share.personId))}: ${formatCurrency(share.amount)} <button type="button" data-action="delete-subscription-share" data-subscription-id="${escapeHtml(service.id)}" data-person-id="${escapeHtml(share.personId)}" aria-label="Odebrat sdílení">×</button></span>`).join('')}</div>` : '<div class="inline-note compact-note">Zatím není nikomu přiřazená.</div>'}
-          <div class="item-actions"><button class="ghost-btn" type="button" data-action="subscription-toggle-service" data-id="${escapeHtml(service.id)}">${service.enabled === false ? 'Zapnout' : 'Vypnout'}</button><button class="danger-btn" type="button" data-action="delete-subscription" data-id="${escapeHtml(service.id)}">Smazat</button></div>
+          <div class="item-actions"><button class="ghost-btn" type="button" data-action="edit-subscription-service" data-id="${escapeHtml(service.id)}">${isEditing ? 'Zavřít úpravu' : 'Upravit'}</button><button class="ghost-btn" type="button" data-action="subscription-toggle-service" data-id="${escapeHtml(service.id)}">${service.enabled === false ? 'Zapnout' : 'Vypnout'}</button><button class="danger-btn" type="button" data-action="delete-subscription" data-id="${escapeHtml(service.id)}">Smazat</button></div>
+          ${isEditing ? renderSubscriptionServiceEditForm(service) : ''}
         </div>`;
     }
 
@@ -776,6 +812,52 @@
       getState().subscriptions.push(normalizeSubscriptionService({ serviceKey, name, price, billingDay: data.billingDay, maxMembers, note: data.note, shares: [] }));
       form.reset();
       persistSubscriptionsState({ toast: 'Předplatné přidané' });
+    }
+
+    function setSubscriptionServiceEdit(id) {
+      subscriptionServiceEditId = subscriptionServiceEditId === id ? '' : String(id || '');
+      render();
+    }
+
+    // Úprava existující služby. NIKDY nemaže id, createdAt, shares ani
+    // subscriptionPayments — mění jen serviceKey/name/price/billingDay/
+    // maxMembers/note. Při změně serviceKey se ikonka a default název
+    // přizpůsobí přes normalizeSubscriptionService.
+    function updateSubscriptionServiceFromForm(id, data, form) {
+      const service = getState().subscriptions.find((item) => item.id === id);
+      if (!service) return showToast('Služba nenalezená');
+      const nextKey = normalizeSubscriptionServiceKey(data.serviceKey || service.serviceKey || 'other');
+      const keyChanged = nextKey !== service.serviceKey;
+      // Vlastní název: když je prázdný a změnila se služba, vezmi default
+      // názvu nové služby; jinak zachovej ručně zadaný.
+      const rawName = normalizeText(data.name);
+      const nextName = rawName || (keyChanged ? subscriptionServiceName(nextKey, '') : service.name);
+      // Cena / max míst: nepřepisuj ručně zadané. Když pole prázdné a služba
+      // se změnila, doplň default nové služby; jinak zachovej původní hodnotu.
+      const rawPrice = normalizeText(data.price);
+      const nextPrice = rawPrice !== '' ? decimalValue(data.price) : (keyChanged ? subscriptionServiceDefaultPrice(nextKey) : service.price);
+      const rawMembers = normalizeText(data.maxMembers);
+      const nextMembers = rawMembers !== '' ? Math.max(0, Math.floor(Number(data.maxMembers || 0))) : (keyChanged ? subscriptionServiceDefaultMembers(nextKey) : service.maxMembers);
+      if (!(nextPrice > 0)) return showToast('Vyplň cenu služby');
+      const updated = normalizeSubscriptionService({
+        ...service,
+        id: service.id,
+        createdAt: service.createdAt,
+        householdId: service.householdId,
+        profileId: service.profileId,
+        shares: service.shares,
+        enabled: service.enabled,
+        serviceKey: nextKey,
+        name: nextName,
+        price: nextPrice,
+        billingDay: normalizeText(data.billingDay) !== '' ? data.billingDay : service.billingDay,
+        maxMembers: nextMembers,
+        note: data.note !== undefined ? data.note : service.note
+      });
+      const index = getState().subscriptions.findIndex((item) => item.id === id);
+      if (index >= 0) getState().subscriptions[index] = updated;
+      subscriptionServiceEditId = '';
+      persistSubscriptionsState({ toast: 'Služba upravená' });
     }
 
     function addSubscriptionShareFromForm(data, form) {
@@ -887,9 +969,13 @@
       shiftSubscriptionMonth,
       setSubscriptionPaymentFilter,
       setSubscriptionPaymentDraft,
+      // autofill defaults pro formulář
+      subscriptionServiceDefaults,
       // handlery
       addSubscriptionPersonFromForm,
       addSubscriptionFromForm,
+      updateSubscriptionServiceFromForm,
+      setSubscriptionServiceEdit,
       addSubscriptionShareFromForm,
       addSubscriptionPaymentFromForm,
       toggleSubscriptionPaid,
