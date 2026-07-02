@@ -28,6 +28,12 @@ function expect(source, pattern, label) {
   else notes.push(label);
 }
 
+function expectAbsent(source, pattern, label) {
+  const found = typeof pattern === 'string' ? source.includes(pattern) : pattern.test(source);
+  if (found) errors.push(label);
+  else notes.push(label);
+}
+
 const app = read('app.js');
 const finance = read('finance.js');
 const pool = read('pool.js');
@@ -79,8 +85,14 @@ if (app && contracts && index && sw) {
   expect(app, 'contracts: renderContracts', 'app.js: contracts renderer je v renderModule mapě.');
   expect(app, 'return getContractsModule().renderContracts();', 'app.js: renderContracts je už jen wrapper.');
   expect(app, 'return getContractsModule().renderContractOverviewItem(contract);', 'app.js: overview smlouvy jde přes contracts module.');
+  expect(app, 'return getContractsModule().cloudLoadContracts(showMessage);', 'app.js: cloudLoadContracts je už jen wrapper.');
+  expect(app, 'return getContractsModule().addContractFromForm(data, form);', 'app.js: add-contract formulář jde přes contracts module.');
+  expectAbsent(app, 'function cloudContractPayload', 'app.js: cloudContractPayload už není v monolitu.');
   expect(contracts, 'function renderContracts()', 'contracts.js: renderContracts existuje.');
   expect(contracts, 'function renderContractDetail', 'contracts.js: renderContractDetail existuje.');
+  expect(contracts, 'function cloudContractPayload', 'contracts.js: cloudContractPayload žije v modulu.');
+  expect(contracts, 'async function cloudLoadContracts', 'contracts.js: cloudLoadContracts žije v modulu.');
+  expect(contracts, 'async function addContractFromForm', 'contracts.js: add-contract handler žije v modulu.');
   expect(contracts, 'data-form="add-contract"', 'contracts.js: add-contract formulář se renderuje.');
   expect(contracts, 'data-form="add-contract-file"', 'contracts.js: add-contract-file formulář se renderuje.');
   expect(contracts, 'window.DomacnostContracts', 'contracts.js: factory export existuje.');

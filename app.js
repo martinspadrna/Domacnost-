@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_333';
-  const APP_BUILD = 333;
+  const APP_VERSION = 'Domácnost+ v.0.1_334';
+  const APP_BUILD = 334;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -5333,6 +5333,18 @@
       getState: () => state,
       getActiveContractId: () => activeContractId,
       setActiveContractId: (value) => { activeContractId = value || null; },
+      uid,
+      normalizeText,
+      decimalValue,
+      currentHouseholdId,
+      currentProfileId,
+      touchState,
+      saveState,
+      render,
+      showToast,
+      getSupabaseClient,
+      refreshCloudSession,
+      cloudLoadContractFiles,
       getModuleTab,
       escapeHtml,
       field,
@@ -10293,6 +10305,38 @@
     return getContractsModule().contractFileCount(contractId);
   }
 
+  function addContractFromForm(data, form) {
+    return getContractsModule().addContractFromForm(data, form);
+  }
+
+  function updateContract(id, data, form) {
+    return getContractsModule().updateContract(id, data, form);
+  }
+
+  function cloudAddContract(contract) {
+    return getContractsModule().cloudAddContract(contract);
+  }
+
+  function cloudUpdateContract(contract) {
+    return getContractsModule().cloudUpdateContract(contract);
+  }
+
+  function cloudLoadContracts(showMessage = true) {
+    return getContractsModule().cloudLoadContracts(showMessage);
+  }
+
+  function cloudSyncContractById(id) {
+    return getContractsModule().cloudSyncContractById(id);
+  }
+
+  function cloudSyncLocalContracts() {
+    return getContractsModule().cloudSyncLocalContracts();
+  }
+
+  function cloudDeleteContract(contract) {
+    return getContractsModule().cloudDeleteContract(contract);
+  }
+
   function normalizeFinanceTemplates(templates) {
     return getFinanceModule().normalizeFinanceTemplates(templates);
   }
@@ -13279,175 +13323,6 @@
 
 
 
-  function frequencyToCloud(value) {
-    const map = { monthly: 'monthly', yearly: 'yearly', once: 'one_time', one_time: 'one_time', quarterly: 'quarterly', other: 'other' };
-    return map[value] || 'monthly';
-  }
-
-  function frequencyFromCloud(value) {
-    const map = { monthly: 'monthly', yearly: 'yearly', one_time: 'once', quarterly: 'quarterly', other: 'other' };
-    return map[value] || 'monthly';
-  }
-
-  function cloudContractPayload(contract, userId) {
-    return {
-      household_id: state.cloud.householdId,
-      profile_id: null,
-      title: contract.name,
-      type: contract.type || null,
-      provider: contract.provider || null,
-      contract_number: contract.number || null,
-      valid_from: contract.validFrom || null,
-      valid_until: contract.validTo || null,
-      amount: contract.amount === '' || contract.amount === null || contract.amount === undefined ? null : Number(contract.amount),
-      currency: 'CZK',
-      payment_frequency: frequencyToCloud(contract.frequency),
-      reminder_days: 30,
-      note: contract.note || null,
-      status: 'active',
-      created_by: userId || state.cloud.userId || null,
-      updated_by: userId || state.cloud.userId || null
-    };
-  }
-
-  async function cloudAddContract(contract) {
-    const client = getSupabaseClient();
-    if (!client || !state.cloud?.householdId) return null;
-    const user = await refreshCloudSession(false);
-    if (!user) return null;
-    if (contract.cloudId) return { id: contract.cloudId };
-    const { data, error } = await client
-      .from('contracts')
-      .insert(cloudContractPayload(contract, user.id))
-      .select('id')
-      .single();
-    if (error) {
-      showToast(error.message || 'Smlouvu se nepovedlo uložit do cloudu');
-      return null;
-    }
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return data;
-  }
-
-  async function cloudUpdateContract(contract) {
-    const client = getSupabaseClient();
-    if (!client || !state.cloud?.householdId || !contract?.cloudId) return true;
-    const user = await refreshCloudSession(false);
-    if (!user) return false;
-    const payload = cloudContractPayload(contract, user.id);
-    delete payload.household_id;
-    delete payload.profile_id;
-    delete payload.created_by;
-    const { error } = await client
-      .from('contracts')
-      .update(payload)
-      .eq('id', contract.cloudId)
-      .eq('household_id', state.cloud.householdId);
-    if (error) {
-      showToast(error.message || 'Smlouvu se nepovedlo upravit v cloudu');
-      return false;
-    }
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return true;
-  }
-
-  async function cloudLoadContracts(showMessage = true) {
-    const client = getSupabaseClient();
-    if (!client) return showToast('Supabase knihovna není načtená');
-    const user = await refreshCloudSession(false);
-    if (!user || !state.cloud?.householdId) return showToast('Nejdřív vytvoř / napoj domácnost v cloudu');
-    const { data, error } = await client
-      .from('contracts')
-      .select('id,title,type,provider,contract_number,valid_from,valid_until,amount,payment_frequency,note,created_at')
-      .eq('household_id', state.cloud.householdId)
-      .order('valid_until', { ascending: true, nullsFirst: false })
-      .order('created_at', { ascending: false });
-    if (error) return showToast(error.message || 'Smlouvy se nepovedlo načíst');
-
-    const cloudContracts = (data || []).map((item) => {
-      const existing = state.contracts.find((contract) => contract.cloudId === item.id);
-      return {
-        id: existing?.id || uid(),
-        cloudId: item.id,
-        householdId: currentHouseholdId(),
-        profileId: currentProfileId(),
-        createdAt: item.created_at || new Date().toISOString(),
-        name: item.title || 'Smlouva',
-        type: item.type || '',
-        provider: item.provider || '',
-        number: item.contract_number || '',
-        validFrom: item.valid_from || '',
-        validTo: item.valid_until || '',
-        amount: item.amount === null || item.amount === undefined ? '' : Number(item.amount),
-        frequency: frequencyFromCloud(item.payment_frequency),
-        note: item.note || ''
-      };
-    });
-    const localOnly = state.contracts.filter((contract) => !contract.cloudId);
-    state.contracts = [...localOnly, ...cloudContracts];
-    if (!activeContractId && state.contracts.length) activeContractId = state.contracts[0].id;
-    state.cloud.lastSyncAt = new Date().toISOString();
-    touchState();
-    saveState();
-    render();
-    await cloudLoadContractFiles(false);
-    if (showMessage) showToast('Cloud smlouvy načtené');
-  }
-
-  async function cloudSyncContractById(id) {
-    const contract = state.contracts.find((item) => item.id === id);
-    if (!contract) return;
-    if (contract.cloudId) {
-      const ok = await cloudUpdateContract(contract);
-      if (!ok) return;
-      showToast('Cloud smlouva aktualizovaná');
-    } else {
-      const cloudContract = await cloudAddContract(contract);
-      if (!cloudContract?.id) return;
-      contract.cloudId = cloudContract.id;
-      showToast('Smlouva odeslaná do cloudu');
-    }
-    touchState();
-    saveState();
-    render();
-  }
-
-  async function cloudSyncLocalContracts() {
-    const localContracts = state.contracts.filter((contract) => !contract.cloudId);
-    if (!state.cloud?.householdId) return showToast('Nejdřív napoj domácnost na cloud');
-    if (!localContracts.length) return showToast('Není co odeslat');
-    let synced = 0;
-    for (const contract of localContracts) {
-      const cloudContract = await cloudAddContract(contract);
-      if (cloudContract?.id) {
-        contract.cloudId = cloudContract.id;
-        synced += 1;
-      }
-    }
-    touchState();
-    saveState();
-    render();
-    showToast(synced ? `Odesláno smluv: ${synced}` : 'Nic se nepovedlo odeslat');
-  }
-
-  async function cloudDeleteContract(contract) {
-    const client = getSupabaseClient();
-    if (!client || !contract?.cloudId || !state.cloud?.householdId) return true;
-    const { error } = await client
-      .from('contracts')
-      .delete()
-      .eq('id', contract.cloudId)
-      .eq('household_id', state.cloud.householdId);
-    if (error) {
-      showToast(error.message || 'Cloud smlouvu se nepovedlo smazat');
-      return false;
-    }
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return true;
-  }
-
-
-
   function pad2(value) {
     return String(value).padStart(2, '0');
   }
@@ -13780,33 +13655,7 @@
       },
       'update-fuel': async () => updateFuelLog(form.dataset.id, data),
       'update-service': async () => updateServiceLog(form.dataset.id, data),
-      'add-contract': async () => {
-        const contract = {
-          id: uid(),
-          householdId: currentHouseholdId(),
-          profileId: currentProfileId(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          name: normalizeText(data.name),
-          type: normalizeText(data.type),
-          provider: normalizeText(data.provider),
-          number: normalizeText(data.number),
-          validFrom: normalizeText(data.validFrom),
-          validTo: normalizeText(data.validTo),
-          amount: decimalValue(data.amount),
-          frequency: data.frequency,
-          note: normalizeText(data.note)
-        };
-        const cloudContract = await cloudAddContract(contract);
-        if (cloudContract?.id) contract.cloudId = cloudContract.id;
-        state.contracts.push(contract);
-        activeContractId = contract.id;
-        touchState();
-        saveState();
-        form.reset();
-        render();
-        showToast(contract.cloudId ? 'Smlouva uložena do cloudu' : 'Smlouva uložena lokálně');
-      },
+      'add-contract': () => addContractFromForm(data, form),
       'update-contract': async () => updateContract(form.dataset.contractId, data, form),
       'add-contract-file': () => addContractFiles(form),
       'fuelio-preview': () => previewFuelioImport(form),
@@ -14172,27 +14021,6 @@
     saveState();
     render();
     showToast(coupon.cloudId ? 'Kód upraven v cloudu' : 'Kód upraven lokálně');
-  }
-
-  async function updateContract(id, data, form) {
-    const contract = state.contracts.find((item) => item.id === id);
-    if (!contract) return showToast('Smlouva nenalezena');
-    contract.name = normalizeText(data.name) || contract.name;
-    contract.type = normalizeText(data.type) || 'other';
-    contract.provider = normalizeText(data.provider);
-    contract.number = normalizeText(data.number);
-    contract.validFrom = normalizeText(data.validFrom);
-    contract.validTo = normalizeText(data.validTo);
-    contract.amount = decimalValue(data.amount);
-    contract.frequency = data.frequency || 'monthly';
-    contract.note = normalizeText(data.note);
-    contract.updatedAt = new Date().toISOString();
-    const ok = await cloudUpdateContract(contract);
-    if (!ok) return;
-    touchState();
-    saveState();
-    render();
-    showToast(contract.cloudId ? 'Smlouva upravena v cloudu' : 'Smlouva upravena lokálně');
   }
 
   function decimalValue(value) {

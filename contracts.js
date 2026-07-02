@@ -1,12 +1,24 @@
 (function () {
   'use strict';
 
-  // Smlouvy: UI render + overview. Cloud sync a souborové přílohy zatím zůstávají v app.js,
+  // Smlouvy: UI render + cloud CRUD. Souborové přílohy zatím zůstávají v app.js,
   // protože sdílí Supabase Storage, IndexedDB a globální preview modal.
   function createContracts(deps) {
     const getState = deps.getState || (() => ({}));
     const getActiveContractId = deps.getActiveContractId || (() => null);
     const setActiveContractId = deps.setActiveContractId || (() => {});
+    const uid = deps.uid || (() => `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    const normalizeText = deps.normalizeText || ((value) => String(value ?? '').trim());
+    const decimalValue = deps.decimalValue || ((value) => value);
+    const currentHouseholdId = deps.currentHouseholdId || (() => '');
+    const currentProfileId = deps.currentProfileId || (() => '');
+    const touchState = deps.touchState || (() => {});
+    const saveState = deps.saveState || (() => {});
+    const render = deps.render || (() => {});
+    const showToast = deps.showToast || (() => {});
+    const getSupabaseClient = deps.getSupabaseClient || (() => null);
+    const refreshCloudSession = deps.refreshCloudSession || (async () => null);
+    const cloudLoadContractFiles = deps.cloudLoadContractFiles || (async () => true);
     const getModuleTab = deps.getModuleTab || ((area, fallback) => fallback);
     const escapeHtml = deps.escapeHtml || ((v) => String(v ?? ''));
     const field = deps.field || (() => '');
@@ -48,6 +60,252 @@
 
     function frequencyLabel(value) {
       return ({ monthly: 'měsíčně', quarterly: 'čtvrtletně', yearly: 'ročně', once: 'jednorázově', other: 'jiné' }[value] || 'jiné');
+    }
+
+    function frequencyToCloud(value) {
+      const map = { monthly: 'monthly', yearly: 'yearly', once: 'one_time', one_time: 'one_time', quarterly: 'quarterly', other: 'other' };
+      return map[value] || 'monthly';
+    }
+
+    function frequencyFromCloud(value) {
+      const map = { monthly: 'monthly', yearly: 'yearly', one_time: 'once', quarterly: 'quarterly', other: 'other' };
+      return map[value] || 'monthly';
+    }
+
+    function cloudContractPayload(contract, userId) {
+      const state = getState();
+      return {
+        household_id: state.cloud?.householdId,
+        profile_id: null,
+        title: contract.name,
+        type: contract.type || null,
+        provider: contract.provider || null,
+        contract_number: contract.number || null,
+        valid_from: contract.validFrom || null,
+        valid_until: contract.validTo || null,
+        amount: contract.amount === '' || contract.amount === null || contract.amount === undefined ? null : Number(contract.amount),
+        currency: 'CZK',
+        payment_frequency: frequencyToCloud(contract.frequency),
+        reminder_days: 30,
+        note: contract.note || null,
+        status: 'active',
+        created_by: userId || state.cloud?.userId || null,
+        updated_by: userId || state.cloud?.userId || null
+      };
+    }
+
+    async function cloudAddContract(contract) {
+      const state = getState();
+      const client = getSupabaseClient();
+      if (!client || !state.cloud?.householdId) return null;
+      const user = await refreshCloudSession(false);
+      if (!user) return null;
+      if (contract.cloudId) return { id: contract.cloudId };
+      const { data, error } = await client
+        .from('contracts')
+        .insert(cloudContractPayload(contract, user.id))
+        .select('id')
+        .single();
+      if (error) {
+        showToast(error.message || 'Smlouvu se nepovedlo uložit do cloudu');
+        return null;
+      }
+      state.cloud.lastSyncAt = new Date().toISOString();
+      return data;
+    }
+
+    async function cloudUpdateContract(contract) {
+      const state = getState();
+      const client = getSupabaseClient();
+      if (!client || !state.cloud?.householdId || !contract?.cloudId) return true;
+      const user = await refreshCloudSession(false);
+      if (!user) return false;
+      const payload = cloudContractPayload(contract, user.id);
+      delete payload.household_id;
+      delete payload.profile_id;
+      delete payload.created_by;
+      const { error } = await client
+        .from('contracts')
+        .update(payload)
+        .eq('id', contract.cloudId)
+        .eq('household_id', state.cloud.householdId);
+      if (error) {
+        showToast(error.message || 'Smlouvu se nepovedlo upravit v cloudu');
+        return false;
+      }
+      state.cloud.lastSyncAt = new Date().toISOString();
+      return true;
+    }
+
+    async function cloudLoadContracts(showMessage = true) {
+      const state = getState();
+      const client = getSupabaseClient();
+      if (!client) {
+        if (showMessage) showToast('Supabase knihovna není načtená');
+        return false;
+      }
+      const user = await refreshCloudSession(false);
+      if (!user || !state.cloud?.householdId) {
+        if (showMessage) showToast('Nejdřív vytvoř / napoj domácnost v cloudu');
+        return false;
+      }
+      const { data, error } = await client
+        .from('contracts')
+        .select('id,title,type,provider,contract_number,valid_from,valid_until,amount,payment_frequency,note,created_at')
+        .eq('household_id', state.cloud.householdId)
+        .order('valid_until', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: false });
+      if (error) {
+        if (showMessage) showToast(error.message || 'Smlouvy se nepovedlo načíst');
+        return false;
+      }
+
+      const cloudContracts = (data || []).map((item) => {
+        const existing = (state.contracts || []).find((contract) => contract.cloudId === item.id);
+        return {
+          id: existing?.id || uid(),
+          cloudId: item.id,
+          householdId: currentHouseholdId(),
+          profileId: currentProfileId(),
+          createdAt: item.created_at || new Date().toISOString(),
+          name: item.title || 'Smlouva',
+          type: item.type || '',
+          provider: item.provider || '',
+          number: item.contract_number || '',
+          validFrom: item.valid_from || '',
+          validTo: item.valid_until || '',
+          amount: item.amount === null || item.amount === undefined ? '' : Number(item.amount),
+          frequency: frequencyFromCloud(item.payment_frequency),
+          note: item.note || ''
+        };
+      });
+      const localOnly = (state.contracts || []).filter((contract) => !contract.cloudId);
+      state.contracts = [...localOnly, ...cloudContracts];
+      if (!getActiveContractId() && state.contracts.length) setActiveContractId(state.contracts[0].id);
+      state.cloud.lastSyncAt = new Date().toISOString();
+      touchState();
+      saveState();
+      render();
+      await cloudLoadContractFiles(false);
+      if (showMessage) showToast('Cloud smlouvy načtené');
+      return true;
+    }
+
+    async function cloudSyncContractById(id) {
+      const state = getState();
+      const contract = (state.contracts || []).find((item) => item.id === id);
+      if (!contract) return false;
+      if (contract.cloudId) {
+        const ok = await cloudUpdateContract(contract);
+        if (!ok) return false;
+        showToast('Cloud smlouva aktualizovaná');
+      } else {
+        const cloudContract = await cloudAddContract(contract);
+        if (!cloudContract?.id) return false;
+        contract.cloudId = cloudContract.id;
+        showToast('Smlouva odeslaná do cloudu');
+      }
+      touchState();
+      saveState();
+      render();
+      return true;
+    }
+
+    async function cloudSyncLocalContracts() {
+      const state = getState();
+      const localContracts = (state.contracts || []).filter((contract) => !contract.cloudId);
+      if (!state.cloud?.householdId) {
+        showToast('Nejdřív napoj domácnost na cloud');
+        return 0;
+      }
+      if (!localContracts.length) {
+        showToast('Není co odeslat');
+        return 0;
+      }
+      let synced = 0;
+      for (const contract of localContracts) {
+        const cloudContract = await cloudAddContract(contract);
+        if (cloudContract?.id) {
+          contract.cloudId = cloudContract.id;
+          synced += 1;
+        }
+      }
+      touchState();
+      saveState();
+      render();
+      showToast(synced ? `Odesláno smluv: ${synced}` : 'Nic se nepovedlo odeslat');
+      return synced;
+    }
+
+    async function cloudDeleteContract(contract) {
+      const state = getState();
+      const client = getSupabaseClient();
+      if (!client || !contract?.cloudId || !state.cloud?.householdId) return true;
+      const { error } = await client
+        .from('contracts')
+        .delete()
+        .eq('id', contract.cloudId)
+        .eq('household_id', state.cloud.householdId);
+      if (error) {
+        showToast(error.message || 'Cloud smlouvu se nepovedlo smazat');
+        return false;
+      }
+      state.cloud.lastSyncAt = new Date().toISOString();
+      return true;
+    }
+
+    async function addContractFromForm(data, form) {
+      const state = getState();
+      const contract = {
+        id: uid(),
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        name: normalizeText(data.name),
+        type: normalizeText(data.type),
+        provider: normalizeText(data.provider),
+        number: normalizeText(data.number),
+        validFrom: normalizeText(data.validFrom),
+        validTo: normalizeText(data.validTo),
+        amount: decimalValue(data.amount),
+        frequency: data.frequency,
+        note: normalizeText(data.note)
+      };
+      const cloudContract = await cloudAddContract(contract);
+      if (cloudContract?.id) contract.cloudId = cloudContract.id;
+      state.contracts = Array.isArray(state.contracts) ? state.contracts : [];
+      state.contracts.push(contract);
+      setActiveContractId(contract.id);
+      touchState();
+      saveState();
+      if (form?.reset) form.reset();
+      render();
+      showToast(contract.cloudId ? 'Smlouva uložena do cloudu' : 'Smlouva uložena lokálně');
+      return contract;
+    }
+
+    async function updateContract(id, data) {
+      const state = getState();
+      const contract = (state.contracts || []).find((item) => item.id === id);
+      if (!contract) return showToast('Smlouva nenalezena');
+      contract.name = normalizeText(data.name) || contract.name;
+      contract.type = normalizeText(data.type) || 'other';
+      contract.provider = normalizeText(data.provider);
+      contract.number = normalizeText(data.number);
+      contract.validFrom = normalizeText(data.validFrom);
+      contract.validTo = normalizeText(data.validTo);
+      contract.amount = decimalValue(data.amount);
+      contract.frequency = data.frequency || 'monthly';
+      contract.note = normalizeText(data.note);
+      contract.updatedAt = new Date().toISOString();
+      const ok = await cloudUpdateContract(contract);
+      if (!ok) return false;
+      touchState();
+      saveState();
+      render();
+      showToast(contract.cloudId ? 'Smlouva upravena v cloudu' : 'Smlouva upravena lokálně');
+      return true;
     }
 
     function contractFileCount(contractId) {
@@ -219,9 +477,17 @@
     }
 
     return {
+      addContractFromForm,
+      cloudAddContract,
+      cloudUpdateContract,
+      cloudLoadContracts,
+      cloudSyncContractById,
+      cloudSyncLocalContracts,
+      cloudDeleteContract,
       contractFileCount,
       renderContractOverviewItem,
-      renderContracts
+      renderContracts,
+      updateContract
     };
   }
 
