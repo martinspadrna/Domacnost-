@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_334';
-  const APP_BUILD = 334;
+  const APP_VERSION = 'Domácnost+ v.0.1_335';
+  const APP_BUILD = 335;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -482,12 +482,10 @@
   const FILE_STORE_WARRANTIES = 'warrantyFiles';
   const FILE_STORE_APP_STATE = 'appState';
   const APP_STATE_IDB_KEY = 'primary';
-  const CONTRACT_FILE_MAX_BYTES = 15 * 1024 * 1024;
-  const CONTRACT_FILE_ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
   const WARRANTY_FILE_MAX_BYTES = 15 * 1024 * 1024;
   const WARRANTY_IMAGE_MAX_DIMENSION = 1800;
   const WARRANTY_IMAGE_JPEG_QUALITY = 0.82;
-  const WARRANTY_FILE_ALLOWED_MIME = CONTRACT_FILE_ALLOWED_MIME;
+  const WARRANTY_FILE_ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
   const SUPABASE_URL = 'https://cgshssdjgzzuprlwnabl.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_v7jeuZC-MNUEO5nfE5xcUQ_Pu9pT-X_';
   const SUPABASE_STORAGE_KEY = 'domacnost-plus-auth';
@@ -5308,12 +5306,15 @@
     if (!factory) throw new Error('pool.js není načtený');
     poolInstance = factory({
       getState: () => state,
+      uid,
+      todayISO,
       normalizeText,
       escapeHtml,
       decimalValue,
       field,
       selectField,
       renderEmptyCta,
+      formatDate,
       formatDateTime,
       touchState,
       saveState,
@@ -5344,7 +5345,11 @@
       showToast,
       getSupabaseClient,
       refreshCloudSession,
-      cloudLoadContractFiles,
+      putStoredContractFile,
+      getStoredContractFile,
+      deleteStoredContractFile,
+      sanitizeStorageFileName,
+      showFilePreviewModal,
       getModuleTab,
       escapeHtml,
       field,
@@ -10325,6 +10330,10 @@
     return getContractsModule().cloudLoadContracts(showMessage);
   }
 
+  function cloudLoadContractFiles(showMessage = true) {
+    return getContractsModule().cloudLoadContractFiles(showMessage);
+  }
+
   function cloudSyncContractById(id) {
     return getContractsModule().cloudSyncContractById(id);
   }
@@ -10333,8 +10342,24 @@
     return getContractsModule().cloudSyncLocalContracts();
   }
 
+  function cloudSyncLocalContractFiles(showMessage = true) {
+    return getContractsModule().cloudSyncLocalContractFiles(showMessage);
+  }
+
   function cloudDeleteContract(contract) {
     return getContractsModule().cloudDeleteContract(contract);
+  }
+
+  function addContractFiles(form) {
+    return getContractsModule().addContractFiles(form);
+  }
+
+  function openOrDownloadContractFile(id, openInNewTab = false) {
+    return getContractsModule().openOrDownloadContractFile(id, openInNewTab);
+  }
+
+  function deleteContractFile(id) {
+    return getContractsModule().deleteContractFile(id);
   }
 
   function normalizeFinanceTemplates(templates) {
@@ -11652,314 +11677,6 @@
     const base = parts.join('.') || fallback;
     return `${normalizeKey(base).replace(/\s+/g, '-').slice(0, 80) || fallback}${ext}`;
   }
-
-  async function ensureCloudContract(contract) {
-    if (!contract) return null;
-    if (contract.cloudId) return contract.cloudId;
-    if (!state.cloud?.householdId) return null;
-    const cloudContract = await cloudAddContract(contract);
-    if (!cloudContract?.id) return null;
-    contract.cloudId = cloudContract.id;
-    touchState();
-    saveState();
-    return contract.cloudId;
-  }
-
-  async function cloudUploadContractFile(contract, file) {
-    const client = getSupabaseClient();
-    if (!client || !state.cloud?.householdId) return null;
-    const user = await refreshCloudSession(false);
-    if (!user) return null;
-    const cloudContractId = await ensureCloudContract(contract);
-    if (!cloudContractId) return null;
-    const storagePath = `${state.cloud.householdId}/${cloudContractId}/${Date.now()}-${uid()}-${sanitizeStorageFileName(file.name)}`;
-    const { error: uploadError } = await client.storage
-      .from('contract-files')
-      .upload(storagePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: file.type || 'application/octet-stream'
-      });
-    if (uploadError) {
-      showToast(uploadError.message || 'Přílohu se nepovedlo nahrát');
-      return null;
-    }
-
-    const { data, error } = await client
-      .from('contract_files')
-      .insert({
-        household_id: state.cloud.householdId,
-        contract_id: cloudContractId,
-        bucket_id: 'contract-files',
-        storage_path: storagePath,
-        file_name: file.name || 'příloha',
-        mime_type: file.type || null,
-        file_size: file.size || 0,
-        source: file.type && file.type.startsWith('image/') ? 'camera' : 'upload',
-        created_by: user.id
-      })
-      .select('id,household_id,contract_id,storage_path,file_name,mime_type,file_size,source,created_at')
-      .single();
-    if (error) {
-      await client.storage.from('contract-files').remove([storagePath]).catch?.(() => {});
-      showToast(error.message || 'Metadata přílohy se nepovedlo uložit');
-      return null;
-    }
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return mapCloudContractFile(data, contract.id);
-  }
-
-  function mapCloudContractFile(item, localContractId = null) {
-    const contract = localContractId
-      ? state.contracts.find((entry) => entry.id === localContractId)
-      : state.contracts.find((entry) => entry.cloudId === item.contract_id);
-    if (!contract) return null;
-    const existing = state.contractFiles.find((file) => file.cloudId === item.id);
-    return {
-      id: existing?.id || `cloud-file-${item.id}`,
-      cloudId: item.id,
-      householdId: currentHouseholdId(),
-      profileId: currentProfileId(),
-      contractId: contract.id,
-      cloudContractId: item.contract_id,
-      storagePath: item.storage_path,
-      bucketId: 'contract-files',
-      fileName: item.file_name || 'příloha',
-      fileType: item.mime_type || 'soubor',
-      size: item.file_size || 0,
-      source: item.source || 'upload',
-      createdAt: item.created_at || new Date().toISOString()
-    };
-  }
-
-  function isAllowedContractFile(file) {
-    if (!file) return false;
-    const name = String(file.name || '').toLowerCase();
-    const type = String(file.type || '').toLowerCase();
-    if (CONTRACT_FILE_ALLOWED_MIME.has(type)) return true;
-    return ['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'].some((ext) => name.endsWith(ext));
-  }
-
-  function contractFileValidationMessage(file) {
-    if (!file) return 'Soubor není dostupný';
-    if (file.size > CONTRACT_FILE_MAX_BYTES) return `${file.name || 'Soubor'} je větší než 15 MB`;
-    if (!isAllowedContractFile(file)) return `${file.name || 'Soubor'} není podporovaný typ. Použij PDF nebo fotku.`;
-    return '';
-  }
-
-  async function cloudLoadContractFiles(showMessage = true) {
-    const client = getSupabaseClient();
-    if (!client) { if (showMessage) showToast('Supabase knihovna není načtená'); return null; }
-    const user = await refreshCloudSession(false);
-    if (!user || !state.cloud?.householdId) return showToast('Nejdřív napoj domácnost na cloud');
-    const { data, error } = await client
-      .from('contract_files')
-      .select('id,household_id,contract_id,storage_path,file_name,mime_type,file_size,source,created_at')
-      .eq('household_id', state.cloud.householdId)
-      .order('created_at', { ascending: false });
-    if (error) return showToast(error.message || 'Přílohy se nepovedlo načíst');
-    const cloudFiles = (data || []).map((item) => mapCloudContractFile(item)).filter(Boolean);
-    const localOnly = state.contractFiles.filter((file) => !file.cloudId);
-    state.contractFiles = [...localOnly, ...cloudFiles];
-    state.cloud.lastSyncAt = new Date().toISOString();
-    touchState();
-    saveState();
-    render();
-    if (showMessage) showToast('Cloud přílohy načtené');
-  }
-
-  async function addContractFiles(form) {
-    const contractId = form.dataset.contractId;
-    const contract = state.contracts.find((item) => item.id === contractId);
-    const input = form.querySelector('input[type="file"]');
-    const files = [...(input?.files || [])];
-    if (!contract || !files.length) {
-      showToast('Vyber soubor');
-      return;
-    }
-    const useCloudStorage = cloudReady();
-    let added = 0;
-    let failed = 0;
-    for (const file of files) {
-      const validationMessage = contractFileValidationMessage(file);
-      if (validationMessage) {
-        failed += 1;
-        showToast(validationMessage);
-        continue;
-      }
-      if (useCloudStorage) {
-        const cloudFile = await cloudUploadContractFile(contract, file);
-        if (cloudFile) {
-          state.contractFiles = state.contractFiles.filter((entry) => entry.cloudId !== cloudFile.cloudId);
-          state.contractFiles.push(cloudFile);
-          added += 1;
-        } else {
-          failed += 1;
-        }
-        continue;
-      }
-      if (!('indexedDB' in window)) {
-        failed += 1;
-        showToast('Prohlížeč nepodporuje IndexedDB');
-        continue;
-      }
-      const id = `file-${uid()}`;
-      const createdAt = new Date().toISOString();
-      const meta = {
-        id,
-        householdId: currentHouseholdId(),
-        profileId: currentProfileId(),
-        contractId,
-        fileName: file.name || 'příloha',
-        fileType: file.type || 'soubor',
-        size: file.size || 0,
-        createdAt
-      };
-      await putStoredContractFile({ ...meta, blob: file });
-      state.contractFiles.push(meta);
-      added += 1;
-    }
-    activeContractId = contractId;
-    touchState();
-    saveState();
-    if (input) input.value = '';
-    render();
-    if (added && useCloudStorage) showToast(failed ? `Do cloudu nahráno ${added}, neprošlo ${failed}` : (added === 1 ? 'Příloha nahraná do cloudu' : `Do cloudu nahráno příloh: ${added}`));
-    else if (added) showToast(added === 1 ? 'Příloha uložená lokálně' : `Lokálně přidáno příloh: ${added}`);
-    else showToast('Přílohu se nepovedlo přidat');
-  }
-
-  async function cloudSyncLocalContractFiles(showMessage = true) {
-    if (!cloudReady()) {
-      if (showMessage) showToast('Nejdřív napoj domácnost na cloud');
-      return 0;
-    }
-    const localFiles = state.contractFiles.filter((file) => !file.cloudId);
-    if (!localFiles.length) {
-      if (showMessage) showToast('Žádné lokální přílohy k odeslání');
-      return 0;
-    }
-    let uploaded = 0;
-    let missing = 0;
-    let failed = 0;
-    for (const meta of localFiles) {
-      const contract = state.contracts.find((item) => item.id === meta.contractId);
-      if (!contract) { failed += 1; continue; }
-      let stored = null;
-      try {
-        stored = await getStoredContractFile(meta.id);
-      } catch {
-        stored = null;
-      }
-      const blob = stored?.blob;
-      if (!blob) { missing += 1; continue; }
-      const fileName = meta.fileName || stored.fileName || 'priloha';
-      const fileType = meta.fileType || stored.fileType || blob.type || 'application/octet-stream';
-      const uploadFile = (typeof File !== 'undefined' && blob instanceof File) ? blob : new File([blob], fileName, { type: fileType });
-      const cloudFile = await cloudUploadContractFile(contract, uploadFile);
-      if (!cloudFile?.cloudId) { failed += 1; continue; }
-      state.contractFiles = state.contractFiles.filter((file) => file.id !== meta.id && file.cloudId !== cloudFile.cloudId);
-      state.contractFiles.push({ ...cloudFile, id: meta.id, createdAt: meta.createdAt || cloudFile.createdAt });
-      deleteStoredContractFile(meta.id).catch(() => {});
-      uploaded += 1;
-    }
-    if (uploaded) state.cloud.lastSyncAt = new Date().toISOString();
-    touchState();
-    saveState();
-    render();
-    if (showMessage) {
-      const details = [uploaded ? `${uploaded} nahráno` : '', missing ? `${missing} nemá soubor v tomto prohlížeči` : '', failed ? `${failed} chyba` : ''].filter(Boolean).join(' · ');
-      showToast(details || 'Přílohy se nepodařilo dohnat');
-    }
-    return uploaded;
-  }
-
-  async function openCloudContractFile(meta, download = false) {
-    const client = getSupabaseClient();
-    if (!client || !meta?.storagePath) return showToast('Cloud příloha není dostupná');
-    const { data, error } = await client.storage
-      .from('contract-files')
-      .createSignedUrl(meta.storagePath, 300, download ? { download: meta.fileName || 'priloha' } : undefined);
-    if (error || !data?.signedUrl) {
-      showToast(error?.message || 'Dočasný odkaz nejde vytvořit');
-      return;
-    }
-    if (download) {
-      const link = document.createElement('a');
-      link.href = data.signedUrl;
-      link.download = meta.fileName || 'priloha';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      return;
-    }
-    showFilePreviewModal({ url: data.signedUrl, name: meta.fileName || 'Příloha smlouvy', type: meta.fileType || meta.mimeType || '', source: 'Smlouvy' });
-  }
-
-  async function openOrDownloadContractFile(id, openInNewTab = false) {
-    const meta = state.contractFiles.find((file) => file.id === id);
-    if (meta?.cloudId) {
-      await openCloudContractFile(meta, !openInNewTab);
-      return;
-    }
-    try {
-      const record = await getStoredContractFile(id);
-      if (!record?.blob) {
-        showToast('Soubor není v tomto prohlížeči dostupný');
-        return;
-      }
-      const url = URL.createObjectURL(record.blob);
-      if (openInNewTab) {
-        showFilePreviewModal({ url, objectUrl: url, name: meta?.fileName || record.fileName || 'Příloha smlouvy', type: meta?.fileType || record.fileType || record.blob.type || '', source: 'Smlouvy' });
-      } else {
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = meta?.fileName || record.fileName || 'priloha';
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
-      }
-    } catch {
-      showToast('Soubor nejde otevřít');
-    }
-  }
-
-  async function deleteCloudContractFile(meta) {
-    const client = getSupabaseClient();
-    if (!client || !meta?.cloudId || !meta?.storagePath || !state.cloud?.householdId) return false;
-    const { error: dbError } = await client
-      .from('contract_files')
-      .delete()
-      .eq('id', meta.cloudId)
-      .eq('household_id', state.cloud.householdId);
-    if (dbError) {
-      showToast(dbError.message || 'Metadata přílohy se nepovedlo smazat');
-      return false;
-    }
-    const { error: storageError } = await client.storage.from('contract-files').remove([meta.storagePath]);
-    if (storageError) showToast('Metadata smazaná, soubor ve Storage může zůstat k dočištění');
-    state.cloud.lastSyncAt = new Date().toISOString();
-    return true;
-  }
-
-  async function deleteContractFile(id) {
-    const meta = state.contractFiles.find((file) => file.id === id);
-    const ok = window.confirm(meta?.cloudId ? 'Smazat přílohu smlouvy z cloudu?' : 'Smazat přílohu smlouvy z tohoto zařízení?');
-    if (!ok) return;
-    if (meta?.cloudId) {
-      const deleted = await deleteCloudContractFile(meta);
-      if (!deleted) return;
-    } else {
-      deleteStoredContractFile(id).catch(() => {});
-    }
-    state.contractFiles = state.contractFiles.filter((file) => file.id !== id);
-    touchState();
-    saveState();
-    render();
-    showToast('Příloha smazána');
-  }
-
 
   function cloudLoadWarrantyFiles(showMessage = false) {
     return getWarrantyModule().cloudLoadWarrantyFiles(showMessage);

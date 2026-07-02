@@ -72,8 +72,11 @@ if (app && pool && index && sw) {
   expect(app, /layout\.pool && typeof layout\.pool === 'object'/, 'app.js: pool se obnovuje z cloud layoutu.');
   expect(app, /pool: \[loadHouseholdUiForModule\]/, 'app.js: pool lazy/background loader tahá household UI.');
   expect(pool, 'function normalizePoolState', 'pool.js: normalizePoolState existuje.');
+  expect(pool, 'function normalizePoolMeasurements', 'pool.js: historie měření bazénu se normalizuje.');
   expect(pool, 'function poolVolumeM3', 'pool.js: výpočet objemu existuje.');
   expect(pool, 'function poolPhDose', 'pool.js: dávkování pH existuje.');
+  expect(pool, 'waterTempC', 'pool.js: teplota vody je součást stavu/renderu.');
+  expect(pool, 'function renderPoolMeasurementChart', 'pool.js: graf pH/teploty existuje.');
   expect(pool, 'data-form="pool-settings"', 'pool.js: formulář nastavení bazénu se renderuje.');
 }
 
@@ -88,11 +91,15 @@ if (app && contracts && index && sw) {
   expect(app, 'return getContractsModule().cloudLoadContracts(showMessage);', 'app.js: cloudLoadContracts je už jen wrapper.');
   expect(app, 'return getContractsModule().addContractFromForm(data, form);', 'app.js: add-contract formulář jde přes contracts module.');
   expectAbsent(app, 'function cloudContractPayload', 'app.js: cloudContractPayload už není v monolitu.');
+  expectAbsent(app, 'function cloudUploadContractFile', 'app.js: cloudUploadContractFile už není v monolitu.');
   expect(contracts, 'function renderContracts()', 'contracts.js: renderContracts existuje.');
   expect(contracts, 'function renderContractDetail', 'contracts.js: renderContractDetail existuje.');
   expect(contracts, 'function cloudContractPayload', 'contracts.js: cloudContractPayload žije v modulu.');
   expect(contracts, 'async function cloudLoadContracts', 'contracts.js: cloudLoadContracts žije v modulu.');
   expect(contracts, 'async function addContractFromForm', 'contracts.js: add-contract handler žije v modulu.');
+  expect(contracts, 'async function cloudUploadContractFile', 'contracts.js: upload příloh smluv žije v modulu.');
+  expect(contracts, 'async function cloudLoadContractFiles', 'contracts.js: načtení příloh smluv žije v modulu.');
+  expect(contracts, 'async function openOrDownloadContractFile', 'contracts.js: otevření/stahování příloh žije v modulu.');
   expect(contracts, 'data-form="add-contract"', 'contracts.js: add-contract formulář se renderuje.');
   expect(contracts, 'data-form="add-contract-file"', 'contracts.js: add-contract-file formulář se renderuje.');
   expect(contracts, 'window.DomacnostContracts', 'contracts.js: factory export existuje.');

@@ -269,8 +269,14 @@ function smokeSeedScript() {
       width: 3,
       depth: 1.2,
       ph: 7.6,
+      waterTempC: 24.5,
       targetPh: 7.2,
       dosePer10m3Per01: 100,
+      measurements: [
+        { id: 'pool-measure-1', date: '2026-06-28', ph: 7.3, waterTempC: 22.2, note: 'start' },
+        { id: 'pool-measure-2', date: '2026-06-30', ph: 7.5, waterTempC: 23.8, note: '' },
+        { id: 'pool-measure-3', date: '2026-07-02', ph: 7.6, waterTempC: 24.5, note: 'smoke' }
+      ],
       updatedAt: new Date().toISOString()
     },
     cloud: {
@@ -380,8 +386,11 @@ async function run() {
         const text = document.body?.innerText || '';
         return {
           form: Boolean(document.querySelector('form[data-form="pool-settings"]')),
+          tempInput: Boolean(document.querySelector('form[data-form="pool-settings"] input[name="waterTempC"]')),
           volume: text.includes('21,6 m³') || text.includes('21.6 m³') || text.includes('objem vody'),
-          ph: text.includes('pH') && (text.includes('pH-') || text.includes('pH+'))
+          ph: text.includes('pH') && (text.includes('pH-') || text.includes('pH+')),
+          temperature: text.includes('Teplota vody') && text.includes('24,5'),
+          chart: Boolean(document.querySelector('.pool-chart .pool-chart-line.ph')) && Boolean(document.querySelector('.pool-chart .pool-chart-line.temp'))
         };
       })()`
     });
@@ -391,9 +400,12 @@ async function run() {
     }
     let poolOk = true;
     if (!poolValue.form) { fail('Bazén po kliknutí nerenderuje pool-settings formulář.'); poolOk = false; }
+    if (!poolValue.tempInput) { fail('Bazén po kliknutí nemá vstup pro teplotu vody.'); poolOk = false; }
     if (!poolValue.volume) { fail('Bazén po kliknutí neukazuje objem vody.'); poolOk = false; }
     if (!poolValue.ph) { fail('Bazén po kliknutí neukazuje pH část.'); poolOk = false; }
-    if (poolOk) ok('Bazén: formulář, objem a pH část renderují.');
+    if (!poolValue.temperature) { fail('Bazén po kliknutí neukazuje teplotu vody.'); poolOk = false; }
+    if (!poolValue.chart) { fail('Bazén po kliknutí nerenderuje graf pH/teploty.'); poolOk = false; }
+    if (poolOk) ok('Bazén: formulář, objem, pH, teplota a graf renderují.');
 
     await page.send('Runtime.evaluate', {
       expression: `document.querySelector('[data-nav="finance"]')?.click()`

@@ -7820,6 +7820,38 @@ textarea {
   font-weight: 500;
 }
 
+.pool-chart-line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pool-chart-line.ph {
+  stroke: rgba(124, 196, 255, .92);
+}
+
+.pool-chart-line.temp {
+  stroke: rgba(96, 211, 148, .92);
+}
+
+.pool-chart-dot {
+  stroke: rgba(8, 13, 24, .88);
+  stroke-width: 2;
+}
+
+.pool-chart-dot.ph {
+  fill: rgba(124, 196, 255, .98);
+}
+
+.pool-chart-dot.temp {
+  fill: rgba(96, 211, 148, .98);
+}
+
+.pool-chart-legend {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .consumption-chart-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
