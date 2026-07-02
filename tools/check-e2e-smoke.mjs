@@ -229,10 +229,26 @@ function smokeSeedScript() {
     activeProfileId: 'profile-e2e-smoke',
     enabledModules: ['weather', 'calendar', 'shopping', 'hdo', 'waste', 'readings', 'pool', 'tasks', 'warranties', 'polishHolidays', 'garage', 'contracts', 'finance', 'subscriptions'],
     settings: {
-      bottomNavIds: ['home', 'finance', 'pool', 'garage', 'calendar'],
+      bottomNavIds: ['home', 'finance', 'pool', 'contracts', 'calendar'],
       homeHeroItems: ['pool', 'finance', 'calendar', 'garage'],
       dashboardWidgets: []
     },
+    contracts: [{
+      id: 'contract-e2e-smoke',
+      householdId: 'household-e2e-smoke',
+      profileId: 'profile-e2e-smoke',
+      name: 'Smoke pojistka',
+      type: 'home_insurance',
+      provider: 'Test',
+      number: 'SMOKE-1',
+      validFrom: '2026-01-01',
+      validTo: '2026-12-31',
+      amount: 1200,
+      frequency: 'monthly',
+      note: 'E2E smoke',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }],
     financeLoans: [{
       id: 'loan-e2e-smoke',
       name: 'Smoke půjčka',
@@ -335,6 +351,7 @@ async function run() {
           bootError: Boolean(document.querySelector('.module-error-card, .app-boot-error')),
           navPool: Boolean(document.querySelector('[data-nav="pool"]')),
           navFinance: Boolean(document.querySelector('[data-nav="finance"]')),
+          navContracts: Boolean(document.querySelector('[data-nav="contracts"]')),
           textSample: text.slice(0, 600)
         };
       })()`
@@ -350,7 +367,8 @@ async function run() {
     if (initialValue.bootError) { fail('Po bootu je vidět module/app error card.'); bootOk = false; }
     if (!initialValue.navPool) { fail('Po seed bootu není dostupná navigace Bazén.'); bootOk = false; }
     if (!initialValue.navFinance) { fail('Po seed bootu není dostupná navigace Finance.'); bootOk = false; }
-    if (bootOk) ok('boot: app root, verze, Finance i Bazén navigace dostupné.');
+    if (!initialValue.navContracts) { fail('Po seed bootu není dostupná navigace Smlouvy.'); bootOk = false; }
+    if (bootOk) ok('boot: app root, verze, Finance, Bazén i Smlouvy navigace dostupné.');
 
     await page.send('Runtime.evaluate', {
       expression: `document.querySelector('[data-nav="pool"]')?.click()`
@@ -401,6 +419,30 @@ async function run() {
     if (!financeValue.refinanceForm) { fail('Finance/Půjčky nerenderují finance-refinance formulář.'); financeOk = false; }
     if (!financeValue.loanText) { fail('Finance/Půjčky neukazují seed půjčku/refinancování.'); financeOk = false; }
     if (financeOk) ok('Finance: půjčka a refinancování renderují.');
+
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('[data-nav="contracts"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    const contractsCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const text = document.body?.innerText || '';
+        return {
+          addForm: Boolean(document.querySelector('form[data-form="add-contract"]')),
+          updateForm: Boolean(document.querySelector('form[data-form="update-contract"]')),
+          fileForm: Boolean(document.querySelector('form[data-form="add-contract-file"]')),
+          contractText: text.includes('Smoke pojistka') && text.includes('Smlouvy a pojistky')
+        };
+      })()`
+    });
+    const contractsValue = contractsCheck.result?.value || {};
+    let contractsOk = true;
+    if (!contractsValue.addForm) { fail('Smlouvy nerenderují add-contract formulář.'); contractsOk = false; }
+    if (!contractsValue.updateForm) { fail('Smlouvy nerenderují update-contract formulář v detailu.'); contractsOk = false; }
+    if (!contractsValue.fileForm) { fail('Smlouvy nerenderují add-contract-file formulář.'); contractsOk = false; }
+    if (!contractsValue.contractText) { fail('Smlouvy neukazují seed smlouvu/přehled.'); contractsOk = false; }
+    if (contractsOk) ok('Smlouvy: přehled, detail i příloha formuláře renderují.');
 
     browserCdp.close();
   } finally {

@@ -31,6 +31,7 @@ function expect(source, pattern, label) {
 const app = read('app.js');
 const finance = read('finance.js');
 const pool = read('pool.js');
+const contracts = read('contracts.js');
 const index = read('index.html');
 const sw = read('sw.js');
 const pkg = read('package.json');
@@ -68,6 +69,21 @@ if (app && pool && index && sw) {
   expect(pool, 'function poolVolumeM3', 'pool.js: výpočet objemu existuje.');
   expect(pool, 'function poolPhDose', 'pool.js: dávkování pH existuje.');
   expect(pool, 'data-form="pool-settings"', 'pool.js: formulář nastavení bazénu se renderuje.');
+}
+
+if (app && contracts && index && sw) {
+  expect(index, './contracts.js?v=', 'index.html: contracts.js se načítá před app.js.');
+  expect(sw, "'./contracts.js'", 'sw.js: contracts.js je v APP_ASSETS.');
+  expect(app, 'let contractsInstance = null', 'app.js: contracts má modulovou instanci.');
+  expect(app, 'function getContractsModule()', 'app.js: getContractsModule factory wrapper existuje.');
+  expect(app, 'contracts: renderContracts', 'app.js: contracts renderer je v renderModule mapě.');
+  expect(app, 'return getContractsModule().renderContracts();', 'app.js: renderContracts je už jen wrapper.');
+  expect(app, 'return getContractsModule().renderContractOverviewItem(contract);', 'app.js: overview smlouvy jde přes contracts module.');
+  expect(contracts, 'function renderContracts()', 'contracts.js: renderContracts existuje.');
+  expect(contracts, 'function renderContractDetail', 'contracts.js: renderContractDetail existuje.');
+  expect(contracts, 'data-form="add-contract"', 'contracts.js: add-contract formulář se renderuje.');
+  expect(contracts, 'data-form="add-contract-file"', 'contracts.js: add-contract-file formulář se renderuje.');
+  expect(contracts, 'window.DomacnostContracts', 'contracts.js: factory export existuje.');
 }
 
 if (pkg) {
