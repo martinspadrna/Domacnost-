@@ -2426,6 +2426,7 @@ button {
 .contracts-tab-add .contracts-panel:not(.panel-add),
 .finance-tab-summary .finance-panel:not(.panel-summary),
 .finance-tab-accounts .finance-panel:not(.panel-accounts),
+.finance-tab-loans .finance-panel:not(.panel-loans),
 .finance-tab-add .finance-panel:not(.panel-add),
 .finance-tab-analysis .finance-panel:not(.panel-analysis) {
   display: none;
@@ -18723,7 +18724,7 @@ main {
   }
 }
 
-/* Domácnost+ v.0.1_344 – společné mobilní akční lišty */
+/* Domácnost+ – společné mobilní akční lišty */
 @media (max-width: 720px) {
   .form-actions,
   .item-actions,
@@ -18792,5 +18793,67 @@ main {
   .garage-history-toolbar .garage-history-count {
     flex: 0 0 min(62vw, 220px);
     scroll-snap-align: start;
+  }
+}
+
+/* Domácnost+ – jednotný obsah modulů */
+.module-tabbed {
+  align-items: start;
+  width: 100%;
+  min-width: 0;
+}
+
+.module-tabbed > .card,
+.module-tabbed > .item,
+.module-tabbed > details,
+.module-tabbed > form {
+  min-width: 0;
+}
+
+.module-tabbed .card-header {
+  min-width: 0;
+}
+
+.module-tabbed .card-header > div,
+.module-tabbed .item-top > div,
+.module-tabbed .item-title,
+.module-tabbed .item-meta {
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .grid.two.module-tabbed,
+  .grid.three.module-tabbed,
+  .grid.four.module-tabbed,
+  .module-tabbed {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px;
+  }
+
+  .module-tabbed > .card,
+  .module-tabbed > .desktop-span-2,
+  .module-tabbed > .wide-panel {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (min-width: 860px) {
+  .grid.two.module-tabbed,
+  .module-tabbed {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .module-tabbed > .card {
+    grid-column: auto;
+  }
+
+  .module-tabbed > .desktop-span-2,
+  .module-tabbed > .wide-panel,
+  .module-tabbed > .finance-dashboard-card,
+  .module-tabbed > .panel-overview:only-child,
+  .module-tabbed > .panel-detail:only-child,
+  .module-tabbed > .panel-loans:only-child {
+    grid-column: 1 / -1;
   }
 }

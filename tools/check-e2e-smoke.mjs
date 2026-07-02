@@ -491,6 +491,10 @@ async function run() {
         const sectionTabsStyle = sectionTabs ? getComputedStyle(sectionTabs) : null;
         const financeFormActions = document.querySelector('form[data-form="finance-refinance"] .form-actions');
         const financeFormActionsStyle = financeFormActions ? getComputedStyle(financeFormActions) : null;
+        const financeModule = document.querySelector('.module-tabbed[data-tab-area="finance"]');
+        const financeModuleStyle = financeModule ? getComputedStyle(financeModule) : null;
+        const financeModuleRect = financeModule ? financeModule.getBoundingClientRect() : null;
+        const financeCards = financeModule ? Array.from(financeModule.querySelectorAll(':scope > .card')) : [];
         return {
           cockpit: Boolean(document.querySelector('[data-module-cockpit="finance"]')),
           cockpitNoSwipe: Boolean(document.querySelector('[data-module-cockpit="finance"][data-no-swipe]')),
@@ -500,6 +504,8 @@ async function run() {
           tabsNoSwipe: Boolean(sectionTabs?.hasAttribute('data-no-swipe')),
           tabsScrollable: Boolean(sectionTabs && sectionTabsStyle && /auto|scroll/.test(sectionTabsStyle.overflowX) && sectionTabs.scrollWidth > sectionTabs.clientWidth),
           formActionsRail: Boolean(financeFormActionsStyle && /auto|scroll/.test(financeFormActionsStyle.overflowX) && financeFormActionsStyle.flexWrap === 'nowrap' && financeFormActionsStyle.overscrollBehaviorX === 'contain'),
+          moduleOneColumn: Boolean(financeModuleStyle && financeModuleStyle.display === 'grid' && financeModuleStyle.gridTemplateColumns.trim().split(/\\s+/).length === 1),
+          moduleCardsFit: Boolean(financeModuleRect && financeCards.length && financeCards.every((card) => card.getBoundingClientRect().width <= financeModuleRect.width + 1)),
           loanForm: Boolean(document.querySelector('form[data-form="add-finance-loan"]')),
           refinanceForm: Boolean(document.querySelector('form[data-form="finance-refinance"]')),
           loanText: text.includes('Smoke půjčka') && text.includes('Refinancování')
@@ -519,6 +525,8 @@ async function run() {
     if (!financeValue.tabsNoSwipe) { fail('Finance modulové záložky nejsou chráněné proti swipe přepnutí.'); financeOk = false; }
     if (!financeValue.tabsScrollable) { fail('Finance modulové záložky nejsou na mobilu vodorovně posuvné.'); financeOk = false; }
     if (!financeValue.formActionsRail) { fail('Finance formulářové akce nemají mobilní rail chování.'); financeOk = false; }
+    if (!financeValue.moduleOneColumn) { fail('Finance module-tabbed není na mobilu jednosloupcový grid.'); financeOk = false; }
+    if (!financeValue.moduleCardsFit) { fail('Finance module-tabbed karty na mobilu přesahují šířku modulu.'); financeOk = false; }
     if (!financeValue.loanForm) { fail('Finance/Půjčky nerenderují add-finance-loan formulář.'); financeOk = false; }
     if (!financeValue.refinanceForm) { fail('Finance/Půjčky nerenderují finance-refinance formulář.'); financeOk = false; }
     if (!financeValue.loanText) { fail('Finance/Půjčky neukazují seed půjčku/refinancování.'); financeOk = false; }

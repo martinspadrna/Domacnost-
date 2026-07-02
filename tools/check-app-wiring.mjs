@@ -123,6 +123,10 @@ if (app) {
 
 if (styles) {
   expect(styles, '.section-tabs {\n  display: flex;', 'styles.css: společné modulové záložky používají horizontální rail.');
+  expect(styles, '.finance-tab-loans .finance-panel:not(.panel-loans)', 'styles.css: Finance Půjčky mají vlastní tab visibility pravidlo.');
+  expect(styles, '/* Domácnost+ – jednotný obsah modulů */', 'styles.css: existuje finální blok pro jednotný obsah modulů.');
+  expect(styles, '.grid.two.module-tabbed,\n  .grid.three.module-tabbed', 'styles.css: module-tabbed má mobilní jednosloupcové pravidlo.');
+  expect(styles, '.module-tabbed > .card {\n    grid-column: auto;', 'styles.css: module-tabbed umí na desktopu vrátit běžné karty do gridu.');
   expect(styles, '.form-actions,\n  .item-actions,\n  .finance-filter-chips', 'styles.css: společné akční lišty používají mobilní rail.');
   expect(styles, '.garage-history-toolbar {\n    display: flex;', 'styles.css: garážové filtry používají mobilní rail.');
   expect(styles, '.module-cockpit-metrics,\n  .module-cockpit-actions', 'styles.css: cockpit metriky a akce sdílí mobilní rail.');
