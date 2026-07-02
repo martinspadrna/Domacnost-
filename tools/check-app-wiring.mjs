@@ -136,6 +136,9 @@ if (styles) {
   expect(styles, '/* Domácnost+ – jednotné dashboard a history povrchy */', 'styles.css: existuje finální blok pro dashboard/history povrchy.');
   expect(styles, '.home-primary-action,\n.home-attention-item,\n.focus-tile,\n.timeline-item,\n.setup-item,\n.sync-overview-row {\n  grid-template-columns: auto minmax(0, 1fr) auto;', 'styles.css: dashboard/history řádky sdílí stabilní třísloupcový grid.');
   expect(styles, '.empty,\n.empty-cta {', 'styles.css: prázdné stavy mají sjednocený nový povrch.');
+  expect(styles, '/* Domácnost+ – jednotné detailní a grafové povrchy */', 'styles.css: existuje finální blok pro detailní/grafové povrchy.');
+  expect(styles, '.consumption-chart,\n.pool-chart,\n.garage-line-chart,\n.readings-line-chart svg', 'styles.css: grafy mají stabilní responzivní rozměry.');
+  expect(styles, '.garage-stats-kpis {\n    grid-template-columns: repeat(2, minmax(0, 1fr));', 'styles.css: KPI gridy mají společné mobilní pravidlo.');
   expect(styles, '.form-actions,\n  .item-actions,\n  .finance-filter-chips', 'styles.css: společné akční lišty používají mobilní rail.');
   expect(styles, '.garage-history-toolbar {\n    display: flex;', 'styles.css: garážové filtry používají mobilní rail.');
   expect(styles, '.module-cockpit-metrics,\n  .module-cockpit-actions', 'styles.css: cockpit metriky a akce sdílí mobilní rail.');

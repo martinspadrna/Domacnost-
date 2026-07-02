@@ -19323,3 +19323,211 @@ main {
     font-size: .76rem;
   }
 }
+
+/* Domácnost+ – jednotné detailní a grafové povrchy */
+.finance-kpi,
+.finance-split-card,
+.consumption-chart-wrap,
+.pool-chart-wrap,
+.garage-chart-card,
+.garage-detail-chart-section,
+.garage-chart-values span,
+.garage-chart-title,
+.garage-chart-header-full,
+.readings-line-chart,
+.readings-detail-chart-panel,
+.reading-chart-row,
+.readings-cost-card,
+.vehicle-detail-head,
+.modal-detail-card,
+.subscription-person-detail-card,
+.contracts-panel.panel-detail,
+.readings-panel.panel-detail,
+.garage-panel.panel-detail {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 10px 28px rgba(31, 41, 55, 0.06);
+}
+
+[data-theme="dark"] .finance-kpi,
+[data-theme="dark"] .finance-split-card,
+[data-theme="dark"] .consumption-chart-wrap,
+[data-theme="dark"] .pool-chart-wrap,
+[data-theme="dark"] .garage-chart-card,
+[data-theme="dark"] .garage-detail-chart-section,
+[data-theme="dark"] .garage-chart-values span,
+[data-theme="dark"] .garage-chart-title,
+[data-theme="dark"] .garage-chart-header-full,
+[data-theme="dark"] .readings-line-chart,
+[data-theme="dark"] .readings-detail-chart-panel,
+[data-theme="dark"] .reading-chart-row,
+[data-theme="dark"] .readings-cost-card,
+[data-theme="dark"] .vehicle-detail-head,
+[data-theme="dark"] .modal-detail-card,
+[data-theme="dark"] .subscription-person-detail-card,
+[data-theme="dark"] .contracts-panel.panel-detail,
+[data-theme="dark"] .readings-panel.panel-detail,
+[data-theme="dark"] .garage-panel.panel-detail {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
+}
+
+.finance-kpi,
+.garage-chart-values span,
+.readings-cost-card {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+}
+
+.finance-kpi strong,
+.finance-split-head strong,
+.consumption-chart-head strong,
+.garage-chart-head strong,
+.garage-chart-values strong,
+.garage-chart-title strong,
+.garage-chart-header-full strong,
+.reading-chart-label strong,
+.reading-chart-values strong,
+.readings-cost-card strong,
+.vehicle-detail-title h2,
+.modal-detail-card strong,
+.subscription-person-detail-card strong {
+  min-width: 0;
+  color: var(--text);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.finance-kpi span,
+.finance-split-head span,
+.consumption-chart-head span,
+.garage-chart-head span,
+.garage-chart-values em,
+.garage-chart-title em,
+.garage-chart-header-full em,
+.reading-chart-label span,
+.reading-chart-values span,
+.readings-cost-card span,
+.readings-cost-card small,
+.vehicle-detail-title p,
+.modal-detail-card span,
+.subscription-person-detail-card em {
+  min-width: 0;
+  color: var(--muted);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.consumption-chart-head,
+.garage-chart-head,
+.garage-chart-header-full,
+.garage-chart-title,
+.vehicle-detail-head,
+.reading-chart-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.consumption-chart,
+.pool-chart,
+.garage-line-chart,
+.readings-line-chart svg {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+
+.garage-chart-body,
+.garage-chart-body-empty,
+.garage-chart-plot,
+.readings-line-chart,
+.pool-chart-wrap,
+.consumption-chart-wrap {
+  overflow: hidden;
+}
+
+.garage-chart-values,
+.consumption-chart-stats,
+.finance-kpi-row,
+.readings-kpi-grid,
+.subscription-kpi-grid {
+  min-width: 0;
+}
+
+.garage-chart-values span,
+.consumption-chart-stats span {
+  min-width: 0;
+  border-radius: 16px;
+}
+
+.reading-chart-label,
+.reading-chart-values,
+.vehicle-detail-title,
+.vehicle-detail-title > div {
+  min-width: 0;
+}
+
+.reading-chart-label strong,
+.reading-chart-label span,
+.vehicle-detail-title h2,
+.vehicle-detail-title p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .finance-kpi,
+  .finance-split-card,
+  .consumption-chart-wrap,
+  .pool-chart-wrap,
+  .garage-chart-card,
+  .garage-detail-chart-section,
+  .garage-chart-values span,
+  .garage-chart-title,
+  .garage-chart-header-full,
+  .readings-line-chart,
+  .readings-detail-chart-panel,
+  .reading-chart-row,
+  .readings-cost-card,
+  .vehicle-detail-head,
+  .modal-detail-card,
+  .subscription-person-detail-card,
+  .contracts-panel.panel-detail,
+  .readings-panel.panel-detail,
+  .garage-panel.panel-detail {
+    border-radius: 16px;
+  }
+
+  .consumption-chart-head,
+  .garage-chart-head,
+  .garage-chart-header-full,
+  .garage-chart-title,
+  .vehicle-detail-head,
+  .reading-chart-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .finance-kpi-row,
+  .readings-kpi-grid,
+  .subscription-kpi-grid,
+  .garage-stats-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .finance-kpi-row,
+  .readings-kpi-grid,
+  .subscription-kpi-grid,
+  .garage-stats-kpis,
+  .consumption-chart-stats,
+  .garage-chart-values {
+    grid-template-columns: 1fr;
+  }
+}

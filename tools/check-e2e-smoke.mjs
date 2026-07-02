@@ -464,6 +464,8 @@ async function run() {
         const text = document.body?.innerText || '';
         const metricsRail = document.querySelector('[data-module-cockpit="pool"] .module-cockpit-metrics');
         const metricsStyle = metricsRail ? getComputedStyle(metricsRail) : null;
+        const poolChartWrap = document.querySelector('.pool-chart-wrap');
+        const poolChartWrapStyle = poolChartWrap ? getComputedStyle(poolChartWrap) : null;
         return {
           cockpit: Boolean(document.querySelector('[data-module-cockpit="pool"]')),
           cockpitNoSwipe: Boolean(document.querySelector('[data-module-cockpit="pool"][data-no-swipe]')),
@@ -475,7 +477,8 @@ async function run() {
           volume: text.includes('21,6 m³') || text.includes('21.6 m³') || text.includes('objem vody'),
           ph: text.includes('pH') && (text.includes('pH-') || text.includes('pH+')),
           temperature: text.includes('Teplota vody') && text.includes('24,5'),
-          chart: Boolean(document.querySelector('.pool-chart .pool-chart-line.ph')) && Boolean(document.querySelector('.pool-chart .pool-chart-line.temp'))
+          chart: Boolean(document.querySelector('.pool-chart .pool-chart-line.ph')) && Boolean(document.querySelector('.pool-chart .pool-chart-line.temp')),
+          chartSurface: Boolean(poolChartWrapStyle && parseFloat(poolChartWrapStyle.borderTopLeftRadius) >= 16 && poolChartWrapStyle.overflow === 'hidden')
         };
       })()`
     });
@@ -495,6 +498,7 @@ async function run() {
     if (!poolValue.ph) { fail('Bazén po kliknutí neukazuje pH část.'); poolOk = false; }
     if (!poolValue.temperature) { fail('Bazén po kliknutí neukazuje teplotu vody.'); poolOk = false; }
     if (!poolValue.chart) { fail('Bazén po kliknutí nerenderuje graf pH/teploty.'); poolOk = false; }
+    if (!poolValue.chartSurface) { fail('Bazénový graf nemá sjednocený detailní/grafový povrch.'); poolOk = false; }
     if (poolOk) ok('Bazén: formulář, objem, pH, teplota a graf renderují.');
 
     await page.send('Runtime.evaluate', {
@@ -580,6 +584,8 @@ async function run() {
       returnByValue: true,
       expression: `(() => {
         const text = document.body?.innerText || '';
+        const detailPanel = document.querySelector('.contracts-panel.panel-detail');
+        const detailPanelStyle = detailPanel ? getComputedStyle(detailPanel) : null;
         return {
           cockpit: Boolean(document.querySelector('[data-module-cockpit="contracts"]')),
           cockpitMetrics: document.querySelectorAll('[data-module-cockpit="contracts"] .module-cockpit-metric').length,
@@ -587,6 +593,7 @@ async function run() {
           addForm: Boolean(document.querySelector('form[data-form="add-contract"]')),
           updateForm: Boolean(document.querySelector('form[data-form="update-contract"]')),
           fileForm: Boolean(document.querySelector('form[data-form="add-contract-file"]')),
+          detailSurface: Boolean(detailPanelStyle && parseFloat(detailPanelStyle.borderTopLeftRadius) >= 16),
           contractText: text.includes('Smoke pojistka') && text.includes('Smlouvy a pojistky')
         };
       })()`
@@ -599,6 +606,7 @@ async function run() {
     if (!contractsValue.addForm) { fail('Smlouvy nerenderují add-contract formulář.'); contractsOk = false; }
     if (!contractsValue.updateForm) { fail('Smlouvy nerenderují update-contract formulář v detailu.'); contractsOk = false; }
     if (!contractsValue.fileForm) { fail('Smlouvy nerenderují add-contract-file formulář.'); contractsOk = false; }
+    if (!contractsValue.detailSurface) { fail('Smlouvy detail nemá sjednocený detailní povrch.'); contractsOk = false; }
     if (!contractsValue.contractText) { fail('Smlouvy neukazují seed smlouvu/přehled.'); contractsOk = false; }
     if (contractsOk) ok('Smlouvy: přehled, detail i příloha formuláře renderují.');
 
