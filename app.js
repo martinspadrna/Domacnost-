@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_337';
-  const APP_BUILD = 337;
+  const APP_VERSION = 'Domácnost+ v.0.1_338';
+  const APP_BUILD = 338;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -472,9 +472,9 @@
 
 
   const BOTTOM_NAV_MIN = 3;
-  const BOTTOM_NAV_MAX = 5;
+  const BOTTOM_NAV_MAX = 4;
   const BOTTOM_NAV_CUSTOM_MIN = 2;
-  const BOTTOM_NAV_CUSTOM_MAX = 4;
+  const BOTTOM_NAV_CUSTOM_MAX = 3;
   const MORE_MODULE = { id: 'more', label: 'Více', icon: '⚙️' };
   const FILE_DB_NAME = 'homeWebOfflineFiles.v1';
   const FILE_DB_VERSION = 3;

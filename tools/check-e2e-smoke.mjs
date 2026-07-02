@@ -361,6 +361,7 @@ async function run() {
           homeStatusCount: document.querySelectorAll('.home-status-card').length,
           homeAttention: Boolean(document.querySelector('.home-attention-list')),
           homeModules: Boolean(document.querySelector('.home-module-strip .home-module-shortcut')),
+          bottomNavCount: document.querySelectorAll('.nav-shell .nav-item').length,
           navPool: Boolean(document.querySelector('[data-nav="pool"]')),
           navFinance: Boolean(document.querySelector('[data-nav="finance"]')),
           navContracts: Boolean(document.querySelector('[data-nav="contracts"]')),
@@ -383,6 +384,7 @@ async function run() {
     if (initialValue.homeStatusCount < 4) { fail('Home nemá čtyři stavové karty.'); bootOk = false; }
     if (!initialValue.homeAttention) { fail('Home neobsahuje seznam Dnes a brzy.'); bootOk = false; }
     if (!initialValue.homeModules) { fail('Home neobsahuje zkratky modulů.'); bootOk = false; }
+    if (initialValue.bottomNavCount !== 5) { fail(`Spodní lišta má ${initialValue.bottomNavCount} položek místo 5 včetně Více.`); bootOk = false; }
     if (!initialValue.navPool) { fail('Po seed bootu není dostupná navigace Bazén.'); bootOk = false; }
     if (!initialValue.navFinance) { fail('Po seed bootu není dostupná navigace Finance.'); bootOk = false; }
     if (!initialValue.navContracts) { fail('Po seed bootu není dostupná navigace Smlouvy.'); bootOk = false; }
