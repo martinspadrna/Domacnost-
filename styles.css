@@ -18355,6 +18355,33 @@ main {
   white-space: nowrap;
 }
 
+.more-section-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.more-module-section {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255,255,255,.18);
+}
+
+[data-theme="dark"] .more-module-section {
+  background: rgba(255,255,255,.035);
+}
+
+.more-module-section .more-module-grid {
+  gap: 8px;
+}
+
+.more-module-section .more-module-card {
+  min-height: 68px;
+  border-radius: 16px;
+}
+
 @media (min-width: 760px) {
   .home-dashboard-redesign {
     grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);

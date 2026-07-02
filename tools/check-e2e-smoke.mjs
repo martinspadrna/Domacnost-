@@ -389,6 +389,34 @@ async function run() {
     if (bootOk) ok('boot: nový Home, app root, verze, Finance, Bazén i Smlouvy navigace dostupné.');
 
     await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.nav-shell [data-nav="more"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 400));
+    const moreCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const headings = Array.from(document.querySelectorAll('.more-module-section h2')).map((node) => node.textContent.trim());
+        return {
+          settings: Boolean(document.querySelector('.more-settings-card[data-nav="settings"]')),
+          sectionCount: document.querySelectorAll('.more-module-section').length,
+          hasDaily: headings.includes('Denně'),
+          hasHome: headings.includes('Domov'),
+          hasMoney: headings.includes('Peníze a doklady'),
+          moduleShortcutCount: document.querySelectorAll('.more-module-section [data-nav]').length
+        };
+      })()`
+    });
+    const moreValue = moreCheck.result?.value || {};
+    let moreOk = true;
+    if (!moreValue.settings) { fail('Více neobsahuje vstup do Nastavení.'); moreOk = false; }
+    if (moreValue.sectionCount < 3) { fail('Více nemá skupiny modulů.'); moreOk = false; }
+    if (!moreValue.hasDaily) { fail('Více nemá sekci Denně.'); moreOk = false; }
+    if (!moreValue.hasHome) { fail('Více nemá sekci Domov.'); moreOk = false; }
+    if (!moreValue.hasMoney) { fail('Více nemá sekci Peníze a doklady.'); moreOk = false; }
+    if (moreValue.moduleShortcutCount < 8) { fail('Více nemá dost modulových zkratek.'); moreOk = false; }
+    if (moreOk) ok('Více: nastavení a skupiny modulů renderují.');
+
+    await page.send('Runtime.evaluate', {
       expression: `document.querySelector('[data-nav="pool"]')?.click()`
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 500));

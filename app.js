@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_336';
-  const APP_BUILD = 336;
+  const APP_VERSION = 'Domácnost+ v.0.1_337';
+  const APP_BUILD = 337;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -38,7 +38,7 @@
     { id: 'settings', label: 'Nastavení', icon: '⚙️' }
   ];
 
-  const DEFAULT_BOTTOM_NAV_IDS = ['home', 'calendar', 'hdo', 'garage', 'finance'];
+  const DEFAULT_BOTTOM_NAV_IDS = ['home', 'calendar', 'shopping', 'finance'];
 
 
 
@@ -10850,8 +10850,36 @@
     `;
   }
 
+  function renderMoreModuleSection(section, moduleMap, usedIds) {
+    const rows = section.ids
+      .map((id) => moduleMap.get(id))
+      .filter(Boolean);
+    if (!rows.length) return '';
+    rows.forEach((module) => usedIds.add(module.id));
+    return `
+      <section class="more-module-section">
+        <div class="card-header compact-card-header">
+          <div><h2>${escapeHtml(section.title)}</h2><p>${escapeHtml(section.note)}</p></div>
+          <span class="badge">${rows.length}</span>
+        </div>
+        <div class="grid four more-module-grid">
+          ${rows.map(renderMoreModuleCard).join('')}
+        </div>
+      </section>
+    `;
+  }
+
   function renderMore() {
     const modules = getVisibleModules().filter((module) => !['home', 'settings'].includes(module.id));
+    const moduleMap = new Map(modules.map((module) => [module.id, module]));
+    const usedIds = new Set();
+    const sections = [
+      { title: 'Denně', note: 'Věci, které se otevírají nejčastěji během dne.', ids: ['calendar', 'shopping', 'tasks', 'weather', 'hdo', 'waste'] },
+      { title: 'Domov', note: 'Technika, auta, bazén, odečty a hlídání domácnosti.', ids: ['garage', 'pool', 'readings', 'warranties', 'polishHolidays'] },
+      { title: 'Peníze a doklady', note: 'Finance, smlouvy a pravidelné platby.', ids: ['finance', 'subscriptions', 'contracts'] }
+    ];
+    const sectionHtml = sections.map((section) => renderMoreModuleSection(section, moduleMap, usedIds)).filter(Boolean).join('');
+    const otherModules = modules.filter((module) => !usedIds.has(module.id));
 
     return `
       <div class="grid two more-hub-grid more-clean-hub">
@@ -10869,11 +10897,22 @@
 
         <section class="card desktop-span-2 more-modules-panel">
           <div class="card-header">
-            <div><h2>Moduly</h2><p>Univerzální vstup do všech zapnutých částí aplikace.</p></div>
+            <div><h2>Všechny funkce</h2><p>Spodní lišta zůstává krátká, tady jsou všechny zapnuté části aplikace.</p></div>
             <span class="badge">${modules.length}</span>
           </div>
-          <div class="grid four more-module-grid">
-            ${modules.length ? modules.map(renderMoreModuleCard).join('') : '<div class="empty">Zatím nejsou zapnuté žádné další moduly.</div>'}
+          <div class="more-section-stack">
+            ${sectionHtml || '<div class="empty">Zatím nejsou zapnuté žádné další moduly.</div>'}
+            ${otherModules.length ? `
+              <section class="more-module-section">
+                <div class="card-header compact-card-header">
+                  <div><h2>Ostatní</h2><p>Další zapnuté moduly.</p></div>
+                  <span class="badge">${otherModules.length}</span>
+                </div>
+                <div class="grid four more-module-grid">
+                  ${otherModules.map(renderMoreModuleCard).join('')}
+                </div>
+              </section>
+            ` : ''}
           </div>
         </section>
       </div>
