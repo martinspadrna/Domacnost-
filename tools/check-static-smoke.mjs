@@ -158,6 +158,7 @@ if (manifestSource) {
 // dispatcher zůstává v app.js. Renderovací tlačítka hledáme v obou.
 const app = readOrFail('app.js', 'app.js');
 const pwaModule = readOrFail('pwa.js', 'pwa.js');
+const workflow = readOrFail('.github/workflows/checks.yml', 'GitHub Actions workflow');
 if (app) {
   const renderHaystack = `${app}\n${pwaModule}`;
   const pwaActions = ['pwa-check-update', 'pwa-apply-update', 'pwa-clear-cache'];
@@ -168,6 +169,18 @@ if (app) {
     if (!inDispatch) errors.push(`app.js: chybí action handler pro '${action}'.`);
     if (inRender && inDispatch) notes.push(`PWA akce ${action} zaregistrovaná (render v app.js/pwa.js + dispatch v app.js).`);
   });
+}
+
+if (workflow) {
+  if (!/npm run check:e2e/.test(workflow)) {
+    errors.push('GitHub Actions workflow nespouští npm run check:e2e.');
+  }
+  if (!/E2E_REQUIRED:\s*["']?1["']?/.test(workflow)) {
+    errors.push('GitHub Actions workflow nespouští E2E smoke v povinném režimu E2E_REQUIRED=1.');
+  }
+  if (/npm run check:e2e/.test(workflow) && /E2E_REQUIRED:\s*["']?1["']?/.test(workflow)) {
+    notes.push('GitHub Actions: real-browser E2E smoke je zapojený jako povinný krok.');
+  }
 }
 
 console.log('Static smoke check pro Domácnost+');

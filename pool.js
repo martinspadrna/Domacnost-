@@ -165,6 +165,7 @@
     return {
       normalizePoolState,
       poolVolumeM3,
+      formatPoolVolume: formatVolume,
       poolPhDose,
       renderPool,
       savePoolFromForm

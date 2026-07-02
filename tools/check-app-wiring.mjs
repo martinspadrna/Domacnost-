@@ -73,6 +73,7 @@ if (app && pool && index && sw) {
 if (pkg) {
   expect(pkg, '"check:wiring"', 'package.json: check:wiring je v npm skriptech.');
   expect(pkg, 'npm run check:wiring', 'package.json: hlavní check spouští wiring smoke.');
+  expect(pkg, '"check:e2e"', 'package.json: check:e2e real-browser smoke je dostupný.');
 }
 
 console.log('App wiring smoke pro Domácnost+');

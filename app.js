@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_331';
-  const APP_BUILD = 331;
+  const APP_VERSION = 'Domácnost+ v.0.1_332';
+  const APP_BUILD = 332;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -10460,9 +10460,7 @@
   }
 
   function formatPoolVolume(value) {
-    const number = Number(value || 0);
-    if (!Number.isFinite(number) || number <= 0) return '0 m³';
-    return `${number.toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} m³`;
+    return getPoolModule().formatPoolVolume(value);
   }
 
   function renderPool() {
@@ -10472,11 +10470,6 @@
   function savePoolFromForm(data, form) {
     return getPoolModule().savePoolFromForm(data, form);
   }
-
-  function poolPhDose(value) {
-    return getPoolModule().poolPhDose(value);
-  }
-
 
   function subscriptionMonthSummary(month) {
     return getSubscriptionsModule().subscriptionMonthSummary(month);
