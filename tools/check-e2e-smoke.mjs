@@ -357,6 +357,16 @@ async function run() {
         const text = document.body?.innerText || '';
         const homeMain = document.querySelector('.home-redesign-shell.home-app-shell main');
         const homeMainStyle = homeMain ? getComputedStyle(homeMain) : null;
+        const homePrimary = document.querySelector('.home-primary-action');
+        const homePrimaryStyle = homePrimary ? getComputedStyle(homePrimary) : null;
+        const homeStatus = document.querySelector('.home-status-card');
+        const homeStatusStyle = homeStatus ? getComputedStyle(homeStatus) : null;
+        const homeAttention = document.querySelector('.home-attention-item');
+        const homeAttentionStyle = homeAttention ? getComputedStyle(homeAttention) : null;
+        const homeAttentionMeta = homeAttention ? homeAttention.querySelector('.home-attention-copy em') : null;
+        const homeAttentionMetaStyle = homeAttentionMeta ? getComputedStyle(homeAttentionMeta) : null;
+        const homeShortcut = document.querySelector('.home-module-shortcut');
+        const homeShortcutStyle = homeShortcut ? getComputedStyle(homeShortcut) : null;
         return {
           title: document.title,
           appStarted: Boolean(window.__DOMACNOST_APP_STARTED__),
@@ -373,6 +383,11 @@ async function run() {
           homeStatusCount: document.querySelectorAll('.home-status-card').length,
           homeAttention: Boolean(document.querySelector('.home-attention-list')),
           homeModules: Boolean(document.querySelector('.home-module-strip .home-module-shortcut')),
+          homePrimarySurface: Boolean(homePrimaryStyle && homePrimaryStyle.display === 'grid' && parseFloat(homePrimaryStyle.borderTopLeftRadius) >= 16),
+          homeStatusSurface: Boolean(homeStatusStyle && homeStatusStyle.display === 'grid' && parseFloat(homeStatusStyle.borderTopLeftRadius) >= 16),
+          homeAttentionSurface: Boolean(homeAttentionStyle && homeAttentionStyle.display === 'grid' && parseFloat(homeAttentionStyle.borderTopLeftRadius) >= 16),
+          homeAttentionClamp: Boolean(homeAttentionMetaStyle && homeAttentionMetaStyle.webkitLineClamp === '2'),
+          homeShortcutSurface: Boolean(homeShortcutStyle && homeShortcutStyle.display === 'grid' && parseFloat(homeShortcutStyle.borderTopLeftRadius) >= 16),
           bottomNavCount: document.querySelectorAll('.nav-shell .nav-item').length,
           navPool: Boolean(document.querySelector('[data-nav="pool"]')),
           navFinance: Boolean(document.querySelector('[data-nav="finance"]')),
@@ -400,6 +415,11 @@ async function run() {
     if (initialValue.homeStatusCount < 4) { fail('Home nemá čtyři stavové karty.'); bootOk = false; }
     if (!initialValue.homeAttention) { fail('Home neobsahuje seznam Dnes a brzy.'); bootOk = false; }
     if (!initialValue.homeModules) { fail('Home neobsahuje zkratky modulů.'); bootOk = false; }
+    if (!initialValue.homePrimarySurface) { fail('Home hlavní akce nemá sjednocený dashboard povrch.'); bootOk = false; }
+    if (!initialValue.homeStatusSurface) { fail('Home stavová karta nemá sjednocený dashboard povrch.'); bootOk = false; }
+    if (!initialValue.homeAttentionSurface) { fail('Home pozornostní řádek nemá sjednocený dashboard povrch.'); bootOk = false; }
+    if (!initialValue.homeAttentionClamp) { fail('Home pozornostní metadata nemají kontrolovaný dvouřádkový ořez.'); bootOk = false; }
+    if (!initialValue.homeShortcutSurface) { fail('Home modulová zkratka nemá sjednocený dashboard povrch.'); bootOk = false; }
     if (initialValue.bottomNavCount !== 5) { fail(`Spodní lišta má ${initialValue.bottomNavCount} položek místo 5 včetně Více.`); bootOk = false; }
     if (!initialValue.navPool) { fail('Po seed bootu není dostupná navigace Bazén.'); bootOk = false; }
     if (!initialValue.navFinance) { fail('Po seed bootu není dostupná navigace Finance.'); bootOk = false; }

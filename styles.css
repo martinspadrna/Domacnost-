@@ -19106,3 +19106,220 @@ main {
     font-size: .78rem;
   }
 }
+
+/* Domácnost+ – jednotné dashboard a history povrchy */
+.dashboard-widget-block,
+.home-command-card,
+.home-agenda-card,
+.home-modules-card,
+.tablet-agenda-card,
+.tablet-now-card,
+.tablet-modules-card,
+.setup-card,
+.cloud-sync-overview-card,
+.cloud-sync-audit-card,
+.dashboard-layout-card {
+  min-width: 0;
+}
+
+.home-primary-action,
+.home-attention-item,
+.home-status-card,
+.home-module-shortcut,
+.focus-tile,
+.timeline-item,
+.setup-item,
+.sync-overview-row,
+.mini-stat,
+.kpi,
+.overview-summary-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.64);
+  box-shadow: 0 8px 22px rgba(31, 41, 55, 0.052);
+}
+
+[data-theme="dark"] .home-primary-action,
+[data-theme="dark"] .home-attention-item,
+[data-theme="dark"] .home-status-card,
+[data-theme="dark"] .home-module-shortcut,
+[data-theme="dark"] .focus-tile,
+[data-theme="dark"] .timeline-item,
+[data-theme="dark"] .setup-item,
+[data-theme="dark"] .sync-overview-row,
+[data-theme="dark"] .mini-stat,
+[data-theme="dark"] .kpi,
+[data-theme="dark"] .overview-summary-card {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+}
+
+.home-primary-action,
+.home-attention-item,
+.focus-tile,
+.timeline-item,
+.setup-item,
+.sync-overview-row {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.home-primary-copy,
+.home-attention-copy,
+.timeline-copy,
+.sync-overview-main,
+.setup-item > div,
+.focus-tile > div,
+.home-module-shortcut span {
+  min-width: 0;
+}
+
+.home-primary-copy strong,
+.home-attention-copy strong,
+.timeline-copy strong,
+.sync-overview-title,
+.setup-item strong,
+.focus-tile h3,
+.home-module-shortcut strong,
+.home-status-card strong,
+.mini-stat strong,
+.overview-summary-card strong,
+.kpi strong {
+  min-width: 0;
+  color: var(--text);
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-primary-copy small,
+.home-attention-copy em,
+.timeline-copy em,
+.sync-overview-meta,
+.setup-item em,
+.focus-tile p,
+.home-module-shortcut em,
+.home-status-card small,
+.mini-stat span,
+.overview-summary-card span,
+.kpi span {
+  min-width: 0;
+  color: var(--muted);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.home-primary-copy small,
+.home-attention-copy em,
+.timeline-copy em,
+.setup-item em,
+.focus-tile p,
+.home-status-card small {
+  display: -webkit-box;
+  overflow: hidden;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.timeline-item > .badge,
+.home-primary-action > .badge,
+.home-attention-item > .badge {
+  justify-self: end;
+  max-width: min(34vw, 132px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-stat,
+.kpi,
+.overview-summary-card {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+}
+
+.mini-stat strong,
+.kpi strong,
+.overview-summary-card strong {
+  font-size: clamp(.95rem, 2.8vw, 1.24rem);
+  line-height: 1.12;
+}
+
+.mini-stat span,
+.kpi span,
+.overview-summary-card span {
+  display: block;
+  font-size: .74rem;
+  font-weight: 800;
+}
+
+.empty,
+.empty-cta {
+  min-width: 0;
+  border: 1px dashed color-mix(in srgb, var(--line) 74%, var(--muted));
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+[data-theme="dark"] .empty,
+[data-theme="dark"] .empty-cta {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+@media (max-width: 720px) {
+  .home-primary-action,
+  .home-attention-item,
+  .focus-tile,
+  .timeline-item,
+  .setup-item,
+  .sync-overview-row {
+    gap: 8px;
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .home-primary-action,
+  .home-attention-item,
+  .timeline-item,
+  .sync-overview-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .home-primary-action > .badge,
+  .home-attention-item > .badge,
+  .timeline-item > .badge,
+  .sync-overview-meta {
+    grid-column: 2;
+    justify-self: start;
+    max-width: 100%;
+  }
+
+  .home-status-card,
+  .home-module-shortcut,
+  .mini-stat,
+  .kpi,
+  .overview-summary-card {
+    border-radius: 16px;
+  }
+
+  .home-primary-copy strong,
+  .home-attention-copy strong,
+  .timeline-copy strong,
+  .focus-tile h3,
+  .home-module-shortcut strong,
+  .home-status-card strong {
+    font-size: .93rem;
+  }
+
+  .home-primary-copy small,
+  .home-attention-copy em,
+  .timeline-copy em,
+  .focus-tile p,
+  .home-module-shortcut em,
+  .home-status-card small {
+    font-size: .76rem;
+  }
+}

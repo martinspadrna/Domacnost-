@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_347';
-  const APP_BUILD = 347;
+  const APP_VERSION = 'Domácnost+ v.0.1_348';
+  const APP_BUILD = 348;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
