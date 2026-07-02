@@ -18136,7 +18136,89 @@ main {
 }
 
 .home-daily-hero .station-summary-item {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
   min-height: 82px;
+  padding: 10px;
+  border-radius: 18px;
+}
+
+.home-daily-hero .station-summary-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+}
+
+.home-daily-hero .station-summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  padding: 0 !important;
+}
+
+.home-daily-hero .station-summary-copy em {
+  color: var(--muted);
+  font-size: .68rem;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: .06em;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.home-daily-hero .station-summary-copy strong,
+.home-daily-hero .station-summary-metric {
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 1.15;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-daily-hero .station-summary-primary,
+.home-daily-hero .station-summary-detail {
+  color: var(--muted);
+  display: -webkit-box;
+  font-size: .78rem;
+  line-height: 1.25;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.home-daily-hero .station-summary-detail {
+  font-size: .72rem;
+  -webkit-line-clamp: 1;
+}
+
+.home-daily-hero .station-summary-chipline,
+.home-daily-hero .station-summary-extra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 22px;
+  overflow: hidden;
+}
+
+.home-daily-hero .station-summary-chipline b,
+.home-daily-hero .station-summary-extra b {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: .66rem;
+  font-weight: 850;
+  line-height: 1;
+  padding: 4px 6px;
 }
 
 .home-command-card,

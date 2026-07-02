@@ -349,6 +349,8 @@ async function run() {
       returnByValue: true,
       expression: `(() => {
         const text = document.body?.innerText || '';
+        const homeMain = document.querySelector('.home-redesign-shell.home-app-shell main');
+        const homeMainStyle = homeMain ? getComputedStyle(homeMain) : null;
         return {
           title: document.title,
           appStarted: Boolean(window.__DOMACNOST_APP_STARTED__),
@@ -356,6 +358,10 @@ async function run() {
           versionOk: document.title.includes('v.0.1_${expectedBuild}') || text.includes('v.0.1_${expectedBuild}'),
           bootError: Boolean(document.querySelector('.module-error-card, .app-boot-error')),
           homeRedesign: Boolean(document.querySelector('.home-dashboard-redesign')),
+          homeDailyHero: Boolean(document.querySelector('.home-daily-hero')),
+          homeOldHero: Boolean(document.querySelector('.home-minimal-hero, .dashboard-empty-home')),
+          homeMainScrollable: Boolean(homeMainStyle && /auto|scroll/.test(homeMainStyle.overflowY)),
+          homeSummaryCopy: Boolean(document.querySelector('.home-daily-hero .station-summary-copy')),
           homeDaily: Boolean(document.querySelector('[data-dashboard-widget="daily"]')),
           homePrimary: Boolean(document.querySelector('.home-primary-action')),
           homeStatusCount: document.querySelectorAll('.home-status-card').length,
@@ -379,6 +385,10 @@ async function run() {
     if (!initialValue.versionOk) { fail(`Na stránce/title není v0.1_${expectedBuild}.`); bootOk = false; }
     if (initialValue.bootError) { fail('Po bootu je vidět module/app error card.'); bootOk = false; }
     if (!initialValue.homeRedesign) { fail('Home nepoužívá nový home-dashboard-redesign layout.'); bootOk = false; }
+    if (!initialValue.homeDailyHero) { fail('Home nepoužívá nový home-daily-hero panel.'); bootOk = false; }
+    if (initialValue.homeOldHero) { fail('Home znovu vykresluje starý full-height hero layout.'); bootOk = false; }
+    if (!initialValue.homeMainScrollable) { fail('Nový Home main není scrollovatelný.'); bootOk = false; }
+    if (!initialValue.homeSummaryCopy) { fail('Home denní panel nemá textové bloky station-summary-copy.'); bootOk = false; }
     if (!initialValue.homeDaily) { fail('Home neobsahuje denní přehled.'); bootOk = false; }
     if (!initialValue.homePrimary) { fail('Home neobsahuje hlavní akční kartu.'); bootOk = false; }
     if (initialValue.homeStatusCount < 4) { fail('Home nemá čtyři stavové karty.'); bootOk = false; }
