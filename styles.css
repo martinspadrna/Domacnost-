@@ -2367,8 +2367,10 @@ button {
   display: flex;
   gap: 7px;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   padding: 2px 0 10px;
   margin-top: -2px;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
 }
 .section-tabs::-webkit-scrollbar { display: none; }
@@ -2384,6 +2386,7 @@ button {
   color: var(--muted);
   background: rgba(255,255,255,.46);
   cursor: pointer;
+  scroll-snap-align: start;
 }
 [data-theme="dark"] .section-tab { background: rgba(255,255,255,.06); }
 .section-tab strong { font-size: .84rem; }

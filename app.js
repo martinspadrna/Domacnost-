@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_342';
-  const APP_BUILD = 342;
+  const APP_VERSION = 'Domácnost+ v.0.1_343';
+  const APP_BUILD = 343;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -2715,7 +2715,7 @@
     const rawActive = getModuleTab(area, fallbackTab);
     const active = tabs.some((tab) => tab.id === rawActive) ? rawActive : fallbackTab;
     return `
-      <div class="section-tabs compact-tabs" role="tablist" aria-label="Záložky modulu">
+      <div class="section-tabs compact-tabs" role="tablist" aria-label="Záložky modulu" data-no-swipe>
         ${tabs.map((tab) => `
           <button class="section-tab ${active === tab.id ? 'active' : ''}" type="button" role="tab" aria-selected="${active === tab.id ? 'true' : 'false'}" data-action="set-section-tab" data-area="${escapeHtml(area)}" data-tab="${escapeHtml(tab.id)}">
             ${tab.iconHtml || `<span aria-hidden="true">${escapeHtml(tab.icon || '')}</span>`}<strong>${escapeHtml(tab.label)}</strong>${tab.count !== undefined ? `<em>${escapeHtml(String(tab.count))}</em>` : ''}
