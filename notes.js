@@ -111,15 +111,26 @@
     }
 
     // Cache pro notebookPages() a legacyQuickNotes() sdílí jednu signature
-    // z state.notes. Signature bere id/cloudId/updatedAt/createdAt/text.length
-    // + prvních 96 znaků textu (parseNotebookNote sáhne stejně jen na text).
-    // Full text v signature by zabil benefit; substring + délka chytnou
-    // typickou úpravu (přidání/ubrání znaku, změna prefixu JSON stringu).
-    // Cache invaliduje, když se cokoli z těchto polí změní — jak po saveState
-    // po edit, tak po reassignu state (loadState / hydrate).
+    // z state.notes. Fingerprint textu je FNV-1a hash CELÉHO note.text —
+    // dřívější `text.slice(0, 96)` mohl nechat starou cache při editaci
+    // za 96. znakem se zachovanou délkou/timestampem. FNV-1a je O(n) přes
+    // celý text (řádově srovnatelné s Array.filter/map dole), deterministic
+    // a nepotřebuje žádnou závislost. Cache invaliduje, když se cokoli
+    // z těchto polí změní — po saveState i po reassignu state.
     let cachedNotesSignature = '';
     let cachedNotebookPages = null;
     let cachedLegacyQuickNotes = null;
+
+    // FNV-1a 32-bit — jednoduchý deterministic string hash. Math.imul emuluje
+    // 32-bit multiply v JavaScriptu; výstup je vrácen v base36 pro krátkost.
+    function fnv1aHashNoteText(text) {
+      let h = 0x811c9dc5;
+      for (let i = 0; i < text.length; i += 1) {
+        h ^= text.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+      }
+      return (h >>> 0).toString(36);
+    }
 
     function computeNotesSignature() {
       const notes = getState().notes || [];
@@ -127,7 +138,7 @@
       for (let i = 0; i < notes.length; i += 1) {
         const n = notes[i] || {};
         const text = String(n.text || '');
-        parts[i] = `${n.id || ''}|${n.cloudId || ''}|${n.updatedAt || ''}|${n.createdAt || ''}|${text.length}|${text.slice(0, 96)}`;
+        parts[i] = `${n.id || ''}|${n.cloudId || ''}|${n.updatedAt || ''}|${n.createdAt || ''}|${text.length}|${fnv1aHashNoteText(text)}`;
       }
       return `${notes.length}#${parts.join('||')}`;
     }

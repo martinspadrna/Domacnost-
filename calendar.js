@@ -137,7 +137,12 @@
       const eventParts = new Array(events.length);
       for (let i = 0; i < events.length; i += 1) {
         const e = events[i] || {};
-        eventParts[i] = `${e.id || ''}:${e.cloudId || ''}:${e.sourceId || ''}:${e.date || ''}:${e.time || ''}:${e.endDate || ''}:${e.endTime || ''}:${e.updatedAt || ''}`;
+        // title patří do signature — sortCalendarEventsByStart používá
+        // localeCompare(title) jako tie-breaker při stejném startMs, takže
+        // přejmenování události se stejným časem musí invalidovat cache.
+        // updatedAt většinou stačí, ale nepolehneme na to (starý stav v IDB
+        // nemusí updatedAt mít, migrace ho nastaví lazy).
+        eventParts[i] = `${e.id || ''}:${e.cloudId || ''}:${e.sourceId || ''}:${e.date || ''}:${e.time || ''}:${e.endDate || ''}:${e.endTime || ''}:${e.updatedAt || ''}:${e.title || ''}`;
       }
       const sourceParts = new Array(sources.length);
       for (let i = 0; i < sources.length; i += 1) {
