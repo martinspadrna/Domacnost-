@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_339';
-  const APP_BUILD = 339;
+  const APP_VERSION = 'Domácnost+ v.0.1_340';
+  const APP_BUILD = 340;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -16335,6 +16335,23 @@
     return Boolean(target?.closest?.('input, textarea, select, [contenteditable="true"], .selectable-text'));
   }
 
+  function isHorizontallyScrollableTarget(target) {
+    let node = target?.nodeType === 1 ? target : target?.parentElement;
+    while (node && node !== document.body && node !== document.documentElement) {
+      if (node.scrollWidth > node.clientWidth + 8) {
+        const overflowX = window.getComputedStyle(node).overflowX;
+        if (/(auto|scroll|overlay)/.test(overflowX)) return true;
+      }
+      node = node.parentElement;
+    }
+    return false;
+  }
+
+  function isNavigationSwipeIgnoredTarget(target) {
+    return Boolean(target?.closest?.('.nav-shell, .overview-drawer, .app-modal, details, form, input, select, textarea, [data-no-swipe]'))
+      || isHorizontallyScrollableTarget(target);
+  }
+
   function installAppLikeTouchGuards() {
     let lastTouchEnd = 0;
     const preventGesture = (event) => event.preventDefault();
@@ -16352,10 +16369,12 @@
 
     let swipeStartX = 0;
     let swipeStartY = 0;
+    let swipeStartTarget = null;
     document.addEventListener('touchstart', (event) => {
       if (event.touches.length !== 1) return;
       swipeStartX = event.touches[0].clientX;
       swipeStartY = event.touches[0].clientY;
+      swipeStartTarget = event.target;
     }, { passive: true });
     document.addEventListener('touchend', (event) => {
       if (event.changedTouches.length !== 1) return;
@@ -16363,13 +16382,11 @@
       const dy = event.changedTouches[0].clientY - swipeStartY;
       if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.8) return;
       if (isEditableTarget(event.target)) return;
-      // Swipe uvnitř formuláře nebo horizontálně scrollovatelného bloku (grafy,
-      // karusely) nesmí přepnout spodní navigaci na jiný modul. `form` chrání
-      // add-vehicle panel (uživatel scrolluje dlouhý formulář, diagonální gesto
-      // dřív navigovalo pryč a panel „zmizel"). `[data-no-swipe]` na garage
-      // chart carouselech chrání horizontální scroll grafů — stejný pattern
-      // jako u kalendářové mřížky.
-      if (event.target.closest('.nav-shell, .overview-drawer, .app-modal, details, form, input, select, textarea, [data-no-swipe]')) return;
+      // Swipe uvnitř formulářů, detailů, modalů nebo horizontálně scrollovatelných
+      // bloků (záložky, grafy, karusely) nesmí přepnout spodní navigaci.
+      // Chrání to dlouhé add panely i vodorovné grafy před stejným problémem,
+      // který dřív posouval kalendář/garáž na jiný modul.
+      if (isNavigationSwipeIgnoredTarget(event.target) || isNavigationSwipeIgnoredTarget(swipeStartTarget)) return;
       const modules = getBottomNavModules();
       const currentIndex = modules.findIndex((m) => m.id === activeModule);
       const baseIndex = currentIndex >= 0 ? currentIndex : modules.findIndex((m) => m.id === getActiveBottomNavId(activeModule));

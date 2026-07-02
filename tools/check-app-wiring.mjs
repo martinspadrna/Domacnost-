@@ -105,6 +105,13 @@ if (app && contracts && index && sw) {
   expect(contracts, 'window.DomacnostContracts', 'contracts.js: factory export existuje.');
 }
 
+if (app) {
+  expect(app, 'function isHorizontallyScrollableTarget', 'app.js: swipe guard umí poznat horizontálně scrollovatelný blok.');
+  expect(app, 'function isNavigationSwipeIgnoredTarget', 'app.js: navigační swipe má jednotný ignore helper.');
+  expect(app, 'swipeStartTarget', 'app.js: navigační swipe kontroluje i místo začátku gesta.');
+  expect(app, 'isNavigationSwipeIgnoredTarget(event.target) || isNavigationSwipeIgnoredTarget(swipeStartTarget)', 'app.js: swipe navigace ignoruje start i konec v chráněném bloku.');
+}
+
 if (pkg) {
   expect(pkg, '"check:wiring"', 'package.json: check:wiring je v npm skriptech.');
   expect(pkg, 'npm run check:wiring', 'package.json: hlavní check spouští wiring smoke.');
