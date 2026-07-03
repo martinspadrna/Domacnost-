@@ -155,6 +155,9 @@ if (styles) {
   expect(styles, '.app-modal,\n.overview-panel {\n  width: min(100%, 760px);', 'styles.css: app modal a overview panel sdili novy povrch.');
   expect(styles, '.modal-actions {\n  position: sticky;', 'styles.css: modalni akce jsou ukotvene uvnitr modalu.');
   expect(styles, '.loyalty-code-stage,\n.file-preview-stage,\n.loyalty-action-sheet', 'styles.css: vnorene modalni plochy maji sjednoceny povrch.');
+  expect(styles, '/* Domacnost+ - sjednoceny hub Vice */', 'styles.css: existuje finalni blok pro hub Vice.');
+  expect(styles, '.more-clean-hub .more-settings-card,\n.more-clean-hub .more-module-card {\n  display: grid;', 'styles.css: Vice karty pouzivaji novy grid povrch.');
+  expect(styles, '.more-module-section .more-module-grid {\n  display: grid;\n  grid-template-columns: repeat(auto-fit', 'styles.css: Vice modulove sekce maji responzivni grid.');
 }
 
 if (shoppingCss) {

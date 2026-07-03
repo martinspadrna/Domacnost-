@@ -20076,3 +20076,147 @@ main {
     flex: 0 0 auto;
   }
 }
+
+/* Domacnost+ - sjednoceny hub Vice */
+.more-hub-grid,
+.more-settings-priority,
+.more-modules-panel,
+.more-section-stack,
+.more-module-section,
+.more-module-grid,
+.more-clean-hub .more-settings-card,
+.more-clean-hub .more-module-card,
+.more-clean-hub .more-module-copy {
+  min-width: 0;
+}
+
+.more-hub-grid {
+  align-items: start;
+}
+
+.more-settings-priority,
+.more-modules-panel {
+  overflow: hidden;
+}
+
+.more-module-section {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.56);
+  box-shadow: 0 10px 28px rgba(31, 41, 55, 0.052);
+}
+
+[data-theme="dark"] .more-module-section {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
+}
+
+.more-module-section .compact-card-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  margin: 0;
+}
+
+.more-module-section .compact-card-header h2,
+.more-module-section .compact-card-header p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.more-module-section .more-module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 168px), 1fr));
+  gap: 9px;
+}
+
+.more-clean-hub .more-settings-card,
+.more-clean-hub .more-module-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 76px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--text);
+  text-align: left;
+  box-shadow: 0 8px 22px rgba(31, 41, 55, 0.052);
+}
+
+[data-theme="dark"] .more-clean-hub .more-settings-card,
+[data-theme="dark"] .more-clean-hub .more-module-card {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+}
+
+.more-clean-hub .more-settings-card:hover,
+.more-clean-hub .more-module-card:hover {
+  border-color: color-mix(in srgb, var(--primary) 34%, var(--line));
+}
+
+.more-clean-hub .module-card-illustration-slot {
+  width: 42px;
+  height: 42px;
+}
+
+.more-clean-hub .more-module-copy strong,
+.more-clean-hub .more-module-copy span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.more-clean-hub .more-module-copy strong {
+  color: var(--text);
+  font-size: .96rem;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.more-clean-hub .more-module-copy span {
+  color: var(--muted);
+  font-size: .78rem;
+  line-height: 1.25;
+}
+
+@media (max-width: 720px) {
+  .more-hub-grid,
+  .more-hub-grid.grid.two,
+  .more-module-section .more-module-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .more-settings-priority,
+  .more-modules-panel,
+  .more-module-section,
+  .more-clean-hub .more-settings-card,
+  .more-clean-hub .more-module-card {
+    border-radius: 16px;
+  }
+
+  .more-clean-hub .more-settings-card,
+  .more-clean-hub .more-module-card {
+    min-height: 66px;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .more-clean-hub .more-settings-card > .badge,
+  .more-clean-hub .more-module-card > .badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .more-clean-hub .module-card-illustration-slot {
+    width: 38px;
+    height: 38px;
+  }
+}

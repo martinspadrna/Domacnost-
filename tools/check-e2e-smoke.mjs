@@ -510,13 +510,34 @@ async function run() {
       returnByValue: true,
       expression: `(() => {
         const headings = Array.from(document.querySelectorAll('.more-module-section h2')).map((node) => node.textContent.trim());
+        const hub = document.querySelector('.more-clean-hub');
+        const hubStyle = hub ? getComputedStyle(hub) : null;
+        const hubRect = hub ? hub.getBoundingClientRect() : null;
+        const settingsCard = document.querySelector('.more-settings-card[data-nav="settings"]');
+        const settingsCardStyle = settingsCard ? getComputedStyle(settingsCard) : null;
+        const section = document.querySelector('.more-module-section');
+        const sectionStyle = section ? getComputedStyle(section) : null;
+        const moduleGrid = document.querySelector('.more-module-section .more-module-grid');
+        const moduleGridStyle = moduleGrid ? getComputedStyle(moduleGrid) : null;
+        const moduleCard = document.querySelector('.more-module-section .more-module-card');
+        const moduleCardStyle = moduleCard ? getComputedStyle(moduleCard) : null;
+        const moduleCardRect = moduleCard ? moduleCard.getBoundingClientRect() : null;
+        const moduleCopy = moduleCard ? moduleCard.querySelector('.more-module-copy strong') : null;
+        const moduleCopyStyle = moduleCopy ? getComputedStyle(moduleCopy) : null;
         return {
           settings: Boolean(document.querySelector('.more-settings-card[data-nav="settings"]')),
           sectionCount: document.querySelectorAll('.more-module-section').length,
           hasDaily: headings.includes('Denně'),
           hasHome: headings.includes('Domov'),
           hasMoney: headings.includes('Peníze a doklady'),
-          moduleShortcutCount: document.querySelectorAll('.more-module-section [data-nav]').length
+          moduleShortcutCount: document.querySelectorAll('.more-module-section [data-nav]').length,
+          hubOneColumn: Boolean(hubStyle && hubStyle.display === 'grid' && hubStyle.gridTemplateColumns.trim().split(/\\s+/).length === 1),
+          settingsSurface: Boolean(settingsCardStyle && settingsCardStyle.display === 'grid' && parseFloat(settingsCardStyle.borderTopLeftRadius) >= 16),
+          sectionSurface: Boolean(sectionStyle && sectionStyle.display === 'grid' && parseFloat(sectionStyle.borderTopLeftRadius) >= 16),
+          moduleGridSurface: Boolean(moduleGridStyle && moduleGridStyle.display === 'grid' && moduleGridStyle.gridTemplateColumns.trim().split(/\\s+/).length === 1),
+          moduleCardSurface: Boolean(moduleCardStyle && moduleCardStyle.display === 'grid' && parseFloat(moduleCardStyle.borderTopLeftRadius) >= 16),
+          moduleCardFits: Boolean(hubRect && moduleCardRect && moduleCardRect.width <= hubRect.width + 1),
+          moduleCopyClamp: Boolean(moduleCopyStyle && moduleCopyStyle.overflow === 'hidden' && moduleCopyStyle.textOverflow === 'ellipsis')
         };
       })()`
     });
@@ -528,7 +549,14 @@ async function run() {
     if (!moreValue.hasHome) { fail('Více nemá sekci Domov.'); moreOk = false; }
     if (!moreValue.hasMoney) { fail('Více nemá sekci Peníze a doklady.'); moreOk = false; }
     if (moreValue.moduleShortcutCount < 8) { fail('Více nemá dost modulových zkratek.'); moreOk = false; }
-    if (moreOk) ok('Více: nastavení a skupiny modulů renderují.');
+    if (!moreValue.hubOneColumn) { fail('Vice hub neni na mobilu jednosloupcovy grid.'); moreOk = false; }
+    if (!moreValue.settingsSurface) { fail('Vice Nastaveni karta nema novy grid povrch.'); moreOk = false; }
+    if (!moreValue.sectionSurface) { fail('Vice sekce modulu nema novy povrch.'); moreOk = false; }
+    if (!moreValue.moduleGridSurface) { fail('Vice modulova sekce neni na mobilu jednosloupcovy grid.'); moreOk = false; }
+    if (!moreValue.moduleCardSurface) { fail('Vice modulova karta nema novy grid povrch.'); moreOk = false; }
+    if (!moreValue.moduleCardFits) { fail('Vice modulova karta presahuje sirku hubu.'); moreOk = false; }
+    if (!moreValue.moduleCopyClamp) { fail('Vice modulova karta nema kontrolovany orez dlouheho nazvu.'); moreOk = false; }
+    if (moreOk) ok('Vice: nastaveni, skupiny modulu a novy povrch renderuji.');
 
     await page.send('Runtime.evaluate', {
       expression: `document.querySelector('.more-module-section [data-nav="shopping"], [data-nav="shopping"]')?.click()`
