@@ -228,6 +228,43 @@ function smokeSeedScript() {
     profiles: [{ id: 'profile-e2e-smoke', name: 'Smoke', role: 'admin', createdAt: new Date().toISOString() }],
     activeProfileId: 'profile-e2e-smoke',
     enabledModules: ['weather', 'calendar', 'shopping', 'hdo', 'waste', 'readings', 'pool', 'tasks', 'warranties', 'polishHolidays', 'garage', 'contracts', 'finance', 'subscriptions'],
+    shoppingLists: [{
+      id: 'shopping-list-e2e-smoke',
+      householdId: 'household-e2e-smoke',
+      profileId: 'profile-e2e-smoke',
+      name: 'Smoke nákup',
+      sortOrder: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }],
+    activeShoppingListId: 'shopping-list-e2e-smoke',
+    shopping: [{
+      id: 'shopping-item-open-e2e-smoke',
+      householdId: 'household-e2e-smoke',
+      profileId: 'profile-e2e-smoke',
+      listId: 'shopping-list-e2e-smoke',
+      name: 'Mléko',
+      category: 'Potraviny',
+      kind: 'Potraviny',
+      quantity: 1,
+      unit: 'ks',
+      done: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }, {
+      id: 'shopping-item-done-e2e-smoke',
+      householdId: 'household-e2e-smoke',
+      profileId: 'profile-e2e-smoke',
+      listId: 'shopping-list-e2e-smoke',
+      name: 'Rohlíky',
+      category: 'Pečivo',
+      kind: 'Pečivo',
+      quantity: 6,
+      unit: 'ks',
+      done: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }],
     vehicles: [{
       id: 'vehicle-e2e-smoke',
       householdId: 'household-e2e-smoke',
@@ -492,6 +529,62 @@ async function run() {
     if (!moreValue.hasMoney) { fail('Více nemá sekci Peníze a doklady.'); moreOk = false; }
     if (moreValue.moduleShortcutCount < 8) { fail('Více nemá dost modulových zkratek.'); moreOk = false; }
     if (moreOk) ok('Více: nastavení a skupiny modulů renderují.');
+
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.more-module-section [data-nav="shopping"], [data-nav="shopping"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 600));
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('[data-action="open-shopping-done-modal"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    const shoppingDoneCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const modal = document.querySelector('.shopping-done-modal.app-modal');
+        const backdrop = document.querySelector('.shopping-done-modal-backdrop.app-modal-backdrop');
+        const head = modal ? modal.querySelector('.app-modal-head') : null;
+        const actions = modal ? modal.querySelector('.shopping-done-actions.modal-actions') : null;
+        const row = modal ? modal.querySelector('.shopping-listonic-item.done') : null;
+        const modalStyle = modal ? getComputedStyle(modal) : null;
+        const backdropStyle = backdrop ? getComputedStyle(backdrop) : null;
+        const headStyle = head ? getComputedStyle(head) : null;
+        const actionsStyle = actions ? getComputedStyle(actions) : null;
+        const rowStyle = row ? getComputedStyle(row) : null;
+        return {
+          modal: Boolean(modal),
+          bodyOpen: document.body.classList.contains('overview-open'),
+          backdrop: Boolean(backdrop),
+          modalSurface: Boolean(modalStyle && parseFloat(modalStyle.borderTopLeftRadius) >= 18 && /auto|scroll/.test(modalStyle.overflowY) && modalStyle.overscrollBehaviorY === 'contain'),
+          modalFitsMobile: Boolean(modal && modal.getBoundingClientRect().width <= window.innerWidth && modal.getBoundingClientRect().height <= window.innerHeight),
+          backdropMobileSheet: Boolean(backdropStyle && ['flex-end', 'end'].includes(backdropStyle.alignItems)),
+          headLayout: Boolean(headStyle && headStyle.display === 'grid' && headStyle.position === 'sticky'),
+          actionsStickyRail: Boolean(actionsStyle && actionsStyle.position === 'sticky' && /auto|scroll/.test(actionsStyle.overflowX)),
+          doneRowSurface: Boolean(rowStyle && rowStyle.display === 'grid' && parseFloat(rowStyle.borderTopLeftRadius) >= 16),
+          text: (modal?.innerText || '').slice(0, 260)
+        };
+      })()`
+    });
+    const shoppingDoneValue = shoppingDoneCheck.result?.value || {};
+    if (process.env.E2E_DEBUG === '1') {
+      console.log('DEBUG shoppingDone:', JSON.stringify(shoppingDoneValue, null, 2));
+    }
+    let shoppingDoneOk = true;
+    if (!shoppingDoneValue.modal) { fail('Nakup Hotovo modal se neotevrel.'); shoppingDoneOk = false; }
+    if (!shoppingDoneValue.bodyOpen) { fail('Nakup Hotovo modal nenastavil modalni stav body.'); shoppingDoneOk = false; }
+    if (!shoppingDoneValue.backdrop) { fail('Nakup Hotovo modal nepouziva spolecny app-modal-backdrop.'); shoppingDoneOk = false; }
+    if (!shoppingDoneValue.modalSurface) { fail('Nakup Hotovo modal nema novy povrch a vnitrni scroll.'); shoppingDoneOk = false; }
+    if (!shoppingDoneValue.modalFitsMobile) { fail('Nakup Hotovo modal presahuje mobilni viewport.'); shoppingDoneOk = false; }
+    if (!shoppingDoneValue.backdropMobileSheet) { fail('Nakup Hotovo modal nedrzi mobilni sheet u spodni hrany.'); shoppingDoneOk = false; }
+    if (!shoppingDoneValue.headLayout) { fail('Nakup Hotovo modal nema spolecnou sticky hlavicku.'); shoppingDoneOk = false; }
+    if (!shoppingDoneValue.actionsStickyRail) { fail('Nakup Hotovo modal nema sticky modalni akce.'); shoppingDoneOk = false; }
+    if (!shoppingDoneValue.doneRowSurface) { fail('Nakup Hotovo polozky nemaji sjednoceny seznamovy povrch.'); shoppingDoneOk = false; }
+    if (!/Rohl/.test(shoppingDoneValue.text || '')) { fail('Nakup Hotovo modal neukazuje seed koupenou polozku.'); shoppingDoneOk = false; }
+    if (shoppingDoneOk) ok('Nakup: Hotovo podslozka se otevira jako novy mobilni modal.');
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('[data-action="close-shopping-done-modal"]')?.click(); document.querySelector('.nav-shell [data-nav="more"]')?.click();`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 450));
 
     await page.send('Runtime.evaluate', {
       expression: `document.querySelector('.more-settings-card[data-nav="settings"]')?.click()`

@@ -225,14 +225,15 @@
 
     function renderShoppingDoneModal(groupedDone, doneItems, activeList) {
       return `
-      <div class="modal-backdrop shopping-done-modal-backdrop" data-modal-backdrop role="dialog" aria-modal="true">
-        <section class="modal-card app-modal shopping-done-modal">
-          <div class="modal-head">
-            <div><h2>Hotovo</h2><p>${escapeHtml(activeList?.name || 'Nákupní seznam')} · ${doneItems.length} položek</p></div>
-            <button class="ghost-btn" type="button" data-action="close-shopping-done-modal">Zavřít</button>
+      <div class="app-modal-backdrop shopping-done-modal-backdrop" data-modal-backdrop role="presentation">
+        <section class="app-modal shopping-done-modal" role="dialog" aria-modal="true" aria-labelledby="shopping-done-title">
+          <div class="app-modal-head shopping-done-head">
+            <div><span class="badge good">hotovo</span><h2 id="shopping-done-title">Hotovo</h2><p>${escapeHtml(activeList?.name || 'Nákupní seznam')} · ${doneItems.length} položek</p></div>
+            <button class="icon-btn" type="button" data-action="close-shopping-done-modal" aria-label="Zavřít přehled koupených">×</button>
           </div>
           <div class="hint-box">Položku můžeš vrátit zpátky tlačítkem fajfky. Na mobilu ji posuň doleva a nabídne se smazání.</div>
           <div class="shopping-grouped-list shopping-listonic-done">${groupedDone.map(renderShoppingGroup).join('')}</div>
+          <div class="form-actions modal-actions shopping-done-actions"><button class="ghost-btn" type="button" data-action="close-shopping-done-modal">Zavřít</button></div>
         </section>
       </div>
     `;

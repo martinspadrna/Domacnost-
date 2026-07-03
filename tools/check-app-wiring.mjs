@@ -42,6 +42,7 @@ const index = read('index.html');
 const sw = read('sw.js');
 const pkg = read('package.json');
 const styles = read('styles.css');
+const shoppingCss = read('shopping.css');
 
 if (app && finance) {
   expect(app, "financeLoans: []", 'app.js: financeLoans jsou ve výchozím stavu.');
@@ -154,6 +155,12 @@ if (styles) {
   expect(styles, '.app-modal,\n.overview-panel {\n  width: min(100%, 760px);', 'styles.css: app modal a overview panel sdili novy povrch.');
   expect(styles, '.modal-actions {\n  position: sticky;', 'styles.css: modalni akce jsou ukotvene uvnitr modalu.');
   expect(styles, '.loyalty-code-stage,\n.file-preview-stage,\n.loyalty-action-sheet', 'styles.css: vnorene modalni plochy maji sjednoceny povrch.');
+}
+
+if (shoppingCss) {
+  expect(shoppingCss, '/* Domacnost+ - novy povrch nakupnich podslozek */', 'shopping.css: existuje finalni blok pro nakupni podslozky.');
+  expect(shoppingCss, '.shopping-done-modal {\n  width: min(100%, 760px);', 'shopping.css: hotovo modal sdili mobilni sheet rozmery.');
+  expect(shoppingCss, '.shopping-done-actions {\n  margin-top: 14px;', 'shopping.css: hotovo modal ma spodní akce v modalnim railu.');
 }
 
 if (pkg) {

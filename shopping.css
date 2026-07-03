@@ -1551,3 +1551,59 @@ html[data-theme="dark"] .shopping-cloud-strip {
     height: 46px !important;
   }
 }
+
+/* Domacnost+ - novy povrch nakupnich podslozek */
+.shopping-done-modal-backdrop {
+  z-index: 1200;
+  padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+}
+
+.shopping-done-modal {
+  width: min(100%, 760px);
+  max-height: min(86dvh, 820px);
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  border-radius: 24px;
+}
+
+.shopping-done-modal > .hint-box,
+.shopping-done-modal > .shopping-grouped-list {
+  margin-inline: 16px;
+}
+
+.shopping-done-modal > .hint-box {
+  margin-bottom: 12px;
+}
+
+.shopping-done-modal .shopping-kind-heading,
+.shopping-done-modal .shopping-listonic-copy,
+.shopping-done-modal .item-title,
+.shopping-done-modal .item-meta {
+  min-width: 0;
+}
+
+.shopping-done-modal .shopping-listonic-done {
+  padding-bottom: 2px;
+}
+
+.shopping-done-actions {
+  margin-top: 14px;
+}
+
+@media (max-width: 720px) {
+  .shopping-done-modal-backdrop {
+    align-items: flex-end;
+    padding: 10px 10px max(10px, env(safe-area-inset-bottom));
+  }
+
+  .shopping-done-modal {
+    width: 100%;
+    max-height: 88dvh;
+    border-radius: 22px 22px 18px 18px;
+  }
+
+  .shopping-done-modal > .hint-box,
+  .shopping-done-modal > .shopping-grouped-list {
+    margin-inline: 12px;
+  }
+}
