@@ -41,6 +41,8 @@ const styles = read('styles.css');
 if (styles) {
   const beforeCalendar = beforeMarker(styles, '/* Domacnost+ - sjednoceny kalendar */', 'sjednoceny kalendar');
   const beforeGarage = beforeMarker(styles, '/* Domacnost+ - sjednocena Garaz */', 'sjednocena Garaz');
+  const beforeHome = beforeMarker(styles, '/* Domacnost+ - sjednoceny Home */', 'sjednoceny Home');
+  const beforeSettings = beforeMarker(styles, '/* Domácnost+ – jednotné Nastavení, importy a dlouhé formuláře */', 'jednotne Nastaveni');
 
   [
     [/v\.0\.1_106/, 'styles.css: stary v0.1_106 kalendarovy grid nesmi byt pred finalnim kalendarem.'],
@@ -61,6 +63,22 @@ if (styles) {
     [/\.garage-chart-body\s*\{/, 'styles.css: garage-chart-body ma zit az ve finalnim garage bloku.'],
     [/\.garage-tab-calculator\s+\.garage-panel:not\(\.panel-calculator\)/, 'styles.css: garage tab visibility ma zit az ve finalnim garage bloku.']
   ].forEach(([pattern, label]) => expectAbsent(beforeGarage, pattern, label));
+
+  [
+    ['home reset', 'styles.css: stary home reset nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_96[\s\S]{0,120}Home panelu/, 'styles.css: stary v0.1_96 variabilni Home panel nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_96[\s\S]{0,120}stabiln[\s\S]{0,80}Home panel/, 'styles.css: stary v0.1_96 stabilni Home panel nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_102[\s\S]{0,120}Home mini/, 'styles.css: stary v0.1_102 Home mini panel patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_109/, 'styles.css: stary v0.1_109 Home live patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_111/, 'styles.css: stary v0.1_111 Home layout/live patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_112/, 'styles.css: stary v0.1_112 Home height patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_113/, 'styles.css: stary v0.1_113 Home width/height patch nesmi byt pred finalnim Home blokem.'],
+    [/legacy[\s\S]{0,80}Home:/, 'styles.css: stary legacy Home patch nesmi byt pred finalnim Home blokem.']
+  ].forEach(([pattern, label]) => expectAbsent(beforeHome, pattern, label));
+
+  [
+    [/\.settings-tab-dashboard \.settings-panel:not\(\.panel-dashboard\),\s*\.settings-tab-household \.settings-panel:not\(\.panel-household\)/, 'styles.css: settings tab visibility ma zit az ve finalnim Nastaveni bloku.']
+  ].forEach(([pattern, label]) => expectAbsent(beforeSettings, pattern, label));
 }
 
 console.log('Style layering check pro Domacnost+');
