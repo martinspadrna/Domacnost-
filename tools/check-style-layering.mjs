@@ -73,6 +73,15 @@ if (styles) {
     [/v\.0\.1_111/, 'styles.css: stary v0.1_111 Home layout/live patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_112/, 'styles.css: stary v0.1_112 Home height patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_113/, 'styles.css: stary v0.1_113 Home width/height patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_138[\s\S]{0,120}Home/, 'styles.css: stary v0.1_138 Home readability patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_149[\s\S]{0,120}Home/, 'styles.css: stary v0.1_149 Home height/icon patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_154[\s\S]{0,120}Home/, 'styles.css: stary v0.1_154 Home compact patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_155[\s\S]{0,120}Home/, 'styles.css: stary v0.1_155 Home no-scroll patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_156[\s\S]{0,120}Home/, 'styles.css: stary v0.1_156 Home grid patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_159[\s\S]{0,120}Home/, 'styles.css: stary v0.1_159 Home fullscreen patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_217[\s\S]{0,120}Home/, 'styles.css: stary v0.1_217 Home safe-area patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_232[\s\S]{0,120}finance\/Home/, 'styles.css: stary v0.1_232 finance/Home stabilization patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_232[\s\S]{0,120}stabilizace Home/, 'styles.css: stary v0.1_232 final Home stabilization patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_281/, 'styles.css: stary v0.1_281 Home/nav patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_282/, 'styles.css: stary v0.1_282 Home readability patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_283/, 'styles.css: stary v0.1_283 Home height patch nesmi byt pred finalnim Home blokem.'],
@@ -80,6 +89,8 @@ if (styles) {
     [/v\.0\.1_286/, 'styles.css: stary v0.1_286 Home active-area patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_287/, 'styles.css: stary v0.1_287 Home text/height patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_288/, 'styles.css: stary v0.1_288 Home padding patch nesmi byt pred finalnim Home blokem.'],
+    [/\.app-shell\.home-app-shell\s+\.home-hero-count-0\.home-minimal-hero/, 'styles.css: stary app-shell Home fullscreen selector nesmi byt pred finalnim Home blokem.'],
+    [/\.home-hero-count-0\.home-minimal-hero,[\s\S]{0,500}height:\s*(?:calc|clamp)/, 'styles.css: stary Home hero height clamp nesmi byt pred finalnim Home blokem.'],
     [/legacy[\s\S]{0,80}Home:/, 'styles.css: stary legacy Home patch nesmi byt pred finalnim Home blokem.']
   ].forEach(([pattern, label]) => expectAbsent(beforeHome, pattern, label));
 
