@@ -73,6 +73,13 @@ if (styles) {
     [/v\.0\.1_111/, 'styles.css: stary v0.1_111 Home layout/live patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_112/, 'styles.css: stary v0.1_112 Home height patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_113/, 'styles.css: stary v0.1_113 Home width/height patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_281/, 'styles.css: stary v0.1_281 Home/nav patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_282/, 'styles.css: stary v0.1_282 Home readability patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_283/, 'styles.css: stary v0.1_283 Home height patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_284/, 'styles.css: stary v0.1_284 Home layout patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_286/, 'styles.css: stary v0.1_286 Home active-area patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_287/, 'styles.css: stary v0.1_287 Home text/height patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_288/, 'styles.css: stary v0.1_288 Home padding patch nesmi byt pred finalnim Home blokem.'],
     [/legacy[\s\S]{0,80}Home:/, 'styles.css: stary legacy Home patch nesmi byt pred finalnim Home blokem.']
   ].forEach(([pattern, label]) => expectAbsent(beforeHome, pattern, label));
 
