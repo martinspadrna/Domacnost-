@@ -265,6 +265,35 @@ function smokeSeedScript() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }],
+    calendarCloud: {
+      sources: [{
+        id: 'calendar-source-e2e-smoke',
+        cloudId: 'calendar-source-e2e-smoke',
+        householdId: 'household-e2e-smoke',
+        name: 'Smoke kalendar',
+        provider: 'manual',
+        isEnabled: true,
+        syncEnabled: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }]
+    },
+    calendar: [{
+      id: 'calendar-event-e2e-smoke',
+      cloudId: '',
+      householdId: 'household-e2e-smoke',
+      profileId: 'profile-e2e-smoke',
+      sourceId: 'calendar-source-e2e-smoke',
+      title: 'Smoke udalost',
+      date: '2026-07-03',
+      time: '09:30',
+      endTime: '10:15',
+      type: 'event',
+      location: 'Doma',
+      note: 'E2E smoke',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }],
     vehicles: [{
       id: 'vehicle-e2e-smoke',
       householdId: 'household-e2e-smoke',
@@ -557,6 +586,123 @@ async function run() {
     if (!moreValue.moduleCardFits) { fail('Vice modulova karta presahuje sirku hubu.'); moreOk = false; }
     if (!moreValue.moduleCopyClamp) { fail('Vice modulova karta nema kontrolovany orez dlouheho nazvu.'); moreOk = false; }
     if (moreOk) ok('Vice: nastaveni, skupiny modulu a novy povrch renderuji.');
+
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.more-module-section [data-nav="calendar"], [data-nav="calendar"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 700));
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.section-tabs [data-area="calendar"][data-tab="sources"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 250));
+    const calendarCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const calendar = document.querySelector('.module-tabbed[data-tab-area="calendar"]');
+        const sourceDetails = document.querySelector('.calendar-source-list-details');
+        if (sourceDetails) sourceDetails.open = true;
+        const sourceItem = document.querySelector('.calendar-source-item');
+        const sourceItemStyle = sourceItem ? getComputedStyle(sourceItem) : null;
+        const sourceDetailsStyle = sourceDetails ? getComputedStyle(sourceDetails) : null;
+        const sourceSurface = Boolean(sourceItemStyle && sourceItemStyle.display === 'grid' && parseFloat(sourceItemStyle.borderTopLeftRadius) >= 14);
+        const sourceDetailsSurface = Boolean(sourceDetailsStyle && parseFloat(sourceDetailsStyle.borderTopLeftRadius) >= 16);
+        const sourceDisplay = sourceItemStyle?.display || '';
+        const sourceRadius = sourceItemStyle?.borderTopLeftRadius || '';
+        const sourceDetailsDisplay = sourceDetailsStyle?.display || '';
+        const sourceDetailsRadius = sourceDetailsStyle?.borderTopLeftRadius || '';
+        const sourceText = sourceItem?.innerText || '';
+        document.querySelector('.section-tabs [data-area="calendar"][data-tab="overview"]')?.click();
+        const overview = document.querySelector('.calendar-panel.panel-overview');
+        const monthView = document.querySelector('.calendar-month-view');
+        const toolbar = document.querySelector('.calendar-month-toolbar');
+        const grid = document.querySelector('.calendar-grid[data-no-swipe]');
+        const weekRow = document.querySelector('.calendar-week-row');
+        const day = document.querySelector('.calendar-day');
+        const eventButton = document.querySelector('.calendar-day-event[data-action="calendar-event-detail"]');
+        const overviewStyle = overview ? getComputedStyle(overview) : null;
+        const monthViewStyle = monthView ? getComputedStyle(monthView) : null;
+        const toolbarStyle = toolbar ? getComputedStyle(toolbar) : null;
+        const weekRowStyle = weekRow ? getComputedStyle(weekRow) : null;
+        const dayStyle = day ? getComputedStyle(day) : null;
+        const eventStyle = eventButton ? getComputedStyle(eventButton) : null;
+        return {
+          calendar: Boolean(calendar),
+          sourceSurface,
+          sourceDetailsSurface,
+          overviewSurface: Boolean(overviewStyle && parseFloat(overviewStyle.borderTopLeftRadius) >= 16),
+          monthSurface: Boolean(monthViewStyle && monthViewStyle.display === 'grid' && parseFloat(monthViewStyle.borderTopLeftRadius) >= 16),
+          toolbarGrid: Boolean(toolbarStyle && toolbarStyle.display === 'grid'),
+          gridNoSwipe: Boolean(grid),
+          weekSevenColumns: Boolean(weekRowStyle && weekRowStyle.display === 'grid' && weekRowStyle.gridTemplateColumns.trim().split(/\\s+/).length === 7),
+          daySurface: Boolean(dayStyle && dayStyle.display === 'grid' && parseFloat(dayStyle.borderTopLeftRadius) >= 10),
+          eventSurface: Boolean(eventStyle && eventStyle.display === 'grid' && parseFloat(eventStyle.borderTopLeftRadius) >= 8),
+          eventText: eventButton?.innerText || '',
+          sourceText,
+          sourceDisplay,
+          sourceRadius,
+          sourceDetailsDisplay,
+          sourceDetailsRadius
+        };
+      })()`
+    });
+    const calendarValue = calendarCheck.result?.value || {};
+    if (process.env.E2E_DEBUG === '1') {
+      console.log('DEBUG calendar:', JSON.stringify(calendarValue, null, 2));
+    }
+    let calendarOk = true;
+    if (!calendarValue.calendar) { fail('Kalendář se neotevřel do module-tabbed layoutu.'); calendarOk = false; }
+    if (!calendarValue.sourceSurface) { fail('Kalendář zdroj nemá nový seznamový povrch.'); calendarOk = false; }
+    if (!calendarValue.sourceDetailsSurface) { fail('Kalendář zdroje nemají nový details povrch.'); calendarOk = false; }
+    if (!calendarValue.overviewSurface) { fail('Kalendář přehled panel nemá sjednocený povrch.'); calendarOk = false; }
+    if (!calendarValue.monthSurface) { fail('Kalendář měsíční mřížka nemá nový povrch.'); calendarOk = false; }
+    if (!calendarValue.toolbarGrid) { fail('Kalendář měsíční toolbar není grid.'); calendarOk = false; }
+    if (!calendarValue.gridNoSwipe) { fail('Kalendář mřížka nemá data-no-swipe ochranu.'); calendarOk = false; }
+    if (!calendarValue.weekSevenColumns) { fail('Kalendář týden nemá 7 stabilních sloupců.'); calendarOk = false; }
+    if (!calendarValue.daySurface) { fail('Kalendář den nemá stabilní kartový povrch.'); calendarOk = false; }
+    if (!calendarValue.eventSurface) { fail('Kalendář událost nemá nový kartový povrch.'); calendarOk = false; }
+    if (!/Smoke udalost/.test(calendarValue.eventText || '')) { fail('Kalendář neukazuje seed událost.'); calendarOk = false; }
+    if (!/Smoke kalendar/.test(calendarValue.sourceText || '')) { fail('Kalendář neukazuje seed zdroj.'); calendarOk = false; }
+
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.calendar-day-event[data-action="calendar-event-detail"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 400));
+    const calendarModalCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const modal = document.querySelector('.calendar-event-modal.app-modal');
+        const head = modal ? modal.querySelector('.app-modal-head') : null;
+        const detail = modal ? modal.querySelector('.modal-detail-card') : null;
+        const actions = modal ? modal.querySelector('.modal-actions') : null;
+        const modalStyle = modal ? getComputedStyle(modal) : null;
+        const headStyle = head ? getComputedStyle(head) : null;
+        const detailStyle = detail ? getComputedStyle(detail) : null;
+        const actionsStyle = actions ? getComputedStyle(actions) : null;
+        return {
+          modal: Boolean(modal),
+          modalSurface: Boolean(modalStyle && parseFloat(modalStyle.borderTopLeftRadius) >= 18),
+          headLayout: Boolean(headStyle && headStyle.display === 'grid' && headStyle.position === 'sticky'),
+          detailSurface: Boolean(detailStyle && parseFloat(detailStyle.borderTopLeftRadius) >= 14),
+          actionsSticky: Boolean(actionsStyle && actionsStyle.position === 'sticky'),
+          text: (modal?.innerText || '').slice(0, 240)
+        };
+      })()`
+    });
+    const calendarModalValue = calendarModalCheck.result?.value || {};
+    if (process.env.E2E_DEBUG === '1') {
+      console.log('DEBUG calendarModal:', JSON.stringify(calendarModalValue, null, 2));
+    }
+    if (!calendarModalValue.modal) { fail('Kalendář detail události se neotevřel.'); calendarOk = false; }
+    if (!calendarModalValue.modalSurface) { fail('Kalendář detail události nemá nový modal povrch.'); calendarOk = false; }
+    if (!calendarModalValue.headLayout) { fail('Kalendář detail události nemá sticky hlavičku.'); calendarOk = false; }
+    if (!calendarModalValue.detailSurface) { fail('Kalendář detail události nemá detailní karty.'); calendarOk = false; }
+    if (!calendarModalValue.actionsSticky) { fail('Kalendář detail události nemá sticky akce.'); calendarOk = false; }
+    if (!/Smoke udalost/.test(calendarModalValue.text || '')) { fail('Kalendář detail neukazuje seed událost.'); calendarOk = false; }
+    if (calendarOk) ok('Kalendář: mřížka, zdroje a detail události renderují v novém povrchu.');
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('[data-action="close-modal"]')?.click(); document.querySelector('.nav-shell [data-nav="more"]')?.click();`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 450));
 
     await page.send('Runtime.evaluate', {
       expression: `document.querySelector('.more-module-section [data-nav="shopping"], [data-nav="shopping"]')?.click()`

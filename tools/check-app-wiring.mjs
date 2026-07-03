@@ -158,6 +158,11 @@ if (styles) {
   expect(styles, '/* Domacnost+ - sjednoceny hub Vice */', 'styles.css: existuje finalni blok pro hub Vice.');
   expect(styles, '.more-clean-hub .more-settings-card,\n.more-clean-hub .more-module-card {\n  display: grid;', 'styles.css: Vice karty pouzivaji novy grid povrch.');
   expect(styles, '.more-module-section .more-module-grid {\n  display: grid;\n  grid-template-columns: repeat(auto-fit', 'styles.css: Vice modulove sekce maji responzivni grid.');
+  expect(styles, '/* Domacnost+ - sjednoceny kalendar */', 'styles.css: existuje finalni blok pro kalendar.');
+  expect(styles, '.calendar-month-toolbar {\n  display: grid;', 'styles.css: kalendarovy mesicni toolbar pouziva grid.');
+  expect(styles, '.calendar-weekdays,\n.calendar-week-row {\n  display: grid;\n  grid-template-columns: repeat(7, minmax(0, 1fr));', 'styles.css: kalendarovy tyden ma stabilnich 7 sloupcu.');
+  expect(styles, '.calendar-day-event {\n  width: 100%;\n  display: grid;', 'styles.css: kalendarova udalost ma stabilni kartovy grid.');
+  expect(styles, '.calendar-source-item {\n  display: grid;', 'styles.css: kalendarovy zdroj ma novy seznamovy povrch.');
 }
 
 if (shoppingCss) {
