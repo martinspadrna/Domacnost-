@@ -1,16 +1,17 @@
 {
   "name": "domacnost-plus",
-  "version": "0.1.355",
+  "version": "0.1.356",
   "private": true,
   "type": "module",
   "description": "Domácnost+ — instalovatelná PWA pro rodinnou domácnost. Frontend-only repo; ověřovací skripty jsou dependency-free.",
   "scripts": {
-    "check": "npm run check:syntax && npm run check:release && npm run check:static && npm run check:memo && npm run check:wiring",
+    "check": "npm run check:syntax && npm run check:release && npm run check:static && npm run check:memo && npm run check:wiring && npm run check:style-layers",
     "check:syntax": "node tools/check-syntax.mjs",
     "check:release": "node tools/check-release.mjs",
     "check:static": "node tools/check-static-smoke.mjs",
     "check:memo": "node tools/check-memoization.mjs",
     "check:wiring": "node tools/check-app-wiring.mjs",
+    "check:style-layers": "node tools/check-style-layering.mjs",
     "check:e2e": "node tools/check-e2e-smoke.mjs",
     "hooks:install": "node tools/install-hooks.mjs"
   }
