@@ -149,6 +149,13 @@ if (styles) {
   expect(styles, 'scroll-snap-type: x proximity;', 'styles.css: cockpit rail má jemné snapování položek.');
 }
 
+if (styles) {
+  expect(styles, '/* Domacnost+ - sjednocene modaly a prekryvy */', 'styles.css: existuje finalni blok pro modaly a prekryvy.');
+  expect(styles, '.app-modal,\n.overview-panel {\n  width: min(100%, 760px);', 'styles.css: app modal a overview panel sdili novy povrch.');
+  expect(styles, '.modal-actions {\n  position: sticky;', 'styles.css: modalni akce jsou ukotvene uvnitr modalu.');
+  expect(styles, '.loyalty-code-stage,\n.file-preview-stage,\n.loyalty-action-sheet', 'styles.css: vnorene modalni plochy maji sjednoceny povrch.');
+}
+
 if (pkg) {
   expect(pkg, '"check:wiring"', 'package.json: check:wiring je v npm skriptech.');
   expect(pkg, 'npm run check:wiring', 'package.json: hlavní check spouští wiring smoke.');

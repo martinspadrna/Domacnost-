@@ -228,6 +228,45 @@ function smokeSeedScript() {
     profiles: [{ id: 'profile-e2e-smoke', name: 'Smoke', role: 'admin', createdAt: new Date().toISOString() }],
     activeProfileId: 'profile-e2e-smoke',
     enabledModules: ['weather', 'calendar', 'shopping', 'hdo', 'waste', 'readings', 'pool', 'tasks', 'warranties', 'polishHolidays', 'garage', 'contracts', 'finance', 'subscriptions'],
+    vehicles: [{
+      id: 'vehicle-e2e-smoke',
+      householdId: 'household-e2e-smoke',
+      profileId: 'profile-e2e-smoke',
+      name: 'Smoke auto',
+      brand: 'Test',
+      model: 'Modal',
+      year: '2024',
+      plate: 'SMK 351',
+      fuelType: 'benzín',
+      odometer: 45000,
+      technicalInspectionUntil: '2027-01-01',
+      insuranceUntil: '2026-12-31',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }],
+    fuel: [{
+      id: 'fuel-e2e-smoke',
+      vehicleId: 'vehicle-e2e-smoke',
+      date: '2026-06-30',
+      odometer: 44800,
+      liters: 42,
+      pricePerLiter: 38.9,
+      price: 1633.8,
+      note: 'E2E smoke',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }],
+    services: [{
+      id: 'service-e2e-smoke',
+      vehicleId: 'vehicle-e2e-smoke',
+      date: '2026-06-20',
+      odometer: 44000,
+      title: 'Smoke servis',
+      price: 2500,
+      note: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }],
     settings: {
       bottomNavIds: ['home', 'finance', 'pool', 'contracts', 'calendar'],
       homeHeroItems: ['pool', 'finance', 'calendar', 'garage'],
@@ -658,6 +697,63 @@ async function run() {
     if (!contractsValue.detailSurface) { fail('Smlouvy detail nemá sjednocený detailní povrch.'); contractsOk = false; }
     if (!contractsValue.contractText) { fail('Smlouvy neukazují seed smlouvu/přehled.'); contractsOk = false; }
     if (contractsOk) ok('Smlouvy: přehled, detail i příloha formuláře renderují.');
+
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.nav-shell [data-nav="more"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 350));
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.more-module-section [data-nav="garage"], [data-nav="garage"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 600));
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('button[data-action="select-vehicle"][data-garage-target="add-fuel"], button[data-action="open-garage-detail"][data-garage-target="add-fuel"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 900));
+    const modalCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const modal = document.querySelector('.app-modal.garage-record-modal');
+        const backdrop = document.querySelector('.app-modal-backdrop');
+        const head = modal ? modal.querySelector('.app-modal-head') : null;
+        const form = modal ? modal.querySelector('form[data-form="add-fuel"]') : null;
+        const actions = modal ? modal.querySelector('.modal-actions') : null;
+        const modalStyle = modal ? getComputedStyle(modal) : null;
+        const backdropStyle = backdrop ? getComputedStyle(backdrop) : null;
+        const headStyle = head ? getComputedStyle(head) : null;
+        const actionsStyle = actions ? getComputedStyle(actions) : null;
+        const formGrid = form ? form.querySelector('.form-grid.two') : null;
+        const formGridStyle = formGrid ? getComputedStyle(formGrid) : null;
+        return {
+          modal: Boolean(modal),
+          bodyOpen: document.body.classList.contains('overview-open'),
+          form: Boolean(form),
+          fuelFields: form ? form.querySelectorAll('input[name="date"], input[name="odometer"], input[name="liters"], input[name="price"]').length : 0,
+          modalSurface: Boolean(modalStyle && parseFloat(modalStyle.borderTopLeftRadius) >= 18 && /auto|scroll/.test(modalStyle.overflowY) && modalStyle.overscrollBehaviorY === 'contain'),
+          modalFitsMobile: Boolean(modal && modal.getBoundingClientRect().width <= window.innerWidth && modal.getBoundingClientRect().height <= window.innerHeight),
+          backdropMobileSheet: Boolean(backdropStyle && ['flex-end', 'end'].includes(backdropStyle.alignItems)),
+          headLayout: Boolean(headStyle && headStyle.display === 'grid' && headStyle.position === 'sticky'),
+          actionsStickyRail: Boolean(actionsStyle && actionsStyle.position === 'sticky' && /auto|scroll/.test(actionsStyle.overflowX) && actionsStyle.flexWrap === 'nowrap'),
+          formSingleColumn: Boolean(formGridStyle && formGridStyle.gridTemplateColumns.trim().split(/\\s+/).length === 1)
+        };
+      })()`
+    });
+    const modalValue = modalCheck.result?.value || {};
+    if (process.env.E2E_DEBUG === '1') {
+      console.log('DEBUG modal:', JSON.stringify(modalValue, null, 2));
+    }
+    let modalOk = true;
+    if (!modalValue.modal) { fail('Garage add-fuel modal se neotevrel.'); modalOk = false; }
+    if (!modalValue.bodyOpen) { fail('Otevreny modal nenastavil modalni stav body.'); modalOk = false; }
+    if (!modalValue.form) { fail('Garage modal neobsahuje add-fuel formular.'); modalOk = false; }
+    if (modalValue.fuelFields < 4) { fail('Garage modal nema zakladni pole tankovani.'); modalOk = false; }
+    if (!modalValue.modalSurface) { fail('Garage modal nema sjednoceny modalni povrch a vnitrni scroll.'); modalOk = false; }
+    if (!modalValue.modalFitsMobile) { fail('Garage modal presahuje mobilni viewport.'); modalOk = false; }
+    if (!modalValue.backdropMobileSheet) { fail('Modal backdrop na mobilu nedrzi sheet u spodni hrany.'); modalOk = false; }
+    if (!modalValue.headLayout) { fail('Modal hlavicka nema sticky grid layout.'); modalOk = false; }
+    if (!modalValue.actionsStickyRail) { fail('Modalni akce nemaji sticky mobilni rail.'); modalOk = false; }
+    if (!modalValue.formSingleColumn) { fail('Modalni formular neni na mobilu jednosloupcovy.'); modalOk = false; }
+    if (modalOk) ok('Modaly: garage tankovani se otevira jako novy mobilni sheet s formularovou akci.');
 
     browserCdp.close();
   } finally {

@@ -19807,3 +19807,272 @@ main {
     min-height: 132px;
   }
 }
+
+/* Domacnost+ - sjednocene modaly a prekryvy */
+.app-modal-backdrop,
+.overview-backdrop {
+  padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+}
+
+.app-modal,
+.overview-panel {
+  width: min(100%, 760px);
+  max-height: min(86dvh, 820px);
+  min-width: 0;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.64)),
+    var(--panel);
+  box-shadow: 0 26px 72px rgba(15, 23, 42, 0.22);
+}
+
+[data-theme="dark"] .app-modal,
+[data-theme="dark"] .overview-panel {
+  background:
+    linear-gradient(180deg, rgba(31, 41, 55, 0.92), rgba(15, 23, 42, 0.86)),
+    var(--panel);
+  box-shadow: 0 28px 82px rgba(0, 0, 0, 0.42);
+}
+
+.app-modal-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(1.14);
+  -webkit-backdrop-filter: blur(18px) saturate(1.14);
+}
+
+.app-modal-head > div,
+.app-modal-head h2,
+.app-modal-head p,
+.app-modal-head .badge {
+  min-width: 0;
+}
+
+.app-modal-head h2 {
+  margin: 7px 0 2px;
+  color: var(--text);
+  font-size: clamp(1.05rem, 3.7vw, 1.38rem);
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.app-modal-head p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.app-modal-head .icon-btn {
+  inline-size: 42px;
+  block-size: 42px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 14px;
+  font-size: 1.3rem;
+}
+
+.app-modal > .garage-modal-form,
+.app-modal > .compact-form,
+.app-modal > .modal-detail-grid,
+.app-modal > .loyalty-code-stage,
+.app-modal > .loyalty-action-sheet,
+.app-modal > .file-preview-stage,
+.warranty-detail-modal > details {
+  margin-inline: 16px;
+}
+
+.app-modal .form-grid,
+.app-modal .compact-form,
+.app-modal .field,
+.app-modal .input,
+.app-modal .select,
+.app-modal .textarea,
+.app-modal .fuel-cost-row {
+  min-width: 0;
+}
+
+.app-modal .input,
+.app-modal .select,
+.app-modal .textarea {
+  width: 100%;
+  max-width: 100%;
+}
+
+.modal-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.loyalty-code-stage,
+.file-preview-stage,
+.loyalty-action-sheet {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: 0 10px 28px rgba(31, 41, 55, 0.06);
+}
+
+[data-theme="dark"] .loyalty-code-stage,
+[data-theme="dark"] .file-preview-stage,
+[data-theme="dark"] .loyalty-action-sheet {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.loyalty-code-stage {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.loyalty-code-stage .selectable-text {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.loyalty-action-sheet {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.loyalty-action-sheet button {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  color: var(--text);
+  text-align: left;
+}
+
+.loyalty-action-sheet button span {
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.loyalty-action-sheet button strong,
+.loyalty-action-sheet button span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.file-preview-modal {
+  width: min(100%, 940px);
+}
+
+.file-preview-stage {
+  display: grid;
+  place-items: center;
+  min-height: 260px;
+  overflow: hidden;
+}
+
+.file-preview-stage img,
+.file-preview-stage iframe {
+  max-width: 100%;
+  border: 0;
+}
+
+.file-preview-stage iframe {
+  width: 100%;
+  height: min(64dvh, 620px);
+}
+
+.unsupported-stage {
+  padding: 22px;
+  text-align: center;
+}
+
+.unsupported-stage span {
+  color: var(--muted);
+}
+
+.modal-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 14px 0 0;
+  padding: 12px 16px 16px;
+  border-top: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(1.12);
+  -webkit-backdrop-filter: blur(18px) saturate(1.12);
+}
+
+@media (max-width: 720px) {
+  .app-modal-backdrop,
+  .overview-backdrop {
+    align-items: flex-end;
+    padding: 10px 10px max(10px, env(safe-area-inset-bottom));
+  }
+
+  .app-modal,
+  .overview-panel {
+    width: 100%;
+    max-height: 88dvh;
+    border-radius: 22px 22px 18px 18px;
+  }
+
+  .app-modal-head {
+    padding: 13px 12px 10px;
+  }
+
+  .app-modal-head .icon-btn {
+    inline-size: 40px;
+    block-size: 40px;
+  }
+
+  .app-modal > .garage-modal-form,
+  .app-modal > .compact-form,
+  .app-modal > .modal-detail-grid,
+  .app-modal > .loyalty-code-stage,
+  .app-modal > .loyalty-action-sheet,
+  .app-modal > .file-preview-stage,
+  .warranty-detail-modal > details {
+    margin-inline: 12px;
+  }
+
+  .modal-detail-grid,
+  .app-modal .form-grid.two,
+  .app-modal .form-grid.three,
+  .app-modal .form-grid.four {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .file-preview-stage {
+    min-height: 220px;
+  }
+
+  .modal-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 10px 12px 12px;
+  }
+
+  .modal-actions > * {
+    flex: 0 0 auto;
+  }
+}
