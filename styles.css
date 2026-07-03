@@ -20544,3 +20544,390 @@ main {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Domacnost+ - sjednocena Garaz */
+.garage-tab-overview .garage-panel:not(.panel-overview),
+.garage-tab-detail .garage-panel:not(.panel-detail),
+.garage-tab-stats .garage-panel:not(.panel-stats),
+.garage-tab-calculator .garage-panel:not(.panel-calculator),
+.garage-tab-add .garage-panel:not(.panel-add),
+.garage-tab-import .garage-panel:not(.panel-import) {
+  display: none;
+}
+
+.garage-panel,
+.garage-overview-dashboard-card,
+.garage-active-vehicle-selector,
+.garage-vehicle-dropdown,
+.garage-vehicle-dropdown summary,
+.garage-vehicle-dropdown-list,
+.garage-vehicle-option-row,
+.garage-vehicle-option-main,
+.garage-vehicle-option-copy,
+.garage-dashboard-panel,
+.garage-fuel-lines,
+.garage-chart-carousel,
+.garage-chart-card,
+.garage-chart-body,
+.garage-chart-values,
+.garage-stat-block,
+.garage-stats-filters,
+.garage-stats-kpis,
+.vehicle-detail-head,
+.vehicle-detail-title,
+.vehicle-detail-title > div,
+.vehicle-detail-head-actions,
+.garage-status-grid,
+.detail-summary-grid,
+.garage-detail-chart-section,
+.garage-history-panel,
+.garage-history-toolbar,
+.garage-history-list,
+.garage-history-row,
+.garage-service-plan-details,
+.service-plan-body,
+.service-plan-list,
+.service-plan-item,
+.service-plan-form,
+.garage-trip-result,
+.garage-trip-calc-form,
+.garage-preset-tool,
+.garage-technical-fields,
+.garage-record-modal {
+  min-width: 0;
+}
+
+.garage-panel {
+  overflow: hidden;
+}
+
+.garage-overview-dashboard-card,
+.garage-dashboard-panel,
+.garage-stat-block,
+.garage-detail-chart-section,
+.service-plan-body,
+.garage-trip-result,
+.preview-box {
+  display: grid;
+  gap: 12px;
+}
+
+.garage-vehicle-dropdown,
+.garage-dashboard-panel,
+.garage-chart-card,
+.garage-stat-block,
+.garage-detail-chart-section,
+.garage-history-toolbar,
+.garage-status-grid,
+.detail-summary-grid > .detail-stack,
+.service-plan-body,
+.service-plan-item,
+.garage-trip-result,
+.garage-preset-tool,
+.garage-technical-fields {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.56);
+  box-shadow: 0 10px 28px rgba(31, 41, 55, 0.052);
+}
+
+[data-theme="dark"] .garage-vehicle-dropdown,
+[data-theme="dark"] .garage-dashboard-panel,
+[data-theme="dark"] .garage-chart-card,
+[data-theme="dark"] .garage-stat-block,
+[data-theme="dark"] .garage-detail-chart-section,
+[data-theme="dark"] .garage-history-toolbar,
+[data-theme="dark"] .garage-status-grid,
+[data-theme="dark"] .detail-summary-grid > .detail-stack,
+[data-theme="dark"] .service-plan-body,
+[data-theme="dark"] .service-plan-item,
+[data-theme="dark"] .garage-trip-result,
+[data-theme="dark"] .garage-preset-tool,
+[data-theme="dark"] .garage-technical-fields {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
+}
+
+.garage-vehicle-dropdown summary {
+  min-height: 58px;
+  padding: 12px;
+}
+
+.garage-vehicle-summary-main,
+.garage-vehicle-summary-side {
+  min-width: 0;
+}
+
+.garage-vehicle-summary-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.garage-vehicle-summary-main em {
+  grid-column: 2;
+  max-width: none;
+}
+
+.garage-vehicle-summary-main strong,
+.garage-vehicle-summary-main em,
+.garage-vehicle-option-copy strong,
+.garage-vehicle-option-copy em,
+.vehicle-detail-title h2,
+.vehicle-detail-title p,
+.garage-chart-header-full strong,
+.garage-chart-header-full em,
+.garage-stat-block-head h3,
+.garage-stat-block-head p,
+.service-plan-item .item-title,
+.service-plan-item .item-meta,
+.garage-history-row .item-title,
+.garage-history-row .item-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.garage-vehicle-summary-main strong,
+.garage-vehicle-option-copy strong,
+.service-plan-item .item-title,
+.garage-history-row .item-title {
+  white-space: nowrap;
+}
+
+.garage-vehicle-summary-main em,
+.garage-vehicle-option-copy em,
+.vehicle-detail-title p,
+.service-plan-item .item-meta,
+.garage-history-row .item-meta {
+  overflow-wrap: anywhere;
+}
+
+.garage-vehicle-dropdown-list {
+  padding: 0 12px 12px;
+}
+
+.garage-vehicle-option-row {
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+[data-theme="dark"] .garage-vehicle-option-row {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.garage-vehicle-option-main {
+  width: 100%;
+  border-radius: 14px;
+}
+
+.garage-dashboard-panel {
+  padding: 12px;
+}
+
+.garage-fuel-lines {
+  max-width: none;
+}
+
+.garage-chart-carousel {
+  grid-auto-columns: minmax(min(92%, 540px), 1fr);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.garage-chart-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.garage-chart-card {
+  min-height: 178px;
+}
+
+.garage-chart-card .garage-line-chart {
+  width: 100%;
+  min-height: 116px;
+  height: clamp(116px, 22vw, 154px) !important;
+}
+
+.garage-chart-values span,
+.garage-history-count,
+.garage-status-grid .due-card,
+.detail-summary-grid .stat-line,
+.garage-trip-result .kpi {
+  border-radius: 16px;
+}
+
+.vehicle-detail-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.vehicle-detail-title {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.vehicle-detail-head-actions {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  max-width: 100%;
+  scrollbar-width: none;
+}
+
+.vehicle-detail-head-actions::-webkit-scrollbar {
+  display: none;
+}
+
+.garage-status-grid {
+  padding: 10px;
+}
+
+.detail-summary-grid > .detail-stack,
+.service-plan-body {
+  padding: 12px;
+}
+
+.garage-detail-chart-section {
+  padding: 12px;
+}
+
+.garage-history-toolbar {
+  margin: 10px 0;
+  padding: 10px;
+}
+
+.garage-history-row,
+.service-plan-item {
+  display: grid;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+[data-theme="dark"] .garage-history-row,
+[data-theme="dark"] .service-plan-item {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.garage-history-row .item-top,
+.service-plan-item .item-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+}
+
+.service-plan-form {
+  padding-top: 4px;
+}
+
+.garage-trip-result {
+  padding: 10px;
+}
+
+.garage-panel.panel-add form,
+.garage-panel.panel-import form {
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .garage-tab-overview,
+  .garage-tab-detail,
+  .garage-tab-stats,
+  .garage-tab-calculator,
+  .garage-tab-add,
+  .garage-tab-import {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .garage-vehicle-dropdown,
+  .garage-dashboard-panel,
+  .garage-chart-card,
+  .garage-stat-block,
+  .garage-detail-chart-section,
+  .garage-history-toolbar,
+  .garage-status-grid,
+  .detail-summary-grid > .detail-stack,
+  .service-plan-body,
+  .service-plan-item,
+  .garage-history-row,
+  .garage-trip-result,
+  .garage-preset-tool,
+  .garage-technical-fields {
+    border-radius: 16px;
+  }
+
+  .garage-dashboard-panel,
+  .garage-detail-chart-section,
+  .service-plan-body,
+  .detail-summary-grid > .detail-stack {
+    padding: 10px;
+  }
+
+  .garage-vehicle-summary-side {
+    justify-self: end;
+  }
+
+  .garage-chart-carousel {
+    grid-auto-columns: minmax(88%, 1fr);
+  }
+
+  .garage-chart-body,
+  .garage-chart-body-empty {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .garage-chart-values,
+  .garage-chart-values-with-title,
+  .garage-stats-kpis,
+  .garage-status-grid,
+  .detail-summary-grid,
+  .garage-trip-result,
+  .garage-panel .form-grid.two,
+  .garage-panel .form-grid.three,
+  .garage-panel .form-grid.four {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .vehicle-detail-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .vehicle-detail-head-actions {
+    width: 100%;
+  }
+
+  .vehicle-detail-head-actions .badge {
+    margin-left: 0;
+  }
+
+  .garage-history-toolbar {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+  }
+
+  .garage-history-toolbar .compact-select-field,
+  .garage-history-toolbar .garage-history-count {
+    flex: 0 0 min(68vw, 240px);
+    scroll-snap-align: start;
+  }
+
+  .garage-history-row .item-actions,
+  .service-plan-item .item-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+}

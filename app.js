@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_354';
-  const APP_BUILD = 354;
+  const APP_VERSION = 'Domácnost+ v.0.1_355';
+  const APP_BUILD = 355;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -39,6 +39,16 @@
   ];
 
   const DEFAULT_BOTTOM_NAV_IDS = ['home', 'calendar', 'shopping', 'finance'];
+
+  const SERVICE_PLAN_TYPE_OPTIONS = [
+    ['oil', 'Olej'],
+    ['filters', 'Filtry'],
+    ['brakes', 'Brzdy'],
+    ['tires', 'Pneu'],
+    ['timing', 'Rozvody'],
+    ['stk', 'STK'],
+    ['custom', 'Vlastní položka']
+  ];
 
 
 
@@ -9641,16 +9651,6 @@
   // Servisní plán auta — položky jako olej, filtry, brzdy atd. s intervalem
   // km / měsíců. Ukládá se v households.dashboard_layout.vehicleServicePlans
   // (mapa vehicleId → pole položek), takže žádná nová DB tabulka/migrace.
-  const SERVICE_PLAN_TYPE_OPTIONS = [
-    ['oil', 'Olej'],
-    ['filters', 'Filtry'],
-    ['brakes', 'Brzdy'],
-    ['tires', 'Pneu'],
-    ['timing', 'Rozvody'],
-    ['stk', 'STK'],
-    ['custom', 'Vlastní položka']
-  ];
-
   function servicePlanTypeLabel(type) {
     const found = SERVICE_PLAN_TYPE_OPTIONS.find(([value]) => value === type);
     return found ? found[1] : 'Servis';

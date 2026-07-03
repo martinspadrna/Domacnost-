@@ -336,7 +336,19 @@ function smokeSeedScript() {
     settings: {
       bottomNavIds: ['home', 'finance', 'pool', 'contracts', 'calendar'],
       homeHeroItems: ['pool', 'finance', 'calendar', 'garage'],
-      dashboardWidgets: []
+      dashboardWidgets: [],
+      vehicleServicePlans: {
+        'vehicle-e2e-smoke': [{
+          id: 'service-plan-e2e-smoke',
+          type: 'oil',
+          label: 'Olej',
+          intervalKm: 15000,
+          intervalMonths: 12,
+          lastKm: 44000,
+          lastDate: '2026-06-20',
+          note: 'E2E smoke'
+        }]
+      }
     },
     contracts: [{
       id: 'contract-e2e-smoke',
@@ -973,8 +985,233 @@ async function run() {
       expression: `document.querySelector('.more-module-section [data-nav="garage"], [data-nav="garage"]')?.click()`
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 600));
+    const garageOverviewCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const module = document.querySelector('.module-tabbed[data-tab-area="garage"]');
+        const overview = document.querySelector('.garage-panel.panel-overview');
+        const picker = document.querySelector('.garage-vehicle-dropdown');
+        const pickerSummary = picker ? picker.querySelector('summary') : null;
+        const dashboard = document.querySelector('.garage-dashboard-panel');
+        const chartCarousel = document.querySelector('.garage-chart-carousel[data-no-swipe]');
+        const chartCard = document.querySelector('.garage-chart-card');
+        const chartSvg = document.querySelector('.garage-line-chart');
+        const overviewStyle = overview ? getComputedStyle(overview) : null;
+        const pickerStyle = picker ? getComputedStyle(picker) : null;
+        const pickerSummaryStyle = pickerSummary ? getComputedStyle(pickerSummary) : null;
+        const dashboardStyle = dashboard ? getComputedStyle(dashboard) : null;
+        const chartCarouselStyle = chartCarousel ? getComputedStyle(chartCarousel) : null;
+        const chartCardStyle = chartCard ? getComputedStyle(chartCard) : null;
+        const chartSvgStyle = chartSvg ? getComputedStyle(chartSvg) : null;
+        return {
+          module: Boolean(module),
+          overviewSurface: Boolean(overviewStyle && parseFloat(overviewStyle.borderTopLeftRadius) >= 16),
+          pickerSurface: Boolean(pickerStyle && parseFloat(pickerStyle.borderTopLeftRadius) >= 16),
+          pickerSummaryGrid: Boolean(pickerSummaryStyle && pickerSummaryStyle.display === 'grid'),
+          dashboardSurface: Boolean(dashboardStyle && dashboardStyle.display === 'grid' && parseFloat(dashboardStyle.borderTopLeftRadius) >= 16),
+          chartNoSwipe: Boolean(chartCarousel),
+          chartScrollable: Boolean(chartCarouselStyle && /auto|scroll/.test(chartCarouselStyle.overflowX) && chartCarouselStyle.overscrollBehaviorX === 'contain'),
+          chartSurface: Boolean(chartCardStyle && parseFloat(chartCardStyle.borderTopLeftRadius) >= 16),
+          chartStableSize: Boolean(chartCardStyle && parseFloat(chartCardStyle.minHeight) >= 160),
+          chartHeight: chartSvgStyle?.height || chartCardStyle?.minHeight || '',
+          text: (overview?.innerText || '').slice(0, 360)
+        };
+      })()`
+    });
+    const garageOverviewValue = garageOverviewCheck.result?.value || {};
+    if (process.env.E2E_DEBUG === '1') {
+      console.log('DEBUG garageOverview:', JSON.stringify(garageOverviewValue, null, 2));
+    }
+    let garageOk = true;
+    if (!garageOverviewValue.module) { fail('Garáž se neotevřela do module-tabbed layoutu.'); garageOk = false; }
+    if (!garageOverviewValue.overviewSurface) { fail('Garáž přehled nemá sjednocený panelový povrch.'); garageOk = false; }
+    if (!garageOverviewValue.pickerSurface) { fail('Garáž výběr auta nemá nový povrch.'); garageOk = false; }
+    if (!garageOverviewValue.pickerSummaryGrid) { fail('Garáž výběr auta nemá stabilní summary grid.'); garageOk = false; }
+    if (!garageOverviewValue.dashboardSurface) { fail('Garáž palivový dashboard nemá nový grid povrch.'); garageOk = false; }
+    if (!garageOverviewValue.chartNoSwipe) { fail('Garáž grafový carousel nemá data-no-swipe ochranu.'); garageOk = false; }
+    if (!garageOverviewValue.chartScrollable) { fail('Garáž grafový carousel nemá vnitřní horizontální posun.'); garageOk = false; }
+    if (!garageOverviewValue.chartSurface) { fail('Garáž graf nemá sjednocený kartový povrch.'); garageOk = false; }
+    if (!garageOverviewValue.chartStableSize) { fail('Garáž graf nemá stabilní výšku.'); garageOk = false; }
+    if (!/Smoke auto/.test(garageOverviewValue.text || '')) { fail('Garáž přehled neukazuje seed auto.'); garageOk = false; }
+
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('button[data-action="select-vehicle"][data-garage-target="add-fuel"], button[data-action="open-garage-detail"][data-garage-target="add-fuel"]')?.click()`
+      expression: `document.querySelector('.section-tabs [data-area="garage"][data-tab="detail"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    const garageDetailCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const detail = document.querySelector('.garage-panel.panel-detail');
+        const head = document.querySelector('.vehicle-detail-head');
+        const headActions = document.querySelector('.vehicle-detail-head-actions');
+        const statusGrid = document.querySelector('.garage-status-grid');
+        const summaryStack = document.querySelector('.detail-summary-grid > .detail-stack');
+        const detailCharts = document.querySelector('.garage-detail-chart-section');
+        const serviceDetails = document.querySelector('.garage-service-plan-details');
+        if (serviceDetails) serviceDetails.open = true;
+        const serviceBody = document.querySelector('.service-plan-body');
+        const serviceItem = document.querySelector('.service-plan-item');
+        const serviceForm = document.querySelector('form[data-form="service-plan-item"]');
+        const history = document.querySelector('.garage-history-panel');
+        if (history) history.open = true;
+        const historyToolbar = document.querySelector('.garage-history-toolbar');
+        const historyRow = document.querySelector('.garage-history-row');
+        const detailStyle = detail ? getComputedStyle(detail) : null;
+        const headStyle = head ? getComputedStyle(head) : null;
+        const headActionsStyle = headActions ? getComputedStyle(headActions) : null;
+        const statusGridStyle = statusGrid ? getComputedStyle(statusGrid) : null;
+        const summaryStackStyle = summaryStack ? getComputedStyle(summaryStack) : null;
+        const detailChartsStyle = detailCharts ? getComputedStyle(detailCharts) : null;
+        const serviceBodyStyle = serviceBody ? getComputedStyle(serviceBody) : null;
+        const serviceItemStyle = serviceItem ? getComputedStyle(serviceItem) : null;
+        const historyToolbarStyle = historyToolbar ? getComputedStyle(historyToolbar) : null;
+        const historyRowStyle = historyRow ? getComputedStyle(historyRow) : null;
+        return {
+          detailSurface: Boolean(detailStyle && parseFloat(detailStyle.borderTopLeftRadius) >= 16),
+          headGrid: Boolean(headStyle && headStyle.display === 'grid'),
+          headActionsRail: Boolean(headActionsStyle && /auto|scroll/.test(headActionsStyle.overflowX) && headActionsStyle.overscrollBehaviorX === 'contain'),
+          statusSurface: Boolean(statusGridStyle && parseFloat(statusGridStyle.borderTopLeftRadius) >= 16),
+          summarySurface: Boolean(summaryStackStyle && parseFloat(summaryStackStyle.borderTopLeftRadius) >= 16),
+          detailChartSurface: Boolean(detailChartsStyle && detailChartsStyle.display === 'grid' && parseFloat(detailChartsStyle.borderTopLeftRadius) >= 16),
+          serviceBodySurface: Boolean(serviceBodyStyle && serviceBodyStyle.display === 'grid' && parseFloat(serviceBodyStyle.borderTopLeftRadius) >= 16),
+          serviceItemSurface: Boolean(serviceItemStyle && serviceItemStyle.display === 'grid' && parseFloat(serviceItemStyle.borderTopLeftRadius) >= 16),
+          serviceForm: Boolean(serviceForm),
+          historyToolbarSurface: Boolean(historyToolbarStyle && /auto|scroll/.test(historyToolbarStyle.overflowX) && historyToolbarStyle.overscrollBehaviorX === 'contain'),
+          historyRowSurface: Boolean(historyRowStyle && historyRowStyle.display === 'grid' && parseFloat(historyRowStyle.borderTopLeftRadius) >= 16),
+          serviceText: serviceItem?.innerText || '',
+          historyText: history?.innerText || historyRow?.innerText || '',
+          text: (detail?.innerText || '').slice(0, 520)
+        };
+      })()`
+    });
+    const garageDetailValue = garageDetailCheck.result?.value || {};
+    if (process.env.E2E_DEBUG === '1') {
+      console.log('DEBUG garageDetail:', JSON.stringify(garageDetailValue, null, 2));
+    }
+    if (!garageDetailValue.detailSurface) { fail('Garáž detail panel nemá sjednocený povrch.'); garageOk = false; }
+    if (!garageDetailValue.headGrid) { fail('Garáž detail hlavička není stabilní grid.'); garageOk = false; }
+    if (!garageDetailValue.headActionsRail) { fail('Garáž detail akce nejsou mobilní horizontální rail.'); garageOk = false; }
+    if (!garageDetailValue.statusSurface) { fail('Garáž termíny/STK grid nemá nový povrch.'); garageOk = false; }
+    if (!garageDetailValue.summarySurface) { fail('Garáž detail souhrn nemá nový povrch.'); garageOk = false; }
+    if (!garageDetailValue.detailChartSurface) { fail('Garáž detail grafy nemají nový povrch.'); garageOk = false; }
+    if (!garageDetailValue.serviceBodySurface) { fail('Garáž servisní plán nemá nový povrch.'); garageOk = false; }
+    if (!garageDetailValue.serviceItemSurface) { fail('Garáž servisní položka nemá nový seznamový povrch.'); garageOk = false; }
+    if (!garageDetailValue.serviceForm) { fail('Garáž servisní plán nemá formulář.'); garageOk = false; }
+    if (!garageDetailValue.historyToolbarSurface) { fail('Garáž historie filtry nejsou mobilní rail.'); garageOk = false; }
+    if (!garageDetailValue.historyRowSurface) { fail('Garáž historie řádek nemá nový seznamový povrch.'); garageOk = false; }
+    if (!/Olej/.test(garageDetailValue.serviceText || '') || !/Smoke servis/.test(garageDetailValue.historyText || '')) { fail('Garáž detail neukazuje seed servisní plán a historii.'); garageOk = false; }
+
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.section-tabs [data-area="garage"][data-tab="stats"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 350));
+    const garageStatsCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const panel = document.querySelector('.garage-panel.panel-stats');
+        const block = document.querySelector('.garage-stat-block');
+        const filters = document.querySelector('.garage-stats-filters');
+        const kpis = document.querySelector('.garage-stats-kpis');
+        const blockStyle = block ? getComputedStyle(block) : null;
+        const filtersStyle = filters ? getComputedStyle(filters) : null;
+        const kpisStyle = kpis ? getComputedStyle(kpis) : null;
+        return {
+          panel: Boolean(panel),
+          blockSurface: Boolean(blockStyle && blockStyle.display === 'grid' && parseFloat(blockStyle.borderTopLeftRadius) >= 16),
+          filtersGrid: Boolean(filtersStyle && filtersStyle.display === 'grid'),
+          kpiGrid: Boolean(kpisStyle && kpisStyle.display === 'grid'),
+          text: (panel?.innerText || '').slice(0, 260)
+        };
+      })()`
+    });
+    const garageStatsValue = garageStatsCheck.result?.value || {};
+    if (!garageStatsValue.panel) { fail('Garáž statistiky se neotevřely.'); garageOk = false; }
+    if (!garageStatsValue.blockSurface) { fail('Garáž statistický blok nemá nový povrch.'); garageOk = false; }
+    if (!garageStatsValue.filtersGrid) { fail('Garáž statistické filtry nejsou grid.'); garageOk = false; }
+    if (!garageStatsValue.kpiGrid) { fail('Garáž statistiky KPI nejsou grid.'); garageOk = false; }
+    if (!/Statistiky/.test(garageStatsValue.text || '')) { fail('Garáž statistiky neukazují obsah.'); garageOk = false; }
+
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.section-tabs [data-area="garage"][data-tab="calculator"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 350));
+    const garageCalculatorCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const panel = document.querySelector('.garage-panel.panel-calculator');
+        const form = document.querySelector('form[data-form="garage-trip-calc"]');
+        const result = document.querySelector('.garage-trip-result');
+        const resultStyle = result ? getComputedStyle(result) : null;
+        return {
+          panel: Boolean(panel),
+          form: Boolean(form),
+          resultSurface: Boolean(resultStyle && resultStyle.display === 'grid' && parseFloat(resultStyle.borderTopLeftRadius) >= 16),
+          text: (panel?.innerText || '').slice(0, 260)
+        };
+      })()`
+    });
+    const garageCalculatorValue = garageCalculatorCheck.result?.value || {};
+    if (!garageCalculatorValue.panel) { fail('Garáž kalkulačka se neotevřela.'); garageOk = false; }
+    if (!garageCalculatorValue.form) { fail('Garáž kalkulačka nemá formulář.'); garageOk = false; }
+    if (!garageCalculatorValue.resultSurface) { fail('Garáž kalkulačka výsledek nemá nový povrch.'); garageOk = false; }
+
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.section-tabs [data-area="garage"][data-tab="add"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 350));
+    const garageAddCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const panel = document.querySelector('.garage-panel.panel-add');
+        const preset = document.querySelector('.garage-preset-tool');
+        const tech = document.querySelector('.garage-technical-fields');
+        const form = document.querySelector('form[data-form="add-vehicle"]');
+        const presetStyle = preset ? getComputedStyle(preset) : null;
+        const techStyle = tech ? getComputedStyle(tech) : null;
+        return {
+          panel: Boolean(panel),
+          form: Boolean(form),
+          presetSurface: Boolean(presetStyle && parseFloat(presetStyle.borderTopLeftRadius) >= 16),
+          techSurface: Boolean(techStyle && parseFloat(techStyle.borderTopLeftRadius) >= 16)
+        };
+      })()`
+    });
+    const garageAddValue = garageAddCheck.result?.value || {};
+    if (!garageAddValue.panel) { fail('Garáž přidání auta se neotevřelo.'); garageOk = false; }
+    if (!garageAddValue.form) { fail('Garáž přidání auta nemá formulář.'); garageOk = false; }
+    if (!garageAddValue.presetSurface) { fail('Garáž preset auta nemá nový povrch.'); garageOk = false; }
+    if (!garageAddValue.techSurface) { fail('Garáž technický list nemá nový povrch.'); garageOk = false; }
+
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.section-tabs [data-area="garage"][data-tab="import"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 350));
+    const garageImportCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const panel = document.querySelector('.garage-panel.panel-import');
+        const form = document.querySelector('form[data-form="fuelio-preview"]');
+        const upload = document.querySelector('.upload-box');
+        const uploadStyle = upload ? getComputedStyle(upload) : null;
+        return {
+          panel: Boolean(panel),
+          form: Boolean(form),
+          uploadSurface: Boolean(uploadStyle && parseFloat(uploadStyle.borderTopLeftRadius) >= 14)
+        };
+      })()`
+    });
+    const garageImportValue = garageImportCheck.result?.value || {};
+    if (!garageImportValue.panel) { fail('Garáž Fuelio import se neotevřel.'); garageOk = false; }
+    if (!garageImportValue.form) { fail('Garáž Fuelio import nemá formulář.'); garageOk = false; }
+    if (!garageImportValue.uploadSurface) { fail('Garáž Fuelio upload nemá nový povrch.'); garageOk = false; }
+    if (garageOk) ok('Garáž: přehled, detail, historie, servisní plán, statistiky, kalkulačka, přidání i import renderují.');
+
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.section-tabs [data-area="garage"][data-tab="detail"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('button[data-action="open-garage-detail"][data-garage-target="add-fuel"], button[data-action="select-vehicle"][data-garage-target="add-fuel"]')?.click()`
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 900));
     const modalCheck = await page.send('Runtime.evaluate', {
