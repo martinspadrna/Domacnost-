@@ -124,6 +124,10 @@ if (shoppingStyles) {
   ].forEach(([pattern, label]) => expectAbsent(shoppingStyles, pattern, label));
 }
 
+if (styles) {
+  expectAbsent(styles, /\.subscription-cloud-actions\b/, 'styles.css: stary rucni cloud action pas v Predplatnem nesmi zustat vedle automatickeho sync statusu.');
+}
+
 console.log('Style layering check pro Domacnost+');
 notes.forEach((line) => console.log(`  ok: ${line}`));
 
