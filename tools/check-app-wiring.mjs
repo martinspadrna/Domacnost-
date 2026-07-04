@@ -172,6 +172,12 @@ if (styles) {
   expect(styles, '.garage-trip-result {\n  padding: 10px;', 'styles.css: Garaz kalkulacka ma sjednoceny vysledkovy povrch.');
 }
 
+if (styles) {
+  expect(styles, '/* Domacnost+ - sjednocene Odecty */', 'styles.css: existuje finalni blok pro sjednocene Odecty.');
+  expect(styles, '.readings-tool-page,\n.readings-price-details,\n.readings-add-group-form,\n.readings-group-card,\n.readings-energy-box,\n.reading-due-card,\n.reading-meter-card {', 'styles.css: Odecty karty sdili novy povrch.');
+  expect(styles, '.readings-meter-tool-tabs > .readings-tool-card {\n    flex: 0 0 min(78vw, 260px);', 'styles.css: Odecty nastroje maji mobilni rail misto stareho skladani panelu.');
+}
+
 if (shoppingCss) {
   expect(shoppingCss, '/* Domacnost+ - novy povrch nakupnich podslozek */', 'shopping.css: existuje finalni blok pro nakupni podslozky.');
   expect(shoppingCss, '.shopping-done-modal {\n  width: min(100%, 760px);', 'shopping.css: hotovo modal sdili mobilni sheet rozmery.');

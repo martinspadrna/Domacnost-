@@ -11942,74 +11942,6 @@ body {
   }
 }
 
-/* Domácnost+ v.0.1_267 – Odečty: fakturační období nesmí tlačit skupiny mimo panel */
-.readings-prices-page,
-.readings-prices-page *,
-.readings-group-card,
-.readings-group-card *,
-.readings-billing-energy-grid,
-.readings-energy-box,
-.readings-billing-period-grid {
-  box-sizing: border-box;
-  min-width: 0;
-}
-
-.readings-prices-page {
-  overflow-x: hidden;
-}
-
-.readings-groups-settings,
-.readings-group-card,
-.readings-billing-energy-grid,
-.readings-energy-box,
-.readings-billing-period-grid,
-.readings-billing-period-grid .field {
-  width: 100%;
-  max-width: 100%;
-}
-
-.readings-billing-energy-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
-  align-items: stretch;
-}
-
-.readings-billing-period-grid.form-grid.two {
-  grid-template-columns: 1fr !important;
-}
-
-.readings-billing-period-grid .field,
-.readings-billing-period-grid .input,
-.readings-billing-period-grid input[type="date"] {
-  display: block;
-  inline-size: 100%;
-  width: 100%;
-  max-inline-size: 100%;
-  max-width: 100%;
-}
-
-.readings-billing-period-grid input[type="date"] {
-  -webkit-appearance: none;
-  appearance: none;
-  font-size: 16px;
-  line-height: 1.25;
-  padding-left: 10px;
-  padding-right: 10px;
-}
-
-@media (max-width: 520px) {
-  .readings-prices-page {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-
-  .readings-group-card,
-  .readings-energy-box {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-}
-
-
 /* Domácnost+ v.0.1_276 – spodní dock: sedí orámování i aktivní jezdec/ikona */
 @media (max-width: 720px) {
   :root {
@@ -14234,6 +14166,153 @@ body.home-active {
 }
 
 /* Domácnost+ – jednotné Nastavení, importy a dlouhé formuláře */
+/* Domacnost+ - sjednocene Odecty */
+.readings-module,
+.readings-panel,
+.readings-tool-page,
+.readings-prices-page,
+.readings-group-card,
+.readings-energy-box,
+.readings-billing-energy-grid,
+.readings-billing-period-grid,
+.reading-due-card,
+.reading-meter-card,
+.readings-line-chart,
+.readings-cost-card,
+.readings-price-details,
+.readings-add-group-form {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.readings-module .readings-panel,
+.readings-tool-page,
+.readings-price-details,
+.readings-add-group-form,
+.readings-group-card,
+.readings-energy-box,
+.reading-due-card,
+.reading-meter-card {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 10px 28px rgba(31, 41, 55, 0.06);
+}
+
+[data-theme="dark"] .readings-module .readings-panel,
+[data-theme="dark"] .readings-tool-page,
+[data-theme="dark"] .readings-price-details,
+[data-theme="dark"] .readings-add-group-form,
+[data-theme="dark"] .readings-group-card,
+[data-theme="dark"] .readings-energy-box,
+[data-theme="dark"] .reading-due-card,
+[data-theme="dark"] .reading-meter-card {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
+}
+
+.readings-meter-grid,
+.readings-due-grid,
+.readings-cost-summary,
+.readings-groups-settings,
+.readings-billing-energy-grid,
+.readings-detail-layout,
+.readings-detail-filter-grid {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.readings-meter-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+}
+
+.readings-billing-energy-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  align-items: stretch;
+}
+
+.readings-billing-period-grid.form-grid.two {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.readings-billing-period-grid .field,
+.readings-billing-period-grid input,
+.readings-prices-page .field,
+.readings-prices-page input,
+.readings-prices-page select,
+.readings-prices-page textarea,
+.readings-entry-form input,
+.readings-entry-form select,
+.readings-entry-form textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.readings-detail-layout .soft-panel {
+  border-color: var(--line);
+  background: transparent;
+  box-shadow: none;
+}
+
+.readings-tool-card {
+  border-color: var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.56);
+  box-shadow: 0 8px 22px rgba(31, 41, 55, 0.05);
+}
+
+[data-theme="dark"] .readings-tool-card {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.readings-tool-card.active,
+.reading-due-card.active {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+}
+
+.readings-prices-page,
+.readings-panel.panel-meters,
+.readings-panel.panel-entry,
+.readings-panel.panel-detail {
+  overflow-x: hidden;
+}
+
+@media (max-width: 720px) {
+  .readings-module .readings-panel,
+  .readings-tool-page,
+  .readings-price-details,
+  .readings-add-group-form,
+  .readings-group-card,
+  .readings-energy-box,
+  .reading-due-card,
+  .reading-meter-card {
+    border-radius: 16px;
+  }
+
+  .readings-meter-tool-tabs {
+    display: flex;
+    grid-template-columns: none;
+  }
+
+  .readings-meter-tool-tabs > .readings-tool-card {
+    flex: 0 0 min(78vw, 260px);
+  }
+
+  .readings-detail-layout,
+  .readings-detail-filter-grid,
+  .readings-entry-form .form-grid.two,
+  .readings-prices-page .form-grid.two,
+  .readings-group-card .form-grid.two,
+  .readings-billing-period-grid.form-grid.two,
+  .readings-add-group-form .form-grid.two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .settings-tab-household .settings-panel:not(.panel-household),
 .settings-tab-modules .settings-panel:not(.panel-modules),
 .settings-tab-dashboard .settings-panel:not(.panel-dashboard),

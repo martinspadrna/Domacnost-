@@ -134,6 +134,8 @@ if (styles) {
   expectAbsent(styles, /\.warranty-files-block\b/, 'styles.css: stary warranty files wrapper nesmi zustat vedle aktualniho warranty detail modalu.');
   expectAbsent(styles, /\.hdo-manual-form\b/, 'styles.css: HDO manual form nema mit vlastni stary formularovy patch vedle spolecneho rozbalovaciho povrchu.');
   expectAbsent(styles, /\.readings-tab-overview\s+\.readings-panel\.panel-detail\b/, 'styles.css: stary Odečty detail-only tab hack nesmi zustat vedle aktualniho kompletniho readings tab pravidla.');
+  expectAbsent(styles, /\.readings-prices-page\s*,\s*\.readings-prices-page\s+\*/, 'styles.css: stary Odečty v267 brute-force descendant reset nesmi zustat vedle finalniho Odecty bloku.');
+  expectAbsent(styles, /\.readings-group-card\s*,\s*\.readings-group-card\s+\*/, 'styles.css: stary Odečty group descendant reset nesmi zustat vedle finalniho Odecty bloku.');
 }
 
 console.log('Style layering check pro Domacnost+');
