@@ -7633,88 +7633,10 @@ svg.anime-module-svg .anime-icon-line {
   }
 }
 
-/* Domácnost+ v.0.1_136 – cloud sync Předplatného + přesun Home panelů podržením */
+/* Domacnost+ - Predplatne cloud actions */
 .subscription-cloud-actions {
   margin: -2px 0 12px;
 }
-
-.station-summary-edit-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin: 4px 0 12px;
-  padding: 10px 12px;
-  border: 1px solid rgba(53, 116, 240, 0.22);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.42);
-  box-shadow: 0 12px 28px rgba(45, 70, 110, 0.10);
-}
-
-.station-summary-edit-toolbar strong {
-  color: var(--text);
-  font-size: 0.92rem;
-}
-
-.station-summary-edit-toolbar span {
-  flex: 1 1 180px;
-  color: var(--muted);
-  font-size: 0.82rem;
-  line-height: 1.35;
-}
-
-.station-summary-editing .station-summary-item {
-  cursor: default;
-  user-select: none;
-  -webkit-user-select: none;
-  outline: 2px dashed rgba(53, 116, 240, 0.24);
-  outline-offset: -5px;
-}
-
-.station-summary-reorder-controls {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  display: inline-flex;
-  gap: 6px;
-  z-index: 2;
-}
-
-.mini-glass-btn {
-  width: 34px;
-  height: 34px;
-  border: 1px solid rgba(255,255,255,.45);
-  border-radius: 999px;
-  background: rgba(255,255,255,.70);
-  color: var(--text);
-  font-size: 1.45rem;
-  font-weight: 900;
-  line-height: 1;
-  box-shadow: 0 10px 22px rgba(18, 48, 95, 0.14);
-  cursor: pointer;
-}
-
-.mini-glass-btn:active {
-  transform: scale(.96);
-}
-
-[data-theme="dark"] .station-summary-edit-toolbar,
-[data-theme="dark"] .mini-glass-btn {
-  background: rgba(255,255,255,.10);
-}
-
-@media (max-width: 640px) {
-  .station-summary-reorder-controls {
-    right: 8px;
-    bottom: 8px;
-  }
-
-  .mini-glass-btn {
-    width: 32px;
-    height: 32px;
-  }
-}
-
 
 /* Domácnost+ v.0.1_137 – Předplatné automatický Supabase sync bez ručních tlačítek */
 .subscription-cloud-status {
@@ -7737,21 +7659,7 @@ svg.anime-module-svg .anime-icon-line {
   margin-top: 12px;
 }
 
-/* Domácnost+ v.0.1_139 – HDO tabulky, stabilnější ikonky a editace Home panelů nahoře */
-.home-hero-edit-toolbar-top {
-  margin: 0 0 12px;
-  position: sticky;
-  top: calc(env(safe-area-inset-top, 0px) + 8px);
-  z-index: 30;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-}
-
-.home-hero-edit-toolbar-top .primary-btn {
-  min-height: 40px;
-  padding-inline: 18px;
-}
-
+/* Domacnost+ - HDO tabulky a stabilni modulove ilustrace */
 .hdo-overview-table-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7864,19 +7772,7 @@ svg.anime-module-svg .anime-icon-line {
 }
 
 @media (max-width: 520px) {
-  .home-hero-edit-toolbar-top {
-    align-items: stretch;
-  }
-
-  .home-hero-edit-toolbar-top span {
-    flex-basis: 100%;
-  }
-
-  .home-hero-edit-toolbar-top .primary-btn {
-    width: 100%;
-  }
-
-  .hdo-overview-table-row {
+.hdo-overview-table-row {
     grid-template-columns: 1fr auto;
   }
 
@@ -11492,19 +11388,6 @@ body {
 
 
 
-/* Domácnost+ v.0.1_249 – Home panely: sjednocené dlouhé podržení */
-.home-minimal-hero .station-summary-item[data-home-hero-id] {
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-  touch-action: manipulation;
-}
-
-.home-minimal-hero.home-hero-editing .station-summary-item[data-home-hero-id] {
-  cursor: grab;
-}
-
-
 /* Domácnost+ v.0.1_249 – Odečty + tablet počasí */
 .readings-module .panel-overview,
 .readings-module .panel-meters,
@@ -11589,33 +11472,6 @@ body {
 }
 .reading-entry-item .item-title span {
   margin-right: 4px;
-}
-.app-shell.home-app-shell .hero-weather-copy,
-.home-minimal-hero .hero-weather-copy {
-  min-width: 0;
-  overflow: visible;
-}
-.app-shell.home-app-shell .hero-weather-copy strong,
-.app-shell.home-app-shell .hero-weather-copy em,
-.app-shell.home-app-shell .hero-weather-copy small,
-.home-minimal-hero .hero-weather-copy strong,
-.home-minimal-hero .hero-weather-copy em,
-.home-minimal-hero .hero-weather-copy small {
-  white-space: normal !important;
-  overflow: visible !important;
-  text-overflow: clip !important;
-  line-height: 1.15;
-}
-@media (min-width: 700px) and (max-width: 1100px) {
-  .app-shell.home-app-shell .hero-weather-pill,
-  .home-minimal-hero .hero-weather-pill {
-    min-height: 86px;
-    align-items: center;
-  }
-  .app-shell.home-app-shell .hero-weather-copy em,
-  .home-minimal-hero .hero-weather-copy em {
-    font-size: clamp(.78rem, 1.35vw, .96rem) !important;
-  }
 }
 @media (max-width: 560px) {
   .readings-meter-grid {
@@ -13229,6 +13085,7 @@ body.home-active {
 }
 
 .home-daily-hero .station-summary-item {
+  position: relative;
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
@@ -13236,6 +13093,51 @@ body.home-active {
   min-height: 82px;
   padding: 10px;
   border-radius: 18px;
+}
+
+.home-daily-hero.home-hero-editing .station-summary-item[data-home-hero-id] {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  outline: 2px dashed color-mix(in srgb, var(--primary) 28%, transparent);
+  outline-offset: -5px;
+}
+
+.home-daily-hero .station-summary-reorder-controls {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.home-daily-hero .mini-glass-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .68);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: 0 8px 20px rgba(31, 41, 55, .10);
+  cursor: pointer;
+}
+
+[data-theme="dark"] .home-daily-hero .mini-glass-btn {
+  background: rgba(255, 255, 255, .10);
+}
+
+.home-daily-hero .mini-glass-btn:active {
+  transform: scale(.96);
 }
 
 .home-daily-hero .station-summary-icon {

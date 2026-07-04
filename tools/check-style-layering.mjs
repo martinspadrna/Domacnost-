@@ -82,6 +82,9 @@ if (styles) {
     [/v\.0\.1_217[\s\S]{0,120}Home/, 'styles.css: stary v0.1_217 Home safe-area patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_232[\s\S]{0,120}finance\/Home/, 'styles.css: stary v0.1_232 finance/Home stabilization patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_232[\s\S]{0,120}stabilizace Home/, 'styles.css: stary v0.1_232 final Home stabilization patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_136[\s\S]{0,120}Home/, 'styles.css: stary v0.1_136 Home edit toolbar patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_139[\s\S]{0,120}Home/, 'styles.css: stary v0.1_139 Home edit toolbar patch nesmi byt pred finalnim Home blokem.'],
+    [/v\.0\.1_249[\s\S]{0,120}Home/, 'styles.css: stary v0.1_249 Home long-press patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_281/, 'styles.css: stary v0.1_281 Home/nav patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_282/, 'styles.css: stary v0.1_282 Home readability patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_283/, 'styles.css: stary v0.1_283 Home height patch nesmi byt pred finalnim Home blokem.'],
@@ -91,6 +94,9 @@ if (styles) {
     [/v\.0\.1_288/, 'styles.css: stary v0.1_288 Home padding patch nesmi byt pred finalnim Home blokem.'],
     [/\.app-shell\.home-app-shell\s+\.home-hero-count-0\.home-minimal-hero/, 'styles.css: stary app-shell Home fullscreen selector nesmi byt pred finalnim Home blokem.'],
     [/\.home-hero-count-0\.home-minimal-hero,[\s\S]{0,500}height:\s*(?:calc|clamp)/, 'styles.css: stary Home hero height clamp nesmi byt pred finalnim Home blokem.'],
+    [/\.station-summary-edit-toolbar\s*\{/, 'styles.css: stary Home edit toolbar nesmi byt pred finalnim Home blokem.'],
+    [/\.home-hero-edit-toolbar-top\s*\{/, 'styles.css: stary Home top edit toolbar nesmi byt pred finalnim Home blokem.'],
+    [/\.app-shell\.home-app-shell\s+\.hero-weather-copy,/, 'styles.css: stary app-shell Home weather text override nesmi byt pred finalnim Home blokem.'],
     [/legacy[\s\S]{0,80}Home:/, 'styles.css: stary legacy Home patch nesmi byt pred finalnim Home blokem.']
   ].forEach(([pattern, label]) => expectAbsent(beforeHome, pattern, label));
 
