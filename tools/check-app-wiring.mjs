@@ -143,6 +143,7 @@ if (styles) {
   expect(styles, '/* Domácnost+ – jednotné Nastavení, importy a dlouhé formuláře */', 'styles.css: existuje finální blok pro Nastavení/formuláře.');
   expect(styles, '.compact-edit-details,\n.subscription-form-drawer,\n.inline-edit-card {', 'styles.css: Předplatné formuláře jsou explicitně ve společném rozbalovacím povrchu.');
   expect(styles, '.settings-tabbed .textarea {\n  min-height: 148px;', 'styles.css: import/dlouhé textarea mají stabilní výšku.');
+  expect(styles, '.install-steps {\n  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));', 'styles.css: instalační kroky PWA drží nový responzivní grid.');
   expect(styles, '.visual-choice-card,\n.module-toggle,\n.switch-row,\n.cloud-household-row,\n.install-step,\n.pwa-diagnostic-item {\n  display: grid;', 'styles.css: settings volby a řádky sdílí nový grid povrch.');
   expect(styles, '.form-actions,\n  .item-actions,\n  .finance-filter-chips', 'styles.css: společné akční lišty používají mobilní rail.');
   expect(styles, '.garage-history-toolbar {\n    display: flex;', 'styles.css: garážové filtry používají mobilní rail.');

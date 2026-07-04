@@ -1848,50 +1848,9 @@ button {
   }
 }
 
-.pwa-card {
-  overflow: hidden;
-}
-
-.install-steps {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 14px 0;
-}
-
-.install-step {
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.5);
-  box-shadow: var(--shadow-soft);
-}
-
-[data-theme="dark"] .install-step {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.install-step strong {
-  display: block;
-  margin-bottom: 6px;
-}
-
-.install-step span {
-  display: block;
-  color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.35;
-}
-
 .warn-box {
   border-color: rgba(245, 158, 11, 0.35);
   background: rgba(245, 158, 11, 0.12);
-}
-
-@media (max-width: 760px) {
-  .install-steps {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Domácnost+ v.0.1_13 · rychlé nákupy */
@@ -14349,6 +14308,10 @@ body.home-active {
   align-items: start;
 }
 
+.pwa-card {
+  overflow: hidden;
+}
+
 .compact-settings-card,
 .visual-settings-card,
 .dashboard-settings-card,
@@ -14478,6 +14441,10 @@ body.home-active {
 .pwa-diagnostic-list {
   display: grid;
   gap: 8px;
+}
+
+.install-steps {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
 }
 
 .visual-choice-card,

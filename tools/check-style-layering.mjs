@@ -103,7 +103,10 @@ if (styles) {
   ].forEach(([pattern, label]) => expectAbsent(beforeHome, pattern, label));
 
   [
-    [/\.settings-tab-dashboard \.settings-panel:not\(\.panel-dashboard\),\s*\.settings-tab-household \.settings-panel:not\(\.panel-household\)/, 'styles.css: settings tab visibility ma zit az ve finalnim Nastaveni bloku.']
+    [/\.settings-tab-dashboard \.settings-panel:not\(\.panel-dashboard\),\s*\.settings-tab-household \.settings-panel:not\(\.panel-household\)/, 'styles.css: settings tab visibility ma zit az ve finalnim Nastaveni bloku.'],
+    [/\.pwa-card\s*\{/, 'styles.css: PWA karta ma zit az ve finalnim Nastaveni bloku.'],
+    [/\.install-steps\s*\{/, 'styles.css: instalacni kroky PWA maji zit az ve finalnim Nastaveni bloku.'],
+    [/\.install-step\s*\{/, 'styles.css: instalacni krok PWA ma zit az ve finalnim Nastaveni bloku.']
   ].forEach(([pattern, label]) => expectAbsent(beforeSettings, pattern, label));
 }
 
