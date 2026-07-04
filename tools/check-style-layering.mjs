@@ -129,6 +129,7 @@ if (shoppingStyles) {
 
 if (styles) {
   expectAbsent(styles, /\.subscription-cloud-actions\b/, 'styles.css: stary rucni cloud action pas v Predplatnem nesmi zustat vedle automatickeho sync statusu.');
+  expectAbsent(styles, /\.finance-hero-card\b/, 'styles.css: mrtvy Finance hero selector nesmi zustat vedle aktualniho finance dashboardu.');
 }
 
 console.log('Style layering check pro Domacnost+');

@@ -3113,14 +3113,9 @@ body.overview-open {
 .compact-form .textarea {
   min-height: 66px;
 }
-.finance-form-drawer {
-  margin-top: 9px;
-}
-.finance-form-drawer summary,
 .compact-edit-details summary {
   min-height: 42px;
 }
-.finance-form-drawer summary em,
 .compact-edit-details summary em {
   display: -webkit-box;
   overflow: hidden;
@@ -3156,17 +3151,14 @@ body.overview-open {
   .compact-record-grid {
     grid-template-columns: 1fr;
   }
-  .compact-edit-details,
-  .finance-form-drawer {
+  .compact-edit-details {
     border-radius: 17px;
   }
-  .compact-edit-details summary,
-  .finance-form-drawer summary {
+  .compact-edit-details summary {
     padding: 9px 10px;
     gap: 8px;
   }
-  .compact-edit-details[open],
-  .finance-form-drawer[open] {
+  .compact-edit-details[open] {
     padding-bottom: 9px;
   }
   .compact-form .primary-btn,
@@ -9212,38 +9204,6 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 .finance-dashboard-card {
   overflow: hidden;
 }
-.finance-hero-card {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 20px;
-  margin-bottom: 14px;
-  border-radius: 28px;
-  background: linear-gradient(135deg, rgba(15, 118, 110, 0.13), rgba(59, 130, 246, 0.10)), rgba(255, 255, 255, 0.62);
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);
-}
-.finance-hero-card .eyebrow {
-  display: block;
-  font-size: 0.78rem;
-  color: var(--muted);
-  font-weight: 800;
-  letter-spacing: .02em;
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
-.finance-hero-card strong {
-  display: block;
-  font-size: clamp(2rem, 7vw, 3.5rem);
-  line-height: 1;
-  letter-spacing: -0.06em;
-}
-.finance-hero-card p {
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-weight: 650;
-}
 .finance-kpi-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -9346,10 +9306,6 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   border: 1px solid rgba(59, 130, 246, 0.20);
 }
 @media (max-width: 720px) {
-  .finance-hero-card {
-    border-radius: 24px;
-    padding: 16px;
-  }
   .finance-kpi-row,
   .finance-split-overview {
     grid-template-columns: 1fr;
@@ -9363,13 +9319,11 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   border: 1px solid rgba(148, 163, 184, 0.28);
   box-shadow: 0 14px 38px rgba(15, 23, 42, 0.10);
 }
-.finance-hero-card,
 .finance-kpi,
 .finance-split-card,
 .inline-edit-card,
 .finance-template-panel,
 .finance-copy-panel,
-.finance-form-drawer[open],
 .finance-panel .compact-edit-details[open] {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(239, 246, 255, 0.78));
   border-color: rgba(148, 163, 184, 0.34);
@@ -9385,8 +9339,6 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 }
 .finance-panel .field label,
 .finance-panel .card-header p,
-.finance-hero-card .eyebrow,
-.finance-hero-card p,
 .finance-kpi span,
 .finance-split-head span,
 .finance-panel .item-meta,
@@ -9431,13 +9383,11 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.84));
   border-color: rgba(148, 163, 184, 0.24);
 }
-[data-theme="dark"] .finance-hero-card,
 [data-theme="dark"] .finance-kpi,
 [data-theme="dark"] .finance-split-card,
 [data-theme="dark"] .inline-edit-card,
 [data-theme="dark"] .finance-template-panel,
 [data-theme="dark"] .finance-copy-panel,
-[data-theme="dark"] .finance-form-drawer[open],
 [data-theme="dark"] .finance-panel .compact-edit-details[open],
 [data-theme="dark"] .finance-panel .item,
 [data-theme="dark"] .finance-panel .compact-item {
@@ -9460,8 +9410,6 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 }
 [data-theme="dark"] .finance-panel .field label,
 [data-theme="dark"] .finance-panel .card-header p,
-[data-theme="dark"] .finance-hero-card .eyebrow,
-[data-theme="dark"] .finance-hero-card p,
 [data-theme="dark"] .finance-kpi span,
 [data-theme="dark"] .finance-split-head span,
 [data-theme="dark"] .finance-panel .item-meta,
@@ -13595,6 +13543,7 @@ body.home-active {
 /* Domácnost+ – jednotné rozbalovací formuláře */
 .action-details,
 .compact-edit-details,
+.finance-form-drawer,
 .subscription-form-drawer,
 .inline-edit-card {
   border: 1px solid var(--line);
@@ -13605,6 +13554,7 @@ body.home-active {
 
 [data-theme="dark"] .action-details,
 [data-theme="dark"] .compact-edit-details,
+[data-theme="dark"] .finance-form-drawer,
 [data-theme="dark"] .subscription-form-drawer,
 [data-theme="dark"] .inline-edit-card {
   background: rgba(255, 255, 255, 0.055);
@@ -13613,12 +13563,14 @@ body.home-active {
 
 .action-details,
 .compact-edit-details,
+.finance-form-drawer,
 .subscription-form-drawer {
   overflow: hidden;
 }
 
 .action-details > summary,
 .compact-edit-details > summary,
+.finance-form-drawer > summary,
 .subscription-form-drawer > summary {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -13632,12 +13584,14 @@ body.home-active {
 
 .action-details > summary::-webkit-details-marker,
 .compact-edit-details > summary::-webkit-details-marker,
+.finance-form-drawer > summary::-webkit-details-marker,
 .subscription-form-drawer > summary::-webkit-details-marker {
   display: none;
 }
 
 .action-details > summary::after,
 .compact-edit-details > summary::after,
+.finance-form-drawer > summary::after,
 .subscription-form-drawer > summary::after {
   display: grid;
   width: 28px;
@@ -13655,12 +13609,14 @@ body.home-active {
 
 .action-details[open] > summary::after,
 .compact-edit-details[open] > summary::after,
+.finance-form-drawer[open] > summary::after,
 .subscription-form-drawer[open] > summary::after {
   transform: rotate(180deg);
 }
 
 .action-details > summary span,
 .compact-edit-details > summary span,
+.finance-form-drawer > summary span,
 .subscription-form-drawer > summary span {
   overflow: hidden;
   color: var(--text);
@@ -13671,6 +13627,7 @@ body.home-active {
 
 .action-details > summary em,
 .compact-edit-details > summary em,
+.finance-form-drawer > summary em,
 .subscription-form-drawer > summary em {
   display: block;
   overflow: hidden;
@@ -13690,6 +13647,9 @@ body.home-active {
 .compact-edit-details > form,
 .compact-edit-details > .grid,
 .compact-edit-details > .compact-form,
+.finance-form-drawer > form,
+.finance-form-drawer > .grid,
+.finance-form-drawer > .compact-form,
 .subscription-form-drawer > form,
 .subscription-form-drawer > .grid,
 .subscription-form-drawer > .compact-form {
@@ -13713,6 +13673,7 @@ body.home-active {
 @media (max-width: 430px) {
   .action-details > summary,
   .compact-edit-details > summary,
+  .finance-form-drawer > summary,
   .subscription-form-drawer > summary {
     min-height: 46px;
     padding: 10px 12px;
@@ -13724,6 +13685,9 @@ body.home-active {
   .compact-edit-details > form,
   .compact-edit-details > .grid,
   .compact-edit-details > .compact-form,
+  .finance-form-drawer > form,
+  .finance-form-drawer > .grid,
+  .finance-form-drawer > .compact-form,
   .subscription-form-drawer > form,
   .subscription-form-drawer > .grid,
   .subscription-form-drawer > .compact-form,
