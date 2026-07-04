@@ -133,6 +133,7 @@ if (styles) {
   expectAbsent(styles, /\.warranty-overview-button\b|\.fake-btn\b/, 'styles.css: stary warranty overview button/fake-btn nesmi zustat vedle aktualniho warranty item detailu.');
   expectAbsent(styles, /\.warranty-files-block\b/, 'styles.css: stary warranty files wrapper nesmi zustat vedle aktualniho warranty detail modalu.');
   expectAbsent(styles, /\.hdo-manual-form\b/, 'styles.css: HDO manual form nema mit vlastni stary formularovy patch vedle spolecneho rozbalovaciho povrchu.');
+  expectAbsent(styles, /\.readings-tab-overview\s+\.readings-panel\.panel-detail\b/, 'styles.css: stary Odečty detail-only tab hack nesmi zustat vedle aktualniho kompletniho readings tab pravidla.');
 }
 
 console.log('Style layering check pro Domacnost+');

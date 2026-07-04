@@ -11088,12 +11088,6 @@ body {
 }
 
 /* Domácnost+ v.0.1_250 – Odečty: graf spotřeby a ceny */
-.readings-tab-overview .readings-panel:not(.panel-overview),
-.readings-tab-detail .readings-panel:not(.panel-detail),
-.readings-tab-meters .readings-panel:not(.panel-meters),
-.readings-tab-history .readings-panel:not(.panel-history) {
-  display: none;
-}
 .reading-meter-pricing {
   display: flex;
   justify-content: space-between;
@@ -11267,13 +11261,6 @@ body {
 
 
 /* Domácnost+ v.0.1_257 – Odečty: detail, T1/T2 a čistší měřidla */
-.readings-tab-detail .readings-panel:not(.panel-detail),
-.readings-tab-overview .readings-panel.panel-detail,
-.readings-tab-meters .readings-panel.panel-detail,
-.readings-tab-history .readings-panel.panel-detail {
-  display: none;
-}
-
 .readings-meter-tools {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -13513,6 +13500,7 @@ body.home-active {
 .compact-edit-details,
 .finance-form-drawer,
 .hdo-manual-details,
+.readings-form-drawer,
 .subscription-form-drawer,
 .inline-edit-card {
   border: 1px solid var(--line);
@@ -13525,6 +13513,7 @@ body.home-active {
 [data-theme="dark"] .compact-edit-details,
 [data-theme="dark"] .finance-form-drawer,
 [data-theme="dark"] .hdo-manual-details,
+[data-theme="dark"] .readings-form-drawer,
 [data-theme="dark"] .subscription-form-drawer,
 [data-theme="dark"] .inline-edit-card {
   background: rgba(255, 255, 255, 0.055);
@@ -13535,6 +13524,7 @@ body.home-active {
 .compact-edit-details,
 .finance-form-drawer,
 .hdo-manual-details,
+.readings-form-drawer,
 .subscription-form-drawer {
   overflow: hidden;
 }
@@ -13543,6 +13533,7 @@ body.home-active {
 .compact-edit-details > summary,
 .finance-form-drawer > summary,
 .hdo-manual-details > summary,
+.readings-form-drawer > summary,
 .subscription-form-drawer > summary {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -13558,6 +13549,7 @@ body.home-active {
 .compact-edit-details > summary::-webkit-details-marker,
 .finance-form-drawer > summary::-webkit-details-marker,
 .hdo-manual-details > summary::-webkit-details-marker,
+.readings-form-drawer > summary::-webkit-details-marker,
 .subscription-form-drawer > summary::-webkit-details-marker {
   display: none;
 }
@@ -13566,6 +13558,7 @@ body.home-active {
 .compact-edit-details > summary::after,
 .finance-form-drawer > summary::after,
 .hdo-manual-details > summary::after,
+.readings-form-drawer > summary::after,
 .subscription-form-drawer > summary::after {
   display: grid;
   width: 28px;
@@ -13585,6 +13578,7 @@ body.home-active {
 .compact-edit-details[open] > summary::after,
 .finance-form-drawer[open] > summary::after,
 .hdo-manual-details[open] > summary::after,
+.readings-form-drawer[open] > summary::after,
 .subscription-form-drawer[open] > summary::after {
   transform: rotate(180deg);
 }
@@ -13593,6 +13587,7 @@ body.home-active {
 .compact-edit-details > summary span,
 .finance-form-drawer > summary span,
 .hdo-manual-details > summary span,
+.readings-form-drawer > summary span,
 .subscription-form-drawer > summary span {
   overflow: hidden;
   color: var(--text);
@@ -13605,6 +13600,7 @@ body.home-active {
 .compact-edit-details > summary em,
 .finance-form-drawer > summary em,
 .hdo-manual-details > summary em,
+.readings-form-drawer > summary em,
 .subscription-form-drawer > summary em {
   display: block;
   overflow: hidden;
@@ -13630,6 +13626,9 @@ body.home-active {
 .hdo-manual-details > form,
 .hdo-manual-details > .grid,
 .hdo-manual-details > .compact-form,
+.readings-form-drawer > form,
+.readings-form-drawer > .grid,
+.readings-form-drawer > .compact-form,
 .subscription-form-drawer > form,
 .subscription-form-drawer > .grid,
 .subscription-form-drawer > .compact-form {
@@ -13655,6 +13654,7 @@ body.home-active {
   .compact-edit-details > summary,
   .finance-form-drawer > summary,
   .hdo-manual-details > summary,
+  .readings-form-drawer > summary,
   .subscription-form-drawer > summary {
     min-height: 46px;
     padding: 10px 12px;
@@ -13672,6 +13672,9 @@ body.home-active {
   .hdo-manual-details > form,
   .hdo-manual-details > .grid,
   .hdo-manual-details > .compact-form,
+  .readings-form-drawer > form,
+  .readings-form-drawer > .grid,
+  .readings-form-drawer > .compact-form,
   .subscription-form-drawer > form,
   .subscription-form-drawer > .grid,
   .subscription-form-drawer > .compact-form,
