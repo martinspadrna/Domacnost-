@@ -1,6 +1,6 @@
 {
   "name": "domacnost-plus",
-  "version": "0.1.369",
+  "version": "0.1.370",
   "private": true,
   "type": "module",
   "description": "Domácnost+ — instalovatelná PWA pro rodinnou domácnost. Frontend-only repo; ověřovací skripty jsou dependency-free.",

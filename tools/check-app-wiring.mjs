@@ -170,6 +170,9 @@ if (styles) {
   expect(styles, '.vehicle-detail-head {\n  display: grid;', 'styles.css: Garaz detail hlavicka pouziva stabilni grid.');
   expect(styles, '.garage-history-row,\n.service-plan-item {\n  display: grid;', 'styles.css: Garaz historie a servisni plan sdili seznamovy povrch.');
   expect(styles, '.garage-trip-result {\n  padding: 10px;', 'styles.css: Garaz kalkulacka ma sjednoceny vysledkovy povrch.');
+  expect(styles, '/* Domacnost+ - sjednoceny Zapisnik */', 'styles.css: existuje finalni blok pro Zapisnik.');
+  expect(styles, '.notebook-section-card,\n.notebook-tasks-tab,\n.notebook-create-card,\n.notebook-note-card,\n.notebook-task-group,\n.notebook-empty-actions {', 'styles.css: Zapisnik karty a prazdne stavy sdili novy povrch.');
+  expect(styles, '.notebook-task-form input[type="date"],\n.notebook-task-form .input[type="date"],\n.notebook-date-input {', 'styles.css: Zapisnik datum a formulare jsou ve finalni vrstve.');
 }
 
 if (styles) {
