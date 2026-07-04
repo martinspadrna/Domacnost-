@@ -130,6 +130,9 @@ if (shoppingStyles) {
 if (styles) {
   expectAbsent(styles, /\.subscription-cloud-actions\b/, 'styles.css: stary rucni cloud action pas v Predplatnem nesmi zustat vedle automatickeho sync statusu.');
   expectAbsent(styles, /\.finance-hero-card\b/, 'styles.css: mrtvy Finance hero selector nesmi zustat vedle aktualniho finance dashboardu.');
+  expectAbsent(styles, /\.warranty-overview-button\b|\.fake-btn\b/, 'styles.css: stary warranty overview button/fake-btn nesmi zustat vedle aktualniho warranty item detailu.');
+  expectAbsent(styles, /\.warranty-files-block\b/, 'styles.css: stary warranty files wrapper nesmi zustat vedle aktualniho warranty detail modalu.');
+  expectAbsent(styles, /\.hdo-manual-form\b/, 'styles.css: HDO manual form nema mit vlastni stary formularovy patch vedle spolecneho rozbalovaciho povrchu.');
 }
 
 console.log('Style layering check pro Domacnost+');

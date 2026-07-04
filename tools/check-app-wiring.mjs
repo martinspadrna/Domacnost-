@@ -141,7 +141,7 @@ if (styles) {
   expect(styles, '.consumption-chart,\n.pool-chart,\n.garage-line-chart,\n.readings-line-chart svg', 'styles.css: grafy mají stabilní responzivní rozměry.');
   expect(styles, '.garage-stats-kpis {\n    grid-template-columns: repeat(2, minmax(0, 1fr));', 'styles.css: KPI gridy mají společné mobilní pravidlo.');
   expect(styles, '/* Domácnost+ – jednotné Nastavení, importy a dlouhé formuláře */', 'styles.css: existuje finální blok pro Nastavení/formuláře.');
-  expect(styles, '.compact-edit-details,\n.finance-form-drawer,\n.subscription-form-drawer,\n.inline-edit-card {', 'styles.css: Finance i Předplatné formuláře jsou explicitně ve společném rozbalovacím povrchu.');
+  expect(styles, '.compact-edit-details,\n.finance-form-drawer,\n.hdo-manual-details,\n.subscription-form-drawer,\n.inline-edit-card {', 'styles.css: Finance, HDO i Předplatné formuláře jsou explicitně ve společném rozbalovacím povrchu.');
   expect(styles, '.settings-tabbed .textarea {\n  min-height: 148px;', 'styles.css: import/dlouhé textarea mají stabilní výšku.');
   expect(styles, '.install-steps {\n  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));', 'styles.css: instalační kroky PWA drží nový responzivní grid.');
   expect(styles, '.visual-choice-card,\n.module-toggle,\n.switch-row,\n.cloud-household-row,\n.install-step,\n.pwa-diagnostic-item {\n  display: grid;', 'styles.css: settings volby a řádky sdílí nový grid povrch.');

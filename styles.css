@@ -4766,16 +4766,6 @@ textarea {
   }
 }
 
-.hdo-manual-details {
-  margin-top: 12px;
-}
-
-.hdo-manual-form {
-  padding-top: 10px;
-}
-
-
-
 @media (max-width: 560px) {
   .station-summary-extra b {
     padding: 3px 6px;
@@ -8253,13 +8243,6 @@ html[data-theme="dark"][data-color-scheme="royal"] { --primary: #60a5fa; --prima
 
 
 /* v.0.1_159 - záruky: přílohy PDF/fotky */
-.warranty-files-block {
-  margin-top: 10px;
-  padding: 10px;
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--panel, #fff) 72%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border, #dbe3ef) 72%, transparent);
-}
 .warranty-file-list {
   display: grid;
   gap: 8px;
@@ -8846,21 +8829,6 @@ html[data-icon-theme="isometric-micro"] .module-theme-icon .icon-line,
 
 
 /* Domácnost+ v.0.1_170 – Záruky: čistý přehled + detail */
-.warranty-overview-button {
-  width: 100%;
-  display: grid;
-  gap: 8px;
-  text-align: left;
-  cursor: pointer;
-}
-.warranty-overview-button .fake-btn {
-  pointer-events: none;
-  display: inline-flex;
-  width: fit-content;
-  min-height: 0;
-  padding: 6px 10px;
-  font-size: .82rem;
-}
 .warranty-detail-modal {
   width: min(760px, calc(100vw - 24px));
   max-height: min(88svh, 860px);
@@ -13544,6 +13512,7 @@ body.home-active {
 .action-details,
 .compact-edit-details,
 .finance-form-drawer,
+.hdo-manual-details,
 .subscription-form-drawer,
 .inline-edit-card {
   border: 1px solid var(--line);
@@ -13555,6 +13524,7 @@ body.home-active {
 [data-theme="dark"] .action-details,
 [data-theme="dark"] .compact-edit-details,
 [data-theme="dark"] .finance-form-drawer,
+[data-theme="dark"] .hdo-manual-details,
 [data-theme="dark"] .subscription-form-drawer,
 [data-theme="dark"] .inline-edit-card {
   background: rgba(255, 255, 255, 0.055);
@@ -13564,6 +13534,7 @@ body.home-active {
 .action-details,
 .compact-edit-details,
 .finance-form-drawer,
+.hdo-manual-details,
 .subscription-form-drawer {
   overflow: hidden;
 }
@@ -13571,6 +13542,7 @@ body.home-active {
 .action-details > summary,
 .compact-edit-details > summary,
 .finance-form-drawer > summary,
+.hdo-manual-details > summary,
 .subscription-form-drawer > summary {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -13585,6 +13557,7 @@ body.home-active {
 .action-details > summary::-webkit-details-marker,
 .compact-edit-details > summary::-webkit-details-marker,
 .finance-form-drawer > summary::-webkit-details-marker,
+.hdo-manual-details > summary::-webkit-details-marker,
 .subscription-form-drawer > summary::-webkit-details-marker {
   display: none;
 }
@@ -13592,6 +13565,7 @@ body.home-active {
 .action-details > summary::after,
 .compact-edit-details > summary::after,
 .finance-form-drawer > summary::after,
+.hdo-manual-details > summary::after,
 .subscription-form-drawer > summary::after {
   display: grid;
   width: 28px;
@@ -13610,6 +13584,7 @@ body.home-active {
 .action-details[open] > summary::after,
 .compact-edit-details[open] > summary::after,
 .finance-form-drawer[open] > summary::after,
+.hdo-manual-details[open] > summary::after,
 .subscription-form-drawer[open] > summary::after {
   transform: rotate(180deg);
 }
@@ -13617,6 +13592,7 @@ body.home-active {
 .action-details > summary span,
 .compact-edit-details > summary span,
 .finance-form-drawer > summary span,
+.hdo-manual-details > summary span,
 .subscription-form-drawer > summary span {
   overflow: hidden;
   color: var(--text);
@@ -13628,6 +13604,7 @@ body.home-active {
 .action-details > summary em,
 .compact-edit-details > summary em,
 .finance-form-drawer > summary em,
+.hdo-manual-details > summary em,
 .subscription-form-drawer > summary em {
   display: block;
   overflow: hidden;
@@ -13650,6 +13627,9 @@ body.home-active {
 .finance-form-drawer > form,
 .finance-form-drawer > .grid,
 .finance-form-drawer > .compact-form,
+.hdo-manual-details > form,
+.hdo-manual-details > .grid,
+.hdo-manual-details > .compact-form,
 .subscription-form-drawer > form,
 .subscription-form-drawer > .grid,
 .subscription-form-drawer > .compact-form {
@@ -13674,6 +13654,7 @@ body.home-active {
   .action-details > summary,
   .compact-edit-details > summary,
   .finance-form-drawer > summary,
+  .hdo-manual-details > summary,
   .subscription-form-drawer > summary {
     min-height: 46px;
     padding: 10px 12px;
@@ -13688,6 +13669,9 @@ body.home-active {
   .finance-form-drawer > form,
   .finance-form-drawer > .grid,
   .finance-form-drawer > .compact-form,
+  .hdo-manual-details > form,
+  .hdo-manual-details > .grid,
+  .hdo-manual-details > .compact-form,
   .subscription-form-drawer > form,
   .subscription-form-drawer > .grid,
   .subscription-form-drawer > .compact-form,
