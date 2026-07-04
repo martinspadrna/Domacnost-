@@ -659,7 +659,7 @@
 
       return wrap(`
           <section class="card desktop-span-2 subscription-panel panel-overview">
-            <div class="card-header"><div><h2>Předplatné</h2><p>Streamovací služby, sdílení s lidmi a měsíční kontrola, kdo už zaplatil.</p></div><span class="badge ${summary.owed ? 'warn' : 'good'}">${summary.owed ? `${formatCurrency(summary.owed)} chybí` : 'srovnáno'}</span></div>
+            <div class="card-header"><div><h2>Tento měsíc</h2><p>Streamovací služby, sdílení s lidmi a měsíční kontrola, kdo už zaplatil.</p></div><span class="badge ${summary.owed ? 'warn' : 'good'}">${summary.owed ? `${formatCurrency(summary.owed)} chybí` : 'srovnáno'}</span></div>
             ${cloudReady() ? `<div class="inline-note compact-note subscription-cloud-status"><span class="badge ${getState().subscriptionsCloud?.pendingAt ? 'warn' : getState().subscriptionsCloud?.loadedAt ? 'good' : ''}">${getState().subscriptionsCloud?.pendingAt ? 'automaticky ukládám' : getState().subscriptionsCloud?.loadedAt ? `cloud ${escapeHtml(formatDateTime(getState().subscriptionsCloud.loadedAt))}` : 'cloud aktivní'}</span><span>Předplatné se synchronizuje automaticky přes Supabase domácnost. Není potřeba nic ručně odesílat ani načítat.</span></div>` : `<div class="inline-note compact-note">Po přihlášení a napojení domácnosti na cloud se Předplatné začne synchronizovat automaticky.</div>`}
             <form data-form="subscription-month-filter" class="compact-filter-form subscription-month-form">
               <div class="form-grid two">

@@ -318,7 +318,7 @@
       return `
         <section class="card homecare-panel panel-warranties">
           <div class="card-header">
-            <div><h2>Záruky</h2><p>Koupené věci, konec záruky a poznámky třeba k reklamaci.</p></div>
+            <div><h2>Přehled záruk</h2><p>Koupené věci, konec záruky a poznámky třeba k reklamaci.</p></div>
             <span class="badge ${getState().cloud?.householdId ? 'good' : ''}">${getState().cloud?.householdId ? 'sdílené v domácnosti' : 'lokálně'}</span>
           </div>
           <details class="action-details compact-edit-details warranty-add-details">

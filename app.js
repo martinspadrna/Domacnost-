@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_372';
-  const APP_BUILD = 372;
+  const APP_VERSION = 'Domácnost+ v.0.1_373';
+  const APP_BUILD = 373;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -704,7 +704,7 @@
       updatedAt: ''
     },
     settings: {
-      theme: 'light',
+      theme: 'dark',
       iconTheme: 'sticker-ui',
       colorScheme: 'sky',
       dashboardNote: 'Domácí přehled je připravený na cloud. Každý si nastaví vlastní domácnost, profily a zapnuté moduly.',
@@ -960,6 +960,7 @@
   const iconHtmlCache = new Map();
   let runtimeStateRef = null;
   let forceLightVisualRecovery = false;
+  let forceDarkVisualUpgrade = false;
   let weatherInstance = null;
   let pwaInstance = null;
   let notesInstance = null;
@@ -1571,6 +1572,7 @@
     const timestamp = new Date().toISOString();
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
     forceLightVisualRecovery = Boolean(previousAppBuild && previousAppBuild < 264 && normalizeAppTheme(migrated.settings?.theme) === 'dark');
+    forceDarkVisualUpgrade = Boolean(previousAppBuild && previousAppBuild < 373 && normalizeAppTheme(migrated.settings?.theme) === 'light');
 
     migrated.meta = {
       schemaVersion: 85,
@@ -1582,7 +1584,7 @@
 
     migrated.settings = {
       ...(migrated.settings || {}),
-      theme: forceLightVisualRecovery ? 'light' : normalizeAppTheme(migrated.settings?.theme),
+      theme: forceLightVisualRecovery ? 'light' : forceDarkVisualUpgrade ? 'dark' : normalizeAppTheme(migrated.settings?.theme),
       iconTheme: normalizeIconTheme(migrated.settings?.iconTheme),
       colorScheme: normalizeColorScheme(migrated.settings?.colorScheme),
       dashboardNote: migrated.settings?.dashboardNote || DEFAULT_STATE.settings.dashboardNote,
@@ -1601,6 +1603,18 @@
       try {
         localStorage.setItem(VISUAL_SETTINGS_STORAGE_KEY, JSON.stringify({
           theme: 'light',
+          iconTheme: migrated.settings.iconTheme,
+          colorScheme: migrated.settings.colorScheme
+        }));
+      } catch (error) {}
+    } else if (forceDarkVisualUpgrade) {
+      Object.keys(migrated.settings.profileUiSettings || {}).forEach((key) => {
+        const item = migrated.settings.profileUiSettings[key];
+        if (item?.visualSettings) item.visualSettings = { ...item.visualSettings, theme: 'dark' };
+      });
+      try {
+        localStorage.setItem(VISUAL_SETTINGS_STORAGE_KEY, JSON.stringify({
+          theme: 'dark',
           iconTheme: migrated.settings.iconTheme,
           colorScheme: migrated.settings.colorScheme
         }));
@@ -1844,7 +1858,7 @@
     const before = JSON.stringify(getVisualSettingsSnapshot());
     state.settings = {
       ...(state.settings || {}),
-      theme: forceLightVisualRecovery ? 'light' : normalizeAppTheme(settings.theme ?? state.settings?.theme),
+      theme: forceLightVisualRecovery ? 'light' : forceDarkVisualUpgrade ? 'dark' : normalizeAppTheme(settings.theme ?? state.settings?.theme),
       iconTheme: normalizeIconTheme(settings.iconTheme ?? settings.icon_theme ?? state.settings?.iconTheme),
       colorScheme: normalizeColorScheme(settings.colorScheme ?? settings.color_scheme ?? state.settings?.colorScheme)
     };
@@ -2170,16 +2184,14 @@
 
   function getBottomNavModules() {
     const visible = getVisibleModules();
-    const selectedIds = getActiveProfileBottomNavIds();
-    const selected = selectedIds
+    const selected = DEFAULT_BOTTOM_NAV_IDS
       .map((id) => visible.find((module) => module.id === id))
       .filter(Boolean);
     return [...selected, MORE_MODULE];
   }
 
   function isMoreNavActive() {
-    const selectedIds = getActiveProfileBottomNavIds();
-    return activeModule === MORE_MODULE.id || !selectedIds.includes(activeModule);
+    return activeModule === MORE_MODULE.id || !DEFAULT_BOTTOM_NAV_IDS.includes(activeModule);
   }
 
   function getActiveBottomNavId(moduleId = activeModule) {
@@ -2520,8 +2532,8 @@
         app?.classList?.toggle('home-redesign-shell', isHomeModule);
         document.documentElement.classList.toggle('home-active', isHomeModule);
         document.body.classList.toggle('home-active', isHomeModule);
-        const pageTitle = isHomeModule ? householdName() : active.label;
-        const pageSubtitle = isHomeModule ? '' : getModuleSubtitle(active.id);
+        const pageTitle = active.label;
+        const pageSubtitle = getModuleSubtitle(active.id);
         const moduleRenderStartedAt = performance?.now ? performance.now() : Date.now();
         const moduleHtml = renderModule(active.id);
         const moduleRenderMs = Math.round((performance?.now ? performance.now() : Date.now()) - moduleRenderStartedAt);
@@ -2530,14 +2542,16 @@
         app.innerHTML = `
           <div class="app-frame ${isHomeModule ? 'home-clean-frame' : ''}">
             <main>
-              <section class="page-head ${isHomeModule ? 'home-page-head' : ''}">
+              ${isHomeModule ? '' : `
+              <section class="page-head">
                 <div>
                   <h2 class="page-title">${escapeHtml(pageTitle)}</h2>
                   ${pageSubtitle ? `<p class="page-subtitle">${escapeHtml(pageSubtitle)}</p>` : ''}
                 </div>
                 ${renderPageActions(active.id)}
               </section>
-              ${renderDemoReadOnlyBanner()}${renderModuleCockpit(active)}${moduleHtml}
+              `}
+              ${renderDemoReadOnlyBanner()}${moduleHtml}
             </main>
           </div>
 
@@ -3362,221 +3376,6 @@
     return '';
   }
 
-  function renderModuleCockpit(module) {
-    const moduleId = String(module?.id || '');
-    if (!moduleId || ['home', 'more', 'settings'].includes(moduleId)) return '';
-    const stats = getModuleStats(moduleId);
-    const metrics = getModuleCockpitMetrics(moduleId, stats);
-    const actions = getModuleCockpitActions(moduleId);
-    return `
-      <section class="card module-cockpit module-cockpit-${escapeHtml(moduleId)}" data-module-cockpit="${escapeHtml(moduleId)}" data-no-swipe>
-        <div class="module-cockpit-main">
-          ${renderModuleIllustration(moduleId, { size: 'card', slotClass: 'module-cockpit-icon module-card-illustration-slot', extraClass: 'module-card-illustration', label: module.label })}
-          <div class="module-cockpit-copy">
-            <span class="section-kicker">${escapeHtml(module.label)}</span>
-            <h2>${escapeHtml(moduleCockpitTitle(moduleId, module.label))}</h2>
-            <p>${escapeHtml(moduleCockpitNote(moduleId, stats.note || getModuleSubtitle(moduleId)))}</p>
-          </div>
-        </div>
-        <div class="module-cockpit-metrics" data-no-swipe>
-          ${metrics.slice(0, 4).map((metric) => `
-            <button class="module-cockpit-metric ${metric.tone || ''}" type="button" ${moduleCockpitActionAttrs(metric.nav || moduleId, metric.tab || '', metric.overview || '')}>
-              <span>${escapeHtml(metric.label)}</span>
-              <strong>${escapeHtml(String(metric.value ?? '—'))}</strong>
-            </button>
-          `).join('')}
-        </div>
-        ${actions.length ? `
-          <div class="module-cockpit-actions" data-no-swipe>
-            ${actions.map((action, index) => `<button class="${index === 0 ? 'primary-btn' : 'ghost-btn'} mini-btn" type="button" ${moduleCockpitActionAttrs(action.nav || moduleId, action.tab || '', action.overview || '')}>${escapeHtml(action.label)}</button>`).join('')}
-          </div>
-        ` : ''}
-      </section>
-    `;
-  }
-
-  function moduleCockpitActionAttrs(nav, tab = '', overview = '') {
-    if (overview) return `data-action="open-overview" data-overview="${escapeHtml(overview)}"`;
-    return `data-nav="${escapeHtml(nav || 'home')}"${tab ? ` data-target-tab="${escapeHtml(tab)}"` : ''}`;
-  }
-
-  function moduleCockpitTitle(moduleId, fallback) {
-    const titles = {
-      weather: 'Počasí pro domácnost',
-      calendar: 'Kalendář a nejbližší dny',
-      shopping: 'Nákupy, kódy a karty',
-      hdo: 'Nízký tarif',
-      waste: 'Svoz odpadu',
-      readings: 'Odečty a spotřeba',
-      pool: 'Bazén a kvalita vody',
-      tasks: 'Zápisník a úkoly',
-      warranties: 'Záruky a účtenky',
-      polishHolidays: 'Polské svátky',
-      garage: 'Garáž a servis',
-      contracts: 'Smlouvy a pojistky',
-      finance: 'Finance domácnosti',
-      subscriptions: 'Předplatné a platby'
-    };
-    return titles[moduleId] || fallback || 'Modul';
-  }
-
-  function moduleCockpitNote(moduleId, fallback) {
-    const notes = {
-      calendar: 'Nejdřív přehled, potom rychlé přidání nebo zdroje kalendáře.',
-      shopping: 'Seznamy, katalog, slevové kódy a věrnostní karty z jednoho místa.',
-      garage: 'Auta, spotřeba, servisní plán a upozornění drží stejný přehled.',
-      finance: 'Pohyby, účty, půjčky i refinancování jsou rozdělené do jasných záložek.',
-      contracts: 'Platnosti a přílohy jsou oddělené, aby modul zůstal použitelný na mobilu.',
-      pool: 'Objem vody, poslední měření a dávkování pH jsou nahoře pohromadě.',
-      subscriptions: 'Služby, lidi a platby mají společný měsíční přehled.'
-    };
-    return notes[moduleId] || fallback || getModuleSubtitle(moduleId);
-  }
-
-  function getModuleCockpitActions(moduleId) {
-    const map = {
-      weather: [{ label: 'Otevřít počasí' }],
-      calendar: [{ label: 'Přehled', tab: 'overview' }, { label: 'Přidat', tab: 'add' }, { label: 'Zdroje', tab: 'sources' }],
-      shopping: [{ label: 'Seznamy', tab: 'list' }, { label: 'Katalog', tab: 'catalog' }, { label: 'Kódy', tab: 'coupons' }],
-      hdo: [{ label: 'Přehled', overview: 'hdo' }],
-      waste: [{ label: 'Přehled', overview: 'waste' }],
-      readings: [{ label: 'Přehled', tab: 'overview' }, { label: 'Odečet', tab: 'entry' }, { label: 'Měřidla', tab: 'meters' }],
-      pool: [{ label: 'Nastavit bazén' }],
-      tasks: [{ label: 'Zápisník', overview: 'tasks' }],
-      warranties: [{ label: 'Záruky' }],
-      polishHolidays: [{ label: 'Svátky PL' }],
-      garage: [{ label: 'Přehled', tab: 'overview' }, { label: 'Přidat auto', tab: 'add' }, { label: 'Statistiky', tab: 'stats' }],
-      contracts: [{ label: 'Přehled', tab: 'overview' }, { label: 'Přidat', tab: 'add' }, { label: 'Detail', tab: 'detail' }],
-      finance: [{ label: 'Přehled', tab: 'summary' }, { label: 'Pohyb', tab: 'add' }, { label: 'Půjčky', tab: 'loans' }],
-      subscriptions: [{ label: 'Přehled', tab: 'overview' }, { label: 'Služby', tab: 'services' }, { label: 'Platby', tab: 'payments' }]
-    };
-    return map[moduleId] || [{ label: 'Otevřít' }];
-  }
-
-  function getModuleCockpitMetrics(moduleId, fallbackStats = null) {
-    const base = fallbackStats || getModuleStats(moduleId);
-    const baseMetric = { label: base.label || 'položek', value: base.count ?? 0 };
-    if (moduleId === 'calendar') {
-      const events = upcomingCalendarEvents(now);
-      return [
-        { label: 'Dnes', value: events.filter((event) => event.date === todayISO()).length, tab: 'overview' },
-        { label: 'Do 7 dnů', value: events.filter((event) => event.date && daysUntil(event.date) !== null && daysUntil(event.date) <= 7).length, tab: 'overview' },
-        { label: 'Zdroje', value: getCalendarSources().length, tab: 'sources' }
-      ];
-    }
-    if (moduleId === 'shopping') {
-      return [
-        { label: 'Koupit', value: state.shopping.filter((item) => !item.done).length, tab: 'list', tone: state.shopping.some((item) => !item.done) ? 'warn' : 'good' },
-        { label: 'Seznamy', value: state.shoppingLists.length, tab: 'list' },
-        { label: 'Kódy', value: state.coupons.filter((item) => !item.used).length, tab: 'coupons' },
-        { label: 'Karty', value: getLoyaltyCards().length, tab: 'loyalty' }
-      ];
-    }
-    if (moduleId === 'hdo') {
-      const hdo = getHdoStatus(now);
-      return [
-        { label: 'Teď', value: hdo.active ? 'běží' : 'neběží', overview: 'hdo', tone: hdo.active ? 'good' : 'warn' },
-        { label: 'Oken', value: state.hdoWindows.length, overview: 'hdo' },
-        { label: 'Další', value: hdo.label || '—', overview: 'hdo' }
-      ];
-    }
-    if (moduleId === 'waste') {
-      const soon = getUpcomingWasteRuntimeItems({ maxDays: 7, limit: 12 });
-      return [
-        { label: 'Do týdne', value: soon.length, overview: 'waste', tone: soon.length ? 'warn' : 'good' },
-        { label: 'Plánů', value: state.waste.length, overview: 'waste' },
-        { label: 'Nejbližší', value: soon[0] ? dueBadge(soon[0].days) : '—', overview: 'waste' }
-      ];
-    }
-    if (moduleId === 'readings') {
-      const meters = readingsMeters();
-      return [
-        { label: 'Měřidla', value: meters.length, tab: 'meters' },
-        { label: 'Odečty', value: state.readings.length, tab: 'history' },
-        { label: 'Čeká', value: meters.filter((meter) => !readingMeterHasCompleteMonthEntry(meter)).length, tab: 'entry', tone: meters.some((meter) => !readingMeterHasCompleteMonthEntry(meter)) ? 'warn' : 'good' }
-      ];
-    }
-    if (moduleId === 'pool') {
-      const pool = normalizePoolState(state.pool || {});
-      const dose = getPoolModule().poolPhDose(pool);
-      return [
-        { label: 'Objem', value: formatPoolVolume(poolVolumeM3(pool)) },
-        { label: 'pH', value: pool.ph || '—', tone: dose.status === 'minus' || dose.status === 'plus' ? 'warn' : dose.status === 'ok' ? 'good' : '' },
-        { label: 'Měření', value: pool.measurements?.length || 0 }
-      ];
-    }
-    if (moduleId === 'tasks') {
-      const open = state.homeTasks.filter((task) => !task.done).length;
-      return [
-        { label: 'Úkoly', value: open, overview: 'tasks', tone: open ? 'warn' : 'good' },
-        { label: 'Stránky', value: notebookPages().length, overview: 'tasks' },
-        { label: 'Poznámky', value: state.notes.length, overview: 'tasks' }
-      ];
-    }
-    if (moduleId === 'warranties') {
-      const active = state.warranties.filter((item) => item.status !== 'archived').length;
-      return [
-        { label: 'Aktivní', value: active },
-        { label: 'Příloh', value: state.warrantyFiles.length },
-        { label: 'Celkem', value: state.warranties.length }
-      ];
-    }
-    if (moduleId === 'garage') {
-      const alerts = getVehicleAlerts();
-      return [
-        { label: 'Auta', value: garageOwnedVehicles().length, tab: 'overview' },
-        { label: 'Upozornění', value: alerts.length, tab: 'overview', tone: alerts.length ? 'warn' : 'good' },
-        { label: 'Tankování', value: state.fuel.length, tab: 'stats' },
-        { label: 'Servis', value: state.services.length, tab: 'detail' }
-      ];
-    }
-    if (moduleId === 'contracts') {
-      const urgent = state.contracts.filter((contract) => {
-        const days = daysUntil(contract.validTo);
-        return days !== null && days <= 45;
-      }).length;
-      return [
-        { label: 'Smlouvy', value: state.contracts.length, tab: 'overview' },
-        { label: 'Do 45 dnů', value: urgent, tab: 'overview', tone: urgent ? 'warn' : 'good' },
-        { label: 'Příloh', value: state.contractFiles.length, tab: 'detail' }
-      ];
-    }
-    if (moduleId === 'finance') {
-      const summary = financeMonthSummary();
-      return [
-        { label: 'Rozdíl', value: formatCurrency(summary.balance), tab: 'summary', tone: summary.balance < 0 ? 'warn' : 'good' },
-        { label: 'Účty', value: state.financeAccounts.length, tab: 'accounts' },
-        { label: 'Půjčky', value: state.financeLoans.length, tab: 'loans' }
-      ];
-    }
-    if (moduleId === 'subscriptions') {
-      const summary = subscriptionMonthSummary();
-      return [
-        { label: 'Služby', value: state.subscriptions.filter((item) => item.enabled !== false).length, tab: 'services' },
-        { label: 'Má se vrátit', value: formatCurrency(summary.expectedReturn), tab: 'overview' },
-        { label: 'Chybí', value: formatCurrency(summary.owed), tab: 'payments', tone: summary.owed ? 'warn' : 'good' }
-      ];
-    }
-    if (moduleId === 'polishHolidays') {
-      const next = nextPolishShopHomeEntry();
-      return [
-        { label: 'Další', value: next ? dueBadge(daysUntil(next.date)) : '—' },
-        { label: 'Rok', value: polishShopSelectedYear() },
-        { label: 'Zavřeno', value: buildPolishShopCalendarYear(polishShopSelectedYear()).filter((entry) => entry.status === 'closed').length }
-      ];
-    }
-    if (moduleId === 'weather') {
-      const weather = normalizeWeatherState(state.weather);
-      const current = weather.current || {};
-      return [
-        { label: 'Teď', value: weather.current ? roundWeather(current.temperature, '°') : '—', tone: weather.current ? 'good' : '' },
-        { label: 'Místo', value: weatherLocationLabel() || '—' },
-        { label: 'Zdroj', value: normalizeWeatherSource(state.weather?.source || 'chmi').toUpperCase() }
-      ];
-    }
-    return [baseMetric];
-  }
-
   function renderModule(moduleId) {
     const renderers = {
       home: renderDashboard,
@@ -3686,69 +3485,181 @@
     ensureWeatherFresh(false);
     normalizeGarageRuntimeState({ persist: false });
     const weather = normalizeWeatherState(state.weather);
-    const dashboardContext = { hdo, todayEvents, upcomingEvents, calendarPanelEvents, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, weather, notes: state.notes, coupons: state.coupons, contracts: state.contracts };
-    const selectedHeroItems = normalizeHomeHeroIds(state.settings?.homeHeroItems);
-    const heroCount = selectedHeroItems.length;
+    const ctx = { hdo, todayEvents, upcomingEvents, calendarPanelEvents, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, weather, notes: state.notes, coupons: state.coupons, contracts: state.contracts };
+
+    const nowItems = buildHomeNowItems(ctx);
+    const soonItems = buildHomeSoonItems(ctx);
+    const moneyItems = buildHomeMoneyItems(ctx);
+    const lastSync = state.cloud?.lastSyncAt ? formatDateTime(state.cloud.lastSyncAt) : formatDateTime(now);
 
     return `
-      <div class="dashboard-v10 home-dashboard-redesign">
-        <section class="card hero-card station-hero home-daily-hero ${homeHeroEditMode ? 'home-hero-editing' : ''}">
-          <div class="station-hero-main">
-            <div class="station-clock-area">
-              ${homeHeroEditMode ? `<button class="primary-btn home-hero-edit-done-overlay" type="button" data-action="home-hero-edit-done">Hotovo</button>` : ''}
-              <div class="hero-clock-row">
-                <button class="hero-clock-copy hero-clock-button" type="button" data-nav="calendar" data-target-tab="overview" aria-label="Otevřít kalendář">
-                  <div class="hero-time">${clockText(now)}</div>
-                  <div class="hero-date">${escapeHtml(formatDateTime(now))}</div>
-                </button>
-                ${renderHeroWeatherPill(dashboardContext, { expanded: heroCount === 0 })}
-              </div>
-            </div>
-            ${heroCount ? `<div class="station-summary station-summary-count-${heroCount} ${homeHeroEditMode ? 'station-summary-editing' : ''}">${renderHomeHeroSummaryItems(dashboardContext)}</div>` : ''}
+      <div class="home-dash">
+        <header class="home-dash-top">
+          <div class="home-dash-brand">
+            <span class="home-dash-kicker">Domácnost+</span>
+            ${renderHomeWeatherPill(ctx)}
           </div>
-        </section>
-        ${renderHomeDailyOverview(dashboardContext)}
+          <h1 class="home-dash-title">Domů</h1>
+        </header>
+        ${renderHomeListSection('Teď', nowItems)}
+        ${renderHomeListSection('Brzy', soonItems)}
+        ${renderHomeListSection('Peníze', moneyItems)}
+        <div class="home-dash-sync"><span aria-hidden="true">⟳</span> Poslední aktualizace: ${escapeHtml(lastSync)}</div>
       </div>
     `;
   }
 
-  function renderHomeDailyOverview(ctx) {
-    const attentionItems = buildHomeAttentionItems(ctx);
-    const primary = attentionItems[0] || buildHomeFallbackAction(ctx);
-    const rows = attentionItems.slice(primary ? 1 : 0, 7);
+  function renderHomeWeatherPill(ctx) {
+    const weather = normalizeWeatherState(ctx?.weather || state.weather);
+    const current = weather.current || {};
+    const [condition] = weatherCodeLabel(current.weatherCode);
+    const hasCurrent = Boolean(weather.current);
+    const value = hasCurrent ? roundWeather(current.temperature, '°') : '—';
+    const place = weatherLocationLabel() || 'Počasí';
+    const label = weather.loading ? 'Načítám' : (weather.error && !hasCurrent) ? 'Nejde načíst' : hasCurrent ? condition : 'Nenačteno';
     return `
-      <section class="card home-command-card dashboard-widget-block" data-dashboard-widget="daily">
-        <div class="home-command-head">
-          <div>
-            <span class="section-kicker">Domů</span>
-            <h2>Denní přehled</h2>
-          </div>
-          <button class="ghost-btn mini-btn" type="button" data-nav="more">Všechny moduly</button>
-        </div>
-        ${primary ? renderHomePrimaryAction(primary) : ''}
-        <div class="home-status-grid">
-          ${renderHomeStatusCards(ctx)}
-        </div>
-      </section>
-      <section class="card home-agenda-card dashboard-widget-block" data-dashboard-widget="agenda">
-        <div class="card-header compact-card-header">
-          <div><h2>Dnes a brzy</h2><p>Události, úkoly, svozy, smlouvy a auta na jednom místě.</p></div>
-          <span class="badge ${attentionItems.length ? 'warn' : 'good'}">${attentionItems.length ? `${attentionItems.length} položek` : 'klid'}</span>
-        </div>
-        <div class="home-attention-list">
-          ${rows.length ? rows.map(renderHomeAttentionItem).join('') : renderHomeQuietState(ctx)}
-        </div>
-      </section>
-      <section class="card home-modules-card dashboard-widget-block" data-dashboard-widget="modules">
-        <div class="card-header compact-card-header">
-          <div><h2>Oblasti domácnosti</h2><p>Rychlý vstup do zapnutých částí bez přeplněné spodní lišty.</p></div>
-          <button class="ghost-btn mini-btn" type="button" data-nav="settings" data-target-tab="modules">Upravit</button>
-        </div>
-        <div class="home-module-strip">
-          ${renderHomeModuleShortcuts(ctx.visibleModules)}
+      <button class="home-dash-weather-pill" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
+        ${renderWeatherAnimeIcon(current.weatherCode, { size: 'xs', extraClass: 'home-dash-weather-icon' })}
+        <span>${escapeHtml(place)}</span>
+        <strong>${escapeHtml(value)}</strong>
+        <em class="sr-only-inline">${escapeHtml(label)}</em>
+      </button>
+    `;
+  }
+
+  function renderHomeListSection(title, items) {
+    if (!items.length) return '';
+    return `
+      <section class="home-dash-section">
+        <h2 class="home-dash-section-title">${escapeHtml(title)}</h2>
+        <div class="card home-list-card">
+          ${items.map(renderHomeListRow).join('')}
         </div>
       </section>
     `;
+  }
+
+  function renderHomeListRow(item) {
+    return `
+      <button class="home-row ${item.tone || ''}" type="button" ${homeActionAttrs(item)}>
+        <span class="home-row-icon" aria-hidden="true">${escapeHtml(item.icon || '•')}</span>
+        <span class="home-row-copy">
+          <strong>${escapeHtml(item.title)}</strong>
+          ${item.meta ? `<em>${escapeHtml(item.meta)}</em>` : ''}
+        </span>
+        ${item.value ? `<span class="home-row-value ${item.tone || ''}">${escapeHtml(item.value)}</span>` : ''}
+        <span class="home-row-chevron" aria-hidden="true">›</span>
+      </button>
+    `;
+  }
+
+  function buildHomeNowItems(ctx) {
+    const rows = [];
+    const hasModule = (id) => ctx.visibleModules.some((module) => module.id === id);
+
+    if (hasModule('hdo')) {
+      rows.push({
+        icon: '💡',
+        title: ctx.hdo.active ? 'Nízký tarif aktivní' : 'Bez HDO',
+        meta: ctx.hdo.message || '',
+        tone: ctx.hdo.active ? 'good' : '',
+        overview: 'hdo'
+      });
+    }
+
+    if (hasModule('waste')) {
+      const next = ctx.wasteSoon[0];
+      if (next) {
+        rows.push({
+          icon: '♻️',
+          title: `Odpad: ${next.type || 'svoz'} ${dueBadge(next.days)}`,
+          meta: `Svoz ${formatDate(next.date)}${next.note ? ` · ${next.note}` : ''}`,
+          tone: next.days <= 1 ? 'warn' : '',
+          overview: 'waste'
+        });
+      }
+    }
+
+    if (hasModule('pool')) {
+      const pool = normalizePoolState(state.pool || {});
+      if (pool.ph !== '' || pool.waterTempC !== '') {
+        const dose = getPoolModule().poolPhDose(pool);
+        const phLabel = pool.ph !== '' ? Number(pool.ph).toLocaleString('cs-CZ', { maximumFractionDigits: 1 }) : '—';
+        const tempLabel = pool.waterTempC !== '' ? `${Number(pool.waterTempC).toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} °C` : '—';
+        rows.push({
+          icon: '🏊',
+          title: 'Bazén',
+          meta: `pH ${phLabel} · voda ${tempLabel}`,
+          tone: dose.status === 'minus' || dose.status === 'plus' ? 'warn' : '',
+          nav: 'pool'
+        });
+      }
+    }
+
+    if (!rows.length) {
+      rows.push({
+        icon: '✓',
+        title: 'Doma je klid',
+        meta: 'Nic akutního teď nečeká.',
+        tone: 'good',
+        overview: 'important'
+      });
+    }
+
+    return rows;
+  }
+
+  function buildHomeSoonItems(ctx) {
+    const excludedOverviews = new Set(['hdo', 'waste', 'pool', 'finance', 'shopping']);
+    return buildHomeAttentionItems(ctx)
+      .filter((item) => !excludedOverviews.has(item.overview))
+      .slice(0, 5);
+  }
+
+  function buildHomeMoneyItems(ctx) {
+    const rows = [];
+    const hasModule = (id) => ctx.visibleModules.some((module) => module.id === id);
+
+    if (hasModule('subscriptions')) {
+      const summary = subscriptionMonthSummary();
+      if (summary.services.length) {
+        const count = summary.services.length;
+        rows.push({
+          icon: '🎬',
+          title: 'Předplatné tento měsíc',
+          meta: `${count} ${count === 1 ? 'služba' : count < 5 ? 'služby' : 'služeb'}`,
+          value: formatCurrency(summary.totalCost),
+          tone: summary.owed ? 'warn' : '',
+          nav: 'subscriptions',
+          tab: 'overview'
+        });
+      }
+    }
+
+    if (hasModule('finance')) {
+      const finance = financeMonthSummary();
+      if (finance.balance < 0) {
+        rows.push({
+          icon: '💰',
+          title: 'Finance tento měsíc',
+          meta: `Příjmy ${formatCurrency(finance.income)} · výdaje ${formatCurrency(finance.expense)}`,
+          value: formatCurrency(finance.balance),
+          tone: 'warn',
+          nav: 'finance',
+          tab: 'summary'
+        });
+      } else if ((state.financeLoans || []).length) {
+        rows.push({
+          icon: '📈',
+          title: 'Refinancování: možná úspora',
+          meta: 'Zkontrolujte své půjčky',
+          nav: 'finance',
+          tab: 'loans'
+        });
+      }
+    }
+
+    return rows;
   }
 
   function buildHomeAttentionItems(ctx) {
@@ -3898,130 +3809,6 @@
       nav: 'pool',
       rank: 2
     };
-  }
-
-  function buildHomeFallbackAction(ctx) {
-    const progress = getStarterSetupProgress();
-    if (progress.nextStep && progress.doneCount < progress.total) {
-      return {
-        icon: progress.nextStep.icon || '✨',
-        title: progress.nextStep.title || 'Dokončit nastavení',
-        meta: progress.nextStep.note || 'Základ domácnosti ještě není úplně hotový.',
-        badge: `${progress.doneCount}/${progress.total}`,
-        tone: 'warn',
-        nav: progress.nextStep.nav || 'settings',
-        tab: progress.nextStep.tab || '',
-        rank: 9
-      };
-    }
-    return {
-      icon: ctx.hdo?.active ? '💡' : '✓',
-      title: ctx.hdo?.active ? 'Nízký tarif běží' : 'Doma je klid',
-      meta: ctx.hdo?.active ? ctx.hdo.message : 'Nic akutního teď nečeká.',
-      badge: ctx.hdo?.active ? ctx.hdo.label : 'OK',
-      tone: ctx.hdo?.active ? 'good' : 'good',
-      overview: ctx.hdo?.active ? 'hdo' : 'important',
-      rank: 9
-    };
-  }
-
-  function renderHomePrimaryAction(item) {
-    return `
-      <button class="home-primary-action ${item.tone || ''}" type="button" ${homeActionAttrs(item)}>
-        <span class="home-primary-icon">${escapeHtml(item.icon)}</span>
-        <span class="home-primary-copy">
-          <em>${item.tone === 'bad' ? 'Nutné' : item.tone === 'warn' ? 'Pozor' : 'Teď'}</em>
-          <strong>${escapeHtml(item.title)}</strong>
-          <small>${escapeHtml(item.meta)}</small>
-        </span>
-        <span class="badge ${item.tone || ''}">${escapeHtml(item.badge || 'otevřít')}</span>
-      </button>
-    `;
-  }
-
-  function renderHomeStatusCards(ctx) {
-    const finance = financeMonthSummary();
-    const subscriptions = subscriptionMonthSummary();
-    const pool = normalizePoolState(state.pool || {});
-    const dose = getPoolModule().poolPhDose(pool);
-    const houseAlerts = (ctx.vehicleAlerts?.length || 0) + (dose.status === 'minus' || dose.status === 'plus' ? 1 : 0);
-    const cards = [
-      {
-        icon: '💡',
-        label: 'Teď',
-        value: ctx.hdo.active ? 'HDO běží' : 'Bez HDO',
-        note: ctx.hdo.message || weatherLocationLabel() || 'Aktuální stav domácnosti.',
-        tone: ctx.hdo.active ? 'good' : '',
-        overview: 'hdo'
-      },
-      {
-        icon: '📅',
-        label: 'Dnes',
-        value: `${(ctx.todayEvents?.length || 0) + (ctx.wasteSoon?.length || 0)}`,
-        note: `${ctx.todayEvents?.length || 0} událostí · ${ctx.wasteSoon?.length || 0} svozů do týdne`,
-        tone: (ctx.todayEvents?.length || 0) || (ctx.wasteSoon?.length || 0) ? 'warn' : 'good',
-        overview: 'calendar'
-      },
-      {
-        icon: '💰',
-        label: 'Peníze',
-        value: formatCurrency(finance.balance),
-        note: subscriptions.owed ? `Předplatné: chybí ${formatCurrency(subscriptions.owed)}` : `Měsíc ${financeMonthLabel()}`,
-        tone: finance.balance < 0 || subscriptions.owed ? 'warn' : 'good',
-        overview: 'finance'
-      },
-      {
-        icon: '🏠',
-        label: 'Domov',
-        value: houseAlerts ? `${houseAlerts} upozornění` : 'Klid',
-        note: dose.status === 'minus' || dose.status === 'plus' ? `${dose.label} pro bazén` : `${garageOwnedVehicles().length} aut · ${state.contracts.length} smluv`,
-        tone: houseAlerts ? 'warn' : 'good',
-        overview: houseAlerts ? 'garage' : 'important'
-      }
-    ];
-    return cards.map((card) => `
-      <button class="home-status-card ${card.tone || ''}" type="button" ${homeActionAttrs(card)}>
-        <span>${escapeHtml(card.icon)}</span>
-        <em>${escapeHtml(card.label)}</em>
-        <strong>${escapeHtml(card.value)}</strong>
-        <small>${escapeHtml(card.note)}</small>
-      </button>
-    `).join('');
-  }
-
-  function renderHomeAttentionItem(item) {
-    return `
-      <button class="home-attention-item ${item.tone || ''}" type="button" ${homeActionAttrs(item)}>
-        <span class="home-attention-icon">${escapeHtml(item.icon)}</span>
-        <span class="home-attention-copy"><strong>${escapeHtml(item.title)}</strong><em>${escapeHtml(item.meta)}</em></span>
-        <span class="badge ${item.tone || ''}">${escapeHtml(item.badge || 'otevřít')}</span>
-      </button>
-    `;
-  }
-
-  function renderHomeQuietState(ctx) {
-    return `
-      <button class="home-attention-item good" type="button" data-action="open-overview" data-overview="important">
-        <span class="home-attention-icon">✓</span>
-        <span class="home-attention-copy"><strong>Nic akutního</strong><em>${escapeHtml(ctx.hdo?.message || 'Domácnost nemá žádné blízké upozornění.')}</em></span>
-        <span class="badge good">OK</span>
-      </button>
-    `;
-  }
-
-  function renderHomeModuleShortcuts(visibleModules = []) {
-    const modules = visibleModules
-      .filter((module) => !['home', 'settings', 'weather'].includes(module.id))
-      .slice(0, 12);
-    return modules.map((module) => {
-      const stats = getModuleStats(module.id);
-      return `
-        <button class="home-module-shortcut" type="button" data-nav="${escapeHtml(module.id)}">
-          ${renderModuleIllustration(module.id, { size: 'tab', slotClass: 'home-module-shortcut-icon', label: module.label })}
-          <span><strong>${escapeHtml(module.label)}</strong><em>${stats.count} ${escapeHtml(stats.label)}</em></span>
-        </button>
-      `;
-    }).join('');
   }
 
   function homeActionAttrs(item = {}) {
@@ -9037,7 +8824,7 @@
       consumptionRows.forEach((row) => { if (!lastMonthMap.has(row.meterId)) lastMonthMap.set(row.meterId, row); });
       content = `
         <section class="card desktop-span-2 readings-panel panel-overview">
-          <div class="card-header"><div><h2>Odečty</h2><p>Elektřina, plyn a voda v jednom přehledu. U dvoutarifní elektřiny se v souhrnu počítá T1 + T2 dohromady, detail tarifů zůstává vidět v textu.</p></div><span class="badge ${cloudReady() ? 'good' : ''}">${cloudReady() ? 'cloud domácnost' : 'lokálně'}</span></div>
+          <div class="card-header"><div><h2>Přehled měřidel</h2><p>Elektřina, plyn a voda v jednom přehledu. U dvoutarifní elektřiny se v souhrnu počítá T1 + T2 dohromady, detail tarifů zůstává vidět v textu.</p></div><span class="badge ${cloudReady() ? 'good' : ''}">${cloudReady() ? 'cloud domácnost' : 'lokálně'}</span></div>
           ${meters.length ? `<div class="readings-meter-grid">${meters.map((meter) => renderReadingMeterCard(meter, { context: 'overview', stats: meterStatsMap.get(meter.id), lastMonth: lastMonthMap.get(meter.id), consumptionRows })).join('')}</div>` : renderEmpty('Zatím žádné měřidlo. Přidání je v záložce Měřidla nahoře.')}
         </section>
 
@@ -11099,7 +10886,7 @@
     return `
       <div class="grid two more-hub-grid more-clean-hub">
         <section class="card desktop-span-2 more-settings-priority">
-          <div class="card-header"><div><h2>Nastavení aplikace</h2><p>Domácnost, profily, zapnuté moduly, Home panel, cloud, PWA a export/import.</p></div></div>
+          <div class="card-header"><div><h2>Nastavení aplikace</h2><p>Domácnost, profily, zapnuté moduly, cloud, PWA a export/import.</p></div></div>
           <button class="item module-hub-item more-settings-card" type="button" data-nav="settings">
             ${renderModuleIllustration('settings', { size: 'card', slotClass: 'module-status-icon module-card-illustration-slot settings-module-icon-slot', extraClass: 'module-card-illustration settings-module-icon', label: 'Nastavení aplikace' })}
             <div class="more-module-copy">
@@ -11195,13 +10982,12 @@
 
   function renderSettings() {
     const enabled = new Set(normalizeModuleList(state.enabledModules));
-    const settingsTabIds = ['household', 'modules', 'dashboard', 'cloud', 'data'];
+    const settingsTabIds = ['household', 'modules', 'cloud', 'data'];
     const activeSettingsTab = settingsTabIds.includes(getModuleTab('settings', 'household')) ? getModuleTab('settings', 'household') : 'household';
     return `
       ${renderSectionTabs('settings', [
         { id: 'household', label: 'Domácnost', iconHtml: renderModuleIllustration('home', { size: 'tab', slotClass: 'section-tab-icon-slot', label: 'Domácnost' }), count: state.profiles.length },
         { id: 'modules', label: 'Moduly', iconHtml: renderModuleIllustration('more', { size: 'tab', slotClass: 'section-tab-icon-slot', label: 'Moduly' }), count: normalizeModuleList(state.enabledModules).length },
-        { id: 'dashboard', label: 'Home', iconHtml: renderModuleIllustration('weather', { size: 'tab', slotClass: 'section-tab-icon-slot', label: 'Home' }), count: normalizeHomeHeroIds(state.settings?.homeHeroItems).length },
         { id: 'cloud', label: 'Cloud / PWA', icon: '☁️', count: state.cloud?.userId ? 1 : 0 },
         { id: 'data', label: 'Data', icon: '🛟' }
       ], 'household')}
@@ -11268,10 +11054,6 @@
           </section>
         </div>
 
-        <div class="settings-panel panel-dashboard grid two">
-          ${renderDashboardSettings()}
-        </div>
-
         <div class="settings-panel panel-cloud grid two">
           ${renderCloudAccount()}
           ${renderCloudSyncOverview('settings')}
@@ -11306,42 +11088,6 @@
   }
 
 
-  function renderDashboardSettings() {
-    // Jedno volání upcomingCalendarEvents(now) — reuse pro today/upcoming/panel.
-    // Cache v calendar.js by dnes tři volání sloučila, ale explicitní dedup je
-    // rychlejší (bez signature scanu) a čitelnější.
-    const calendarPanelEvents = upcomingCalendarEvents(now);
-    const previewCtx = {
-      hdo: getHdoStatus(now),
-      todayEvents: calendarPanelEvents.filter((event) => event.date === todayISO()),
-      upcomingEvents: calendarPanelEvents.slice(0, 6),
-      calendarPanelEvents,
-      openShopping: state.shopping.filter((item) => !item.done),
-      openTasks: state.homeTasks.filter((task) => !task.done),
-      wasteSoon: getUpcomingWasteRuntimeItems({ maxDays: 7 }),
-      vehicleAlerts: getVehicleAlerts(),
-      weather: normalizeWeatherState(state.weather)
-    };
-    return `
-      <section class="card desktop-span-2 compact-settings-card dashboard-settings-card">
-        <div class="card-header"><div><h2>Panely v horním bloku Home</h2><p>Čas a počasí jsou na Home pevně. Vyber až 10 dalších panelů pod ně. Pořadí můžeš měnit dlouhým podržením panelu přímo na Home.</p></div><span class="badge">${normalizeHomeHeroIds(state.settings?.homeHeroItems).length}/${HOME_HERO_MAX}</span></div>
-        <div class="switch-list dashboard-widget-picker">
-          ${HOME_HERO_ITEMS.map((item) => {
-            const active = normalizeHomeHeroIds(state.settings?.homeHeroItems).includes(item.id);
-            return `
-              <button class="switch-row dashboard-widget-switch ${active ? 'active' : ''}" type="button" role="switch" aria-checked="${active ? 'true' : 'false'}" data-action="toggle-home-hero-item" data-id="${escapeHtml(item.id)}">
-                ${renderModuleIllustration(item.id, { size: 'picker', slotClass: 'switch-row-icon', label: item.label })}
-                <span class="switch-row-copy"><strong>${escapeHtml(item.label)}</strong><em>${escapeHtml(item.text(previewCtx))}</em></span>
-                <span class="ios-switch" aria-hidden="true"><span></span></span>
-              </button>
-            `;
-          }).join('')}
-        </div>
-        <div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="home-hero-reset">Bez dalších panelů</button>${cloudReady() ? '<span class="badge good">ukládá se i do domácnosti</span>' : '<span class="badge">lokálně</span>'}</div>
-      </section>
-    `;
-  }
-
   function renderDeleteAccountCard() {
     const signedIn = Boolean(state.cloud?.userId);
     return `
@@ -11364,43 +11110,18 @@
   }
 
   function renderBottomNavSettings() {
-    const selected = new Set(getActiveProfileBottomNavIds());
-    const candidates = getNavCandidateIds(state.enabledModules)
-      .filter((id) => id !== 'home')
-      .map((id) => MODULES.find((module) => module.id === id))
-      .filter(Boolean);
-    const customCount = Math.max(0, selected.size - 1);
-
     return `
       <div class="card-header">
-        <div><h2>Spodní lišta</h2><p>Domů je vždy vlevo, Více vždy vpravo. Prostřední 2–4 ikony si nastaví každý profil zvlášť.</p></div>
-        <span class="badge">${customCount}/${BOTTOM_NAV_CUSTOM_MAX} + Domů/Více</span>
+        <div><h2>Spodní lišta</h2><p>Spodní navigace je pevná a stejná pro celou domácnost.</p></div>
       </div>
-      <div class="hint-box">Tohle nastavení je vázané na aktivní profil „${escapeHtml(currentProfile()?.name || 'Profil')}“. Když se stejný profil načte na jiném zařízení, spodní lišta bude stejná.</div>
       <div class="switch-list nav-picker-list">
-        <div class="switch-row nav-picker-switch active nav-picker-fixed" aria-disabled="true">
-          ${renderModuleIllustration('home', { size: 'picker', slotClass: 'switch-row-icon', label: 'Domů' })}
-          <span class="switch-row-copy"><strong>Domů</strong><em>pevně vlevo</em></span>
-          <span class="badge good">pevné</span>
-        </div>
-        ${candidates.map((module) => {
-          const isSelected = selected.has(module.id);
-          return `
-            <button class="switch-row nav-picker-switch ${isSelected ? 'active' : ''}" type="button" role="switch" aria-checked="${isSelected ? 'true' : 'false'}" data-action="toggle-bottom-nav" data-id="${module.id}">
-              ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'switch-row-icon', label: module.label })}
-              <span class="switch-row-copy">
-                <strong>${escapeHtml(module.label)}</strong>
-                <em>${isSelected ? 'zobrazuje se uprostřed' : 'nezobrazuje se dole'}</em>
-              </span>
-              <span class="ios-switch" aria-hidden="true"><span></span></span>
-            </button>
-          `;
-        }).join('')}
-        <div class="switch-row nav-picker-switch active nav-picker-fixed" aria-disabled="true">
-          ${renderModuleIllustration('more', { size: 'picker', slotClass: 'switch-row-icon', label: 'Více' })}
-          <span class="switch-row-copy"><strong>Více</strong><em>pevně vpravo</em></span>
-          <span class="badge good">pevné</span>
-        </div>
+        ${getBottomNavModules().map((module) => `
+          <div class="switch-row nav-picker-switch active nav-picker-fixed" aria-disabled="true">
+            ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'switch-row-icon', label: module.label })}
+            <span class="switch-row-copy"><strong>${escapeHtml(module.label)}</strong></span>
+            <span class="badge good">pevné</span>
+          </div>
+        `).join('')}
       </div>
     `;
   }

@@ -117,9 +117,7 @@ if (app) {
   expect(app, "'.finance-toolbar'", 'app.js: finance toolbar je chráněný proti swipe přepnutí.');
   expect(app, "'.garage-history-toolbar'", 'app.js: garážové filtry jsou chráněné proti swipe přepnutí.');
   expect(app, 'aria-label="Záložky modulu" data-no-swipe', 'app.js: společné modulové záložky jsou chráněné proti swipe přepnutí.');
-  expect(app, 'data-module-cockpit="${escapeHtml(moduleId)}" data-no-swipe', 'app.js: module cockpit je chráněný proti swipe přepnutí.');
-  expect(app, '<div class="module-cockpit-metrics" data-no-swipe>', 'app.js: cockpit metriky jsou chráněné proti swipe přepnutí.');
-  expect(app, '<div class="module-cockpit-actions" data-no-swipe>', 'app.js: cockpit akce jsou chráněné proti swipe přepnutí.');
+  expectAbsent(app, 'function renderModuleCockpit', 'app.js: module cockpit byl odstraněn (redesign v0.1_373 – jedna hlavička na modul).');
 }
 
 if (styles) {

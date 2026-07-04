@@ -665,7 +665,7 @@
       return `
         <section class="card homecare-panel panel-tasks notebook-panel notebook-tabs-panel">
           <div class="card-header notebook-card-header">
-            <div><h2>Zápisník</h2><p>Jedno místo, ale dvě jasné části: Poznámky pro stránky a Úkoly pro věci k udělání.</p></div>
+            <div><h2>Poznámky a úkoly</h2><p>Jedno místo, ale dvě jasné části: Poznámky pro stránky a Úkoly pro věci k udělání.</p></div>
             <div class="notebook-header-actions">
               <span class="badge ${(tasks.some((task) => task.cloudId) || notebookPages().some((page) => page.cloudId)) ? 'good' : ''}">${S.cloud?.householdId ? 'sdílená domácnost' : 'lokálně'}</span>
             </div>

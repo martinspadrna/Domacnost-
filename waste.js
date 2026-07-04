@@ -279,7 +279,7 @@
       return `
         <section class="card homecare-panel panel-waste">
           <div class="card-header">
-            <div><h2>Odpad</h2><p>Svoz odpadu s přípravou na připomínky.</p></div>
+            <div><h2>Svozový plán</h2><p>Svoz odpadu s přípravou na připomínky.</p></div>
             <span class="badge ${waste.some((item) => item.cloudId) ? 'good' : ''}">${waste.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
           </div>
           <form data-form="add-waste">

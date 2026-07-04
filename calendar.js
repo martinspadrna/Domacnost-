@@ -560,7 +560,7 @@
         <div class="grid two module-tabbed calendar-tab-${activeCalendarTab}" data-tab-area="calendar">
           <section class="card desktop-span-2 calendar-panel panel-overview">
             <div class="card-header">
-              <div><h2>Kalendář</h2></div>
+              <div><h2>Přehled</h2></div>
               <span class="badge ${cloudCount ? 'good' : ''}">${events.length} událostí</span>
             </div>
             <details class="compact-edit-details calendar-overview-summary-details">

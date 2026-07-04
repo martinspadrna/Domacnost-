@@ -275,7 +275,7 @@
       const latest = latestPoolMeasurement(pool);
       return `
         <section class="card desktop-span-2 pool-panel">
-          <div class="card-header"><div><h2>Bazén</h2><p>Objem vody, poslední pH a orientační dávka pH přípravku.</p></div><span class="badge">${formatVolume(volume)}</span></div>
+          <div class="card-header"><div><h2>Stav vody</h2><p>Objem vody, poslední pH a orientační dávka pH přípravku.</p></div><span class="badge">${formatVolume(volume)}</span></div>
           <div class="kpi-grid compact-kpi-grid">
             <div class="kpi"><strong>${formatVolume(volume)}</strong><span>objem vody</span></div>
             <div class="kpi"><strong>${pool.ph || '—'}</strong><span>aktuální pH</span></div>
