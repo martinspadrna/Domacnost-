@@ -107,6 +107,23 @@ if (styles) {
   ].forEach(([pattern, label]) => expectAbsent(beforeSettings, pattern, label));
 }
 
+const shoppingStyles = read('shopping.css');
+if (shoppingStyles) {
+  [
+    [/\.shopping-done-details\b/, 'shopping.css: stary inline Hotovo details nesmi zustat vedle noveho shopping-done-modal.'],
+    [/\.loyalty-card-top\b/, 'shopping.css: stara verze vernostni karty loyalty-card-top nesmi zustat vedle compact wallet renderu.'],
+    [/\.loyalty-card-bottom\b/, 'shopping.css: stara verze vernostni karty loyalty-card-bottom nesmi zustat vedle compact wallet renderu.'],
+    [/\.loyalty-card-actions\b/, 'shopping.css: stare inline akce vernostni karty nesmi zustat vedle action modalu.'],
+    [/\.loyalty-favorite-btn\b/, 'shopping.css: stare tlacitko oblibene vernostni karty nesmi zustat vedle action modalu.'],
+    [/\.loyalty-card-code\b/, 'shopping.css: stary kod vernostni karty nesmi zustat vedle SVG code preview.'],
+    [/\.loyalty-code-photo\b/, 'shopping.css: stary foto kod vernostni karty nesmi zustat vedle aktualni scan/preview vrstvy.'],
+    [/\.loyalty-barcode(?!-svg)\b/, 'shopping.css: stary rucne kresleny loyalty-barcode nesmi zustat vedle SVG barcode renderu.'],
+    [/\.loyalty-qr(?!-svg)\b/, 'shopping.css: stary rucne kresleny loyalty-qr nesmi zustat vedle SVG QR renderu.'],
+    [/\.loyalty-card-menu(?:\s|>|:|\.|\[|#|$)/, 'shopping.css: stare details menu vernostni karty nesmi zustat vedle action modalu.'],
+    [/\.loyalty-card-menu-panel\b/, 'shopping.css: stary inline menu panel vernostni karty nesmi zustat vedle action modalu.']
+  ].forEach(([pattern, label]) => expectAbsent(shoppingStyles, pattern, label));
+}
+
 console.log('Style layering check pro Domacnost+');
 notes.forEach((line) => console.log(`  ok: ${line}`));
 
