@@ -180,8 +180,10 @@ if (styles) {
 
 if (shoppingCss) {
   expect(shoppingCss, '/* Domacnost+ - novy povrch nakupnich podslozek */', 'shopping.css: existuje finalni blok pro nakupni podslozky.');
+  expect(shoppingCss, '.shopping-list-chip,\n.shopping-cloud-strip,\n.shopping-progress-card,\n.shopping-done-open-card,\n.loyalty-add-panel,\n.loyalty-scan-card {', 'shopping.css: nakupni seznamy, cloud a loyalty formulare sdili finalni povrch.');
   expect(shoppingCss, '.shopping-done-modal {\n  width: min(100%, 760px);', 'shopping.css: hotovo modal sdili mobilni sheet rozmery.');
   expect(shoppingCss, '.shopping-done-actions {\n  margin-top: 14px;', 'shopping.css: hotovo modal ma spodní akce v modalnim railu.');
+  expect(shoppingCss, '.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) {\n  min-height: 158px;', 'shopping.css: kompaktni vernostni karty ziji ve finalni vrstve bez !important override.');
 }
 
 if (pkg) {

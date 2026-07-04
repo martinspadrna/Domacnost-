@@ -204,35 +204,6 @@
   font-size: .86rem;
 }
 
-.shopping-done-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
-  background: rgba(15, 23, 42, 0.32);
-  backdrop-filter: blur(16px);
-}
-
-.shopping-done-modal {
-  width: min(760px, 100%);
-  max-height: min(82vh, 780px);
-  overflow: auto;
-  border-radius: 28px 28px 22px 22px;
-}
-
-.shopping-done-modal .shopping-listonic-item.done {
-  touch-action: pan-y;
-}
-
-@media (min-width: 820px) {
-  .shopping-done-modal-backdrop {
-    align-items: center;
-  }
-}
-
 @media (max-width: 520px) {
   .shopping-listonic-item {
     gap: 8px;
@@ -261,18 +232,6 @@
 html[data-theme="dark"] .danger-outline-btn {
   color: #fecaca !important;
   background: rgba(127, 29, 29, 0.24) !important;
-}
-
-.shopping-panel,
-.listonic-panel,
-.shopping-list-chip,
-.shopping-progress-card,
-.shopping-done-open-card {
-  transition-property: transform, box-shadow, border-color !important;
-}
-
-body:not(.overview-open) .shopping-done-modal-backdrop {
-  display: none !important;
 }
 
 /* Domácnost+ v.0.1_216 – větší ovládání množství a katalogové mazání */
@@ -1256,61 +1215,62 @@ html[data-theme="dark"] .shopping-cloud-strip {
   }
 }
 
-/* Domácnost+ v.0.1_281 – věrnostní karty: zachované nižší přehledové karty */
-.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) {
-  min-height: 158px !important;
-  gap: 9px !important;
-  padding: 12px !important;
-}
-
-.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-code-thumb {
-  min-height: 88px !important;
-  padding: 8px !important;
-  border-radius: 18px !important;
-}
-
-.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-card-compact-head h3 {
-  font-size: 1.02rem !important;
-}
-
-.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-qr-svg {
-  width: 76px !important;
-  height: 76px !important;
-}
-
-.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-barcode-svg {
-  height: 54px !important;
-  max-width: 180px !important;
-}
-
-.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-card-mini-meta {
-  font-size: .68rem !important;
-}
-
-@media (max-width: 680px) {
-  .loyalty-wallet-grid .loyalty-card-item:not(.is-editing) {
-    min-height: 142px !important;
-    padding: 10px !important;
-  }
-
-  .loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-code-thumb {
-    min-height: 76px !important;
-  }
-
-  .loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-qr-svg {
-    width: 66px !important;
-    height: 66px !important;
-  }
-
-  .loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-barcode-svg {
-    height: 46px !important;
-  }
-}
-
 /* Domacnost+ - novy povrch nakupnich podslozek */
+.shopping-list-chip,
+.shopping-cloud-strip,
+.shopping-progress-card,
+.shopping-done-open-card,
+.loyalty-add-panel,
+.loyalty-scan-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 10px 28px rgba(31, 41, 55, 0.06);
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+[data-theme="dark"] .shopping-list-chip,
+[data-theme="dark"] .shopping-cloud-strip,
+[data-theme="dark"] .shopping-progress-card,
+[data-theme="dark"] .shopping-done-open-card,
+[data-theme="dark"] .loyalty-add-panel,
+[data-theme="dark"] .loyalty-scan-card {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
+}
+
+.shopping-list-switcher,
+.loyalty-toolbar {
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.shopping-list-switcher::-webkit-scrollbar,
+.loyalty-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.shopping-list-chip.active {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+}
+
+.shopping-done-open-card {
+  border: 1px solid var(--line);
+}
+
 .shopping-done-modal-backdrop {
+  position: fixed;
+  inset: 0;
   z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .shopping-done-modal {
@@ -1319,6 +1279,10 @@ html[data-theme="dark"] .shopping-cloud-strip {
   overflow: hidden auto;
   overscroll-behavior: contain;
   border-radius: 24px;
+}
+
+.shopping-done-modal .shopping-listonic-item.done {
+  touch-action: pan-y;
 }
 
 .shopping-done-modal > .hint-box,
@@ -1345,6 +1309,36 @@ html[data-theme="dark"] .shopping-cloud-strip {
   margin-top: 14px;
 }
 
+.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) {
+  min-height: 158px;
+  gap: 9px;
+  padding: 12px;
+}
+
+.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-code-thumb {
+  min-height: 88px;
+  padding: 8px;
+  border-radius: 18px;
+}
+
+.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-card-compact-head h3 {
+  font-size: 1.02rem;
+}
+
+.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-qr-svg {
+  width: 76px;
+  height: 76px;
+}
+
+.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-barcode-svg {
+  height: 54px;
+  max-width: 180px;
+}
+
+.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-card-mini-meta {
+  font-size: .68rem;
+}
+
 @media (max-width: 720px) {
   .shopping-done-modal-backdrop {
     align-items: flex-end;
@@ -1360,5 +1354,34 @@ html[data-theme="dark"] .shopping-cloud-strip {
   .shopping-done-modal > .hint-box,
   .shopping-done-modal > .shopping-grouped-list {
     margin-inline: 12px;
+  }
+
+  .shopping-list-chip,
+  .shopping-cloud-strip,
+  .shopping-progress-card,
+  .shopping-done-open-card,
+  .loyalty-add-panel,
+  .loyalty-scan-card {
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 680px) {
+  .loyalty-wallet-grid .loyalty-card-item:not(.is-editing) {
+    min-height: 142px;
+    padding: 10px;
+  }
+
+  .loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-code-thumb {
+    min-height: 76px;
+  }
+
+  .loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-qr-svg {
+    width: 66px;
+    height: 66px;
+  }
+
+  .loyalty-wallet-grid .loyalty-card-item:not(.is-editing) .loyalty-barcode-svg {
+    height: 46px;
   }
 }

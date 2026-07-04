@@ -123,7 +123,11 @@ if (shoppingStyles) {
     [/\.loyalty-barcode(?!-svg)\b/, 'shopping.css: stary rucne kresleny loyalty-barcode nesmi zustat vedle SVG barcode renderu.'],
     [/\.loyalty-qr(?!-svg)\b/, 'shopping.css: stary rucne kresleny loyalty-qr nesmi zustat vedle SVG QR renderu.'],
     [/\.loyalty-card-menu(?:\s|>|:|\.|\[|#|$)/, 'shopping.css: stare details menu vernostni karty nesmi zustat vedle action modalu.'],
-    [/\.loyalty-card-menu-panel\b/, 'shopping.css: stary inline menu panel vernostni karty nesmi zustat vedle action modalu.']
+    [/\.loyalty-card-menu-panel\b/, 'shopping.css: stary inline menu panel vernostni karty nesmi zustat vedle action modalu.'],
+    [/v\.0\.1_281/, 'shopping.css: stary v0.1_281 compact loyalty override nesmi zustat vedle finalniho Nákupu.'],
+    [/\.loyalty-wallet-grid \.loyalty-card-item:not\(\.is-editing\)[\s\S]{0,220}!important/, 'shopping.css: compact loyalty karty nesmi byt rizene starou !important vrstvou.'],
+    [/body:not\(\.overview-open\)\s+\.shopping-done-modal-backdrop/, 'shopping.css: Hotovo modal nesmi byt schovavany starou overview-open CSS pojistkou.'],
+    [/transition-property:\s*transform,\s*box-shadow,\s*border-color\s*!important/, 'shopping.css: nakupni prechody nesmi zustat ve stare !important vrstve.']
   ].forEach(([pattern, label]) => expectAbsent(shoppingStyles, pattern, label));
 }
 
