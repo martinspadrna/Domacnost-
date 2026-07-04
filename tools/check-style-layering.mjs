@@ -73,6 +73,7 @@ if (styles) {
     [/v\.0\.1_111/, 'styles.css: stary v0.1_111 Home layout/live patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_112/, 'styles.css: stary v0.1_112 Home height patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_113/, 'styles.css: stary v0.1_113 Home width/height patch nesmi byt pred finalnim Home blokem.'],
+    [/v0\.1_115|v0\.1_117|v0\.1_118|v0\.1_120|v0\.1_124/, 'styles.css: stare Home glass/weather icon vrstvy v115-v124 nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_138[\s\S]{0,120}Home/, 'styles.css: stary v0.1_138 Home readability patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_149[\s\S]{0,120}Home/, 'styles.css: stary v0.1_149 Home height/icon patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_154[\s\S]{0,120}Home/, 'styles.css: stary v0.1_154 Home compact patch nesmi byt pred finalnim Home blokem.'],
@@ -99,7 +100,10 @@ if (styles) {
     [/\.station-summary-edit-toolbar\s*\{/, 'styles.css: stary Home edit toolbar nesmi byt pred finalnim Home blokem.'],
     [/\.home-hero-edit-toolbar-top\s*\{/, 'styles.css: stary Home top edit toolbar nesmi byt pred finalnim Home blokem.'],
     [/\.app-shell\.home-app-shell\s+\.hero-weather-copy,/, 'styles.css: stary app-shell Home weather text override nesmi byt pred finalnim Home blokem.'],
-    [/legacy[\s\S]{0,80}Home:/, 'styles.css: stary legacy Home patch nesmi byt pred finalnim Home blokem.']
+    [/legacy[\s\S]{0,80}Home:/, 'styles.css: stary legacy Home patch nesmi byt pred finalnim Home blokem.'],
+    [/\.glass-icon\.hero-weather-icon/, 'styles.css: stare glass hero weather pravidlo nesmi zit pred finalnim Home blokem.'],
+    [/\.station-summary-item \.glass-icon\.station-summary-icon/, 'styles.css: stary glass station-summary fallback nesmi zit pred finalnim Home blokem.'],
+    [/\.glass-icon-size-/, 'styles.css: stare glass-icon-size utility tridy nesmi zit pred finalnim Home blokem.']
   ].forEach(([pattern, label]) => expectAbsent(beforeHome, pattern, label));
 
   [

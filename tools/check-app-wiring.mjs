@@ -135,6 +135,9 @@ if (styles) {
   expect(styles, '.item-top {\n  display: grid;', 'styles.css: item-top používá stabilní grid řádek.');
   expect(styles, '.compact-list .item-meta,\n.overview-list .item-meta', 'styles.css: kompaktní seznamy mají kontrolovaný ořez dlouhých metadat.');
   expect(styles, '/* Domácnost+ – jednotné dashboard a history povrchy */', 'styles.css: existuje finální blok pro dashboard/history povrchy.');
+  expect(styles, '/* Domacnost+ - sjednoceny Home */', 'styles.css: existuje finalni blok pro jednotny Home.');
+  expect(styles, '.home-daily-hero .glass-icon.station-summary-icon {', 'styles.css: Home glass fallback je ukotveny ve finalni Home vrstve.');
+  expect(styles, '.home-daily-hero .hero-weather-pill .weather-anime-icon svg,', 'styles.css: Home pocasi a ikonove SVG sloty ziji ve finalni Home vrstve.');
   expect(styles, '.home-primary-action,\n.home-attention-item,\n.focus-tile,\n.timeline-item,\n.setup-item,\n.sync-overview-row {\n  grid-template-columns: auto minmax(0, 1fr) auto;', 'styles.css: dashboard/history řádky sdílí stabilní třísloupcový grid.');
   expect(styles, '.empty,\n.empty-cta {', 'styles.css: prázdné stavy mají sjednocený nový povrch.');
   expect(styles, '/* Domácnost+ – jednotné detailní a grafové povrchy */', 'styles.css: existuje finální blok pro detailní/grafové povrchy.');
