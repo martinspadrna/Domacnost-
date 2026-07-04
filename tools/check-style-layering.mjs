@@ -92,6 +92,8 @@ if (styles) {
     [/v\.0\.1_286/, 'styles.css: stary v0.1_286 Home active-area patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_287/, 'styles.css: stary v0.1_287 Home text/height patch nesmi byt pred finalnim Home blokem.'],
     [/v\.0\.1_288/, 'styles.css: stary v0.1_288 Home padding patch nesmi byt pred finalnim Home blokem.'],
+    [/\.home-minimal-hero\b/, 'styles.css: stary home-minimal-hero selector nesmi byt pred finalnim Home blokem.'],
+    [/\.home-hero-count-\d+\b/, 'styles.css: stary home-hero-count selector nesmi byt pred finalnim Home blokem.'],
     [/\.app-shell\.home-app-shell\s+\.home-hero-count-0\.home-minimal-hero/, 'styles.css: stary app-shell Home fullscreen selector nesmi byt pred finalnim Home blokem.'],
     [/\.home-hero-count-0\.home-minimal-hero,[\s\S]{0,500}height:\s*(?:calc|clamp)/, 'styles.css: stary Home hero height clamp nesmi byt pred finalnim Home blokem.'],
     [/\.station-summary-edit-toolbar\s*\{/, 'styles.css: stary Home edit toolbar nesmi byt pred finalnim Home blokem.'],
