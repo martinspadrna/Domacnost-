@@ -10216,310 +10216,6 @@ body {
 }
 
 
-/* v0.1_239: Zápisník jako dvě jednoduché záložky + přidávání přes plus */
-.notebook-panel {
-  grid-column: 1 / -1;
-}
-
-.notebook-tabs-panel > .section-tabs {
-  margin: 8px 0 14px;
-}
-
-.notebook-tab-content {
-  display: grid;
-  gap: 14px;
-  min-width: 0;
-}
-
-.notebook-section-list {
-  display: grid;
-  gap: 14px;
-}
-
-.notebook-section-card,
-.notebook-tasks-tab {
-  border: 1px solid rgba(255,255,255,0.55);
-  background: rgba(255,255,255,0.46);
-  border-radius: 24px;
-  padding: 12px;
-  box-shadow: 0 12px 30px rgba(15,23,42,0.08);
-}
-
-.notebook-section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.notebook-section-head strong {
-  font-size: 1rem;
-  font-weight: 900;
-}
-
-.notebook-section-head span {
-  color: var(--muted);
-  font-size: 0.84rem;
-  font-weight: 800;
-}
-
-.notebook-create textarea,
-.notebook-notes-tab .textarea,
-.notebook-tasks-tab .textarea {
-  min-height: 92px;
-  resize: vertical;
-}
-
-.notebook-create textarea,
-.notebook-main .textarea {
-  min-height: 92px;
-  resize: vertical;
-}
-
-.notebook-pages {
-  display: grid;
-  gap: 12px;
-}
-
-.notebook-page {
-  scroll-margin-top: 92px;
-}
-
-.notebook-section-pill {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  border-radius: 999px;
-  padding: 4px 9px;
-  margin-bottom: 5px;
-  background: rgba(37,99,235,0.1);
-  color: var(--primary);
-  font-size: 0.76rem;
-  font-weight: 800;
-}
-
-.notebook-body {
-  margin: 10px 0;
-  color: var(--muted);
-  line-height: 1.45;
-  white-space: pre-wrap;
-}
-
-.notebook-checklist {
-  display: grid;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.notebook-check {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) auto auto;
-  gap: 8px;
-  align-items: center;
-  padding: 8px;
-  border-radius: 16px;
-  background: rgba(255,255,255,0.62);
-}
-
-.notebook-check.done span {
-  text-decoration: line-through;
-  color: var(--muted);
-}
-
-.notebook-check-toggle {
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  border: 1px solid rgba(37,99,235,0.28);
-  background: rgba(255,255,255,0.82);
-  color: var(--primary);
-  font-weight: 900;
-}
-
-.tiny-btn {
-  min-height: 28px;
-  padding: 5px 8px;
-  border-radius: 12px;
-  font-size: 0.78rem;
-}
-
-.notebook-add-line {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.notebook-task-block {
-  margin-top: 14px;
-}
-
-@media (max-width: 760px) {
-  .notebook-check {
-    grid-template-columns: 30px minmax(0, 1fr);
-  }
-  .notebook-check .tiny-btn {
-    grid-column: span 1;
-  }
-}
-
-
-
-/* v0.1_239: Zápisník – přidávání přes + a stabilní datum v úkolech */
-.notebook-card-header {
-  align-items: center;
-  gap: 12px;
-}
-
-.notebook-header-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.notebook-add-btn {
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  min-height: 44px;
-  padding: 0;
-  border-radius: 999px;
-  font-size: 1.55rem;
-  line-height: 1;
-}
-
-.notebook-create-page {
-  display: grid;
-  gap: 14px;
-  min-width: 0;
-}
-
-.notebook-create-head,
-.notebook-list-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.notebook-create-grid,
-.notebook-task-form-grid {
-  min-width: 0;
-}
-
-.notebook-create-card,
-.notebook-tasks-tab {
-  border: 1px solid rgba(255,255,255,0.38);
-  background: rgba(248,250,252,0.30);
-  box-shadow: 0 14px 34px rgba(15,23,42,0.10);
-}
-
-[data-theme="dark"] .notebook-create-card,
-[data-theme="dark"] .notebook-tasks-tab {
-  background: rgba(15,23,42,0.48);
-  border-color: rgba(255,255,255,0.13);
-}
-
-.notebook-create-page .field,
-.notebook-tasks-tab .field,
-.notebook-create-page .input,
-.notebook-tasks-tab .input,
-.notebook-create-page .select,
-.notebook-tasks-tab .select,
-.notebook-task-form input[type="date"] {
-  min-width: 0;
-  max-width: 100%;
-}
-
-.notebook-empty-actions {
-  display: grid;
-  gap: 10px;
-  justify-items: center;
-  padding: 20px;
-  border: 1px dashed var(--line);
-  border-radius: 22px;
-  color: var(--muted);
-  text-align: center;
-  background: rgba(255,255,255,0.24);
-}
-
-@media (max-width: 760px) {
-  .notebook-card-header,
-  .notebook-create-head,
-  .notebook-list-head {
-    align-items: stretch;
-    flex-direction: column;
-  }
-  .notebook-header-actions {
-    justify-content: space-between;
-  }
-  .notebook-create-grid,
-  .notebook-task-form-grid {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-
-/* v0.1_241: Zápisník – aktivní sekce a přesné řazení termínů */
-.notebook-section-field .field-hint {
-  display: block;
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 800;
-  line-height: 1.35;
-}
-
-.notebook-section-field input[list] {
-  width: 100%;
-}
-
-.notebook-due-field {
-  grid-column: 1 / -1;
-  width: 100%;
-  min-width: 0;
-}
-
-.notebook-due-field .notebook-date-input {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-  text-align: left;
-  direction: ltr;
-  padding-left: 16px;
-  padding-right: 16px;
-}
-
-@supports (-webkit-touch-callout: none) {
-  .notebook-due-field .notebook-date-input {
-    min-height: 46px;
-    line-height: 1.2;
-  }
-}
-
-.notebook-section-picker {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
-  width: 100%;
-  min-width: 0;
-}
-
-.notebook-section-picker .field {
-  min-width: 0;
-}
-
-@media (max-width: 760px) {
-  .notebook-section-picker {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* Domácnost+ v.0.1_242 – spodní lišta zamknutá k viewportu při scrollu */
 .nav-shell {
   position: fixed !important;
@@ -13942,6 +13638,10 @@ body.home-active {
   align-items: flex-start;
 }
 
+.notebook-tabs-panel > .section-tabs {
+  margin: 8px 0 14px;
+}
+
 .notebook-panel {
   grid-column: 1 / -1;
 }
@@ -14016,6 +13716,68 @@ body.home-active {
   text-decoration: line-through;
 }
 
+.notebook-page {
+  scroll-margin-top: 92px;
+}
+
+.notebook-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.notebook-section-head strong {
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.notebook-section-head span,
+.notebook-note-stats,
+.notebook-body {
+  color: var(--muted);
+}
+
+.notebook-section-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 9px;
+  margin-bottom: 5px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.notebook-body {
+  margin: 10px 0;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.notebook-checklist {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.notebook-check {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.50);
+}
+
+[data-theme="dark"] .notebook-check {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .notebook-task-main {
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr);
@@ -14045,10 +13807,59 @@ body.home-active {
   height: 28px;
 }
 
+.notebook-add-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.notebook-task-block {
+  margin-top: 14px;
+}
+
+.tiny-btn {
+  min-height: 28px;
+  padding: 5px 8px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+}
+
 .notebook-task-side {
   display: grid;
   justify-items: end;
   gap: 8px;
+}
+
+.notebook-card-header {
+  gap: 12px;
+}
+
+.notebook-create-head,
+.notebook-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.notebook-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.notebook-add-btn {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 999px;
+  font-size: 1.55rem;
+  line-height: 1;
 }
 
 .notebook-section-head,
@@ -14098,6 +13909,26 @@ body.home-active {
   -webkit-appearance: none;
 }
 
+.notebook-section-field .field-hint {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.notebook-section-field input[list] {
+  width: 100%;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .notebook-due-field .notebook-date-input {
+    min-height: 46px;
+    line-height: 1.2;
+  }
+}
+
 .notebook-note-stats,
 .notebook-task-actions {
   display: flex;
@@ -14141,6 +13972,14 @@ body.home-active {
 
   .notebook-task-side .badge {
     width: fit-content;
+  }
+
+  .notebook-header-actions {
+    justify-content: space-between;
+  }
+
+  .notebook-check {
+    grid-template-columns: 30px minmax(0, 1fr);
   }
 }
 

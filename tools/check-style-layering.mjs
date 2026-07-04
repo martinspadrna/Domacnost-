@@ -137,7 +137,9 @@ if (styles) {
   expectAbsent(styles, /\.warranty-overview-button\b|\.fake-btn\b/, 'styles.css: stary warranty overview button/fake-btn nesmi zustat vedle aktualniho warranty item detailu.');
   expectAbsent(styles, /\.warranty-files-block\b/, 'styles.css: stary warranty files wrapper nesmi zustat vedle aktualniho warranty detail modalu.');
   expectAbsent(styles, /\.hdo-manual-form\b/, 'styles.css: HDO manual form nema mit vlastni stary formularovy patch vedle spolecneho rozbalovaciho povrchu.');
+  expectAbsent(styles, /v0\.1_239[\s\S]{0,160}Zápisník|v0\.1_239[\s\S]{0,160}ZĂˇpisnĂ­k/, 'styles.css: stare v0.1_239 bloky Zapisniku nesmi zustat vedle finalniho Zapisniku.');
   expectAbsent(styles, /v0\.1_240[\s\S]{0,120}Zápisník|v0\.1_240[\s\S]{0,120}ZĂˇpisnĂ­k/, 'styles.css: stary v0.1_240 Zapisnik prebarvovaci blok nesmi zustat vedle finalniho Zapisniku.');
+  expectAbsent(styles, /v0\.1_241[\s\S]{0,160}Zápisník|v0\.1_241[\s\S]{0,160}ZĂˇpisnĂ­k/, 'styles.css: stary v0.1_241 Zapisnik sekce/datum patch nesmi zustat vedle finalniho Zapisniku.');
   expectAbsent(styles, /\.notebook-header-actions \.notebook-add-btn\s*\{[\s\S]{0,80}display:\s*none\s*!important/, 'styles.css: stare notebook add tlacitko nesmi byt skryvane !important vrstvou.');
   expectAbsent(styles, /\.readings-tab-overview\s+\.readings-panel\.panel-detail\b/, 'styles.css: stary Odečty detail-only tab hack nesmi zustat vedle aktualniho kompletniho readings tab pravidla.');
   expectAbsent(styles, /\.readings-prices-page\s*,\s*\.readings-prices-page\s+\*/, 'styles.css: stary Odečty v267 brute-force descendant reset nesmi zustat vedle finalniho Odecty bloku.');

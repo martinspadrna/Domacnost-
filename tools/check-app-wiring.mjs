@@ -172,6 +172,8 @@ if (styles) {
   expect(styles, '.garage-trip-result {\n  padding: 10px;', 'styles.css: Garaz kalkulacka ma sjednoceny vysledkovy povrch.');
   expect(styles, '/* Domacnost+ - sjednoceny Zapisnik */', 'styles.css: existuje finalni blok pro Zapisnik.');
   expect(styles, '.notebook-section-card,\n.notebook-tasks-tab,\n.notebook-create-card,\n.notebook-note-card,\n.notebook-task-group,\n.notebook-empty-actions {', 'styles.css: Zapisnik karty a prazdne stavy sdili novy povrch.');
+  expect(styles, '.notebook-section-pill {', 'styles.css: Zapisnik sekcni stitek je ve finalni vrstve.');
+  expect(styles, '.notebook-checklist {', 'styles.css: Zapisnik checklist je ve finalni vrstve.');
   expect(styles, '.notebook-task-form input[type="date"],\n.notebook-task-form .input[type="date"],\n.notebook-date-input {', 'styles.css: Zapisnik datum a formulare jsou ve finalni vrstve.');
 }
 
