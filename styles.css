@@ -4591,6 +4591,15 @@ textarea {
   to { transform: translateX(350%); }
 }
 
+@keyframes appContentFadeSlide {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.app-frame main {
+  animation: appContentFadeSlide 260ms ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .boot-loading-line span {
     width: 100%;
@@ -8708,6 +8717,10 @@ form[data-busy="true"] button[type="submit"] {
   .nav-item .nav-icon.module-illustration-slot {
     transition: none !important;
   }
+
+  .app-frame main {
+    animation: none !important;
+  }
 }
 
 
@@ -8732,8 +8745,8 @@ form[data-busy="true"] button[type="submit"] {
   --home-nav-reserve-bottom: 0px;
   --home-compact-height: calc(var(--app-vh) - var(--nav-height) - 150px);
   --home-bottom-reserve: calc(78px + max(2px, calc(env(safe-area-inset-bottom, 0px) - 24px)) + 4px) !important;
-  --nav-motion-duration: 2.2s;
-  --nav-motion-ease: cubic-bezier(.14, .78, .16, 1);
+  --nav-motion-duration: 160ms;
+  --nav-motion-ease: ease;
 }
 
 

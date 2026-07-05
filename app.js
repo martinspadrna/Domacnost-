@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_382';
-  const APP_BUILD = 382;
+  const APP_VERSION = 'Domácnost+ v.0.1_384';
+  const APP_BUILD = 384;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -696,6 +696,7 @@
   const WARRANTY_YEARS_OPTIONS = Array.from({ length: 9 }, (_, index) => [String(index + 2), `${index + 2} roky`]);
   const WEATHER_CHMI_FUNCTION = 'weather-chmi-forecast';
   const ICON_THEME_OPTIONS = [
+    ['flat-emoji', 'Klasické emoji', 'Ploché jednobarevné emoji ikonky, žádné obrázky – podle redesignu.'],
     ['ios', 'iOS Soft', 'Jemné hladké ikonky inspirované moderním iOS stylem.'],
     ['duotone-fresh', 'Duotone Fresh', 'Dvoutónové barevné ikonky se svěžím kontrastem.'],
     ['sticker-ui', 'Sticker UI', 'Výraznější barevné samolepkové ikonky bez pozadí.'],
@@ -737,7 +738,7 @@
     },
     settings: {
       theme: 'dark',
-      iconTheme: 'sticker-ui',
+      iconTheme: 'flat-emoji',
       colorScheme: 'indigo',
       dashboardNote: 'Domácí přehled je připravený na cloud. Každý si nastaví vlastní domácnost, profily a zapnuté moduly.',
       cloudEnabled: false,
@@ -996,6 +997,7 @@
   let runtimeStateRef = null;
   let forceLightVisualRecovery = false;
   let forceDarkVisualUpgrade = false;
+  let forceFlatEmojiIconUpgrade = false;
   let weatherInstance = null;
   let pwaInstance = null;
   let notesInstance = null;
@@ -1610,6 +1612,7 @@
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
     forceLightVisualRecovery = Boolean(previousAppBuild && previousAppBuild < 264 && normalizeAppTheme(migrated.settings?.theme) === 'dark');
     forceDarkVisualUpgrade = Boolean(previousAppBuild && previousAppBuild < 375 && normalizeAppTheme(migrated.settings?.theme) === 'light');
+    forceFlatEmojiIconUpgrade = Boolean(previousAppBuild && previousAppBuild < 383 && normalizeIconTheme(migrated.settings?.iconTheme) === 'sticker-ui');
 
     migrated.meta = {
       schemaVersion: 85,
@@ -1622,7 +1625,7 @@
     migrated.settings = {
       ...(migrated.settings || {}),
       theme: forceLightVisualRecovery ? 'light' : forceDarkVisualUpgrade ? 'dark' : normalizeAppTheme(migrated.settings?.theme),
-      iconTheme: normalizeIconTheme(migrated.settings?.iconTheme),
+      iconTheme: forceFlatEmojiIconUpgrade ? 'flat-emoji' : normalizeIconTheme(migrated.settings?.iconTheme),
       colorScheme: normalizeColorScheme(migrated.settings?.colorScheme),
       dashboardNote: migrated.settings?.dashboardNote || DEFAULT_STATE.settings.dashboardNote,
       bottomNavIds: Array.isArray(migrated.settings?.bottomNavIds) ? migrated.settings.bottomNavIds : [...DEFAULT_BOTTOM_NAV_IDS],
@@ -1665,6 +1668,26 @@
       // v Nastavení ručně přepne zpátky na light v rámci téhle session.
       forceDarkVisualUpgrade = false;
     };
+
+    if (forceFlatEmojiIconUpgrade) {
+      Object.keys(migrated.settings.profileUiSettings || {}).forEach((key) => {
+        const item = migrated.settings.profileUiSettings[key];
+        if (item?.visualSettings) {
+          item.visualSettings = { ...item.visualSettings, iconTheme: 'flat-emoji' };
+          item.updatedAt = timestamp;
+        }
+      });
+      try {
+        localStorage.setItem(VISUAL_SETTINGS_STORAGE_KEY, JSON.stringify({
+          theme: migrated.settings.theme,
+          iconTheme: 'flat-emoji',
+          colorScheme: migrated.settings.colorScheme
+        }));
+      } catch (error) {}
+      // Jednorázový přechod na nový výchozí styl ikon (redesign v0.1_383) je hotový:
+      // nesmí dál přepisovat ručně zvolený jiný icon theme v rámci téhle session.
+      forceFlatEmojiIconUpgrade = false;
+    }
 
     // v0.1_382: ceník, datum začátku a částka za prodej v modulu Vape byly osobní
     // data jednoho účtu, ne výchozí obsah pro každou domácnost. Nová domácnost
@@ -1865,7 +1888,7 @@
   }
 
   function normalizeIconTheme(value) {
-    return normalizeOptionId(value, ICON_THEME_OPTIONS, 'ios');
+    return normalizeOptionId(value, ICON_THEME_OPTIONS, 'flat-emoji');
   }
 
   function normalizeColorScheme(value) {
@@ -2809,7 +2832,7 @@
       document.querySelector('.nav-scroll')?.classList.remove('nav-is-moving');
       document.querySelectorAll('.nav-item.nav-sweep').forEach((item) => item.classList.remove('nav-sweep'));
       if (pendingNavMotion === motion) pendingNavMotion = null;
-    }, 2600);
+    }, 260);
   }
 
   function keepActiveNavCentered(behavior = 'auto') {
@@ -4479,8 +4502,30 @@
     return html;
   }
 
+  function moduleEmojiIcon(id) {
+    if (id === MORE_MODULE.id) return MORE_MODULE.icon;
+    const module = MODULES.find((item) => item.id === id);
+    return module?.icon || '⚙️';
+  }
+
+  const FLAT_EMOJI_SIZE_PX = { nav: 18, md: 20, card: 28, picker: 24, tab: 16 };
+
+  function renderFlatEmojiIcon(id, options = {}) {
+    const label = options.label || '';
+    const slotClass = options.slotClass ? ` ${options.slotClass}` : '';
+    const extraClass = options.extraClass ? ` ${options.extraClass}` : '';
+    const size = options.size || 'md';
+    const baseClass = options.baseClass || 'module-illustration-slot';
+    const px = FLAT_EMOJI_SIZE_PX[size] || FLAT_EMOJI_SIZE_PX.md;
+    const cacheKey = `flat|${id}|${size}|${baseClass}|${slotClass}|${extraClass}|${label}`;
+    if (iconHtmlCache.has(cacheKey)) return iconHtmlCache.get(cacheKey);
+    const html = `<span class="${baseClass} ${baseClass}-${escapeHtml(String(size))}${slotClass}${extraClass} flat-emoji-icon-slot" data-icon-id="${escapeHtml(String(id || 'settings'))}" style="font-size:${px}px; line-height:1;" aria-hidden="true">${escapeHtml(moduleEmojiIcon(id))}</span>${label ? `<span class="sr-only">${escapeHtml(label)}</span>` : ''}`;
+    return rememberIconHtml(cacheKey, html);
+  }
+
   function renderAssetThemeIcon(id, options = {}) {
     const themeId = normalizeIconTheme(options.themeId || state.settings?.iconTheme || 'ios');
+    if (themeId === 'flat-emoji') return renderFlatEmojiIcon(id, options);
     const config = getAssetThemeIconConfig(id, themeId);
     if (!config) return '';
     const label = options.label || '';
@@ -11229,16 +11274,8 @@
 
   function renderSettings() {
     const enabled = new Set(normalizeModuleList(state.enabledModules));
-    const settingsTabIds = ['household', 'modules', 'cloud', 'data'];
-    const activeSettingsTab = settingsTabIds.includes(getModuleTab('settings', 'household')) ? getModuleTab('settings', 'household') : 'household';
     return `
-      ${renderSectionTabs('settings', [
-        { id: 'household', label: 'Domácnost', iconHtml: renderModuleIllustration('home', { size: 'tab', slotClass: 'section-tab-icon-slot', label: 'Domácnost' }), count: state.profiles.length },
-        { id: 'modules', label: 'Moduly', iconHtml: renderModuleIllustration('more', { size: 'tab', slotClass: 'section-tab-icon-slot', label: 'Moduly' }), count: normalizeModuleList(state.enabledModules).length },
-        { id: 'cloud', label: 'Cloud / PWA', icon: '☁️', count: state.cloud?.userId ? 1 : 0 },
-        { id: 'data', label: 'Data', icon: '🛟' }
-      ], 'household')}
-      <div class="settings-tabbed settings-tab-${activeSettingsTab}" data-tab-area="settings">
+      <div class="settings-tabbed settings-flow" data-tab-area="settings">
         <div class="settings-panel panel-household grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Domácnost</h2><p>Základ rodinného účtu a vzhled celé aplikace.</p></div><span class="badge">${escapeHtml(state.household.id)}</span></div>
@@ -11249,8 +11286,6 @@
               <div class="form-actions compact-actions"><button class="primary-btn" type="submit">Uložit domácnost</button></div>
             </form>
           </section>
-
-          ${renderVisualSettingsCard()}
 
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Profily</h2><p>Členové jedné domácnosti. Každý může mít svoje položky a nastavení.</p></div><span class="badge">${state.profiles.length} profilů</span></div>
@@ -11279,27 +11314,11 @@
           </section>
         </div>
 
-        <div class="settings-panel panel-modules grid two">
-          <section class="card desktop-span-2 compact-settings-card">
-            <div class="card-header"><div><h2>Zapnuté moduly</h2><p>Každá domácnost si může nechat jen to, co opravdu používá.</p></div><span class="badge">${enabled.size}</span></div>
-            <details class="compact-edit-details settings-enabled-modules-details">
-              <summary><span>Zapnuté moduly</span><em>${enabled.size} zapnuto</em></summary>
-              <div class="module-toggle-grid compact-module-toggle-grid">
-                ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => `
-                  <button class="module-toggle ${enabled.has(module.id) ? 'active' : ''}" type="button" data-action="toggle-module" data-id="${module.id}">
-                    ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'module-toggle-icon-slot', label: module.label })}
-                    <strong>${escapeHtml(module.label)}</strong>
-                    <em>${enabled.has(module.id) ? 'zapnuto' : 'vypnuto'}</em>
-                  </button>
-                `).join('')}
-              </div>
-            </details>
-          </section>
+        ${renderVisualSettingsCard()}
 
-          <section class="card desktop-span-2 compact-settings-card">
-            ${renderBottomNavSettings()}
-          </section>
-        </div>
+        <section class="card desktop-span-2 compact-settings-card">
+          ${renderBottomNavSettings()}
+        </section>
 
         <div class="settings-panel panel-cloud grid two">
           ${renderCloudAccount()}
@@ -11309,6 +11328,19 @@
           ${renderPwaInstallCard()}
           ${renderAuthSetupCard()}
         </div>
+
+        <section class="card desktop-span-2 compact-settings-card">
+          <div class="card-header"><div><h2>Viditelné moduly</h2><p>Vypnuté moduly zmizí z „Vše" i z bočního menu.</p></div><span class="badge">${enabled.size}</span></div>
+          <div class="module-toggle-grid compact-module-toggle-grid">
+            ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => `
+              <button class="module-toggle ${enabled.has(module.id) ? 'active' : ''}" type="button" data-action="toggle-module" data-id="${module.id}">
+                ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'module-toggle-icon-slot', label: module.label })}
+                <strong>${escapeHtml(module.label)}</strong>
+                <em>${enabled.has(module.id) ? 'zapnuto' : 'vypnuto'}</em>
+              </button>
+            `).join('')}
+          </div>
+        </section>
 
         <div class="settings-panel panel-data grid two">
           ${renderPwaUpdateStatusCard()}
