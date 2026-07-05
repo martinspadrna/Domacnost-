@@ -1622,6 +1622,9 @@
           colorScheme: migrated.settings.colorScheme
         }));
       } catch (error) {}
+      // Jednorázová korekce je hotová: nesmí dál "bojovat" s uživatelem, když si
+      // v Nastavení ručně přepne zpátky na light v rámci téhle session.
+      forceDarkVisualUpgrade = false;
     };
 
     migrated.household = {
@@ -1861,7 +1864,7 @@
     const before = JSON.stringify(getVisualSettingsSnapshot());
     state.settings = {
       ...(state.settings || {}),
-      theme: forceLightVisualRecovery ? 'light' : forceDarkVisualUpgrade ? 'dark' : normalizeAppTheme(settings.theme ?? state.settings?.theme),
+      theme: forceLightVisualRecovery ? 'light' : normalizeAppTheme(settings.theme ?? state.settings?.theme),
       iconTheme: normalizeIconTheme(settings.iconTheme ?? settings.icon_theme ?? state.settings?.iconTheme),
       colorScheme: normalizeColorScheme(settings.colorScheme ?? settings.color_scheme ?? state.settings?.colorScheme)
     };
@@ -2106,7 +2109,7 @@
     if (Array.isArray(profileSettings.dashboardWidgets)) state.settings.dashboardWidgets = normalizeDashboardWidgetIds(profileSettings.dashboardWidgets);
     if (Array.isArray(profileSettings.homeHeroItems)) state.settings.homeHeroItems = normalizeHomeHeroIds(profileSettings.homeHeroItems);
     if (profileSettings.visualSettings && typeof profileSettings.visualSettings === 'object') {
-      state.settings.theme = forceLightVisualRecovery ? 'light' : forceDarkVisualUpgrade ? 'dark' : normalizeAppTheme(profileSettings.visualSettings.theme);
+      state.settings.theme = forceLightVisualRecovery ? 'light' : normalizeAppTheme(profileSettings.visualSettings.theme);
       state.settings.iconTheme = normalizeIconTheme(profileSettings.visualSettings.iconTheme);
       state.settings.colorScheme = normalizeColorScheme(profileSettings.visualSettings.colorScheme);
       applyVisualSettings();
