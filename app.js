@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_376';
-  const APP_BUILD = 376;
+  const APP_VERSION = 'Domácnost+ v.0.1_379';
+  const APP_BUILD = 379;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -20,23 +20,32 @@
   const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_82', 'domacnostPlus.v0.1_81', 'domacnostPlus.v0.1_80', 'domacnostPlus.v0.1_79', 'domacnostPlus.v0.1_78', 'domacnostPlus.v0.1_77', 'domacnostPlus.v0.1_72', 'domacnostPlus.v0.1_71', 'domacnostPlus.v0.1_70', 'domacnostPlus.v0.1_69', 'domacnostPlus.v0.1_68', 'domacnostPlus.v0.1_67', 'domacnostPlus.v0.1_66', 'domacnostPlus.v0.1_65', 'domacnostPlus.v0.1_64', 'domacnostPlus.v0.1_63', 'domacnostPlus.v0.1_62', 'domacnostPlus.v0.1_61', 'domacnostPlus.v0.1_60', 'domacnostPlus.v0.1_59', 'domacnostPlus.v0.1_58', 'domacnostPlus.v0.1_57', 'domacnostPlus.v0.1_56', 'domacnostPlus.v0.1_55', 'domacnostPlus.v0.1_54', 'domacnostPlus.v0.1_53', 'domacnostPlus.v0.1_52', 'domacnostPlus.v0.1_51', 'domacnostPlus.v0.1_50', 'domacnostPlus.v0.1_49', 'domacnostPlus.v0.1_48', 'domacnostPlus.v0.1_47', 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
 
   const MODULES = [
-    { id: 'home', label: 'Domů', icon: '🏠' },
-    { id: 'weather', label: 'Počasí', icon: '🌤️' },
-    { id: 'calendar', label: 'Kalendář', icon: '📅' },
-    { id: 'shopping', label: 'Nákupy', icon: '🛒' },
-    { id: 'hdo', label: 'HDO', icon: '💡' },
-    { id: 'waste', label: 'Odpad', icon: '♻️' },
-    { id: 'readings', label: 'Odečty', icon: '📊' },
-    { id: 'pool', label: 'Bazén', icon: '🏊' },
-    { id: 'tasks', label: 'Zápisník', icon: '🗒️' },
-    { id: 'warranties', label: 'Záruky', icon: '🧾' },
-    { id: 'polishHolidays', label: 'Svátky PL', icon: '🇵🇱' },
-    { id: 'garage', label: 'Garáž', icon: '🚗' },
-    { id: 'contracts', label: 'Smlouvy', icon: '📄' },
-    { id: 'finance', label: 'Finance', icon: '💰' },
-    { id: 'subscriptions', label: 'Předplatné', icon: '🎬' },
-    { id: 'settings', label: 'Nastavení', icon: '⚙️' }
+    { id: 'home', label: 'Domů', icon: '🏠', category: 'overview' },
+    { id: 'weather', label: 'Počasí', icon: '🌤️', category: 'overview' },
+    { id: 'calendar', label: 'Kalendář', icon: '📅', category: 'overview' },
+    { id: 'tasks', label: 'Zápisník', icon: '🗒️', category: 'overview' },
+    { id: 'waste', label: 'Odpad', icon: '♻️', category: 'household' },
+    { id: 'hdo', label: 'HDO', icon: '💡', category: 'household' },
+    { id: 'readings', label: 'Odečty', icon: '📊', category: 'household' },
+    { id: 'warranties', label: 'Záruky', icon: '🧾', category: 'household' },
+    { id: 'contracts', label: 'Smlouvy', icon: '📄', category: 'household' },
+    { id: 'pool', label: 'Bazén', icon: '🏊', category: 'household' },
+    { id: 'garage', label: 'Garáž', icon: '🚗', category: 'household' },
+    { id: 'finance', label: 'Finance', icon: '💰', category: 'money' },
+    { id: 'subscriptions', label: 'Předplatné', icon: '🎬', category: 'money' },
+    { id: 'shopping', label: 'Nákupy', icon: '🛒', category: 'money' },
+    { id: 'polishHolidays', label: 'Svátky PL', icon: '🇵🇱', category: 'system' },
+    { id: 'settings', label: 'Nastavení', icon: '⚙️', category: 'system' }
   ];
+
+  const MODULE_CATEGORIES = [
+    { id: 'overview', label: 'Přehled' },
+    { id: 'household', label: 'Domácnost' },
+    { id: 'money', label: 'Finance' },
+    { id: 'system', label: 'Systém' }
+  ];
+
+  const SIDEBAR_PINNED_IDS = ['home', 'garage', 'readings', 'subscriptions'];
 
   const DEFAULT_BOTTOM_NAV_IDS = ['home', 'calendar', 'shopping', 'finance'];
 
@@ -485,7 +494,7 @@
   const BOTTOM_NAV_MAX = 4;
   const BOTTOM_NAV_CUSTOM_MIN = 2;
   const BOTTOM_NAV_CUSTOM_MAX = 3;
-  const MORE_MODULE = { id: 'more', label: 'Více', icon: '⚙️' };
+  const MORE_MODULE = { id: 'more', label: 'Vše', icon: '▦' };
   const FILE_DB_NAME = 'homeWebOfflineFiles.v1';
   const FILE_DB_VERSION = 3;
   const FILE_STORE_CONTRACTS = 'contractFiles';
@@ -528,6 +537,27 @@
   ];
   const DEFAULT_HOME_HERO_IDS = [];
   const HOME_HERO_MAX = 10;
+
+  const HOME_WIDGET_DEFS = [
+    { id: 'weather', label: 'Počasí' },
+    { id: 'today', label: 'Dnešní přehled (HDO, svoz, událost)' },
+    { id: 'finance', label: 'Finance' },
+    { id: 'timeline', label: 'Nadcházející' },
+    { id: 'quick', label: 'Rychlé akce' }
+  ];
+  const DEFAULT_HOME_WIDGET_IDS = ['weather', 'today', 'finance', 'timeline', 'quick'];
+
+  const HOME_QUICK_ACTION_DEFS = [
+    { id: 'expense', label: 'Výdaj', icon: '➕', nav: 'finance', tab: 'add' },
+    { id: 'shopping', label: 'Nákup', icon: '🛒', nav: 'shopping', tab: '' },
+    { id: 'note', label: 'Poznámka', icon: '🗒️', nav: 'tasks', tab: '' },
+    { id: 'reading', label: 'Odečet', icon: '📊', nav: 'readings', tab: 'entry' },
+    { id: 'task', label: 'Úkol', icon: '✅', nav: 'tasks', tab: '' },
+    { id: 'fuel', label: 'Tankování', icon: '⛽', nav: 'garage', tab: 'stats' },
+    { id: 'service', label: 'Servis', icon: '🔧', nav: 'garage', tab: 'detail' },
+    { id: 'warranty', label: 'Záruka', icon: '🧾', nav: 'warranties', tab: '' }
+  ];
+  const DEFAULT_HOME_QUICK_ACTION_IDS = ['expense', 'shopping', 'note', 'reading'];
   const POLISH_SHOP_HOLIDAY_API = 'https://date.nager.at/api/v3/PublicHolidays';
   const POLISH_SHOP_YEAR_MIN = 2025;
   const POLISH_SHOP_YEAR_MAX = 2032;
@@ -687,8 +717,9 @@
 
 
   const COLOR_SCHEME_OPTIONS = [
-    ['sky', 'Modrá', 'Výchozí svěží modrá.'],
-    ['royal', 'Royal', 'Sytější modro-zlatý kontrastní styl.']
+    ['indigo', 'Indigo', 'Výchozí sytě modro-fialový akcent.'],
+    ['amber', 'Amber', 'Teplý jantarový akcent.'],
+    ['teal', 'Teal', 'Chladný tyrkysový akcent.']
   ];
   const APP_THEME_OPTIONS = [
     ['light', 'Světlý', 'Světlé sklo pro běžné použití.'],
@@ -706,12 +737,14 @@
     settings: {
       theme: 'dark',
       iconTheme: 'sticker-ui',
-      colorScheme: 'sky',
+      colorScheme: 'indigo',
       dashboardNote: 'Domácí přehled je připravený na cloud. Každý si nastaví vlastní domácnost, profily a zapnuté moduly.',
       cloudEnabled: false,
       bottomNavIds: [...DEFAULT_BOTTOM_NAV_IDS],
       dashboardWidgets: [...DEFAULT_DASHBOARD_WIDGET_IDS],
       homeHeroItems: [...DEFAULT_HOME_HERO_IDS],
+      homeWidgets: [...DEFAULT_HOME_WIDGET_IDS],
+      homeQuickActionIds: [...DEFAULT_HOME_QUICK_ACTION_IDS],
       vehicleIconColors: {},
       vehicleServicePlans: {},
       profileUiSettings: {},
@@ -1074,6 +1107,7 @@
   let cloudAutosyncTimer = null;
   let cloudAutosyncRunning = false;
   let homeHeroEditMode = false;
+  let homeEditSheetOpen = false;
   let homeHeroLongPressTimer = null;
   let homeHeroLongPressPointer = null;
   let cloudAutosyncLastAttempt = 0;
@@ -1591,6 +1625,8 @@
       bottomNavIds: Array.isArray(migrated.settings?.bottomNavIds) ? migrated.settings.bottomNavIds : [...DEFAULT_BOTTOM_NAV_IDS],
       dashboardWidgets: [],
       homeHeroItems: previousAppBuild && previousAppBuild < 74 ? [] : normalizeHomeHeroIds(migrated.settings?.homeHeroItems),
+      homeWidgets: normalizeHomeWidgetIds(migrated.settings?.homeWidgets),
+      homeQuickActionIds: normalizeHomeQuickActionIds(migrated.settings?.homeQuickActionIds),
       vehicleIconColors: normalizeVehicleIconColorMap(migrated.settings?.vehicleIconColors),
       vehicleServicePlans: normalizeVehicleServicePlanMap(migrated.settings?.vehicleServicePlans),
       profileUiSettings: normalizeProfileUiSettingsMap(migrated.settings?.profileUiSettings, migrated.enabledModules)
@@ -1816,7 +1852,7 @@
   }
 
   function normalizeColorScheme(value) {
-    return normalizeOptionId(value, COLOR_SCHEME_OPTIONS, 'sky');
+    return normalizeOptionId(value, COLOR_SCHEME_OPTIONS, 'indigo');
   }
 
   function getVisualSettingsSnapshot(source = state?.settings || {}) {
@@ -2154,6 +2190,26 @@
     return HOME_HERO_ITEMS.find((item) => item.id === id) || HOME_HERO_ITEMS[0];
   }
 
+  function normalizeHomeWidgetIds(value) {
+    const allowed = new Set(HOME_WIDGET_DEFS.map((item) => item.id));
+    const requested = Array.isArray(value) ? value : DEFAULT_HOME_WIDGET_IDS;
+    const result = [];
+    requested.forEach((id) => {
+      if (allowed.has(id) && !result.includes(id)) result.push(id);
+    });
+    return result;
+  }
+
+  function normalizeHomeQuickActionIds(value) {
+    const allowed = new Set(HOME_QUICK_ACTION_DEFS.map((item) => item.id));
+    const requested = Array.isArray(value) ? value : DEFAULT_HOME_QUICK_ACTION_IDS;
+    const result = [];
+    requested.forEach((id) => {
+      if (allowed.has(id) && !result.includes(id)) result.push(id);
+    });
+    return result;
+  }
+
   function normalizeWeatherLocation(location) { return getWeatherModule().normalizeWeatherLocation(location); }
   function normalizeWeatherSource(value) { return getWeatherModule().normalizeWeatherSource(value); }
   function normalizeWeatherState(value) { return getWeatherModule().normalizeWeatherState(value); }
@@ -2175,6 +2231,13 @@
     return state.household?.name || state.settings?.householdName || 'Domácnost';
   }
 
+  function currentProfileInitials() {
+    const name = normalizeText(currentProfile()?.name || householdName() || 'Domácnost');
+    const parts = name.split(/\s+/).filter(Boolean);
+    const initials = parts.slice(0, 2).map((part) => part[0]).join('');
+    return (initials || name.slice(0, 2) || 'D').toUpperCase();
+  }
+
   function getAppBaseUrl() {
     return APP_PUBLIC_URL;
   }
@@ -2190,14 +2253,52 @@
 
   function getBottomNavModules() {
     const visible = getVisibleModules();
-    const selected = DEFAULT_BOTTOM_NAV_IDS
+    const selectedIds = getActiveProfileBottomNavIds();
+    const selected = selectedIds
       .map((id) => visible.find((module) => module.id === id))
       .filter(Boolean);
     return [...selected, MORE_MODULE];
   }
 
   function isMoreNavActive() {
-    return activeModule === MORE_MODULE.id || !DEFAULT_BOTTOM_NAV_IDS.includes(activeModule);
+    const selectedIds = getActiveProfileBottomNavIds();
+    return activeModule === MORE_MODULE.id || !selectedIds.includes(activeModule);
+  }
+
+  function renderDesktopSidebarRow(module, activeId) {
+    const isActive = module.id === activeId;
+    return `
+      <button type="button" class="sidebar-nav-row ${isActive ? 'active' : ''}" data-nav="${escapeHtml(module.id)}">
+        ${renderMiniModuleIcon(module.id, { size: 'nav', slotClass: 'sidebar-nav-icon', label: module.label })}
+        <span>${escapeHtml(module.label)}</span>
+      </button>
+    `;
+  }
+
+  function renderDesktopSidebar(activeId) {
+    const visible = getVisibleModules();
+    const pinned = SIDEBAR_PINNED_IDS.map((id) => visible.find((module) => module.id === id)).filter(Boolean);
+    const groups = MODULE_CATEGORIES
+      .map((category) => ({ label: category.label, items: visible.filter((module) => module.category === category.id) }))
+      .filter((group) => group.items.length);
+    return `
+      <aside class="app-sidebar">
+        <div class="app-sidebar-brand">
+          <span class="app-sidebar-logo" aria-hidden="true"></span>
+          <span class="app-sidebar-word">Domácnost+</span>
+        </div>
+        <div class="app-sidebar-group">
+          <div class="app-sidebar-label">Oblíbené</div>
+          ${pinned.map((module) => renderDesktopSidebarRow(module, activeId)).join('')}
+        </div>
+        ${groups.map((group) => `
+          <div class="app-sidebar-group">
+            <div class="app-sidebar-label">${escapeHtml(group.label)}</div>
+            ${group.items.map((module) => renderDesktopSidebarRow(module, activeId)).join('')}
+          </div>
+        `).join('')}
+      </aside>
+    `;
   }
 
   function getActiveBottomNavId(moduleId = activeModule) {
@@ -2546,19 +2647,29 @@
         if (moduleRenderMs > 180) console.info('Domácnost+ pomalý render modulu', active.id, `${moduleRenderMs} ms`);
 
         app.innerHTML = `
-          <div class="app-frame ${isHomeModule ? 'home-clean-frame' : ''}">
-            <main>
-              ${isHomeModule ? '' : `
-              <section class="page-head">
-                <div>
-                  <h2 class="page-title">${escapeHtml(pageTitle)}</h2>
-                  ${pageSubtitle ? `<p class="page-subtitle">${escapeHtml(pageSubtitle)}</p>` : ''}
+          <div class="app-desktop-row">
+            ${renderDesktopSidebar(active.id)}
+            <div class="app-frame ${isHomeModule ? 'home-clean-frame' : ''}">
+              <main>
+                <div class="app-top-bar">
+                  <div class="app-top-brand">
+                    <span class="app-top-logo" aria-hidden="true"></span>
+                    <span class="app-top-word">Domácnost+</span>
+                  </div>
+                  <button type="button" class="app-top-avatar" data-nav="settings" aria-label="Nastavení">${escapeHtml(currentProfileInitials())}</button>
                 </div>
-                ${renderPageActions(active.id)}
-              </section>
-              `}
-              ${renderDemoReadOnlyBanner()}${moduleHtml}
-            </main>
+                ${isHomeModule ? '' : `
+                <section class="page-head">
+                  <div>
+                    <h2 class="page-title">${escapeHtml(pageTitle)}</h2>
+                    ${pageSubtitle ? `<p class="page-subtitle">${escapeHtml(pageSubtitle)}</p>` : ''}
+                  </div>
+                  ${renderPageActions(active.id)}
+                </section>
+                `}
+                ${renderDemoReadOnlyBanner()}${moduleHtml}
+              </main>
+            </div>
           </div>
 
           <nav class="nav-shell" aria-label="Hlavní navigace">
@@ -3468,6 +3579,13 @@
   }
 
 
+  function homeGreeting() {
+    const hour = now.getHours();
+    if (hour < 11) return 'Dobré ráno';
+    if (hour < 18) return 'Dobré odpoledne';
+    return 'Dobrý večer';
+  }
+
   function renderDashboard() {
     const calendarPanelEvents = upcomingCalendarEvents(now);
     const todayEvents = calendarPanelEvents
@@ -3493,57 +3611,119 @@
     const weather = normalizeWeatherState(state.weather);
     const ctx = { hdo, todayEvents, upcomingEvents, calendarPanelEvents, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, weather, notes: state.notes, coupons: state.coupons, contracts: state.contracts };
 
-    const nowItems = buildHomeNowItems(ctx);
-    const soonItems = buildHomeSoonItems(ctx);
-    const moneyItems = buildHomeMoneyItems(ctx);
-    const quickActions = buildHomeQuickActions(ctx);
+    const activeWidgets = normalizeHomeWidgetIds(state.settings?.homeWidgets);
+    const hasWidget = (id) => activeWidgets.includes(id);
     const lastSync = state.cloud?.lastSyncAt ? formatDateTime(state.cloud.lastSyncAt) : formatDateTime(now);
 
     return `
       <div class="home-dash">
         <header class="home-dash-top">
-          <div class="home-dash-brand">
-            <span class="home-dash-kicker">Domácnost+</span>
-            ${renderHomeWeatherPill(ctx)}
+          <div class="home-dash-greeting">${escapeHtml(homeGreeting())}</div>
+          <div class="home-dash-title-row">
+            <h1 class="home-dash-title">Přehled domácnosti</h1>
+            <button class="home-dash-edit-btn" type="button" data-action="toggle-home-edit">Upravit</button>
           </div>
-          <h1 class="home-dash-title">Domů</h1>
         </header>
-        ${renderHomeListSection('Teď', nowItems)}
-        ${renderHomeListSection('Brzy', soonItems)}
-        ${renderHomeListSection('Peníze', moneyItems)}
-        ${renderHomeQuickActions(quickActions)}
+        ${hasWidget('weather') ? renderHomeWeatherWidget(ctx) : ''}
+        ${hasWidget('today') ? renderHomeTodayWidget(ctx) : ''}
+        ${hasWidget('finance') ? renderHomeFinanceWidget(ctx) : ''}
+        ${hasWidget('timeline') ? renderHomeTimelineWidget(ctx) : ''}
+        ${hasWidget('quick') ? renderHomeQuickWidget(ctx) : ''}
         <div class="home-dash-sync"><span aria-hidden="true">⟳</span> Poslední aktualizace: ${escapeHtml(lastSync)}</div>
       </div>
+      ${homeEditSheetOpen ? renderHomeEditSheet() : ''}
     `;
   }
 
-  function renderHomeWeatherPill(ctx) {
+  function renderHomeWeatherWidget(ctx) {
     const weather = normalizeWeatherState(ctx?.weather || state.weather);
     const current = weather.current || {};
     const [condition] = weatherCodeLabel(current.weatherCode);
     const hasCurrent = Boolean(weather.current);
     const value = hasCurrent ? roundWeather(current.temperature, '°') : '—';
     const place = weatherLocationLabel() || 'Počasí';
-    const label = weather.loading ? 'Načítám' : (weather.error && !hasCurrent) ? 'Nejde načíst' : hasCurrent ? condition : 'Nenačteno';
+    const label = weather.loading ? 'Načítám počasí' : (weather.error && !hasCurrent) ? 'Počasí nejde načíst' : hasCurrent ? condition : 'Počasí není načtené';
     return `
-      <button class="home-dash-weather-pill" type="button" data-nav="weather" aria-label="Otevřít podrobné počasí">
-        ${renderWeatherAnimeIcon(current.weatherCode, { size: 'xs', extraClass: 'home-dash-weather-icon' })}
-        <span>${escapeHtml(place)}</span>
-        <strong>${escapeHtml(value)}</strong>
-        <em class="sr-only-inline">${escapeHtml(label)}</em>
+      <button class="home-widget-card home-weather-widget" type="button" data-nav="weather">
+        <div class="home-weather-widget-main">
+          ${renderWeatherAnimeIcon(current.weatherCode, { size: 'md', extraClass: 'home-weather-widget-icon' })}
+          <div>
+            <div class="home-weather-widget-temp">${escapeHtml(value)}</div>
+            <div class="home-weather-widget-meta">${escapeHtml(label)} · ${escapeHtml(place)}</div>
+          </div>
+        </div>
+        <span class="home-weather-widget-link">Detail ›</span>
       </button>
     `;
   }
 
-  function renderHomeListSection(title, items) {
-    if (!items.length) return '';
+  function renderHomeTodayWidget(ctx) {
+    const hasModule = (id) => ctx.visibleModules.some((module) => module.id === id);
+    const cards = [];
+    if (hasModule('hdo')) {
+      cards.push({
+        label: ctx.hdo.active ? 'Nízký tarif' : 'HDO',
+        value: ctx.hdo.active ? (ctx.hdo.label || 'aktivní') : 'neběží',
+        tone: 'good',
+        overview: 'hdo'
+      });
+    }
+    if (hasModule('waste')) {
+      const next = ctx.wasteSoon[0];
+      cards.push({
+        label: `Svoz${next ? ` · ${next.type || ''}` : ''}`,
+        value: next ? dueBadge(next.days) : 'nic brzy',
+        tone: 'warn',
+        overview: 'waste'
+      });
+    }
+    if (hasModule('calendar')) {
+      const nextEvent = ctx.todayEvents[0] || ctx.upcomingEvents[0];
+      cards.push({
+        label: 'Událost',
+        value: nextEvent ? nextEvent.title : 'žádná',
+        tone: '',
+        nav: 'calendar',
+        tab: 'overview'
+      });
+    }
+    if (!cards.length) return '';
     return `
-      <section class="home-dash-section">
-        <h2 class="home-dash-section-title">${escapeHtml(title)}</h2>
-        <div class="card home-list-card">
-          ${items.map(renderHomeListRow).join('')}
+      <div class="home-today-grid">
+        ${cards.map((card) => `
+          <button class="home-today-card" type="button" ${homeActionAttrs(card)}>
+            <span class="home-today-label home-today-label-${card.tone || 'neutral'}">${escapeHtml(card.label)}</span>
+            <span class="home-today-value">${escapeHtml(card.value)}</span>
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function renderHomeFinanceWidget(ctx) {
+    const hasModule = (id) => ctx.visibleModules.some((module) => module.id === id);
+    if (!hasModule('finance')) return '';
+    const summary = financeMonthSummary();
+    const total = summary.income + summary.expense;
+    const incomePct = total > 0 ? Math.round((summary.income / total) * 100) : 0;
+    const expensePct = total > 0 ? Math.round((summary.expense / total) * 100) : 0;
+    return `
+      <button class="home-widget-card home-finance-widget" type="button" data-nav="finance">
+        <div class="home-widget-kicker">Finance · tento měsíc</div>
+        <div class="home-finance-balance">${escapeHtml(formatCurrency(summary.balance))}</div>
+        <div class="home-finance-bars">
+          <div class="home-finance-bar-row">
+            <span>Příjmy</span>
+            <div class="home-finance-bar-track"><div class="home-finance-bar-fill good" style="width:${incomePct}%"></div></div>
+            <strong>${escapeHtml(formatCurrency(summary.income))}</strong>
+          </div>
+          <div class="home-finance-bar-row">
+            <span>Výdaje</span>
+            <div class="home-finance-bar-track"><div class="home-finance-bar-fill bad" style="width:${expensePct}%"></div></div>
+            <strong>${escapeHtml(formatCurrency(summary.expense))}</strong>
+          </div>
         </div>
-      </section>
+      </button>
     `;
   }
 
@@ -3552,101 +3732,87 @@
     '📄': 'amber', '📅': 'blue', '✓': 'green', '🎬': 'green', '💰': 'amber', '📈': 'blue'
   };
 
-  function renderHomeListRow(item) {
-    const iconTone = HOME_ROW_ICON_TONES[item.icon] || 'neutral';
+  function renderHomeTimelineWidget(ctx) {
+    const items = buildHomeSoonItems(ctx);
+    if (!items.length) return '';
     return `
-      <button class="home-row ${item.tone || ''}" type="button" ${homeActionAttrs(item)}>
-        <span class="home-row-icon home-row-icon-${iconTone}" aria-hidden="true">${escapeHtml(item.icon || '•')}</span>
-        <span class="home-row-copy">
-          <strong>${escapeHtml(item.title)}</strong>
-          ${item.meta ? `<em>${escapeHtml(item.meta)}</em>` : ''}
-        </span>
-        ${item.value ? `<span class="home-row-value ${item.tone || ''}">${escapeHtml(item.value)}</span>` : ''}
-        <span class="home-row-chevron" aria-hidden="true">›</span>
-      </button>
+      <div class="home-dash-section">
+        <h2 class="home-dash-section-title">Nadcházející</h2>
+        <div class="home-timeline-list">
+          ${items.map((item) => `
+            <button class="home-timeline-row" type="button" ${homeActionAttrs(item)}>
+              <span class="home-row-icon home-row-icon-${HOME_ROW_ICON_TONES[item.icon] || 'neutral'}" aria-hidden="true">${escapeHtml(item.icon || '•')}</span>
+              <span class="home-row-copy">
+                <strong>${escapeHtml(item.title)}</strong>
+                ${item.meta ? `<em>${escapeHtml(item.meta)}</em>` : ''}
+              </span>
+            </button>
+          `).join('')}
+        </div>
+      </div>
     `;
   }
 
-  function buildHomeQuickActions(ctx) {
+  function renderHomeQuickWidget(ctx) {
     const hasModule = (id) => ctx.visibleModules.some((module) => module.id === id);
-    const actions = [];
-    if (hasModule('finance')) actions.push({ icon: '➕', label: 'Výdaj', nav: 'finance', tab: 'add' });
-    if (hasModule('shopping')) actions.push({ icon: '🛒', label: 'Nákup', nav: 'shopping' });
-    if (hasModule('readings')) actions.push({ icon: '📊', label: 'Odečet', nav: 'readings', tab: 'entry' });
-    return actions;
-  }
-
-  function renderHomeQuickActions(actions) {
+    const activeIds = normalizeHomeQuickActionIds(state.settings?.homeQuickActionIds);
+    const actions = activeIds
+      .map((id) => HOME_QUICK_ACTION_DEFS.find((item) => item.id === id))
+      .filter((item) => item && hasModule(item.nav));
     if (!actions.length) return '';
     return `
-      <section class="home-dash-section">
+      <div class="home-dash-section">
         <h2 class="home-dash-section-title">Rychlé akce</h2>
         <div class="home-quick-actions">
           ${actions.map((action) => `
-            <button class="home-quick-action" type="button" ${homeActionAttrs(action)}>
+            <button class="home-quick-action" type="button" data-nav="${escapeHtml(action.nav)}"${action.tab ? ` data-target-tab="${escapeHtml(action.tab)}"` : ''}>
               <span class="home-quick-action-icon" aria-hidden="true">${escapeHtml(action.icon)}</span>
               <span>${escapeHtml(action.label)}</span>
             </button>
           `).join('')}
         </div>
-      </section>
+      </div>
     `;
   }
 
-  function buildHomeNowItems(ctx) {
-    const rows = [];
-    const hasModule = (id) => ctx.visibleModules.some((module) => module.id === id);
-
-    if (hasModule('hdo')) {
-      rows.push({
-        icon: '💡',
-        title: ctx.hdo.active ? 'Nízký tarif aktivní' : 'Bez HDO',
-        meta: ctx.hdo.message || '',
-        tone: ctx.hdo.active ? 'good' : '',
-        overview: 'hdo'
-      });
-    }
-
-    if (hasModule('waste')) {
-      const next = ctx.wasteSoon[0];
-      if (next) {
-        rows.push({
-          icon: '♻️',
-          title: `Odpad: ${next.type || 'svoz'} ${dueBadge(next.days)}`,
-          meta: `Svoz ${formatDate(next.date)}${next.note ? ` · ${next.note}` : ''}`,
-          tone: next.days <= 1 ? 'warn' : '',
-          overview: 'waste'
-        });
-      }
-    }
-
-    if (hasModule('pool')) {
-      const pool = normalizePoolState(state.pool || {});
-      if (pool.ph !== '' || pool.waterTempC !== '') {
-        const dose = getPoolModule().poolPhDose(pool);
-        const phLabel = pool.ph !== '' ? Number(pool.ph).toLocaleString('cs-CZ', { maximumFractionDigits: 1 }) : '—';
-        const tempLabel = pool.waterTempC !== '' ? `${Number(pool.waterTempC).toLocaleString('cs-CZ', { maximumFractionDigits: 1 })} °C` : '—';
-        rows.push({
-          icon: '🏊',
-          title: 'Bazén',
-          meta: `pH ${phLabel} · voda ${tempLabel}`,
-          tone: dose.status === 'minus' || dose.status === 'plus' ? 'warn' : '',
-          nav: 'pool'
-        });
-      }
-    }
-
-    if (!rows.length) {
-      rows.push({
-        icon: '✓',
-        title: 'Doma je klid',
-        meta: 'Nic akutního teď nečeká.',
-        tone: 'good',
-        overview: 'important'
-      });
-    }
-
-    return rows;
+  function renderHomeEditSheet() {
+    const activeWidgets = new Set(normalizeHomeWidgetIds(state.settings?.homeWidgets));
+    const activeActions = new Set(normalizeHomeQuickActionIds(state.settings?.homeQuickActionIds));
+    return `
+      <div class="home-edit-backdrop" data-home-edit-backdrop>
+        <div class="home-edit-sheet" data-no-swipe>
+          <div class="home-edit-head">
+            <div class="home-edit-title">Upravit Domů</div>
+            <button type="button" class="icon-btn" data-action="close-home-edit" aria-label="Zavřít">✕</button>
+          </div>
+          <p class="home-edit-note">Zapni nebo vypni karty, které se mají zobrazit na úvodní obrazovce.</p>
+          <div class="switch-list home-edit-widget-list">
+            ${HOME_WIDGET_DEFS.map((widget) => {
+              const isOn = activeWidgets.has(widget.id);
+              return `
+                <button type="button" class="switch-row ${isOn ? 'active' : ''}" role="switch" aria-checked="${isOn ? 'true' : 'false'}" data-action="toggle-home-widget" data-id="${escapeHtml(widget.id)}">
+                  <span class="switch-row-copy"><strong>${escapeHtml(widget.label)}</strong></span>
+                  <span class="ios-switch" aria-hidden="true"><span></span></span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+          <div class="home-edit-subtitle">Rychlé akce na Domů</div>
+          <div class="switch-list home-edit-quick-list">
+            ${HOME_QUICK_ACTION_DEFS.map((action) => {
+              const isOn = activeActions.has(action.id);
+              return `
+                <button type="button" class="switch-row ${isOn ? 'active' : ''}" role="switch" aria-checked="${isOn ? 'true' : 'false'}" data-action="toggle-home-quick-action" data-id="${escapeHtml(action.id)}">
+                  <span class="switch-row-icon" aria-hidden="true">${escapeHtml(action.icon)}</span>
+                  <span class="switch-row-copy"><strong>${escapeHtml(action.label)}</strong></span>
+                  <span class="ios-switch" aria-hidden="true"><span></span></span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   function buildHomeSoonItems(ctx) {
@@ -3654,52 +3820,6 @@
     return buildHomeAttentionItems(ctx)
       .filter((item) => !excludedOverviews.has(item.overview))
       .slice(0, 5);
-  }
-
-  function buildHomeMoneyItems(ctx) {
-    const rows = [];
-    const hasModule = (id) => ctx.visibleModules.some((module) => module.id === id);
-
-    if (hasModule('subscriptions')) {
-      const summary = subscriptionMonthSummary();
-      if (summary.services.length) {
-        const count = summary.services.length;
-        rows.push({
-          icon: '🎬',
-          title: 'Předplatné tento měsíc',
-          meta: `${count} ${count === 1 ? 'služba' : count < 5 ? 'služby' : 'služeb'}`,
-          value: formatCurrency(summary.totalCost),
-          tone: summary.owed ? 'warn' : '',
-          nav: 'subscriptions',
-          tab: 'overview'
-        });
-      }
-    }
-
-    if (hasModule('finance')) {
-      const finance = financeMonthSummary();
-      if (finance.balance < 0) {
-        rows.push({
-          icon: '💰',
-          title: 'Finance tento měsíc',
-          meta: `Příjmy ${formatCurrency(finance.income)} · výdaje ${formatCurrency(finance.expense)}`,
-          value: formatCurrency(finance.balance),
-          tone: 'warn',
-          nav: 'finance',
-          tab: 'summary'
-        });
-      } else if ((state.financeLoans || []).length) {
-        rows.push({
-          icon: '📈',
-          title: 'Refinancování: možná úspora',
-          meta: 'Zkontrolujte své půjčky',
-          nav: 'finance',
-          tab: 'loans'
-        });
-      }
-    }
-
-    return rows;
   }
 
   function buildHomeAttentionItems(ctx) {
@@ -10901,7 +11021,7 @@
     return `
       <section class="more-module-section">
         <div class="card-header compact-card-header">
-          <div><h2>${escapeHtml(section.title)}</h2><p>${escapeHtml(section.note)}</p></div>
+          <div><h2>${escapeHtml(section.title)}</h2>${section.note ? `<p>${escapeHtml(section.note)}</p>` : ''}</div>
           <span class="badge">${rows.length}</span>
         </div>
         <div class="grid four more-module-grid">
@@ -10915,11 +11035,13 @@
     const modules = getVisibleModules().filter((module) => !['home', 'settings'].includes(module.id));
     const moduleMap = new Map(modules.map((module) => [module.id, module]));
     const usedIds = new Set();
-    const sections = [
-      { title: 'Denně', note: 'Věci, které se otevírají nejčastěji během dne.', ids: ['calendar', 'shopping', 'tasks', 'weather', 'hdo', 'waste'] },
-      { title: 'Domov', note: 'Technika, auta, bazén, odečty a hlídání domácnosti.', ids: ['garage', 'pool', 'readings', 'warranties', 'polishHolidays'] },
-      { title: 'Peníze a doklady', note: 'Finance, smlouvy a pravidelné platby.', ids: ['finance', 'subscriptions', 'contracts'] }
-    ];
+    const sections = MODULE_CATEGORIES
+      .filter((category) => category.id !== 'system')
+      .map((category) => ({
+        title: category.label,
+        note: '',
+        ids: modules.filter((module) => module.category === category.id).map((module) => module.id)
+      }));
     const sectionHtml = sections.map((section) => renderMoreModuleSection(section, moduleMap, usedIds)).filter(Boolean).join('');
     const otherModules = modules.filter((module) => !usedIds.has(module.id));
 
@@ -11150,18 +11272,42 @@
   }
 
   function renderBottomNavSettings() {
+    const selected = new Set(getActiveProfileBottomNavIds());
+    const candidates = getNavCandidateIds(state.enabledModules)
+      .filter((id) => id !== 'home')
+      .map((id) => MODULES.find((module) => module.id === id))
+      .filter(Boolean);
+    const customCount = Math.max(0, selected.size - 1);
+
     return `
       <div class="card-header">
-        <div><h2>Spodní lišta</h2><p>Spodní navigace je pevná a stejná pro celou domácnost.</p></div>
+        <div><h2>Spodní panel</h2><p>Domů a Vše jsou vždy vidět. Vyber až ${BOTTOM_NAV_CUSTOM_MAX} další moduly.</p></div>
+        <span class="badge">${customCount}/${BOTTOM_NAV_CUSTOM_MAX}</span>
       </div>
       <div class="switch-list nav-picker-list">
-        ${getBottomNavModules().map((module) => `
-          <div class="switch-row nav-picker-switch active nav-picker-fixed" aria-disabled="true">
-            ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'switch-row-icon', label: module.label })}
-            <span class="switch-row-copy"><strong>${escapeHtml(module.label)}</strong></span>
-            <span class="badge good">pevné</span>
-          </div>
-        `).join('')}
+        <div class="switch-row nav-picker-switch active nav-picker-fixed" aria-disabled="true">
+          ${renderModuleIllustration('home', { size: 'picker', slotClass: 'switch-row-icon', label: 'Domů' })}
+          <span class="switch-row-copy"><strong>Domů</strong><em>pevně vlevo</em></span>
+          <span class="badge good">vždy</span>
+        </div>
+        ${candidates.map((module) => {
+          const isSelected = selected.has(module.id);
+          return `
+            <button class="switch-row nav-picker-switch ${isSelected ? 'active' : ''}" type="button" role="switch" aria-checked="${isSelected ? 'true' : 'false'}" data-action="toggle-bottom-nav" data-id="${module.id}">
+              ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'switch-row-icon', label: module.label })}
+              <span class="switch-row-copy">
+                <strong>${escapeHtml(module.label)}</strong>
+                <em>${isSelected ? 'zobrazuje se dole' : 'nezobrazuje se dole'}</em>
+              </span>
+              <span class="ios-switch" aria-hidden="true"><span></span></span>
+            </button>
+          `;
+        }).join('')}
+        <div class="switch-row nav-picker-switch active nav-picker-fixed" aria-disabled="true">
+          ${renderModuleIllustration('more', { size: 'picker', slotClass: 'switch-row-icon', label: 'Vše' })}
+          <span class="switch-row-copy"><strong>Vše</strong><em>pevně vpravo</em></span>
+          <span class="badge good">vždy</span>
+        </div>
       </div>
     `;
   }
@@ -15488,6 +15634,22 @@
       resetHomeHeroItems();
       return;
     }
+    if (action === 'toggle-home-edit') {
+      toggleHomeEditSheet();
+      return;
+    }
+    if (action === 'close-home-edit') {
+      toggleHomeEditSheet(false);
+      return;
+    }
+    if (action === 'toggle-home-widget') {
+      toggleHomeWidget(button.dataset.id);
+      return;
+    }
+    if (action === 'toggle-home-quick-action') {
+      toggleHomeQuickAction(button.dataset.id);
+      return;
+    }
     if (action === 'dashboard-reset-widgets') {
       resetDashboardWidgets();
       return;
@@ -17300,6 +17462,31 @@
     showToast('Panely na Home vyčištěné');
   }
 
+  function toggleHomeEditSheet(forceValue) {
+    homeEditSheetOpen = typeof forceValue === 'boolean' ? forceValue : !homeEditSheetOpen;
+    render();
+  }
+
+  function toggleHomeWidget(widgetId) {
+    if (!HOME_WIDGET_DEFS.some((item) => item.id === widgetId)) return;
+    const selected = new Set(normalizeHomeWidgetIds(state.settings?.homeWidgets));
+    if (selected.has(widgetId)) selected.delete(widgetId);
+    else selected.add(widgetId);
+    state.settings.homeWidgets = normalizeHomeWidgetIds([...selected]);
+    persistProfileUiSettings(false);
+    render();
+  }
+
+  function toggleHomeQuickAction(actionId) {
+    if (!HOME_QUICK_ACTION_DEFS.some((item) => item.id === actionId)) return;
+    const selected = new Set(normalizeHomeQuickActionIds(state.settings?.homeQuickActionIds));
+    if (selected.has(actionId)) selected.delete(actionId);
+    else selected.add(actionId);
+    state.settings.homeQuickActionIds = normalizeHomeQuickActionIds([...selected]);
+    persistProfileUiSettings(false);
+    render();
+  }
+
   async function deleteItem(collection, id) {
     if (!collection || !Array.isArray(state[collection])) return;
     if (collection === 'fuel' || collection === 'services') {
@@ -17537,6 +17724,11 @@
     const backdrop = event.target.closest('[data-overview-backdrop]');
     if (backdrop && !event.target.closest('[data-overview-panel]')) {
       closeOverview();
+      return;
+    }
+    const homeEditBackdrop = event.target.closest('[data-home-edit-backdrop]');
+    if (homeEditBackdrop && !event.target.closest('.home-edit-sheet')) {
+      toggleHomeEditSheet(false);
       return;
     }
     const modalBackdrop = event.target.closest('[data-modal-backdrop]');
