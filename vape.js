@@ -158,11 +158,10 @@
     }
 
     function normalizeVapeState(value = {}) {
-      const hasSeededItems = Array.isArray(value.items);
       return {
-        items: hasSeededItems ? normalizeVapeItems(value.items) : seedVapeItems(),
-        resaleTotal: Math.max(0, decimalValue(value.resaleTotal ?? 581)),
-        startDate: /^\d{4}-\d{2}-\d{2}$/.test(String(value.startDate || '')) ? value.startDate : '2025-01-06',
+        items: normalizeVapeItems(value.items),
+        resaleTotal: Math.max(0, decimalValue(value.resaleTotal ?? 0)),
+        startDate: /^\d{4}-\d{2}-\d{2}$/.test(String(value.startDate || '')) ? value.startDate : todayISO(),
         cigaretteCostPerDay: decimalValue(value.cigaretteCostPerDay ?? 150.5) || 150.5,
         calcBooster: normalizeVapeCalc(value.calcBooster),
         calcReady: normalizeVapeCalc(value.calcReady),
@@ -574,6 +573,7 @@
 
     return {
       normalizeVapeState,
+      seedVapeItems,
       renderVape,
       addVapeItemFromForm,
       updateVapeItemFromForm,

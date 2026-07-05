@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_381';
-  const APP_BUILD = 381;
+  const APP_VERSION = 'Domácnost+ v.0.1_382';
+  const APP_BUILD = 382;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1665,6 +1665,20 @@
       // v Nastavení ručně přepne zpátky na light v rámci téhle session.
       forceDarkVisualUpgrade = false;
     };
+
+    // v0.1_382: ceník, datum začátku a částka za prodej v modulu Vape byly osobní
+    // data jednoho účtu, ne výchozí obsah pro každou domácnost. Nová domácnost
+    // (previousAppBuild 0) začíná s prázdným ceníkem; existující instalace, které
+    // je ještě nemají doplněné (build < 382, žádné vlastní položky), je dostanou
+    // jednorázově doplněné, aby o svá historická data nepřišly.
+    if (previousAppBuild && previousAppBuild < 382 && !(Array.isArray(migrated.vape?.items) && migrated.vape.items.length)) {
+      migrated.vape = {
+        ...(migrated.vape || {}),
+        items: seedVapeItems(),
+        resaleTotal: 581,
+        startDate: '2025-01-06'
+      };
+    }
 
     migrated.household = {
       id: migrated.household?.id || `household-${uid()}`,
@@ -10951,6 +10965,10 @@
 
   function normalizeVapeState(value) {
     return getVapeModule().normalizeVapeState(value);
+  }
+
+  function seedVapeItems() {
+    return getVapeModule().seedVapeItems();
   }
 
   function subscriptionMonthSummary(month) {

@@ -15279,8 +15279,13 @@ body.home-active {
   .app-desktop-row .app-frame {
     flex: 1;
     min-width: 0;
-    max-width: 640px;
+    max-width: 1320px;
     margin: 0 auto;
+  }
+
+  /* Home zůstává úzký dashboardový sloupec, ostatní moduly ať využijí celou šířku obrazovky. */
+  .app-desktop-row .app-frame.home-clean-frame {
+    max-width: 640px;
   }
 
   .nav-shell {
