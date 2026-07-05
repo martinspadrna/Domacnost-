@@ -345,12 +345,8 @@ button {
 
 .nav-item.active {
   color: var(--text);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.70), rgba(255, 255, 255, 0.38));
-  box-shadow: 0 10px 28px rgba(45, 70, 110, 0.12);
-}
-
-[data-theme="dark"] .nav-item.active {
-  background: rgba(255, 255, 255, 0.09);
+  background: transparent;
+  box-shadow: none;
 }
 
 .page-head {
@@ -4206,8 +4202,7 @@ body::before {
 .icon-btn,
 .badge,
 .quick-chip,
-.module-chip,
-.nav-item.active {
+.module-chip {
   border-color: color-mix(in srgb, var(--ios-glass-edge) 64%, var(--line));
   background: color-mix(in srgb, var(--ios-glass-strong) 68%, transparent);
   box-shadow: var(--ios-inner-highlight);
@@ -4220,7 +4215,6 @@ body::before {
 }
 .nav-item.active {
   color: var(--text);
-  transform: translateY(-1px);
 }
 .overview-backdrop {
   background: rgba(8, 14, 25, .34);
@@ -4796,13 +4790,6 @@ textarea {
 }
 
 /* Domácnost+ v.0.1_102 – Home Kalendář: probíhající a nadcházející události */
-.nav-shell {
-  bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + 4px);
-  transform: translate3d(0, 0, 0);
-  will-change: auto;
-  contain: layout paint;
-}
-
 .nav-scroll {
   overscroll-behavior-x: contain;
   scroll-behavior: auto;
@@ -5310,7 +5297,7 @@ textarea {
 
 .consumption-grid text {
   fill: rgba(255,255,255,.62);
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .consumption-bar rect {
@@ -5322,7 +5309,7 @@ textarea {
 
 .consumption-bar text {
   fill: rgba(255,255,255,.88);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -6761,10 +6748,13 @@ body::before {
 
 .brand-mark:not(.logo-mark),
 .primary-btn,
-.nav-item.active,
 .starter-progress span,
 .setup-progress span {
   background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+}
+
+.nav-item.active {
+  background: transparent !important;
 }
 
 .primary-btn,
@@ -9307,66 +9297,8 @@ form[data-busy="true"] button[type="submit"] {
 }
 
 
-/* Domácnost+ v0.1_239 – spodní lišta bez visualViewport skoku */
-:root {
-  --nav-visual-height-v234: 76px;
-  --nav-inner-height-v234: 62px;
-  --nav-bottom-gap-v234: max(0px, calc(env(safe-area-inset-bottom, 0px) - 30px));
-}
-
-body {
-  padding-bottom: calc(var(--nav-visual-height-v234) + var(--nav-bottom-gap-v234) + 18px) !important;
-}
-
-.nav-shell {
-  position: fixed !important;
-  left: 50% !important;
-  right: auto !important;
-  bottom: var(--nav-bottom-gap-v234) !important;
-  width: min(calc(100vw - 20px), 540px) !important;
-  height: var(--nav-visual-height-v234) !important;
-  min-height: var(--nav-visual-height-v234) !important;
-  max-height: var(--nav-visual-height-v234) !important;
-  transform: translate3d(-50%, 0, 0) !important;
-  transform-origin: center bottom !important;
-  overflow: visible !important;
-}
-
-.nav-scroll {
-  height: var(--nav-inner-height-v234) !important;
-  min-height: var(--nav-inner-height-v234) !important;
-  max-height: var(--nav-inner-height-v234) !important;
-  overflow: hidden !important;
-}
-
-.nav-item {
-  height: var(--nav-inner-height-v234) !important;
-  min-height: var(--nav-inner-height-v234) !important;
-  max-height: var(--nav-inner-height-v234) !important;
-}
-
-.app-frame {
-  padding-bottom: calc(var(--nav-visual-height-v234) + var(--nav-bottom-gap-v234) + 18px) !important;
-}
-
 
 /* Domácnost+ v.0.1_242 – spodní lišta zamknutá k viewportu při scrollu */
-.nav-shell {
-  position: fixed !important;
-  left: 50% !important;
-  right: auto !important;
-  bottom: 0 !important;
-  width: min(620px, calc(100vw - 16px)) !important;
-  max-width: calc(100vw - 16px) !important;
-  margin: 0 !important;
-  padding: 8px 8px max(8px, env(safe-area-inset-bottom, 0px)) !important;
-  transform: translate3d(-50%, 0, 0) !important;
-  -webkit-transform: translate3d(-50%, 0, 0) !important;
-  will-change: transform !important;
-  contain: layout paint style !important;
-  overscroll-behavior: none !important;
-}
-
 .app-shell {
   min-height: 100svh;
   padding: max(12px, env(safe-area-inset-top, 0px)) 12px calc(var(--nav-height) + var(--safe-bottom) + 12px);
@@ -14985,7 +14917,7 @@ body.home-active {
   gap: 10px;
   padding: 0 2px;
   color: var(--muted);
-  font-size: .68rem;
+  font-size: 13px;
   font-weight: 800;
   line-height: 1.1;
 }

@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_384';
-  const APP_BUILD = 384;
+  const APP_VERSION = 'Domácnost+ v.0.1_385';
+  const APP_BUILD = 385;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -9965,6 +9965,12 @@
     return { first: rows[0].label || 'začátek', last: rows[rows.length - 1].label || 'poslední' };
   }
 
+  // Na úzkých obrazovkách appka zobrazí méně sloupců/bodů grafu, ať se popisky a body nemačkají.
+  function chartColumnLimit(wideLimit, narrowLimit = 6) {
+    const width = typeof window !== 'undefined' ? window.innerWidth : 0;
+    return width && width < 480 ? narrowLimit : wideLimit;
+  }
+
   function garageChartPointsFromFuelPrices(fuelRows = [], limit = 14) {
     return sortFuelRows(fuelRows)
       .map((item) => ({ value: fuelPricePerLiter(item), label: formatDate(item.date) }))
@@ -10056,10 +10062,10 @@
 
   function renderGarageFuelPanel(vehicle) {
     const analytics = garageVehicleAnalytics(vehicle);
-    const priceChartPoints = garageChartPointsFromFuelPrices(analytics.fuelRows, 14);
-    const consumptionChartPoints = garageChartPointsFromConsumption(analytics.entries, 14);
-    const monthlyFuelCostPoints = garageMonthlyFuelCostPoints(analytics.fuelRows).slice(-12);
-    const monthlyDistancePoints = garageMonthlyDistancePoints(analytics.entries).slice(-12);
+    const priceChartPoints = garageChartPointsFromFuelPrices(analytics.fuelRows, chartColumnLimit(14));
+    const consumptionChartPoints = garageChartPointsFromConsumption(analytics.entries, chartColumnLimit(14));
+    const monthlyFuelCostPoints = garageMonthlyFuelCostPoints(analytics.fuelRows).slice(-chartColumnLimit(12));
+    const monthlyDistancePoints = garageMonthlyDistancePoints(analytics.entries).slice(-chartColumnLimit(12));
     const priceChartValues = priceChartPoints.map((item) => item.value);
     const consumptionChartValues = consumptionChartPoints.map((item) => item.value);
     const monthlyChartValues = monthlyFuelCostPoints.map((item) => item.value);
@@ -10413,8 +10419,8 @@
     lastYearStart.setFullYear(lastYearStart.getFullYear() - 1);
     const lastYearStartIso = localISODate(lastYearStart);
     const lastYearEntries = analytics.entries.filter((item) => String(item.date || '').slice(0, 10) >= lastYearStartIso);
-    const lastYearPoints = garageChartPointsFromConsumption(lastYearEntries, 24);
-    const allTimePoints = garageChartPointsFromConsumption(analytics.entries, 999);
+    const lastYearPoints = garageChartPointsFromConsumption(lastYearEntries, chartColumnLimit(24));
+    const allTimePoints = garageChartPointsFromConsumption(analytics.entries, chartColumnLimit(999));
     const lastYearValues = lastYearPoints.map((item) => item.value);
     const allTimeValues = allTimePoints.map((item) => item.value);
     const avg = (values) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
@@ -10819,7 +10825,7 @@
   }
 
   function renderMiniChart(fuelRows) {
-    const series = buildFuelConsumptionSeries(fuelRows, 12);
+    const series = buildFuelConsumptionSeries(fuelRows, chartColumnLimit(12));
     const values = series.map((item) => item.value).filter((value) => Number.isFinite(value));
     if (values.length < 2) return '<div class="inline-note" style="margin-top:12px;">Graf spotřeby za poslední rok se zobrazí po více tankováních s km a litry.</div>';
     const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
@@ -10857,8 +10863,8 @@
     }).join('');
     return `
       <div class="consumption-chart-wrap">
-        <div class="consumption-chart-head"><strong>Spotřeba paliva</strong><span>posledních 12 měsíců</span></div>
-        <svg class="consumption-chart" viewBox="0 0 ${chartWidth} ${chartHeight}" role="img" aria-label="Graf spotřeby paliva za posledních 12 měsíců">
+        <div class="consumption-chart-head"><strong>Spotřeba paliva</strong><span>posledních ${series.length} měsíců</span></div>
+        <svg class="consumption-chart" viewBox="0 0 ${chartWidth} ${chartHeight}" role="img" aria-label="Graf spotřeby paliva za posledních ${series.length} měsíců">
           ${grid}
           ${bars}
         </svg>
