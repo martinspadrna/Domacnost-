@@ -15555,3 +15555,21 @@ body.home-active {
   display: grid;
   gap: 6px;
 }
+
+/* Domácnost+ - modul Vape */
+.vape-mix-component {
+  border-top: 1px solid var(--border, var(--line));
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.vape-mix-component:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.vape-mix-component-label {
+  font-weight: 700;
+  margin-bottom: 8px;
+}

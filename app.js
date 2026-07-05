@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_380';
-  const APP_BUILD = 380;
+  const APP_VERSION = 'Domácnost+ v.0.1_381';
+  const APP_BUILD = 381;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -31,6 +31,7 @@
     { id: 'contracts', label: 'Smlouvy', icon: '📄', category: 'household' },
     { id: 'pool', label: 'Bazén', icon: '🏊', category: 'household' },
     { id: 'garage', label: 'Garáž', icon: '🚗', category: 'household' },
+    { id: 'vape', label: 'Vape', icon: '💨', category: 'household' },
     { id: 'finance', label: 'Finance', icon: '💰', category: 'money' },
     { id: 'subscriptions', label: 'Předplatné', icon: '🎬', category: 'money' },
     { id: 'shopping', label: 'Nákupy', icon: '🛒', category: 'money' },
@@ -799,6 +800,7 @@
     financeLoans: [],
     financeRefinanceResult: null,
     pool: {},
+    vape: {},
     subscriptions: [],
     subscriptionPeople: [],
     subscriptionPayments: [],
@@ -1005,6 +1007,7 @@
   let contractsInstance = null;
   let subscriptionsInstance = null;
   let calendarInstance = null;
+  let vapeInstance = null;
 
   let state = loadState();
   runtimeStateRef = state;
@@ -1727,7 +1730,7 @@
     }
 
     migrated.enabledModules = normalizeModuleList(migrated.enabledModules);
-    ['hdo', 'waste', 'readings', 'pool', 'tasks', 'warranties', 'polishHolidays'].forEach((id) => {
+    ['hdo', 'waste', 'readings', 'pool', 'vape', 'tasks', 'warranties', 'polishHolidays'].forEach((id) => {
       if (!migrated.enabledModules.includes(id)) migrated.enabledModules.push(id);
     });
     if (!migrated.enabledModules.includes('weather')) migrated.enabledModules = ['weather', ...migrated.enabledModules];
@@ -3474,6 +3477,7 @@
       warranties: 'Záruky, účtenky a hlídání konce záruky.',
       polishHolidays: 'Polské svátky a dny, kdy můžou být zavřené obchody.',
       garage: 'Auta v domácnosti, tankování, servis a základní přehled spotřeby.',
+      vape: 'Kalkulačky na míchání liquidu, kompletní ceník nákupů a přehled útraty.',
       contracts: 'Evidence smluv a pojistek s hlídáním platnosti.',
       finance: 'Jednoduchý přehled příjmů a výdajů domácnosti s cloudovým oddělením podle householdId.',
       subscriptions: 'Předplatné, sdílení streamovacích služeb, platby lidí a kontrola dluhů/přeplatků.',
@@ -3502,6 +3506,7 @@
       polishHolidays: () => renderHomecare('polish-holidays'),
       homecare: () => renderHomecare('hdo'),
       garage: renderGarage,
+      vape: renderVape,
       contracts: renderContracts,
       finance: renderFinance,
       subscriptions: renderSubscriptions,
@@ -5812,6 +5817,34 @@
       cloudSaveHouseholdUiSettings
     });
     return poolInstance;
+  }
+
+  function getVapeModule() {
+    if (vapeInstance) return vapeInstance;
+    const factory = window.DomacnostVape?.createVape;
+    if (!factory) throw new Error('vape.js není načtený');
+    vapeInstance = factory({
+      getState: () => state,
+      uid,
+      todayISO,
+      normalizeText,
+      escapeHtml,
+      decimalValue,
+      field,
+      selectField,
+      renderEmpty,
+      renderEmptyCta,
+      renderSectionTabs,
+      getModuleTab,
+      formatCurrency,
+      touchState,
+      saveState,
+      render,
+      showToast,
+      cloudReady,
+      cloudSaveHouseholdUiSettings
+    });
+    return vapeInstance;
   }
 
   function getContractsModule() {
@@ -10880,6 +10913,46 @@
     return getPoolModule().savePoolFromForm(data, form);
   }
 
+  function renderVape() {
+    return getVapeModule().renderVape();
+  }
+
+  function addVapeItemFromForm(data, form) {
+    return getVapeModule().addVapeItemFromForm(data, form);
+  }
+
+  function updateVapeItemFromForm(id, data, form) {
+    return getVapeModule().updateVapeItemFromForm(id, data, form);
+  }
+
+  function setVapeItemEdit(id) {
+    return getVapeModule().setVapeItemEdit(id);
+  }
+
+  function deleteVapeItem(id) {
+    return getVapeModule().deleteVapeItem(id);
+  }
+
+  function saveVapeSettingsFromForm(data) {
+    return getVapeModule().saveVapeSettingsFromForm(data);
+  }
+
+  function calcVapeBoosterFromForm(data) {
+    return getVapeModule().calcVapeBoosterFromForm(data);
+  }
+
+  function calcVapeReadyFromForm(data) {
+    return getVapeModule().calcVapeReadyFromForm(data);
+  }
+
+  function calcVapeCustomFromForm(data) {
+    return getVapeModule().calcVapeCustomFromForm(data);
+  }
+
+  function normalizeVapeState(value) {
+    return getVapeModule().normalizeVapeState(value);
+  }
+
   function subscriptionMonthSummary(month) {
     return getSubscriptionsModule().subscriptionMonthSummary(month);
   }
@@ -13877,6 +13950,12 @@
       'add-profile': () => addProfile(data.name, data.role),
       'weather-settings': () => saveWeatherSettings(data, form),
       'pool-settings': () => savePoolFromForm(data, form),
+      'add-vape-item': () => addVapeItemFromForm(data, form),
+      'update-vape-item': () => updateVapeItemFromForm(form.dataset.id, data, form),
+      'vape-settings': () => saveVapeSettingsFromForm(data),
+      'vape-calc-booster': () => calcVapeBoosterFromForm(data),
+      'vape-calc-ready': () => calcVapeReadyFromForm(data),
+      'vape-calc-custom': () => calcVapeCustomFromForm(data),
       'import-data': () => importData(data.json),
       'cloud-login': () => cloudLogin(data.email, data.password),
       'cloud-signup': () => cloudSignUp(data.email, data.password),
@@ -16147,6 +16226,18 @@
       deleteFinanceLoan(button.dataset.id);
       return;
     }
+    if (action === 'vape-item-edit') {
+      setVapeItemEdit(button.dataset.id);
+      return;
+    }
+    if (action === 'vape-item-edit-cancel') {
+      setVapeItemEdit('');
+      return;
+    }
+    if (action === 'delete-vape-item') {
+      deleteVapeItem(button.dataset.id);
+      return;
+    }
     if (action === 'subscription-month-prev') {
       shiftSubscriptionMonth(-1);
       return;
@@ -16869,6 +16960,9 @@
     if (layout.pool && typeof layout.pool === 'object' && !Array.isArray(layout.pool)) {
       state.pool = normalizePoolState({ ...(state.pool || {}), ...layout.pool });
     }
+    if (layout.vape && typeof layout.vape === 'object' && !Array.isArray(layout.vape)) {
+      state.vape = normalizeVapeState({ ...(state.vape || {}), ...layout.vape });
+    }
     if (layout.financeSettings && typeof layout.financeSettings === 'object') {
       if (/^\d{4}-\d{2}$/.test(String(layout.financeSettings.month || ''))) state.financeCloud = { ...(state.financeCloud || {}), monthFilter: String(layout.financeSettings.month) };
       if (['all', 'income', 'expense', 'transfer'].includes(layout.financeSettings.typeFilter)) state.financeCloud = { ...(state.financeCloud || {}), typeFilter: layout.financeSettings.typeFilter };
@@ -16910,6 +17004,7 @@
         financeTemplates: normalizeFinanceTemplates(state.financeTemplates || []),
         financeLoans: normalizeFinanceLoans(state.financeLoans || []),
         pool: normalizePoolState(state.pool || {}),
+        vape: normalizeVapeState(state.vape || {}),
         financeSettings: {
           month: financeSelectedMonth(),
           typeFilter: financeTypeFilter()
