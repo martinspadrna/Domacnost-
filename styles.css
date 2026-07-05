@@ -12726,6 +12726,11 @@ body.home-active {
 }
 
 /* Domácnost+ v0.1_373 – redesign cleanup and unified dark Home (Teď/Brzy/Peníze) */
+.home-redesign-shell.home-app-shell .home-clean-frame main,
+.home-redesign-shell.home-app-shell main {
+  padding-bottom: calc(var(--safe-bottom, 0px) + 28px) !important;
+}
+
 .sr-only-inline {
   position: absolute;
   width: 1px;

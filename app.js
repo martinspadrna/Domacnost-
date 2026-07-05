@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_373';
-  const APP_BUILD = 373;
+  const APP_VERSION = 'Domácnost+ v.0.1_374';
+  const APP_BUILD = 374;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1572,7 +1572,7 @@
     const timestamp = new Date().toISOString();
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
     forceLightVisualRecovery = Boolean(previousAppBuild && previousAppBuild < 264 && normalizeAppTheme(migrated.settings?.theme) === 'dark');
-    forceDarkVisualUpgrade = Boolean(previousAppBuild && previousAppBuild < 373 && normalizeAppTheme(migrated.settings?.theme) === 'light');
+    forceDarkVisualUpgrade = Boolean(previousAppBuild && previousAppBuild < 374 && normalizeAppTheme(migrated.settings?.theme) === 'light');
 
     migrated.meta = {
       schemaVersion: 85,
@@ -1610,7 +1610,10 @@
     } else if (forceDarkVisualUpgrade) {
       Object.keys(migrated.settings.profileUiSettings || {}).forEach((key) => {
         const item = migrated.settings.profileUiSettings[key];
-        if (item?.visualSettings) item.visualSettings = { ...item.visualSettings, theme: 'dark' };
+        if (item?.visualSettings) {
+          item.visualSettings = { ...item.visualSettings, theme: 'dark' };
+          item.updatedAt = timestamp;
+        }
       });
       try {
         localStorage.setItem(VISUAL_SETTINGS_STORAGE_KEY, JSON.stringify({
@@ -2103,7 +2106,7 @@
     if (Array.isArray(profileSettings.dashboardWidgets)) state.settings.dashboardWidgets = normalizeDashboardWidgetIds(profileSettings.dashboardWidgets);
     if (Array.isArray(profileSettings.homeHeroItems)) state.settings.homeHeroItems = normalizeHomeHeroIds(profileSettings.homeHeroItems);
     if (profileSettings.visualSettings && typeof profileSettings.visualSettings === 'object') {
-      state.settings.theme = normalizeAppTheme(profileSettings.visualSettings.theme);
+      state.settings.theme = forceLightVisualRecovery ? 'light' : forceDarkVisualUpgrade ? 'dark' : normalizeAppTheme(profileSettings.visualSettings.theme);
       state.settings.iconTheme = normalizeIconTheme(profileSettings.visualSettings.iconTheme);
       state.settings.colorScheme = normalizeColorScheme(profileSettings.visualSettings.colorScheme);
       applyVisualSettings();
