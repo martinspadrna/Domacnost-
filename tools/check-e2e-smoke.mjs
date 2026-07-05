@@ -781,7 +781,7 @@ async function run() {
           cardDisplay: cardStyle?.display || '',
           cardRadius: cardStyle?.borderTopLeftRadius || '',
           cardBackground: cardStyle?.backgroundColor || '',
-          visualChoiceSurface: Boolean(visualChoiceStyle && visualChoiceStyle.display === 'grid' && parseFloat(visualChoiceStyle.borderTopLeftRadius) >= 16),
+          visualChoiceSurface: Boolean(visualChoiceStyle && (visualChoiceStyle.display === 'grid' || visualChoiceStyle.display === 'flex') && parseFloat(visualChoiceStyle.borderTopLeftRadius) >= 16),
           visualChoiceDisplay: visualChoiceStyle?.display || '',
           visualChoiceRadius: visualChoiceStyle?.borderTopLeftRadius || '',
           dataPanel: Boolean(document.querySelector('.settings-tab-data .panel-data, .panel-data')),

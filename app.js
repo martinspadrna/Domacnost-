@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_385';
-  const APP_BUILD = 385;
+  const APP_VERSION = 'Domácnost+ v.0.1_387';
+  const APP_BUILD = 387;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -2468,7 +2468,14 @@
     if (recoveryModeActive) return false;
     if (bootCloudResumeChecked || cloudWarmStartDone) return false;
     if (!hasStoredSupabaseSession()) return false;
-    if (hasUsableAppSession() && state.household?.isConfigured) return false;
+    // Pokud už máme lokálně (localStorage nebo IndexedDB záloha) nakonfigurovanou
+    // domácnost, appku ukážeme rovnou s těmito daty a cloud si ověří session na
+    // pozadí (scheduleBootCloudWarmStart) — nečekáme na cloud round-trip jen proto,
+    // že state.cloud.status ještě formálně neříká 'signed-in'. Dřív to na iOS (kde
+    // localStorage může být po quota-purge prázdné, ale IndexedDB záloha ho stihne
+    // obnovit až po prvním renderu) znamenalo zbytečné několikavteřinové čekání na
+    // "Obnovuji domácnost" i když appka lokální data ve skutečnosti měla.
+    if (state.household?.isConfigured) return false;
     return true;
   }
 

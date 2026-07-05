@@ -13751,6 +13751,32 @@ body.home-active {
   }
 }
 
+/* Domácnost+ - kompaktní karty ve výběru vzhledu (režim/styl ikon/schéma).
+   Sdílený .visual-choice-card layout (auto/1fr/auto řádek) počítá s malým
+   náhledem vedle textu. Náhledy vzhledu ale mají netriviální šířku (ikonky,
+   orb, tečky), takže sloupec s textem se zhroutí na 0px a titulek/popis se
+   zalomí do extrémně vysokého jednoho sloupce. Všechny tři výběry proto mají
+   vlastní kompaktní svislý layout (náhled nahoře, text pod ním). */
+.visual-choice-grid .visual-choice-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 0;
+  height: auto;
+}
+
+/* Styl ikon má 6 voleb (nejvíc ze všech tří) — popis navíc schovaný, ať se
+   karty vejdou na mobil bez zbytečného scrollování. Titulek stačí. */
+.icon-choice-grid .visual-choice-card .visual-icon-preview-row .module-theme-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.icon-choice-grid .visual-choice-card em {
+  display: none;
+}
+
 /* Domacnost+ - sjednocene modaly a prekryvy */
 .app-modal-backdrop,
 .overview-backdrop {
