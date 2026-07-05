@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_374';
-  const APP_BUILD = 374;
+  const APP_VERSION = 'Domácnost+ v.0.1_375';
+  const APP_BUILD = 375;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1572,7 +1572,7 @@
     const timestamp = new Date().toISOString();
     const previousAppBuild = Number(migrated.meta?.appBuild || 0);
     forceLightVisualRecovery = Boolean(previousAppBuild && previousAppBuild < 264 && normalizeAppTheme(migrated.settings?.theme) === 'dark');
-    forceDarkVisualUpgrade = Boolean(previousAppBuild && previousAppBuild < 374 && normalizeAppTheme(migrated.settings?.theme) === 'light');
+    forceDarkVisualUpgrade = Boolean(previousAppBuild && previousAppBuild < 375 && normalizeAppTheme(migrated.settings?.theme) === 'light');
 
     migrated.meta = {
       schemaVersion: 85,
@@ -3496,6 +3496,7 @@
     const nowItems = buildHomeNowItems(ctx);
     const soonItems = buildHomeSoonItems(ctx);
     const moneyItems = buildHomeMoneyItems(ctx);
+    const quickActions = buildHomeQuickActions(ctx);
     const lastSync = state.cloud?.lastSyncAt ? formatDateTime(state.cloud.lastSyncAt) : formatDateTime(now);
 
     return `
@@ -3510,6 +3511,7 @@
         ${renderHomeListSection('Teď', nowItems)}
         ${renderHomeListSection('Brzy', soonItems)}
         ${renderHomeListSection('Peníze', moneyItems)}
+        ${renderHomeQuickActions(quickActions)}
         <div class="home-dash-sync"><span aria-hidden="true">⟳</span> Poslední aktualizace: ${escapeHtml(lastSync)}</div>
       </div>
     `;
@@ -3545,10 +3547,16 @@
     `;
   }
 
+  const HOME_ROW_ICON_TONES = {
+    '💡': 'amber', '♻️': 'green', '♻': 'green', '🏊': 'blue', '🚗': 'coral',
+    '📄': 'amber', '📅': 'blue', '✓': 'green', '🎬': 'green', '💰': 'amber', '📈': 'blue'
+  };
+
   function renderHomeListRow(item) {
+    const iconTone = HOME_ROW_ICON_TONES[item.icon] || 'neutral';
     return `
       <button class="home-row ${item.tone || ''}" type="button" ${homeActionAttrs(item)}>
-        <span class="home-row-icon" aria-hidden="true">${escapeHtml(item.icon || '•')}</span>
+        <span class="home-row-icon home-row-icon-${iconTone}" aria-hidden="true">${escapeHtml(item.icon || '•')}</span>
         <span class="home-row-copy">
           <strong>${escapeHtml(item.title)}</strong>
           ${item.meta ? `<em>${escapeHtml(item.meta)}</em>` : ''}
@@ -3556,6 +3564,32 @@
         ${item.value ? `<span class="home-row-value ${item.tone || ''}">${escapeHtml(item.value)}</span>` : ''}
         <span class="home-row-chevron" aria-hidden="true">›</span>
       </button>
+    `;
+  }
+
+  function buildHomeQuickActions(ctx) {
+    const hasModule = (id) => ctx.visibleModules.some((module) => module.id === id);
+    const actions = [];
+    if (hasModule('finance')) actions.push({ icon: '➕', label: 'Výdaj', nav: 'finance', tab: 'add' });
+    if (hasModule('shopping')) actions.push({ icon: '🛒', label: 'Nákup', nav: 'shopping' });
+    if (hasModule('readings')) actions.push({ icon: '📊', label: 'Odečet', nav: 'readings', tab: 'entry' });
+    return actions;
+  }
+
+  function renderHomeQuickActions(actions) {
+    if (!actions.length) return '';
+    return `
+      <section class="home-dash-section">
+        <h2 class="home-dash-section-title">Rychlé akce</h2>
+        <div class="home-quick-actions">
+          ${actions.map((action) => `
+            <button class="home-quick-action" type="button" ${homeActionAttrs(action)}>
+              <span class="home-quick-action-icon" aria-hidden="true">${escapeHtml(action.icon)}</span>
+              <span>${escapeHtml(action.label)}</span>
+            </button>
+          `).join('')}
+        </div>
+      </section>
     `;
   }
 

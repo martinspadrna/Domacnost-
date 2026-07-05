@@ -12846,6 +12846,38 @@ body.home-active {
 .home-row.bad .home-row-icon { background: color-mix(in srgb, var(--bad) 22%, transparent); }
 .home-row.good .home-row-icon { background: color-mix(in srgb, var(--good) 20%, transparent); }
 
+.home-row-icon-green { background: color-mix(in srgb, var(--good) 20%, transparent); }
+.home-row-icon-blue { background: color-mix(in srgb, var(--primary) 20%, transparent); }
+.home-row-icon-amber { background: color-mix(in srgb, var(--warn) 20%, transparent); }
+.home-row-icon-coral { background: color-mix(in srgb, var(--bad) 16%, transparent); }
+
+.home-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.home-quick-action {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 12px 4px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(127, 143, 168, .08);
+  color: var(--text);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 700;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.home-quick-action-icon {
+  font-size: 1.25rem;
+}
+
 .home-row-copy {
   display: grid;
   gap: 2px;
