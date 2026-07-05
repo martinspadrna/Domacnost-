@@ -359,7 +359,9 @@ function smokeSeedScript() {
       provider: 'Test',
       number: 'SMOKE-1',
       validFrom: '2026-01-01',
-      validTo: '2026-12-31',
+      // +30 dní od běhu testu, ať smlouva vždy spadne do 45denního okna
+      // pro urgentContracts a objeví se v Home widgetu Nadcházející.
+      validTo: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
       amount: 1200,
       frequency: 'monthly',
       note: 'E2E smoke',
@@ -474,37 +476,22 @@ async function run() {
         const text = document.body?.innerText || '';
         const homeMain = document.querySelector('.home-redesign-shell.home-app-shell main');
         const homeMainStyle = homeMain ? getComputedStyle(homeMain) : null;
-        const homePrimary = document.querySelector('.home-primary-action');
-        const homePrimaryStyle = homePrimary ? getComputedStyle(homePrimary) : null;
-        const homeStatus = document.querySelector('.home-status-card');
-        const homeStatusStyle = homeStatus ? getComputedStyle(homeStatus) : null;
-        const homeAttention = document.querySelector('.home-attention-item');
-        const homeAttentionStyle = homeAttention ? getComputedStyle(homeAttention) : null;
-        const homeAttentionMeta = homeAttention ? homeAttention.querySelector('.home-attention-copy em') : null;
-        const homeAttentionMetaStyle = homeAttentionMeta ? getComputedStyle(homeAttentionMeta) : null;
-        const homeShortcut = document.querySelector('.home-module-shortcut');
-        const homeShortcutStyle = homeShortcut ? getComputedStyle(homeShortcut) : null;
         return {
           title: document.title,
           appStarted: Boolean(window.__DOMACNOST_APP_STARTED__),
           appRoot: Boolean(document.querySelector('#app')),
           versionOk: document.title.includes('v.0.1_${expectedBuild}') || text.includes('v.0.1_${expectedBuild}'),
           bootError: Boolean(document.querySelector('.module-error-card, .app-boot-error')),
-          homeRedesign: Boolean(document.querySelector('.home-dashboard-redesign')),
-          homeDailyHero: Boolean(document.querySelector('.home-daily-hero')),
-          homeOldHero: Boolean(document.querySelector('.home-minimal-hero, .dashboard-empty-home')),
+          homeDash: Boolean(document.querySelector('.home-dash')),
+          homeDashTop: Boolean(document.querySelector('.home-dash-top')),
+          homeOldHero: Boolean(document.querySelector('.home-minimal-hero, .dashboard-empty-home, .home-daily-hero, .home-dashboard-redesign')),
           homeMainScrollable: Boolean(homeMainStyle && /auto|scroll/.test(homeMainStyle.overflowY)),
-          homeSummaryCopy: Boolean(document.querySelector('.home-daily-hero .station-summary-copy')),
-          homeDaily: Boolean(document.querySelector('[data-dashboard-widget="daily"]')),
-          homePrimary: Boolean(document.querySelector('.home-primary-action')),
-          homeStatusCount: document.querySelectorAll('.home-status-card').length,
-          homeAttention: Boolean(document.querySelector('.home-attention-list')),
-          homeModules: Boolean(document.querySelector('.home-module-strip .home-module-shortcut')),
-          homePrimarySurface: Boolean(homePrimaryStyle && homePrimaryStyle.display === 'grid' && parseFloat(homePrimaryStyle.borderTopLeftRadius) >= 16),
-          homeStatusSurface: Boolean(homeStatusStyle && homeStatusStyle.display === 'grid' && parseFloat(homeStatusStyle.borderTopLeftRadius) >= 16),
-          homeAttentionSurface: Boolean(homeAttentionStyle && homeAttentionStyle.display === 'grid' && parseFloat(homeAttentionStyle.borderTopLeftRadius) >= 16),
-          homeAttentionClamp: Boolean(homeAttentionMetaStyle && homeAttentionMetaStyle.webkitLineClamp === '2'),
-          homeShortcutSurface: Boolean(homeShortcutStyle && homeShortcutStyle.display === 'grid' && parseFloat(homeShortcutStyle.borderTopLeftRadius) >= 16),
+          homeGreeting: Boolean(document.querySelector('.home-dash-greeting')),
+          homeTitle: Boolean(document.querySelector('.home-dash-title')),
+          homeToday: Boolean(document.querySelector('.home-today-grid .home-today-card')),
+          homeFinance: Boolean(document.querySelector('.home-finance-widget')),
+          homeAttention: Boolean(document.querySelector('.home-timeline-list .home-timeline-row')),
+          homeModules: Boolean(document.querySelector('.home-quick-actions .home-quick-action')),
           bottomNavCount: document.querySelectorAll('.nav-shell .nav-item').length,
           navPool: Boolean(document.querySelector('[data-nav="pool"]')),
           navFinance: Boolean(document.querySelector('[data-nav="finance"]')),
@@ -522,21 +509,16 @@ async function run() {
     if (!initialValue.appRoot) { fail('Chybí #app root.'); bootOk = false; }
     if (!initialValue.versionOk) { fail(`Na stránce/title není v0.1_${expectedBuild}.`); bootOk = false; }
     if (initialValue.bootError) { fail('Po bootu je vidět module/app error card.'); bootOk = false; }
-    if (!initialValue.homeRedesign) { fail('Home nepoužívá nový home-dashboard-redesign layout.'); bootOk = false; }
-    if (!initialValue.homeDailyHero) { fail('Home nepoužívá nový home-daily-hero panel.'); bootOk = false; }
-    if (initialValue.homeOldHero) { fail('Home znovu vykresluje starý full-height hero layout.'); bootOk = false; }
+    if (!initialValue.homeDash) { fail('Home nepoužívá nový home-dash widget layout.'); bootOk = false; }
+    if (!initialValue.homeDashTop) { fail('Home nemá hlavičku home-dash-top (pozdrav + název domácnosti).'); bootOk = false; }
+    if (initialValue.homeOldHero) { fail('Home znovu vykresluje starý hero/cockpit layout.'); bootOk = false; }
     if (!initialValue.homeMainScrollable) { fail('Nový Home main není scrollovatelný.'); bootOk = false; }
-    if (!initialValue.homeSummaryCopy) { fail('Home denní panel nemá textové bloky station-summary-copy.'); bootOk = false; }
-    if (!initialValue.homeDaily) { fail('Home neobsahuje denní přehled.'); bootOk = false; }
-    if (!initialValue.homePrimary) { fail('Home neobsahuje hlavní akční kartu.'); bootOk = false; }
-    if (initialValue.homeStatusCount < 4) { fail('Home nemá čtyři stavové karty.'); bootOk = false; }
-    if (!initialValue.homeAttention) { fail('Home neobsahuje seznam Dnes a brzy.'); bootOk = false; }
-    if (!initialValue.homeModules) { fail('Home neobsahuje zkratky modulů.'); bootOk = false; }
-    if (!initialValue.homePrimarySurface) { fail('Home hlavní akce nemá sjednocený dashboard povrch.'); bootOk = false; }
-    if (!initialValue.homeStatusSurface) { fail('Home stavová karta nemá sjednocený dashboard povrch.'); bootOk = false; }
-    if (!initialValue.homeAttentionSurface) { fail('Home pozornostní řádek nemá sjednocený dashboard povrch.'); bootOk = false; }
-    if (!initialValue.homeAttentionClamp) { fail('Home pozornostní metadata nemají kontrolovaný dvouřádkový ořez.'); bootOk = false; }
-    if (!initialValue.homeShortcutSurface) { fail('Home modulová zkratka nemá sjednocený dashboard povrch.'); bootOk = false; }
+    if (!initialValue.homeGreeting) { fail('Home nemá pozdrav (home-dash-greeting).'); bootOk = false; }
+    if (!initialValue.homeTitle) { fail('Home nemá název domácnosti v nadpisu (home-dash-title).'); bootOk = false; }
+    if (!initialValue.homeToday) { fail('Home neobsahuje dnešní přehled (home-today-grid).'); bootOk = false; }
+    if (!initialValue.homeFinance) { fail('Home neobsahuje finanční widget.'); bootOk = false; }
+    if (!initialValue.homeAttention) { fail('Home neobsahuje seznam Nadcházející.'); bootOk = false; }
+    if (!initialValue.homeModules) { fail('Home neobsahuje Rychlé akce.'); bootOk = false; }
     if (initialValue.bottomNavCount !== 5) { fail(`Spodní lišta má ${initialValue.bottomNavCount} položek místo 5 včetně Více.`); bootOk = false; }
     if (!initialValue.navPool) { fail('Po seed bootu není dostupná navigace Bazén.'); bootOk = false; }
     if (!initialValue.navFinance) { fail('Po seed bootu není dostupná navigace Finance.'); bootOk = false; }
@@ -568,9 +550,9 @@ async function run() {
         return {
           settings: Boolean(document.querySelector('.more-settings-card[data-nav="settings"]')),
           sectionCount: document.querySelectorAll('.more-module-section').length,
-          hasDaily: headings.includes('Denně'),
-          hasHome: headings.includes('Domov'),
-          hasMoney: headings.includes('Peníze a doklady'),
+          hasDaily: headings.includes('Přehled'),
+          hasHome: headings.includes('Domácnost'),
+          hasMoney: headings.includes('Finance'),
           moduleShortcutCount: document.querySelectorAll('.more-module-section [data-nav]').length,
           hubOneColumn: Boolean(hubStyle && hubStyle.display === 'grid' && hubStyle.gridTemplateColumns.trim().split(/\\s+/).length === 1),
           settingsSurface: Boolean(settingsCardStyle && settingsCardStyle.display === 'grid' && parseFloat(settingsCardStyle.borderTopLeftRadius) >= 16),
@@ -586,9 +568,9 @@ async function run() {
     let moreOk = true;
     if (!moreValue.settings) { fail('Více neobsahuje vstup do Nastavení.'); moreOk = false; }
     if (moreValue.sectionCount < 3) { fail('Více nemá skupiny modulů.'); moreOk = false; }
-    if (!moreValue.hasDaily) { fail('Více nemá sekci Denně.'); moreOk = false; }
-    if (!moreValue.hasHome) { fail('Více nemá sekci Domov.'); moreOk = false; }
-    if (!moreValue.hasMoney) { fail('Více nemá sekci Peníze a doklady.'); moreOk = false; }
+    if (!moreValue.hasDaily) { fail('Více nemá sekci Přehled.'); moreOk = false; }
+    if (!moreValue.hasHome) { fail('Více nemá sekci Domácnost.'); moreOk = false; }
+    if (!moreValue.hasMoney) { fail('Více nemá sekci Finance.'); moreOk = false; }
     if (moreValue.moduleShortcutCount < 8) { fail('Více nemá dost modulových zkratek.'); moreOk = false; }
     if (!moreValue.hubOneColumn) { fail('Vice hub neni na mobilu jednosloupcovy grid.'); moreOk = false; }
     if (!moreValue.settingsSurface) { fail('Vice Nastaveni karta nema novy grid povrch.'); moreOk = false; }
@@ -829,16 +811,9 @@ async function run() {
       returnByValue: true,
       expression: `(() => {
         const text = document.body?.innerText || '';
-        const metricsRail = document.querySelector('[data-module-cockpit="pool"] .module-cockpit-metrics');
-        const metricsStyle = metricsRail ? getComputedStyle(metricsRail) : null;
         const poolChartWrap = document.querySelector('.pool-chart-wrap');
         const poolChartWrapStyle = poolChartWrap ? getComputedStyle(poolChartWrap) : null;
         return {
-          cockpit: Boolean(document.querySelector('[data-module-cockpit="pool"]')),
-          cockpitNoSwipe: Boolean(document.querySelector('[data-module-cockpit="pool"][data-no-swipe]')),
-          cockpitMetrics: document.querySelectorAll('[data-module-cockpit="pool"] .module-cockpit-metric').length,
-          cockpitActions: document.querySelectorAll('[data-module-cockpit="pool"] .module-cockpit-actions button').length,
-          metricRailScrollable: Boolean(metricsRail && metricsStyle && /auto|scroll/.test(metricsStyle.overflowX) && metricsRail.scrollWidth > metricsRail.clientWidth),
           form: Boolean(document.querySelector('form[data-form="pool-settings"]')),
           tempInput: Boolean(document.querySelector('form[data-form="pool-settings"] input[name="waterTempC"]')),
           volume: text.includes('21,6 m³') || text.includes('21.6 m³') || text.includes('objem vody'),
@@ -854,11 +829,6 @@ async function run() {
       console.log('DEBUG pool:', JSON.stringify(poolValue, null, 2));
     }
     let poolOk = true;
-    if (!poolValue.cockpit) { fail('Bazén nemá horní module cockpit.'); poolOk = false; }
-    if (!poolValue.cockpitNoSwipe) { fail('Bazén cockpit není chráněný proti swipe přepnutí modulu.'); poolOk = false; }
-    if (poolValue.cockpitMetrics < 3) { fail('Bazén cockpit nemá metriky.'); poolOk = false; }
-    if (poolValue.cockpitActions < 1) { fail('Bazén cockpit nemá rychlou akci.'); poolOk = false; }
-    if (!poolValue.metricRailScrollable) { fail('Bazén cockpit metriky nejsou na mobilu vodorovně posuvné.'); poolOk = false; }
     if (!poolValue.form) { fail('Bazén po kliknutí nerenderuje pool-settings formulář.'); poolOk = false; }
     if (!poolValue.tempInput) { fail('Bazén po kliknutí nemá vstup pro teplotu vody.'); poolOk = false; }
     if (!poolValue.volume) { fail('Bazén po kliknutí neukazuje objem vody.'); poolOk = false; }
@@ -876,8 +846,6 @@ async function run() {
       returnByValue: true,
       expression: `(() => {
         const text = document.body?.innerText || '';
-        const actionsRail = document.querySelector('[data-module-cockpit="finance"] .module-cockpit-actions');
-        const actionsStyle = actionsRail ? getComputedStyle(actionsRail) : null;
         const sectionTabs = document.querySelector('.section-tabs[aria-label="Záložky modulu"]');
         const sectionTabsStyle = sectionTabs ? getComputedStyle(sectionTabs) : null;
         const financeFormActions = document.querySelector('form[data-form="finance-refinance"] .form-actions');
@@ -897,11 +865,6 @@ async function run() {
         const financeLoanMeta = financeLoanItem ? financeLoanItem.querySelector('.item-meta') : null;
         const financeLoanMetaStyle = financeLoanMeta ? getComputedStyle(financeLoanMeta) : null;
         return {
-          cockpit: Boolean(document.querySelector('[data-module-cockpit="finance"]')),
-          cockpitNoSwipe: Boolean(document.querySelector('[data-module-cockpit="finance"][data-no-swipe]')),
-          cockpitMetrics: document.querySelectorAll('[data-module-cockpit="finance"] .module-cockpit-metric').length,
-          cockpitActions: document.querySelectorAll('[data-module-cockpit="finance"] .module-cockpit-actions button').length,
-          actionRailScrollable: Boolean(actionsRail && actionsStyle && /auto|scroll/.test(actionsStyle.overflowX) && actionsRail.scrollWidth > actionsRail.clientWidth),
           tabsNoSwipe: Boolean(sectionTabs?.hasAttribute('data-no-swipe')),
           tabsScrollable: Boolean(sectionTabs && sectionTabsStyle && /auto|scroll/.test(sectionTabsStyle.overflowX) && sectionTabs.scrollWidth > sectionTabs.clientWidth),
           formActionsRail: Boolean(financeFormActionsStyle && /auto|scroll/.test(financeFormActionsStyle.overflowX) && financeFormActionsStyle.flexWrap === 'nowrap' && financeFormActionsStyle.overscrollBehaviorX === 'contain'),
@@ -923,11 +886,6 @@ async function run() {
       console.log('DEBUG finance:', JSON.stringify(financeValue, null, 2));
     }
     let financeOk = true;
-    if (!financeValue.cockpit) { fail('Finance nemají horní module cockpit.'); financeOk = false; }
-    if (!financeValue.cockpitNoSwipe) { fail('Finance cockpit není chráněný proti swipe přepnutí modulu.'); financeOk = false; }
-    if (financeValue.cockpitMetrics < 3) { fail('Finance cockpit nemá metriky.'); financeOk = false; }
-    if (financeValue.cockpitActions < 3) { fail('Finance cockpit nemá rychlé akce.'); financeOk = false; }
-    if (!financeValue.actionRailScrollable) { fail('Finance cockpit akce nejsou na mobilu vodorovně posuvné.'); financeOk = false; }
     if (!financeValue.tabsNoSwipe) { fail('Finance modulové záložky nejsou chráněné proti swipe přepnutí.'); financeOk = false; }
     if (!financeValue.tabsScrollable) { fail('Finance modulové záložky nejsou na mobilu vodorovně posuvné.'); financeOk = false; }
     if (!financeValue.formActionsRail) { fail('Finance formulářové akce nemají mobilní rail chování.'); financeOk = false; }
@@ -954,9 +912,6 @@ async function run() {
         const detailPanel = document.querySelector('.contracts-panel.panel-detail');
         const detailPanelStyle = detailPanel ? getComputedStyle(detailPanel) : null;
         return {
-          cockpit: Boolean(document.querySelector('[data-module-cockpit="contracts"]')),
-          cockpitMetrics: document.querySelectorAll('[data-module-cockpit="contracts"] .module-cockpit-metric').length,
-          cockpitActions: document.querySelectorAll('[data-module-cockpit="contracts"] .module-cockpit-actions button').length,
           addForm: Boolean(document.querySelector('form[data-form="add-contract"]')),
           updateForm: Boolean(document.querySelector('form[data-form="update-contract"]')),
           fileForm: Boolean(document.querySelector('form[data-form="add-contract-file"]')),
@@ -967,9 +922,6 @@ async function run() {
     });
     const contractsValue = contractsCheck.result?.value || {};
     let contractsOk = true;
-    if (!contractsValue.cockpit) { fail('Smlouvy nemají horní module cockpit.'); contractsOk = false; }
-    if (contractsValue.cockpitMetrics < 3) { fail('Smlouvy cockpit nemá metriky.'); contractsOk = false; }
-    if (contractsValue.cockpitActions < 3) { fail('Smlouvy cockpit nemá rychlé akce.'); contractsOk = false; }
     if (!contractsValue.addForm) { fail('Smlouvy nerenderují add-contract formulář.'); contractsOk = false; }
     if (!contractsValue.updateForm) { fail('Smlouvy nerenderují update-contract formulář v detailu.'); contractsOk = false; }
     if (!contractsValue.fileForm) { fail('Smlouvy nerenderují add-contract-file formulář.'); contractsOk = false; }
