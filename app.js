@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_379';
-  const APP_BUILD = 379;
+  const APP_VERSION = 'Domácnost+ v.0.1_380';
+  const APP_BUILD = 380;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -2231,13 +2231,6 @@
     return state.household?.name || state.settings?.householdName || 'Domácnost';
   }
 
-  function currentProfileInitials() {
-    const name = normalizeText(currentProfile()?.name || householdName() || 'Domácnost');
-    const parts = name.split(/\s+/).filter(Boolean);
-    const initials = parts.slice(0, 2).map((part) => part[0]).join('');
-    return (initials || name.slice(0, 2) || 'D').toUpperCase();
-  }
-
   function getAppBaseUrl() {
     return APP_PUBLIC_URL;
   }
@@ -2651,13 +2644,14 @@
             ${renderDesktopSidebar(active.id)}
             <div class="app-frame ${isHomeModule ? 'home-clean-frame' : ''}">
               <main>
+                ${isHomeModule ? '' : `
                 <div class="app-top-bar">
                   <div class="app-top-brand">
                     <span class="app-top-logo" aria-hidden="true"></span>
                     <span class="app-top-word">Domácnost+</span>
                   </div>
-                  <button type="button" class="app-top-avatar" data-nav="settings" aria-label="Nastavení">${escapeHtml(currentProfileInitials())}</button>
                 </div>
+                `}
                 ${isHomeModule ? '' : `
                 <section class="page-head">
                   <div>
@@ -3620,7 +3614,7 @@
         <header class="home-dash-top">
           <div class="home-dash-greeting">${escapeHtml(homeGreeting())}</div>
           <div class="home-dash-title-row">
-            <h1 class="home-dash-title">Přehled domácnosti</h1>
+            <h1 class="home-dash-title">${escapeHtml(householdName())}</h1>
             <button class="home-dash-edit-btn" type="button" data-action="toggle-home-edit">Upravit</button>
           </div>
         </header>
