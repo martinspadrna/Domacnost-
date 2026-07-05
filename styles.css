@@ -12731,6 +12731,17 @@ body.home-active {
   padding-bottom: calc(var(--safe-bottom, 0px) + 28px) !important;
 }
 
+/* v0.1_239 přidal padding-bottom i na body a .app-frame (nezávisle na main) –
+   pro Home to skládá tři vrstvy prázdného místa nad sebou. Pro Home tyhle
+   dvě vnější vrstvy vynulujeme, main už si svůj vlastní odstup řeší sám. */
+body.home-active {
+  padding-bottom: 0 !important;
+}
+
+.home-redesign-shell.home-app-shell .app-frame {
+  padding-bottom: 0 !important;
+}
+
 .sr-only-inline {
   position: absolute;
   width: 1px;
