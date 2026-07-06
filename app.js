@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_393';
-  const APP_BUILD = 393;
+  const APP_VERSION = 'Domácnost+ v.0.1_394';
+  const APP_BUILD = 394;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -2446,6 +2446,26 @@
     if (state?.meta) state.meta.updatedAt = new Date().toISOString();
     persistStateSnapshot({ immediate: options.immediate === true });
     scheduleCloudAutosync('save');
+  }
+
+  // Local-first: cloud volání se spustí AŽ PO lokálním uložení, takže klik na
+  // "Přidat"/"Uložit" nikdy nečeká na síť - render() proběhne okamžitě z
+  // lokálního state. Cloud request běží na pozadí; když se povede, dopíšeme
+  // cloudId a tiše překreslíme. Když se nepovede (výpadek sítě, offline...),
+  // položka zůstává platná lokální data - autosync ji zkusí odeslat později,
+  // nikdy nezahazujeme rozepsanou/uloženou změnu jen kvůli chybějícímu cloudu.
+  function syncNewItemToCloud(cloudPromise, item) {
+    Promise.resolve(cloudPromise).then((saved) => {
+      if (saved?.id && item) {
+        item.cloudId = saved.id;
+        saveState();
+        requestRender();
+      }
+    }).catch((error) => console.warn('Cloud sync (přidání) na pozadí selhal', error));
+  }
+
+  function syncUpdateToCloud(cloudPromise) {
+    Promise.resolve(cloudPromise).catch((error) => console.warn('Cloud sync (úprava) na pozadí selhal', error));
   }
 
 
@@ -5716,6 +5736,7 @@
       showToast,
       saveState,
       render,
+      requestRender,
       touchState,
       currentHouseholdId,
       currentProfileId,
@@ -5771,6 +5792,7 @@
       touchState,
       saveState,
       render,
+      requestRender,
       putStoredWarrantyFile,
       getStoredWarrantyFile,
       deleteStoredWarrantyFile,
@@ -5807,6 +5829,7 @@
       showToast,
       saveState,
       render,
+      requestRender,
       touchState,
       currentHouseholdId,
       currentProfileId,
@@ -5846,6 +5869,7 @@
       showToast,
       saveState,
       render,
+      requestRender,
       touchState,
       currentHouseholdId,
       currentProfileId,
@@ -5990,6 +6014,7 @@
       touchState,
       saveState,
       render,
+      requestRender,
       showToast,
       getSupabaseClient,
       refreshCloudSession,
@@ -8089,13 +8114,16 @@
     state.readingsCloud = { ...(state.readingsCloud || {}), pendingAt: cloudReady() ? new Date().toISOString() : '' };
     touchState();
     saveState();
-    if (cloudReady()) {
-      const ok = await cloudSaveHouseholdUiSettings(false);
-      if (ok) state.readingsCloud = { ...(state.readingsCloud || {}), loadedAt: new Date().toISOString(), pendingAt: '' };
-      saveState();
-    }
     render();
     if (toast) showToast(toast);
+    if (cloudReady()) {
+      syncUpdateToCloud((async () => {
+        const ok = await cloudSaveHouseholdUiSettings(false);
+        if (ok) state.readingsCloud = { ...(state.readingsCloud || {}), loadedAt: new Date().toISOString(), pendingAt: '' };
+        saveState();
+        requestRender();
+      })());
+    }
   }
 
   function renderReadingBillingEnergyFields(prefix = '', billing = {}) {
@@ -12702,18 +12730,12 @@
     rememberVehicleIconColor(vehicle);
     touchState();
     saveState();
-    const cloudSaved = await cloudUpdateVehicle(vehicle);
-    if (cloudReady() && cloudSaved) await cloudSaveHouseholdUiSettings(false);
     render();
-    if (cloudReady()) {
-      if (cloudSaved) {
-        showToast(garageVehicleExtendedSchemaPending ? 'Údaje auta uloženy. Nová pole se pošlou do cloudu po spuštění DB migrace.' : 'Údaje auta uloženy v cloudu');
-      } else {
-        showToast('Údaje auta uloženy lokálně, cloud se teď nepovedl aktualizovat');
-      }
-    } else {
-      showToast('Údaje auta uloženy lokálně');
-    }
+    showToast(garageVehicleExtendedSchemaPending ? 'Údaje auta uloženy. Nová pole se pošlou do cloudu po spuštění DB migrace.' : 'Údaje auta uloženy');
+    syncUpdateToCloud((async () => {
+      const cloudSaved = await cloudUpdateVehicle(vehicle);
+      if (cloudReady() && cloudSaved) await cloudSaveHouseholdUiSettings(false);
+    })());
   }
 
 
@@ -12728,15 +12750,14 @@
     item.pricePerLiter = fuelParts.pricePerLiter;
     item.note = normalizeText(data.note);
     item.updatedAt = new Date().toISOString();
-    const ok = await cloudUpdateFuelLog(item);
-    if (!ok) return;
     syncVehicleOdometerFromReading(item.vehicleId, item.odometer);
     garageEditRecord = null;
     garageModal = null;
     touchState();
     saveState();
     render();
-    showToast(item.cloudId ? 'Tankování upraveno v cloudu' : 'Tankování upraveno lokálně');
+    showToast('Tankování upraveno');
+    syncUpdateToCloud(cloudUpdateFuelLog(item));
   }
 
   async function updateServiceLog(id, data) {
@@ -12748,15 +12769,14 @@
     item.price = decimalValue(data.price);
     item.note = normalizeText(data.note);
     item.updatedAt = new Date().toISOString();
-    const ok = await cloudUpdateServiceLog(item);
-    if (!ok) return;
     syncVehicleOdometerFromReading(item.vehicleId, item.odometer);
     garageEditRecord = null;
     garageModal = null;
     touchState();
     saveState();
     render();
-    showToast(item.cloudId ? 'Servis upraven v cloudu' : 'Servis upraven lokálně');
+    showToast('Servis upraven');
+    syncUpdateToCloud(cloudUpdateServiceLog(item));
   }
 
 
@@ -14004,8 +14024,6 @@
           note: ''
         };
         applyVehicleTechnicalFields(vehicle, data);
-        const cloudVehicle = await cloudAddVehicle(vehicle);
-        if (cloudVehicle?.id) vehicle.cloudId = cloudVehicle.id;
         state.vehicles.push(vehicle);
         rememberVehicleIconColor(vehicle);
         garageVehicleId = vehicle.id;
@@ -14013,10 +14031,14 @@
         garageTripCalcResult = null;
         touchState();
         saveState();
-        if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
         form.reset();
         render();
-        showToast(vehicle.cloudId ? 'Auto uloženo do cloudu' : 'Auto uloženo lokálně');
+        showToast('Auto uloženo');
+        syncNewItemToCloud((async () => {
+          const cloudVehicle = await cloudAddVehicle(vehicle);
+          if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
+          return cloudVehicle;
+        })(), vehicle);
       },
       'update-vehicle': () => updateVehicle(form.dataset.vehicleId, data),
       'service-plan-item': () => saveServicePlanItemFromForm(form.dataset.vehicleId, form.dataset.editId, data),
@@ -14034,8 +14056,6 @@
       'add-fuel': async () => {
         const fuelParts = normalizeFuelCostParts(data);
         const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), vehicleId: form.dataset.vehicleId, date: data.date, odometer: data.odometer, liters: fuelParts.liters, price: fuelParts.price, pricePerLiter: fuelParts.pricePerLiter, note: data.note };
-        const saved = await cloudAddFuelLog(item);
-        if (saved?.id) item.cloudId = saved.id;
         state.fuel.push(item);
         syncVehicleOdometerFromReading(item.vehicleId, item.odometer);
         garageModal = null;
@@ -14043,12 +14063,11 @@
         saveState();
         form.reset();
         render();
-        showToast(item.cloudId ? 'Tankování uloženo do cloudu' : 'Tankování uloženo lokálně');
+        showToast('Tankování uloženo');
+        syncNewItemToCloud(cloudAddFuelLog(item), item);
       },
       'add-service': async () => {
         const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), vehicleId: form.dataset.vehicleId, date: data.date, odometer: data.odometer, title: data.title, price: decimalValue(data.price), note: data.note };
-        const saved = await cloudAddServiceLog(item);
-        if (saved?.id) item.cloudId = saved.id;
         state.services.push(item);
         syncVehicleOdometerFromReading(item.vehicleId, item.odometer);
         garageModal = null;
@@ -14056,7 +14075,8 @@
         saveState();
         form.reset();
         render();
-        showToast(item.cloudId ? 'Servis uložen do cloudu' : 'Servis uložen lokálně');
+        showToast('Servis uložen');
+        syncNewItemToCloud(cloudAddServiceLog(item), item);
       },
       'update-fuel': async () => updateFuelLog(form.dataset.id, data),
       'update-service': async () => updateServiceLog(form.dataset.id, data),
@@ -14073,17 +14093,17 @@
         state.household.name = normalizeText(data.householdName) || 'Domácnost';
         touchState();
         saveState();
-        await cloudSaveHouseholdUiSettings(false, true);
         render();
-        showToast(state.cloud?.householdId ? 'Domácnost uložena do cloudu' : 'Domácnost uložena lokálně');
+        showToast('Domácnost uložena');
+        syncUpdateToCloud(cloudSaveHouseholdUiSettings(false, true));
       },
       settings: async () => {
         state.household.name = normalizeText(data.householdName) || 'Domácnost';
         touchState();
         saveState();
-        await cloudSaveHouseholdUiSettings(false, true);
         render();
         showToast('Nastavení uloženo');
+        syncUpdateToCloud(cloudSaveHouseholdUiSettings(false, true));
       },
       'add-profile': () => addProfile(data.name, data.role),
       'weather-settings': () => saveWeatherSettings(data, form),
@@ -14383,14 +14403,13 @@
       return;
     }
     const profile = createProfile(cleanName, role === 'owner' ? 'owner' : 'member', currentHouseholdId());
-    const saved = await cloudAddProfile(profile);
-    if (saved?.id) profile.cloudId = saved.id;
     state.profiles.push(profile);
     state.activeProfileId = profile.id;
     touchState();
     saveState();
     render();
-    showToast(profile.cloudId ? 'Profil přidán do cloudu' : 'Profil přidán lokálně');
+    showToast('Profil přidán');
+    syncNewItemToCloud(cloudAddProfile(profile), profile);
   }
 
   function touchState() {
@@ -14407,13 +14426,12 @@
       createdAt: new Date().toISOString(),
       ...normalized
     };
-    const saved = await cloudAddExtraItem(collection, record);
-    if (saved?.id) record.cloudId = saved.id;
     state[collection].push(record);
     touchState();
     saveState();
     render();
-    showToast(record.cloudId ? 'Uloženo do cloudu' : 'Uloženo lokálně');
+    showToast('Uloženo');
+    syncNewItemToCloud(cloudAddExtraItem(collection, record), record);
   }
 
   async function updateCoupon(id, data) {
@@ -14425,13 +14443,12 @@
     coupon.expiry = normalizeText(data.expiry);
     coupon.note = normalizeText(data.note);
     coupon.updatedAt = new Date().toISOString();
-    const ok = await cloudUpdateExtraItem('coupons', coupon);
-    if (!ok) return;
     couponEditId = '';
     touchState();
     saveState();
     render();
-    showToast(coupon.cloudId ? 'Kód upraven v cloudu' : 'Kód upraven lokálně');
+    showToast('Kód upraven');
+    syncUpdateToCloud(cloudUpdateExtraItem('coupons', coupon));
   }
 
   function decimalValue(value) {
@@ -17593,8 +17610,6 @@
     if (!profile) return;
     const confirmed = window.confirm(`Smazat profil ${profile.name}? Data z modulů zůstanou uložená, jen už nebudou patřit aktivnímu profilu.`);
     if (!confirmed) return;
-    const ok = await cloudArchiveProfile(profile);
-    if (!ok) return;
     state.profiles = state.profiles.filter((item) => item.id !== id);
     if (state.activeProfileId === id) {
       state.activeProfileId = state.profiles[0]?.id || '';
@@ -17603,7 +17618,8 @@
     touchState();
     saveState();
     render();
-    showToast(profile.cloudId ? 'Profil smazán v cloudu' : 'Profil smazán');
+    showToast('Profil smazán');
+    syncUpdateToCloud(cloudArchiveProfile(profile));
   }
 
   function toggleModule(moduleId) {
@@ -17716,44 +17732,43 @@
 
   async function deleteItem(collection, id) {
     if (!collection || !Array.isArray(state[collection])) return;
-    if (collection === 'fuel' || collection === 'services') {
-      const record = state[collection].find((item) => item.id === id);
-      const ok = await cloudDeleteGarageRecord(collection, record);
-      if (!ok) return;
-    }
+    const record = state[collection].find((item) => item.id === id);
     if (collection === 'contracts') {
-      const contract = state.contracts.find((item) => item.id === id);
-      const ok = await cloudDeleteContract(contract);
-      if (!ok) return;
       const files = state.contractFiles.filter((file) => file.contractId === id);
       files.forEach((file) => deleteStoredContractFile(file.id).catch(() => {}));
       state.contractFiles = state.contractFiles.filter((file) => file.contractId !== id);
       if (activeContractId === id) activeContractId = state.contracts.find((contract) => contract.id !== id)?.id || null;
-    }
-    if (extraCloudConfig(collection)) {
-      const item = state[collection].find((entry) => entry.id === id);
-      const ok = await cloudDeleteExtraItem(collection, item);
-      if (!ok) return;
     }
     state[collection] = state[collection].filter((item) => item.id !== id);
     touchState();
     saveState();
     render();
     showToast('Smazáno');
+    if (collection === 'fuel' || collection === 'services') {
+      syncUpdateToCloud(cloudDeleteGarageRecord(collection, record));
+    } else if (collection === 'contracts') {
+      syncUpdateToCloud(cloudDeleteContract(record));
+    } else if (extraCloudConfig(collection)) {
+      syncUpdateToCloud(cloudDeleteExtraItem(collection, record));
+    }
   }
 
   async function toggleBoolean(collection, id, key) {
     const item = state[collection]?.find((entry) => entry.id === id);
     if (!item) return;
     item[key] = !item[key];
-    const ok = await cloudUpdateExtraItem(collection, item);
-    if (!ok) {
-      item[key] = !item[key];
-      return;
-    }
     touchState();
     saveState();
     render();
+    syncUpdateToCloud((async () => {
+      const ok = await cloudUpdateExtraItem(collection, item);
+      if (!ok) {
+        item[key] = !item[key];
+        touchState();
+        saveState();
+        requestRender();
+      }
+    })());
   }
 
   async function deleteVehicle(id) {
@@ -17763,8 +17778,6 @@
     const serviceCount = state.services.filter((item) => item.vehicleId === id).length;
     const message = `Opravdu smazat auto "${vehicle.name || 'Auto'}"?\n\nSmaže se i ${fuelCount} tankování a ${serviceCount} servisních/nákladových záznamů.`;
     if (typeof window !== 'undefined' && typeof window.confirm === 'function' && !window.confirm(message)) return;
-    const ok = await cloudDeleteVehicle(vehicle);
-    if (!ok) return;
     state.vehicles = state.vehicles.filter((entry) => entry.id !== id);
     state.fuel = state.fuel.filter((item) => item.vehicleId !== id);
     state.services = state.services.filter((item) => item.vehicleId !== id);
@@ -17773,6 +17786,7 @@
     saveState();
     render();
     showToast('Auto smazáno');
+    syncUpdateToCloud(cloudDeleteVehicle(vehicle));
   }
 
   async function copyText(text) {

@@ -348,9 +348,11 @@
       getState().pool = next;
       touchState();
       saveState({ immediate: true });
-      if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
       render();
       showToast('Bazén uložen');
+      if (cloudReady()) {
+        cloudSaveHouseholdUiSettings(false).catch((error) => console.warn('Cloud sync (bazén) na pozadí selhal', error));
+      }
     }
 
     return {

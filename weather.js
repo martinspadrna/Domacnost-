@@ -504,10 +504,10 @@
         setWeatherState({ ...normalizeWeatherState(getWeatherState()), location, current: null, daily: [], hourly: [], updatedAt: '', error: '', source: weatherSource });
         touchState();
         saveState();
-        await cloudSaveHouseholdUiSettings(false);
-        await ensureWeatherFresh(true);
         form?.reset?.();
         showToast(`Počasí nastavené: ${location.name}`);
+        cloudSaveHouseholdUiSettings(false).catch((error) => console.warn('Cloud sync (počasí) na pozadí selhal', error));
+        await ensureWeatherFresh(true);
       } catch (error) {
         showToast(error?.message || 'Počasí se nepovedlo nastavit');
       }

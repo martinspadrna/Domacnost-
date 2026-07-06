@@ -183,21 +183,24 @@
         sortOrder: store.shoppingLists.length,
         source: 'custom'
       };
-      if (deps.cloudReady?.() && deps.cloudAddShoppingList) {
-        const cloudList = await deps.cloudAddShoppingList(name);
-        if (cloudList?.id) {
-          record.cloudId = cloudList.id;
-          record.cloudListId = cloudList.id;
-          record.source = 'cloud';
-          store.shoppingCloud = { ...(store.shoppingCloud || {}), activeListId: cloudList.id };
-        }
-      }
       deps.markShoppingRuntimeDirty?.();
       store.shoppingLists.push(record);
       store.activeShoppingListId = id;
       persist('full');
       form?.reset?.();
-      showToast(record.cloudId ? `Seznam ${name} vytvořen v cloudu` : `Seznam ${name} vytvořen`);
+      showToast(`Seznam ${name} vytvořen`);
+      if (deps.cloudReady?.() && deps.cloudAddShoppingList) {
+        deps.cloudAddShoppingList(name).then((cloudList) => {
+          if (cloudList?.id) {
+            record.cloudId = cloudList.id;
+            record.cloudListId = cloudList.id;
+            record.source = 'cloud';
+            store.shoppingCloud = { ...(store.shoppingCloud || {}), activeListId: cloudList.id };
+            deps.saveState?.();
+            deps.requestRender?.();
+          }
+        }).catch((error) => console.warn('Cloud sync (nákupní seznam) na pozadí selhal', error));
+      }
     }
 
     function setActiveShoppingList(id) {
@@ -223,10 +226,6 @@
       const list = lists.find((entry) => entry.id === id);
       if (!list) return;
       if (!confirmDialog(`Smazat seznam ${list.name} včetně položek?`)) return;
-      if (deps.cloudArchiveShoppingList) {
-        const ok = await deps.cloudArchiveShoppingList(list);
-        if (!ok) return;
-      }
       deps.markShoppingRuntimeDirty?.();
       store.shoppingLists = (store.shoppingLists || []).filter((entry) => entry.id !== id);
       store.shopping = (store.shopping || []).filter((item) => item.listId !== id);
@@ -234,6 +233,9 @@
       deps.closeShoppingTransientUi?.();
       persist('full');
       showToast('Seznam smazán');
+      if (deps.cloudArchiveShoppingList) {
+        deps.cloudArchiveShoppingList(list).catch((error) => console.warn('Cloud sync (smazání seznamu) na pozadí selhal', error));
+      }
     }
 
     function promptAddShoppingList() {
@@ -265,15 +267,17 @@
       deps.markShoppingRuntimeDirty?.();
       // activeShoppingListId se nemění — přejmenování aktivní seznam neopouští.
       persist('full');
-      if (deps.cloudReady?.() && deps.cloudUpdateShoppingList) {
-        let target = list;
-        if (!(list.cloudId || list.cloudListId) && deps.cloudEnsureShoppingList) {
-          await deps.cloudEnsureShoppingList(list);
-          target = (store.shoppingLists || []).find((entry) => entry.id === id) || list;
-        }
-        await deps.cloudUpdateShoppingList(target);
-      }
       showToast(`Seznam přejmenován na ${name}`);
+      if (deps.cloudReady?.() && deps.cloudUpdateShoppingList) {
+        (async () => {
+          let target = list;
+          if (!(list.cloudId || list.cloudListId) && deps.cloudEnsureShoppingList) {
+            await deps.cloudEnsureShoppingList(list);
+            target = (store.shoppingLists || []).find((entry) => entry.id === id) || list;
+          }
+          await deps.cloudUpdateShoppingList(target);
+        })().catch((error) => console.warn('Cloud sync (přejmenování seznamu) na pozadí selhal', error));
+      }
     }
 
     function promptRenameShoppingList(id) {
@@ -324,13 +328,12 @@
       const item = store.shopping?.find((entry) => entry.id === id);
       if (!item || !item.done) return;
       if (!confirmDialog(`Smazat koupenou položku ${item.name}?`)) return;
-      if (deps.cloudDeleteShoppingItem) {
-        const ok = await deps.cloudDeleteShoppingItem(item);
-        if (!ok) return;
-      }
       store.shopping = store.shopping.filter((entry) => entry.id !== id);
       persist('full');
       showToast('Položka smazána');
+      if (deps.cloudDeleteShoppingItem) {
+        deps.cloudDeleteShoppingItem(item).catch((error) => console.warn('Cloud sync (smazání položky) na pozadí selhal', error));
+      }
     }
 
     async function cloudSyncLocalShoppingItems() {
@@ -394,11 +397,10 @@
       const store = state();
       const item = store.shopping?.find((entry) => entry.id === id);
       if (!item) return;
-      const ok = await deps.cloudDeleteShoppingItem?.(item);
-      if (ok === false) return;
       store.shopping = store.shopping.filter((entry) => entry.id !== id);
       persist('full');
       showToast('Smazáno');
+      deps.cloudDeleteShoppingItem?.(item).catch((error) => console.warn('Cloud sync (smazání položky) na pozadí selhal', error));
     }
 
     async function deleteShoppingCatalogItem(id, name) {
@@ -410,12 +412,11 @@
       if (item.source === 'local') {
         store.shoppingCatalogCustom = (store.shoppingCatalogCustom || []).filter((entry) => normalizeKey(entry.name) !== normalizeKey(item.name) && String(entry.id || '') !== String(item.id || ''));
       } else if (item.householdId && deps.cloudDeleteShoppingCatalogItem) {
-        const ok = await deps.cloudDeleteShoppingCatalogItem(item);
-        if (ok === false) return;
         store.shoppingCloud = {
           ...(store.shoppingCloud || {}),
           catalog: (store.shoppingCloud?.catalog || []).filter((entry) => String(entry.id || '') !== String(item.id || '') && normalizeKey(entry.name) !== normalizeKey(item.name))
         };
+        deps.cloudDeleteShoppingCatalogItem(item).catch((error) => console.warn('Cloud sync (smazání katalogu) na pozadí selhal', error));
       } else {
         store.shoppingCatalogHidden = Array.isArray(store.shoppingCatalogHidden) ? store.shoppingCatalogHidden : [];
         const key = normalizeKey(item.name);

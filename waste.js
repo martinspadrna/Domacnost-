@@ -23,6 +23,7 @@
     const showToast = deps.showToast || (() => {});
     const saveState = deps.saveState || (() => {});
     const render = deps.render || (() => {});
+    const requestRender = deps.requestRender || render;
     const touchState = deps.touchState || (() => {});
     const currentHouseholdId = deps.currentHouseholdId || (() => '');
     const currentProfileId = deps.currentProfileId || (() => '');
@@ -242,26 +243,26 @@
         enabled: true,
         note: normalizeText(data.note)
       };
-      const saved = await cloudAddWaste(item);
-      if (saved?.id) item.cloudId = saved.id;
       getState().waste.push(item);
       touchState();
       saveState();
       form?.reset();
       render();
-      showToast(item.cloudId ? 'Svoz uložen do cloudu' : 'Svoz uložen lokálně');
+      showToast('Svoz uložen');
+      cloudAddWaste(item).then((saved) => {
+        if (saved?.id) { item.cloudId = saved.id; saveState(); requestRender(); }
+      }).catch((error) => console.warn('Cloud sync (svoz) na pozadí selhal', error));
     }
 
     async function deleteWaste(id) {
       const item = getState().waste.find((entry) => entry.id === id);
       if (!item) return;
-      const ok = await cloudDeleteWaste(item);
-      if (!ok) return;
       getState().waste = getState().waste.filter((entry) => entry.id !== id);
       touchState();
       saveState();
       render();
       showToast('Svoz smazán');
+      cloudDeleteWaste(item).catch((error) => console.warn('Cloud sync (smazání svozu) na pozadí selhal', error));
     }
 
     function renderWasteOverviewItem(item) {

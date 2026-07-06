@@ -1196,14 +1196,15 @@
         note: normalizeText(data.note)
       };
       if (!account.name) return showToast('Doplň název účtu');
-      const saved = await cloudAddFinanceAccount(account);
-      if (saved?.id) account.cloudId = saved.id;
       getState().financeAccounts.push(account);
       touchState();
       saveState();
       form.reset();
       render();
-      showToast(account.cloudId ? 'Účet uložen do cloudu' : 'Účet uložen lokálně');
+      showToast('Účet uložen');
+      cloudAddFinanceAccount(account).then((saved) => {
+        if (saved?.id) { account.cloudId = saved.id; saveState(); requestRender(); }
+      }).catch((error) => console.warn('Cloud sync (účet) na pozadí selhal', error));
     }
 
     async function addManagedFinanceSetFromForm(data, form) {
@@ -1218,32 +1219,30 @@
         { name: reserveName, accountType: 'savings', openingBalance: decimalValue(data.reserveOpeningBalance) || 0, note: 'Peníze bokem / spoření' }
       ].filter((draft) => draft.name && !existingNames.has(draft.name.toLowerCase()));
       if (!drafts.length) return showToast('Tyhle účty už existují');
-      let cloudCount = 0;
-      for (const draft of drafts) {
-        const account = {
-          id: uid(),
-          householdId: currentHouseholdId(),
-          profileId: currentProfileId(),
-          createdAt: new Date().toISOString(),
-          name: draft.name,
-          accountType: draft.accountType,
-          ownerLabel: ownerName,
-          openingBalance: draft.openingBalance,
-          includeInTotal,
-          note: draft.note
-        };
-        const saved = await cloudAddFinanceAccount(account);
-        if (saved?.id) {
-          account.cloudId = saved.id;
-          cloudCount += 1;
-        }
-        getState().financeAccounts.push(account);
-      }
+      const accounts = drafts.map((draft) => ({
+        id: uid(),
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: new Date().toISOString(),
+        name: draft.name,
+        accountType: draft.accountType,
+        ownerLabel: ownerName,
+        openingBalance: draft.openingBalance,
+        includeInTotal,
+        note: draft.note
+      }));
+      accounts.forEach((account) => getState().financeAccounts.push(account));
       touchState();
       saveState();
       form.reset();
       render();
-      showToast(cloudCount ? `Založeno účtů: ${drafts.length}, v cloudu: ${cloudCount}` : `Založeno účtů: ${drafts.length}`);
+      showToast(`Založeno účtů: ${drafts.length}`);
+      Promise.all(accounts.map((account) => cloudAddFinanceAccount(account).then((saved) => {
+        if (saved?.id) account.cloudId = saved.id;
+        return Boolean(saved?.id);
+      }))).then((results) => {
+        if (results.some(Boolean)) { saveState(); requestRender(); }
+      }).catch((error) => console.warn('Cloud sync (spravované účty) na pozadí selhal', error));
     }
 
     function fillFinanceTemplate(templateId) {
@@ -1660,15 +1659,14 @@
         note: normalizeText(data.note)
       };
       if (!next.name) return showToast('Doplň název účtu');
-      const ok = await cloudUpdateFinanceAccount(next);
-      if (!ok) return;
       getState().financeAccounts[index] = next;
       setFinanceAccountEditId('');
       touchState();
       saveState();
       form?.reset?.();
       render();
-      showToast(next.cloudId ? 'Účet upraven v cloudu' : 'Účet upraven lokálně');
+      showToast('Účet upraven');
+      cloudUpdateFinanceAccount(next).catch((error) => console.warn('Cloud sync (úprava účtu) na pozadí selhal', error));
     }
 
     function persistFinanceLoans(toast = '') {
@@ -1844,13 +1842,12 @@
     async function deleteFinanceTransaction(id) {
       const item = getState().finance.find((entry) => entry.id === id);
       if (!item) return;
-      const ok = await cloudDeleteFinance(item);
-      if (!ok) return;
       getState().finance = getState().finance.filter((entry) => entry.id !== id);
       touchState();
       saveState();
       render();
       showToast('Záznam smazán');
+      cloudDeleteFinance(item).catch((error) => console.warn('Cloud sync (smazání pohybu) na pozadí selhal', error));
     }
 
     async function deleteFinanceAccount(id) {
@@ -1860,13 +1857,12 @@
         showToast('Účet má pohyby. Nejdřív smaž nebo přesuň záznamy.');
         return;
       }
-      const ok = await cloudDeleteFinanceAccount(account);
-      if (!ok) return;
       getState().financeAccounts = getState().financeAccounts.filter((entry) => entry.id !== id);
       touchState();
       saveState();
       render();
       showToast('Účet smazán');
+      cloudDeleteFinanceAccount(account).catch((error) => console.warn('Cloud sync (smazání účtu) na pozadí selhal', error));
     }
 
     return {

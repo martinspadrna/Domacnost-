@@ -769,18 +769,21 @@
         createdAt: new Date().toISOString()
       });
       if (!source.name) return showToast('Doplň název kalendáře');
-      const saved = await cloudAddCalendarSource(source);
-      if (saved?.id) {
-        source.id = saved.id;
-        source.cloudId = saved.id;
-      }
       getState().calendarCloud = { ...(getState().calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), [source]) };
       touchState();
       saveState();
       form.reset();
       render();
-      const google = source.provider === 'google';
-      showToast(saved?.id ? (google ? 'Google zdroj připravený v cloudu' : 'Zdroj kalendáře uložen do cloudu') : 'Zdroj kalendáře uložen lokálně');
+      showToast('Zdroj kalendáře uložen');
+      cloudAddCalendarSource(source).then((saved) => {
+        if (saved?.id) {
+          source.id = saved.id;
+          source.cloudId = saved.id;
+          getState().calendarCloud = { ...(getState().calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), [source]) };
+          saveState();
+          requestRender();
+        }
+      }).catch((error) => console.warn('Cloud sync (zdroj kalendáře) na pozadí selhal', error));
     }
 
     async function cloudAddCalendarSource(source) {
@@ -847,24 +850,23 @@
       if (!source) return showToast('Zdroj kalendáře nenalezen');
       const nextEnabled = enabled !== undefined ? enabled : source.isEnabled === false;
       source.isEnabled = Boolean(nextEnabled);
-      const client = getSupabaseClient();
-      if (client && getState().cloud?.householdId && source.cloudId) {
-        const user = await refreshCloudSession(false);
-        const { error } = await client
-          .from('calendar_sources')
-          .update({ is_enabled: source.isEnabled, updated_by: user?.id || undefined })
-          .eq('id', source.cloudId)
-          .eq('household_id', getState().cloud.householdId);
-        if (error) {
-          showToast(error.message || 'Zdroj kalendáře se nepovedlo upravit');
-          return;
-        }
-      }
       getState().calendarCloud = { ...(getState().calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), [source]) };
       touchState();
       saveState();
       render();
       showToast(source.isEnabled ? 'Kalendář zobrazen' : 'Kalendář skrytý');
+      const client = getSupabaseClient();
+      if (client && getState().cloud?.householdId && source.cloudId) {
+        (async () => {
+          const user = await refreshCloudSession(false);
+          const { error } = await client
+            .from('calendar_sources')
+            .update({ is_enabled: source.isEnabled, updated_by: user?.id || undefined })
+            .eq('id', source.cloudId)
+            .eq('household_id', getState().cloud.householdId);
+          if (error) console.warn('Cloud sync (zdroj kalendáře toggle) na pozadí selhal', error.message);
+        })().catch((error) => console.warn('Cloud sync (zdroj kalendáře toggle) na pozadí selhal', error));
+      }
     }
 
     async function deleteCalendarSource(sourceId) {
@@ -875,28 +877,6 @@
       if (!ok) return;
 
       const sourceKeys = [source.id, source.cloudId].filter(Boolean).map(String);
-      const client = getSupabaseClient();
-      if (client && getState().cloud?.householdId && source.cloudId) {
-        const { error: eventsError } = await client
-          .from('calendar_events')
-          .delete()
-          .eq('source_id', source.cloudId)
-          .eq('household_id', getState().cloud.householdId);
-        if (eventsError) {
-          showToast(eventsError.message || 'Události kalendáře se nepovedlo odebrat');
-          return;
-        }
-        const { error } = await client
-          .from('calendar_sources')
-          .delete()
-          .eq('id', source.cloudId)
-          .eq('household_id', getState().cloud.householdId);
-        if (error) {
-          showToast(error.message || 'Kalendář se nepovedlo odebrat');
-          return;
-        }
-      }
-
       getState().calendarCloud = {
         ...(getState().calendarCloud || {}),
         sources: getCalendarSources().filter((item) => !sourceKeys.includes(String(item.id || '')) && !sourceKeys.includes(String(item.cloudId || ''))),
@@ -906,11 +886,29 @@
       if (getState().calendarCloud?.googleCalendars?.length && source.providerCalendarId) {
         getState().calendarCloud.googleCalendars = getState().calendarCloud.googleCalendars.map((calendar) => String(calendar.id || '') === String(source.providerCalendarId) ? { ...calendar, selected: false } : calendar);
       }
-      if (getState().cloud) getState().cloud.lastSyncAt = new Date().toISOString();
       touchState();
       saveState();
       render();
       showToast('Kalendář odebraný');
+
+      const client = getSupabaseClient();
+      if (client && getState().cloud?.householdId && source.cloudId) {
+        (async () => {
+          const { error: eventsError } = await client
+            .from('calendar_events')
+            .delete()
+            .eq('source_id', source.cloudId)
+            .eq('household_id', getState().cloud.householdId);
+          if (eventsError) { console.warn('Cloud sync (smazání událostí kalendáře) na pozadí selhal', eventsError.message); return; }
+          const { error } = await client
+            .from('calendar_sources')
+            .delete()
+            .eq('id', source.cloudId)
+            .eq('household_id', getState().cloud.householdId);
+          if (error) { console.warn('Cloud sync (smazání zdroje kalendáře) na pozadí selhal', error.message); return; }
+          if (getState().cloud) { getState().cloud.lastSyncAt = new Date().toISOString(); saveState(); }
+        })().catch((error) => console.warn('Cloud sync (smazání zdroje kalendáře) na pozadí selhal', error));
+      }
     }
 
     async function cloudAddCalendarEvent(event) {
@@ -1045,26 +1043,26 @@
         note: normalizeText(data.note)
       };
       if (!event.title || !event.date) return showToast('Doplň název a datum');
-      const saved = await cloudAddCalendarEvent(event);
-      if (saved?.id) event.cloudId = saved.id;
       getState().calendar.push(event);
       touchState();
       saveState();
       form.reset();
       render();
-      showToast(event.cloudId ? 'Událost uložena do cloudu' : 'Událost uložena lokálně');
+      showToast('Událost uložena');
+      cloudAddCalendarEvent(event).then((saved) => {
+        if (saved?.id) { event.cloudId = saved.id; saveState(); requestRender(); }
+      }).catch((error) => console.warn('Cloud sync (událost) na pozadí selhal', error));
     }
 
     async function deleteCalendarEvent(id) {
       const event = getState().calendar.find((entry) => entry.id === id);
       if (!event) return;
-      const ok = await cloudDeleteCalendarEvent(event);
-      if (!ok) return;
       getState().calendar = getState().calendar.filter((entry) => entry.id !== id);
       touchState();
       saveState();
       render();
       showToast('Událost smazána');
+      cloudDeleteCalendarEvent(event).catch((error) => console.warn('Cloud sync (smazání události) na pozadí selhal', error));
     }
 
     // ---------- Google OAuth + edge (ČÁST B) ----------

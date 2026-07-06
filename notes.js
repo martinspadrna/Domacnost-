@@ -16,6 +16,7 @@
     const showToast = deps.showToast || (() => {});
     const saveState = deps.saveState || (() => {});
     const render = deps.render || (() => {});
+    const requestRender = deps.requestRender || render;
     const touchState = deps.touchState || (() => {});
     const currentHouseholdId = deps.currentHouseholdId || (() => '');
     const currentProfileId = deps.currentProfileId || (() => '');
@@ -236,12 +237,11 @@
       if (!note) return false;
       note.text = serializeNotebookPage(page);
       note.updatedAt = new Date().toISOString();
-      const ok = await cloudUpdateExtraItem('notes', note);
-      if (!ok) return false;
       touchState();
       saveState();
       render();
-      if (showMessage) showToast(note.cloudId ? 'Stránka uložená do cloudu' : 'Stránka uložená lokálně');
+      if (showMessage) showToast('Stránka uložená');
+      cloudUpdateExtraItem('notes', note).catch((error) => console.warn('Cloud sync (zápisník) na pozadí selhal', error));
       return true;
     }
 
@@ -303,14 +303,15 @@
         priority: 'normal',
         done: false
       };
-      const saved = await cloudAddTask(task);
-      if (saved?.id) task.cloudId = saved.id;
       getState().homeTasks.push(task);
       setModuleTab('notebookCreate', '');
       touchState();
       saveState();
       render();
-      showToast(task.cloudId ? 'Bod převedený na cloud úkol' : 'Bod převedený na úkol');
+      showToast('Bod převedený na úkol');
+      cloudAddTask(task).then((saved) => {
+        if (saved?.id) { task.cloudId = saved.id; saveState(); requestRender(); }
+      }).catch((error) => console.warn('Cloud sync (úkol) na pozadí selhal', error));
     }
 
     function notebookPageSummary(page) {
@@ -604,15 +605,16 @@
         done: false
       };
       if (!task.title) return showToast('Doplň název úkolu');
-      const saved = await cloudAddTask(task);
-      if (saved?.id) task.cloudId = saved.id;
       getState().homeTasks.push(task);
       setModuleTab('notebookCreate', '');
       touchState();
       saveState();
       form.reset();
       render();
-      showToast(task.cloudId ? 'Úkol uložen do cloudu' : 'Úkol uložen lokálně');
+      showToast('Úkol uložen');
+      cloudAddTask(task).then((saved) => {
+        if (saved?.id) { task.cloudId = saved.id; saveState(); requestRender(); }
+      }).catch((error) => console.warn('Cloud sync (úkol) na pozadí selhal', error));
     }
 
     async function toggleTaskDone(id) {
@@ -620,23 +622,21 @@
       if (!task) return;
       task.done = !task.done;
       task.completedAt = task.done ? new Date().toISOString() : '';
-      const ok = await cloudUpdateTask(task);
-      if (!ok) return;
       touchState();
       saveState();
       render();
+      cloudUpdateTask(task).catch((error) => console.warn('Cloud sync (úkol) na pozadí selhal', error));
     }
 
     async function deleteTask(id) {
       const task = getState().homeTasks.find((entry) => entry.id === id);
       if (!task) return;
-      const ok = await cloudDeleteTask(task);
-      if (!ok) return;
       getState().homeTasks = getState().homeTasks.filter((entry) => entry.id !== id);
       touchState();
       saveState();
       render();
       showToast('Úkol smazán');
+      cloudDeleteTask(task).catch((error) => console.warn('Cloud sync (úkol) na pozadí selhal', error));
     }
 
     function renderTaskOverviewItem(task) {

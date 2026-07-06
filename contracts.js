@@ -16,6 +16,7 @@
     const touchState = deps.touchState || (() => {});
     const saveState = deps.saveState || (() => {});
     const render = deps.render || (() => {});
+    const requestRender = deps.requestRender || render;
     const showToast = deps.showToast || (() => {});
     const getSupabaseClient = deps.getSupabaseClient || (() => null);
     const refreshCloudSession = deps.refreshCloudSession || (async () => null);
@@ -286,8 +287,6 @@
         frequency: data.frequency,
         note: normalizeText(data.note)
       };
-      const cloudContract = await cloudAddContract(contract);
-      if (cloudContract?.id) contract.cloudId = cloudContract.id;
       state.contracts = Array.isArray(state.contracts) ? state.contracts : [];
       state.contracts.push(contract);
       setActiveContractId(contract.id);
@@ -295,7 +294,10 @@
       saveState();
       if (form?.reset) form.reset();
       render();
-      showToast(contract.cloudId ? 'Smlouva uložena do cloudu' : 'Smlouva uložena lokálně');
+      showToast('Smlouva uložena');
+      cloudAddContract(contract).then((cloudContract) => {
+        if (cloudContract?.id) { contract.cloudId = cloudContract.id; saveState(); requestRender(); }
+      }).catch((error) => console.warn('Cloud sync (smlouva) na pozadí selhal', error));
       return contract;
     }
 
@@ -313,12 +315,11 @@
       contract.frequency = data.frequency || 'monthly';
       contract.note = normalizeText(data.note);
       contract.updatedAt = new Date().toISOString();
-      const ok = await cloudUpdateContract(contract);
-      if (!ok) return false;
       touchState();
       saveState();
       render();
-      showToast(contract.cloudId ? 'Smlouva upravena v cloudu' : 'Smlouva upravena lokálně');
+      showToast('Smlouva upravena');
+      cloudUpdateContract(contract).catch((error) => console.warn('Cloud sync (úprava smlouvy) na pozadí selhal', error));
       return true;
     }
 

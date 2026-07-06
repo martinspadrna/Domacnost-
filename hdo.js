@@ -20,6 +20,7 @@
     const showToast = deps.showToast || (() => {});
     const saveState = deps.saveState || (() => {});
     const render = deps.render || (() => {});
+    const requestRender = deps.requestRender || render;
     const touchState = deps.touchState || (() => {});
     const currentHouseholdId = deps.currentHouseholdId || (() => '');
     const currentProfileId = deps.currentProfileId || (() => '');
@@ -513,40 +514,43 @@
         days: daysModeToArray(data.daysMode),
         enabled: true
       };
-      const saved = await cloudAddHdoWindow(item);
-      if (saved?.id) item.cloudId = saved.id;
       getState().hdoWindows.push(item);
       touchState();
       saveState();
       form?.reset();
       render();
-      showToast(item.cloudId ? 'HDO okno uloženo do cloudu' : 'HDO okno uloženo lokálně');
+      showToast('HDO okno uloženo');
+      cloudAddHdoWindow(item).then((saved) => {
+        if (saved?.id) { item.cloudId = saved.id; saveState(); requestRender(); }
+      }).catch((error) => console.warn('Cloud sync (HDO) na pozadí selhal', error));
     }
 
     async function toggleHdoWindow(id) {
       const item = getState().hdoWindows.find((entry) => entry.id === id);
       if (!item) return;
       item.enabled = !item.enabled;
-      const ok = await cloudUpdateHdoWindow(item);
-      if (!ok) {
-        item.enabled = !item.enabled;
-        return;
-      }
       touchState();
       saveState();
       render();
+      cloudUpdateHdoWindow(item).then((ok) => {
+        if (!ok) {
+          item.enabled = !item.enabled;
+          touchState();
+          saveState();
+          requestRender();
+        }
+      }).catch((error) => console.warn('Cloud sync (HDO toggle) na pozadí selhal', error));
     }
 
     async function deleteHdoWindow(id) {
       const item = getState().hdoWindows.find((entry) => entry.id === id);
       if (!item) return;
-      const ok = await cloudDeleteHdoWindow(item);
-      if (!ok) return;
       getState().hdoWindows = getState().hdoWindows.filter((entry) => entry.id !== id);
       touchState();
       saveState();
       render();
       showToast('HDO okno smazáno');
+      cloudDeleteHdoWindow(item).catch((error) => console.warn('Cloud sync (smazání HDO) na pozadí selhal', error));
     }
 
     // Panel HDO pro renderHomecare (fast i main path měly identický obsah).

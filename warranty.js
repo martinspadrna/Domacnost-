@@ -38,6 +38,7 @@
     const touchState = deps.touchState || (() => {});
     const saveState = deps.saveState || (() => {});
     const render = deps.render || (() => {});
+    const requestRender = deps.requestRender || render;
     const putStoredWarrantyFile = deps.putStoredWarrantyFile || (async () => {});
     const getStoredWarrantyFile = deps.getStoredWarrantyFile || (async () => null);
     const deleteStoredWarrantyFile = deps.deleteStoredWarrantyFile || (async () => {});
@@ -673,21 +674,24 @@
       if (!meta) return;
       const ok = window.confirm(meta.cloudId ? 'Smazat přílohu záruky z cloudu?' : 'Smazat přílohu záruky z tohoto zařízení?');
       if (!ok) return;
-      if (meta.cloudId) {
-        const client = getSupabaseClient();
-        if (!client || !getState().cloud?.householdId) return showToast('Cloud není dostupný');
-        const { error: dbError } = await client.from('household_warranty_files').delete().eq('id', meta.cloudId).eq('household_id', getState().cloud.householdId);
-        if (dbError) return showToast(dbError.message || 'Metadata přílohy se nepovedlo smazat');
-        if (meta.storagePath) await client.storage.from('warranty-files').remove([meta.storagePath]).catch?.(() => {});
-        getState().cloud.lastSyncAt = new Date().toISOString();
-      } else {
-        deleteStoredWarrantyFile(id).catch(() => {});
-      }
       getState().warrantyFiles = getState().warrantyFiles.filter((file) => file.id !== id);
       touchState();
       saveState();
       render();
       showToast('Příloha záruky smazána');
+      if (meta.cloudId) {
+        (async () => {
+          const client = getSupabaseClient();
+          if (!client || !getState().cloud?.householdId) return;
+          const { error: dbError } = await client.from('household_warranty_files').delete().eq('id', meta.cloudId).eq('household_id', getState().cloud.householdId);
+          if (dbError) { console.warn('Cloud sync (smazání přílohy záruky) na pozadí selhal', dbError.message); return; }
+          if (meta.storagePath) await client.storage.from('warranty-files').remove([meta.storagePath]).catch?.(() => {});
+          getState().cloud.lastSyncAt = new Date().toISOString();
+          saveState();
+        })().catch((error) => console.warn('Cloud sync (smazání přílohy záruky) na pozadí selhal', error));
+      } else {
+        deleteStoredWarrantyFile(id).catch(() => {});
+      }
     }
 
     async function addWarrantyFromForm(data, form) {
@@ -695,64 +699,69 @@
         showToast('Záruka se právě ukládá…');
         return;
       }
-      if (form) {
-        form.dataset.saving = 'true';
-        form.querySelectorAll('button[type="submit"]').forEach((button) => {
-          button.disabled = true;
-          button.dataset.originalText = button.textContent || '';
-          button.textContent = 'Ukládám…';
-        });
-      }
-      try {
-        const purchaseDate = normalizeText(data.purchaseDate) || todayISO();
-        const warrantyYears = normalizeWarrantyYears(data.warrantyYears || 2, purchaseDate);
-        const item = normalizeWarrantyItem({
-          id: uid(),
-          householdId: currentHouseholdId(),
-          profileId: currentProfileId(),
-          createdAt: new Date().toISOString(),
-          name: data.name,
-          store: data.store,
-          price: data.price,
-          purchaseDate,
-          warrantyYears,
-          warrantyUntil: normalizeText(data.warrantyUntil) || addYearsIso(purchaseDate, warrantyYears),
-          status: data.status || 'active',
-          note: data.note
-        });
-        getState().warranties = normalizeWarranties([...(getState().warranties || []), item]);
-        let savedItem = getState().warranties.find((entry) => entry.id === item.id) || item;
-        touchState();
-        saveState();
+      if (form) form.dataset.saving = 'true';
+      const purchaseDate = normalizeText(data.purchaseDate) || todayISO();
+      const warrantyYears = normalizeWarrantyYears(data.warrantyYears || 2, purchaseDate);
+      const item = normalizeWarrantyItem({
+        id: uid(),
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: new Date().toISOString(),
+        name: data.name,
+        store: data.store,
+        price: data.price,
+        purchaseDate,
+        warrantyYears,
+        warrantyUntil: normalizeText(data.warrantyUntil) || addYearsIso(purchaseDate, warrantyYears),
+        status: data.status || 'active',
+        note: data.note
+      });
+      getState().warranties = normalizeWarranties([...(getState().warranties || []), item]);
+      const savedItem = getState().warranties.find((entry) => entry.id === item.id) || item;
+      touchState();
+      saveState();
+      const input = form?.querySelector?.('input[type="file"]');
+      const files = [...(input?.files || [])];
+      clearWarrantyDraft();
+      form?.reset();
+      const purchase = form?.querySelector?.('[name="purchaseDate"]');
+      const years = form?.querySelector?.('[name="warrantyYears"]');
+      const until = form?.querySelector?.('[name="warrantyUntil"]');
+      if (purchase) purchase.value = todayISO();
+      if (years) years.value = '2';
+      if (until) until.value = addYearsIso(todayISO(), 2);
+      if (form) delete form.dataset.saving;
+      render();
+      showToast(files.length ? 'Záruka uložena, příloha se nahrává na pozadí' : 'Záruka uložena');
+      (async () => {
         if (cloudReady()) {
           try {
             const saved = await cloudAddExtraItem('warranties', savedItem);
             if (saved?.id) {
               savedItem.cloudId = saved.id;
               getState().warranties = normalizeWarranties(getState().warranties).map((entry) => entry.id === savedItem.id ? { ...entry, cloudId: saved.id } : entry);
-              savedItem = getState().warranties.find((entry) => entry.id === item.id) || savedItem;
               touchState();
               saveState();
+              requestRender();
             }
           } catch (error) {
             console.warn('Warranty cloud add failed', error);
-            showToast('Záruka je uložená lokálně, cloud se zkusí znovu automaticky');
           }
         }
-        const input = form?.querySelector?.('input[type="file"]');
-        const files = [...(input?.files || [])];
         let fileResult = { added: 0, failed: 0 };
         if (files.length) {
           try {
             fileResult = await addWarrantyFilesToWarranty(savedItem, files);
           } catch (error) {
             console.warn('Warranty file add failed', error);
-            showToast('Záruka je uložená, ale příloha se nepovedla přidat');
             fileResult.failed += files.length;
           }
+          touchState();
+          saveState();
+          requestRender();
+          if (fileResult.added) showToast(fileResult.failed ? 'Příloha záruky nahraná (část se nepovedla)' : 'Příloha záruky nahraná');
+          else showToast('Příloha záruky se nepovedla přidat');
         }
-        touchState();
-        saveState();
         if (cloudReady()) {
           try {
             await cloudSyncLocalWarrantyFiles(false);
@@ -760,27 +769,7 @@
             console.warn('Warranty file follow-up sync failed', error);
           }
         }
-        clearWarrantyDraft();
-        form?.reset();
-        const purchase = form?.querySelector?.('[name="purchaseDate"]');
-        const years = form?.querySelector?.('[name="warrantyYears"]');
-        const until = form?.querySelector?.('[name="warrantyUntil"]');
-        if (purchase) purchase.value = todayISO();
-        if (years) years.value = '2';
-        if (until) until.value = addYearsIso(todayISO(), 2);
-        render();
-        if (files.length && fileResult.added) showToast(fileResult.failed ? 'Záruka uložená, část příloh se nepovedla' : 'Záruka a příloha uložená');
-        else showToast(files.length ? 'Záruka uložená, příloha se nepovedla' : 'Záruka uložena');
-      } finally {
-        if (form) {
-          delete form.dataset.saving;
-          form.querySelectorAll('button[type="submit"]').forEach((button) => {
-            button.disabled = false;
-            if (button.dataset.originalText) button.textContent = button.dataset.originalText;
-            delete button.dataset.originalText;
-          });
-        }
-      }
+      })().catch((error) => console.warn('Cloud sync (záruka) na pozadí selhal', error));
     }
 
     async function updateWarrantyFromForm(data, form) {
@@ -804,29 +793,29 @@
       getState().warranties = normalizeWarranties(getState().warranties).map((item) => item.id === id ? updated : item);
       touchState();
       saveState();
-      if (cloudReady()) {
-        const current = getState().warranties.find((item) => item.id === id) || updated;
-        if (current.cloudId) await cloudUpdateExtraItem('warranties', current);
-        else {
-          const saved = await cloudAddExtraItem('warranties', current);
-          if (saved?.id) {
-            getState().warranties = normalizeWarranties(getState().warranties).map((item) => item.id === id ? { ...item, cloudId: saved.id } : item);
-            touchState();
-            saveState();
-          }
-        }
-      }
       render();
       showToast('Záruka upravena');
+      if (cloudReady()) {
+        (async () => {
+          const current = getState().warranties.find((item) => item.id === id) || updated;
+          if (current.cloudId) {
+            await cloudUpdateExtraItem('warranties', current);
+          } else {
+            const saved = await cloudAddExtraItem('warranties', current);
+            if (saved?.id) {
+              getState().warranties = normalizeWarranties(getState().warranties).map((item) => item.id === id ? { ...item, cloudId: saved.id } : item);
+              touchState();
+              saveState();
+              requestRender();
+            }
+          }
+        })().catch((error) => console.warn('Cloud sync (úprava záruky) na pozadí selhal', error));
+      }
     }
 
     async function deleteWarranty(id) {
       const before = (getState().warranties || []).length;
       const warranty = getState().warranties.find((item) => item.id === id);
-      if (warranty?.cloudId) {
-        const ok = await cloudDeleteExtraItem('warranties', warranty);
-        if (!ok) return;
-      }
       getState().warranties = normalizeWarranties(getState().warranties).filter((item) => item.id !== id);
       if (getState().warranties.length === before) return;
       const files = (getState().warrantyFiles || []).filter((file) => file.warrantyId === id);
@@ -836,9 +825,10 @@
       getState().warrantyFiles = (getState().warrantyFiles || []).filter((file) => file.warrantyId !== id);
       touchState();
       saveState();
-      if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
       render();
       showToast('Záruka smazána');
+      if (warranty?.cloudId) cloudDeleteExtraItem('warranties', warranty).catch((error) => console.warn('Cloud sync (smazání záruky) na pozadí selhal', error));
+      if (cloudReady()) cloudSaveHouseholdUiSettings(false).catch((error) => console.warn('Cloud sync (smazání záruky) na pozadí selhal', error));
     }
 
     return {
