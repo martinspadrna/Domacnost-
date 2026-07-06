@@ -3873,7 +3873,7 @@ body.overview-open {
 
 /* v0.1_68: čistší základní obrazovka bez vrchního brand panelu */
 .home-clean-frame {
-  padding-top: max(12px, env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
 }
 .home-page-head {
   margin-top: 0;

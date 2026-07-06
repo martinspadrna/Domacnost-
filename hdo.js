@@ -179,6 +179,8 @@
         return {
           active: true,
           label: active.label,
+          activeStart: active.start,
+          activeEnd: active.end,
           message: `Právě běží ${active.label} (${hdoWindowTimeLabel(active)}).`
         };
       }

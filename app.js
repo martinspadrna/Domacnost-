@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_390';
-  const APP_BUILD = 390;
+  const APP_VERSION = 'Domácnost+ v.0.1_392';
+  const APP_BUILD = 392;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -3746,7 +3746,7 @@
     if (hasModule('hdo')) {
       cards.push({
         label: ctx.hdo.active ? 'Nízký tarif' : 'HDO',
-        value: ctx.hdo.active ? (ctx.hdo.label || 'aktivní') : (ctx.hdo.nextStart ? `od ${ctx.hdo.nextStart} (${ctx.hdo.nextInLabel})` : 'nenastaveno'),
+        value: ctx.hdo.active ? (ctx.hdo.activeEnd ? `do ${ctx.hdo.activeEnd}` : (ctx.hdo.label || 'aktivní')) : (ctx.hdo.nextStart ? `od ${ctx.hdo.nextStart}` : 'nenastaveno'),
         tone: 'good',
         overview: 'hdo'
       });
