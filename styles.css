@@ -12755,6 +12755,21 @@ body.home-active {
   padding-bottom: 4px;
 }
 
+/* Domácnost+ – Home na desktopu (šířka celého app-frame) rozkládá widgety do
+   dvou sloupců vedle sebe místo jednoho úzkého natahovaného sloupce. */
+@media (min-width: 900px) {
+  .home-dash {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+
+  .home-dash-top,
+  .home-dash-quick-section,
+  .home-dash-sync {
+    grid-column: 1 / -1;
+  }
+}
+
 .home-dash-top {
   display: grid;
   gap: 12px;
@@ -14498,9 +14513,7 @@ body.home-active {
 
   .calendar-weekdays,
   .calendar-week-row {
-    width: max-content;
-    min-width: 100%;
-    grid-template-columns: repeat(7, minmax(92px, 1fr));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 4px;
   }
 
@@ -15259,11 +15272,6 @@ body.home-active {
     min-width: 0;
     max-width: 1320px;
     margin: 0 auto;
-  }
-
-  /* Home zůstává úzký dashboardový sloupec, ostatní moduly ať využijí celou šířku obrazovky. */
-  .app-desktop-row .app-frame.home-clean-frame {
-    max-width: 640px;
   }
 
   .nav-shell {

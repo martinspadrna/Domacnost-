@@ -5,7 +5,8 @@
     const getWeatherState = deps.getWeatherState || (() => null);
     const setWeatherState = deps.setWeatherState || (() => {});
     const getHouseholdId = deps.getHouseholdId || (() => '');
-    const getDetailsOpen = deps.getDetailsOpen || (() => false);
+    const getModuleTab = deps.getModuleTab || ((area, fallback) => fallback);
+    const renderSectionTabs = deps.renderSectionTabs || (() => '');
     const saveState = deps.saveState || (() => {});
     const render = deps.render || (() => {});
     const touchState = deps.touchState || (() => {});
@@ -280,8 +281,12 @@
       const providerLabel = normalizeText(weather.meta?.providerLabel) || (weather.source === 'chmi' ? 'ČHMÚ + doplněné detaily' : sourceLabel);
       const astronomySource = normalizeText(weather.meta?.astronomySource || weather.meta?.numericFallback) || (weather.source === 'chmi' ? 'Open-Meteo' : sourceLabel);
       ensureWeatherFresh(false);
-      return `
-      <div class="grid two weather-page">
+      const activeTab = getModuleTab('weather', 'overview');
+      const tabs = renderSectionTabs('weather', [
+        { id: 'overview', label: 'Přehled', icon: '🌤️' },
+        { id: 'settings', label: 'Nastavení', icon: '⚙️' }
+      ], 'overview');
+      const overviewContent = `
         <section class="card desktop-span-2 weather-page-hero">
           <div class="card-header compact-card-header">
             <div><h2>${escapeHtml(weatherLocationLabel())}</h2><p>Aktualizováno: ${escapeHtml(updated)}</p></div>
@@ -311,20 +316,24 @@
           <div class="card-header"><div><h2>Další dny</h2><p>Přehled dopředu, bez zbytečné omáčky.</p></div></div>
           ${renderWeatherDailyGrid((weather.daily || []).slice(0, 7))}
         </section>
+      `;
+      const settingsContent = `
         <section class="card desktop-span-2 weather-settings-card">
-          <details class="compact-edit-details weather-settings-details" data-details-key="weather-settings" ${getDetailsOpen('weather-settings') ? 'open' : ''}>
-            <summary><span>Nastavení počasí</span><em>${escapeHtml(weatherLocationLabel())}</em></summary>
-            <form data-form="weather-settings" class="compact-form">
-              <div class="form-grid two">
-                ${selectField('Zdroj', 'weatherSource', WEATHER_PROVIDER_OPTIONS, normalizeWeatherSource(weather.source))}
-                ${renderLocationAutocompleteField(location)}
-              </div>
-              <div class="form-actions compact-actions"><button class="primary-btn" type="submit" data-weather-save-btn>Uložit a načíst počasí</button><button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit počasí</button></div>
-            </form>
-          </details>
+          <div class="card-header"><div><h2>Nastavení počasí</h2><p>${escapeHtml(weatherLocationLabel())}</p></div></div>
+          <form data-form="weather-settings" class="compact-form">
+            <div class="form-grid two">
+              ${selectField('Zdroj', 'weatherSource', WEATHER_PROVIDER_OPTIONS, normalizeWeatherSource(weather.source))}
+              ${renderLocationAutocompleteField(location)}
+            </div>
+            <div class="form-actions compact-actions"><button class="primary-btn" type="submit" data-weather-save-btn>Uložit a načíst počasí</button><button class="ghost-btn" type="button" data-action="weather-refresh">Obnovit počasí</button></div>
+          </form>
         </section>
-      </div>
-    `;
+      `;
+      return `
+        ${tabs}
+        <div class="grid two module-tabbed weather-tab-${escapeHtml(activeTab)}" data-tab-area="weather">
+          ${activeTab === 'settings' ? settingsContent : overviewContent}
+        </div>`;
     }
 
     async function ensureWeatherFresh(force = false) {

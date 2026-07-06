@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_392';
-  const APP_BUILD = 392;
+  const APP_VERSION = 'Domácnost+ v.0.1_393';
+  const APP_BUILD = 393;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -3844,7 +3844,7 @@
       .filter((item) => item && hasModule(item.nav));
     if (!actions.length) return '';
     return `
-      <div class="home-dash-section">
+      <div class="home-dash-section home-dash-quick-section">
         <h2 class="home-dash-section-title">Rychlé akce</h2>
         <div class="home-quick-actions">
           ${actions.map((action) => `
@@ -5129,6 +5129,7 @@
       waste: { count: countBy('waste'), label: 'svozů', note: 'Nejbližší odpad a připomínky.' },
       tasks: { count: countBy('homeTasks', (item) => !item.done) + countBy('notes'), label: 'položek', note: `${countBy('homeTasks', (item) => !item.done)} úkolů, ${countBy('notes')} stránek/poznámek.` },
       warranties: { count: countBy('warranties'), label: 'záruk', note: `${countBy('warrantyFiles')} příloh záruk.` },
+      readings: { count: countBy('readingMeters'), label: 'měřidel', note: `${countBy('readings')} odečtů celkem.` },
       polishHolidays: { count: buildPolishShopCalendarYear(polishShopSelectedYear()).filter((entry) => entry.status === 'closed').length, label: 'dnů', note: 'Polské svátky a volitelné neděle nehandlowe.' },
       garage: { count: countBy('vehicles'), label: 'aut', note: `${countBy('fuel')} tankování, ${countBy('services')} servisů.` },
       contracts: { count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh smluv, ${countBy('warrantyFiles')} příloh záruk.` },
@@ -5657,8 +5658,9 @@
       getWeatherState: () => state.weather,
       setWeatherState: (val) => { state.weather = val; },
       getHouseholdId: () => state.cloud?.householdId || '',
-      getDetailsOpen: isDetailsOpen,
-      setDetailsOpen,
+      getModuleTab,
+      setModuleTab,
+      renderSectionTabs,
       saveState,
       render,
       touchState,

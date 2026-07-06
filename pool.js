@@ -270,15 +270,14 @@
     }
 
     function renderPoolAddForm(pool) {
-      const latest = latestPoolMeasurement(pool);
       return `
         <form data-form="pool-settings" class="compact-form pool-form">
           <div class="form-grid two">
             ${selectField('Tvar bazénu', 'shape', SHAPE_OPTIONS, pool.shape)}
             ${renderDimensionFields(pool)}
-            ${field('Datum měření', 'measurementDate', 'date', '', false, latest?.date || todayISO())}
-            ${field('Aktuální pH', 'ph', 'number', 'např. 7,6', false, pool.ph || '')}
-            ${field('Teplota vody °C', 'waterTempC', 'number', 'např. 24,5', false, pool.waterTempC || '')}
+            ${field('Datum měření', 'measurementDate', 'date', '', false, todayISO())}
+            ${field('Aktuální pH', 'ph', 'number', 'např. 7,6', false, '')}
+            ${field('Teplota vody °C', 'waterTempC', 'number', 'např. 24,5', false, '')}
             ${field('Cílové pH', 'targetPh', 'number', 'např. 7,2', false, pool.targetPh || 7.2)}
             ${field('Dávka g / 10 m³ / 0,1 pH', 'dosePer10m3Per01', 'number', 'např. 100', false, pool.dosePer10m3Per01 || 100)}
             ${field('Poznámka', 'note', 'text', 'např. po dešti / chlorování', false, pool.note || '')}
@@ -303,16 +302,17 @@
       return `
         <section class="card desktop-span-2 pool-panel">
           <div class="card-header"><div><h2>Stav vody</h2><p>Objem vody, poslední pH a orientační dávka pH přípravku.</p></div><span class="badge">${formatVolume(volume)}</span></div>
-          <div class="kpi-grid compact-kpi-grid">
-            <div class="kpi"><strong>${formatVolume(volume)}</strong><span>objem vody</span></div>
-            <div class="kpi"><strong>${pool.ph || '—'}</strong><span>aktuální pH</span></div>
-            <div class="kpi"><strong>${pool.waterTempC ? `${formatPoolNumber(pool.waterTempC, 1)} °C` : '—'}</strong><span>teplota vody</span></div>
-            <div class="kpi ${tone}"><strong>${dose.status === 'ok' ? 'OK' : dose.status === 'missing' ? 'doplň' : formatGrams(dose.grams)}</strong><span>${escapeHtml(dose.label)}</span></div>
-          </div>
-          ${pool.updatedAt ? `<div class="inline-note compact-note">Naposledy upraveno ${escapeHtml(formatDateTime(pool.updatedAt))}${latest?.date ? ` · měření ${escapeHtml(formatDate(latest.date))}` : ''}${pool.note ? ` · ${escapeHtml(pool.note)}` : ''}</div>` : ''}
           ${tabs}
           <div class="module-tabbed pool-tab-${escapeHtml(activeTab)}" data-tab-area="pool">
-            ${activeTab === 'add' ? renderPoolAddForm(pool) : ''}
+            ${activeTab === 'add' ? renderPoolAddForm(pool) : `
+              <div class="kpi-grid compact-kpi-grid">
+                <div class="kpi"><strong>${formatVolume(volume)}</strong><span>objem vody</span></div>
+                <div class="kpi"><strong>${pool.ph || '—'}</strong><span>aktuální pH</span></div>
+                <div class="kpi"><strong>${pool.waterTempC ? `${formatPoolNumber(pool.waterTempC, 1)} °C` : '—'}</strong><span>teplota vody</span></div>
+                <div class="kpi ${tone}"><strong>${dose.status === 'ok' ? 'OK' : dose.status === 'missing' ? 'doplň' : formatGrams(dose.grams)}</strong><span>${escapeHtml(dose.label)}</span></div>
+              </div>
+              ${pool.updatedAt ? `<div class="inline-note compact-note">Naposledy upraveno ${escapeHtml(formatDateTime(pool.updatedAt))}${latest?.date ? ` · měření ${escapeHtml(formatDate(latest.date))}` : ''}${pool.note ? ` · ${escapeHtml(pool.note)}` : ''}</div>` : ''}
+            `}
           </div>
         </section>
         ${activeTab === 'overview' ? renderPoolMeasurements(pool) : ''}
@@ -322,15 +322,22 @@
 
     async function savePoolFromForm(data) {
       const current = normalizePoolState(getState().pool || {});
+      // Formulář "Nové měření" nechává pH/teplotu prázdné (nepředvyplňuje se stará
+      // hodnota) - když je uživatel nevyplní, zůstává aktuální pH/teplota bazénu
+      // beze změny (nesmaže se na prázdno) a žádné nové měření se nezaznamená.
+      const typedPh = normalizeText(data.ph);
+      const typedWaterTempC = normalizeText(data.waterTempC);
       const next = normalizePoolState({
         ...current,
         ...data,
+        ph: typedPh === '' ? current.ph : data.ph,
+        waterTempC: typedWaterTempC === '' ? current.waterTempC : data.waterTempC,
         updatedAt: new Date().toISOString()
       });
       const measurement = normalizePoolMeasurement({
         date: normalizeText(data.measurementDate) || todayISO(),
-        ph: next.ph,
-        waterTempC: next.waterTempC,
+        ph: typedPh === '' ? '' : next.ph,
+        waterTempC: typedWaterTempC === '' ? '' : next.waterTempC,
         note: next.note
       });
       if (shouldAppendMeasurement(current, measurement)) {
