@@ -11,6 +11,7 @@
   function createSubscriptions(deps) {
     const getState = deps.getState || (() => ({}));
     const getActiveModule = deps.getActiveModule || (() => '');
+    const getDetailsOpen = deps.getDetailsOpen || (() => false);
     const normalizeText = deps.normalizeText || ((v) => String(v || '').trim());
     const normalizeKey = deps.normalizeKey || ((v) => String(v || '').toLowerCase());
     const uid = deps.uid || (() => Math.random().toString(36).slice(2));
@@ -562,7 +563,7 @@
         return wrap(`
           <section class="card desktop-span-2 subscription-panel panel-services">
             <div class="card-header"><div><h2>Služby</h2><p>Vyber službu, uprav cenu a potom nastav, kdo ti za ni kolik platí.</p></div><span class="badge">${allServices.length}</span></div>
-            <details class="action-details compact-edit-details subscription-form-drawer">
+            <details class="action-details compact-edit-details subscription-form-drawer" data-details-key="subscription-add-service" ${getDetailsOpen('subscription-add-service') ? 'open' : ''}>
               <summary><span>Přidat službu</span><em>Netflix, Disney+, Spotify nebo vlastní</em></summary>
               <form data-form="add-subscription" class="compact-form">
                 <div class="form-grid two">
@@ -597,7 +598,7 @@
         return wrap(`
           <section class="card desktop-span-2 subscription-panel panel-people">
             <div class="card-header"><div><h2>Lidé</h2><p>Klikni na člověka a přiřaď mu službu včetně částky. Volná místa u služeb se přepočítají sama.</p></div><span class="badge">${people.length}</span></div>
-            <details class="action-details compact-edit-details subscription-form-drawer">
+            <details class="action-details compact-edit-details subscription-form-drawer" data-details-key="subscription-add-person" ${getDetailsOpen('subscription-add-person') ? 'open' : ''}>
               <summary><span>Přidat člověka</span><em>kamarád, rodina, kolega</em></summary>
               <form data-form="add-subscription-person" class="compact-form">
                 <div class="form-grid two">

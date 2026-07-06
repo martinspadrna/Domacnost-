@@ -17,6 +17,7 @@
     const getNow = deps.getNow || (() => new Date());
     const getCalendarViewMonth = deps.getCalendarViewMonth || (() => new Date().toISOString().slice(0, 7));
     const getCalendarDetailEventId = deps.getCalendarDetailEventId || (() => null);
+    const getDetailsOpen = deps.getDetailsOpen || (() => false);
     const escapeHtml = deps.escapeHtml || ((v) => String(v ?? ''));
     const normalizeText = deps.normalizeText || ((v) => String(v || '').trim());
     const uid = deps.uid || (() => Math.random().toString(36).slice(2));
@@ -583,7 +584,7 @@
               <span class="badge ${cloudReadyFlag ? 'good' : ''}">${cloudReadyFlag ? 'cloud' : 'lokálně'}</span>
             </div>
             ${renderGoogleCalendarConnector(cloudReadyFlag, sourceList)}
-            <details class="compact-edit-details calendar-manual-source-details">
+            <details class="compact-edit-details calendar-manual-source-details" data-details-key="calendar-add-source" ${getDetailsOpen('calendar-add-source') ? 'open' : ''}>
               <summary><span>Přidat ruční zdroj kalendáře</span><em>domácí / veřejný Google iCal odkaz</em></summary>
               <form data-form="add-calendar-source" class="compact-form">
                 <div class="form-grid two">

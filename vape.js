@@ -8,6 +8,7 @@
     const uid = deps.uid || (() => `${Date.now()}-${Math.random().toString(16).slice(2)}`);
     const todayISO = deps.todayISO || (() => new Date().toISOString().slice(0, 10));
     const normalizeText = deps.normalizeText || ((v) => String(v || '').trim());
+    const normalizeKey = deps.normalizeKey || ((v) => String(v || '').toLowerCase());
     const escapeHtml = deps.escapeHtml || ((v) => String(v ?? ''));
     const decimalValue = deps.decimalValue || ((v) => Number(String(v || '').replace(',', '.')) || 0);
     const field = deps.field || (() => '');
@@ -165,7 +166,7 @@
         cigaretteCostPerDay: decimalValue(value.cigaretteCostPerDay ?? 150.5) || 150.5,
         calcBooster: normalizeVapeCalc(value.calcBooster),
         calcReady: normalizeVapeCalc(value.calcReady),
-        calcCustom: normalizeVapeCalc(value.calcCustom),
+        calcShakeVape: normalizeVapeCalc(value.calcShakeVape),
         updatedAt: normalizeText(value.updatedAt)
       };
     }
@@ -236,32 +237,73 @@
       return { volumeMl: volume, aromaPercent: aromaPct, aromaMl, baseMl };
     }
 
-    // Kalkulačka 3: vlastní směs až ze 4 složek (báze / nikotin / aroma 1 / aroma 2),
-    // váženy podle použitých ml - stejná logika jako list "S&V" v původním excelu.
-    function calcCustomMix(components) {
-      const rows = components
-        .map((component) => ({
-          name: normalizeText(component.name),
-          ml: Math.max(0, decimalValue(component.ml)),
-          pg: Math.min(100, Math.max(0, decimalValue(component.pg))),
-          nicMgMl: Math.max(0, decimalValue(component.nicMgMl)),
-          pricePerMl: Math.max(0, decimalValue(component.pricePerMl))
-        }))
-        .filter((component) => component.ml > 0);
-      const totalMl = rows.reduce((sum, row) => sum + row.ml, 0);
+    // Najde položku v ceníku podle názvu (přesná shoda přednostně, jinak substring).
+    function findVapeItemByName(vape, name) {
+      const key = normalizeKey(name);
+      if (!key) return null;
+      const items = vape.items.filter((item) => item.sizeMl > 0);
+      return items.find((item) => normalizeKey(item.name) === key)
+        || items.find((item) => normalizeKey(item.name).includes(key) || key.includes(normalizeKey(item.name)))
+        || null;
+    }
+
+    // Průměrná cena/ml napříč položkami dané kategorie v ceníku (báze / booster) -
+    // báze a nikotin se u Shake and Vape nekupují pod konkrétním "receptovým" názvem,
+    // takže se cena bere jako průměr toho, co je v ceníku vedené.
+    function vapeCategoryAveragePricePerMl(vape, category) {
+      const perMl = vape.items
+        .filter((item) => item.category === category)
+        .map(vapeItemPricePerMl)
+        .filter((value) => Number.isFinite(value) && value > 0);
+      if (!perMl.length) return null;
+      return perMl.reduce((sum, value) => sum + value, 0) / perMl.length;
+    }
+
+    // Kalkulačka 3: Shake and Vape - lahvička s příchutí doplněná bází a nikotinovým
+    // boosterem. Příchuť i booster se počítají jako 100% PG (běžné složení), báze má
+    // vlastní poměr PG/VG. Cena příchutě se dohledá v ceníku podle názvu, báze a
+    // nikotin se cení průměrnou cenou/ml z jejich kategorie v ceníku.
+    function calcShakeAndVape({ bottleSizeMl, flavorName, flavorMl, baseMl, basePg, nicMgMl, nicMl }) {
+      const vape = getVape();
+      const bottleSize = Math.max(0, decimalValue(bottleSizeMl));
+      const flavor = Math.max(0, decimalValue(flavorMl));
+      const base = Math.max(0, decimalValue(baseMl));
+      const basePgPercent = Math.min(100, Math.max(0, decimalValue(basePg)));
+      const nicStrength = Math.max(0, decimalValue(nicMgMl));
+      const nic = Math.max(0, decimalValue(nicMl));
+      const totalMl = flavor + base + nic;
       if (!(totalMl > 0)) return null;
-      const totalPrice = rows.reduce((sum, row) => sum + row.ml * row.pricePerMl, 0);
-      const totalPgMl = rows.reduce((sum, row) => sum + row.ml * (row.pg / 100), 0);
-      const totalNicMg = rows.reduce((sum, row) => sum + row.ml * row.nicMgMl, 0);
+
+      const flavorItem = findVapeItemByName(vape, flavorName);
+      const flavorPricePerMl = flavorItem ? vapeItemPricePerMl(flavorItem) : null;
+      const basePricePerMl = vapeCategoryAveragePricePerMl(vape, 'base');
+      const nicPricePerMl = vapeCategoryAveragePricePerMl(vape, 'booster');
+      const flavorCost = flavorPricePerMl ? flavor * flavorPricePerMl : 0;
+      const baseCost = basePricePerMl ? base * basePricePerMl : 0;
+      const nicCost = nicPricePerMl ? nic * nicPricePerMl : 0;
+      const totalPrice = flavorCost + baseCost + nicCost;
+
+      const totalPgMl = flavor * 1 + base * (basePgPercent / 100) + nic * 1;
       const pgPercent = (totalPgMl / totalMl) * 100;
+      const totalNicMg = nic * nicStrength;
+
       return {
-        rows,
+        bottleSizeMl: bottleSize,
+        flavorName: normalizeText(flavorName),
+        flavorMl: flavor,
+        baseMl: base,
+        basePg: basePgPercent,
+        nicMgMl: nicStrength,
+        nicMl: nic,
         totalMl,
         totalPrice,
         pricePerMl: totalPrice / totalMl,
         pgPercent,
         vgPercent: 100 - pgPercent,
-        nicMgMl: totalNicMg / totalMl
+        nicMgPerMl: totalNicMg / totalMl,
+        flavorMatched: Boolean(flavorItem),
+        baseMatched: Boolean(basePricePerMl),
+        nicMatched: Boolean(nicPricePerMl)
       };
     }
 
@@ -343,17 +385,11 @@
       persistVape();
     }
 
-    function calcVapeCustomFromForm(data) {
-      const components = [
-        { name: data.baseName || 'Báze', ml: data.baseMl, pg: data.basePg, nicMgMl: data.baseNic, pricePerMl: data.basePrice },
-        { name: data.nicName || 'Nikotin', ml: data.nicMl, pg: data.nicPg, nicMgMl: data.nicNic, pricePerMl: data.nicPrice },
-        { name: data.aroma1Name || 'Aroma 1', ml: data.aroma1Ml, pg: data.aroma1Pg, nicMgMl: data.aroma1Nic, pricePerMl: data.aroma1Price },
-        { name: data.aroma2Name || 'Aroma 2', ml: data.aroma2Ml, pg: data.aroma2Pg, nicMgMl: data.aroma2Nic, pricePerMl: data.aroma2Price }
-      ];
-      const result = calcCustomMix(components);
-      if (!result) return showToast('Zadej aspoň jednu složku s objemem v ml');
+    function calcVapeShakeAndVapeFromForm(data) {
+      const result = calcShakeAndVape(data);
+      if (!result) return showToast('Zadej aspoň jeden objem (příchuť, báze nebo nikotin)');
       const vape = getVape();
-      getState().vape = { ...vape, calcCustom: { ...data, result } };
+      getState().vape = { ...vape, calcShakeVape: { ...data, result } };
       persistVape();
     }
 
@@ -408,43 +444,38 @@
       `;
     }
 
-    function renderVapeCustomComponentFields(prefix, label, saved = {}) {
-      return `
-        <div class="vape-mix-component">
-          <div class="inline-note compact-note vape-mix-component-label">${escapeHtml(label)}</div>
-          <div class="form-grid two">
-            ${field('Název', `${prefix}Name`, 'text', label, false, saved[`${prefix}Name`] || '')}
-            ${field('Množství (ml)', `${prefix}Ml`, 'number', 'ml', false, saved[`${prefix}Ml`] || '')}
-            ${field('PG (%)', `${prefix}Pg`, 'number', '0-100', false, saved[`${prefix}Pg`] ?? '')}
-            ${field('Nikotin (mg/ml)', `${prefix}Nic`, 'number', 'mg/ml', false, saved[`${prefix}Nic`] || '')}
-            ${field('Cena za ml', `${prefix}Price`, 'number', 'Kč/ml', false, saved[`${prefix}Price`] || '')}
-          </div>
-        </div>
-      `;
-    }
-
-    function renderVapeCustomCalc(vape) {
-      const saved = vape.calcCustom || {};
+    function renderVapeShakeAndVapeCalc(vape) {
+      const saved = vape.calcShakeVape || {};
       const result = saved.result || null;
       return `
         <section class="card desktop-span-2 vape-calc-panel">
-          <div class="card-header"><div><h2>Vlastní směs</h2><p>Až 4 složky (báze, nikotin, dvě aromata) - spočítá celkový objem, cenu, poměr PG/VG a nikotin.</p></div></div>
-          <form data-form="vape-calc-custom" class="compact-form">
-            ${renderVapeCustomComponentFields('base', 'Báze', saved)}
-            ${renderVapeCustomComponentFields('nic', 'Nikotin / booster', saved)}
-            ${renderVapeCustomComponentFields('aroma1', 'Aroma 1', saved)}
-            ${renderVapeCustomComponentFields('aroma2', 'Aroma 2', saved)}
+          <div class="card-header"><div><h2>Shake and Vape</h2><p>Lahvička s příchutí doplněná bází a nikotinovým boosterem na cílový objem.</p></div></div>
+          <form data-form="vape-calc-shakevape" class="compact-form">
+            <div class="form-grid two">
+              ${field('Velikost lahvičky (ml)', 'bottleSizeMl', 'number', 'např. 60', true, saved.bottleSizeMl ?? 60)}
+              ${field('Název příchutě', 'flavorName', 'text', 'podle ceníku', false, saved.flavorName || '')}
+              ${field('Příchuť v lahvičce (ml)', 'flavorMl', 'number', 'např. 16', false, saved.flavorMl ?? 16)}
+              ${field('Báze (ml)', 'baseMl', 'number', 'např. 43', false, saved.baseMl ?? 43)}
+              ${field('Báze - poměr PG (%)', 'basePg', 'number', 'např. 50', false, saved.basePg ?? 50)}
+              ${field('Síla nikotinu (mg/ml)', 'nicMgMl', 'number', 'např. 200', false, saved.nicMgMl ?? 200)}
+              ${field('Obsah nikotinu (ml)', 'nicMl', 'number', 'např. 1', false, saved.nicMl ?? 1)}
+            </div>
+            <div class="inline-note compact-note">Příchuť a nikotinový booster se počítají jako 100% PG (běžné složení), báze má svůj vlastní poměr PG/VG.</div>
             <div class="form-actions"><button class="primary-btn" type="submit">Spočítat směs</button></div>
           </form>
           ${result ? `
             <div class="kpi-grid compact-kpi-grid">
-              <div class="kpi"><strong>${formatMl(result.totalMl)}</strong><span>celkový objem</span></div>
+              <div class="kpi"><strong>${formatMl(result.totalMl)}</strong><span>celkové množství</span></div>
               <div class="kpi"><strong>${formatCurrency(result.totalPrice)}</strong><span>celková cena</span></div>
               <div class="kpi"><strong>${formatPerMl(result.pricePerMl)}</strong><span>cena za ml</span></div>
-              <div class="kpi"><strong>${Math.round(result.pgPercent)}/${Math.round(result.vgPercent)}</strong><span>poměr PG/VG</span></div>
-              <div class="kpi"><strong>${result.nicMgMl.toLocaleString('cs-CZ', { maximumFractionDigits: 2 })} mg/ml</strong><span>obsah nikotinu</span></div>
+              <div class="kpi"><strong>${Math.round(result.pgPercent)}/${Math.round(result.vgPercent)}</strong><span>výsledný poměr PG/VG</span></div>
+              <div class="kpi"><strong>${result.nicMgPerMl.toLocaleString('cs-CZ', { maximumFractionDigits: 2 })} mg/ml</strong><span>celkový obsah nikotinu</span></div>
             </div>
-          ` : renderEmpty('Vyplň aspoň jednu složku s objemem v ml.')}
+            ${result.bottleSizeMl && Math.round(result.totalMl) !== Math.round(result.bottleSizeMl) ? `<div class="inline-note compact-note">Součet příchuť + báze + nikotin (${formatMl(result.totalMl)}) neodpovídá velikosti lahvičky (${formatMl(result.bottleSizeMl)}).</div>` : ''}
+            ${!result.flavorMatched && result.flavorName ? `<div class="inline-note compact-note">Příchuť „${escapeHtml(result.flavorName)}“ nebyla v ceníku nalezena, do ceny se nepočítá.</div>` : ''}
+            ${!result.baseMatched && result.baseMl ? '<div class="inline-note compact-note">V ceníku není žádná báze, cena báze se nepočítá.</div>' : ''}
+            ${!result.nicMatched && result.nicMl ? '<div class="inline-note compact-note">V ceníku není žádný booster, cena nikotinu se nepočítá.</div>' : ''}
+          ` : renderEmpty('Vyplň formulář a spočítej Shake and Vape směs.')}
         </section>
       `;
     }
@@ -453,11 +484,11 @@
       const tabs = [
         { id: 'booster', label: 'Booster', icon: '💧' },
         { id: 'ready', label: 'Hotová báze', icon: '🧪' },
-        { id: 'custom', label: 'Vlastní směs', icon: '🧉' }
+        { id: 'shakevape', label: 'Shake and Vape', icon: '🧉' }
       ];
       const active = getModuleTab('vapeCalc', 'booster');
       const activeTab = tabs.some((tab) => tab.id === active) ? active : 'booster';
-      const panel = activeTab === 'ready' ? renderVapeReadyCalc(vape) : activeTab === 'custom' ? renderVapeCustomCalc(vape) : renderVapeBoosterCalc(vape);
+      const panel = activeTab === 'ready' ? renderVapeReadyCalc(vape) : activeTab === 'shakevape' ? renderVapeShakeAndVapeCalc(vape) : renderVapeBoosterCalc(vape);
       return `
         ${renderSectionTabs('vapeCalc', tabs, 'booster')}
         ${panel}
@@ -582,7 +613,7 @@
       saveVapeSettingsFromForm,
       calcVapeBoosterFromForm,
       calcVapeReadyFromForm,
-      calcVapeCustomFromForm,
+      calcVapeShakeAndVapeFromForm,
       getVapeItemEditId: () => vapeItemEditId
     };
   }

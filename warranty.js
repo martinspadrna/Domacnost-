@@ -8,6 +8,8 @@
   function createWarranty(deps) {
     const getState = deps.getState || (() => ({}));
     const getActiveWarrantyDetailId = deps.getActiveWarrantyDetailId || (() => null);
+    const getModuleTab = deps.getModuleTab || ((area, fallback) => fallback);
+    const renderSectionTabs = deps.renderSectionTabs || (() => '');
     const sessionStorage = deps.sessionStorage || window.sessionStorage;
 
     const normalizeKey = deps.normalizeKey || ((v) => String(v || '').toLowerCase());
@@ -300,11 +302,31 @@
       `;
     }
 
-    function renderWarrantiesPanel(warranties) {
+    function renderWarrantyAddForm() {
       const draftPurchaseDate = warrantyDraftValue('purchaseDate', todayISO()) || todayISO();
       const draftWarrantyYears = normalizeWarrantyYears(warrantyDraftValue('warrantyYears', '2'), draftPurchaseDate);
       const draftWarrantyUntil = warrantyDraftValue('warrantyUntil', addYearsIso(draftPurchaseDate, draftWarrantyYears)) || addYearsIso(draftPurchaseDate, draftWarrantyYears);
       const draftStatus = warrantyDraftValue('status', 'active') || 'active';
+      return `
+        <form data-form="add-warranty" class="compact-form warranty-form">
+          <div class="form-grid two">
+            ${field('Věc', 'name', 'text', 'televize / pračka / telefon', true, warrantyDraftValue('name', ''))}
+            ${field('Obchod', 'store', 'text', 'Alza / Datart / Kaufland', false, warrantyDraftValue('store', ''))}
+            ${field('Cena', 'price', 'text', 'volitelné', false, warrantyDraftValue('price', ''), 'decimal')}
+            ${field('Datum koupě', 'purchaseDate', 'date', '', true, draftPurchaseDate)}
+            ${selectField('Délka záruky', 'warrantyYears', WARRANTY_YEARS_OPTIONS, String(draftWarrantyYears))}
+            ${field('Záruka do', 'warrantyUntil', 'date', 'automaticky podle délky', false, draftWarrantyUntil)}
+            ${selectField('Stav', 'status', WARRANTY_STATUS_OPTIONS, draftStatus)}
+            ${field('Poznámka / reklamace', 'note', 'text', 'např. reklamováno, číslo reklamace, domluva', false, warrantyDraftValue('note', ''))}
+          </div>
+          <label class="field warranty-file-add-field"><span>Fotka / PDF účtenky</span><input class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf"></label>
+          <div class="inline-note compact-note">Základ je 2 roky. Fotky se před uložením automaticky zmenší tak, aby zůstal čitelný text. PDF se nechává beze změny.</div>
+          <div class="form-actions"><button class="primary-btn" type="submit">Přidat záruku</button></div>
+        </form>
+      `;
+    }
+
+    function renderWarrantiesPanel(warranties) {
       const activeItems = warranties.filter((item) => !['archived', 'done'].includes(item.status));
       const claimCount = warranties.filter((item) => item.status === 'claim').length;
       const endingSoon = warranties.filter((item) => {
@@ -315,39 +337,30 @@
         const days = daysUntil(item.warrantyUntil);
         return item.status === 'active' && days !== null && days < 0;
       }).length;
+      const activeTab = getModuleTab('warranties', 'overview');
+      const tabs = renderSectionTabs('warranties', [
+        { id: 'overview', label: 'Přehled', icon: '🧾', count: warranties.length },
+        { id: 'add', label: 'Přidat záruku', icon: '➕' }
+      ], 'overview');
       return `
         <section class="card homecare-panel panel-warranties">
           <div class="card-header">
             <div><h2>Přehled záruk</h2><p>Koupené věci, konec záruky a poznámky třeba k reklamaci.</p></div>
             <span class="badge ${getState().cloud?.householdId ? 'good' : ''}">${getState().cloud?.householdId ? 'sdílené v domácnosti' : 'lokálně'}</span>
           </div>
-          <details class="action-details compact-edit-details warranty-add-details">
-            <summary><span>Přidat novou záruku</span><em>účtenka, fotka/PDF, délka záruky</em></summary>
-            <form data-form="add-warranty" class="compact-form warranty-form">
-              <div class="form-grid two">
-                ${field('Věc', 'name', 'text', 'televize / pračka / telefon', true, warrantyDraftValue('name', ''))}
-                ${field('Obchod', 'store', 'text', 'Alza / Datart / Kaufland', false, warrantyDraftValue('store', ''))}
-                ${field('Cena', 'price', 'text', 'volitelné', false, warrantyDraftValue('price', ''), 'decimal')}
-                ${field('Datum koupě', 'purchaseDate', 'date', '', true, draftPurchaseDate)}
-                ${selectField('Délka záruky', 'warrantyYears', WARRANTY_YEARS_OPTIONS, String(draftWarrantyYears))}
-                ${field('Záruka do', 'warrantyUntil', 'date', 'automaticky podle délky', false, draftWarrantyUntil)}
-                ${selectField('Stav', 'status', WARRANTY_STATUS_OPTIONS, draftStatus)}
-                ${field('Poznámka / reklamace', 'note', 'text', 'např. reklamováno, číslo reklamace, domluva', false, warrantyDraftValue('note', ''))}
-              </div>
-              <label class="field warranty-file-add-field"><span>Fotka / PDF účtenky</span><input class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf"></label>
-              <div class="inline-note compact-note">Základ je 2 roky. Fotky se před uložením automaticky zmenší tak, aby zůstal čitelný text. PDF se nechává beze změny.</div>
-              <div class="form-actions"><button class="primary-btn" type="submit">Přidat záruku</button></div>
-            </form>
-          </details>
-          <div style="height:12px"></div>
-          ${renderOverviewSummary([
-            { label: 'Aktivní', value: activeItems.length },
-            { label: 'Do 30 dnů', value: endingSoon, tone: endingSoon ? 'warn' : '' },
-            { label: 'Reklamace', value: claimCount, tone: claimCount ? 'warn' : '' },
-            { label: 'Po záruce', value: expired, tone: expired ? 'bad' : '' }
-          ])}
-          <div style="height:14px"></div>
-          ${warranties.length ? `<div class="list warranty-list">${warranties.map(renderWarrantyItem).join('')}</div>` : renderEmptyCta({ icon: '🧾', title: 'Záruky jsou prázdné', text: 'Přidej první koupenou věc. Konec záruky se předvyplní na 2 roky od nákupu.', nav: 'warranties', tab: '', label: 'Přidat záruku' })}
+          ${tabs}
+          <div class="module-tabbed warranties-tab-${escapeHtml(activeTab)}" data-tab-area="warranties">
+            ${activeTab === 'add' ? renderWarrantyAddForm() : `
+              ${renderOverviewSummary([
+                { label: 'Aktivní', value: activeItems.length },
+                { label: 'Do 30 dnů', value: endingSoon, tone: endingSoon ? 'warn' : '' },
+                { label: 'Reklamace', value: claimCount, tone: claimCount ? 'warn' : '' },
+                { label: 'Po záruce', value: expired, tone: expired ? 'bad' : '' }
+              ])}
+              <div style="height:14px"></div>
+              ${warranties.length ? `<div class="list warranty-list">${warranties.map(renderWarrantyItem).join('')}</div>` : renderEmptyCta({ icon: '🧾', title: 'Záruky jsou prázdné', text: 'Přidej první koupenou věc. Konec záruky se předvyplní na 2 roky od nákupu.', nav: 'warranties', tab: 'add', label: 'Přidat záruku' })}
+            `}
+          </div>
         </section>
       `;
     }

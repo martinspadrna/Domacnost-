@@ -14897,11 +14897,18 @@ body.home-active {
 }
 
 .garage-chart-carousel {
+  display: grid;
+  grid-auto-flow: column;
   grid-auto-columns: minmax(min(92%, 540px), 1fr);
+  gap: 14px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
   scrollbar-width: none;
+}
+
+.garage-chart-carousel > * {
+  scroll-snap-align: start;
 }
 
 .garage-chart-carousel::-webkit-scrollbar {

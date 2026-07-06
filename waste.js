@@ -7,6 +7,8 @@
   // dueBadge, todayISO) se předávají přes deps.
   function createWaste(deps) {
     const getState = deps.getState || (() => ({}));
+    const getModuleTab = deps.getModuleTab || ((area, fallback) => fallback);
+    const renderSectionTabs = deps.renderSectionTabs || (() => '');
     const escapeHtml = deps.escapeHtml || ((v) => String(v ?? ''));
     const normalizeText = deps.normalizeText || ((v) => String(v || '').trim());
     const uid = deps.uid || (() => Math.random().toString(36).slice(2));
@@ -273,32 +275,44 @@
     }
 
     // Panel Odpad pro renderHomecare (fast i main path měly identický obsah).
+    function renderWasteAddForm(S, waste) {
+      return `
+        <form data-form="add-waste">
+          <div class="form-grid two">
+            ${field('Typ', 'type', 'text', 'plast / papír / komunál', true)}
+            ${field('Datum svozu', 'date', 'date', '', true)}
+            ${selectField('Opakování', 'repeatRule', [['none', 'Jednorázově'], ['weekly', 'Týdně'], ['biweekly', 'Každé 2 týdny'], ['monthly', 'Měsíčně']])}
+            ${field('Upozornit předem (hod)', 'notifyBeforeHours', 'number', '12')}
+            ${field('Poznámka', 'note', 'text', 'volitelné')}
+          </div>
+          <div class="form-actions"><button class="primary-btn" type="submit">Přidat svoz</button>${S.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-waste">Načíst cloud odpad</button>' : ''}${S.cloud?.householdId && waste.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-waste">Odeslat lokální svozy (${waste.filter((item) => !item.cloudId).length})</button>` : ''}</div>
+        </form>
+      `;
+    }
+
     function renderWastePanel() {
       const S = getState();
       const waste = getWasteRuntimeItems(S.waste).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+      const activeTab = getModuleTab('waste', 'overview');
+      const tabs = renderSectionTabs('waste', [
+        { id: 'overview', label: 'Přehled', icon: '♻️', count: waste.length },
+        { id: 'add', label: 'Přidat svoz', icon: '➕' }
+      ], 'overview');
       return `
         <section class="card homecare-panel panel-waste">
           <div class="card-header">
             <div><h2>Svozový plán</h2><p>Svoz odpadu s přípravou na připomínky.</p></div>
             <span class="badge ${waste.some((item) => item.cloudId) ? 'good' : ''}">${waste.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
           </div>
-          <form data-form="add-waste">
-            <div class="form-grid two">
-              ${field('Typ', 'type', 'text', 'plast / papír / komunál', true)}
-              ${field('Datum svozu', 'date', 'date', '', true)}
-              ${selectField('Opakování', 'repeatRule', [['none', 'Jednorázově'], ['weekly', 'Týdně'], ['biweekly', 'Každé 2 týdny'], ['monthly', 'Měsíčně']])}
-              ${field('Upozornit předem (hod)', 'notifyBeforeHours', 'number', '12')}
-              ${field('Poznámka', 'note', 'text', 'volitelné')}
-            </div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Přidat svoz</button>${S.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-waste">Načíst cloud odpad</button>' : ''}${S.cloud?.householdId && waste.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-waste">Odeslat lokální svozy (${waste.filter((item) => !item.cloudId).length})</button>` : ''}</div>
-          </form>
-          <div style="height:14px"></div>
-          ${waste.length ? `<div class="list">${waste.map((item) => `
+          ${tabs}
+          <div class="module-tabbed waste-tab-${escapeHtml(activeTab)}" data-tab-area="waste">
+            ${activeTab === 'add' ? renderWasteAddForm(S, waste) : (waste.length ? `<div class="list">${waste.map((item) => `
             <div class="item">
               <div class="item-top"><div class="item-title">${escapeHtml(item.type)}</div><span class="badge ${daysUntil(item.date) <= 1 ? 'warn' : ''}">${formatDate(item.date)}</span></div>
               <div class="item-meta">${escapeHtml(wasteRepeatLabel(item.repeatRule))}${item.notifyBeforeHours ? ` · připomenout ${escapeHtml(String(item.notifyBeforeHours))} h předem` : ''}${item.note ? ` · ${escapeHtml(item.note)}` : ''}${item.cloudId ? ' · cloud' : ' · lokálně'}</div>
               <div class="item-actions">${S.cloud?.householdId && !item.cloudId ? `<button class="ghost-btn" type="button" data-action="cloud-sync-waste" data-id="${escapeHtml(item.id)}">Odeslat</button>` : ''}<button class="danger-btn" type="button" data-action="delete-waste" data-id="${escapeHtml(item.id)}">Smazat</button></div>
-            </div>`).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej první svoz a aplikace ho ukáže v přehledu Dnes a brzy.', nav: 'waste', tab: '', label: 'Přidat svoz' })}
+            </div>`).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej první svoz a aplikace ho ukáže v přehledu Dnes a brzy.', nav: 'waste', tab: 'add', label: 'Přidat svoz' }))}
+          </div>
         </section>`;
     }
 

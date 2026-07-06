@@ -18,6 +18,7 @@
     const setFinanceTemplateEditId = deps.setFinanceTemplateEditId || (() => {});
     const getFinanceCopyId = deps.getFinanceCopyId || (() => '');
     const setFinanceCopyId = deps.setFinanceCopyId || (() => {});
+    const getDetailsOpen = deps.getDetailsOpen || (() => false);
     const writeFinanceModuleTab = deps.writeFinanceModuleTab || (() => {});
     const getModuleTab = deps.getModuleTab || ((area, fallback) => fallback);
     const escapeHtml = deps.escapeHtml || ((v) => String(v ?? ''));
@@ -276,7 +277,7 @@
               </span>
             `).join('')}
           </div>
-          <details class="action-details compact-edit-details finance-template-details" ${isTemplateEdit ? 'open' : ''}>
+          <details class="action-details compact-edit-details finance-template-details" data-details-key="finance-template-form" ${isTemplateEdit || getDetailsOpen('finance-template-form') ? 'open' : ''}>
             <summary><span>${isTemplateEdit ? 'Upravit šablonu' : 'Vytvořit vlastní šablonu'}</span><em>${isTemplateEdit ? escapeHtml(formTemplate.name) : 'nájem, elektřina, plyn, pojistky...'}</em></summary>
             <form data-form="${isTemplateEdit ? 'update-finance-template' : 'add-finance-template'}" ${isTemplateEdit ? `data-id="${escapeHtml(formTemplate.id)}"` : ''} class="compact-form">
               <div class="form-grid two">
@@ -543,7 +544,7 @@
           </div>
           ${loans.length ? `<div class="list compact-list">${loans.map(renderFinanceLoanItem).join('')}</div>` : renderEmptyCta({ icon: '💳', title: 'Zatím žádná půjčka', text: 'Zadej zůstatek, splátku a zbývající měsíce. Pak půjde spočítat refinancování.', nav: 'finance', tab: 'loans', label: 'Přidat půjčku' })}
           ${editingLoan ? `<div class="inline-edit-card"><h3>Upravit půjčku</h3>${renderFinanceLoanForm(editingLoan)}</div>` : ''}
-          <details class="action-details compact-edit-details finance-form-drawer" ${editingLoan ? '' : 'open'}>
+          <details class="action-details compact-edit-details finance-form-drawer" data-details-key="finance-add-loan" ${!editingLoan && getDetailsOpen('finance-add-loan', true) ? 'open' : ''}>
             <summary><span>Přidat půjčku</span><em>zůstatek, úrok, splátka, zbývající měsíce</em></summary>
             ${renderFinanceLoanForm(null)}
           </details>
@@ -577,7 +578,7 @@
             <div class="card-header"><div><h2>Účty / peněženky</h2><p>Každý účet má vlastní zůstatek. Může to být banka, hotovost, spoření, obálka nebo osoba.</p></div><span class="badge">${accounts.length}</span></div>
             ${accounts.length ? `<div class="list compact-list">${accounts.map((account) => renderFinanceAccount(account, balances)).join('')}</div>` : renderEmptyCta({ icon: '🏦', title: 'Nejdřív přidej účet', text: 'Účet může být banka, hotovost, spoření, obálka nebo spravované peníze pro někoho dalšího.', nav: 'finance', tab: 'accounts', label: 'Přidat účet' })}
             ${editingFinanceAccount ? `<div class="inline-edit-card"><h3>Upravit účet</h3>${renderFinanceAccountForm(editingFinanceAccount)}</div>` : ''}
-            <details class="action-details compact-edit-details finance-form-drawer" ${editingFinanceAccount ? '' : ''}>
+            <details class="action-details compact-edit-details finance-form-drawer" data-details-key="finance-add-account" ${getDetailsOpen('finance-add-account') ? 'open' : ''}>
               <summary><span>Přidat účet / peněženku</span><em>banka, hotovost, obálka nebo osoba</em></summary>
               ${renderFinanceAccountForm(null)}
               <div class="form-actions cloud-inline-actions">
@@ -590,7 +591,7 @@
           <section class="card finance-panel panel-accounts">
             <div class="card-header"><div><h2>Spravované zůstatky</h2><p>Součet účtů seskupený podle osoby/obálky.</p></div></div>
             ${managedRows.length ? `<div class="list compact-list">${managedRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(row.label)}</div><span class="badge good">${formatCurrency(row.total)}</span></div><div class="item-meta">${row.accounts.map((account) => `${financeAccountIcon(account.accountType)} ${escapeHtml(account.name)}: ${formatCurrency(balances[account.id] || 0)}`).join(' · ')}</div></div>`).join('')}</div>` : renderEmptyCta({ icon: '👥', title: 'Spravované peníze zatím nejsou', text: 'Přidej účet s vlastníkem, třeba babička / tchyně, nebo použij rychlé založení dvojice účtů.', nav: 'finance', tab: 'accounts', label: 'Přidat spravované peníze' })}
-            <details class="action-details compact-edit-details finance-form-drawer">
+            <details class="action-details compact-edit-details finance-form-drawer" data-details-key="finance-add-managed-set" ${getDetailsOpen('finance-add-managed-set') ? 'open' : ''}>
               <summary><span>Založit spravované peníze</span><em>dvojice hlavní účet + spoření</em></summary>
               <form data-form="add-managed-finance-set" class="compact-form">
                 <div class="form-grid two">

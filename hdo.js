@@ -8,6 +8,9 @@
   function createHdo(deps) {
     const getState = deps.getState || (() => ({}));
     const getNow = deps.getNow || (() => new Date());
+    const getModuleTab = deps.getModuleTab || ((area, fallback) => fallback);
+    const setModuleTab = deps.setModuleTab || (() => {});
+    const renderSectionTabs = deps.renderSectionTabs || (() => '');
     const escapeHtml = deps.escapeHtml || ((v) => String(v ?? ''));
     const normalizeText = deps.normalizeText || ((v) => String(v || '').trim());
     const uid = deps.uid || (() => Math.random().toString(36).slice(2));
@@ -184,7 +187,11 @@
       return {
         active: false,
         label: next.item.label,
-        message: `Další nízký tarif: ${next.item.label} za ${humanDuration(next.diffMinutes)} (${hdoWindowTimeLabel(next.item)}).`
+        message: `Další nízký tarif: ${next.item.label} za ${humanDuration(next.diffMinutes)} (${hdoWindowTimeLabel(next.item)}).`,
+        nextLabel: next.item.label,
+        nextStart: next.item.start,
+        nextInMinutes: next.diffMinutes,
+        nextInLabel: `za ${humanDuration(next.diffMinutes)}`
       };
     }
 
@@ -541,29 +548,39 @@
     }
 
     // Panel HDO pro renderHomecare (fast i main path měly identický obsah).
+    function renderHdoAddForm() {
+      const S = getState();
+      return `
+        <form data-form="add-hdo" class="compact-form hdo-manual-form">
+          <div class="form-grid two">
+            ${field('Název okna', 'label', 'text', 'např. Večerní tarif', true)}
+            ${hdoTimeField('Od', 'start', '0600 nebo 06:00', true)}
+            ${hdoTimeField('Do', 'end', '2200 nebo 22:00', true)}
+            ${selectField('Dny', 'daysMode', [['all', 'Každý den'], ['workdays', 'Po–Pá'], ['weekend', 'Víkend']])}
+          </div>
+          <div class="form-actions"><button class="primary-btn" type="submit">Přidat HDO okno</button>${S.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-hdo">Načíst cloud HDO</button>' : ''}${S.cloud?.householdId && S.hdoWindows.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-hdo">Odeslat lokální HDO (${S.hdoWindows.filter((item) => !item.cloudId).length})</button>` : ''}</div>
+        </form>
+      `;
+    }
+
     function renderHdoPanel() {
       const S = getState();
       const hdo = getHdoStatus(getNow());
+      const activeTab = getModuleTab('hdo', 'overview');
+      const tabs = renderSectionTabs('hdo', [
+        { id: 'overview', label: 'Přehled', icon: '💡', count: S.hdoWindows.length },
+        { id: 'add', label: 'Přidat čas', icon: '➕' }
+      ], 'overview');
       return `
         <section class="card homecare-panel panel-hdo">
           <div class="card-header">
             <div><h2>HDO / nízký tarif</h2><p>${escapeHtml(hdo.message)}</p></div>
             <span class="badge ${hdo.active ? 'good' : 'warn'}">${hdo.active ? 'běží' : 'neběží'} · ${S.hdoWindows.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span>
           </div>
-          <details class="compact-edit-details hdo-manual-details" open>
-            <summary><span>Zadání časů HDO</span><em>přidat časové okno nízkého tarifu</em></summary>
-            <form data-form="add-hdo" class="compact-form hdo-manual-form">
-              <div class="form-grid two">
-                ${field('Název okna', 'label', 'text', 'např. Večerní tarif', true)}
-                ${hdoTimeField('Od', 'start', '0600 nebo 06:00', true)}
-                ${hdoTimeField('Do', 'end', '2200 nebo 22:00', true)}
-                ${selectField('Dny', 'daysMode', [['all', 'Každý den'], ['workdays', 'Po–Pá'], ['weekend', 'Víkend']])}
-              </div>
-              <div class="form-actions"><button class="primary-btn" type="submit">Přidat HDO okno</button>${S.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-hdo">Načíst cloud HDO</button>' : ''}${S.cloud?.householdId && S.hdoWindows.some((item) => !item.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-hdo">Odeslat lokální HDO (${S.hdoWindows.filter((item) => !item.cloudId).length})</button>` : ''}</div>
-            </form>
-          </details>
-          <div style="height:14px"></div>
-          ${S.hdoWindows.length ? renderHdoModuleTables(sortHdoWindowsForOverview(getSafeHdoWindows())) : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard začne ukazovat aktuální stav.', nav: 'hdo', tab: '', label: 'Nastavit HDO' })}
+          ${tabs}
+          <div class="module-tabbed hdo-tab-${escapeHtml(activeTab)}" data-tab-area="hdo">
+            ${activeTab === 'add' ? renderHdoAddForm() : (S.hdoWindows.length ? renderHdoModuleTables(sortHdoWindowsForOverview(getSafeHdoWindows())) : renderEmptyCta({ icon: '💡', title: 'HDO není nastavené', text: 'Zadej časová okna nízkého tarifu a dashboard začne ukazovat aktuální stav.', nav: 'hdo', tab: 'add', label: 'Nastavit HDO' }))}
+          </div>
         </section>`;
     }
 

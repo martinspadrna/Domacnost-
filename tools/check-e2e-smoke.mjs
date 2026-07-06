@@ -807,36 +807,50 @@ async function run() {
       expression: `document.querySelector('[data-nav="pool"]')?.click()`
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 500));
-    const poolCheck = await page.send('Runtime.evaluate', {
+    const poolOverviewCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
         const text = document.body?.innerText || '';
         const poolChartWrap = document.querySelector('.pool-chart-wrap');
         const poolChartWrapStyle = poolChartWrap ? getComputedStyle(poolChartWrap) : null;
         return {
-          form: Boolean(document.querySelector('form[data-form="pool-settings"]')),
-          tempInput: Boolean(document.querySelector('form[data-form="pool-settings"] input[name="waterTempC"]')),
           volume: text.includes('21,6 m³') || text.includes('21.6 m³') || text.includes('objem vody'),
           ph: text.includes('pH') && (text.includes('pH-') || text.includes('pH+')),
-          temperature: text.includes('Teplota vody') && text.includes('24,5'),
+          temperature: text.includes('teplota vody') && text.includes('24,5'),
           chart: Boolean(document.querySelector('.pool-chart .pool-chart-line.ph')) && Boolean(document.querySelector('.pool-chart .pool-chart-line.temp')),
           chartSurface: Boolean(poolChartWrapStyle && parseFloat(poolChartWrapStyle.borderTopLeftRadius) >= 16 && poolChartWrapStyle.overflow === 'hidden')
         };
       })()`
     });
-    const poolValue = poolCheck.result?.value || {};
+    const poolOverviewValue = poolOverviewCheck.result?.value || {};
     if (process.env.E2E_DEBUG === '1') {
-      console.log('DEBUG pool:', JSON.stringify(poolValue, null, 2));
+      console.log('DEBUG pool overview:', JSON.stringify(poolOverviewValue, null, 2));
     }
     let poolOk = true;
-    if (!poolValue.form) { fail('Bazén po kliknutí nerenderuje pool-settings formulář.'); poolOk = false; }
-    if (!poolValue.tempInput) { fail('Bazén po kliknutí nemá vstup pro teplotu vody.'); poolOk = false; }
-    if (!poolValue.volume) { fail('Bazén po kliknutí neukazuje objem vody.'); poolOk = false; }
-    if (!poolValue.ph) { fail('Bazén po kliknutí neukazuje pH část.'); poolOk = false; }
-    if (!poolValue.temperature) { fail('Bazén po kliknutí neukazuje teplotu vody.'); poolOk = false; }
-    if (!poolValue.chart) { fail('Bazén po kliknutí nerenderuje graf pH/teploty.'); poolOk = false; }
-    if (!poolValue.chartSurface) { fail('Bazénový graf nemá sjednocený detailní/grafový povrch.'); poolOk = false; }
-    if (poolOk) ok('Bazén: formulář, objem, pH, teplota a graf renderují.');
+    if (!poolOverviewValue.volume) { fail('Bazén po kliknutí neukazuje objem vody.'); poolOk = false; }
+    if (!poolOverviewValue.ph) { fail('Bazén po kliknutí neukazuje pH část.'); poolOk = false; }
+    if (!poolOverviewValue.temperature) { fail('Bazén po kliknutí neukazuje teplotu vody.'); poolOk = false; }
+    if (!poolOverviewValue.chart) { fail('Bazén po kliknutí nerenderuje graf pH/teploty.'); poolOk = false; }
+    if (!poolOverviewValue.chartSurface) { fail('Bazénový graf nemá sjednocený detailní/grafový povrch.'); poolOk = false; }
+
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('[data-action="set-section-tab"][data-area="pool"][data-tab="add"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    const poolAddCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => ({
+        form: Boolean(document.querySelector('form[data-form="pool-settings"]')),
+        tempInput: Boolean(document.querySelector('form[data-form="pool-settings"] input[name="waterTempC"]'))
+      }))()`
+    });
+    const poolAddValue = poolAddCheck.result?.value || {};
+    if (process.env.E2E_DEBUG === '1') {
+      console.log('DEBUG pool add:', JSON.stringify(poolAddValue, null, 2));
+    }
+    if (!poolAddValue.form) { fail('Bazén po kliknutí nerenderuje pool-settings formulář.'); poolOk = false; }
+    if (!poolAddValue.tempInput) { fail('Bazén po kliknutí nemá vstup pro teplotu vody.'); poolOk = false; }
+    if (poolOk) ok('Bazén: přehled (objem/pH/teplota/graf) i záložka Nové měření s formulářem renderují.');
 
     await page.send('Runtime.evaluate', {
       expression: `document.querySelector('[data-nav="finance"]')?.click()`

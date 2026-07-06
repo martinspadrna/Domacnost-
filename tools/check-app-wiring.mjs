@@ -167,7 +167,7 @@ if (styles) {
   expect(styles, '.calendar-day-event {\n  width: 100%;\n  display: grid;', 'styles.css: kalendarova udalost ma stabilni kartovy grid.');
   expect(styles, '.calendar-source-item {\n  display: grid;', 'styles.css: kalendarovy zdroj ma novy seznamovy povrch.');
   expect(styles, '/* Domacnost+ - sjednocena Garaz */', 'styles.css: existuje finalni blok pro Garaz.');
-  expect(styles, '.garage-chart-carousel {\n  grid-auto-columns:', 'styles.css: Garaz grafovy carousel ma vlastni responzivni rail.');
+  expect(styles, '.garage-chart-carousel {\n  display: grid;\n  grid-auto-flow: column;\n  grid-auto-columns:', 'styles.css: Garaz grafovy carousel ma vlastni responzivni rail.');
   expect(styles, '.vehicle-detail-head {\n  display: grid;', 'styles.css: Garaz detail hlavicka pouziva stabilni grid.');
   expect(styles, '.garage-history-row,\n.service-plan-item {\n  display: grid;', 'styles.css: Garaz historie a servisni plan sdili seznamovy povrch.');
   expect(styles, '.garage-trip-result {\n  padding: 10px;', 'styles.css: Garaz kalkulacka ma sjednoceny vysledkovy povrch.');

@@ -5,6 +5,7 @@
     const getWeatherState = deps.getWeatherState || (() => null);
     const setWeatherState = deps.setWeatherState || (() => {});
     const getHouseholdId = deps.getHouseholdId || (() => '');
+    const getDetailsOpen = deps.getDetailsOpen || (() => false);
     const saveState = deps.saveState || (() => {});
     const render = deps.render || (() => {});
     const touchState = deps.touchState || (() => {});
@@ -311,7 +312,7 @@
           ${renderWeatherDailyGrid((weather.daily || []).slice(0, 7))}
         </section>
         <section class="card desktop-span-2 weather-settings-card">
-          <details class="compact-edit-details weather-settings-details">
+          <details class="compact-edit-details weather-settings-details" data-details-key="weather-settings" ${getDetailsOpen('weather-settings') ? 'open' : ''}>
             <summary><span>Nastavení počasí</span><em>${escapeHtml(weatherLocationLabel())}</em></summary>
             <form data-form="weather-settings" class="compact-form">
               <div class="form-grid two">

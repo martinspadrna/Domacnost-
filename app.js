@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_388';
-  const APP_BUILD = 388;
+  const APP_VERSION = 'Domácnost+ v.0.1_390';
+  const APP_BUILD = 390;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1050,6 +1050,15 @@
   // render stejně jako v327 opravené panely — lokální UI stav.
   let garageServicePlanOpen = false;
   let garageServicePlanEditId = '';
+  // Obecná náhrada za jednotlivé boolean proměnné výše (garagePresetToolOpen apod.) —
+  // libovolný <details data-details-key="..."> si přes tohle přežije autosync/realtime
+  // rerender i editaci uvnitř, bez nutnosti zvlášť drátovat každý panel zvlášť.
+  const detailsOpenState = {};
+  function isDetailsOpen(key, defaultValue = false) {
+    const stored = detailsOpenState[key];
+    return stored === undefined ? Boolean(defaultValue) : Boolean(stored);
+  }
+  function setDetailsOpen(key, value) { detailsOpenState[key] = Boolean(value); }
   let couponEditId = '';
   let loyaltyCardEditId = '';
   let loyaltyCardSearchTerm = '';
@@ -2632,8 +2641,38 @@
     const schedule = window.requestAnimationFrame || window.webkitRequestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
     renderFrameRequest = schedule(() => {
       renderFrameRequest = 0;
-      render();
+      renderPreservingActiveInput();
     });
+  }
+
+  // requestRender() je jediný vstup pro rendery z pozadí (cloud autosync, realtime,
+  // boot warm start...) — na rozdíl od přímých render() volání z akcí uživatele.
+  // Když uživatel zrovna píše do inputu/textarea/selectu, tenhle re-render by mu
+  // jinak smazal rozepsanou hodnotu (formulář se vždy generuje znovu ze state, kde
+  // rozepsaná-ale-neuložená hodnota není). Hodnotu i pozici kurzoru proto kolem
+  // render() přenášíme přes stejný data-form/data-id klíč, co používá formulář.
+  function renderPreservingActiveInput() {
+    const active = document.activeElement;
+    const isEditable = active && app?.contains?.(active) && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName);
+    const form = isEditable ? active.closest('form') : null;
+    const name = form ? (active.getAttribute('name') || '') : '';
+    if (!form || !name) {
+      render();
+      return;
+    }
+    const formKey = `${form.dataset.form || ''}::${form.dataset.id || form.dataset.vehicleId || form.dataset.contractId || ''}`;
+    const value = active.value;
+    const selStart = typeof active.selectionStart === 'number' ? active.selectionStart : null;
+    const selEnd = typeof active.selectionEnd === 'number' ? active.selectionEnd : null;
+    render();
+    const matchForm = Array.from(app.querySelectorAll('form')).find((candidate) => `${candidate.dataset.form || ''}::${candidate.dataset.id || candidate.dataset.vehicleId || candidate.dataset.contractId || ''}` === formKey);
+    const target = matchForm ? matchForm.querySelector(`[name="${CSS.escape(name)}"]`) : null;
+    if (!target) return;
+    target.value = value;
+    target.focus();
+    if (selStart !== null && selEnd !== null && typeof target.setSelectionRange === 'function') {
+      try { target.setSelectionRange(selStart, selEnd); } catch {}
+    }
   }
 
   function render() {
@@ -3647,12 +3686,13 @@
       .sort((a, b) => String(a.due || '9999-12-31').localeCompare(String(b.due || '9999-12-31')))
       .slice(0, 4);
     const wasteSoon = getUpcomingWasteRuntimeItems({ maxDays: 7, limit: 3 });
+    const wasteNext = wasteSoon[0] || getUpcomingWasteRuntimeItems({ limit: 1 })[0] || null;
     const vehicleAlerts = getVehicleAlerts().slice(0, 4);
     const visibleModules = getVisibleModules();
     ensureWeatherFresh(false);
     normalizeGarageRuntimeState({ persist: false });
     const weather = normalizeWeatherState(state.weather);
-    const ctx = { hdo, todayEvents, upcomingEvents, calendarPanelEvents, urgentContracts, openShopping, openTasks, wasteSoon, vehicleAlerts, visibleModules, weather, notes: state.notes, coupons: state.coupons, contracts: state.contracts };
+    const ctx = { hdo, todayEvents, upcomingEvents, calendarPanelEvents, urgentContracts, openShopping, openTasks, wasteSoon, wasteNext, vehicleAlerts, visibleModules, weather, notes: state.notes, coupons: state.coupons, contracts: state.contracts };
 
     const activeWidgets = normalizeHomeWidgetIds(state.settings?.homeWidgets);
     const hasWidget = (id) => activeWidgets.includes(id);
@@ -3706,16 +3746,16 @@
     if (hasModule('hdo')) {
       cards.push({
         label: ctx.hdo.active ? 'Nízký tarif' : 'HDO',
-        value: ctx.hdo.active ? (ctx.hdo.label || 'aktivní') : 'neběží',
+        value: ctx.hdo.active ? (ctx.hdo.label || 'aktivní') : (ctx.hdo.nextStart ? `od ${ctx.hdo.nextStart} (${ctx.hdo.nextInLabel})` : 'nenastaveno'),
         tone: 'good',
         overview: 'hdo'
       });
     }
     if (hasModule('waste')) {
-      const next = ctx.wasteSoon[0];
+      const next = ctx.wasteSoon[0] || ctx.wasteNext;
       cards.push({
         label: `Svoz${next ? ` · ${next.type || ''}` : ''}`,
-        value: next ? dueBadge(next.days) : 'nic brzy',
+        value: next ? dueBadge(next.days) : 'nic naplánováno',
         tone: 'warn',
         overview: 'waste'
       });
@@ -5617,6 +5657,8 @@
       getWeatherState: () => state.weather,
       setWeatherState: (val) => { state.weather = val; },
       getHouseholdId: () => state.cloud?.householdId || '',
+      getDetailsOpen: isDetailsOpen,
+      setDetailsOpen,
       saveState,
       render,
       touchState,
@@ -5697,6 +5739,9 @@
     warrantyInstance = factory({
       getState: () => state,
       getActiveWarrantyDetailId: () => activeWarrantyDetailId,
+      getModuleTab,
+      setModuleTab,
+      renderSectionTabs,
       sessionStorage,
       normalizeKey,
       normalizeText,
@@ -5748,6 +5793,9 @@
     hdoInstance = factory({
       getState: () => state,
       getNow: () => now,
+      getModuleTab,
+      setModuleTab,
+      renderSectionTabs,
       escapeHtml,
       normalizeText,
       uid,
@@ -5779,6 +5827,9 @@
     if (!factory) throw new Error('waste.js není načtený');
     wasteInstance = factory({
       getState: () => state,
+      getModuleTab,
+      setModuleTab,
+      renderSectionTabs,
       escapeHtml,
       normalizeText,
       uid,
@@ -5818,6 +5869,8 @@
       setFinanceTemplateEditId: (value) => { financeTemplateEditId = value; },
       getFinanceCopyId: () => financeCopyId,
       setFinanceCopyId: (value) => { financeCopyId = value; },
+      getDetailsOpen: isDetailsOpen,
+      setDetailsOpen,
       writeFinanceModuleTab: (tab) => {
         moduleTabs = { ...(moduleTabs || {}), finance: tab };
         localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
@@ -5865,6 +5918,9 @@
     if (!factory) throw new Error('pool.js není načtený');
     poolInstance = factory({
       getState: () => state,
+      getModuleTab,
+      setModuleTab,
+      renderSectionTabs,
       uid,
       todayISO,
       normalizeText,
@@ -5894,6 +5950,7 @@
       uid,
       todayISO,
       normalizeText,
+      normalizeKey,
       escapeHtml,
       decimalValue,
       field,
@@ -5921,6 +5978,8 @@
       getState: () => state,
       getActiveContractId: () => activeContractId,
       setActiveContractId: (value) => { activeContractId = value || null; },
+      getDetailsOpen: isDetailsOpen,
+      setDetailsOpen,
       uid,
       normalizeText,
       decimalValue,
@@ -5961,6 +6020,8 @@
     subscriptionsInstance = factory({
       getState: () => state,
       getActiveModule: () => activeModule,
+      getDetailsOpen: isDetailsOpen,
+      setDetailsOpen,
       normalizeText,
       normalizeKey,
       uid,
@@ -6000,6 +6061,8 @@
       getNow: () => now,
       getCalendarViewMonth: () => calendarViewMonth,
       getCalendarDetailEventId: () => calendarDetailEventId,
+      getDetailsOpen: isDetailsOpen,
+      setDetailsOpen,
       escapeHtml,
       normalizeText,
       uid,
@@ -7264,7 +7327,7 @@
     state.services = dedupeGarageRecords(state.services, garageServiceDedupeKey, vehicleMap);
     if (!validVehicleIds.has(garageVehicleId)) garageVehicleId = fallbackVehicleId;
     const afterSignature = JSON.stringify({ vehicles: state.vehicles, fuel: state.fuel, services: state.services, active: garageVehicleId });
-    if (beforeSignature !== afterSignature && persist && !isDemoMode()) {
+    if (beforeSignature !== afterSignature && persist) {
       state.meta = { ...(state.meta || {}), updatedAt: new Date().toISOString() };
       saveState();
     }
@@ -7762,7 +7825,7 @@
           ${field('Stálý plat dodavateli', 'fixedSupplierMonthly', 'text', 'Kč/měsíc', false, meter.fixedSupplierMonthly ?? '', 'decimal')}
           ${field('Jiná stálá platba', 'otherFixedMonthly', 'text', 'Kč/měsíc', false, meter.otherFixedMonthly ?? '', 'decimal')}`;
     return `
-      <details class="subtle-details readings-price-details">
+      <details class="subtle-details readings-price-details" data-details-key="readings-price-${meter.id}" ${isDetailsOpen(`readings-price-${meter.id}`) ? 'open' : ''}>
         <summary><span>Cena a výpočet nákladů</span><em>${escapeHtml(meta.label)} · průměr nebo smlouva</em></summary>
         <div class="small-muted">Tady nastavíš cenu jen pro toto konkrétní měřidlo. Když ji nevyplníš, použije se cena skupiny vyúčtování.</div>
         <div class="form-grid two">
@@ -9688,6 +9751,17 @@
     return values.length ? Math.max(...values) : 0;
   }
 
+  // Tankování/servis se zadaným stavem km musí posunout i vehicle.odometer
+  // ("Aktuální km" v nastavení auta) — jinak to pole zůstane na staré hodnotě
+  // ze založení auta, i když má appka novější (vyšší) odečet z tankování.
+  function syncVehicleOdometerFromReading(vehicleId, odometerValue) {
+    const km = Number(odometerValue || 0);
+    if (!Number.isFinite(km) || km <= 0) return;
+    const vehicle = state.vehicles.find((item) => item.id === vehicleId);
+    if (!vehicle) return;
+    if (km > Number(vehicle.odometer || 0)) vehicle.odometer = String(km);
+  }
+
   // Servisní plán auta — položky jako olej, filtry, brzdy atd. s intervalem
   // km / měsíců. Ukládá se v households.dashboard_layout.vehicleServicePlans
   // (mapa vehicleId → pole položek), takže žádná nová DB tabulka/migrace.
@@ -10379,7 +10453,7 @@
     const selectedType = ['all', 'fuel', 'service'].includes(garageHistoryTypeFilter) ? garageHistoryTypeFilter : 'all';
     const filterText = `${selectedYear === 'all' ? 'všechny roky' : selectedYear} · ${garageHistoryTypeLabel(selectedType)}`;
     return `
-      <details class="action-details compact-edit-details garage-history-panel">
+      <details class="action-details compact-edit-details garage-history-panel" data-details-key="garage-history-${vehicle?.id || ''}" ${isDetailsOpen(`garage-history-${vehicle?.id || ''}`) ? 'open' : ''}>
         <summary><span>Historie auta</span><em>${records.length} záznamů celkem · ${escapeHtml(filterText)}</em></summary>
         ${renderGarageHistoryFilters(records, visibleRecords)}
         ${visibleRecords.length ? `<div class="list compact-list garage-history-list">${visibleRecords.map(renderGarageHistoryItem).join('')}</div>` : renderEmpty(`Pro filtr ${filterText} tu není žádný záznam.`)}
@@ -10657,7 +10731,7 @@
       ${renderGarageDetailCharts(vehicle, fuelRows)}
       ${renderVehicleServicePlan(vehicle, analytics.currentKm)}
       ${renderGarageHistory(vehicle, fuelRows, serviceRows)}
-      <details class="action-details compact-edit-details" data-garage-detail="vehicle-settings">
+      <details class="action-details compact-edit-details" data-garage-detail="vehicle-settings" data-details-key="garage-vehicle-settings-${vehicle.id}" ${isDetailsOpen(`garage-vehicle-settings-${vehicle.id}`) ? 'open' : ''}>
         <summary><span>Upravit údaje auta</span><em>termíny, km, servisní intervaly</em></summary>
         <form data-form="update-vehicle" data-vehicle-id="${vehicle.id}" class="compact-form">
           <div class="form-grid two">
@@ -10683,7 +10757,7 @@
           <div class="form-actions"><button class="primary-btn" type="submit">Uložit údaje auta</button></div>
         </form>
       </details>
-      <details class="action-details compact-edit-details danger-zone-details">
+      <details class="action-details compact-edit-details danger-zone-details" data-details-key="garage-danger-zone-${vehicle.id}" ${isDetailsOpen(`garage-danger-zone-${vehicle.id}`) ? 'open' : ''}>
         <summary><span>Smazat auto</span><em>a všechny jeho záznamy</em></summary>
         <div class="inline-note warn-note">Smaže se auto, tankování i servisní náklady. Akce bude ještě vyžadovat potvrzení.</div>
         <div class="form-actions"><button class="danger-btn" type="button" data-action="delete-vehicle" data-id="${vehicle.id}">Smazat auto</button></div>
@@ -11017,8 +11091,8 @@
     return getVapeModule().calcVapeReadyFromForm(data);
   }
 
-  function calcVapeCustomFromForm(data) {
-    return getVapeModule().calcVapeCustomFromForm(data);
+  function calcVapeShakeAndVapeFromForm(data) {
+    return getVapeModule().calcVapeShakeAndVapeFromForm(data);
   }
 
   function normalizeVapeState(value) {
@@ -11314,7 +11388,7 @@
               `).join('')}
             </div>
             ${state.cloud?.householdId ? `<div class="form-actions compact-actions"><button class="ghost-btn" type="button" data-action="cloud-sync-local-profiles">Odeslat lokální profily</button><button class="ghost-btn" type="button" data-action="cloud-load-all">Načíst profily z cloudu</button></div>` : ''}
-            <details class="action-details compact-edit-details settings-form-drawer">
+            <details class="action-details compact-edit-details settings-form-drawer" data-details-key="settings-add-profile" ${isDetailsOpen('settings-add-profile') ? 'open' : ''}>
               <summary><span>Přidat profil</span><em>další člen domácnosti</em></summary>
               <form data-form="add-profile" class="compact-form">
                 <div class="form-grid two">
@@ -11335,11 +11409,6 @@
 
         <div class="settings-panel panel-cloud grid two">
           ${renderCloudAccount()}
-          ${renderCloudSyncOverview('settings')}
-          ${renderCloudLocalSyncAudit()}
-          ${renderCloudReadiness(false)}
-          ${renderPwaInstallCard()}
-          ${renderAuthSetupCard()}
         </div>
 
         <section class="card desktop-span-2 compact-settings-card">
@@ -11364,7 +11433,7 @@
               <button class="ghost-btn" type="button" data-action="export-data">Exportovat JSON</button>
               <button class="danger-btn" type="button" data-action="reset-data">Reset dat</button>
             </div>
-            <details class="action-details compact-edit-details settings-form-drawer">
+            <details class="action-details compact-edit-details settings-form-drawer" data-details-key="settings-import-json" ${isDetailsOpen('settings-import-json') ? 'open' : ''}>
               <summary><span>Import JSON</span><em>vložit starší export</em></summary>
               <form data-form="import-data" class="compact-form">
                 <div class="field"><label for="importJson">Import JSON</label><textarea id="importJson" class="textarea" name="json" placeholder="Sem vlož exportovaný JSON"></textarea></div>
@@ -11618,7 +11687,7 @@
             `).join('')}
           </div>
         ` : '<div class="inline-note">Zatím není načtený seznam domácností. Klikni na „Načíst moje domácnosti“.</div>'}
-        <details class="action-details compact-edit-details settings-form-drawer cloud-household-create-details">
+        <details class="action-details compact-edit-details settings-form-drawer cloud-household-create-details" data-details-key="cloud-household-create" ${isDetailsOpen('cloud-household-create') ? 'open' : ''}>
           <summary><span>Nová domácnost / pozvánka</span><em>otevřít jen když zakládáš nebo zveš</em></summary>
           <div class="grid two cloud-auth-grid">
             <form data-form="cloud-create-household">
@@ -12659,6 +12728,7 @@
     item.updatedAt = new Date().toISOString();
     const ok = await cloudUpdateFuelLog(item);
     if (!ok) return;
+    syncVehicleOdometerFromReading(item.vehicleId, item.odometer);
     garageEditRecord = null;
     garageModal = null;
     touchState();
@@ -12678,6 +12748,7 @@
     item.updatedAt = new Date().toISOString();
     const ok = await cloudUpdateServiceLog(item);
     if (!ok) return;
+    syncVehicleOdometerFromReading(item.vehicleId, item.odometer);
     garageEditRecord = null;
     garageModal = null;
     touchState();
@@ -13964,6 +14035,7 @@
         const saved = await cloudAddFuelLog(item);
         if (saved?.id) item.cloudId = saved.id;
         state.fuel.push(item);
+        syncVehicleOdometerFromReading(item.vehicleId, item.odometer);
         garageModal = null;
         touchState();
         saveState();
@@ -13976,6 +14048,7 @@
         const saved = await cloudAddServiceLog(item);
         if (saved?.id) item.cloudId = saved.id;
         state.services.push(item);
+        syncVehicleOdometerFromReading(item.vehicleId, item.odometer);
         garageModal = null;
         touchState();
         saveState();
@@ -14018,7 +14091,7 @@
       'vape-settings': () => saveVapeSettingsFromForm(data),
       'vape-calc-booster': () => calcVapeBoosterFromForm(data),
       'vape-calc-ready': () => calcVapeReadyFromForm(data),
-      'vape-calc-custom': () => calcVapeCustomFromForm(data),
+      'vape-calc-shakevape': () => calcVapeShakeAndVapeFromForm(data),
       'import-data': () => importData(data.json),
       'cloud-login': () => cloudLogin(data.email, data.password),
       'cloud-signup': () => cloudSignUp(data.email, data.password),
@@ -17870,6 +17943,8 @@
     if (details.matches('.garage-preset-tool')) garagePresetToolOpen = details.open;
     if (details.matches('.garage-technical-fields')) garageTechnicalFieldsOpen = details.open;
     if (details.matches('.garage-service-plan-details')) garageServicePlanOpen = details.open;
+    const detailsKey = details.dataset?.detailsKey;
+    if (detailsKey) setDetailsOpen(detailsKey, details.open);
   }, true);
 
   app.addEventListener('click', (event) => {

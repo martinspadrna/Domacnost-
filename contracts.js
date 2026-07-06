@@ -5,6 +5,7 @@
   // sdílená v app.js, modul dostává jen contract store helpery.
   function createContracts(deps) {
     const getState = deps.getState || (() => ({}));
+    const getDetailsOpen = deps.getDetailsOpen || (() => false);
     const getActiveContractId = deps.getActiveContractId || (() => null);
     const setActiveContractId = deps.setActiveContractId || (() => {});
     const uid = deps.uid || (() => `${Date.now()}-${Math.random().toString(16).slice(2)}`);
@@ -722,7 +723,7 @@
             </div>
           </div>
         `).join('')}</div>` : renderEmptyCta({ icon: '📎', title: 'Zatím žádné přílohy', text: 'Přidej PDF nebo fotku smlouvy. U online domácnosti se příloha nahraje do soukromého Supabase Storage.', nav: 'contracts', tab: 'detail', label: 'Přidat přílohu' })}
-        <details class="action-details compact-edit-details">
+        <details class="action-details compact-edit-details" data-details-key="contract-edit-${contract.id}" ${getDetailsOpen(`contract-edit-${contract.id}`) ? 'open' : ''}>
           <summary><span>Upravit údaje smlouvy</span><em>název, platnost, částka, poznámka</em></summary>
           <form data-form="update-contract" data-contract-id="${escapeHtml(contract.id)}" class="compact-form">
             <div class="form-grid two">
@@ -739,7 +740,7 @@
             <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button>${contract.cloudId ? '<span class="badge good">cloud update</span>' : '<span class="badge">lokální smlouva</span>'}</div>
           </form>
         </details>
-        <details class="action-details compact-edit-details">
+        <details class="action-details compact-edit-details" data-details-key="contract-add-file-${contract.id}" ${getDetailsOpen(`contract-add-file-${contract.id}`) ? 'open' : ''}>
           <summary><span>Přidat přílohu</span><em>PDF, fotka nebo scan dokumentu</em></summary>
           <form data-form="add-contract-file" data-contract-id="${escapeHtml(contract.id)}" class="compact-form">
             <div class="upload-box">

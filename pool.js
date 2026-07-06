@@ -5,6 +5,8 @@
   // Data žijí v households.dashboard_layout.pool, takže není potřeba nová DB tabulka.
   function createPool(deps) {
     const getState = deps.getState || (() => ({}));
+    const getModuleTab = deps.getModuleTab || ((area, fallback) => fallback);
+    const renderSectionTabs = deps.renderSectionTabs || (() => '');
     const uid = deps.uid || (() => `${Date.now()}-${Math.random().toString(16).slice(2)}`);
     const todayISO = deps.todayISO || (() => new Date().toISOString().slice(0, 10));
     const normalizeText = deps.normalizeText || ((v) => String(v || '').trim());
@@ -267,12 +269,37 @@
       `;
     }
 
+    function renderPoolAddForm(pool) {
+      const latest = latestPoolMeasurement(pool);
+      return `
+        <form data-form="pool-settings" class="compact-form pool-form">
+          <div class="form-grid two">
+            ${selectField('Tvar bazénu', 'shape', SHAPE_OPTIONS, pool.shape)}
+            ${renderDimensionFields(pool)}
+            ${field('Datum měření', 'measurementDate', 'date', '', false, latest?.date || todayISO())}
+            ${field('Aktuální pH', 'ph', 'number', 'např. 7,6', false, pool.ph || '')}
+            ${field('Teplota vody °C', 'waterTempC', 'number', 'např. 24,5', false, pool.waterTempC || '')}
+            ${field('Cílové pH', 'targetPh', 'number', 'např. 7,2', false, pool.targetPh || 7.2)}
+            ${field('Dávka g / 10 m³ / 0,1 pH', 'dosePer10m3Per01', 'number', 'např. 100', false, pool.dosePer10m3Per01 || 100)}
+            ${field('Poznámka', 'note', 'text', 'např. po dešti / chlorování', false, pool.note || '')}
+          </div>
+          <div class="inline-note compact-note">Dávkování je orientační. Vždy ho porovnej s etiketou konkrétního pH+ / pH- přípravku. Uložení se zaznamená i jako nové měření, pokud se pH/teplota/datum liší od posledního záznamu.</div>
+          <div class="form-actions"><button class="primary-btn" type="submit">Uložit bazén / měření</button></div>
+        </form>
+      `;
+    }
+
     function renderPool() {
       const pool = normalizePoolState(getState().pool || {});
       const volume = poolVolumeM3(pool);
       const dose = poolPhDose(pool);
       const tone = dose.status === 'ok' ? 'good' : dose.status === 'missing' ? 'warn' : 'bad';
       const latest = latestPoolMeasurement(pool);
+      const activeTab = getModuleTab('pool', 'overview');
+      const tabs = renderSectionTabs('pool', [
+        { id: 'overview', label: 'Přehled', icon: '🏊', count: normalizePoolMeasurements(pool.measurements).length },
+        { id: 'add', label: 'Nové měření', icon: '➕' }
+      ], 'overview');
       return `
         <section class="card desktop-span-2 pool-panel">
           <div class="card-header"><div><h2>Stav vody</h2><p>Objem vody, poslední pH a orientační dávka pH přípravku.</p></div><span class="badge">${formatVolume(volume)}</span></div>
@@ -283,23 +310,13 @@
             <div class="kpi ${tone}"><strong>${dose.status === 'ok' ? 'OK' : dose.status === 'missing' ? 'doplň' : formatGrams(dose.grams)}</strong><span>${escapeHtml(dose.label)}</span></div>
           </div>
           ${pool.updatedAt ? `<div class="inline-note compact-note">Naposledy upraveno ${escapeHtml(formatDateTime(pool.updatedAt))}${latest?.date ? ` · měření ${escapeHtml(formatDate(latest.date))}` : ''}${pool.note ? ` · ${escapeHtml(pool.note)}` : ''}</div>` : ''}
-          <form data-form="pool-settings" class="compact-form pool-form">
-            <div class="form-grid two">
-              ${selectField('Tvar bazénu', 'shape', SHAPE_OPTIONS, pool.shape)}
-              ${renderDimensionFields(pool)}
-              ${field('Datum měření', 'measurementDate', 'date', '', false, latest?.date || todayISO())}
-              ${field('Aktuální pH', 'ph', 'number', 'např. 7,6', false, pool.ph || '')}
-              ${field('Teplota vody °C', 'waterTempC', 'number', 'např. 24,5', false, pool.waterTempC || '')}
-              ${field('Cílové pH', 'targetPh', 'number', 'např. 7,2', false, pool.targetPh || 7.2)}
-              ${field('Dávka g / 10 m³ / 0,1 pH', 'dosePer10m3Per01', 'number', 'např. 100', false, pool.dosePer10m3Per01 || 100)}
-              ${field('Poznámka', 'note', 'text', 'např. po dešti / chlorování', false, pool.note || '')}
-            </div>
-            <div class="inline-note compact-note">Dávkování je orientační. Vždy ho porovnej s etiketou konkrétního pH+ / pH- přípravku.</div>
-            <div class="form-actions"><button class="primary-btn" type="submit">Uložit bazén</button></div>
-          </form>
+          ${tabs}
+          <div class="module-tabbed pool-tab-${escapeHtml(activeTab)}" data-tab-area="pool">
+            ${activeTab === 'add' ? renderPoolAddForm(pool) : ''}
+          </div>
         </section>
-        ${renderPoolMeasurements(pool)}
-        ${volume > 0 ? '' : renderEmptyCta({ icon: '🏊', title: 'Zadej rozměry bazénu', text: 'Pak se dopočítá objem vody a dávkování podle naměřeného pH.', nav: 'pool', label: 'Nastavit bazén' })}
+        ${activeTab === 'overview' ? renderPoolMeasurements(pool) : ''}
+        ${volume > 0 ? '' : renderEmptyCta({ icon: '🏊', title: 'Zadej rozměry bazénu', text: 'Pak se dopočítá objem vody a dávkování podle naměřeného pH.', nav: 'pool', tab: 'add', label: 'Nastavit bazén' })}
       `;
     }
 
