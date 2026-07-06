@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_387';
-  const APP_BUILD = 387;
+  const APP_VERSION = 'Domácnost+ v.0.1_388';
+  const APP_BUILD = 388;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -8131,7 +8131,7 @@
           <div class="card-subheader"><div><h3>Import z Domácí odečty</h3><p>Načte měřidla a historii ze starého exportu.</p></div></div>
           <div class="small-muted">Vyber export z aplikace Domácí odečty. U elektřiny se „Odečet“ a „Odečet 2“ spojí do jednoho elektroměru jako T1/T2.</div>
           <div class="form-grid two readings-import-grid">
-            <label><span>Soubor</span><input type="file" accept=".xls,.csv,.txt" data-reading-import-file></label>
+            <label for="readingsImportFile"><span>Soubor</span><input id="readingsImportFile" name="readingsImportFile" type="file" accept=".xls,.csv,.txt" autocomplete="off" data-reading-import-file></label>
             <div class="form-actions align-end"><button class="primary-btn" type="button" data-action="import-easy-home-offtake">Importovat odečty</button></div>
           </div>
         </section>`;
@@ -9029,8 +9029,8 @@
       <div class="card-subheader readings-detail-controls">
         <div><h3>Detail měřidla</h3><p>Grafy ukazují průměrnou měsíční spotřebu z období mezi odečty, včetně jednotek a rozsahu.</p></div>
         <div class="readings-detail-filter-grid">
-          <label><span>Měřidlo</span><select data-reading-detail-filter="meter">${meters.map((meter) => `<option value="${escapeHtml(meter.id)}" ${meter.id === selectedMeter.id ? 'selected' : ''}>${escapeHtml(readingTypeMeta(meter.type).icon)} ${escapeHtml(meter.name)}</option>`).join('')}</select></label>
-          <label><span>Období</span><select data-reading-detail-filter="period">${READING_DETAIL_PERIOD_OPTIONS.map(([value, label]) => `<option value="${escapeHtml(value)}" ${value === readingsDetailPeriod ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select></label>
+          <label for="readingsDetailMeterSelect"><span>Měřidlo</span><select id="readingsDetailMeterSelect" name="readingsDetailMeter" autocomplete="off" data-reading-detail-filter="meter">${meters.map((meter) => `<option value="${escapeHtml(meter.id)}" ${meter.id === selectedMeter.id ? 'selected' : ''}>${escapeHtml(readingTypeMeta(meter.type).icon)} ${escapeHtml(meter.name)}</option>`).join('')}</select></label>
+          <label for="readingsDetailPeriodSelect"><span>Období</span><select id="readingsDetailPeriodSelect" name="readingsDetailPeriod" autocomplete="off" data-reading-detail-filter="period">${READING_DETAIL_PERIOD_OPTIONS.map(([value, label]) => `<option value="${escapeHtml(value)}" ${value === readingsDetailPeriod ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select></label>
         </div>
       </div>
       <div class="readings-detail-layout">
@@ -9041,7 +9041,7 @@
         <section class="soft-panel readings-compare-panel">
           <div class="card-subheader"><div><h3>Porovnání měřidel</h3><p>Zaškrtni další měřidla a porovnej průměrnou měsíční spotřebu v jednom grafu.</p></div></div>
           <div class="readings-compare-list">
-            ${meters.map((meter) => `<label class="pill-check"><input type="checkbox" data-reading-detail-filter="compare" value="${escapeHtml(meter.id)}" ${readingsCompareMeterIds.includes(meter.id) ? 'checked' : ''} ${meter.id === selectedMeter.id ? 'disabled' : ''}><span>${escapeHtml(readingTypeMeta(meter.type).icon)} ${escapeHtml(meter.name)}</span></label>`).join('')}
+            ${meters.map((meter) => `<label class="pill-check" for="readingsCompare__${escapeHtml(meter.id)}"><input id="readingsCompare__${escapeHtml(meter.id)}" type="checkbox" name="readingsCompareMeter" data-reading-detail-filter="compare" value="${escapeHtml(meter.id)}" ${readingsCompareMeterIds.includes(meter.id) ? 'checked' : ''} ${meter.id === selectedMeter.id ? 'disabled' : ''}><span>${escapeHtml(readingTypeMeta(meter.type).icon)} ${escapeHtml(meter.name)}</span></label>`).join('')}
           </div>
           ${renderReadingsLineChart(compareRows)}
         </section>
