@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_394';
-  const APP_BUILD = 394;
+  const APP_VERSION = 'Domácnost+ v.0.1_396';
+  const APP_BUILD = 396;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -7161,8 +7161,13 @@
   }
 
   function refreshVehicleIconColorSettings() {
-    state.settings.vehicleIconColors = normalizeVehicleIconColorMap(state.settings?.vehicleIconColors);
-    (state.vehicles || []).forEach((vehicle) => rememberVehicleIconColor(vehicle));
+    const map = {};
+    (state.vehicles || []).forEach((vehicle) => {
+      const color = normalizeVehicleIconColor(vehicle.iconColor);
+      vehicle.iconColor = color;
+      [vehicle.cloudId, vehicle.id, normalizeKey(vehicle.name)].filter(Boolean).forEach((key) => { map[key] = color; });
+    });
+    state.settings.vehicleIconColors = map;
   }
 
   function garageNumberKey(value, decimals = 2) {
@@ -7273,12 +7278,24 @@
 
   function normalizeGarageRuntimeState(options = {}) {
     const persist = options.persist !== false;
-    const beforeSignature = JSON.stringify({ vehicles: state.vehicles, fuel: state.fuel, services: state.services, active: garageVehicleId });
+    // beforeSignature/afterSignature (JSON.stringify přes celé vehicles/fuel/services)
+    // se používají JEN k rozhodnutí, jestli zavolat saveState() - a to je stejně
+    // podmíněné `persist`. Počítat je i pro persist:false volání (typicky z Home
+    // dashboardu, kde tahle funkce běží na každý render jen kvůli vehicleAlerts)
+    // bylo čisté zahazování výkonu - u větší historie tankování to bylo měřitelně
+    // pomalé (desítky ms na klik, viditelné sekání appky).
+    const beforeSignature = persist ? JSON.stringify({ vehicles: state.vehicles, fuel: state.fuel, services: state.services, active: garageVehicleId }) : '';
     state.vehicles = Array.isArray(state.vehicles) ? state.vehicles.filter((item) => item && typeof item === 'object') : [];
     state.fuel = Array.isArray(state.fuel) ? state.fuel.filter((item) => item && typeof item === 'object') : [];
     state.services = Array.isArray(state.services) ? state.services.filter((item) => item && typeof item === 'object') : [];
     state.settings = state.settings && typeof state.settings === 'object' ? state.settings : { ...DEFAULT_STATE.settings };
-    state.settings.vehicleIconColors = normalizeVehicleIconColorMap(state.settings.vehicleIconColors);
+    const rawIconColors = state.settings.vehicleIconColors;
+    // Historicky se sem klíče jen přidávaly a nikdy nemazaly (rememberVehicleIconColor
+    // dělalo merge, ne replace) - u reálného účtu to nabobtnalo na 21 000+ osiřelých
+    // klíčů (auta, co už dávno neexistují), a normalizeVehicleIconColorMap nad tím
+    // běžela opakovaně (jednou tady + jednou na auto v mapě níž) = desítky ms na render.
+    // Řešení: mapu na konci téhle funkce vždy postavíme znovu jen z aktuálních aut.
+    const iconColorsBefore = rawIconColors && typeof rawIconColors === 'object' && !Array.isArray(rawIconColors) ? rawIconColors : {};
     state.vehicles = state.vehicles.map((vehicle, index) => {
       const id = normalizeText(vehicle.id) || `vehicle-${index + 1}-${uid()}`;
       const normalized = {
@@ -7330,10 +7347,9 @@
         id,
         name: normalizeText(vehicle.name || vehicle.title || vehicle.model || `Auto ${index + 1}`),
         ownershipStatus: vehicleOwnershipStatus(vehicle),
-        iconColor: normalizeVehicleIconColor(vehicle.iconColor || vehicle.color || state.settings.vehicleIconColors[id] || state.settings.vehicleIconColors[normalizeKey(vehicle.name)] || 'blue')
+        iconColor: normalizeVehicleIconColor(vehicle.iconColor || vehicle.color || iconColorsBefore[id] || iconColorsBefore[normalizeKey(vehicle.name)] || 'blue')
       };
       applyVehicleTechnicalFields(normalized, Object.keys(normalized.technicalSpecs || {}).length ? normalized.technicalSpecs : normalized);
-      rememberVehicleIconColor(normalized);
       return normalized;
     });
     const dedupedVehicles = dedupeGarageVehicles(state.vehicles);
@@ -7353,8 +7369,16 @@
     state.fuel = dedupeGarageRecords(state.fuel, garageFuelDedupeKey, vehicleMap);
     state.services = dedupeGarageRecords(state.services, garageServiceDedupeKey, vehicleMap);
     if (!validVehicleIds.has(garageVehicleId)) garageVehicleId = fallbackVehicleId;
-    const afterSignature = JSON.stringify({ vehicles: state.vehicles, fuel: state.fuel, services: state.services, active: garageVehicleId });
-    if (beforeSignature !== afterSignature && persist) {
+
+    const prunedIconColors = {};
+    state.vehicles.forEach((vehicle) => {
+      [vehicle.cloudId, vehicle.id, normalizeKey(vehicle.name)].filter(Boolean).forEach((key) => { prunedIconColors[key] = vehicle.iconColor; });
+    });
+    const iconColorsPruned = Object.keys(prunedIconColors).length !== Object.keys(iconColorsBefore).length;
+    state.settings.vehicleIconColors = prunedIconColors;
+
+    const afterSignature = persist ? JSON.stringify({ vehicles: state.vehicles, fuel: state.fuel, services: state.services, active: garageVehicleId }) : '';
+    if ((beforeSignature !== afterSignature && persist) || iconColorsPruned) {
       state.meta = { ...(state.meta || {}), updatedAt: new Date().toISOString() };
       saveState();
     }
@@ -11576,12 +11600,14 @@
         if (state.cloud?.status === 'signed-in') {
           state.cloud = { ...(state.cloud || {}), status: 'offline' };
           saveState();
+          if (!onLogin) requestRender(); // only re-render if not already on the login screen
         }
-        if (!onLogin) render(); // only re-render if not already on the login screen
       } else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         if (!session?.user) return;
-        // Sync app state with the confirmed Supabase session so render() can
-        // correctly show the app instead of the login screen.
+        // Supabase-js fires TOKEN_REFRESHED/INITIAL_SESSION repeatedly during its own
+        // startup/refresh bookkeeping even when nothing actually changed for us — only
+        // re-render when the sign-in status genuinely flips, otherwise every duplicate
+        // event was forcing a full, expensive re-render (visible stutter on real data).
         if (state.cloud?.status !== 'signed-in' || !state.cloud?.userId) {
           state.cloud = {
             ...(state.cloud || {}),
@@ -11592,8 +11618,8 @@
             email: session.user.email || state.cloud?.email || ''
           };
           saveState();
+          requestRender();
         }
-        render();
       }
     });
     return supabaseClientInstance;

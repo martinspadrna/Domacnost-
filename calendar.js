@@ -541,16 +541,26 @@
       const sourceList = getCalendarSources();
       const enabledSourceIds = new Set(sourceList.filter((source) => source.isEnabled !== false).map((source) => String(source.id || source.cloudId || '')));
       const events = [...visibleCalendarEvents()].sort((a, b) => `${a.date || ''}${a.time || ''}`.localeCompare(`${b.date || ''}${b.time || ''}`));
-      const todayEvents = events.filter((event) => event.date === todayISO());
-      const upcoming = events.filter((event) => !event.date || event.date >= todayISO()).slice(0, 12);
-      const soonCount = events.filter((event) => event.date && event.date > todayISO() && event.date <= dateOffsetISO(7)).length;
-      const past = events.filter((event) => event.date && event.date < todayISO()).reverse().slice(0, 8);
+      // today/soonCutoff se počítají JEDNOU: todayISO()/dateOffsetISO() staví
+      // nový Intl.DateTimeFormat při každém volání, a volání uvnitř filter()
+      // callbacku (jednou na událost) u stovek událostí znamenalo stovky
+      // zbytečných Intl instancí za render - měřeno ~140 ms jen na tenhle blok.
+      const today = todayISO();
+      const soonCutoff = dateOffsetISO(7);
+      const todayEvents = events.filter((event) => event.date === today);
+      const upcoming = events.filter((event) => !event.date || event.date >= today).slice(0, 12);
+      const soonCount = events.filter((event) => event.date && event.date > today && event.date <= soonCutoff).length;
+      const past = events.filter((event) => event.date && event.date < today).reverse().slice(0, 8);
       const hiddenEvents = (getState().calendar || []).filter((event) => event.sourceId && !enabledSourceIds.has(String(event.sourceId)) && getCalendarSource(event.sourceId)).length;
       const cloudReadyFlag = Boolean(getState().cloud?.householdId);
       const localOnly = events.filter((event) => !event.cloudId).length;
       const cloudCount = events.filter((event) => event.cloudId).length;
       const activeSources = sourceList.filter((source) => source.isEnabled !== false).length;
       const activeCalendarTab = getModuleTab('calendar', 'overview');
+      const monthGridHtml = renderCalendarMonthGrid(events, getCalendarViewMonth());
+      const sourceListHtml = renderCalendarSourceList(sourceList);
+      const pastListHtml = past.length ? renderEventList(past, true) : renderEmpty('Historie je zatím prázdná.');
+      const googleConnectorHtml = renderGoogleCalendarConnector(cloudReadyFlag, sourceList);
       return `
         ${renderSectionTabs('calendar', [
           { id: 'overview', label: 'Přehled', icon: '📅', count: todayEvents.length },
@@ -574,7 +584,7 @@
               </div>
             </details>
             ${hiddenEvents ? `<div class="inline-note">${hiddenEvents} událostí je schovaných, protože jejich kalendář je vypnutý.</div>` : ''}
-            ${renderCalendarMonthGrid(events, getCalendarViewMonth())}
+            ${monthGridHtml}
             ${events.length ? '' : renderEmptyCta({ icon: '📅', title: 'Kalendář je prázdný', text: 'Přidej první sdílenou domácí událost.', nav: 'calendar', tab: 'add', label: 'Přidat událost' })}
           </section>
 
@@ -583,7 +593,7 @@
               <div><h2>Zdroje kalendáře</h2></div>
               <span class="badge ${cloudReadyFlag ? 'good' : ''}">${cloudReadyFlag ? 'cloud' : 'lokálně'}</span>
             </div>
-            ${renderGoogleCalendarConnector(cloudReadyFlag, sourceList)}
+            ${googleConnectorHtml}
             <details class="compact-edit-details calendar-manual-source-details" data-details-key="calendar-add-source" ${getDetailsOpen('calendar-add-source') ? 'open' : ''}>
               <summary><span>Přidat ruční zdroj kalendáře</span><em>domácí / veřejný Google iCal odkaz</em></summary>
               <form data-form="add-calendar-source" class="compact-form">
@@ -598,7 +608,7 @@
                 <div class="form-actions"><button class="primary-btn" type="submit">Přidat zdroj</button></div>
               </form>
             </details>
-            ${renderCalendarSourceList(sourceList)}
+            ${sourceListHtml}
           </section>
 
           <section class="card calendar-panel panel-add">
@@ -626,7 +636,7 @@
 
           <section class="card desktop-span-2 calendar-panel panel-history">
             <div class="card-header"><div><h2>Historie</h2><p>Poslední starší události, aby hlavní přehled nebyl zbytečně dlouhý.</p></div></div>
-            ${past.length ? renderEventList(past, true) : renderEmpty('Historie je zatím prázdná.')}
+            ${pastListHtml}
           </section>
         </div>
       `;
