@@ -577,7 +577,7 @@
           <form data-form="vape-settings" class="compact-form">
             <div class="form-grid two">
               ${field('Začátek vapování', 'startDate', 'date', '', false, vape.startDate)}
-              ${field('Cena krabičky cigaret / den (Kč)', 'cigaretteCostPerDay', 'number', 'např. 150,5', false, vape.cigaretteCostPerDay)}
+              ${field('Předtím prokouřeno denně (Kč)', 'cigaretteCostPerDay', 'number', 'např. 150,5', false, vape.cigaretteCostPerDay)}
               ${field('Utrženo za prodej vybavení (Kč)', 'resaleTotal', 'number', 'např. 581', false, vape.resaleTotal)}
             </div>
             <div class="form-actions"><button class="primary-btn" type="submit">Uložit nastavení</button></div>

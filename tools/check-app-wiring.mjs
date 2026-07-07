@@ -69,11 +69,12 @@ if (app && pool && index && sw) {
   expect(app, 'function getPoolModule()', 'app.js: getPoolModule factory wrapper existuje.');
   expect(app, 'pool: renderPool', 'app.js: pool renderer je v renderModule mapě.');
   expect(app, "'pool-settings': () => savePoolFromForm(data, form)", 'app.js: pool-settings form handler existuje.');
-  expect(app, /migrated\.pool = normalizePoolState\(migrated\.pool\)/, 'app.js: pool prochází migrací.');
-  expect(app, /pool: normalizePoolState\(state\.pool \|\| \{\}\)/, 'app.js: pool se ukládá do household UI payloadu.');
+  expect(app, /migrated\.pools = normalizePools\(migrated\.pools\)/, 'app.js: pool prochází migrací.');
+  expect(app, /pools: normalizePools\(state\.pools \|\| \[\]\)/, 'app.js: pool se ukládá do household UI payloadu.');
   expect(app, /layout\.pool && typeof layout\.pool === 'object'/, 'app.js: pool se obnovuje z cloud layoutu.');
   expect(app, /pool: \[loadHouseholdUiForModule\]/, 'app.js: pool lazy/background loader tahá household UI.');
-  expect(pool, 'function normalizePoolState', 'pool.js: normalizePoolState existuje.');
+  expect(pool, 'function normalizePools', 'pool.js: normalizePools existuje.');
+  expect(pool, 'function normalizePool(', 'pool.js: jednotlivý bazén se normalizuje (více bazénů podporováno).');
   expect(pool, 'function normalizePoolMeasurements', 'pool.js: historie měření bazénu se normalizuje.');
   expect(pool, 'function poolVolumeM3', 'pool.js: výpočet objemu existuje.');
   expect(pool, 'function poolPhDose', 'pool.js: dávkování pH existuje.');

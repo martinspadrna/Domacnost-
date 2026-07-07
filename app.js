@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_396';
-  const APP_BUILD = 396;
+  const APP_VERSION = 'Domácnost+ v.0.1_397';
+  const APP_BUILD = 397;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -527,7 +527,7 @@
     { id: 'hdo', label: 'HDO', icon: '💡', overview: 'hdo', metric: (ctx) => ctx.hdo.active ? 'Běží' : 'Ne', text: () => 'HDO' },
     { id: 'waste', label: 'Odpad', icon: '♻️', overview: 'waste', metric: (ctx) => ctx.wasteSoon.length, text: () => 'svoz do 7 dnů' },
     { id: 'readings', label: 'Odečty', icon: '📊', nav: 'readings', tab: 'overview', metric: () => readingsMeters().length, text: () => 'měřidel' },
-    { id: 'pool', label: 'Bazén', icon: '🏊', nav: 'pool', tab: '', metric: () => formatPoolVolume(poolVolumeM3(state.pool)), text: () => 'objem vody' },
+    { id: 'pool', label: 'Bazén', icon: '🏊', nav: 'pool', tab: '', metric: () => formatPoolVolume(poolVolumeM3(getPoolModule().getActivePool())), text: () => 'objem vody' },
     { id: 'tasks', label: 'Zápisník', icon: '🗒️', overview: 'tasks', metric: (ctx) => (ctx.openTasks?.length || 0) + notebookPages().length, text: () => 'úkoly a stránky' },
     { id: 'warranties', label: 'Záruky', icon: '🧾', nav: 'warranties', tab: '', metric: () => state.warranties.filter((item) => item.status !== 'archived').length, text: () => 'záruky' },
     { id: 'polishHolidays', label: 'PL svátky', icon: '🇵🇱', nav: 'polishHolidays', tab: '', metric: () => polishShopHeroMetric(), text: () => polishShopHeroText() },
@@ -544,7 +544,12 @@
     { id: 'today', label: 'Dnešní přehled (HDO, svoz, událost)' },
     { id: 'finance', label: 'Finance' },
     { id: 'timeline', label: 'Nadcházející' },
-    { id: 'quick', label: 'Rychlé akce' }
+    { id: 'quick', label: 'Rychlé akce' },
+    { id: 'shopping', label: 'Nákupní seznam' },
+    { id: 'waste', label: 'Odpad' },
+    { id: 'garage', label: 'Garáž' },
+    { id: 'contracts', label: 'Smlouvy' },
+    { id: 'tasks', label: 'Úkoly' }
   ];
   const DEFAULT_HOME_WIDGET_IDS = ['weather', 'today', 'finance', 'timeline', 'quick'];
 
@@ -800,7 +805,7 @@
     financeTemplates: [],
     financeLoans: [],
     financeRefinanceResult: null,
-    pool: {},
+    pools: [],
     vape: {},
     subscriptions: [],
     subscriptionPeople: [],
@@ -1824,7 +1829,15 @@
     migrated.financeTemplates = normalizeFinanceTemplates(migrated.financeTemplates);
     migrated.financeLoans = normalizeFinanceLoans(migrated.financeLoans);
     migrated.financeRefinanceResult = migrated.financeRefinanceResult && typeof migrated.financeRefinanceResult === 'object' ? migrated.financeRefinanceResult : null;
-    migrated.pool = normalizePoolState(migrated.pool);
+    // Starší build měl jeden bazén jako households.dashboard_layout.pool
+    // (objekt bez id/name). Nová podoba je pole pojmenovaných bazénů -
+    // legacy objekt se stane první položkou, pokud pools ještě neexistuje.
+    const legacyPool = migrated.pool && typeof migrated.pool === 'object' && !Array.isArray(migrated.pool) ? migrated.pool : null;
+    migrated.pools = normalizePools(migrated.pools);
+    if (!migrated.pools.length && legacyPool && (legacyPool.shape || legacyPool.length || legacyPool.diameter || legacyPool.volumeM3 || (Array.isArray(legacyPool.measurements) && legacyPool.measurements.length))) {
+      migrated.pools = normalizePools([{ ...legacyPool, name: 'Bazén' }]);
+    }
+    delete migrated.pool;
 
     const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
     migrated.vehicles = migrated.vehicles.map((vehicle) => {
@@ -2750,14 +2763,6 @@
             ${renderDesktopSidebar(active.id)}
             <div class="app-frame ${isHomeModule ? 'home-clean-frame' : ''}">
               <main>
-                ${isHomeModule ? '' : `
-                <div class="app-top-bar">
-                  <div class="app-top-brand">
-                    <span class="app-top-logo" aria-hidden="true"></span>
-                    <span class="app-top-word">Domácnost+</span>
-                  </div>
-                </div>
-                `}
                 ${isHomeModule ? '' : `
                 <section class="page-head">
                   <div>
@@ -3731,6 +3736,11 @@
         ${hasWidget('today') ? renderHomeTodayWidget(ctx) : ''}
         ${hasWidget('finance') ? renderHomeFinanceWidget(ctx) : ''}
         ${hasWidget('timeline') ? renderHomeTimelineWidget(ctx) : ''}
+        ${hasWidget('shopping') ? renderHomeShoppingWidget(ctx) : ''}
+        ${hasWidget('waste') ? renderHomeWasteWidget(ctx) : ''}
+        ${hasWidget('garage') ? renderHomeGarageWidget(ctx) : ''}
+        ${hasWidget('contracts') ? renderHomeContractsWidget(ctx) : ''}
+        ${hasWidget('tasks') ? renderHomeTasksWidget(ctx) : ''}
         ${hasWidget('quick') ? renderHomeQuickWidget(ctx) : ''}
         <div class="home-dash-sync"><span aria-hidden="true">⟳</span> Poslední aktualizace: ${escapeHtml(lastSync)}</div>
       </div>
@@ -3832,7 +3842,7 @@
 
   const HOME_ROW_ICON_TONES = {
     '💡': 'amber', '♻️': 'green', '♻': 'green', '🏊': 'blue', '🚗': 'coral',
-    '📄': 'amber', '📅': 'blue', '✓': 'green', '🎬': 'green', '💰': 'amber', '📈': 'blue'
+    '📄': 'amber', '📅': 'blue', '✓': 'green', '🎬': 'green', '💰': 'amber', '📈': 'blue', '🛒': 'coral'
   };
 
   function renderHomeTimelineWidget(ctx) {
@@ -3854,6 +3864,58 @@
         </div>
       </div>
     `;
+  }
+
+  function renderHomeMiniListWidget(title, items, emptyText) {
+    if (!items.length && !emptyText) return '';
+    return `
+      <div class="home-dash-section">
+        <h2 class="home-dash-section-title">${escapeHtml(title)}</h2>
+        ${items.length ? `
+          <div class="home-timeline-list">
+            ${items.map((item) => `
+              <button class="home-timeline-row" type="button" ${homeActionAttrs(item)}>
+                <span class="home-row-icon home-row-icon-${HOME_ROW_ICON_TONES[item.icon] || 'neutral'}" aria-hidden="true">${escapeHtml(item.icon || '•')}</span>
+                <span class="home-row-copy">
+                  <strong>${escapeHtml(item.title)}</strong>
+                  ${item.meta ? `<em>${escapeHtml(item.meta)}</em>` : ''}
+                </span>
+              </button>
+            `).join('')}
+          </div>
+        ` : `<div class="inline-note compact-note">${escapeHtml(emptyText)}</div>`}
+      </div>
+    `;
+  }
+
+  function renderHomeShoppingWidget(ctx) {
+    if (!ctx.visibleModules.some((module) => module.id === 'shopping')) return '';
+    const items = ctx.openShopping.slice(0, 5).map((item) => ({ icon: '🛒', title: item.name || 'Položka', overview: 'shopping' }));
+    return renderHomeMiniListWidget('Nákupní seznam', items, 'Nákupní seznam je prázdný.');
+  }
+
+  function renderHomeWasteWidget(ctx) {
+    if (!ctx.visibleModules.some((module) => module.id === 'waste')) return '';
+    const items = ctx.wasteSoon.slice(0, 3).map((item) => ({ icon: '♻️', title: `${item.type || 'Svoz'} odpad`, meta: `${formatDate(item.date)}${item.note ? ` · ${item.note}` : ''}`, overview: 'waste' }));
+    return renderHomeMiniListWidget('Odpad', items, 'Žádný svoz naplánovaný.');
+  }
+
+  function renderHomeGarageWidget(ctx) {
+    if (!ctx.visibleModules.some((module) => module.id === 'garage')) return '';
+    const items = ctx.vehicleAlerts.slice(0, 3).map((alert) => ({ icon: '🚗', title: alert.title, meta: alert.meta, overview: 'garage' }));
+    return renderHomeMiniListWidget('Garáž', items, 'Žádná upozornění na vozidla.');
+  }
+
+  function renderHomeContractsWidget(ctx) {
+    if (!ctx.visibleModules.some((module) => module.id === 'contracts')) return '';
+    const items = ctx.urgentContracts.slice(0, 3).map((contract) => ({ icon: '📄', title: contract.name || 'Smlouva', meta: `${contract.provider || 'Bez poskytovatele'} · platnost do ${formatDate(contract.validTo)}`, overview: 'contracts' }));
+    return renderHomeMiniListWidget('Smlouvy', items, 'Žádné smlouvy brzy nekončí.');
+  }
+
+  function renderHomeTasksWidget(ctx) {
+    if (!ctx.visibleModules.some((module) => module.id === 'tasks')) return '';
+    const items = ctx.openTasks.slice(0, 5).map((task) => ({ icon: '✓', title: task.title || 'Úkol', meta: task.due ? `Termín ${formatDate(task.due)}` : '', overview: 'tasks' }));
+    return renderHomeMiniListWidget('Úkoly', items, 'Žádné otevřené úkoly.');
   }
 
   function renderHomeQuickWidget(ctx) {
@@ -4057,21 +4119,24 @@
   }
 
   function buildHomePoolAttentionItem() {
-    const pool = normalizePoolState(state.pool || {});
-    const volume = poolVolumeM3(pool);
-    const dose = getPoolModule().poolPhDose(pool);
-    if (dose.status !== 'minus' && dose.status !== 'plus') return null;
-    const grams = Math.max(0, Math.round(Number(dose.grams || 0)));
-    const gramsLabel = grams >= 1000 ? `${(grams / 1000).toLocaleString('cs-CZ', { maximumFractionDigits: 2 })} kg` : `${grams.toLocaleString('cs-CZ')} g`;
-    return {
-      icon: '🏊',
-      title: dose.label,
-      meta: `Bazén ${formatPoolVolume(volume)} · pH ${pool.ph || '—'} → ${pool.targetPh || 7.2}`,
-      badge: gramsLabel,
-      tone: 'warn',
-      nav: 'pool',
-      rank: 2
-    };
+    const pools = getPoolModule().getPools();
+    for (const pool of pools) {
+      const dose = getPoolModule().poolPhDose(pool);
+      if (dose.status !== 'minus' && dose.status !== 'plus') continue;
+      const volume = poolVolumeM3(pool);
+      const grams = Math.max(0, Math.round(Number(dose.grams || 0)));
+      const gramsLabel = grams >= 1000 ? `${(grams / 1000).toLocaleString('cs-CZ', { maximumFractionDigits: 2 })} kg` : `${grams.toLocaleString('cs-CZ')} g`;
+      return {
+        icon: '🏊',
+        title: pools.length > 1 ? `${dose.label} · ${pool.name}` : dose.label,
+        meta: `Bazén ${formatPoolVolume(volume)} · pH ${pool.ph || '—'} → ${pool.targetPh || 7.2}`,
+        badge: gramsLabel,
+        tone: 'warn',
+        nav: 'pool',
+        rank: 2
+      };
+    }
+    return null;
   }
 
   function homeActionAttrs(item = {}) {
@@ -5154,7 +5219,9 @@
       garage: { count: countBy('vehicles'), label: 'aut', note: `${countBy('fuel')} tankování, ${countBy('services')} servisů.` },
       contracts: { count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh smluv, ${countBy('warrantyFiles')} příloh záruk.` },
       finance: { count: countBy('finance'), label: 'záznamů', note: `${formatCurrency(financeMonthSummary().balance)} rozdíl tento měsíc.` },
-      subscriptions: { count: countBy('subscriptions', (item) => item.enabled !== false), label: 'služeb', note: `${formatCurrency(subscriptionMonthSummary().expectedReturn)} se má vrátit tento měsíc.` }
+      subscriptions: { count: countBy('subscriptions', (item) => item.enabled !== false), label: 'služeb', note: `${formatCurrency(subscriptionMonthSummary().expectedReturn)} se má vrátit tento měsíc.` },
+      vape: { count: Array.isArray(state.vape?.items) ? state.vape.items.length : 0, label: 'položek ceníku', note: 'Nákupy, boostery, aroma a kalkulačky na jednom místě.' },
+      pool: { count: Array.isArray(state.pools) ? state.pools.length : 0, label: 'bazénů', note: `${(state.pools || []).reduce((sum, pool) => sum + (Array.isArray(pool.measurements) ? pool.measurements.length : 0), 0)} měření celkem.` }
     };
     return stats[moduleId] || { count: 0, label: 'položek', note: getModuleSubtitle(moduleId) };
   }
@@ -5962,7 +6029,8 @@
       render,
       showToast,
       cloudReady,
-      cloudSaveHouseholdUiSettings
+      cloudSaveHouseholdUiSettings,
+      confirm: (message) => window.confirm(message)
     });
     return poolInstance;
   }
@@ -11093,8 +11161,8 @@
     return getFinanceModule().renderFinance();
   }
 
-  function normalizePoolState(value) {
-    return getPoolModule().normalizePoolState(value);
+  function normalizePools(value) {
+    return getPoolModule().normalizePools(value);
   }
 
   function poolVolumeM3(value) {
@@ -11111,6 +11179,18 @@
 
   function savePoolFromForm(data, form) {
     return getPoolModule().savePoolFromForm(data, form);
+  }
+
+  function addPool() {
+    return getPoolModule().addPool();
+  }
+
+  function selectPool(id) {
+    return getPoolModule().selectPool(id);
+  }
+
+  function deletePool(id) {
+    return getPoolModule().deletePool(id);
   }
 
   function renderVape() {
@@ -11415,8 +11495,17 @@
 
   function renderSettings() {
     const enabled = new Set(normalizeModuleList(state.enabledModules));
+    const activeTab = getModuleTab('settings', 'household');
+    const tabs = renderSectionTabs('settings', [
+      { id: 'household', label: 'Domácnost', icon: '🏠' },
+      { id: 'dashboard', label: 'Vzhled', icon: '🎨' },
+      { id: 'modules', label: 'Moduly', icon: '🧩', count: enabled.size },
+      { id: 'cloud', label: 'Cloud', icon: '☁️' },
+      { id: 'data', label: 'Data', icon: '💾' }
+    ], 'household');
     return `
-      <div class="settings-tabbed settings-flow" data-tab-area="settings">
+      ${tabs}
+      <div class="settings-tabbed settings-tab-${escapeHtml(activeTab)}" data-tab-area="settings">
         <div class="settings-panel panel-household grid two">
           <section class="card compact-settings-card">
             <div class="card-header"><div><h2>Domácnost</h2><p>Základ rodinného účtu a vzhled celé aplikace.</p></div><span class="badge">${escapeHtml(state.household.id)}</span></div>
@@ -11455,28 +11544,32 @@
           </section>
         </div>
 
-        ${renderVisualSettingsCard()}
+        <div class="settings-panel panel-dashboard">
+          ${renderVisualSettingsCard()}
+        </div>
 
-        <section class="card desktop-span-2 compact-settings-card">
-          ${renderBottomNavSettings()}
-        </section>
+        <div class="settings-panel panel-modules">
+          <section class="card desktop-span-2 compact-settings-card">
+            ${renderBottomNavSettings()}
+          </section>
+
+          <section class="card desktop-span-2 compact-settings-card">
+            <div class="card-header"><div><h2>Viditelné moduly</h2><p>Vypnuté moduly zmizí z „Vše" i z bočního menu.</p></div><span class="badge">${enabled.size}</span></div>
+            <div class="module-toggle-grid compact-module-toggle-grid">
+              ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => `
+                <button class="module-toggle ${enabled.has(module.id) ? 'active' : ''}" type="button" data-action="toggle-module" data-id="${module.id}">
+                  ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'module-toggle-icon-slot', label: module.label })}
+                  <strong>${escapeHtml(module.label)}</strong>
+                  <em>${enabled.has(module.id) ? 'zapnuto' : 'vypnuto'}</em>
+                </button>
+              `).join('')}
+            </div>
+          </section>
+        </div>
 
         <div class="settings-panel panel-cloud grid two">
           ${renderCloudAccount()}
         </div>
-
-        <section class="card desktop-span-2 compact-settings-card">
-          <div class="card-header"><div><h2>Viditelné moduly</h2><p>Vypnuté moduly zmizí z „Vše" i z bočního menu.</p></div><span class="badge">${enabled.size}</span></div>
-          <div class="module-toggle-grid compact-module-toggle-grid">
-            ${MODULES.filter((module) => !['home', 'settings'].includes(module.id)).map((module) => `
-              <button class="module-toggle ${enabled.has(module.id) ? 'active' : ''}" type="button" data-action="toggle-module" data-id="${module.id}">
-                ${renderModuleIllustration(module.id, { size: 'picker', slotClass: 'module-toggle-icon-slot', label: module.label })}
-                <strong>${escapeHtml(module.label)}</strong>
-                <em>${enabled.has(module.id) ? 'zapnuto' : 'vypnuto'}</em>
-              </button>
-            `).join('')}
-          </div>
-        </section>
 
         <div class="settings-panel panel-data grid two">
           ${renderPwaUpdateStatusCard()}
@@ -15692,6 +15785,18 @@
       toggleBoolean(button.dataset.collection, button.dataset.id, 'enabled');
       return;
     }
+    if (action === 'pool-select') {
+      selectPool(button.dataset.id);
+      return;
+    }
+    if (action === 'pool-add') {
+      addPool();
+      return;
+    }
+    if (action === 'pool-delete') {
+      deletePool(button.dataset.id);
+      return;
+    }
     if (action === 'toggle-hdo') {
       toggleHdoWindow(button.dataset.id);
       return;
@@ -17138,8 +17243,18 @@
       state.financeLoans = mergeFinanceLoans(state.financeLoans || [], layout.financeLoans);
       state.financeCloud = { ...(state.financeCloud || {}), loansLoadedAt: new Date().toISOString() };
     }
-    if (layout.pool && typeof layout.pool === 'object' && !Array.isArray(layout.pool)) {
-      state.pool = normalizePoolState({ ...(state.pool || {}), ...layout.pool });
+    if (Array.isArray(layout.pools)) {
+      const localPools = normalizePools(state.pools || []);
+      const cloudPools = normalizePools(layout.pools);
+      const cloudMap = new Map(cloudPools.map((pool) => [pool.id, pool]));
+      const merged = localPools.map((pool) => (cloudMap.has(pool.id) ? cloudMap.get(pool.id) : pool));
+      const localIds = new Set(localPools.map((pool) => pool.id));
+      const cloudOnly = cloudPools.filter((pool) => !localIds.has(pool.id));
+      state.pools = normalizePools([...merged, ...cloudOnly]);
+    } else if (layout.pool && typeof layout.pool === 'object' && !Array.isArray(layout.pool)) {
+      // Starší cloud snapshot ještě nemá pools (jednotné číslo pool) - dokud
+      // se lokálně nezmigruje a znovu neodešle, bereme to jako první bazén.
+      if (!Array.isArray(state.pools) || !state.pools.length) state.pools = normalizePools([{ ...layout.pool, name: 'Bazén' }]);
     }
     if (layout.vape && typeof layout.vape === 'object' && !Array.isArray(layout.vape)) {
       state.vape = normalizeVapeState({ ...(state.vape || {}), ...layout.vape });
@@ -17184,7 +17299,7 @@
         loyaltyCards: normalizeLoyaltyCards(state.loyaltyCards || []),
         financeTemplates: normalizeFinanceTemplates(state.financeTemplates || []),
         financeLoans: normalizeFinanceLoans(state.financeLoans || []),
-        pool: normalizePoolState(state.pool || {}),
+        pools: normalizePools(state.pools || []),
         vape: normalizeVapeState(state.vape || {}),
         financeSettings: {
           month: financeSelectedMonth(),
@@ -18046,6 +18161,12 @@
       if (nav.dataset.targetTab && nav.dataset.nav !== 'homecare') {
         moduleTabs = { ...(moduleTabs || {}), [activeModule]: nav.dataset.targetTab };
         localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      } else if (activeModule === 'calendar') {
+        // Kalendář se má vždy otevřít na Přehledu, i když byl naposledy
+        // otevřený na Historii/Zdrojích - jinak si appka pamatuje starou
+        // záložku a uživatel čeká, že uvidí měsíční přehled.
+        moduleTabs = { ...(moduleTabs || {}), calendar: 'overview' };
+        localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       }
       render();
       if (activeModule === 'shopping') scheduleShoppingCloudRefresh('shopping-open', { delay: 700, minAgeMs: 8000, quietMs: 700 });
@@ -18101,8 +18222,7 @@
     }
     const poolShapeSelect = event.target.closest('form[data-form="pool-settings"] select[name="shape"]');
     if (poolShapeSelect) {
-      state.pool = normalizePoolState({ ...(state.pool || {}), shape: poolShapeSelect.value });
-      render();
+      getPoolModule().previewShape(poolShapeSelect.value);
       return;
     }
     const subscriptionMonthInput = event.target.closest('form[data-form="subscription-month-filter"] input[name="month"]');

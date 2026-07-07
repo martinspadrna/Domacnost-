@@ -3872,8 +3872,11 @@ body.overview-open {
 
 
 /* v0.1_68: čistší základní obrazovka bez vrchního brand panelu */
+/* v0.1_397: tenhle padding-top se sčítal s .app-shell, který safe-area-inset-top
+   (nebo aspoň 12px) už řeší na #app - na Home tak nahoře vznikala dvojitá mezera
+   navíc oproti ostatním modulům. Home teď dostává jen ten jeden odstup z .app-shell. */
 .home-clean-frame {
-  padding-top: env(safe-area-inset-top);
+  padding-top: 0;
 }
 .home-page-head {
   margin-top: 0;
@@ -5350,6 +5353,37 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.pool-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 14px;
+}
+
+.pool-switcher-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 14px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: .86rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pool-switcher-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast, #fff);
+}
+
+.pool-switcher-add {
+  background: transparent;
+  border-style: dashed;
+  color: var(--muted);
+}
+
 .consumption-chart-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5946,13 +5980,24 @@ svg.anime-module-svg .anime-icon-line {
 }
 
 /* Domácnost+ v.0.1_132 – ikonky služeb v modulu Předplatné */
-.subscription-service-title,
-.subscription-service-title-sm,
 .subscription-inline-service {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+
+/* v0.1_397 – dlouhý název služby se dřív mačkal do úzkého sloupce vedle loga
+   a zalamoval se znak po znaku (vypadalo to svisle). Logo je teď vlastní řádek,
+   název je pod ním na plnou šířku a zalamuje se normálně jako text. */
+.subscription-service-title,
+.subscription-service-title-sm {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
 }
 
 .subscription-service-brand {
@@ -6401,7 +6446,8 @@ svg.anime-module-svg .anime-icon-line {
 
 .subscription-service-title .subscription-service-brand-name,
 .subscription-service-title-sm .subscription-service-brand-name {
-  display: inline-block;
+  display: block;
+  width: 100%;
 }
 
 @media (max-width: 640px) {
@@ -10850,7 +10896,7 @@ form[data-busy="true"] button[type="submit"] {
   left: 50% !important;
   right: auto !important;
   top: auto !important;
-  bottom: max(6px, env(safe-area-inset-bottom, 0px)) !important;
+  bottom: max(6px, calc(env(safe-area-inset-bottom, 0px) - 10px)) !important;
   transform: translate3d(-50%, 0, 0) !important;
   will-change: transform !important;
   overscroll-behavior: contain !important;
@@ -15287,39 +15333,6 @@ body.home-active {
 }
 
 /* Domácnost+ v0.1_378 – redesign: univerzální top bar + Home widgety + Upravit sheet */
-.app-top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.app-top-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.app-top-logo {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
-  flex-shrink: 0;
-}
-
-.app-top-word {
-  font-weight: 800;
-  font-size: .92rem;
-  letter-spacing: -0.01em;
-  color: var(--text);
-}
-
-.home-clean-frame .app-top-bar {
-  margin-bottom: 6px;
-}
-
 .home-widget-card {
   display: block;
   width: 100%;

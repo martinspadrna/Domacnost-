@@ -472,16 +472,26 @@
       `;
     }
 
+    function financeLoanPayoffDate(months) {
+      const count = Math.round(Number(months || 0));
+      if (!count) return '';
+      const date = new Date();
+      date.setDate(1);
+      date.setMonth(date.getMonth() + count);
+      return date.toISOString().slice(0, 10);
+    }
+
     function renderFinanceLoanItem(loan) {
       const projection = financeLoanProjection(loan);
       const typeLabel = { consumer: 'spotřebitelská', mortgage: 'hypotéka', car: 'auto', credit: 'kredit', other: 'jiná' }[loan.loanType] || 'půjčka';
+      const payoffDate = financeLoanPayoffDate(projection.months);
       return `
         <div class="item compact-item finance-loan-item">
           <div class="item-top">
             <div class="item-title">💳 ${escapeHtml(loan.name)}</div>
             <span class="badge ${projection.payoffCost ? 'warn' : ''}">${formatCurrency(loan.currentBalance)}</span>
           </div>
-          <div class="item-meta">${escapeHtml(loan.lender || typeLabel)} · splátka ${formatCurrency(projection.payment)} · zbývá ${projection.months} měs. · doplatit ${formatCurrency(projection.payoffCost)}${loan.interestRate ? ` · ${loan.interestRate}% p.a.` : ''}${loan.note ? ` · ${escapeHtml(loan.note)}` : ''}</div>
+          <div class="item-meta">${escapeHtml(loan.lender || typeLabel)} · splátka ${formatCurrency(projection.payment)} · zbývá ${projection.months} měs.${payoffDate ? ` · doplacena ${escapeHtml(formatDate(payoffDate))}` : ''} · doplatit ${formatCurrency(projection.payoffCost)}${loan.interestRate ? ` · ${loan.interestRate}% p.a.` : ''}${loan.note ? ` · ${escapeHtml(loan.note)}` : ''}</div>
           <div class="item-actions">
             <button class="ghost-btn" type="button" data-action="finance-loan-edit" data-id="${escapeHtml(loan.id)}">Upravit</button>
             <button class="danger-btn" type="button" data-action="delete-finance-loan" data-id="${escapeHtml(loan.id)}">Smazat</button>

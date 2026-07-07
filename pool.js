@@ -2,10 +2,14 @@
   'use strict';
 
   // Bazén: lokální výpočet objemu a orientační dávkování pH přípravků.
-  // Data žijí v households.dashboard_layout.pool, takže není potřeba nová DB tabulka.
+  // Data žijí v households.dashboard_layout.pools (pole pojmenovaných bazénů),
+  // takže není potřeba nová DB tabulka. Každý bazén má vlastní rozměry/cílové
+  // pH i vlastní historii měření - jde o samostatnou "entitu", podobně jako
+  // vozidla v Garáži.
   function createPool(deps) {
     const getState = deps.getState || (() => ({}));
     const getModuleTab = deps.getModuleTab || ((area, fallback) => fallback);
+    const setModuleTab = deps.setModuleTab || (() => {});
     const renderSectionTabs = deps.renderSectionTabs || (() => '');
     const uid = deps.uid || (() => `${Date.now()}-${Math.random().toString(16).slice(2)}`);
     const todayISO = deps.todayISO || (() => new Date().toISOString().slice(0, 10));
@@ -23,6 +27,9 @@
     const showToast = deps.showToast || (() => {});
     const cloudReady = deps.cloudReady || (() => false);
     const cloudSaveHouseholdUiSettings = deps.cloudSaveHouseholdUiSettings || (() => Promise.resolve(false));
+    const confirm = deps.confirm || ((message) => window.confirm(message));
+
+    let activePoolId = '';
 
     const SHAPE_OPTIONS = [
       ['rect', 'Obdélník'],
@@ -64,9 +71,11 @@
         .slice(-120);
     }
 
-    function normalizePoolState(value = {}) {
+    function normalizePool(value = {}, index = 0) {
       const shape = ['rect', 'round', 'oval', 'custom'].includes(value.shape) ? value.shape : 'rect';
       return {
+        id: normalizeText(value.id) || `pool-${uid()}`,
+        name: normalizeText(value.name) || `Bazén${index ? ` ${index + 1}` : ''}`,
         shape,
         length: numberOrEmpty(value.length),
         width: numberOrEmpty(value.width),
@@ -79,12 +88,37 @@
         dosePer10m3Per01: numberOrEmpty(value.dosePer10m3Per01) || 100,
         measurements: normalizePoolMeasurements(value.measurements),
         note: normalizeText(value.note),
+        createdAt: normalizeText(value.createdAt) || new Date().toISOString(),
         updatedAt: normalizeText(value.updatedAt)
       };
     }
 
-    function poolVolumeM3(pool = normalizePoolState(getState().pool)) {
-      const item = normalizePoolState(pool);
+    // Zpětná kompatibilita: staré households.dashboard_layout.pool (jeden objekt,
+    // bez name/id) migruje app.js na pole s jednou položkou - normalizePool tady
+    // dostane i objekt bez id/name a doplní je.
+    function normalizePools(value) {
+      const rows = Array.isArray(value) ? value : [];
+      const seen = new Set();
+      return rows.map((row, index) => normalizePool(row, index)).map((pool) => {
+        let id = pool.id;
+        while (seen.has(id)) id = `pool-${uid()}`;
+        seen.add(id);
+        return { ...pool, id };
+      });
+    }
+
+    function getPools() {
+      return normalizePools(getState().pools);
+    }
+
+    function getActivePool(pools = getPools()) {
+      if (!pools.length) return null;
+      return pools.find((pool) => pool.id === activePoolId) || pools[0];
+    }
+
+    function poolVolumeM3(pool) {
+      if (!pool) return 0;
+      const item = normalizePool(pool);
       if (item.shape === 'custom') return decimalValue(item.volumeM3);
       const depth = decimalValue(item.depth);
       if (depth <= 0) return 0;
@@ -114,8 +148,9 @@
       return `${number.toLocaleString('cs-CZ')} g`;
     }
 
-    function poolPhDose(pool = normalizePoolState(getState().pool)) {
-      const item = normalizePoolState(pool);
+    function poolPhDose(pool) {
+      if (!pool) return { status: 'missing', label: 'Doplň rozměry a pH', grams: 0, delta: 0 };
+      const item = normalizePool(pool);
       const current = decimalValue(item.ph);
       const target = decimalValue(item.targetPh) || 7.2;
       const volume = poolVolumeM3(item);
@@ -263,16 +298,29 @@
         `;
       }
       return `
-        ${field(pool.shape === 'oval' ? 'Délka m' : 'Délka m', 'length', 'number', 'např. 6', true, pool.length || '')}
-        ${field(pool.shape === 'oval' ? 'Šířka m' : 'Šířka m', 'width', 'number', 'např. 3', true, pool.width || '')}
+        ${field('Délka m', 'length', 'number', 'např. 6', true, pool.length || '')}
+        ${field('Šířka m', 'width', 'number', 'např. 3', true, pool.width || '')}
         ${field('Průměrná hloubka m', 'depth', 'number', 'např. 1,2', true, pool.depth || '')}
       `;
     }
 
-    function renderPoolAddForm(pool) {
+    function renderPoolSwitcher(pools, activePool) {
+      if (!pools.length) return '';
+      return `
+        <div class="pool-switcher" data-no-swipe>
+          ${pools.map((pool) => `
+            <button class="pool-switcher-chip ${activePool && pool.id === activePool.id ? 'active' : ''}" type="button" data-action="pool-select" data-id="${escapeHtml(pool.id)}">${escapeHtml(pool.name)}</button>
+          `).join('')}
+          <button class="pool-switcher-chip pool-switcher-add" type="button" data-action="pool-add">+ Nový bazén</button>
+        </div>
+      `;
+    }
+
+    function renderPoolAddForm(pool, exists = true) {
       return `
         <form data-form="pool-settings" class="compact-form pool-form">
           <div class="form-grid two">
+            ${field('Název bazénu', 'name', 'text', 'např. Zahradní bazén', true, pool.name || '')}
             ${selectField('Tvar bazénu', 'shape', SHAPE_OPTIONS, pool.shape)}
             ${renderDimensionFields(pool)}
             ${field('Datum měření', 'measurementDate', 'date', '', false, todayISO())}
@@ -283,13 +331,28 @@
             ${field('Poznámka', 'note', 'text', 'např. po dešti / chlorování', false, pool.note || '')}
           </div>
           <div class="inline-note compact-note">Dávkování je orientační. Vždy ho porovnej s etiketou konkrétního pH+ / pH- přípravku. Uložení se zaznamená i jako nové měření, pokud se pH/teplota/datum liší od posledního záznamu.</div>
-          <div class="form-actions"><button class="primary-btn" type="submit">Uložit bazén / měření</button></div>
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">${exists ? 'Uložit bazén / měření' : 'Založit bazén'}</button>
+            ${exists ? `<button class="danger-btn" type="button" data-action="pool-delete" data-id="${escapeHtml(pool.id)}">Smazat tento bazén</button>` : ''}
+          </div>
         </form>
       `;
     }
 
     function renderPool() {
-      const pool = normalizePoolState(getState().pool || {});
+      const pools = getPools();
+      const pool = getActivePool(pools);
+      if (!pool) {
+        if (getModuleTab('pool', 'overview') === 'add') {
+          return `
+            <section class="card desktop-span-2 pool-panel">
+              <div class="card-header"><div><h2>Nový bazén</h2><p>Zadej rozměry a cílové pH, uložením se bazén založí.</p></div></div>
+              ${renderPoolAddForm(normalizePool({}), false)}
+            </section>
+          `;
+        }
+        return renderEmptyCta({ icon: '🏊', title: 'Zatím žádný bazén', text: 'Založ bazén, nastav rozměry a cílové pH, ať se dá počítat objem vody a dávkování.', nav: 'pool', tab: 'add', label: 'Založit bazén' });
+      }
       const volume = poolVolumeM3(pool);
       const dose = poolPhDose(pool);
       const tone = dose.status === 'ok' ? 'good' : dose.status === 'missing' ? 'warn' : 'bad';
@@ -301,7 +364,8 @@
       ], 'overview');
       return `
         <section class="card desktop-span-2 pool-panel">
-          <div class="card-header"><div><h2>Stav vody</h2><p>Objem vody, poslední pH a orientační dávka pH přípravku.</p></div><span class="badge">${formatVolume(volume)}</span></div>
+          <div class="card-header"><div><h2>${escapeHtml(pool.name)}</h2><p>Objem vody, poslední pH a orientační dávka pH přípravku.</p></div><span class="badge">${formatVolume(volume)}</span></div>
+          ${renderPoolSwitcher(pools, pool)}
           ${tabs}
           <div class="module-tabbed pool-tab-${escapeHtml(activeTab)}" data-tab-area="pool">
             ${activeTab === 'add' ? renderPoolAddForm(pool) : `
@@ -320,16 +384,66 @@
       `;
     }
 
+    function persistPools(pools) {
+      getState().pools = pools;
+      touchState();
+      saveState();
+      if (cloudReady()) {
+        cloudSaveHouseholdUiSettings(false).catch((error) => console.warn('Cloud sync (bazén) na pozadí selhal', error));
+      }
+    }
+
+    function addPool() {
+      const pools = getPools();
+      const pool = normalizePool({ name: `Bazén ${pools.length + 1}` }, pools.length);
+      persistPools([...pools, pool]);
+      activePoolId = pool.id;
+      setModuleTab('pool', 'add');
+      render();
+      showToast('Nový bazén přidán, doplň rozměry a pH');
+    }
+
+    function previewShape(shape) {
+      const pools = getPools();
+      const active = getActivePool(pools);
+      if (!active) return;
+      const updated = normalizePool({ ...active, shape });
+      getState().pools = pools.map((pool) => (pool.id === active.id ? updated : pool));
+      render();
+    }
+
+    function selectPool(id) {
+      const pools = getPools();
+      if (!pools.some((pool) => pool.id === id)) return;
+      activePoolId = id;
+      render();
+    }
+
+    function deletePool(id) {
+      const pools = getPools();
+      const target = pools.find((pool) => pool.id === id);
+      if (!target) return;
+      if (!confirm(`Smazat bazén „${target.name}“${target.measurements.length ? ` včetně ${target.measurements.length} měření` : ''}?`)) return;
+      const next = pools.filter((pool) => pool.id !== id);
+      if (activePoolId === id) activePoolId = next[0]?.id || '';
+      persistPools(next);
+      setModuleTab('pool', 'overview');
+      render();
+      showToast('Bazén smazán');
+    }
+
     async function savePoolFromForm(data) {
-      const current = normalizePoolState(getState().pool || {});
+      const pools = getPools();
+      const current = getActivePool(pools) || normalizePool({}, pools.length);
       // Formulář "Nové měření" nechává pH/teplotu prázdné (nepředvyplňuje se stará
       // hodnota) - když je uživatel nevyplní, zůstává aktuální pH/teplota bazénu
       // beze změny (nesmaže se na prázdno) a žádné nové měření se nezaznamená.
       const typedPh = normalizeText(data.ph);
       const typedWaterTempC = normalizeText(data.waterTempC);
-      const next = normalizePoolState({
+      const next = normalizePool({
         ...current,
         ...data,
+        name: normalizeText(data.name) || current.name,
         ph: typedPh === '' ? current.ph : data.ph,
         waterTempC: typedWaterTempC === '' ? current.waterTempC : data.waterTempC,
         updatedAt: new Date().toISOString()
@@ -345,24 +459,28 @@
       } else {
         next.measurements = normalizePoolMeasurements(current.measurements || []);
       }
-      getState().pool = next;
-      touchState();
-      saveState({ immediate: true });
+      const exists = pools.some((pool) => pool.id === current.id);
+      const nextPools = exists ? pools.map((pool) => (pool.id === current.id ? next : pool)) : [...pools, next];
+      activePoolId = next.id;
+      persistPools(nextPools);
       render();
       showToast('Bazén uložen');
-      if (cloudReady()) {
-        cloudSaveHouseholdUiSettings(false).catch((error) => console.warn('Cloud sync (bazén) na pozadí selhal', error));
-      }
     }
 
     return {
-      normalizePoolState,
-      normalizePoolMeasurements,
+      normalizePool,
+      normalizePools,
+      getPools,
+      getActivePool,
       poolVolumeM3,
       formatPoolVolume: formatVolume,
       poolPhDose,
       renderPool,
-      savePoolFromForm
+      savePoolFromForm,
+      addPool,
+      selectPool,
+      deletePool,
+      previewShape
     };
   }
 
