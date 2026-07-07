@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_397';
-  const APP_BUILD = 397;
+  const APP_VERSION = 'Domácnost+ v.0.1_399';
+  const APP_BUILD = 399;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -9260,10 +9260,22 @@
       const meterStatsMap = new Map(meters.map((meter) => [meter.id, readingMeterStats(meter, consumptionRows)]));
       const lastMonthMap = new Map();
       consumptionRows.forEach((row) => { if (!lastMonthMap.has(row.meterId)) lastMonthMap.set(row.meterId, row); });
+      // U větší domácnosti s víc měřidly (elektřina + plyn + voda dohromady)
+      // býval tenhle přehled jedna dlouhá stránka se všemi kartami pod sebou.
+      // Rozdělení podle typu měřidla + collapse na všechny kromě první skupiny
+      // zkrátí výchozí pohled, ale nic neschová natrvalo (jde rozkliknout).
+      const meterTypeGroups = READING_TYPE_OPTIONS
+        .map(([type, label]) => ({ type, label, meta: readingTypeMeta(type), list: meters.filter((meter) => meter.type === type) }))
+        .filter((group) => group.list.length);
       content = `
         <section class="card desktop-span-2 readings-panel panel-overview">
           <div class="card-header"><div><h2>Přehled měřidel</h2><p>Elektřina, plyn a voda v jednom přehledu. U dvoutarifní elektřiny se v souhrnu počítá T1 + T2 dohromady, detail tarifů zůstává vidět v textu.</p></div><span class="badge ${cloudReady() ? 'good' : ''}">${cloudReady() ? 'cloud domácnost' : 'lokálně'}</span></div>
-          ${meters.length ? `<div class="readings-meter-grid">${meters.map((meter) => renderReadingMeterCard(meter, { context: 'overview', stats: meterStatsMap.get(meter.id), lastMonth: lastMonthMap.get(meter.id), consumptionRows })).join('')}</div>` : renderEmpty('Zatím žádné měřidlo. Přidání je v záložce Měřidla nahoře.')}
+          ${meters.length ? meterTypeGroups.map((group, index) => `
+            <details class="compact-edit-details readings-type-group" data-details-key="readings-type-${group.type}" ${isDetailsOpen(`readings-type-${group.type}`, index === 0) ? 'open' : ''}>
+              <summary><span>${escapeHtml(group.meta.icon)} ${escapeHtml(group.label)}</span><em>${group.list.length} měřidel</em></summary>
+              <div class="readings-meter-grid">${group.list.map((meter) => renderReadingMeterCard(meter, { context: 'overview', stats: meterStatsMap.get(meter.id), lastMonth: lastMonthMap.get(meter.id), consumptionRows })).join('')}</div>
+            </details>
+          `).join('') : renderEmpty('Zatím žádné měřidlo. Přidání je v záložce Měřidla nahoře.')}
         </section>
 
         <section class="card readings-panel panel-overview">
@@ -18152,28 +18164,39 @@
       const nextModule = nav.dataset.nav === 'homecare'
         ? ({ hdo: 'hdo', waste: 'waste', tasks: 'tasks', warranties: 'warranties', 'polish-holidays': 'polishHolidays' }[legacyTargetTab] || 'hdo')
         : nav.dataset.nav;
-      const nextBottomNavId = getActiveBottomNavId(nextModule);
-      pendingNavMotion = navFromBottomBar && previousBottomNavId !== nextBottomNavId
-        ? { fromId: previousBottomNavId, toId: nextBottomNavId, fromLeft: navSnapshot?.left, fromWidth: navSnapshot?.width, createdAt: Date.now(), consumed: false }
-        : null;
-      activeOverview = null;
-      activeModule = nextModule;
-      if (nav.dataset.targetTab && nav.dataset.nav !== 'homecare') {
-        moduleTabs = { ...(moduleTabs || {}), [activeModule]: nav.dataset.targetTab };
-        localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
-      } else if (activeModule === 'calendar') {
-        // Kalendář se má vždy otevřít na Přehledu, i když byl naposledy
-        // otevřený na Historii/Zdrojích - jinak si appka pamatuje starou
-        // záložku a uživatel čeká, že uvidí měsíční přehled.
-        moduleTabs = { ...(moduleTabs || {}), calendar: 'overview' };
-        localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      try {
+        const nextBottomNavId = getActiveBottomNavId(nextModule);
+        pendingNavMotion = navFromBottomBar && previousBottomNavId !== nextBottomNavId
+          ? { fromId: previousBottomNavId, toId: nextBottomNavId, fromLeft: navSnapshot?.left, fromWidth: navSnapshot?.width, createdAt: Date.now(), consumed: false }
+          : null;
+        activeOverview = null;
+        activeModule = nextModule;
+        if (nav.dataset.targetTab && nav.dataset.nav !== 'homecare') {
+          moduleTabs = { ...(moduleTabs || {}), [activeModule]: nav.dataset.targetTab };
+          localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+        } else if (activeModule === 'calendar') {
+          // Kalendář se má vždy otevřít na Přehledu, i když byl naposledy
+          // otevřený na Historii/Zdrojích - jinak si appka pamatuje starou
+          // záložku a uživatel čeká, že uvidí měsíční přehled.
+          moduleTabs = { ...(moduleTabs || {}), calendar: 'overview' };
+          localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+        }
+        render();
+        if (activeModule === 'shopping') scheduleShoppingCloudRefresh('shopping-open', { delay: 700, minAgeMs: 8000, quietMs: 700 });
+        scheduleLazyCloudLoadForModule(activeModule, { delay: 3400, quietMs: 2200 });
+        keepActiveNavCentered('smooth');
+        keepActiveSectionTabsCentered('smooth');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (error) {
+        // render() může spadnout uprostřed přepisu app.innerHTML (chyba v
+        // renderu konkrétního modulu) - bez tohohle by klik na navigaci
+        // vypadal, že appka "nic nedělá" (viditelně zaseklá, žádná chybová
+        // hláška). Zkusíme fallback na Domů, ať se appka dá aspoň odněkud ovládat dál.
+        console.error('Přepnutí modulu selhalo', nextModule, error);
+        activeModule = 'home';
+        try { render(); } catch {}
+        showToast('Přepnutí se nepovedlo, zkus to prosím znovu.');
       }
-      render();
-      if (activeModule === 'shopping') scheduleShoppingCloudRefresh('shopping-open', { delay: 700, minAgeMs: 8000, quietMs: 700 });
-      scheduleLazyCloudLoadForModule(activeModule, { delay: 3400, quietMs: 2200 });
-      keepActiveNavCentered('smooth');
-      keepActiveSectionTabsCentered('smooth');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -18419,6 +18442,24 @@
   window.addEventListener('pagehide', () => {
     flushStatePersist();
   });
+
+  // Page Lifecycle API - na iOS/Safari podporováno jen částečně, ale když
+  // existuje, dá o "appka jde do pozadí" vědět dřív/spolehlivěji než
+  // visibilitychange/pagehide (které se u samostatné (home-screen) PWA na
+  // iOS občas vůbec nespustí, než systém proces ukončí).
+  window.addEventListener('freeze', () => {
+    flushStatePersist();
+  });
+
+  // Záložní pojistka nezávislá na tom, jestli výše uvedené eventy vůbec
+  // proběhnou: i kdyby appku systém ukončil bez varování, rozepsaná
+  // (debounced) změna je maximálně pár vteřin stará, ne z předchozího
+  // spuštění. Bez tohohle mohl na iOS zůstat lokální state i IndexedDB
+  // záloha "o krok pozadu" a další start pak čekal na cloud round-trip
+  // místo okamžitého načtení z paměti zařízení.
+  setInterval(() => {
+    if (!document.hidden && statePersistDirty) flushStatePersist();
+  }, 5000);
 
   window.addEventListener('focus', () => {
     scheduleShoppingCloudRefresh('app-focus', { delay: 700, minAgeMs: 15000 });
