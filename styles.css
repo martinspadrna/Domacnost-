@@ -4611,9 +4611,16 @@ textarea {
   to { transform: translateX(350%); }
 }
 
+/* v0.1_402 - translateY tady dřív dávalo main.js aktivní transform po celou
+   dobu animace. Jakýkoli transform na rodiči ale vytvoří nový containing
+   block pro position:fixed potomky - takže "Upravit domů" sheet (fixed na
+   celou obrazovku) se místo celé obrazovky ořízl jen na box <main>, dokud
+   animace běžela (a na některých zařízeních/rendererech se dokázala
+   "zaseknout" na první snímek a zůstat tak). Necháváme jen opacity fade,
+   ten containing block neovlivňuje. */
 @keyframes appContentFadeSlide {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .app-frame main {

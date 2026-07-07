@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_401';
-  const APP_BUILD = 401;
+  const APP_VERSION = 'Domácnost+ v.0.1_402';
+  const APP_BUILD = 402;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -541,7 +541,7 @@
 
   const HOME_WIDGET_DEFS = [
     { id: 'weather', label: 'Počasí' },
-    { id: 'today', label: 'Dnešní přehled (HDO, svoz, událost)' },
+    { id: 'today', label: 'Dnešní přehled (volitelné panely)' },
     { id: 'finance', label: 'Finance' },
     { id: 'timeline', label: 'Nadcházející' },
     { id: 'quick', label: 'Rychlé akce' },
@@ -549,9 +549,38 @@
     { id: 'waste', label: 'Odpad' },
     { id: 'garage', label: 'Garáž' },
     { id: 'contracts', label: 'Smlouvy' },
-    { id: 'tasks', label: 'Úkoly' }
+    { id: 'tasks', label: 'Úkoly' },
+    { id: 'hdo', label: 'HDO' },
+    { id: 'readings', label: 'Odečty' },
+    { id: 'warranties', label: 'Záruky' },
+    { id: 'pool', label: 'Bazén' },
+    { id: 'vape', label: 'Vape' },
+    { id: 'subscriptions', label: 'Předplatné' },
+    { id: 'polishHolidays', label: 'Svátky PL' }
   ];
   const DEFAULT_HOME_WIDGET_IDS = ['weather', 'today', 'finance', 'timeline', 'quick'];
+
+  // Katalog badge pro widget "Dnešní přehled" - každý modul, který ještě
+  // nemá vlastní velký widget (počasí/finance mají svůj), může nabídnout
+  // jeden malý panel se stavem. Uživatel si vybere až HOME_TODAY_BADGE_MAX
+  // z nich, aby "Dnešní přehled" nebyl navždy jen HDO/svoz/událost.
+  const HOME_TODAY_BADGE_DEFS = [
+    { id: 'hdo', label: 'HDO', module: 'hdo' },
+    { id: 'waste', label: 'Odpad', module: 'waste' },
+    { id: 'event', label: 'Kalendář', module: 'calendar' },
+    { id: 'shopping', label: 'Nákupy', module: 'shopping' },
+    { id: 'garage', label: 'Garáž', module: 'garage' },
+    { id: 'contracts', label: 'Smlouvy', module: 'contracts' },
+    { id: 'warranties', label: 'Záruky', module: 'warranties' },
+    { id: 'readings', label: 'Odečty', module: 'readings' },
+    { id: 'subscriptions', label: 'Předplatné', module: 'subscriptions' },
+    { id: 'pool', label: 'Bazén', module: 'pool' },
+    { id: 'vape', label: 'Vape', module: 'vape' },
+    { id: 'polishHolidays', label: 'Svátky PL', module: 'polishHolidays' },
+    { id: 'tasks', label: 'Úkoly', module: 'tasks' }
+  ];
+  const DEFAULT_HOME_TODAY_BADGE_IDS = ['hdo', 'waste', 'event'];
+  const HOME_TODAY_BADGE_MAX = 6;
 
   const HOME_QUICK_ACTION_DEFS = [
     { id: 'expense', label: 'Výdaj', icon: '➕', nav: 'finance', tab: 'add' },
@@ -561,7 +590,12 @@
     { id: 'task', label: 'Úkol', icon: '✅', nav: 'tasks', tab: '' },
     { id: 'fuel', label: 'Tankování', icon: '⛽', nav: 'garage', tab: 'stats' },
     { id: 'service', label: 'Servis', icon: '🔧', nav: 'garage', tab: 'detail' },
-    { id: 'warranty', label: 'Záruka', icon: '🧾', nav: 'warranties', tab: '' }
+    { id: 'warranty', label: 'Záruka', icon: '🧾', nav: 'warranties', tab: '' },
+    { id: 'event', label: 'Událost', icon: '📅', nav: 'calendar', tab: 'add' },
+    { id: 'waste', label: 'Svoz', icon: '♻️', nav: 'waste', tab: 'add' },
+    { id: 'contract', label: 'Smlouva', icon: '📄', nav: 'contracts', tab: 'add' },
+    { id: 'pool', label: 'Měření bazénu', icon: '🏊', nav: 'pool', tab: 'add' },
+    { id: 'vape', label: 'Vape položka', icon: '💨', nav: 'vape', tab: 'items' }
   ];
   const DEFAULT_HOME_QUICK_ACTION_IDS = ['expense', 'shopping', 'note', 'reading'];
   const POLISH_SHOP_HOLIDAY_API = 'https://date.nager.at/api/v3/PublicHolidays';
@@ -752,6 +786,7 @@
       homeHeroItems: [...DEFAULT_HOME_HERO_IDS],
       homeWidgets: [...DEFAULT_HOME_WIDGET_IDS],
       homeQuickActionIds: [...DEFAULT_HOME_QUICK_ACTION_IDS],
+      homeTodayBadgeIds: [...DEFAULT_HOME_TODAY_BADGE_IDS],
       vehicleIconColors: {},
       vehicleServicePlans: {},
       profileUiSettings: {},
@@ -1646,6 +1681,7 @@
       homeHeroItems: previousAppBuild && previousAppBuild < 74 ? [] : normalizeHomeHeroIds(migrated.settings?.homeHeroItems),
       homeWidgets: normalizeHomeWidgetIds(migrated.settings?.homeWidgets),
       homeQuickActionIds: normalizeHomeQuickActionIds(migrated.settings?.homeQuickActionIds),
+      homeTodayBadgeIds: normalizeHomeTodayBadgeIds(migrated.settings?.homeTodayBadgeIds),
       vehicleIconColors: normalizeVehicleIconColorMap(migrated.settings?.vehicleIconColors),
       vehicleServicePlans: normalizeVehicleServicePlanMap(migrated.settings?.vehicleServicePlans),
       profileUiSettings: normalizeProfileUiSettingsMap(migrated.settings?.profileUiSettings, migrated.enabledModules)
@@ -2267,6 +2303,16 @@
     const result = [];
     requested.forEach((id) => {
       if (allowed.has(id) && !result.includes(id)) result.push(id);
+    });
+    return result;
+  }
+
+  function normalizeHomeTodayBadgeIds(value) {
+    const allowed = new Set(HOME_TODAY_BADGE_DEFS.map((item) => item.id));
+    const requested = Array.isArray(value) ? value : DEFAULT_HOME_TODAY_BADGE_IDS;
+    const result = [];
+    requested.forEach((id) => {
+      if (allowed.has(id) && !result.includes(id) && result.length < HOME_TODAY_BADGE_MAX) result.push(id);
     });
     return result;
   }
@@ -3740,6 +3786,13 @@
         ${hasWidget('garage') ? renderHomeGarageWidget(ctx) : ''}
         ${hasWidget('contracts') ? renderHomeContractsWidget(ctx) : ''}
         ${hasWidget('tasks') ? renderHomeTasksWidget(ctx) : ''}
+        ${hasWidget('hdo') ? renderHomeHdoWidget(ctx) : ''}
+        ${hasWidget('readings') ? renderHomeReadingsWidget(ctx) : ''}
+        ${hasWidget('warranties') ? renderHomeWarrantiesWidget(ctx) : ''}
+        ${hasWidget('pool') ? renderHomePoolWidget(ctx) : ''}
+        ${hasWidget('vape') ? renderHomeVapeWidget(ctx) : ''}
+        ${hasWidget('subscriptions') ? renderHomeSubscriptionsWidget(ctx) : ''}
+        ${hasWidget('polishHolidays') ? renderHomePolishHolidaysWidget(ctx) : ''}
         ${hasWidget('quick') ? renderHomeQuickWidget(ctx) : ''}
         <div class="home-dash-sync"><span aria-hidden="true">⟳</span> Poslední aktualizace: ${escapeHtml(lastSync)}</div>
       </div>
@@ -3769,36 +3822,101 @@
     `;
   }
 
+  function computeHomeTodayBadge(id, ctx) {
+    switch (id) {
+      case 'hdo':
+        return {
+          label: ctx.hdo.active ? 'Nízký tarif' : 'HDO',
+          value: ctx.hdo.active ? (ctx.hdo.activeEnd ? `do ${ctx.hdo.activeEnd}` : (ctx.hdo.label || 'aktivní')) : (ctx.hdo.nextStart ? `od ${ctx.hdo.nextStart}` : 'nenastaveno'),
+          tone: 'good',
+          overview: 'hdo'
+        };
+      case 'waste': {
+        const next = ctx.wasteSoon[0] || ctx.wasteNext;
+        return {
+          label: `Svoz${next ? ` · ${next.type || ''}` : ''}`,
+          value: next ? dueBadge(next.days) : 'nic naplánováno',
+          tone: 'warn',
+          overview: 'waste'
+        };
+      }
+      case 'event': {
+        const nextEvent = ctx.todayEvents[0] || ctx.upcomingEvents[0];
+        return { label: 'Událost', value: nextEvent ? nextEvent.title : 'žádná', tone: '', nav: 'calendar', tab: 'overview' };
+      }
+      case 'shopping': {
+        const count = ctx.openShopping.length;
+        return { label: 'Nákupy', value: count ? `${count} položek` : 'hotovo', tone: count ? 'warn' : 'good', overview: 'shopping' };
+      }
+      case 'garage': {
+        const alert = (ctx.vehicleAlerts || [])[0];
+        return { label: 'Garáž', value: alert ? alert.title : 'v pořádku', tone: alert ? 'warn' : 'good', overview: 'garage' };
+      }
+      case 'contracts': {
+        const contract = (ctx.urgentContracts || [])[0];
+        return {
+          label: 'Smlouvy',
+          value: contract ? `${contract.name} · ${dueBadge(contract.days)}` : 'v pořádku',
+          tone: contract ? (contract.days < 0 ? 'bad' : 'warn') : 'good',
+          overview: 'contracts'
+        };
+      }
+      case 'warranties': {
+        const warranty = sortedWarranties().find((item) => !['archived', 'done'].includes(item.status));
+        const days = warranty ? daysUntil(warranty.warrantyUntil) : null;
+        return {
+          label: 'Záruky',
+          value: warranty ? `${warranty.name || warranty.itemName || 'Záruka'} · ${days === null ? 'bez data' : dueBadge(days)}` : 'žádná záruka',
+          tone: days !== null && days < 0 ? 'bad' : days !== null && days <= 30 ? 'warn' : 'good',
+          nav: 'warranties',
+          tab: ''
+        };
+      }
+      case 'readings': {
+        const meters = readingsMeters();
+        const due = meters.filter((meter) => !readingMeterHasCompleteMonthEntry(meter)).length;
+        return { label: 'Odečty', value: due ? `${due} čeká` : 'hotovo', tone: due ? 'warn' : 'good', nav: 'readings', tab: 'entry' };
+      }
+      case 'subscriptions': {
+        const summary = subscriptionMonthSummary();
+        return { label: 'Předplatné', value: formatCurrency(summary.expectedReturn), tone: '', nav: 'subscriptions', tab: 'overview' };
+      }
+      case 'pool': {
+        const pools = getPoolModule().getPools();
+        const pool = pools[0];
+        if (!pool) return { label: 'Bazén', value: 'nenastaveno', tone: '', nav: 'pool', tab: 'add' };
+        const dose = getPoolModule().poolPhDose(pool);
+        return {
+          label: 'Bazén',
+          value: dose.status === 'ok' ? 'pH OK' : dose.status === 'missing' ? 'doplň pH' : dose.label,
+          tone: dose.status === 'ok' ? 'good' : dose.status === 'missing' ? '' : 'warn',
+          nav: 'pool',
+          tab: ''
+        };
+      }
+      case 'vape': {
+        const count = Array.isArray(state.vape?.items) ? state.vape.items.length : 0;
+        return { label: 'Vape', value: `${count} položek`, tone: '', nav: 'vape', tab: '' };
+      }
+      case 'polishHolidays':
+        return { label: 'Svátky PL', value: polishShopHeroMetric(), tone: '', nav: 'polishHolidays', tab: '' };
+      case 'tasks': {
+        const count = (ctx.openTasks || []).length;
+        return { label: 'Úkoly', value: count ? `${count} otevřených` : 'hotovo', tone: count ? 'warn' : 'good', overview: 'tasks' };
+      }
+      default:
+        return null;
+    }
+  }
+
   function renderHomeTodayWidget(ctx) {
     const hasModule = (id) => ctx.visibleModules.some((module) => module.id === id);
-    const cards = [];
-    if (hasModule('hdo')) {
-      cards.push({
-        label: ctx.hdo.active ? 'Nízký tarif' : 'HDO',
-        value: ctx.hdo.active ? (ctx.hdo.activeEnd ? `do ${ctx.hdo.activeEnd}` : (ctx.hdo.label || 'aktivní')) : (ctx.hdo.nextStart ? `od ${ctx.hdo.nextStart}` : 'nenastaveno'),
-        tone: 'good',
-        overview: 'hdo'
-      });
-    }
-    if (hasModule('waste')) {
-      const next = ctx.wasteSoon[0] || ctx.wasteNext;
-      cards.push({
-        label: `Svoz${next ? ` · ${next.type || ''}` : ''}`,
-        value: next ? dueBadge(next.days) : 'nic naplánováno',
-        tone: 'warn',
-        overview: 'waste'
-      });
-    }
-    if (hasModule('calendar')) {
-      const nextEvent = ctx.todayEvents[0] || ctx.upcomingEvents[0];
-      cards.push({
-        label: 'Událost',
-        value: nextEvent ? nextEvent.title : 'žádná',
-        tone: '',
-        nav: 'calendar',
-        tab: 'overview'
-      });
-    }
+    const badgeIds = normalizeHomeTodayBadgeIds(state.settings?.homeTodayBadgeIds);
+    const defs = new Map(HOME_TODAY_BADGE_DEFS.map((item) => [item.id, item]));
+    const cards = badgeIds
+      .filter((id) => hasModule(defs.get(id)?.module))
+      .map((id) => computeHomeTodayBadge(id, ctx))
+      .filter(Boolean);
     if (!cards.length) return '';
     return `
       <div class="home-today-grid">
@@ -3917,6 +4035,63 @@
     return renderHomeMiniListWidget('Úkoly', items, 'Žádné otevřené úkoly.');
   }
 
+  function renderHomeHdoWidget(ctx) {
+    if (!ctx.visibleModules.some((module) => module.id === 'hdo')) return '';
+    const items = ctx.hdo.active
+      ? [{ icon: '💡', title: 'Nízký tarif běží', meta: ctx.hdo.activeEnd ? `Do ${ctx.hdo.activeEnd}` : (ctx.hdo.message || ''), overview: 'hdo' }]
+      : ctx.hdo.nextStart ? [{ icon: '💡', title: 'Nízký tarif brzy', meta: `Od ${ctx.hdo.nextStart}`, overview: 'hdo' }] : [];
+    return renderHomeMiniListWidget('HDO', items, 'HDO okna nejsou nastavená.');
+  }
+
+  function renderHomeReadingsWidget(ctx) {
+    if (!ctx.visibleModules.some((module) => module.id === 'readings')) return '';
+    const items = readingsMeters()
+      .filter((meter) => !readingMeterHasCompleteMonthEntry(meter))
+      .slice(0, 5)
+      .map((meter) => ({ icon: '📊', title: meter.name, meta: 'Tento měsíc chybí odečet', nav: 'readings', tab: 'entry' }));
+    return renderHomeMiniListWidget('Odečty', items, 'Všechny odečty tento měsíc hotové.');
+  }
+
+  function renderHomeWarrantiesWidget(ctx) {
+    if (!ctx.visibleModules.some((module) => module.id === 'warranties')) return '';
+    const items = sortedWarranties()
+      .filter((item) => !['archived', 'done'].includes(item.status))
+      .slice(0, 5)
+      .map((item) => ({ icon: '🧾', title: item.name || item.itemName || 'Záruka', meta: `Konec záruky ${formatDate(item.warrantyUntil)}`, nav: 'warranties', tab: '' }));
+    return renderHomeMiniListWidget('Záruky', items, 'Žádné aktivní záruky.');
+  }
+
+  function renderHomePoolWidget(ctx) {
+    if (!ctx.visibleModules.some((module) => module.id === 'pool')) return '';
+    const items = getPoolModule().getPools().slice(0, 5).map((pool) => {
+      const dose = getPoolModule().poolPhDose(pool);
+      const meta = dose.status === 'ok' ? 'pH je v cíli' : dose.status === 'missing' ? 'Doplň rozměry/pH' : dose.label;
+      return { icon: '🏊', title: pool.name, meta, nav: 'pool', tab: '' };
+    });
+    return renderHomeMiniListWidget('Bazén', items, 'Zatím žádný bazén.');
+  }
+
+  function renderHomeVapeWidget(ctx) {
+    if (!ctx.visibleModules.some((module) => module.id === 'vape')) return '';
+    const count = Array.isArray(state.vape?.items) ? state.vape.items.length : 0;
+    const items = count ? [{ icon: '💨', title: `${count} položek v ceníku`, meta: '', nav: 'vape', tab: '' }] : [];
+    return renderHomeMiniListWidget('Vape', items, 'Zatím žádné položky v ceníku.');
+  }
+
+  function renderHomeSubscriptionsWidget(ctx) {
+    if (!ctx.visibleModules.some((module) => module.id === 'subscriptions')) return '';
+    const summary = subscriptionMonthSummary();
+    const items = [{ icon: '🎬', title: `Má se vrátit ${formatCurrency(summary.expectedReturn)}`, meta: 'Tento měsíc', nav: 'subscriptions', tab: 'overview' }];
+    return renderHomeMiniListWidget('Předplatné', items, '');
+  }
+
+  function renderHomePolishHolidaysWidget(ctx) {
+    if (!ctx.visibleModules.some((module) => module.id === 'polishHolidays')) return '';
+    const next = nextPolishShopHomeEntry();
+    const items = next ? [{ icon: '🇵🇱', title: next.name, meta: formatDate(next.date), overview: 'polishHolidays' }] : [];
+    return renderHomeMiniListWidget('Svátky PL', items, 'Žádné známé zavření.');
+  }
+
   function renderHomeQuickWidget(ctx) {
     const hasModule = (id) => ctx.visibleModules.some((module) => module.id === id);
     const activeIds = normalizeHomeQuickActionIds(state.settings?.homeQuickActionIds);
@@ -3942,6 +4117,8 @@
   function renderHomeEditSheet() {
     const activeWidgets = new Set(normalizeHomeWidgetIds(state.settings?.homeWidgets));
     const activeActions = new Set(normalizeHomeQuickActionIds(state.settings?.homeQuickActionIds));
+    const activeBadges = normalizeHomeTodayBadgeIds(state.settings?.homeTodayBadgeIds);
+    const activeBadgeSet = new Set(activeBadges);
     return `
       <div class="home-edit-backdrop" data-home-edit-backdrop>
         <div class="home-edit-sheet" data-no-swipe>
@@ -3956,6 +4133,18 @@
               return `
                 <button type="button" class="switch-row ${isOn ? 'active' : ''}" role="switch" aria-checked="${isOn ? 'true' : 'false'}" data-action="toggle-home-widget" data-id="${escapeHtml(widget.id)}">
                   <span class="switch-row-copy"><strong>${escapeHtml(widget.label)}</strong></span>
+                  <span class="ios-switch" aria-hidden="true"><span></span></span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+          <div class="home-edit-subtitle">Panely v "Dnešní přehled" (${activeBadges.length}/${HOME_TODAY_BADGE_MAX})</div>
+          <div class="switch-list home-edit-badge-list">
+            ${HOME_TODAY_BADGE_DEFS.map((badge) => {
+              const isOn = activeBadgeSet.has(badge.id);
+              return `
+                <button type="button" class="switch-row ${isOn ? 'active' : ''}" role="switch" aria-checked="${isOn ? 'true' : 'false'}" data-action="toggle-home-today-badge" data-id="${escapeHtml(badge.id)}">
+                  <span class="switch-row-copy"><strong>${escapeHtml(badge.label)}</strong></span>
                   <span class="ios-switch" aria-hidden="true"><span></span></span>
                 </button>
               `;
@@ -3980,10 +4169,13 @@
   }
 
   function buildHomeSoonItems(ctx) {
+    // Hledání jede přes buildHomeAttentionItems napříč všemi moduly (kalendář,
+    // úkoly, smlouvy, auto, záruky, odečty, svátky PL...), ale na Domů se z
+    // toho ukážou jen 3 nejnaléhavější, ať widget nezabírá zbytečně místo.
     const excludedOverviews = new Set(['hdo', 'waste', 'pool', 'finance', 'shopping']);
     return buildHomeAttentionItems(ctx)
       .filter((item) => !excludedOverviews.has(item.overview))
-      .slice(0, 5);
+      .slice(0, 3);
   }
 
   function buildHomeAttentionItems(ctx) {
@@ -4109,6 +4301,56 @@
         overview: 'hdo',
         rank: 6
       });
+    }
+
+    // "Nadcházející" má hledat opravdu všude, ne jen v kalendáři/úkolech/smlouvách/
+    // autě - i konec záruky, chybějící odečet nebo nejbližší polský svátek/zavíračka
+    // jsou věci, na které je fajr dostat upozornění bez nutnosti chodit do modulu.
+    sortedWarranties()
+      .filter((item) => !['archived', 'done'].includes(item.status))
+      .slice(0, 3)
+      .forEach((warranty) => {
+        const days = daysUntil(warranty.warrantyUntil);
+        if (days === null || days > 45) return;
+        add({
+          icon: '🧾',
+          title: `Záruka: ${warranty.name || warranty.itemName || 'položka'}`,
+          meta: `Konec záruky ${formatDate(warranty.warrantyUntil)}`,
+          badge: dueBadge(days),
+          tone: days < 0 ? 'bad' : days <= 14 ? 'warn' : '',
+          overview: 'warranties',
+          rank: days < 0 ? 0 : days <= 14 ? 1 : 3
+        });
+      });
+
+    const dueMeters = readingsMeters().filter((meter) => !readingMeterHasCompleteMonthEntry(meter));
+    if (dueMeters.length) {
+      add({
+        icon: '📊',
+        title: dueMeters.length === 1 ? `Odečet: ${dueMeters[0].name}` : `${dueMeters.length} měřidel čeká na odečet`,
+        meta: 'Tento měsíc ještě chybí odečet',
+        badge: `${dueMeters.length}`,
+        tone: '',
+        nav: 'readings',
+        tab: 'entry',
+        rank: 4
+      });
+    }
+
+    const nextPolishClosure = nextPolishShopHomeEntry();
+    if (nextPolishClosure) {
+      const days = daysUntil(nextPolishClosure.date);
+      if (days !== null && days <= 14) {
+        add({
+          icon: '🇵🇱',
+          title: nextPolishClosure.name,
+          meta: `Polský obchod · ${formatDate(nextPolishClosure.date)}`,
+          badge: dueBadge(days),
+          tone: days <= 2 ? 'warn' : '',
+          overview: 'polishHolidays',
+          rank: days <= 2 ? 2 : 4
+        });
+      }
     }
 
     return rows
@@ -16024,6 +16266,10 @@
       toggleHomeQuickAction(button.dataset.id);
       return;
     }
+    if (action === 'toggle-home-today-badge') {
+      toggleHomeTodayBadge(button.dataset.id);
+      return;
+    }
     if (action === 'dashboard-reset-widgets') {
       resetDashboardWidgets();
       return;
@@ -17882,6 +18128,23 @@
     if (selected.has(actionId)) selected.delete(actionId);
     else selected.add(actionId);
     state.settings.homeQuickActionIds = normalizeHomeQuickActionIds([...selected]);
+    persistProfileUiSettings(false);
+    render();
+  }
+
+  function toggleHomeTodayBadge(badgeId) {
+    if (!HOME_TODAY_BADGE_DEFS.some((item) => item.id === badgeId)) return;
+    const selected = new Set(normalizeHomeTodayBadgeIds(state.settings?.homeTodayBadgeIds));
+    if (selected.has(badgeId)) {
+      selected.delete(badgeId);
+    } else {
+      if (selected.size >= HOME_TODAY_BADGE_MAX) {
+        showToast(`Maximum je ${HOME_TODAY_BADGE_MAX} panelů`);
+        return;
+      }
+      selected.add(badgeId);
+    }
+    state.settings.homeTodayBadgeIds = normalizeHomeTodayBadgeIds([...selected]);
     persistProfileUiSettings(false);
     render();
   }
