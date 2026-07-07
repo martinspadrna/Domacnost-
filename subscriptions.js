@@ -270,17 +270,19 @@
 
     function subscriptionFilteredPeopleRows(summary, filter = subscriptionPaymentFilter()) {
       const rows = Array.isArray(summary?.peopleRows) ? summary.peopleRows : [];
-      if (filter === 'debtors' || filter === 'unpaid') return rows.filter((row) => row.debt > 0);
+      // Dlužník je i ten, kdo má zaplacený aktuální měsíc, ale visí mu starší
+      // měsíc - proto kumulativní dluh, ne jen dluh zvoleného měsíce.
+      if (filter === 'debtors' || filter === 'unpaid') return rows.filter((row) => row.cumulativeDebt > 0);
       return rows;
     }
 
     function subscriptionVisibleShares(service, month = subscriptionSelectedMonth(), filter = subscriptionPaymentFilter(), summary = subscriptionMonthSummary(month)) {
       const shares = Array.isArray(service?.shares) ? service.shares : [];
       if (filter === 'all') return shares;
-      const debtPersonIds = new Set((summary.peopleRows || []).filter((row) => row.debt > 0).map((row) => row.person.id));
+      const debtPersonIds = new Set((summary.peopleRows || []).filter((row) => row.cumulativeDebt > 0).map((row) => row.person.id));
       return shares.filter((share) => {
         if (filter === 'debtors' && !debtPersonIds.has(share.personId)) return false;
-        return !subscriptionIsPaid(share.personId, service.id, month);
+        return !subscriptionIsPaid(share.personId, service.id, month) || subscriptionCumulativeDebt(share.personId, service.id, month) > 0;
       });
     }
 
@@ -385,10 +387,12 @@
         .filter((service) => service.enabled !== false)
         .map((service) => {
           const shares = Array.isArray(service.shares) ? service.shares : [];
-          const matchingShares = shares.filter((share) => (!personId || share.personId === personId) && share.personId && !subscriptionIsPaid(share.personId, service.id, month));
+          // Kumulativní dluh: nabídnout i člověka, který má aktuální měsíc
+          // zaplacený, ale visí mu starší měsíc.
+          const matchingShares = shares.filter((share) => (!personId || share.personId === personId) && share.personId && subscriptionCumulativeDebt(share.personId, service.id, month) > 0);
           if (!matchingShares.length) return null;
           const labelPerson = personId ? subscriptionPersonName(personId) : `${matchingShares.length} nezapl.`;
-          const amount = personId ? subscriptionRemainingAmount(personId, service.id, month) : matchingShares.reduce((sum, share) => sum + subscriptionRemainingAmount(share.personId, service.id, month), 0);
+          const amount = personId ? subscriptionCumulativeDebt(personId, service.id, month) : matchingShares.reduce((sum, share) => sum + subscriptionCumulativeDebt(share.personId, service.id, month), 0);
           return [service.id, `${service.name} · ${labelPerson} · zbývá ${formatCurrency(amount)}`];
         })
         .filter(Boolean);
@@ -401,10 +405,10 @@
         const services = getSubscriptionServices().filter((service) => service.enabled !== false && (!subscriptionId || service.id === subscriptionId));
         const unpaidServices = services.filter((service) => {
           const share = (service.shares || []).find((entry) => entry.personId === person.id);
-          return share && decimalValue(share.amount) > 0 && !subscriptionIsPaid(person.id, service.id, month);
+          return share && decimalValue(share.amount) > 0 && subscriptionCumulativeDebt(person.id, service.id, month) > 0;
         });
         if (!unpaidServices.length) return null;
-        const amount = unpaidServices.reduce((sum, service) => sum + subscriptionRemainingAmount(person.id, service.id, month), 0);
+        const amount = unpaidServices.reduce((sum, service) => sum + subscriptionCumulativeDebt(person.id, service.id, month), 0);
         const serviceLabel = subscriptionId ? subscriptionLabelById(subscriptionId) : `${unpaidServices.length} služ.`;
         return [person.id, `${person.name} · ${serviceLabel} · zbývá ${formatCurrency(amount)}`];
       }).filter(Boolean);
@@ -481,6 +485,41 @@
       return subscriptionDirectPaidAmount(personId, subscriptionId, month) + subscriptionCreditBeforeMonth(personId, subscriptionId, month);
     }
 
+    function subscriptionFirstPaymentIndex(personId, subscriptionId) {
+      const payments = getSubscriptionPayments().filter((payment) => payment.personId === personId && payment.subscriptionId === subscriptionId && decimalValue(payment.amount) > 0);
+      if (!payments.length) return null;
+      return Math.min(...payments.map((payment) => subscriptionMonthToIndex(payment.month)));
+    }
+
+    // Kumulativní dluh: kolik člověk za službu dluží CELKEM ke zvolenému měsíci,
+    // ne jen za ten jeden měsíc. "Používá službu" se počítá od měsíce jeho první
+    // zadané platby - od té doby má každý měsíc platit podíl. Bez jediné platby
+    // se počítá jen zvolený měsíc (žádný zpětný dluh za dobu před připojením).
+    // Přeplatky se započítávají automaticky (suma všech plateb do zvoleného
+    // měsíce včetně proti sumě očekávaných podílů).
+    function subscriptionCumulativeDebt(personId, subscriptionId, month = subscriptionSelectedMonth()) {
+      const expected = subscriptionShareAmountForPerson(personId, subscriptionId);
+      if (!(expected > 0)) return 0;
+      const targetIndex = subscriptionMonthToIndex(month);
+      const firstIndex = subscriptionFirstPaymentIndex(personId, subscriptionId);
+      const startIndex = firstIndex === null ? targetIndex : Math.min(firstIndex, targetIndex);
+      // Pojistka proti rozbitému datu platby (překlep roku apod.) - dluh se
+      // nepočítá dál než 10 let zpátky.
+      const monthsCount = Math.min(120, targetIndex - startIndex + 1);
+      const totalExpected = expected * monthsCount;
+      const totalPaid = getSubscriptionPayments()
+        .filter((payment) => payment.personId === personId && payment.subscriptionId === subscriptionId && subscriptionMonthToIndex(payment.month) <= targetIndex)
+        .reduce((sum, payment) => sum + decimalValue(payment.amount), 0);
+      return Math.max(0, totalExpected - totalPaid);
+    }
+
+    function subscriptionCumulativeDebtMonths(personId, subscriptionId, month = subscriptionSelectedMonth()) {
+      const expected = subscriptionShareAmountForPerson(personId, subscriptionId);
+      const debt = subscriptionCumulativeDebt(personId, subscriptionId, month);
+      if (!(expected > 0) || !(debt > 0)) return 0;
+      return Math.ceil(debt / expected);
+    }
+
     function subscriptionPaidAmount(personId, subscriptionId, month = subscriptionSelectedMonth()) {
       return subscriptionEffectivePaidAmount(personId, subscriptionId, month);
     }
@@ -522,6 +561,9 @@
               directPaid,
               creditApplied,
               debt: Math.max(0, expected - paidForService),
+              // Celkový dluh napříč měsíci (od první platby), ne jen zvolený měsíc.
+              cumulativeDebt: subscriptionCumulativeDebt(person.id, service.id, month),
+              debtMonths: subscriptionCumulativeDebtMonths(person.id, service.id, month),
               overpaid: Math.max(0, directPaid + subscriptionCreditBeforeMonth(person.id, service.id, month) - expected)
             };
           })
@@ -531,14 +573,16 @@
         const paidForMonth = serviceRows.reduce((sum, row) => sum + row.paid, 0);
         const creditApplied = serviceRows.reduce((sum, row) => sum + row.creditApplied, 0);
         const debt = serviceRows.reduce((sum, row) => sum + row.debt, 0);
+        const cumulativeDebt = serviceRows.reduce((sum, row) => sum + row.cumulativeDebt, 0);
         const serviceOverpaid = serviceRows.reduce((sum, row) => sum + row.overpaid, 0);
         const extraPayments = Math.max(0, directPaidForMonth - serviceRows.reduce((sum, row) => sum + row.directPaid, 0));
         const future = futurePayments.filter((payment) => payment.personId === person.id).reduce((sum, payment) => sum + decimalValue(payment.amount), 0);
-        return { person, expected, paid: paidForMonth, directPaid: directPaidForMonth, creditApplied, debt, overpaid: serviceOverpaid + extraPayments, future, serviceRows };
+        return { person, expected, paid: paidForMonth, directPaid: directPaidForMonth, creditApplied, debt, cumulativeDebt, overpaid: serviceOverpaid + extraPayments, future, serviceRows };
       });
       const owed = peopleRows.reduce((sum, row) => sum + decimalValue(row.debt), 0);
+      const owedTotal = peopleRows.reduce((sum, row) => sum + decimalValue(row.cumulativeDebt), 0);
       const creditsApplied = peopleRows.reduce((sum, row) => sum + decimalValue(row.creditApplied), 0);
-      return { month, services, people, payments, totalCost, expectedReturn, paid, creditsApplied, owed, netCost, maxSlots, usedSlots, freeSlots, fullServices, futurePayments, peopleRows };
+      return { month, services, people, payments, totalCost, expectedReturn, paid, creditsApplied, owed, owedTotal, netCost, maxSlots, usedSlots, freeSlots, fullServices, futurePayments, peopleRows };
     }
 
     function renderSubscriptions() {
@@ -662,7 +706,7 @@
 
       return wrap(`
           <section class="card desktop-span-2 subscription-panel panel-overview">
-            <div class="card-header"><div><h2>Tento měsíc</h2><p>Streamovací služby, sdílení s lidmi a měsíční kontrola, kdo už zaplatil.</p></div><span class="badge ${summary.owed ? 'warn' : 'good'}">${summary.owed ? `${formatCurrency(summary.owed)} chybí` : 'srovnáno'}</span></div>
+            <div class="card-header"><div><h2>Tento měsíc</h2><p>Streamovací služby, sdílení s lidmi a měsíční kontrola, kdo už zaplatil.</p></div><span class="badge ${summary.owedTotal ? 'warn' : 'good'}">${summary.owedTotal ? `${formatCurrency(summary.owedTotal)} chybí` : 'srovnáno'}</span></div>
             ${cloudReady() ? `<div class="inline-note compact-note subscription-cloud-status"><span class="badge ${getState().subscriptionsCloud?.pendingAt ? 'warn' : getState().subscriptionsCloud?.loadedAt ? 'good' : ''}">${getState().subscriptionsCloud?.pendingAt ? 'automaticky ukládám' : getState().subscriptionsCloud?.loadedAt ? `cloud ${escapeHtml(formatDateTime(getState().subscriptionsCloud.loadedAt))}` : 'cloud aktivní'}</span><span>Předplatné se synchronizuje automaticky přes Supabase domácnost. Není potřeba nic ručně odesílat ani načítat.</span></div>` : `<div class="inline-note compact-note">Po přihlášení a napojení domácnosti na cloud se Předplatné začne synchronizovat automaticky.</div>`}
             <form data-form="subscription-month-filter" class="compact-filter-form subscription-month-form">
               <div class="form-grid two">
@@ -695,14 +739,16 @@
     }
 
     function renderSubscriptionPersonSummary(row) {
-      const tone = row.debt ? 'warn' : row.expected ? 'good' : '';
-      const debtLabel = row.debt ? `⚠️ dluží ${formatCurrency(row.debt)}` : row.expected ? 'zaplaceno / OK' : 'bez služeb';
-      const tag = row.debt ? 'button' : 'div';
-      const attrs = row.debt ? `type="button" data-action="subscription-debtor-info" data-id="${escapeHtml(row.person.id)}"` : '';
+      const owes = row.cumulativeDebt > 0;
+      const tone = owes ? 'warn' : row.expected ? 'good' : '';
+      const olderDebt = Math.max(0, row.cumulativeDebt - row.debt);
+      const debtLabel = owes ? `⚠️ dluží ${formatCurrency(row.cumulativeDebt)}` : row.expected ? 'zaplaceno / OK' : 'bez služeb';
+      const tag = owes ? 'button' : 'div';
+      const attrs = owes ? `type="button" data-action="subscription-debtor-info" data-id="${escapeHtml(row.person.id)}"` : '';
       return `
-        <${tag} class="item compact-item subscription-person-summary ${row.debt ? 'subscription-debt subscription-debt-prominent subscription-debtor-row' : ''}" ${attrs}>
-          <div class="item-top"><div class="item-title">${row.debt ? `<strong class="subscription-debtor-name">${escapeHtml(row.person.name)}</strong>` : escapeHtml(row.person.name)}</div><span class="badge ${tone} ${row.debt ? 'subscription-debt-badge' : ''}">${debtLabel}</span></div>
-          <div class="item-meta">Má platit ${formatCurrency(row.expected)} · započteno ${formatCurrency(row.paid)}${row.directPaid !== row.paid ? ` · z toho platba ${formatCurrency(row.directPaid)} + kredit ${formatCurrency(row.creditApplied)}` : ''}${row.overpaid ? ` · přeplatek dál ${formatCurrency(row.overpaid)}` : ''}${row.future ? ` · předplaceno ${formatCurrency(row.future)}` : ''}</div>
+        <${tag} class="item compact-item subscription-person-summary ${owes ? 'subscription-debt subscription-debt-prominent subscription-debtor-row' : ''}" ${attrs}>
+          <div class="item-top"><div class="item-title">${owes ? `<strong class="subscription-debtor-name">${escapeHtml(row.person.name)}</strong>` : escapeHtml(row.person.name)}</div><span class="badge ${tone} ${owes ? 'subscription-debt-badge' : ''}">${debtLabel}</span></div>
+          <div class="item-meta">Má platit ${formatCurrency(row.expected)} · započteno ${formatCurrency(row.paid)}${row.directPaid !== row.paid ? ` · z toho platba ${formatCurrency(row.directPaid)} + kredit ${formatCurrency(row.creditApplied)}` : ''}${olderDebt > 0 ? ` · z toho starší měsíce ${formatCurrency(olderDebt)}` : ''}${row.overpaid ? ` · přeplatek dál ${formatCurrency(row.overpaid)}` : ''}${row.future ? ` · předplaceno ${formatCurrency(row.future)}` : ''}</div>
         </${tag}>`;
     }
 
@@ -723,20 +769,24 @@
       if (!row) return '';
       const month = summary.month;
       const owedServices = subscriptionPersonAssignedServices(row.person.id)
-        .map((service) => ({ service, remaining: subscriptionRemainingAmount(row.person.id, service.id, month) }))
+        .map((service) => ({
+          service,
+          remaining: subscriptionCumulativeDebt(row.person.id, service.id, month),
+          months: subscriptionCumulativeDebtMonths(row.person.id, service.id, month)
+        }))
         .filter((entry) => entry.remaining > 0);
       const paymentDraft = normalizeSubscriptionPaymentDraft(subscriptionPaymentDraft());
       const paymentServiceOptions = subscriptionPaymentServiceOptions(paymentDraft.personId, paymentDraft.month, true);
       const paymentPersonOptions = subscriptionPaymentPersonOptions(paymentDraft.subscriptionId, paymentDraft.month, true);
       const paymentDefaultAmount = paymentDraft.subscriptionId && paymentDraft.personId
-        ? subscriptionRemainingAmount(paymentDraft.personId, paymentDraft.subscriptionId, paymentDraft.month)
-        : row.debt;
+        ? subscriptionCumulativeDebt(paymentDraft.personId, paymentDraft.subscriptionId, paymentDraft.month)
+        : row.cumulativeDebt;
       return `
         <div class="app-modal-backdrop" data-modal-backdrop role="presentation">
           <section class="app-modal subscription-debtor-modal" role="dialog" aria-modal="true" aria-labelledby="subscription-debtor-modal-title">
             <div class="app-modal-head">
               <div>
-                <span class="badge warn">dluží ${formatCurrency(row.debt)}</span>
+                <span class="badge warn">dluží celkem ${formatCurrency(row.cumulativeDebt)}</span>
                 <h2 id="subscription-debtor-modal-title">${escapeHtml(row.person.name)}</h2>
                 <p>Za co dluží a rovnou zápis platby.</p>
               </div>
@@ -745,9 +795,9 @@
             ${owedServices.length ? `<div class="list compact-list subscription-debtor-service-list">${owedServices.map((entry) => `
               <div class="item compact-item">
                 <div class="item-top"><div class="item-title">${escapeHtml(entry.service.name)}</div><span class="badge warn">${formatCurrency(entry.remaining)}</span></div>
-                <div class="item-meta">Měsíční podíl ${formatCurrency(subscriptionShareAmountForPerson(row.person.id, entry.service.id))} · ${escapeHtml(financeMonthLabel(month))}</div>
+                <div class="item-meta">Měsíční podíl ${formatCurrency(subscriptionShareAmountForPerson(row.person.id, entry.service.id))}${entry.months > 1 ? ` · dluh za ${entry.months} měsíce${entry.months >= 5 ? 'ů' : ''}` : ` · ${escapeHtml(financeMonthLabel(month))}`}</div>
               </div>
-            `).join('')}</div>` : '<div class="empty">Za tenhle měsíc už nic nechybí.</div>'}
+            `).join('')}</div>` : '<div class="empty">Nic nechybí.</div>'}
             <form data-form="add-subscription-payment" class="compact-form subscription-smart-payment-form">
               <div class="form-grid two">
                 ${selectField('Služba', 'subscriptionId', paymentServiceOptions, paymentDraft.subscriptionId)}
@@ -768,13 +818,13 @@
       const availableCount = subscriptionPersonAvailableServiceCount(row.person.id);
       const canAssign = availableCount > 0;
       return `
-        <details class="item compact-item subscription-person-detail-card ${row.debt ? 'subscription-debt' : ''}">
+        <details class="item compact-item subscription-person-detail-card ${row.cumulativeDebt ? 'subscription-debt' : ''}">
           <summary class="subscription-person-summary-toggle">
             <span class="subscription-person-summary-main">
               <strong>${escapeHtml(row.person.name)}</strong>
               <em>${services.length ? `${services.length} služeb · ${formatCurrency(row.expected)} / měsíc` : 'bez přiřazené služby'}</em>
             </span>
-            <span class="badge ${row.debt ? 'warn' : row.expected ? 'good' : ''}">${row.debt ? `dluží ${formatCurrency(row.debt)}` : row.expected ? 'OK' : 'prázdné'}</span>
+            <span class="badge ${row.cumulativeDebt ? 'warn' : row.expected ? 'good' : ''}">${row.cumulativeDebt ? `dluží ${formatCurrency(row.cumulativeDebt)}` : row.expected ? 'OK' : 'prázdné'}</span>
           </summary>
           <div class="subscription-person-detail-body">
             <div class="item-meta">${services.length ? services.map((service) => {

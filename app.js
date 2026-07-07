@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_406';
-  const APP_BUILD = 406;
+  const APP_VERSION = 'Domácnost+ v.0.1_408';
+  const APP_BUILD = 408;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -497,10 +497,11 @@
   const BOTTOM_NAV_CUSTOM_MAX = 3;
   const MORE_MODULE = { id: 'more', label: 'Vše', icon: '▦' };
   const FILE_DB_NAME = 'homeWebOfflineFiles.v1';
-  const FILE_DB_VERSION = 3;
+  const FILE_DB_VERSION = 4;
   const FILE_STORE_CONTRACTS = 'contractFiles';
   const FILE_STORE_WARRANTIES = 'warrantyFiles';
   const FILE_STORE_APP_STATE = 'appState';
+  const FILE_STORE_LOYALTY_PHOTOS = 'loyaltyPhotos';
   const APP_STATE_IDB_KEY = 'primary';
   const WARRANTY_FILE_MAX_BYTES = 15 * 1024 * 1024;
   const WARRANTY_IMAGE_MAX_DIMENSION = 1800;
@@ -4732,14 +4733,14 @@
     }
     if (id === 'subscriptions') {
       const summary = subscriptionMonthSummary();
-      const debtRows = summary.peopleRows.filter((row) => row.debt > 0).sort((a, b) => b.debt - a.debt);
+      const debtRows = summary.peopleRows.filter((row) => row.cumulativeDebt > 0).sort((a, b) => b.cumulativeDebt - a.cumulativeDebt);
       const currentDebt = homeCycleItem(debtRows, 45);
       const servicesWithShares = summary.services.filter((service) => (service.shares || []).length);
       const serviceSlide = homeCycleItem(servicesWithShares, 45);
-      const debtChips = debtRows.map((row) => `${row.person.name}: ${formatCurrency(row.debt)}`);
-      const slides = summary.owed ? [
-        { metric: formatCurrency(summary.owed), text: 'ještě chybí', detail: `${debtRows.length} ${debtRows.length === 1 ? 'člověk nemá doplaceno' : debtRows.length < 5 ? 'lidi nemají doplaceno' : 'lidí nemá doplaceno'}` },
-        currentDebt ? { metric: formatCurrency(currentDebt.debt), text: `${currentDebt.person.name} dluží`, detail: `má platit ${formatCurrency(currentDebt.expected)}` } : null,
+      const debtChips = debtRows.map((row) => `${row.person.name}: ${formatCurrency(row.cumulativeDebt)}`);
+      const slides = summary.owedTotal ? [
+        { metric: formatCurrency(summary.owedTotal), text: 'ještě chybí', detail: `${debtRows.length} ${debtRows.length === 1 ? 'člověk nemá doplaceno' : debtRows.length < 5 ? 'lidi nemají doplaceno' : 'lidí nemá doplaceno'}` },
+        currentDebt ? { metric: formatCurrency(currentDebt.cumulativeDebt), text: `${currentDebt.person.name} dluží`, detail: `má platit ${formatCurrency(currentDebt.expected)}` } : null,
         { metric: formatCurrency(summary.expectedReturn), text: 'má se vrátit', detail: `${formatCurrency(summary.paid)} už zaplaceno` },
         serviceSlide ? { metric: subscriptionCapacityLabel(serviceSlide).replace(' míst', ''), text: serviceSlide.name, detail: `${formatCurrency(serviceSlide.price)} / měsíc` } : null
       ].filter(Boolean) : [
@@ -4747,7 +4748,7 @@
         serviceSlide ? { metric: subscriptionCapacityLabel(serviceSlide).replace(' míst', ''), text: serviceSlide.name, detail: `${formatCurrency(serviceSlide.price)} / měsíc` } : null
       ].filter(Boolean);
       const slide = homeCycleItem(slides, 45) || slides[0];
-      return { ...base, metric: slide.metric, text: slide.text, detail: slide.detail, chips: debtChips, extraRows: debtChips, live: slides.length > 1 || debtRows.length > 1, tone: summary.owed ? 'warn' : summary.expectedReturn ? 'good' : 'neutral' };
+      return { ...base, metric: slide.metric, text: slide.text, detail: slide.detail, chips: debtChips, extraRows: debtChips, live: slides.length > 1 || debtRows.length > 1, tone: summary.owedTotal ? 'warn' : summary.expectedReturn ? 'good' : 'neutral' };
     }
     return base;
   }
@@ -7098,7 +7099,9 @@
         card.cardNumber = normalizeText(detected.code);
         card.codeType = normalizeLoyaltyDetectedFormat(detected.format || card.codeType || 'barcode');
       }
-      card.photoDataUrl = dataUrl;
+      // Fotka jde do IndexedDB, ne do state - viz putStoredLoyaltyPhoto.
+      putStoredLoyaltyPhoto(card.id, dataUrl).catch((error) => console.warn('Loyalty photo IDB save failed', error));
+      card.photoDataUrl = '';
       card.updatedAt = new Date().toISOString();
       markLoyaltyCardsPending();
       state.loyaltyCards = normalizeLoyaltyCards(state.loyaltyCards || []);
@@ -7166,11 +7169,13 @@
       codeType: draft.codeType || scan.detectedFormat,
       color: draft.color,
       note: draft.note,
-      photoDataUrl: scan.dataUrl || '',
+      photoDataUrl: '',
       favorite: false,
       householdId: currentHouseholdId(),
       profileId: currentProfileId()
     });
+    // Fotka ze skenu jde do IndexedDB pod id nové karty, ne do state.
+    if (scan.dataUrl) putStoredLoyaltyPhoto(card.id, scan.dataUrl).catch((error) => console.warn('Loyalty photo IDB save failed', error));
     if (!card.store || !card.cardNumber) return showToast('Zadej obchod a číslo karty');
     state.loyaltyCards = normalizeLoyaltyCards(state.loyaltyCards || []);
     const existing = state.loyaltyCards.find((item) => loyaltyCardKey(item) === loyaltyCardKey(card));
@@ -7239,6 +7244,7 @@
     const card = state.loyaltyCards?.find((item) => item.id === id);
     if (!card) return;
     if (!window.confirm(`Smazat věrnostní kartu ${card.store || 'obchodu'}?`)) return;
+    deleteStoredLoyaltyPhoto(id).catch(() => {});
     state.loyaltyCards = (state.loyaltyCards || []).filter((item) => item.id !== id);
     if (loyaltyCardEditId === id) loyaltyCardEditId = '';
     if (loyaltyCardPreviewId === id) loyaltyCardPreviewId = '';
@@ -12682,6 +12688,9 @@
         if (!db.objectStoreNames.contains(FILE_STORE_APP_STATE)) {
           db.createObjectStore(FILE_STORE_APP_STATE, { keyPath: 'id' });
         }
+        if (!db.objectStoreNames.contains(FILE_STORE_LOYALTY_PHOTOS)) {
+          db.createObjectStore(FILE_STORE_LOYALTY_PHOTOS, { keyPath: 'id' });
+        }
       };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error || new Error('IndexedDB chyba'));
@@ -12772,6 +12781,59 @@
 
   async function deleteStoredWarrantyFile(id) {
     await withNamedFileStore(FILE_STORE_WARRANTIES, 'readwrite', (store) => store.delete(id));
+  }
+
+  // Fotky věrnostních karet: slouží jen k jednorázovému rozpoznání kódu při
+  // skenování, nikde v UI se nezobrazují. Držíme je proto lokálně v IndexedDB
+  // (velká kvóta, přežije restart) místo base64 ve state - v localStorage,
+  // households.dashboard_layout a warm-start downloadu dělaly ~1,4 MB mrtvé
+  // váhy a byly hlavní iOS quota riziko.
+  async function putStoredLoyaltyPhoto(id, dataUrl) {
+    if (!id || !dataUrl) return;
+    await withNamedFileStore(FILE_STORE_LOYALTY_PHOTOS, 'readwrite', (store) => store.put({ id, dataUrl, savedAt: Date.now() }));
+  }
+
+  async function deleteStoredLoyaltyPhoto(id) {
+    if (!id) return;
+    await withNamedFileStore(FILE_STORE_LOYALTY_PHOTOS, 'readwrite', (store) => store.delete(id));
+  }
+
+  // Jednorázová migrace + průběžná pojistka: fotky nalezené ve state (staré
+  // karty, nebo karty došlé z cloudu ze zařízení se starší verzí appky) se
+  // přesunou do IndexedDB a ze state/cloud layoutu zmizí. updatedAt se posune,
+  // aby při merge s cloudem vyhrála odlehčená verze karty.
+  let loyaltyPhotoOffloadTimer = 0;
+  async function offloadLoyaltyPhotosToIdb() {
+    const cards = Array.isArray(state.loyaltyCards) ? state.loyaltyCards : [];
+    const withPhoto = cards.filter((card) => normalizeText(card.photoDataUrl));
+    if (!withPhoto.length) return false;
+    for (const card of withPhoto) {
+      try {
+        await putStoredLoyaltyPhoto(card.id, card.photoDataUrl);
+        card.photoDataUrl = '';
+        card.updatedAt = new Date().toISOString();
+      } catch (error) {
+        console.warn('Loyalty photo offload failed', card.id, error);
+      }
+    }
+    const movedCount = withPhoto.filter((card) => !card.photoDataUrl).length;
+    if (!movedCount) return false;
+    state.loyaltyCards = normalizeLoyaltyCards(cards);
+    markLoyaltyCardsPending();
+    touchState();
+    saveState();
+    requestRender();
+    syncLoyaltyCardsToCloud().catch((error) => console.warn('Loyalty photo offload cloud sync failed', error));
+    console.info(`Domácnost+ fotky karet přesunuté do IndexedDB: ${movedCount}`);
+    return true;
+  }
+
+  function scheduleLoyaltyPhotoOffload() {
+    if (loyaltyPhotoOffloadTimer) return;
+    loyaltyPhotoOffloadTimer = runWhenUiQuiet(() => {
+      loyaltyPhotoOffloadTimer = 0;
+      offloadLoyaltyPhotosToIdb().catch((error) => console.warn('Loyalty photo offload failed', error));
+    }, { delay: 1800, quietMs: 1200, timeout: 12000 });
   }
 
   // Durable app-state backup in IndexedDB. localStorage on iOS has a small (~5 MB)
@@ -17632,6 +17694,9 @@
     if (Array.isArray(layout.loyaltyCards)) {
       state.loyaltyCards = mergeLoyaltyCards(state.loyaltyCards || [], layout.loyaltyCards);
       state.loyaltyCardsCloud = { ...(state.loyaltyCardsCloud || {}), loadedAt: new Date().toISOString(), pendingAt: '' };
+      // Karty z cloudu (nebo ze zařízení se starší verzí) můžou nést base64
+      // fotky - přesunou se na pozadí do IndexedDB a layout se odlehčí.
+      scheduleLoyaltyPhotoOffload();
     }
     if (layout.visualSettings && typeof layout.visualSettings === 'object') {
       if (mergeVisualSettings(layout.visualSettings)) saveLocalVisualSettings();
@@ -18908,7 +18973,8 @@
   // household config but Home showed empty panels because the module arrays were gone.
   hydrateStateFromIndexedDb()
     .then((restored) => { if (restored) requestRender(); })
-    .catch((error) => console.warn('IndexedDB hydrate failed', error));
+    .catch((error) => console.warn('IndexedDB hydrate failed', error))
+    .finally(() => scheduleLoyaltyPhotoOffload());
 
   } catch (error) {
     console.error('Domácnost+ boot failed', error);
