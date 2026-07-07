@@ -439,6 +439,7 @@
                 <div class="kpi ${tone}"><strong>${dose.status === 'ok' ? 'OK' : dose.status === 'missing' ? 'doplň' : formatGrams(dose.grams)}</strong><span>${escapeHtml(dose.label)}</span></div>
               </div>
               ${pool.updatedAt ? `<div class="inline-note compact-note">Naposledy upraveno ${escapeHtml(formatDateTime(pool.updatedAt))}${latest?.date ? ` · měření ${escapeHtml(formatDate(latest.date))}` : ''}${pool.note ? ` · ${escapeHtml(pool.note)}` : ''}</div>` : ''}
+              <div class="form-actions compact-actions pool-overview-actions"><button class="ghost-btn danger-btn" type="button" data-action="pool-delete" data-id="${escapeHtml(pool.id)}">Smazat tento bazén</button></div>
             `}
           </div>
         </section>

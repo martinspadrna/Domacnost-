@@ -34,6 +34,8 @@
     let pendingServiceWorker = null;
     let pwaUpdateAvailable = false;
     let pwaControllerReloadTriggered = false;
+    let userRequestedUpdate = false;
+    let lastAutoUpdateCheckAt = 0;
 
     function getPwaStatus() {
       const standalone = window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone === true;
@@ -358,12 +360,34 @@
     }
 
     function applyAppUpdate() {
+      // Explicitní tap uživatele na "Aktualizovat" - na rozdíl od tichého
+      // controllerchange na pozadí je bezpečné (a chtěné) rovnou obnovit
+      // stránku, i na iOS. Timeout je pojistka pro standalone iOS PWA, kde
+      // controllerchange po skipWaiting někdy vůbec nedorazí.
+      userRequestedUpdate = true;
       if (pendingServiceWorker) {
         pendingServiceWorker.postMessage({ type: 'SKIP_WAITING' });
-        showToast('Aktualizuji aplikaci');
+        showToast('Aktualizuji aplikaci…');
+        window.setTimeout(() => {
+          if (pwaControllerReloadTriggered) return;
+          pwaControllerReloadTriggered = true;
+          window.location.reload();
+        }, 2500);
         return;
       }
       window.location.reload();
+    }
+
+    // Volané při návratu appky do popředí (tab/PWA zpátky viditelná, focus).
+    // Bez tohohle appka čekala jen na to, až si prohlížeč sám (throttlovaně,
+    // klidně jednou za den) všimne nového sw.js - a uživatel tak reálně
+    // dostával novou verzi, jen když appku po dlouhé době znovu nainstaloval.
+    function maybeCheckForAppUpdateOnResume() {
+      if (!serviceWorkerRegistration || pwaUpdateAvailable) return;
+      const now = Date.now();
+      if (now - lastAutoUpdateCheckAt < 60000) return;
+      lastAutoUpdateCheckAt = now;
+      checkForAppUpdate(false);
     }
 
     function setupInstallAndUpdateFlow() {
@@ -384,6 +408,11 @@
         showToast('Domácnost+ je nainstalovaná');
         render();
       });
+
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) maybeCheckForAppUpdateOnResume();
+      });
+      window.addEventListener('focus', maybeCheckForAppUpdateOnResume);
     }
 
     function registerServiceWorker() {
@@ -407,13 +436,17 @@
         // těsně za sebou (nebo mezitím, co běží reload), pustíme reload
         // jen jednou.
         if (pwaControllerReloadTriggered) return;
-        pwaControllerReloadTriggered = true;
-        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        // iOS: tichý reload na pozadí (bez tapu uživatele) je riskantní ve
+        // standalone PWA, proto tam jen ukážeme trvalý pruh k dotažení.
+        // Když si to ale uživatel právě odklikl přes "Aktualizovat"
+        // (userRequestedUpdate), je to jeho gesto - obnovit rovnou.
+        if (/iPhone|iPad|iPod/.test(navigator.userAgent) && !userRequestedUpdate) {
           pwaUpdateAvailable = true;
           render();
-          showToast('Nová verze k dispozici – obnovte stránku');
+          showToast('Nová verze k dispozici – klepni na Aktualizovat');
           return;
         }
+        pwaControllerReloadTriggered = true;
         window.location.reload();
       });
     }

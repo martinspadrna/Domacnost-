@@ -720,6 +720,37 @@ button.kpi.kpi-clickable {
   overflow: visible;
 }
 
+.pwa-update-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: max(10px, env(safe-area-inset-top, 0px));
+  z-index: 1900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(217, 119, 6, 0.4);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 251, 235, 0.98), rgba(254, 243, 199, 0.94));
+  box-shadow: var(--shadow);
+  font-weight: 800;
+  text-align: center;
+}
+
+[data-theme="dark"] .pwa-update-banner {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(113, 63, 18, 0.55));
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fef3c7;
+}
+
+.pwa-update-banner .primary-btn {
+  padding: 6px 14px;
+}
+
 .copy-toast {
   position: fixed;
   right: 16px;
@@ -9414,16 +9445,17 @@ form[data-busy="true"] button[type="submit"] {
 .subscription-overview-service-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 9px;
   min-width: 0;
 }
 
-.subscription-overview-service-head strong {
-  flex: 1;
+.subscription-overview-service-name {
+  display: block;
+  margin-top: 8px;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  letter-spacing: -0.02em;
 }
 
 .subscription-overview-service-meta {
@@ -10916,7 +10948,7 @@ form[data-busy="true"] button[type="submit"] {
 [data-theme="dark"] .subscription-payment-head strong,
 [data-theme="dark"] .subscription-pay-row strong,
 [data-theme="dark"] .subscription-person-summary-main strong,
-[data-theme="dark"] .subscription-overview-service-head strong {
+[data-theme="dark"] .subscription-overview-service-name {
   color: #f8fafc !important;
 }
 

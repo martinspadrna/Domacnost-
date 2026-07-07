@@ -699,7 +699,8 @@
         const ownCost = Math.max(0, decimalValue(service.price) - shareTotal);
         return `
           <div class="subscription-overview-service">
-            <div class="subscription-overview-service-head">${renderSubscriptionServiceIcon(service, { size: 'sm' })}<strong>${escapeHtml(service.name)}</strong><span class="badge ${capacity.isFull ? 'warn' : capacity.used ? 'good' : ''}">${capacity.maxMembers ? `${capacity.used}/${capacity.maxMembers}` : `${capacity.used}`}</span></div>
+            <div class="subscription-overview-service-head">${renderSubscriptionServiceIcon(service, { size: 'sm' })}<span class="badge ${capacity.isFull ? 'warn' : capacity.used ? 'good' : ''}">${capacity.maxMembers ? `${capacity.used}/${capacity.maxMembers}` : `${capacity.used}`}</span></div>
+            <strong class="subscription-overview-service-name">${escapeHtml(service.name)}</strong>
             <div class="subscription-overview-service-meta"><span>Cena ${formatCurrency(service.price)}</span><span>Vrací se ${formatCurrency(shareTotal)}</span><span>Tvoje část ${formatCurrency(ownCost)}</span></div>
           </div>`;
       }).join('');
@@ -707,13 +708,6 @@
       return wrap(`
           <section class="card desktop-span-2 subscription-panel panel-overview">
             <div class="card-header"><div><h2>Tento měsíc</h2><p>Streamovací služby, sdílení s lidmi a měsíční kontrola, kdo už zaplatil.</p></div><span class="badge ${summary.owedTotal ? 'warn' : 'good'}">${summary.owedTotal ? `${formatCurrency(summary.owedTotal)} chybí` : 'srovnáno'}</span></div>
-            ${cloudReady() ? `<div class="inline-note compact-note subscription-cloud-status"><span class="badge ${getState().subscriptionsCloud?.pendingAt ? 'warn' : getState().subscriptionsCloud?.loadedAt ? 'good' : ''}">${getState().subscriptionsCloud?.pendingAt ? 'automaticky ukládám' : getState().subscriptionsCloud?.loadedAt ? `cloud ${escapeHtml(formatDateTime(getState().subscriptionsCloud.loadedAt))}` : 'cloud aktivní'}</span><span>Předplatné se synchronizuje automaticky přes Supabase domácnost. Není potřeba nic ručně odesílat ani načítat.</span></div>` : `<div class="inline-note compact-note">Po přihlášení a napojení domácnosti na cloud se Předplatné začne synchronizovat automaticky.</div>`}
-            <form data-form="subscription-month-filter" class="compact-filter-form subscription-month-form">
-              <div class="form-grid two">
-                ${field('Měsíc přehledu', 'month', 'month', '', false, month)}
-                <div class="field"><label>Rychlý posun</label><div class="item-actions"><button class="ghost-btn" type="button" data-action="subscription-month-prev">Předchozí</button><button class="ghost-btn" type="button" data-action="subscription-month-current">Aktuální</button><button class="ghost-btn" type="button" data-action="subscription-month-next">Další</button></div></div>
-              </div>
-            </form>
             <div class="kpi-grid compact-kpi-grid subscription-kpi-grid">
               <div class="kpi"><strong>${formatCurrency(summary.totalCost)}</strong><span>platím já za služby</span></div>
               <div class="kpi"><strong>${formatCurrency(summary.expectedReturn)}</strong><span>má se mi vrátit</span></div>
@@ -721,19 +715,39 @@
               <div class="kpi"><strong>${formatCurrency(summary.netCost)}</strong><span>reálný náklad po rozpočítání</span></div>
               <div class="kpi"><strong>${summary.maxSlots ? `${summary.freeSlots}/${summary.maxSlots}` : '—'}</strong><span>volná místa / celkem</span></div>
             </div>
-            ${services.length ? `<div class="subscription-overview-service-grid">${serviceOverviewCards}</div>` : ''}
-            ${summary.peopleRows.length ? (visiblePeopleRows.length ? `<div class="list compact-list subscription-person-summary-list">${visiblePeopleRows.map(renderSubscriptionPersonSummary).join('')}</div>` : '<div class="empty">Podle filtru není potřeba nic řešit.</div>') : renderEmptyCta({ icon: '👥', title: 'Zatím tu nejsou lidé', text: 'Přidej člověka, se kterým sdílíš Netflix, Disney+, Spotify nebo jinou službu.', nav: 'subscriptions', tab: 'people', label: 'Přidat člověka' })}
+            <details class="action-details compact-edit-details subscription-form-drawer" data-details-key="subscription-overview-month" ${getDetailsOpen('subscription-overview-month') ? 'open' : ''}>
+              <summary><span>Měsíc a synchronizace</span><em>${escapeHtml(financeMonthLabel(month))}</em></summary>
+              ${cloudReady() ? `<div class="inline-note compact-note subscription-cloud-status"><span class="badge ${getState().subscriptionsCloud?.pendingAt ? 'warn' : getState().subscriptionsCloud?.loadedAt ? 'good' : ''}">${getState().subscriptionsCloud?.pendingAt ? 'automaticky ukládám' : getState().subscriptionsCloud?.loadedAt ? `cloud ${escapeHtml(formatDateTime(getState().subscriptionsCloud.loadedAt))}` : 'cloud aktivní'}</span><span>Předplatné se synchronizuje automaticky přes Supabase domácnost. Není potřeba nic ručně odesílat ani načítat.</span></div>` : `<div class="inline-note compact-note">Po přihlášení a napojení domácnosti na cloud se Předplatné začne synchronizovat automaticky.</div>`}
+              <form data-form="subscription-month-filter" class="compact-filter-form subscription-month-form">
+                <div class="form-grid two">
+                  ${field('Měsíc přehledu', 'month', 'month', '', false, month)}
+                  <div class="field"><label>Rychlý posun</label><div class="item-actions"><button class="ghost-btn" type="button" data-action="subscription-month-prev">Předchozí</button><button class="ghost-btn" type="button" data-action="subscription-month-current">Aktuální</button><button class="ghost-btn" type="button" data-action="subscription-month-next">Další</button></div></div>
+                </div>
+              </form>
+            </details>
+            ${services.length ? `
+            <details class="action-details compact-edit-details subscription-form-drawer" data-details-key="subscription-overview-services" ${getDetailsOpen('subscription-overview-services') ? 'open' : ''}>
+              <summary><span>Služby</span><em>${services.length} služeb · náklad ${formatCurrency(summary.totalCost)}</em></summary>
+              <div class="subscription-overview-service-grid">${serviceOverviewCards}</div>
+            </details>` : ''}
+            <details class="action-details compact-edit-details subscription-form-drawer" data-details-key="subscription-overview-people" ${getDetailsOpen('subscription-overview-people', true) ? 'open' : ''}>
+              <summary><span>Lidé a dluhy</span><em>${summary.owedTotal ? `${formatCurrency(summary.owedTotal)} chybí` : 'vše srovnané'}</em></summary>
+              ${summary.peopleRows.length ? (visiblePeopleRows.length ? `<div class="list compact-list subscription-person-summary-list">${visiblePeopleRows.map(renderSubscriptionPersonSummary).join('')}</div>` : '<div class="empty">Podle filtru není potřeba nic řešit.</div>') : renderEmptyCta({ icon: '👥', title: 'Zatím tu nejsou lidé', text: 'Přidej člověka, se kterým sdílíš Netflix, Disney+, Spotify nebo jinou službu.', nav: 'subscriptions', tab: 'people', label: 'Přidat člověka' })}
+            </details>
           </section>
           <section class="card desktop-span-2 subscription-panel panel-overview">
             <div class="card-header"><div><h2>Kontrola plateb</h2><p>Zaškrtni aktuální měsíc u každé služby/osoby. Budoucí platby se berou jako předplaceno.</p></div><span class="badge">${escapeHtml(financeMonthLabel(month))}</span></div>
-            <div class="subscription-filter-row" role="group" aria-label="Filtr předplatného">
-              ${[
-                ['all', 'Vše'],
-                ['unpaid', 'Nezaplacené'],
-                ['debtors', 'Dlužníci']
-              ].map(([id, label]) => `<button class="quick-chip subscription-filter-chip ${paymentFilter === id ? 'active' : ''}" type="button" data-action="subscription-filter" data-filter="${id}">${label}</button>`).join('')}
-            </div>
-            ${services.length ? (visiblePaymentServices.length ? `<div class="subscription-payment-grid">${visiblePaymentServices.map((row) => renderSubscriptionPaymentCard(row.service, month, paymentFilter, summary)).join('')}</div>` : '<div class="empty">V tomhle filtru není nic k zaplacení.</div>') : renderEmptyCta({ icon: '🎬', title: 'Zatím žádná služba', text: 'Přidej předplatné a potom k němu přiřaď lidi.', nav: 'subscriptions', tab: 'services', label: 'Přidat službu' })}
+            <details class="action-details compact-edit-details subscription-form-drawer" data-details-key="subscription-overview-payments" ${getDetailsOpen('subscription-overview-payments') ? 'open' : ''}>
+              <summary><span>Zaškrtávání podle služeb</span><em>${services.length} služeb · filtr ${paymentFilter === 'all' ? 'vše' : paymentFilter === 'unpaid' ? 'nezaplacené' : 'dlužníci'}</em></summary>
+              <div class="subscription-filter-row" role="group" aria-label="Filtr předplatného">
+                ${[
+                  ['all', 'Vše'],
+                  ['unpaid', 'Nezaplacené'],
+                  ['debtors', 'Dlužníci']
+                ].map(([id, label]) => `<button class="quick-chip subscription-filter-chip ${paymentFilter === id ? 'active' : ''}" type="button" data-action="subscription-filter" data-filter="${id}">${label}</button>`).join('')}
+              </div>
+              ${services.length ? (visiblePaymentServices.length ? `<div class="subscription-payment-grid">${visiblePaymentServices.map((row) => renderSubscriptionPaymentCard(row.service, month, paymentFilter, summary)).join('')}</div>` : '<div class="empty">V tomhle filtru není nic k zaplacení.</div>') : renderEmptyCta({ icon: '🎬', title: 'Zatím žádná služba', text: 'Přidej předplatné a potom k němu přiřaď lidi.', nav: 'subscriptions', tab: 'services', label: 'Přidat službu' })}
+            </details>
           </section>
           ${renderDebtorModal(summary)}`);
     }

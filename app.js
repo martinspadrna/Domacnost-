@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_408';
-  const APP_BUILD = 408;
+  const APP_VERSION = 'Domácnost+ v.0.1_410';
+  const APP_BUILD = 410;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1886,7 +1886,10 @@
     const legacyPool = migrated.pool && typeof migrated.pool === 'object' && !Array.isArray(migrated.pool) ? migrated.pool : null;
     migrated.pools = normalizePools(migrated.pools);
     if (!migrated.pools.length && legacyPool && (legacyPool.shape || legacyPool.length || legacyPool.diameter || legacyPool.volumeM3 || (Array.isArray(legacyPool.measurements) && legacyPool.measurements.length))) {
-      migrated.pools = normalizePools([{ ...legacyPool, name: 'Bazén' }]);
+      // Deterministické id: migrace běží na každém zařízení zvlášť a náhodné
+      // id znamenalo, že každé zařízení vyrobilo "svůj" bazén z téhož legacy
+      // objektu - cloud merge podle id je pak zdvojil. Pevné id se sloučí.
+      migrated.pools = normalizePools([{ ...legacyPool, id: 'pool-legacy-migrated', name: 'Bazén' }]);
     }
     delete migrated.pool;
 
@@ -2170,6 +2173,9 @@
       if (Array.isArray(settings.bottomNavIds)) normalized.bottomNavIds = normalizeBottomNavIds(settings.bottomNavIds, navEnabledModules);
       if (Array.isArray(settings.dashboardWidgets)) normalized.dashboardWidgets = normalizeDashboardWidgetIds(settings.dashboardWidgets);
       if (Array.isArray(settings.homeHeroItems)) normalized.homeHeroItems = normalizeHomeHeroIds(settings.homeHeroItems);
+      if (Array.isArray(settings.homeWidgets)) normalized.homeWidgets = normalizeHomeWidgetIds(settings.homeWidgets);
+      if (Array.isArray(settings.homeQuickActionIds)) normalized.homeQuickActionIds = normalizeHomeQuickActionIds(settings.homeQuickActionIds);
+      if (Array.isArray(settings.homeTodayBadgeIds)) normalized.homeTodayBadgeIds = normalizeHomeTodayBadgeIds(settings.homeTodayBadgeIds);
       if (settings.visualSettings && typeof settings.visualSettings === 'object') {
         normalized.visualSettings = {
           theme: normalizeAppTheme(settings.visualSettings.theme),
@@ -2224,6 +2230,11 @@
       bottomNavIds: normalizeBottomNavIds(state.settings?.bottomNavIds || DEFAULT_BOTTOM_NAV_IDS, state.enabledModules),
       dashboardWidgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
       homeHeroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
+      // Home widgety, rychlé akce a panely "Dnešní přehled" patří k profilu -
+      // po přihlášení stejného profilu na jiném zařízení má Home vypadat stejně.
+      homeWidgets: normalizeHomeWidgetIds(state.settings?.homeWidgets),
+      homeQuickActionIds: normalizeHomeQuickActionIds(state.settings?.homeQuickActionIds),
+      homeTodayBadgeIds: normalizeHomeTodayBadgeIds(state.settings?.homeTodayBadgeIds),
       visualSettings: getVisualSettingsSnapshot(),
       updatedAt: new Date().toISOString()
     };
@@ -2252,11 +2263,17 @@
       bottomNavIds: state.settings?.bottomNavIds,
       dashboardWidgets: state.settings?.dashboardWidgets,
       homeHeroItems: state.settings?.homeHeroItems,
+      homeWidgets: state.settings?.homeWidgets,
+      homeQuickActionIds: state.settings?.homeQuickActionIds,
+      homeTodayBadgeIds: state.settings?.homeTodayBadgeIds,
       visualSettings: getVisualSettingsSnapshot()
     });
     if (Array.isArray(profileSettings.bottomNavIds)) state.settings.bottomNavIds = normalizeBottomNavIds(profileSettings.bottomNavIds, state.enabledModules);
     if (Array.isArray(profileSettings.dashboardWidgets)) state.settings.dashboardWidgets = normalizeDashboardWidgetIds(profileSettings.dashboardWidgets);
     if (Array.isArray(profileSettings.homeHeroItems)) state.settings.homeHeroItems = normalizeHomeHeroIds(profileSettings.homeHeroItems);
+    if (Array.isArray(profileSettings.homeWidgets)) state.settings.homeWidgets = normalizeHomeWidgetIds(profileSettings.homeWidgets);
+    if (Array.isArray(profileSettings.homeQuickActionIds)) state.settings.homeQuickActionIds = normalizeHomeQuickActionIds(profileSettings.homeQuickActionIds);
+    if (Array.isArray(profileSettings.homeTodayBadgeIds)) state.settings.homeTodayBadgeIds = normalizeHomeTodayBadgeIds(profileSettings.homeTodayBadgeIds);
     if (profileSettings.visualSettings && typeof profileSettings.visualSettings === 'object') {
       state.settings.theme = forceLightVisualRecovery ? 'light' : normalizeAppTheme(profileSettings.visualSettings.theme);
       state.settings.iconTheme = normalizeIconTheme(profileSettings.visualSettings.iconTheme);
@@ -2267,6 +2284,9 @@
       bottomNavIds: state.settings?.bottomNavIds,
       dashboardWidgets: state.settings?.dashboardWidgets,
       homeHeroItems: state.settings?.homeHeroItems,
+      homeWidgets: state.settings?.homeWidgets,
+      homeQuickActionIds: state.settings?.homeQuickActionIds,
+      homeTodayBadgeIds: state.settings?.homeTodayBadgeIds,
       visualSettings: getVisualSettingsSnapshot()
     });
     changed = before !== after;
@@ -2882,6 +2902,7 @@
           </nav>
           ${renderOverviewDrawer()}
           ${renderGlobalModals()}
+          ${renderPwaUpdateBanner()}
           <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
         `;
 
@@ -3158,6 +3179,20 @@
         <aside class="overview-panel" data-overview-panel role="dialog" aria-modal="true" aria-labelledby="overview-title">
           ${renderOverviewContent(activeOverview)}
         </aside>
+      </div>
+    `;
+  }
+
+  // Trvalý pruh (ne mizící toast) - ukazuje se na Home i v libovolném modulu,
+  // dokud si uživatel aktualizaci nenainstaluje. Bez tohohle byla jediná
+  // cesta k novému buildu schovaná v Nastavení -> Data, takže lidi radši
+  // appku ručně mazali a restartovali, než aby to tlačítko hledali.
+  function renderPwaUpdateBanner() {
+    if (!isPwaUpdateAvailable()) return '';
+    return `
+      <div class="pwa-update-banner" role="status">
+        <span>Je dostupná nová verze aplikace</span>
+        <button class="primary-btn" type="button" data-action="pwa-apply-update">Aktualizovat</button>
       </div>
     `;
   }
@@ -17187,6 +17222,7 @@
   function clearPwaCacheAndReload() { return getPwaModule().clearPwaCacheAndReload(); }
   function checkForAppUpdate(showMessage = false) { return getPwaModule().checkForAppUpdate(showMessage); }
   function applyAppUpdate() { return getPwaModule().applyAppUpdate(); }
+  function isPwaUpdateAvailable() { return getPwaModule().isUpdateAvailable(); }
   function setupInstallAndUpdateFlow() { return getPwaModule().setupInstallAndUpdateFlow(); }
   function registerServiceWorker() { return getPwaModule().registerServiceWorker(); }
 
