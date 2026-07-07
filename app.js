@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_410';
-  const APP_BUILD = 410;
+  const APP_VERSION = 'Domácnost+ v.0.1_411';
+  const APP_BUILD = 411;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -2902,6 +2902,7 @@
           </nav>
           ${renderOverviewDrawer()}
           ${renderGlobalModals()}
+          ${homeEditSheetOpen ? renderHomeEditSheet() : ''}
           ${renderPwaUpdateBanner()}
           <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
         `;
@@ -3899,7 +3900,6 @@
         ${hasWidget('quick') ? renderHomeQuickWidget(ctx) : ''}
         <div class="home-dash-sync"><span aria-hidden="true">⟳</span> Poslední aktualizace: ${escapeHtml(lastSync)}</div>
       </div>
-      ${homeEditSheetOpen ? renderHomeEditSheet() : ''}
     `;
   }
 

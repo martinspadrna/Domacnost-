@@ -15631,7 +15631,13 @@ body.home-active {
 .home-edit-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  /* .nav-shell má z-index 80 (!important) a je jinak vždy sourozenec na
+     nejvyšší úrovni - s nižším z-indexem tu spodní navigace prosvítala
+     přes tenhle sheet (a přes cokoli pod ní), takže to vypadalo, že sheet
+     je "useknutý" a spodek obrazovky blokuje spodní lišta. Ostatní
+     app-modal-backdrop overlaye používají 1200, sjednoceno na stejnou
+     hodnotu, ať je pořadí vrstev konzistentní napříč appkou. */
+  z-index: 1200;
   background: rgba(0, 0, 0, .5);
   display: flex;
   align-items: flex-end;
@@ -15642,6 +15648,10 @@ body.home-active {
   width: 100%;
   max-width: 640px;
   max-height: 82vh;
+  /* dvh sleduje skutečnou viditelnou výšku i s vysouvací lištou prohlížeče
+     na mobilu - vh na některých zařízeních počítal s jinou výškou, než
+     kolik bylo reálně vidět, a sheet se tak mohl jevit kratší/useknutý. */
+  max-height: 82dvh;
   overflow-y: auto;
   background: var(--bg2, var(--bg-2));
   border: 1px solid var(--border, var(--line));

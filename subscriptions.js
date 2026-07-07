@@ -699,7 +699,7 @@
         const ownCost = Math.max(0, decimalValue(service.price) - shareTotal);
         return `
           <div class="subscription-overview-service">
-            <div class="subscription-overview-service-head">${renderSubscriptionServiceIcon(service, { size: 'sm' })}<span class="badge ${capacity.isFull ? 'warn' : capacity.used ? 'good' : ''}">${capacity.maxMembers ? `${capacity.used}/${capacity.maxMembers}` : `${capacity.used}`}</span></div>
+            <div class="subscription-overview-service-head">${renderSubscriptionServiceIcon(service, { size: 'sm', showName: false })}<span class="badge ${capacity.isFull ? 'warn' : capacity.used ? 'good' : ''}">${capacity.maxMembers ? `${capacity.used}/${capacity.maxMembers}` : `${capacity.used}`}</span></div>
             <strong class="subscription-overview-service-name">${escapeHtml(service.name)}</strong>
             <div class="subscription-overview-service-meta"><span>Cena ${formatCurrency(service.price)}</span><span>Vrací se ${formatCurrency(shareTotal)}</span><span>Tvoje část ${formatCurrency(ownCost)}</span></div>
           </div>`;
