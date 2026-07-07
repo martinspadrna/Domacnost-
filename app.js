@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_402';
-  const APP_BUILD = 402;
+  const APP_VERSION = 'Domácnost+ v.0.1_403';
+  const APP_BUILD = 403;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -588,7 +588,7 @@
     { id: 'note', label: 'Poznámka', icon: '🗒️', nav: 'tasks', tab: '' },
     { id: 'reading', label: 'Odečet', icon: '📊', nav: 'readings', tab: 'entry' },
     { id: 'task', label: 'Úkol', icon: '✅', nav: 'tasks', tab: '' },
-    { id: 'fuel', label: 'Tankování', icon: '⛽', nav: 'garage', tab: 'stats' },
+    { id: 'fuel', label: 'Tankování', icon: '⛽', nav: 'garage', tab: 'stats', action: 'quick-fuel' },
     { id: 'service', label: 'Servis', icon: '🔧', nav: 'garage', tab: 'detail' },
     { id: 'warranty', label: 'Záruka', icon: '🧾', nav: 'warranties', tab: '' },
     { id: 'event', label: 'Událost', icon: '📅', nav: 'calendar', tab: 'add' },
@@ -3188,6 +3188,31 @@
   function renderGarageRecordModal() {
     if (!garageModal) return '';
     const type = garageModal.type || '';
+    if (type === 'select-fuel-vehicle') {
+      const vehicles = garageOwnedVehicles();
+      if (!vehicles.length) return '';
+      return `
+        <div class="app-modal-backdrop" data-modal-backdrop role="presentation">
+          <section class="app-modal garage-record-modal garage-vehicle-picker-modal" role="dialog" aria-modal="true" aria-labelledby="garage-modal-title">
+            <div class="app-modal-head">
+              <div>
+                <h2 id="garage-modal-title">Vyber auto</h2>
+                <p>Tankování se uloží k vybranému autu.</p>
+              </div>
+              <button class="icon-btn" type="button" data-action="close-modal" aria-label="Zavřít výběr">×</button>
+            </div>
+            <div class="list compact-list garage-vehicle-picker-list">
+              ${vehicles.map((item) => `
+                <button class="item compact-item garage-vehicle-picker-item" type="button" data-action="select-fuel-vehicle" data-id="${escapeHtml(item.id)}">
+                  <span class="vehicle-icon-bubble ${vehicleIconColorClass(item.iconColor)}" aria-hidden="true">🚗</span>
+                  <span class="item-title">${escapeHtml(item.name)}</span>
+                </button>
+              `).join('')}
+            </div>
+          </section>
+        </div>
+      `;
+    }
     const vehicle = state.vehicles.find((item) => item.id === garageModal.vehicleId) || state.vehicles.find((item) => item.id === garageVehicleId) || state.vehicles[0] || null;
     if (!vehicle) return '';
     let title = '';
@@ -4104,7 +4129,7 @@
         <h2 class="home-dash-section-title">Rychlé akce</h2>
         <div class="home-quick-actions">
           ${actions.map((action) => `
-            <button class="home-quick-action" type="button" data-nav="${escapeHtml(action.nav)}"${action.tab ? ` data-target-tab="${escapeHtml(action.tab)}"` : ''}>
+            <button class="home-quick-action" type="button" ${action.action ? `data-action="${escapeHtml(action.action)}"` : `data-nav="${escapeHtml(action.nav)}"${action.tab ? ` data-target-tab="${escapeHtml(action.tab)}"` : ''}`}>
               <span class="home-quick-action-icon" aria-hidden="true">${escapeHtml(action.icon)}</span>
               <span>${escapeHtml(action.label)}</span>
             </button>
@@ -14906,6 +14931,28 @@
     settings?.querySelector('input, select, textarea')?.focus({ preventScroll: true });
   }
 
+  function openQuickFuelEntry() {
+    const vehicles = garageOwnedVehicles();
+    if (!vehicles.length) {
+      activeModule = 'garage';
+      localStorage.setItem('homeWeb.activeModule', activeModule);
+      moduleTabs = { ...(moduleTabs || {}), garage: 'add' };
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      render();
+      showToast('Nejdřív přidej auto');
+      return;
+    }
+    if (vehicles.length === 1) {
+      garageVehicleId = vehicles[0].id;
+      garageStatsVehicleId = garageVehicleId;
+      garageModal = { type: 'add-fuel', vehicleId: vehicles[0].id };
+      render();
+      return;
+    }
+    garageModal = { type: 'select-fuel-vehicle' };
+    render();
+  }
+
   function daysModeToArray(mode) {
     if (mode === 'workdays') return [1, 2, 3, 4, 5];
     if (mode === 'weekend') return [6, 0];
@@ -16350,6 +16397,19 @@
       garageStatsVehicleId = garageVehicleId;
       moduleTabs = { ...(moduleTabs || {}), garage: 'overview' };
       localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      render();
+      return;
+    }
+    if (action === 'quick-fuel') {
+      openQuickFuelEntry();
+      return;
+    }
+    if (action === 'select-fuel-vehicle') {
+      const vehicle = state.vehicles.find((item) => item.id === button.dataset.id);
+      if (!vehicle) return;
+      garageVehicleId = vehicle.id;
+      garageStatsVehicleId = garageVehicleId;
+      garageModal = { type: 'add-fuel', vehicleId: vehicle.id };
       render();
       return;
     }

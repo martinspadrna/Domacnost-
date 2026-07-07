@@ -14699,6 +14699,21 @@ body.home-active {
   overflow: hidden;
 }
 
+.garage-vehicle-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.36);
+  cursor: pointer;
+  text-align: left;
+}
+
+[data-theme="dark"] .garage-vehicle-picker-item {
+  background: rgba(255, 255, 255, 0.055);
+}
+
 .fuelio-vehicle-card {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) auto;
