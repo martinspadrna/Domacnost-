@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_405';
-  const APP_BUILD = 405;
+  const APP_VERSION = 'Domácnost+ v.0.1_406';
+  const APP_BUILD = 406;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1119,6 +1119,9 @@
   let readingsMetersCache = [];
   let readingsEntriesCacheSource = null;
   let readingsEntriesCache = [];
+  let readingsEntriesByMeterCache = new Map();
+  let readingGroupsCacheSource = null;
+  let readingGroupsCache = [];
   let readingsConsumptionCacheMetersSource = null;
   let readingsConsumptionCacheEntriesSource = null;
   let readingsConsumptionCachePricesSource = null;
@@ -1567,6 +1570,18 @@
   }
 
   function loadState() {
+    // Fast-path: když aktuální klíč existuje a jde naparsovat, vyhrává vždy
+    // (viz `const current = ...` níž - skóre ostatních kandidátů se na něj
+    // nevztahuje). Sken + JSON.parse všech domacnostPlus.* klíčů je tedy
+    // potřeba jen při chybějícím/rozbitém hlavním klíči; při velkém stavu
+    // šetří na startu parsování megabajtů navíc.
+    const currentParsed = safeParse(localStorage.getItem(STORAGE_KEY), null);
+    if (currentParsed && typeof currentParsed === 'object') {
+      const migrated = migrateState(mergeState(DEFAULT_STATE, currentParsed));
+      storePersistedState(migrated);
+      return migrated;
+    }
+
     const candidates = [];
     const addCandidate = (key, raw, priority = 0) => {
       const parsed = safeParse(raw, null);
@@ -2411,8 +2426,18 @@
   }
 
   function writeStateSnapshotNow() {
+    // Serializace celého stavu je při velké domácnosti (megabajty) drahá -
+    // stringify proběhne jednou a stejný string jde do localStorage i do
+    // IndexedDB zálohy. Dřív se tu stringifikovalo dvakrát za sebou.
+    let serialized = null;
     try {
-      storePersistedState(state);
+      serialized = JSON.stringify(createPersistedStateSnapshot(state));
+    } catch (error) {
+      console.warn('State snapshot build failed', error);
+    }
+    if (serialized === null) return;
+    try {
+      storePersistedState(state, serialized);
       lastStatePersistAt = Date.now();
       statePersistDirty = false;
     } catch (error) {
@@ -2421,7 +2446,6 @@
     // Durable backup — survives iOS localStorage quota failures so the next launch
     // can show the data instantly instead of waiting for a cloud round-trip.
     try {
-      const serialized = JSON.stringify(createPersistedStateSnapshot(state));
       putStoredAppStateJson(serialized).catch((error) => console.warn('IndexedDB state persist failed', error));
     } catch (error) {
       console.warn('IndexedDB snapshot build failed', error);
@@ -2430,6 +2454,22 @@
 
   function createPersistedStateSnapshot(source) {
     const snapshot = { ...source, householdWorkspaces: {} };
+    // dashboardLayout v cloud.households je 1,6MB surová kopie households.dashboard_layout
+    // (včetně base64 fotek věrnostních karet, které už jsou ve state.loyaltyCards).
+    // Warm start si ho při každém spuštění stahuje znovu a všichni konzumenti
+    // (applyCloudHouseholdUiSettings, přepnutí domácnosti) pracují jen s čerstvě
+    // staženými daty - do localStorage/IndexedDB se proto persistuje jen lehký
+    // seznam domácností bez layoutu. Bez tohohle byl uložený stav ~2× větší.
+    if (Array.isArray(snapshot.cloud?.households) && snapshot.cloud.households.some((item) => item && (item.dashboardLayout || item.dashboard_layout))) {
+      snapshot.cloud = {
+        ...snapshot.cloud,
+        households: snapshot.cloud.households.map((item) => {
+          if (!item || (!item.dashboardLayout && !item.dashboard_layout)) return item;
+          const { dashboardLayout, dashboard_layout, ...rest } = item;
+          return rest;
+        })
+      };
+    }
     // Pojistka: kdyby se legacy klíče dostaly do runtime state jinou cestou než přes migrateState(),
     // nesmí se dostat zpět do storage.
     delete snapshot.packages;
@@ -2444,8 +2484,10 @@
     });
   }
 
-  function storePersistedState(source) {
-    const serialized = JSON.stringify(createPersistedStateSnapshot(source));
+  function storePersistedState(source, preserializedSnapshot = null) {
+    const serialized = typeof preserializedSnapshot === 'string' && preserializedSnapshot
+      ? preserializedSnapshot
+      : JSON.stringify(createPersistedStateSnapshot(source));
     try {
       localStorage.setItem(STORAGE_KEY, serialized);
     } catch (error) {
@@ -5472,24 +5514,28 @@
       const list = Array.isArray(state[collection]) ? state[collection] : [];
       return predicate ? list.filter(predicate).length : list.length;
     };
+    // Lazy mapa: hub "Vše" volá getModuleStats pro každý modul zvlášť. Kdyby se
+    // tu všech ~16 statistik počítalo eagerly (včetně financeMonthSummary,
+    // subscriptionMonthSummary a celoročního polského kalendáře), render hubu
+    // by dělal 16×16 přepočtů - naměřeno přes 1 s zamrznutí na reálném účtu.
     const stats = {
-      weather: { count: normalizeWeatherState(state.weather).current ? 1 : 0, label: 'místo', note: weatherLocationLabel() || 'Počasí podle místa domácnosti.' },
-      calendar: { count: countBy('calendar'), label: 'událostí', note: 'Google napojení později přes backend.' },
-      shopping: { count: countBy('shopping', (item) => !item.done), label: 'koupit', note: `${countBy('coupons', (item) => !item.used)} nepoužitých kódů.` },
-      hdo: { count: countBy('hdoWindows'), label: 'oken', note: 'Nízký tarif, normální dny a víkend + svátky.' },
-      waste: { count: countBy('waste'), label: 'svozů', note: 'Nejbližší odpad a připomínky.' },
-      tasks: { count: countBy('homeTasks', (item) => !item.done) + countBy('notes'), label: 'položek', note: `${countBy('homeTasks', (item) => !item.done)} úkolů, ${countBy('notes')} stránek/poznámek.` },
-      warranties: { count: countBy('warranties'), label: 'záruk', note: `${countBy('warrantyFiles')} příloh záruk.` },
-      readings: { count: countBy('readingMeters'), label: 'měřidel', note: `${countBy('readings')} odečtů celkem.` },
-      polishHolidays: { count: buildPolishShopCalendarYear(polishShopSelectedYear()).filter((entry) => entry.status === 'closed').length, label: 'dnů', note: 'Polské svátky a volitelné neděle nehandlowe.' },
-      garage: { count: countBy('vehicles'), label: 'aut', note: `${countBy('fuel')} tankování, ${countBy('services')} servisů.` },
-      contracts: { count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh smluv, ${countBy('warrantyFiles')} příloh záruk.` },
-      finance: { count: countBy('finance'), label: 'záznamů', note: `${formatCurrency(financeMonthSummary().balance)} rozdíl tento měsíc.` },
-      subscriptions: { count: countBy('subscriptions', (item) => item.enabled !== false), label: 'služeb', note: `${formatCurrency(subscriptionMonthSummary().expectedReturn)} se má vrátit tento měsíc.` },
-      vape: { count: Array.isArray(state.vape?.items) ? state.vape.items.length : 0, label: 'položek ceníku', note: 'Nákupy, boostery, aroma a kalkulačky na jednom místě.' },
-      pool: { count: Array.isArray(state.pools) ? state.pools.length : 0, label: 'bazénů', note: `${(state.pools || []).reduce((sum, pool) => sum + (Array.isArray(pool.measurements) ? pool.measurements.length : 0), 0)} měření celkem.` }
+      weather: () => ({ count: normalizeWeatherState(state.weather).current ? 1 : 0, label: 'místo', note: weatherLocationLabel() || 'Počasí podle místa domácnosti.' }),
+      calendar: () => ({ count: countBy('calendar'), label: 'událostí', note: 'Google napojení později přes backend.' }),
+      shopping: () => ({ count: countBy('shopping', (item) => !item.done), label: 'koupit', note: `${countBy('coupons', (item) => !item.used)} nepoužitých kódů.` }),
+      hdo: () => ({ count: countBy('hdoWindows'), label: 'oken', note: 'Nízký tarif, normální dny a víkend + svátky.' }),
+      waste: () => ({ count: countBy('waste'), label: 'svozů', note: 'Nejbližší odpad a připomínky.' }),
+      tasks: () => ({ count: countBy('homeTasks', (item) => !item.done) + countBy('notes'), label: 'položek', note: `${countBy('homeTasks', (item) => !item.done)} úkolů, ${countBy('notes')} stránek/poznámek.` }),
+      warranties: () => ({ count: countBy('warranties'), label: 'záruk', note: `${countBy('warrantyFiles')} příloh záruk.` }),
+      readings: () => ({ count: countBy('readingMeters'), label: 'měřidel', note: `${countBy('readings')} odečtů celkem.` }),
+      polishHolidays: () => ({ count: buildPolishShopCalendarYear(polishShopSelectedYear()).filter((entry) => entry.status === 'closed').length, label: 'dnů', note: 'Polské svátky a volitelné neděle nehandlowe.' }),
+      garage: () => ({ count: countBy('vehicles'), label: 'aut', note: `${countBy('fuel')} tankování, ${countBy('services')} servisů.` }),
+      contracts: () => ({ count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh smluv, ${countBy('warrantyFiles')} příloh záruk.` }),
+      finance: () => ({ count: countBy('finance'), label: 'záznamů', note: `${formatCurrency(financeMonthSummary().balance)} rozdíl tento měsíc.` }),
+      subscriptions: () => ({ count: countBy('subscriptions', (item) => item.enabled !== false), label: 'služeb', note: `${formatCurrency(subscriptionMonthSummary().expectedReturn)} se má vrátit tento měsíc.` }),
+      vape: () => ({ count: Array.isArray(state.vape?.items) ? state.vape.items.length : 0, label: 'položek ceníku', note: 'Nákupy, boostery, aroma a kalkulačky na jednom místě.' }),
+      pool: () => ({ count: Array.isArray(state.pools) ? state.pools.length : 0, label: 'bazénů', note: `${(state.pools || []).reduce((sum, pool) => sum + (Array.isArray(pool.measurements) ? pool.measurements.length : 0), 0)} měření celkem.` })
     };
-    return stats[moduleId] || { count: 0, label: 'položek', note: getModuleSubtitle(moduleId) };
+    return stats[moduleId]?.() || { count: 0, label: 'položek', note: getModuleSubtitle(moduleId) };
   }
 
   function getCloudReadiness() {
@@ -7826,6 +7872,12 @@
 
   function readingGroups() {
     const source = Array.isArray(state.readingGroups) ? state.readingGroups : [];
+    // Memoizace podle reference (stejně jako readingsMeters/readingsEntries).
+    // Bez ní tahle funkce při KAŽDÉM volání přiřadila state.readingGroups nové
+    // pole - tím zneplatnila cache readingsConsumptionRows na každý render a
+    // render Odečtů přepočítával spotřebu i ceny všech odečtů pořád dokola
+    // (readingGroupById se volá pro každý odečet při výpočtu ceny).
+    if (source === readingGroupsCacheSource) return readingGroupsCache;
     const normalized = source.map(normalizeReadingGroup).filter((group) => group.id);
     if (!normalized.length) normalized.push(createDefaultReadingGroup());
     if (!normalized.some((group) => group.id === DEFAULT_READING_GROUP_ID)) {
@@ -7837,7 +7889,9 @@
       seen.add(group.id);
       return true;
     });
-    return state.readingGroups;
+    readingGroupsCache = state.readingGroups;
+    readingGroupsCacheSource = state.readingGroups;
+    return readingGroupsCache;
   }
 
   function readingDefaultGroup() {
@@ -7988,8 +8042,18 @@
         .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
       state.readings = readingsEntriesCache;
       readingsEntriesCacheSource = state.readings;
+      // Mapa podle měřidla se staví jedním průchodem spolu s hlavní cache.
+      // Render Odečtů volá readingsEntries(meterId) pro každé měřidlo mnohokrát
+      // za sebou - filter přes všechny odečty na každé volání dělal z otevření
+      // modulu čtvrtsekundové zamrznutí.
+      readingsEntriesByMeterCache = new Map();
+      readingsEntriesCache.forEach((item) => {
+        const list = readingsEntriesByMeterCache.get(item.meterId);
+        if (list) list.push(item);
+        else readingsEntriesByMeterCache.set(item.meterId, [item]);
+      });
     }
-    const list = meterId ? readingsEntriesCache.filter((item) => item.meterId === meterId) : readingsEntriesCache;
+    const list = meterId ? (readingsEntriesByMeterCache.get(meterId) || []) : readingsEntriesCache;
     return [...list];
   }
 
@@ -8019,7 +8083,7 @@
     const normalizedRegister = normalizeText(registerLabel).toUpperCase();
     return readingsEntries(meterId)
       .filter((entry) => (readingEntryRegisterLabel(entry) || '') === normalizedRegister)
-      .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+      .reverse();
   }
 
   function previousReadingForEntry(entry) {
@@ -8224,7 +8288,9 @@
 }
 
   function readingMeterStats(meter, precomputedRows = null) {
-    const rows = readingsEntries(meter.id).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+    // Cache je seřazená sestupně (date, createdAt) - vzestupné pořadí je jen
+    // reverze čerstvé kopie, žádný další sort na každé měřidlo.
+    const rows = readingsEntries(meter.id).reverse();
     const latest = rows[rows.length - 1] || null;
     const sourceRows = Array.isArray(precomputedRows) ? precomputedRows : readingsConsumptionRows();
     const lastConsumption = sourceRows.find((row) => row.meterId === meter.id) || null;
@@ -8301,7 +8367,7 @@
       groups.forEach((registerLabel) => {
         const sorted = registerLabel
           ? readingEntriesForRegister(meter.id, registerLabel)
-          : readingsEntries(meter.id).filter((entry) => !readingEntryRegisterLabel(entry)).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+          : readingsEntries(meter.id).filter((entry) => !readingEntryRegisterLabel(entry)).reverse();
         sorted.forEach((entry, index) => {
           if (!index) return;
           const previous = sorted[index - 1];
@@ -17495,7 +17561,7 @@
       state.household = { ...(state.household || {}), isConfigured: Boolean(state.household?.isConfigured) };
       touchState();
       saveState();
-      render();
+      requestRender();
       if (showMessage) showToast('Tenhle účet zatím nemá žádnou domácnost');
       return [];
     }
@@ -17511,7 +17577,11 @@
     }
     touchState();
     saveState();
-    render();
+    // requestRender místo render(): cloudLoadHouseholds běží ve warm-start
+    // řetězci (withDeferredRender) a přímý render tady znamenal několik plných
+    // překreslení celé appky během přihlášení za sebou (naměřeno 4× přes 1 s).
+    // Deferred vrstva je slije do jednoho.
+    requestRender();
     if (showMessage) showToast(`Načteno domácností: ${households.length}`);
     return households;
   }
