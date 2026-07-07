@@ -148,6 +148,18 @@
       return new Intl.DateTimeFormat('cs-CZ', { hour: '2-digit', minute: '2-digit' }).format(date);
     }
 
+    function nextHourlyWindow(hours = [], count = 24) {
+      if (!hours.length) return [];
+      const now = new Date();
+      const currentIndex = hours.findIndex((hour) => {
+        const date = toSafeDate(hour.time, null);
+        return date && date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth()
+          && date.getDate() === now.getDate() && date.getHours() === now.getHours();
+      });
+      const startIndex = currentIndex === -1 ? 0 : currentIndex;
+      return hours.slice(startIndex, startIndex + count);
+    }
+
     function renderWeatherHourlyStrip(hours = []) {
       if (!hours.length) return '<div class="empty">Hodinový výhled zatím není načtený.</div>';
       return `<div class="weather-hourly-strip">${hours.map((hour) => {
@@ -310,7 +322,7 @@
         </section>
         <section class="card desktop-span-2">
           <div class="card-header"><div><h2>Po hodinách</h2><p>Nejbližších 24 hodin pro rychlé plánování.</p></div></div>
-          ${renderWeatherHourlyStrip((weather.hourly || []).slice(0, 24))}
+          ${renderWeatherHourlyStrip(nextHourlyWindow(weather.hourly || [], 24))}
         </section>
         <section class="card desktop-span-2">
           <div class="card-header"><div><h2>Další dny</h2><p>Přehled dopředu, bez zbytečné omáčky.</p></div></div>

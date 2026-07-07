@@ -43,6 +43,8 @@
     // Id právě upravované služby — inline edit panel. Lokální UI stav, přežije
     // render (edit se otevírá/zavírá bez ztráty rozdělané úpravy).
     let subscriptionServiceEditId = '';
+    // Id člověka, jehož dluh se právě vysvětluje v přehledu (klik na dlužníka).
+    let debtorModalPersonId = '';
 
     function normalizeSubscriptionServiceKey(serviceKey = '') {
       const key = normalizeText(serviceKey || 'other') || 'other';
@@ -688,17 +690,77 @@
               ].map(([id, label]) => `<button class="quick-chip subscription-filter-chip ${paymentFilter === id ? 'active' : ''}" type="button" data-action="subscription-filter" data-filter="${id}">${label}</button>`).join('')}
             </div>
             ${services.length ? (visiblePaymentServices.length ? `<div class="subscription-payment-grid">${visiblePaymentServices.map((row) => renderSubscriptionPaymentCard(row.service, month, paymentFilter, summary)).join('')}</div>` : '<div class="empty">V tomhle filtru není nic k zaplacení.</div>') : renderEmptyCta({ icon: '🎬', title: 'Zatím žádná služba', text: 'Přidej předplatné a potom k němu přiřaď lidi.', nav: 'subscriptions', tab: 'services', label: 'Přidat službu' })}
-          </section>`);
+          </section>
+          ${renderDebtorModal(summary)}`);
     }
 
     function renderSubscriptionPersonSummary(row) {
       const tone = row.debt ? 'warn' : row.expected ? 'good' : '';
       const debtLabel = row.debt ? `⚠️ dluží ${formatCurrency(row.debt)}` : row.expected ? 'zaplaceno / OK' : 'bez služeb';
+      const tag = row.debt ? 'button' : 'div';
+      const attrs = row.debt ? `type="button" data-action="subscription-debtor-info" data-id="${escapeHtml(row.person.id)}"` : '';
       return `
-        <div class="item compact-item subscription-person-summary ${row.debt ? 'subscription-debt subscription-debt-prominent' : ''}">
+        <${tag} class="item compact-item subscription-person-summary ${row.debt ? 'subscription-debt subscription-debt-prominent subscription-debtor-row' : ''}" ${attrs}>
           <div class="item-top"><div class="item-title">${row.debt ? `<strong class="subscription-debtor-name">${escapeHtml(row.person.name)}</strong>` : escapeHtml(row.person.name)}</div><span class="badge ${tone} ${row.debt ? 'subscription-debt-badge' : ''}">${debtLabel}</span></div>
           <div class="item-meta">Má platit ${formatCurrency(row.expected)} · započteno ${formatCurrency(row.paid)}${row.directPaid !== row.paid ? ` · z toho platba ${formatCurrency(row.directPaid)} + kredit ${formatCurrency(row.creditApplied)}` : ''}${row.overpaid ? ` · přeplatek dál ${formatCurrency(row.overpaid)}` : ''}${row.future ? ` · předplaceno ${formatCurrency(row.future)}` : ''}</div>
-        </div>`;
+        </${tag}>`;
+    }
+
+    function openDebtorModal(personId) {
+      debtorModalPersonId = normalizeText(personId);
+      setSubscriptionPaymentDraft({ personId: debtorModalPersonId, subscriptionId: '' });
+    }
+
+    function closeDebtorModal() {
+      if (!debtorModalPersonId) return;
+      debtorModalPersonId = '';
+      render();
+    }
+
+    function renderDebtorModal(summary) {
+      if (!debtorModalPersonId) return '';
+      const row = summary.peopleRows.find((item) => item.person.id === debtorModalPersonId);
+      if (!row) return '';
+      const month = summary.month;
+      const owedServices = subscriptionPersonAssignedServices(row.person.id)
+        .map((service) => ({ service, remaining: subscriptionRemainingAmount(row.person.id, service.id, month) }))
+        .filter((entry) => entry.remaining > 0);
+      const paymentDraft = normalizeSubscriptionPaymentDraft(subscriptionPaymentDraft());
+      const paymentServiceOptions = subscriptionPaymentServiceOptions(paymentDraft.personId, paymentDraft.month, true);
+      const paymentPersonOptions = subscriptionPaymentPersonOptions(paymentDraft.subscriptionId, paymentDraft.month, true);
+      const paymentDefaultAmount = paymentDraft.subscriptionId && paymentDraft.personId
+        ? subscriptionRemainingAmount(paymentDraft.personId, paymentDraft.subscriptionId, paymentDraft.month)
+        : row.debt;
+      return `
+        <div class="app-modal-backdrop" data-modal-backdrop role="presentation">
+          <section class="app-modal subscription-debtor-modal" role="dialog" aria-modal="true" aria-labelledby="subscription-debtor-modal-title">
+            <div class="app-modal-head">
+              <div>
+                <span class="badge warn">dluží ${formatCurrency(row.debt)}</span>
+                <h2 id="subscription-debtor-modal-title">${escapeHtml(row.person.name)}</h2>
+                <p>Za co dluží a rovnou zápis platby.</p>
+              </div>
+              <button class="icon-btn" type="button" data-action="close-modal" aria-label="Zavřít">×</button>
+            </div>
+            ${owedServices.length ? `<div class="list compact-list subscription-debtor-service-list">${owedServices.map((entry) => `
+              <div class="item compact-item">
+                <div class="item-top"><div class="item-title">${escapeHtml(entry.service.name)}</div><span class="badge warn">${formatCurrency(entry.remaining)}</span></div>
+                <div class="item-meta">Měsíční podíl ${formatCurrency(subscriptionShareAmountForPerson(row.person.id, entry.service.id))} · ${escapeHtml(financeMonthLabel(month))}</div>
+              </div>
+            `).join('')}</div>` : '<div class="empty">Za tenhle měsíc už nic nechybí.</div>'}
+            <form data-form="add-subscription-payment" class="compact-form subscription-smart-payment-form">
+              <div class="form-grid two">
+                ${selectField('Služba', 'subscriptionId', paymentServiceOptions, paymentDraft.subscriptionId)}
+                ${selectField('Člověk', 'personId', paymentPersonOptions, paymentDraft.personId)}
+                ${field('Měsíc', 'month', 'month', '', false, paymentDraft.month)}
+                ${field('Částka', 'amount', 'number', 'např. 80', true, paymentDefaultAmount ? String(paymentDefaultAmount) : '')}
+                ${field('Poznámka', 'note', 'text', 'volitelné')}
+              </div>
+              <div class="form-actions modal-actions"><button class="primary-btn" type="submit">Zapsat platbu</button><button class="ghost-btn" type="button" data-action="close-modal">Zavřít</button></div>
+            </form>
+          </section>
+        </div>
+      `;
     }
 
     function renderSubscriptionPersonDetail(row) {
@@ -970,6 +1032,8 @@
       shiftSubscriptionMonth,
       setSubscriptionPaymentFilter,
       setSubscriptionPaymentDraft,
+      openDebtorModal,
+      closeDebtorModal,
       // autofill defaults pro formulář
       subscriptionServiceDefaults,
       // handlery

@@ -30,6 +30,7 @@
     const confirm = deps.confirm || ((message) => window.confirm(message));
 
     let activePoolId = '';
+    let phInfoOpen = false;
 
     const SHAPE_OPTIONS = [
       ['rect', 'Obdélník'],
@@ -189,6 +190,68 @@
       return number.toLocaleString('cs-CZ', { maximumFractionDigits: decimals });
     }
 
+    function phInfoContent(pool) {
+      const target = decimalValue(pool?.targetPh) || 7.2;
+      const ph = decimalValue(pool?.ph);
+      if (!ph) {
+        return {
+          tone: '',
+          label: 'pH zatím nezměřeno',
+          text: 'pH ukazuje, jak kyselá nebo zásaditá je voda v bazénu. Ideální rozmezí pro koupání i účinnou dezinfekci chlórem je zhruba 7,0–7,6. Změř pH testrem nebo proužky a zapiš ho jako nové měření.'
+        };
+      }
+      const diff = ph - target;
+      if (Math.abs(diff) < 0.2) {
+        return {
+          tone: 'good',
+          label: `pH ${formatPoolNumber(ph, 2)} je v pořádku`,
+          text: `Hodnota je blízko cíle ${formatPoolNumber(target, 2)}. Voda by měla být příjemná na kůži a oči a dezinfekce (chlór) funguje nejúčinněji právě v tomhle rozmezí.`
+        };
+      }
+      if (diff < 0) {
+        return {
+          tone: diff < -0.4 ? 'bad' : 'warn',
+          label: `pH ${formatPoolNumber(ph, 2)} je nízké (kyselá voda)`,
+          text: 'Nejčastější příčiny: hodně deště nebo čerstvě doplněná voda, moc chlornanu/dezinfekce, nebo nově napuštěný bazén. Nízké pH dráždí oči a pokožku a časem koroduje kovové části (žebřík, trysky, topení). Přidej pH+ podle dávkování níž a za pár hodin pH znovu změř.'
+        };
+      }
+      return {
+        tone: diff > 0.4 ? 'bad' : 'warn',
+        label: `pH ${formatPoolNumber(ph, 2)} je vysoké (zásaditá voda)`,
+        text: 'Nejčastější příčiny: tvrdá napouštěná voda, moc přidaného pH+ přípravku, nebo víc organického znečištění (listí, pyl, opalovací krémy). Vysoké pH snižuje účinnost chlóru a může způsobit zákal vody a vodní kámen. Přidej pH- podle dávkování níž a za pár hodin pH znovu změř.'
+      };
+    }
+
+    function renderPhInfoModal(pool) {
+      if (!phInfoOpen || !pool) return '';
+      const info = phInfoContent(pool);
+      return `
+        <div class="app-modal-backdrop pool-ph-info-backdrop" data-modal-backdrop role="presentation">
+          <section class="app-modal pool-ph-info-modal" role="dialog" aria-modal="true" aria-labelledby="pool-ph-info-title">
+            <div class="app-modal-head">
+              <div>
+                <span class="badge ${escapeHtml(info.tone)}">${escapeHtml(info.label)}</span>
+                <h2 id="pool-ph-info-title">Co znamená pH bazénu</h2>
+              </div>
+              <button class="icon-btn" type="button" data-action="close-modal" aria-label="Zavřít vysvětlivku">×</button>
+            </div>
+            <p>${escapeHtml(info.text)}</p>
+          </section>
+        </div>
+      `;
+    }
+
+    function openPhInfoModal() {
+      phInfoOpen = true;
+      render();
+    }
+
+    function closePhInfoModal() {
+      if (!phInfoOpen) return;
+      phInfoOpen = false;
+      render();
+    }
+
     function renderPoolMeasurements(pool) {
       const measurements = normalizePoolMeasurements(pool.measurements);
       const latest = latestPoolMeasurement(pool);
@@ -199,7 +262,7 @@
         <section class="card desktop-span-2 pool-measurements-panel">
           <div class="card-header"><div><h2>Měření vody</h2><p>Historie pH a teploty vody pro sledování trendu.</p></div><span class="badge">${measurements.length} měření</span></div>
           <div class="kpi-grid compact-kpi-grid">
-            <div class="kpi"><strong>${latest?.ph !== '' && latest?.ph !== undefined ? formatPoolNumber(latest.ph, 2) : '—'}</strong><span>poslední pH</span></div>
+            <button type="button" class="kpi kpi-clickable" data-action="pool-ph-info"><strong>${latest?.ph !== '' && latest?.ph !== undefined ? formatPoolNumber(latest.ph, 2) : '—'}</strong><span>poslední pH</span></button>
             <div class="kpi"><strong>${latest?.waterTempC !== '' && latest?.waterTempC !== undefined ? `${formatPoolNumber(latest.waterTempC, 1)} °C` : '—'}</strong><span>teplota vody</span></div>
             <div class="kpi"><strong>${latest?.date ? formatDate(latest.date) : '—'}</strong><span>poslední měření</span></div>
           </div>
@@ -371,7 +434,7 @@
             ${activeTab === 'add' ? renderPoolAddForm(pool) : `
               <div class="kpi-grid compact-kpi-grid">
                 <div class="kpi"><strong>${formatVolume(volume)}</strong><span>objem vody</span></div>
-                <div class="kpi"><strong>${pool.ph || '—'}</strong><span>aktuální pH</span></div>
+                <button type="button" class="kpi kpi-clickable" data-action="pool-ph-info"><strong>${pool.ph || '—'}</strong><span>aktuální pH</span></button>
                 <div class="kpi"><strong>${pool.waterTempC ? `${formatPoolNumber(pool.waterTempC, 1)} °C` : '—'}</strong><span>teplota vody</span></div>
                 <div class="kpi ${tone}"><strong>${dose.status === 'ok' ? 'OK' : dose.status === 'missing' ? 'doplň' : formatGrams(dose.grams)}</strong><span>${escapeHtml(dose.label)}</span></div>
               </div>
@@ -381,6 +444,7 @@
         </section>
         ${activeTab === 'overview' ? renderPoolMeasurements(pool) : ''}
         ${volume > 0 ? '' : renderEmptyCta({ icon: '🏊', title: 'Zadej rozměry bazénu', text: 'Pak se dopočítá objem vody a dávkování podle naměřeného pH.', nav: 'pool', tab: 'add', label: 'Nastavit bazén' })}
+        ${renderPhInfoModal(pool)}
       `;
     }
 
@@ -480,7 +544,9 @@
       addPool,
       selectPool,
       deletePool,
-      previewShape
+      previewShape,
+      openPhInfoModal,
+      closePhInfoModal
     };
   }
 

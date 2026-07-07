@@ -508,6 +508,15 @@ button {
   font-weight: 700;
 }
 
+button.kpi.kpi-clickable {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
 .list {
   display: grid;
   gap: 9px;
@@ -10980,6 +10989,15 @@ form[data-busy="true"] button[type="submit"] {
   border-left: 4px solid #f59e0b !important;
 }
 
+button.subscription-debtor-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
 .subscription-debtor-name {
   color: #b45309 !important;
   font-weight: 900 !important;
@@ -14603,7 +14621,7 @@ body.home-active {
 
   .calendar-weekdays,
   .calendar-week-row {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(7, minmax(90px, 1fr));
     gap: 4px;
   }
 
@@ -14699,15 +14717,29 @@ body.home-active {
   overflow: hidden;
 }
 
+.garage-vehicle-picker-backdrop {
+  align-items: center;
+}
+
+.garage-vehicle-picker-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .garage-vehicle-picker-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  width: 100%;
+  justify-content: center;
+  gap: 10px;
+  aspect-ratio: 1 / 1;
   border: 1px solid var(--line);
+  border-radius: 20px;
   background: rgba(255, 255, 255, 0.36);
   cursor: pointer;
-  text-align: left;
+  text-align: center;
+  font-weight: 800;
 }
 
 [data-theme="dark"] .garage-vehicle-picker-item {

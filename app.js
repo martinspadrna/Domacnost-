@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_403';
-  const APP_BUILD = 403;
+  const APP_VERSION = 'Domácnost+ v.0.1_405';
+  const APP_BUILD = 405;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -3192,7 +3192,7 @@
       const vehicles = garageOwnedVehicles();
       if (!vehicles.length) return '';
       return `
-        <div class="app-modal-backdrop" data-modal-backdrop role="presentation">
+        <div class="app-modal-backdrop garage-vehicle-picker-backdrop" data-modal-backdrop role="presentation">
           <section class="app-modal garage-record-modal garage-vehicle-picker-modal" role="dialog" aria-modal="true" aria-labelledby="garage-modal-title">
             <div class="app-modal-head">
               <div>
@@ -3201,10 +3201,10 @@
               </div>
               <button class="icon-btn" type="button" data-action="close-modal" aria-label="Zavřít výběr">×</button>
             </div>
-            <div class="list compact-list garage-vehicle-picker-list">
+            <div class="garage-vehicle-picker-list">
               ${vehicles.map((item) => `
-                <button class="item compact-item garage-vehicle-picker-item" type="button" data-action="select-fuel-vehicle" data-id="${escapeHtml(item.id)}">
-                  <span class="vehicle-icon-bubble ${vehicleIconColorClass(item.iconColor)}" aria-hidden="true">🚗</span>
+                <button class="garage-vehicle-picker-item" type="button" data-action="select-fuel-vehicle" data-id="${escapeHtml(item.id)}">
+                  <span class="vehicle-icon-bubble vehicle-icon-bubble-large ${vehicleIconColorClass(item.iconColor)}" aria-hidden="true">🚗</span>
                   <span class="item-title">${escapeHtml(item.name)}</span>
                 </button>
               `).join('')}
@@ -16022,6 +16022,8 @@
       loyaltyCardMenuId = '';
       garageEditRecord = null;
       closeFilePreviewModal();
+      getPoolModule().closePhInfoModal();
+      getSubscriptionsModule().closeDebtorModal();
       render();
       return;
     }
@@ -16099,6 +16101,14 @@
     }
     if (action === 'pool-delete') {
       deletePool(button.dataset.id);
+      return;
+    }
+    if (action === 'pool-ph-info') {
+      getPoolModule().openPhInfoModal();
+      return;
+    }
+    if (action === 'subscription-debtor-info') {
+      getSubscriptionsModule().openDebtorModal(button.dataset.id);
       return;
     }
     if (action === 'toggle-hdo') {
@@ -18350,6 +18360,8 @@
       loyaltyCardMenuId = '';
       garageEditRecord = null;
       closeFilePreviewModal();
+      getPoolModule().closePhInfoModal();
+      getSubscriptionsModule().closeDebtorModal();
       render();
       return;
     }
@@ -18462,6 +18474,8 @@
       loyaltyCardMenuId = '';
       garageEditRecord = null;
       closeFilePreviewModal();
+      getPoolModule().closePhInfoModal();
+      getSubscriptionsModule().closeDebtorModal();
       render();
       return;
     }
