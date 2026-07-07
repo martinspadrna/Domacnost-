@@ -956,8 +956,16 @@ button {
 .module-check-grid,
 .module-toggle-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+/* v0.1_401 - Spodní panel (výběr modulů do dolní lišty) se dřív vždy skládal
+   jeden řádek pod druhý i na mobilu, zbytečně roztahovalo stránku. Stejné 2
+   sloupce jako Viditelné moduly, "Domů"/"Vše" (pevné položky) prostě zaberou
+   svou buňku v gridu jako cokoli jiného. */
+.nav-picker-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .check-card,
@@ -6996,6 +7004,7 @@ html[data-icon-theme="glass"] .module-theme-icon .icon-line.light,
 .theme-preview-orb { display: block; width: 72px; height: 34px; border-radius: 999px; border: 1px solid var(--line); box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
 .theme-preview-orb.light { background: linear-gradient(135deg, #ffffff, #dbeafe); }
 .theme-preview-orb.dark { background: linear-gradient(135deg, #0f172a, #334155); }
+.scheme-preview-swatch { display: block; width: 72px; height: 34px; border-radius: 12px; border: 1px solid var(--line); box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
 .scheme-preview-dots { display: flex; gap: 7px; align-items: center; padding-top: 5px; }
 .scheme-preview-dots i { width: 25px; height: 25px; border-radius: 999px; box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 6px 14px rgba(31,54,88,.13); }
 .visual-choice-preview-sky .scheme-preview-dots i:nth-child(1) { background: #3574f0; }
@@ -7773,13 +7782,12 @@ body::before {
   z-index: 1;
 }
 .calendar-overview-summary-details,
-.settings-visual-details,
 .settings-enabled-modules-details {
   margin-top: 8px;
 }
 .calendar-overview-summary-details .cloud-status-grid,
 .settings-enabled-modules-details .module-toggle-grid,
-.settings-visual-details .visual-settings-stack {
+.visual-settings-stack {
   padding: 10px 12px 2px;
 }
 .calendar-month-toolbar {
@@ -12036,9 +12044,24 @@ body.home-active {
   .module-tabbed > .desktop-span-2,
   .module-tabbed > .wide-panel,
   .module-tabbed > .finance-dashboard-card,
-  .module-tabbed > .panel-overview:only-child,
-  .module-tabbed > .panel-detail:only-child,
-  .module-tabbed > .panel-loans:only-child {
+  /* v0.1_401 - dřív měly plnou šířku jen konkrétně vyjmenované panely
+     (.panel-overview/.panel-detail/.panel-loans). Ostatní moduly s jedinou
+     kartou na záložce (Záruky, Svátky PL, ...) používají jiný název třídy,
+     takže spadaly mimo výjimku a zůstávaly na půl šířky s prázdným sloupcem
+     vedle - obecné pravidlo pro "jediné dítě" pokrývá všechny moduly stejně. */
+  .module-tabbed > .card:only-child {
+    grid-column: 1 / -1;
+  }
+
+  /* v0.1_401 - "homecare" wrapper (HDO/Odpad/Zápisník/Záruky/Svátky PL) drží
+     v DOM všech 5 panelů najednou a jen aktivní ukazuje přes :not() (viz výše) -
+     .card:only-child se tu nikdy neuplatní, protože sourozenci v DOM reálně
+     jsou, jen skrytí. Aktivní panel proto potřebuje vlastní pravidlo na plnou šířku. */
+  .homecare-tab-hdo .homecare-panel.panel-hdo,
+  .homecare-tab-waste .homecare-panel.panel-waste,
+  .homecare-tab-tasks .homecare-panel.panel-tasks,
+  .homecare-tab-warranties .homecare-panel.panel-warranties,
+  .homecare-tab-polish-holidays .homecare-panel.panel-polish-holidays {
     grid-column: 1 / -1;
   }
 }
@@ -13674,7 +13697,6 @@ body.home-active {
 
 .settings-form-drawer,
 .settings-enabled-modules-details,
-.settings-visual-details,
 .cloud-household-create-details {
   min-width: 0;
 }

@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_399';
-  const APP_BUILD = 399;
+  const APP_VERSION = 'Domácnost+ v.0.1_401';
+  const APP_BUILD = 401;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1044,7 +1044,6 @@
   let garageModal = null;
   let filePreviewModal = null;
   let activeWarrantyDetailId = null;
-  let visualSettingsDrawerOpen = false;
   let googleCalendarDetailsOpen = false;
   // Garáž „Přidat auto": rozbalené pomocné details (předvyplnění / technický
   // list) si drží stav přes render, aby je autosync/realtime rerender
@@ -11458,6 +11457,15 @@
     }).join('')}</div>`;
   }
 
+  // Skutečné --primary/--primary-2 akcenty jednotlivých schémat (viz
+  // html[data-color-scheme="X"] ve styles.css) - preview puntík má ukazovat
+  // přesně tu barvu, kterou appka po zvolení doopravdy dostane, ne obecnou šedou.
+  const COLOR_SCHEME_ACCENTS = {
+    indigo: ['#7C8CF8', '#5865E0'],
+    amber: ['#F0B24A', '#C98A2E'],
+    teal: ['#4FD1C5', '#2AA89C']
+  };
+
   function renderVisualPreview(id, type) {
     if (type === 'iconTheme') {
       const previewIconsByTheme = {
@@ -11473,7 +11481,8 @@
     if (type === 'theme') {
       return `<span class="theme-preview-orb ${escapeHtml(id)}"></span>`;
     }
-    return `<span class="scheme-preview-dots"><i></i><i></i><i></i></span>`;
+    const [c1, c2] = COLOR_SCHEME_ACCENTS[id] || COLOR_SCHEME_ACCENTS.indigo;
+    return `<span class="scheme-preview-swatch" style="background:linear-gradient(135deg, ${escapeHtml(c1)}, ${escapeHtml(c2)})"></span>`;
   }
 
   function renderVisualSettingsCard() {
@@ -11484,23 +11493,20 @@
           <div><h2>Vzhled aplikace</h2><p>Styl ikon i barevné schéma jsou osobní nastavení účtu. Každý člen domácnosti může mít vlastní vzhled.</p></div>
           <span class="badge">${escapeHtml(getOptionLabel(ICON_THEME_OPTIONS, visual.iconTheme))} · ${escapeHtml(getOptionLabel(COLOR_SCHEME_OPTIONS, visual.colorScheme))}</span>
         </div>
-        <details class="compact-edit-details settings-visual-details" ${visualSettingsDrawerOpen ? 'open' : ''}>
-          <summary><span>Styl ikon a schéma</span><em>${escapeHtml(getOptionLabel(ICON_THEME_OPTIONS, visual.iconTheme))} · ${escapeHtml(getOptionLabel(COLOR_SCHEME_OPTIONS, visual.colorScheme))}</em></summary>
-          <div class="visual-settings-stack">
-            <div class="visual-settings-group">
-              <h3>Režim</h3>
-              ${renderVisualChoiceGrid(APP_THEME_OPTIONS, visual.theme, 'set-app-theme', 'theme', 'theme-choice-grid')}
-            </div>
-            <div class="visual-settings-group">
-              <h3>Styl ikon</h3>
-              ${renderVisualChoiceGrid(ICON_THEME_OPTIONS, visual.iconTheme, 'set-icon-theme', 'iconTheme', 'icon-choice-grid')}
-            </div>
-            <div class="visual-settings-group">
-              <h3>Barevné schéma</h3>
-              ${renderVisualChoiceGrid(COLOR_SCHEME_OPTIONS, visual.colorScheme, 'set-color-scheme', 'colorScheme', 'scheme-choice-grid')}
-            </div>
+        <div class="visual-settings-stack">
+          <div class="visual-settings-group">
+            <h3>Režim</h3>
+            ${renderVisualChoiceGrid(APP_THEME_OPTIONS, visual.theme, 'set-app-theme', 'theme', 'theme-choice-grid')}
           </div>
-        </details>
+          <div class="visual-settings-group">
+            <h3>Styl ikon</h3>
+            ${renderVisualChoiceGrid(ICON_THEME_OPTIONS, visual.iconTheme, 'set-icon-theme', 'iconTheme', 'icon-choice-grid')}
+          </div>
+          <div class="visual-settings-group">
+            <h3>Barevné schéma</h3>
+            ${renderVisualChoiceGrid(COLOR_SCHEME_OPTIONS, visual.colorScheme, 'set-color-scheme', 'colorScheme', 'scheme-choice-grid')}
+          </div>
+        </div>
       </section>
     `;
   }
@@ -15675,7 +15681,6 @@
   }
 
   function setAppTheme(value) {
-    visualSettingsDrawerOpen = true;
     state.settings.theme = normalizeAppTheme(value);
     persistVisualSettings(false);
     render();
@@ -15683,7 +15688,6 @@
   }
 
   function setIconTheme(value) {
-    visualSettingsDrawerOpen = true;
     state.settings.iconTheme = normalizeIconTheme(value);
     preloadAssetIconTheme(state.settings.iconTheme);
     persistVisualSettings(false);
@@ -15692,7 +15696,6 @@
   }
 
   function setColorScheme(value) {
-    visualSettingsDrawerOpen = true;
     state.settings.colorScheme = normalizeColorScheme(value);
     persistVisualSettings(false);
     render();
@@ -18106,7 +18109,6 @@
   document.addEventListener('toggle', (event) => {
     const details = event.target;
     if (!(details instanceof HTMLDetailsElement)) return;
-    if (details.matches('.settings-visual-details')) visualSettingsDrawerOpen = details.open;
     if (details.matches('.loyalty-add-details')) loyaltyAddDetailsOpen = details.open;
     if (details.matches('.calendar-google-details')) googleCalendarDetailsOpen = details.open;
     if (details.matches('.garage-preset-tool')) garagePresetToolOpen = details.open;
