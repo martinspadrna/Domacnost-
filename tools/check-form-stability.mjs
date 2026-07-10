@@ -50,6 +50,14 @@ const checks = [
       app.includes('relationNote')
   },
   {
+    name: 'reading meter monthly deposit is entered and compared per meter',
+    ok: app.includes('monthlyDeposit: normalizeReadingPricePart') &&
+      app.includes("field('Měsíční záloha', 'monthlyDeposit'") &&
+      app.includes('function readingCostBalance(meter = null, row = null)') &&
+      app.includes('const latestByMeter = new Map();') &&
+      app.includes('renderReadingsCostSummary(consumptionRows)')
+  },
+  {
     name: 'warranty files survive renders through an in-memory queue',
     ok: warranty.includes('const warrantyPendingFiles = new Map();') &&
       warranty.includes('stageWarrantyFilesFromForm') &&
