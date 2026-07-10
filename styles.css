@@ -9851,6 +9851,12 @@ form[data-busy="true"] button[type="submit"] {
 .readings-price-details[open] > summary {
   margin-bottom: 10px;
 }
+.readings-price-mode-fields {
+  border: 0;
+  margin: 10px 0 0;
+  min-width: 0;
+  padding: 0;
+}
 .readings-price-help {
   margin-top: 10px;
 }

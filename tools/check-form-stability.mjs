@@ -36,6 +36,20 @@ const checks = [
       app.includes('Průměrná cena za')
   },
   {
+    name: 'reading price mode toggles without full form render',
+    ok: app.includes('function syncReadingPriceModeFields(form)') &&
+      app.includes('const readingsPricingModeControl = event.target.closest') &&
+      !app.includes('const readingsMeterStructureControl = event.target.closest')
+  },
+  {
+    name: 'reading submeter relation is normalized and netted from parent',
+    ok: app.includes('parentMeterId: normalizeText(item.parentMeterId') &&
+      app.includes('function readingParentMeterOptions') &&
+      app.includes('parent.type !== item.type || parent.unit !== item.unit') &&
+      app.includes('parent.submeterValue = Number') &&
+      app.includes('relationNote')
+  },
+  {
     name: 'warranty files survive renders through an in-memory queue',
     ok: warranty.includes('const warrantyPendingFiles = new Map();') &&
       warranty.includes('stageWarrantyFilesFromForm') &&
