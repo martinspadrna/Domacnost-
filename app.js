@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_419';
-  const APP_BUILD = 419;
+  const APP_VERSION = 'Domácnost+ v.0.1_420';
+  const APP_BUILD = 420;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -2918,20 +2918,65 @@
 
   function captureScrollStabilitySnapshot() {
     if (!app) return [];
-    return Array.from(app.querySelectorAll('[data-preserve-scroll]'))
+    return scrollStabilityElements()
       .map((node) => ({
-        key: normalizeText(node.dataset?.preserveScroll),
+        key: scrollStabilityKey(node),
         scrollTop: Number(node.scrollTop || 0),
         scrollLeft: Number(node.scrollLeft || 0)
       }))
-      .filter((item) => item.key);
+      .filter((item) => item.key && (item.scrollTop || item.scrollLeft));
+  }
+
+  function scrollStabilityElements() {
+    if (!app) return [];
+    return Array.from(app.querySelectorAll('*')).filter(isScrollStabilityCandidate).slice(0, 80);
+  }
+
+  function isScrollStabilityCandidate(node) {
+    if (!node || !app?.contains?.(node)) return false;
+    if (node.closest?.('.nav-shell, .nav-scroll, .section-tabs, .tabs-inline')) return false;
+    if (node.closest?.('[data-no-preserve-scroll]')) return false;
+    if (node.hasAttribute?.('data-preserve-scroll')) return true;
+    const canScrollY = Number(node.scrollHeight || 0) > Number(node.clientHeight || 0) + 2;
+    const canScrollX = Number(node.scrollWidth || 0) > Number(node.clientWidth || 0) + 2;
+    if (!canScrollY && !canScrollX) return false;
+    const style = window.getComputedStyle?.(node);
+    if (!style) return false;
+    const overflowY = String(style.overflowY || style.overflow || '');
+    const overflowX = String(style.overflowX || style.overflow || '');
+    return (canScrollY && /(auto|scroll|overlay)/.test(overflowY)) || (canScrollX && /(auto|scroll|overlay)/.test(overflowX));
+  }
+
+  function scrollStabilityKey(node) {
+    const manual = normalizeText(node?.dataset?.preserveScroll);
+    if (manual) return `manual:${manual}`;
+    if (!node || !app?.contains?.(node)) return '';
+    const parts = [];
+    let current = node;
+    while (current && current !== app && parts.length < 7) {
+      const parent = current.parentElement;
+      const tag = String(current.tagName || 'node').toLowerCase();
+      const stableData = ['form', 'detailsKey', 'tabArea', 'overview', 'dashboardWidget', 'module', 'modal']
+        .map((name) => current.dataset?.[name] ? `${name}=${current.dataset[name]}` : '')
+        .filter(Boolean)
+        .join('|');
+      if (stableData) {
+        parts.unshift(`${tag}[${stableData}]`);
+      } else if (current.id) {
+        parts.unshift(`${tag}#${current.id}`);
+      } else {
+        const index = parent ? Array.from(parent.children).filter((child) => child.tagName === current.tagName).indexOf(current) : 0;
+        parts.unshift(`${tag}:${Math.max(0, index)}`);
+      }
+      current = parent;
+    }
+    return parts.length ? `auto:${parts.join('>')}` : '';
   }
 
   function findScrollStabilityElement(key) {
     const safeKey = normalizeText(key);
     if (!safeKey || !app) return null;
-    return Array.from(app.querySelectorAll('[data-preserve-scroll]'))
-      .find((node) => normalizeText(node.dataset?.preserveScroll) === safeKey) || null;
+    return scrollStabilityElements().find((node) => scrollStabilityKey(node) === safeKey) || null;
   }
 
   function restoreScrollStabilitySnapshot(snapshot) {

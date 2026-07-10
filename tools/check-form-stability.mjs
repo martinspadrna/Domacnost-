@@ -11,8 +11,11 @@ const checks = [
       app.includes('namedFormControls(form)')
   },
   {
-    name: 'home edit sheet preserves its own scroll across renders',
+    name: 'scrollable app panels preserve their own scroll across renders',
     ok: app.includes('data-preserve-scroll="home-edit-sheet"') &&
+      app.includes('function scrollStabilityElements()') &&
+      app.includes('function isScrollStabilityCandidate(node)') &&
+      app.includes('function scrollStabilityKey(node)') &&
       app.includes('captureScrollStabilitySnapshot()') &&
       app.includes('restoreScrollStabilitySnapshot(snapshot)') &&
       app.includes('safeAnimationFrame(() => restoreScrollStabilitySnapshot(snapshot))')
