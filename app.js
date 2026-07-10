@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_418';
-  const APP_BUILD = 418;
+  const APP_VERSION = 'Domácnost+ v.0.1_419';
+  const APP_BUILD = 419;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -2884,9 +2884,10 @@
   function captureFormStabilitySnapshot() {
     if (!app) return null;
     const forms = Array.from(app.querySelectorAll('form')).filter(shouldPreserveForm);
+    const scrollContainers = captureScrollStabilitySnapshot();
     const active = document.activeElement;
     const activeForm = active?.closest?.('form') || null;
-    const snapshot = { scrollX: window.scrollX || 0, scrollY: window.scrollY || 0, active: null, forms: [] };
+    const snapshot = { scrollX: window.scrollX || 0, scrollY: window.scrollY || 0, active: null, forms: [], scrollContainers };
     forms.forEach((form) => {
       const controls = namedFormControls(form);
       const nameCounts = new Map();
@@ -2912,7 +2913,37 @@
         selEnd: typeof active.selectionEnd === 'number' ? active.selectionEnd : null
       };
     }
-    return snapshot.forms.length || snapshot.active ? snapshot : null;
+    return snapshot.forms.length || snapshot.active || snapshot.scrollContainers.length ? snapshot : null;
+  }
+
+  function captureScrollStabilitySnapshot() {
+    if (!app) return [];
+    return Array.from(app.querySelectorAll('[data-preserve-scroll]'))
+      .map((node) => ({
+        key: normalizeText(node.dataset?.preserveScroll),
+        scrollTop: Number(node.scrollTop || 0),
+        scrollLeft: Number(node.scrollLeft || 0)
+      }))
+      .filter((item) => item.key);
+  }
+
+  function findScrollStabilityElement(key) {
+    const safeKey = normalizeText(key);
+    if (!safeKey || !app) return null;
+    return Array.from(app.querySelectorAll('[data-preserve-scroll]'))
+      .find((node) => normalizeText(node.dataset?.preserveScroll) === safeKey) || null;
+  }
+
+  function restoreScrollStabilitySnapshot(snapshot) {
+    const containers = Array.isArray(snapshot?.scrollContainers) ? snapshot.scrollContainers : [];
+    containers.forEach((item) => {
+      const node = findScrollStabilityElement(item.key);
+      if (!node) return;
+      const top = Number.isFinite(item.scrollTop) ? item.scrollTop : 0;
+      const left = Number.isFinite(item.scrollLeft) ? item.scrollLeft : 0;
+      node.scrollTop = top;
+      node.scrollLeft = left;
+    });
   }
 
   function findSnapshotForm(key) {
@@ -2937,6 +2968,7 @@
 
   function restoreFormStabilitySnapshot(snapshot) {
     if (!snapshot || !app) return;
+    restoreScrollStabilitySnapshot(snapshot);
     snapshot.forms.forEach((formSnapshot) => {
       const form = findSnapshotForm(formSnapshot.key);
       if (!form) return;
@@ -2958,6 +2990,7 @@
       }
     }
     if (Number.isFinite(snapshot.scrollX) && Number.isFinite(snapshot.scrollY)) window.scrollTo?.(snapshot.scrollX, snapshot.scrollY);
+    safeAnimationFrame(() => restoreScrollStabilitySnapshot(snapshot));
   }
 
   function hasActiveDirtyForm() {
@@ -4232,7 +4265,14 @@
       }
       case 'subscriptions': {
         const summary = subscriptionMonthSummary();
-        return { label: 'Předplatné', value: formatCurrency(summary.expectedReturn), tone: '', nav: 'subscriptions', tab: 'overview' };
+        const debtRows = summary.peopleRows
+          .filter((row) => row.cumulativeDebt > 0)
+          .sort((a, b) => b.cumulativeDebt - a.cumulativeDebt || String(a.person?.name || '').localeCompare(String(b.person?.name || ''), 'cs'));
+        const currentDebt = homeCycleItem(debtRows, 45);
+        if (currentDebt) {
+          return { label: currentDebt.person?.name || 'Předplatné', value: formatCurrency(currentDebt.cumulativeDebt), tone: 'warn', nav: 'subscriptions', tab: 'overview' };
+        }
+        return { label: 'Předplatné', value: summary.expectedReturn ? 'srovnáno' : 'bez sdílení', tone: summary.expectedReturn ? 'good' : '', nav: 'subscriptions', tab: 'overview' };
       }
       case 'pool': {
         const pools = getPoolModule().getPools();
@@ -4474,7 +4514,7 @@
     const activeBadgeSet = new Set(activeBadges);
     return `
       <div class="home-edit-backdrop" data-home-edit-backdrop>
-        <div class="home-edit-sheet" data-no-swipe>
+        <div class="home-edit-sheet" data-no-swipe data-preserve-scroll="home-edit-sheet">
           <div class="home-edit-head">
             <div class="home-edit-title">Upravit Domů</div>
             <button type="button" class="icon-btn" data-action="close-home-edit" aria-label="Zavřít">✕</button>
@@ -4524,11 +4564,12 @@
   function buildHomeSoonItems(ctx) {
     // Hledání jede přes buildHomeAttentionItems napříč všemi moduly (kalendář,
     // úkoly, smlouvy, auto, záruky, odečty, svátky PL...), ale na Domů se z
-    // toho ukážou jen 3 nejnaléhavější, ať widget nezabírá zbytečně místo.
+    // toho ukážou jen 4 nejnaléhavější ve dvou řádcích, ať widget nezabírá
+    // zbytečně místo, ale pořád dá rychlý kontext.
     const excludedOverviews = new Set(['hdo', 'waste', 'pool', 'finance', 'shopping']);
     return buildHomeAttentionItems(ctx)
       .filter((item) => !excludedOverviews.has(item.overview))
-      .slice(0, 3);
+      .slice(0, 4);
   }
 
   function buildHomeAttentionItems(ctx) {

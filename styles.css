@@ -15650,23 +15650,38 @@ body.home-active {
 
 .home-timeline-list {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
 .home-timeline-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  min-width: 0;
   background: var(--surface, var(--card));
   border: 1px solid var(--border, var(--line));
   border-radius: 16px;
-  padding: 12px 14px;
+  padding: 11px 12px;
   text-align: left;
   color: var(--text);
   font: inherit;
   appearance: none;
   -webkit-appearance: none;
   cursor: pointer;
+}
+
+.home-timeline-row .home-row-copy {
+  min-width: 0;
+}
+
+.home-timeline-row .home-row-copy strong,
+.home-timeline-row .home-row-copy em {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .home-edit-backdrop {
