@@ -148,6 +148,93 @@
       return new Intl.DateTimeFormat('cs-CZ', { hour: '2-digit', minute: '2-digit' }).format(date);
     }
 
+    function positiveModulo(value, base) {
+      return ((Number(value) % base) + base) % base;
+    }
+
+    function minutesOfDay(value) {
+      const date = toSafeDate(value, null);
+      if (!date) return null;
+      return date.getHours() * 60 + date.getMinutes();
+    }
+
+    function formatMinuteOfDay(value) {
+      const minutes = Math.round(positiveModulo(value, 1440));
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+    }
+
+    function formatMinutesDuration(value) {
+      const minutes = Math.round(Number(value || 0));
+      if (!(minutes > 0)) return '—';
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${hours} h ${String(mins).padStart(2, '0')} min`;
+    }
+
+    function astronomyDateForDay(day = null) {
+      const iso = normalizeText(day?.date) || new Date().toISOString().slice(0, 10);
+      return toSafeDate(`${iso}T12:00:00`, null) || toSafeDate(iso, null) || new Date();
+    }
+
+    function moonPhaseInfo(day = null) {
+      const date = astronomyDateForDay(day);
+      const synodicMonth = 29.530588853;
+      const referenceNewMoon = Date.UTC(2000, 0, 6, 18, 14);
+      const age = positiveModulo((date.getTime() - referenceNewMoon) / 86400000, synodicMonth);
+      const phase = age / synodicMonth;
+      const illumination = Math.round(((1 - Math.cos(2 * Math.PI * phase)) / 2) * 100);
+      const waxing = phase < 0.5;
+      let label = 'Nov';
+      let emoji = '🌑';
+      if (phase < 0.03 || phase >= 0.97) { label = 'Nov'; emoji = '🌑'; }
+      else if (phase < 0.22) { label = 'Dorůstající srpek'; emoji = '🌒'; }
+      else if (phase < 0.28) { label = 'První čtvrť'; emoji = '🌓'; }
+      else if (phase < 0.47) { label = 'Dorůstá k úplňku'; emoji = '🌔'; }
+      else if (phase < 0.53) { label = 'Úplněk'; emoji = '🌕'; }
+      else if (phase < 0.72) { label = 'Couvá po úplňku'; emoji = '🌖'; }
+      else if (phase < 0.78) { label = 'Poslední čtvrť'; emoji = '🌗'; }
+      else { label = 'Ubývající srpek'; emoji = '🌘'; }
+      return { age, phase, illumination, waxing, label, emoji };
+    }
+
+    function approximateMoonTimes(day = null, moon = moonPhaseInfo(day)) {
+      const sunrise = minutesOfDay(day?.sunrise);
+      const baseRise = Number.isFinite(sunrise) ? sunrise : 6 * 60;
+      const moonriseMinutes = baseRise + moon.phase * 1440;
+      return {
+        moonrise: formatMinuteOfDay(moonriseMinutes),
+        moonset: formatMinuteOfDay(moonriseMinutes + 720)
+      };
+    }
+
+    function weatherAstronomyForDay(day = null, location = null) {
+      const moon = moonPhaseInfo(day);
+      const moonTimes = approximateMoonTimes(day, moon);
+      const sunrise = minutesOfDay(day?.sunrise);
+      const sunset = minutesOfDay(day?.sunset);
+      const daylight = Number.isFinite(sunrise) && Number.isFinite(sunset) ? positiveModulo(sunset - sunrise, 1440) : 0;
+      return {
+        location: normalizeWeatherLocation(location || getWeatherState()?.location),
+        sun: {
+          sunrise: shortTime(day?.sunrise),
+          sunset: shortTime(day?.sunset),
+          daylight: formatMinutesDuration(daylight)
+        },
+        moon: {
+          ...moon,
+          ...moonTimes
+        }
+      };
+    }
+
+    function renderMoonPhaseIcon(moon = moonPhaseInfo(), options = {}) {
+      const size = options.size || 'md';
+      const label = `${moon.label || 'Měsíc'} · ${Number(moon.illumination || 0)} %`;
+      return `<span class="weather-moon-icon weather-moon-icon-${escapeHtml(String(size))}" role="img" aria-label="${escapeHtml(label)}">${escapeHtml(moon.emoji || '🌙')}</span>`;
+    }
+
     function nextHourlyWindow(hours = [], count = 24) {
       if (!hours.length) return [];
       const now = new Date();
@@ -188,6 +275,37 @@
         ].filter((part) => part && part !== '—').join(' · ');
         return `<div class="weather-day"><span>${escapeHtml(shortWeekday(day.date))}</span><strong>${renderWeatherAnimeIcon(day.weatherCode, { size: 'xs', extraClass: 'weather-inline-icon' })}<span>${roundWeather(day.max, '°')}</span></strong><em>${escapeHtml(detail)}</em></div>`;
       }).join('')}</div>`;
+    }
+
+    function renderWeatherAstronomyPanel(weather, day, location) {
+      const astronomy = weatherAstronomyForDay(day, location);
+      return `
+        <section class="card desktop-span-2 weather-astronomy-card">
+          <div class="card-header">
+            <div><h2>Slunce a měsíc</h2><p>${escapeHtml(weatherLocationLabel())}</p></div>
+            <span class="badge">${escapeHtml(astronomy.moon.label)}</span>
+          </div>
+          <div class="weather-astronomy-hero">
+            <div class="weather-astronomy-feature weather-astronomy-sun">
+              <span class="weather-astronomy-icon" aria-hidden="true">☀️</span>
+              <div><strong>${escapeHtml(astronomy.sun.daylight)}</strong><em>délka dne</em></div>
+            </div>
+            <div class="weather-astronomy-feature weather-astronomy-moon">
+              ${renderMoonPhaseIcon(astronomy.moon, { size: 'lg' })}
+              <div><strong>${escapeHtml(`${astronomy.moon.illumination} %`)}</strong><em>${escapeHtml(astronomy.moon.label)}</em></div>
+            </div>
+          </div>
+          <div class="weather-astronomy-grid">
+            <div class="mini-stat"><span>Východ slunce</span><strong>${escapeHtml(astronomy.sun.sunrise)}</strong></div>
+            <div class="mini-stat"><span>Západ slunce</span><strong>${escapeHtml(astronomy.sun.sunset)}</strong></div>
+            <div class="mini-stat"><span>Východ měsíce</span><strong>${escapeHtml(astronomy.moon.moonrise)}</strong></div>
+            <div class="mini-stat"><span>Západ měsíce</span><strong>${escapeHtml(astronomy.moon.moonset)}</strong></div>
+            <div class="mini-stat"><span>Nasvícení</span><strong>${escapeHtml(`${astronomy.moon.illumination} %`)}</strong></div>
+            <div class="mini-stat"><span>Fáze</span><strong>${escapeHtml(astronomy.moon.label)}</strong></div>
+          </div>
+          <div class="inline-note compact-note">Východ a západ slunce jsou z počasí. Měsíc je lokální orientační výpočet podle data a polohy, takže pro běžné plánování stačí, ale není to astronomická observatoř.</div>
+        </section>
+      `;
     }
 
     async function searchWeatherLocations(query) {
@@ -293,9 +411,11 @@
       const providerLabel = normalizeText(weather.meta?.providerLabel) || (weather.source === 'chmi' ? 'ČHMÚ + doplněné detaily' : sourceLabel);
       const astronomySource = normalizeText(weather.meta?.astronomySource || weather.meta?.numericFallback) || (weather.source === 'chmi' ? 'Open-Meteo' : sourceLabel);
       ensureWeatherFresh(false);
-      const activeTab = getModuleTab('weather', 'overview');
+      const requestedTab = getModuleTab('weather', 'overview');
+      const activeTab = ['overview', 'astronomy', 'settings'].includes(requestedTab) ? requestedTab : 'overview';
       const tabs = renderSectionTabs('weather', [
         { id: 'overview', label: 'Přehled', icon: '🌤️' },
+        { id: 'astronomy', label: 'Další', icon: '🌙' },
         { id: 'settings', label: 'Nastavení', icon: '⚙️' }
       ], 'overview');
       const overviewContent = `
@@ -313,8 +433,6 @@
               <div class="mini-stat"><span>Vlhkost</span><strong>${roundWeather(current.humidity, '%')}</strong></div>
               <div class="mini-stat"><span>Vítr</span><strong>${roundWeather(current.windSpeed, ' km/h')}</strong></div>
               <div class="mini-stat"><span>Srážky teď</span><strong>${Number.isFinite(Number(current.precipitation)) ? `${String(current.precipitation).replace('.', ',')} mm` : '—'}</strong></div>
-              <div class="mini-stat"><span>Východ</span><strong>${escapeHtml(shortTime(todayWeather.sunrise))}</strong></div>
-              <div class="mini-stat"><span>Západ</span><strong>${escapeHtml(shortTime(todayWeather.sunset))}</strong></div>
               <div class="mini-stat"><span>Zdroj</span><strong>${escapeHtml(sourceLabel)}</strong></div>
             </div>
           </div>
@@ -341,10 +459,11 @@
           </form>
         </section>
       `;
+      const astronomyContent = renderWeatherAstronomyPanel(weather, todayWeather, location);
       return `
         ${tabs}
         <div class="grid two module-tabbed weather-tab-${escapeHtml(activeTab)}" data-tab-area="weather">
-          ${activeTab === 'settings' ? settingsContent : overviewContent}
+          ${activeTab === 'settings' ? settingsContent : activeTab === 'astronomy' ? astronomyContent : overviewContent}
         </div>`;
     }
 
@@ -533,6 +652,8 @@
       weatherCodeLabel,
       roundWeather,
       weatherLocationLabel,
+      weatherAstronomyForDay,
+      renderMoonPhaseIcon,
       renderWeatherAnimeIcon,
       renderWeatherPage,
       ensureWeatherFresh,

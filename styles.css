@@ -4052,6 +4052,98 @@ body.overview-open {
 .weather-page .weather-daily-row {
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
 }
+
+.weather-astronomy-card {
+  overflow: hidden;
+}
+
+.weather-astronomy-hero {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.weather-astronomy-feature {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .40);
+}
+
+[data-theme="dark"] .weather-astronomy-feature {
+  background: rgba(255, 255, 255, .055);
+}
+
+.weather-astronomy-icon,
+.weather-moon-icon {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .34);
+}
+
+[data-theme="dark"] .weather-astronomy-icon,
+[data-theme="dark"] .weather-moon-icon {
+  background: rgba(255, 255, 255, .08);
+}
+
+.weather-astronomy-icon,
+.weather-moon-icon-lg {
+  width: 54px;
+  height: 54px;
+  font-size: 2rem;
+}
+
+.weather-moon-icon-sm {
+  width: 22px;
+  height: 22px;
+  font-size: .94rem;
+}
+
+.weather-astronomy-feature strong,
+.weather-astronomy-feature em {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weather-astronomy-feature strong {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.weather-astronomy-feature em {
+  color: var(--muted);
+  font-style: normal;
+  font-size: .82rem;
+  font-weight: 750;
+}
+
+.weather-astronomy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.weather-astronomy-card .inline-note {
+  margin-top: 12px;
+}
+
+@media (max-width: 520px) {
+  .weather-astronomy-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .station-summary-item:focus-visible,
 .weather-current-button:focus-visible,
 .weather-title-button:focus-visible {
@@ -15513,15 +15605,21 @@ body.home-active {
 }
 
 .home-weather-widget {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
 }
 
 .home-weather-widget-main {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+}
+
+.home-weather-widget-main > div {
+  min-width: 0;
 }
 
 .home-weather-widget-icon {
@@ -15537,12 +15635,60 @@ body.home-active {
 .home-weather-widget-meta {
   font-size: .8rem;
   color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.home-weather-widget-link {
-  font-size: .8rem;
+.home-weather-astronomy {
+  display: grid;
+  gap: 5px;
+  min-width: 112px;
+  justify-self: end;
+}
+
+.home-weather-astro-row {
+  display: grid;
+  grid-template-columns: 22px auto auto;
+  align-items: center;
+  justify-content: end;
+  gap: 5px;
+  color: var(--muted);
+  font-size: .72rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.home-weather-astro-row strong {
+  color: var(--text);
+  font-size: .78rem;
+  font-weight: 850;
+}
+
+.home-weather-astro-row em {
   color: var(--muted-soft, var(--muted-2));
-  flex-shrink: 0;
+  font-style: normal;
+  font-weight: 750;
+}
+
+@media (max-width: 390px) {
+  .home-weather-widget {
+    gap: 8px;
+    padding-inline: 14px;
+  }
+
+  .home-weather-astronomy {
+    min-width: 98px;
+  }
+
+  .home-weather-astro-row {
+    gap: 3px;
+    font-size: .66rem;
+  }
+
+  .home-weather-astro-row strong {
+    font-size: .72rem;
+  }
 }
 
 .home-today-grid {

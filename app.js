@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_421';
-  const APP_BUILD = 421;
+  const APP_VERSION = 'Domácnost+ v.0.1_422';
+  const APP_BUILD = 422;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -4235,6 +4235,7 @@
     const weather = normalizeWeatherState(ctx?.weather || state.weather);
     const current = weather.current || {};
     const [condition] = weatherCodeLabel(current.weatherCode);
+    const astronomy = weatherAstronomyForDay((weather.daily || [])[0], weather.location);
     const hasCurrent = Boolean(weather.current);
     const value = hasCurrent ? roundWeather(current.temperature, '°') : '—';
     const place = weatherLocationLabel() || 'Počasí';
@@ -4248,7 +4249,10 @@
             <div class="home-weather-widget-meta">${escapeHtml(label)} · ${escapeHtml(place)}</div>
           </div>
         </div>
-        <span class="home-weather-widget-link">Detail ›</span>
+        <span class="home-weather-astronomy" aria-label="Slunce a měsíc">
+          <span class="home-weather-astro-row"><span aria-hidden="true">☀️</span><strong>${escapeHtml(astronomy.sun.sunrise)}</strong><em>${escapeHtml(astronomy.sun.sunset)}</em></span>
+          <span class="home-weather-astro-row">${renderWeatherMoonPhaseIcon(astronomy.moon, { size: 'sm' })}<strong>${escapeHtml(astronomy.moon.moonrise)}</strong><em>${escapeHtml(astronomy.moon.moonset)}</em></span>
+        </span>
       </button>
     `;
   }
@@ -5552,6 +5556,8 @@
   function roundWeather(value, suffix = '') { return getWeatherModule().roundWeather(value, suffix); }
 
   function weatherLocationLabel() { return getWeatherModule().weatherLocationLabel(); }
+  function weatherAstronomyForDay(day, location) { return getWeatherModule().weatherAstronomyForDay(day, location); }
+  function renderWeatherMoonPhaseIcon(moon, options = {}) { return getWeatherModule().renderMoonPhaseIcon(moon, options); }
 
   function renderWeatherPage() { return getWeatherModule().renderWeatherPage(); }
 
