@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_416';
-  const APP_BUILD = 416;
+  const APP_VERSION = 'Domácnost+ v.0.1_417';
+  const APP_BUILD = 417;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1175,6 +1175,10 @@
   let renderFrameRequest = 0;
   let renderQuietTimer = 0;
   let renderForcedDepth = 0;
+  let renderDeferredQuietPending = false;
+  let renderQuietMotionUntil = 0;
+  let renderQuietMotionCleanupTimer = 0;
+  let moduleTransitionCleanupTimer = 0;
   let lastRenderStartedAt = 0;
   let pendingStatePersistTimer = 0;
   let pendingStatePersistKind = '';
@@ -2585,7 +2589,7 @@
       if (saved?.id && item) {
         item.cloudId = saved.id;
         saveState();
-        requestRender();
+        requestBackgroundRender();
       }
     }).catch((error) => console.warn('Cloud sync (přidání) na pozadí selhal', error));
   }
@@ -2659,8 +2663,10 @@
     const finish = () => {
       renderDeferDepth = Math.max(0, renderDeferDepth - 1);
       if (!renderDeferDepth && renderDeferredPending) {
+        const quiet = renderDeferredQuietPending;
         renderDeferredPending = false;
-        requestRender();
+        renderDeferredQuietPending = false;
+        requestRender({ quiet });
       }
     };
     try {
@@ -2708,6 +2714,32 @@
     return new Promise((resolve) => window.setTimeout(resolve, 0));
   }
 
+  function clearQuietRenderClass() {
+    if (Date.now() < renderQuietMotionUntil) {
+      const delay = Math.max(60, renderQuietMotionUntil - Date.now() + 40);
+      renderQuietMotionCleanupTimer = window.setTimeout(clearQuietRenderClass, delay);
+      return;
+    }
+    renderQuietMotionCleanupTimer = 0;
+    document.documentElement.classList.remove('app-quiet-render');
+  }
+
+  function markQuietRender(duration = 900) {
+    renderQuietMotionUntil = Math.max(renderQuietMotionUntil, Date.now() + duration);
+    document.documentElement.classList.add('app-quiet-render');
+    if (renderQuietMotionCleanupTimer) window.clearTimeout(renderQuietMotionCleanupTimer);
+    renderQuietMotionCleanupTimer = window.setTimeout(clearQuietRenderClass, duration + 60);
+  }
+
+  function markModuleTransition() {
+    document.documentElement.classList.add('app-module-transition');
+    if (moduleTransitionCleanupTimer) window.clearTimeout(moduleTransitionCleanupTimer);
+    moduleTransitionCleanupTimer = window.setTimeout(() => {
+      moduleTransitionCleanupTimer = 0;
+      document.documentElement.classList.remove('app-module-transition');
+    }, 360);
+  }
+
   function scheduleBootCloudWarmStart() {
     if (cloudWarmStartTimer) return;
     // If we believe the user is signed in (saved state), start eagerly so the
@@ -2718,7 +2750,7 @@
       cloudWarmStartTimer = null;
       cloudWarmStartLoad(false).catch((error) => {
         bootCloudResumeChecked = true;
-        requestRender();
+        requestBackgroundRender();
         console.warn('Cloud warm start failed', error);
       });
     }, { delay, timeout: 9000 });
@@ -2951,19 +2983,23 @@
       renderForcedDepth += 1;
       try {
         renderDeferredPending = false;
-        requestRender();
+        requestBackgroundRender();
       }
       finally { renderForcedDepth = Math.max(0, renderForcedDepth - 1); }
     }, delay);
   }
 
-  function requestRender() {
+  function requestRender(options = {}) {
+    const quiet = options?.quiet === true;
+    if (quiet) markQuietRender();
     if (renderDeferDepth > 0 || renderInProgress) {
       renderDeferredPending = true;
+      if (quiet) renderDeferredQuietPending = true;
       return;
     }
     if (shouldDelayBackgroundRender()) {
       renderDeferredPending = true;
+      if (quiet) renderDeferredQuietPending = true;
       scheduleQuietRender();
       return;
     }
@@ -2973,6 +3009,10 @@
       renderFrameRequest = 0;
       render();
     });
+  }
+
+  function requestBackgroundRender() {
+    requestRender({ quiet: true });
   }
 
   // requestRender() je jediný vstup pro rendery z pozadí (cloud autosync, realtime,
@@ -3089,9 +3129,12 @@
       restoreFormStabilitySnapshot(formSnapshot);
       renderInProgress = false;
       if (!renderDeferDepth && renderDeferredPending) {
+        const quiet = renderDeferredQuietPending;
         renderDeferredPending = false;
-        window.setTimeout(() => requestRender(), 0);
+        renderDeferredQuietPending = false;
+        window.setTimeout(() => requestRender({ quiet }), 0);
       }
+      clearQuietRenderClass();
     }
   }
 
@@ -12507,7 +12550,7 @@
             email: session.user.email || state.cloud?.email || ''
           };
           saveState();
-          requestRender();
+          requestBackgroundRender();
         }
       }
     });
@@ -13261,7 +13304,8 @@
     markLoyaltyCardsPending();
     touchState();
     saveState();
-    requestRender();
+    if (showMessage) requestRender();
+    else requestBackgroundRender();
     syncLoyaltyCardsToCloud().catch((error) => console.warn('Loyalty photo offload cloud sync failed', error));
     console.info(`Domácnost+ fotky karet přesunuté do IndexedDB: ${movedCount}`);
     return true;
@@ -13886,7 +13930,7 @@
       shoppingLastAutoRefreshAt = Date.now();
       touchState();
       saveState();
-      requestRender();
+      requestBackgroundRender();
       return Boolean(ok);
     } catch (error) {
       console.warn('Shopping cloud refresh failed', reason, error);
@@ -13897,11 +13941,11 @@
         refreshError: error?.message || 'Nákupy se nepovedlo obnovit'
       };
       if (showMessage) showToast(state.shoppingCloud.refreshError);
-      requestRender();
+      requestBackgroundRender();
       return false;
     } finally {
       shoppingCloudRefreshInFlight = false;
-      requestRender();
+      requestBackgroundRender();
     }
   }
 
@@ -15734,14 +15778,14 @@
       state.cloud.lastAutosyncAt = new Date().toISOString();
       persistStateSnapshot();
       if (showMessage) showToast('Cloud je aktuální');
-      requestRender();
+      requestBackgroundRender();
       return true;
     }
     cloudAutosyncRunning = true;
     cloudAutosyncLastAttempt = Date.now();
     state.cloud.autosyncStatus = 'syncing';
     persistStateSnapshot();
-    requestRender();
+    requestBackgroundRender();
     try {
       await withMutedToasts(async () => {
         await cloudSyncLocalPendingData(false);
@@ -15757,7 +15801,7 @@
       };
       touchState();
       persistStateSnapshot();
-      requestRender();
+      requestBackgroundRender();
       if (showMessage) showToast(after ? `Cloud sync hotový, ${after} položek chce ruční kontrolu` : 'Lokální záznamy jsou v cloudu');
       return !after;
     } catch (error) {
@@ -15769,7 +15813,7 @@
         localPendingCount: cloudLocalPendingCount()
       };
       persistStateSnapshot();
-      requestRender();
+      requestBackgroundRender();
       if (showMessage) showToast('Automatická synchronizace se nepovedla');
       return false;
     } finally {
@@ -15952,7 +15996,7 @@
         };
         touchState();
         saveState({ immediate: true });
-        requestRender();
+        requestBackgroundRender();
       });
     } catch (error) {
       // Cílený refresh selhal — zkusíme full reload, aby data nezůstala zatuhlá.
@@ -15971,7 +16015,7 @@
           };
           touchState();
           saveState({ immediate: true });
-          requestRender();
+          requestBackgroundRender();
         });
       } catch (fallbackError) {
         console.warn('Realtime cloud refresh failed', fallbackError);
@@ -16249,7 +16293,7 @@
       state.cloud.lastSyncAt = new Date().toISOString();
       touchState();
       saveState();
-      render();
+      requestBackgroundRender();
       if (showMessage) showToast('Lokální záznamy byly zkontrolované a cloud je načtený');
     });
   }
@@ -16262,7 +16306,7 @@
         user = await refreshCloudSession(false);
       } finally {
         bootCloudResumeChecked = true;
-        if (!user) requestRender();
+        if (!user) requestBackgroundRender();
       }
       if (!user) return;
       cloudWarmStartDone = true;
@@ -16279,7 +16323,7 @@
         await bootstrapCloudHousehold(false);
       }
       if (!state.cloud?.householdId) {
-        requestRender();
+        requestBackgroundRender();
         return;
       }
       await yieldToMainThread();
@@ -16289,7 +16333,7 @@
       await yieldToMainThread();
       await cloudLoadProfilesForCurrentHousehold();
       saveState({ immediate: true });
-      requestRender();
+      requestBackgroundRender();
       // Home hero panely obnovíme dřív; priority loader po dokončení sám spustí
       // klasický background load pro zbytek modulů (s předaným skipModules).
       scheduleBootHomePriorityCloudLoad();
@@ -16385,7 +16429,7 @@
         }
       });
       if (ok > 0) saveState({ immediate: true });
-      if (renderAfter) requestRender();
+      if (renderAfter) requestBackgroundRender();
       if (showMessage) showToast(`Modul načten z cloudu: ${ok}/${loaders.length}`);
       // Strict režim (realtime): jakýkoli neuspěch jednoho loaderu shodí
       // celý modul na false, aby se rozjel plný fallback. UI/lazy režim
@@ -16452,7 +16496,7 @@
         }
       }
       if (loadedModuleIds.length > 0) saveState({ immediate: true });
-      requestRender();
+      requestBackgroundRender();
       if (showMessage) showToast(`Home priority načteno: ${loadedModuleIds.length}/${moduleIds.length}`);
       return loadedModuleIds;
     });
@@ -16485,7 +16529,7 @@
       state.cloud.lastSyncAt = new Date().toISOString();
       touchState();
       saveState({ immediate: true });
-      requestRender();
+      requestBackgroundRender();
       scheduleGoogleCalendarAutoSync('background-load', { delay: 6000 });
       if (showMessage) showToast(`Cloud pozadí načteno: ${ok}/${moduleOrder.length - skipModules.size}`);
       return true;
@@ -16530,7 +16574,7 @@
       state.cloud.lastSyncAt = new Date().toISOString();
       touchState();
       saveState({ immediate: true });
-      requestRender();
+      requestBackgroundRender();
       if (!options.skipRealtimeSetup) setupCloudRealtimeSubscriptions(false);
       if (showMessage) showToast(`Cloud načten: ${ok}/${loaders.length} částí`);
     });
@@ -18063,7 +18107,7 @@
       state.household = { ...(state.household || {}), isConfigured: Boolean(state.household?.isConfigured) };
       touchState();
       saveState();
-      requestRender();
+      requestBackgroundRender();
       if (showMessage) showToast('Tenhle účet zatím nemá žádnou domácnost');
       return [];
     }
@@ -18083,7 +18127,7 @@
     // řetězci (withDeferredRender) a přímý render tady znamenal několik plných
     // překreslení celé appky během přihlášení za sebou (naměřeno 4× přes 1 s).
     // Deferred vrstva je slije do jednoho.
-    requestRender();
+    requestBackgroundRender();
     if (showMessage) showToast(`Načteno domácností: ${households.length}`);
     return households;
   }
@@ -19095,6 +19139,7 @@
           moduleTabs = { ...(moduleTabs || {}), calendar: 'overview' };
           localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
         }
+        markModuleTransition();
         render();
         if (activeModule === 'shopping') scheduleShoppingCloudRefresh('shopping-open', { delay: 700, minAgeMs: 8000, quietMs: 700 });
         scheduleLazyCloudLoadForModule(activeModule, { delay: 3400, quietMs: 2200 });
@@ -19441,7 +19486,7 @@
   // cloud/localStorage state. This fixes the case where localStorage restored the
   // household config but Home showed empty panels because the module arrays were gone.
   hydrateStateFromIndexedDb()
-    .then((restored) => { if (restored) requestRender(); })
+    .then((restored) => { if (restored) requestBackgroundRender(); })
     .catch((error) => console.warn('IndexedDB hydrate failed', error))
     .finally(() => scheduleLoyaltyPhotoOffload());
 

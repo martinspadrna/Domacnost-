@@ -15751,3 +15751,41 @@ body.home-active {
   font-weight: 700;
   margin-bottom: 8px;
 }
+
+/* Domacnost+ v0.1_417 - klidne cloud rendery a stabilni mobilni dock */
+.app-frame main {
+  animation: none !important;
+}
+
+html.app-module-transition:not(.app-quiet-render) .app-frame main {
+  animation: appContentFadeSlide 180ms ease !important;
+}
+
+html.app-quiet-render .app-frame main,
+html.app-quiet-render .nav-active-runner,
+html.app-quiet-render .nav-item,
+html.app-quiet-render .nav-item .nav-icon,
+html.app-quiet-render .nav-item .nav-icon.mini-module-icon,
+html.app-quiet-render .nav-item .nav-icon.module-illustration-slot {
+  animation: none !important;
+  transition: none !important;
+}
+
+@media (max-width: 720px) {
+  :root {
+    --mobile-dock-bottom-gap: 4px;
+    --nav-v278-bottom-gap: var(--mobile-dock-bottom-gap);
+  }
+
+  .nav-shell {
+    position: fixed !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: var(--mobile-dock-bottom-gap) !important;
+    inset-block-end: var(--mobile-dock-bottom-gap) !important;
+    left: 50% !important;
+    width: min(620px, calc(100dvw - 32px)) !important;
+    margin: 0 !important;
+    transform: translate3d(-50%, 0, 0) !important;
+  }
+}

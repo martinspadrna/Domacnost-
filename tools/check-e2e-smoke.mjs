@@ -512,6 +512,9 @@ async function run() {
         const text = document.body?.innerText || '';
         const homeMain = document.querySelector('.home-redesign-shell.home-app-shell main');
         const homeMainStyle = homeMain ? getComputedStyle(homeMain) : null;
+        const navShell = document.querySelector('.nav-shell');
+        const navRect = navShell?.getBoundingClientRect?.();
+        const navStyle = navShell ? getComputedStyle(navShell) : null;
         return {
           title: document.title,
           appStarted: Boolean(window.__DOMACNOST_APP_STARTED__),
@@ -523,6 +526,7 @@ async function run() {
           homeDashTop: Boolean(document.querySelector('.home-dash-top')),
           homeOldHero: Boolean(document.querySelector('.home-minimal-hero, .dashboard-empty-home, .home-daily-hero, .home-dashboard-redesign')),
           homeMainScrollable: Boolean(homeMainStyle && /auto|scroll/.test(homeMainStyle.overflowY)),
+          homeMainAnimationName: homeMainStyle?.animationName || '',
           homeGreeting: Boolean(document.querySelector('.home-dash-greeting')),
           homeTitle: Boolean(document.querySelector('.home-dash-title')),
           homeToday: Boolean(document.querySelector('.home-today-grid .home-today-card')),
@@ -530,6 +534,8 @@ async function run() {
           homeAttention: Boolean(document.querySelector('.home-timeline-list .home-timeline-row')),
           homeModules: Boolean(document.querySelector('.home-quick-actions .home-quick-action')),
           bottomNavCount: document.querySelectorAll('.nav-shell .nav-item').length,
+          bottomNavGap: navRect ? Math.round(window.innerHeight - navRect.bottom) : null,
+          bottomNavCssBottom: navStyle?.bottom || '',
           navPool: Boolean(document.querySelector('[data-nav="pool"]')),
           navFinance: Boolean(document.querySelector('[data-nav="finance"]')),
           navContracts: Boolean(document.querySelector('[data-nav="contracts"]')),
@@ -552,6 +558,7 @@ async function run() {
     if (!initialValue.homeDashTop) { fail('Home nemá hlavičku home-dash-top (pozdrav + název domácnosti).'); bootOk = false; }
     if (initialValue.homeOldHero) { fail('Home znovu vykresluje starý hero/cockpit layout.'); bootOk = false; }
     if (!initialValue.homeMainScrollable) { fail('Nový Home main není scrollovatelný.'); bootOk = false; }
+    if (initialValue.homeMainAnimationName && initialValue.homeMainAnimationName !== 'none') { fail(`Home main při bootu pořád animuje (${initialValue.homeMainAnimationName}).`); bootOk = false; }
     if (!initialValue.homeGreeting) { fail('Home nemá pozdrav (home-dash-greeting).'); bootOk = false; }
     if (!initialValue.homeTitle) { fail('Home nemá název domácnosti v nadpisu (home-dash-title).'); bootOk = false; }
     if (!initialValue.homeToday) { fail('Home neobsahuje dnešní přehled (home-today-grid).'); bootOk = false; }
@@ -559,6 +566,7 @@ async function run() {
     if (!initialValue.homeAttention) { fail('Home neobsahuje seznam Nadcházející.'); bootOk = false; }
     if (!initialValue.homeModules) { fail('Home neobsahuje Rychlé akce.'); bootOk = false; }
     if (initialValue.bottomNavCount !== 5) { fail(`Spodní lišta má ${initialValue.bottomNavCount} položek místo 5 včetně Více.`); bootOk = false; }
+    if (!Number.isFinite(initialValue.bottomNavGap) || initialValue.bottomNavGap < 0 || initialValue.bottomNavGap > 8) { fail(`Spodní lišta není při bootu ukotvená dole (gap ${initialValue.bottomNavGap}, css bottom ${initialValue.bottomNavCssBottom}).`); bootOk = false; }
     if (!initialValue.navPool) { fail('Po seed bootu není dostupná navigace Bazén.'); bootOk = false; }
     if (!initialValue.navFinance) { fail('Po seed bootu není dostupná navigace Finance.'); bootOk = false; }
     if (!initialValue.navContracts) { fail('Po seed bootu není dostupná navigace Smlouvy.'); bootOk = false; }

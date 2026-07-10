@@ -109,6 +109,10 @@ if (app && contracts && index && sw) {
 }
 
 if (app) {
+  expect(app, 'function requestBackgroundRender()', 'app.js: background/cloud render ma tichy vstup.');
+  expect(app, "document.documentElement.classList.add('app-quiet-render')", 'app.js: tiche rendery umi vypnout rusivou animaci obsahu.');
+  expect(app, 'function markModuleTransition()', 'app.js: rucni prepnuti modulu ma explicitni prechod.');
+  expect(app, /markModuleTransition\(\);\s*render\(\);/, 'app.js: modulovy prechod se pousti jen pred rucnim nav renderem.');
   expect(app, 'function isHorizontallyScrollableTarget', 'app.js: swipe guard umí poznat horizontálně scrollovatelný blok.');
   expect(app, 'const NAVIGATION_SWIPE_IGNORE_SELECTOR', 'app.js: swipe guard má centrální seznam chráněných oblastí.');
   expect(app, 'function isNavigationSwipeIgnoredTarget', 'app.js: navigační swipe má jednotný ignore helper.');
@@ -122,6 +126,9 @@ if (app) {
 }
 
 if (styles) {
+  expect(styles, '/* Domacnost+ v0.1_417 - klidne cloud rendery a stabilni mobilni dock */', 'styles.css: existuje finalni blok pro klidne cloud rendery a stabilni mobilni dock.');
+  expect(styles, 'html.app-quiet-render .app-frame main', 'styles.css: app-quiet-render vypina animaci main obsahu.');
+  expect(styles, 'html.app-module-transition:not(.app-quiet-render) .app-frame main', 'styles.css: main animace je povolena jen pri rucnim prepnuti modulu.');
   expect(styles, '.section-tabs {\n  display: flex;', 'styles.css: společné modulové záložky používají horizontální rail.');
   expect(styles, '.finance-tab-loans .finance-panel:not(.panel-loans)', 'styles.css: Finance Půjčky mají vlastní tab visibility pravidlo.');
   expect(styles, '/* Domácnost+ – jednotný obsah modulů */', 'styles.css: existuje finální blok pro jednotný obsah modulů.');

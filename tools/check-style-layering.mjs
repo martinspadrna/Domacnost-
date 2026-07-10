@@ -37,6 +37,12 @@ function expectAbsent(source, pattern, label) {
   else notes.push(label);
 }
 
+function expectPresent(source, pattern, label) {
+  const found = typeof pattern === 'string' ? source.includes(pattern) : pattern.test(source);
+  if (!found) errors.push(label);
+  else notes.push(label);
+}
+
 const styles = read('styles.css');
 if (styles) {
   const beforeCalendar = beforeMarker(styles, '/* Domacnost+ - sjednoceny kalendar */', 'sjednoceny kalendar');
@@ -148,6 +154,14 @@ if (styles) {
   expectAbsent(styles, /\.readings-tab-overview\s+\.readings-panel\.panel-detail\b/, 'styles.css: stary Odečty detail-only tab hack nesmi zustat vedle aktualniho kompletniho readings tab pravidla.');
   expectAbsent(styles, /\.readings-prices-page\s*,\s*\.readings-prices-page\s+\*/, 'styles.css: stary Odečty v267 brute-force descendant reset nesmi zustat vedle finalniho Odecty bloku.');
   expectAbsent(styles, /\.readings-group-card\s*,\s*\.readings-group-card\s+\*/, 'styles.css: stary Odečty group descendant reset nesmi zustat vedle finalniho Odecty bloku.');
+  const quietRenderMarker = '/* Domacnost+ v0.1_417 - klidne cloud rendery a stabilni mobilni dock */';
+  const quietRenderMarkerIndex = styles.indexOf(quietRenderMarker);
+  const quietRenderBlock = quietRenderMarkerIndex === -1 ? '' : styles.slice(quietRenderMarkerIndex);
+  expectPresent(styles, quietRenderMarker, 'styles.css: existuje finalni blok pro klidne cloud rendery a stabilni dock.');
+  expectPresent(quietRenderBlock, /html\.app-quiet-render \.app-frame main[\s\S]{0,260}animation:\s*none\s*!important/, 'styles.css: app-quiet-render vypina animaci hlavniho obsahu.');
+  expectPresent(quietRenderBlock, /html\.app-module-transition:not\(\.app-quiet-render\) \.app-frame main[\s\S]{0,160}appContentFadeSlide/, 'styles.css: animace obsahu bezi jen pri rucnim prepnuti modulu.');
+  expectPresent(quietRenderBlock, /--mobile-dock-bottom-gap:\s*4px/, 'styles.css: mobilni dock ma stabilni boot bottom gap 4px.');
+  expectPresent(quietRenderBlock, /\.nav-shell[\s\S]{0,360}bottom:\s*var\(--mobile-dock-bottom-gap\)\s*!important/, 'styles.css: finalni mobilni nav-shell kotvi dock ke stabilnimu bottom gapu.');
 }
 
 console.log('Style layering check pro Domacnost+');
