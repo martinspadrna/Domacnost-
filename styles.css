@@ -14137,6 +14137,18 @@ body.home-active {
   color: var(--muted);
 }
 
+/* v0.1_414: iOS PWA pri prvnim bootu nekdy vrati prechodny safe-area bottom.
+   Dock proto kotvime stabilne k viewportu a safe-area nechavame jen jako rezervu obsahu. */
+@media (max-width: 720px) {
+  :root {
+    --nav-v278-bottom-gap: 4px;
+  }
+
+  .nav-shell {
+    bottom: 4px !important;
+  }
+}
+
 .modal-actions {
   position: sticky;
   bottom: 0;
