@@ -59,6 +59,41 @@
       try { return JSON.parse(sessionStorage.getItem('domacnostPlus.warrantyDraft')) || null; }
       catch (error) { return null; }
     })();
+    const warrantyPendingFiles = new Map();
+
+    function warrantyFileQueueKey(formOrId = '') {
+      if (typeof formOrId === 'string') return formOrId || 'new';
+      const form = formOrId;
+      if (!form) return 'new';
+      if (form.dataset?.form === 'add-warranty-files') return `files:${form.dataset.warrantyId || ''}`;
+      return 'new';
+    }
+
+    function pendingWarrantyFilesFor(key) {
+      return warrantyPendingFiles.get(warrantyFileQueueKey(key)) || [];
+    }
+
+    function stageWarrantyFilesFromForm(form) {
+      if (!form) return [];
+      const input = form.querySelector?.('input[type="file"]');
+      const files = Array.from(input?.files || []).filter(Boolean);
+      const key = warrantyFileQueueKey(form);
+      if (files.length) warrantyPendingFiles.set(key, files);
+      return pendingWarrantyFilesFor(key);
+    }
+
+    function clearWarrantyPendingFiles(key) {
+      warrantyPendingFiles.delete(warrantyFileQueueKey(key));
+    }
+
+    function renderPendingWarrantyFiles(key) {
+      const files = pendingWarrantyFilesFor(key);
+      if (!files.length) return '';
+      return `
+        <div class="inline-note compact-note warranty-pending-files">
+          Vybráno: ${files.map((file) => escapeHtml(file.name || 'příloha')).join(', ')}
+        </div>`;
+    }
 
     function normalizeWarrantyStatus(value) {
       const key = normalizeKey(value || 'active');
@@ -289,6 +324,7 @@
               ${files.length ? `<div class="warranty-file-list">${files.map((file) => renderWarrantyFileItem(file)).join('')}</div>` : '<div class="item-meta">Bez přílohy</div>'}
               <form data-form="add-warranty-files" data-warranty-id="${escapeHtml(item.id)}" class="compact-form warranty-file-form">
                 <label class="field"><span>Přidat fotku / PDF</span><input class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf"></label>
+                ${renderPendingWarrantyFiles(`files:${item.id}`)}
                 <div class="form-actions compact-actions"><button class="ghost-btn" type="submit">Přidat přílohu</button></div>
               </form>
             </details>
@@ -321,6 +357,7 @@
             ${field('Poznámka / reklamace', 'note', 'text', 'např. reklamováno, číslo reklamace, domluva', false, warrantyDraftValue('note', ''))}
           </div>
           <label class="field warranty-file-add-field"><span>Fotka / PDF účtenky</span><input class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf"></label>
+          ${renderPendingWarrantyFiles('new')}
           <div class="inline-note compact-note">Základ je 2 roky. Fotky se před uložením automaticky zmenší tak, aby zůstal čitelný text. PDF se nechává beze změny.</div>
           <div class="form-actions"><button class="primary-btn" type="submit">Přidat záruku</button></div>
         </form>
@@ -587,12 +624,14 @@
       const warrantyId = form.dataset.warrantyId;
       const warranty = getState().warranties.find((item) => item.id === warrantyId);
       const input = form.querySelector('input[type="file"]');
-      const files = [...(input?.files || [])];
+      const queueKey = warrantyFileQueueKey(form);
+      const files = pendingWarrantyFilesFor(queueKey).length ? pendingWarrantyFilesFor(queueKey) : [...(input?.files || [])];
       if (!warranty || !files.length) return showToast('Vyber soubor');
       const { added, failed } = await addWarrantyFilesToWarranty(warranty, files);
       touchState();
       saveState();
       if (input) input.value = '';
+      if (added && !failed) clearWarrantyPendingFiles(queueKey);
       render();
       if (added && cloudReady()) showToast(failed ? `Do cloudu nahráno ${added}, neprošlo ${failed}` : 'Příloha záruky nahraná do cloudu');
       else if (added) showToast(added === 1 ? 'Příloha záruky uložená lokálně' : `Lokálně přidáno příloh: ${added}`);
@@ -721,8 +760,9 @@
       touchState();
       saveState();
       const input = form?.querySelector?.('input[type="file"]');
-      const files = [...(input?.files || [])];
+      const files = pendingWarrantyFilesFor('new').length ? pendingWarrantyFilesFor('new') : [...(input?.files || [])];
       clearWarrantyDraft();
+      clearWarrantyPendingFiles('new');
       form?.reset();
       const purchase = form?.querySelector?.('[name="purchaseDate"]');
       const years = form?.querySelector?.('[name="warrantyYears"]');
@@ -842,6 +882,7 @@
       // draft
       saveWarrantyDraftFromForm,
       clearWarrantyDraft,
+      stageWarrantyFilesFromForm,
       isWarrantyFormActive,
       // render
       renderWarrantyItem,

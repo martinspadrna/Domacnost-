@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_411';
-  const APP_BUILD = 411;
+  const APP_VERSION = 'Domácnost+ v.0.1_412';
+  const APP_BUILD = 412;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1173,6 +1173,9 @@
   let renderDeferredPending = false;
   let renderInProgress = false;
   let renderFrameRequest = 0;
+  let renderQuietTimer = 0;
+  let renderForcedDepth = 0;
+  let lastRenderStartedAt = 0;
   let pendingStatePersistTimer = 0;
   let pendingStatePersistKind = '';
   let lastStatePersistAt = 0;
@@ -1183,6 +1186,8 @@
   let bootHomePriorityCloudLoadTimer = null;
   let lastUserInteractionAt = Date.now();
   const UI_INTERACTION_QUIET_MS = 1400;
+  const FORM_RENDER_QUIET_MS = 1800;
+  const FORM_RENDER_MAX_WAIT_MS = 7000;
   const lazyModuleCloudLoads = new Map();
 
   const app = document.getElementById('app');
@@ -2655,7 +2660,7 @@
       renderDeferDepth = Math.max(0, renderDeferDepth - 1);
       if (!renderDeferDepth && renderDeferredPending) {
         renderDeferredPending = false;
-        render();
+        requestRender();
       }
     };
     try {
@@ -2773,16 +2778,200 @@
     }, { delay: Number(options.delay || 2200), quietMs: Number(options.quietMs || 1500), timeout: 7000 });
   }
 
+  function formStabilityBaseKey(form) {
+    if (!form) return '';
+    return [
+      form.dataset.form || '',
+      form.dataset.id || '',
+      form.dataset.vehicleId || '',
+      form.dataset.contractId || '',
+      form.dataset.warrantyId || '',
+      form.dataset.cloudId || ''
+    ].join('::');
+  }
+
+  function formStabilityKey(form, forms = null) {
+    const base = formStabilityBaseKey(form);
+    const all = forms || Array.from(app?.querySelectorAll?.('form') || []);
+    let index = 0;
+    for (const candidate of all) {
+      if (candidate === form) break;
+      if (formStabilityBaseKey(candidate) === base) index += 1;
+    }
+    return `${base}#${index}`;
+  }
+
+  function controlValueSnapshot(control) {
+    const tag = String(control?.tagName || '').toUpperCase();
+    const type = String(control?.type || '').toLowerCase();
+    if (type === 'file') return null;
+    if (type === 'checkbox' || type === 'radio') return { kind: 'checked', checked: Boolean(control.checked) };
+    if (tag === 'SELECT' && control.multiple) return { kind: 'multi', values: Array.from(control.selectedOptions || []).map((option) => option.value) };
+    return { kind: 'value', value: control.value ?? '' };
+  }
+
+  function controlDefaultSnapshot(control) {
+    const tag = String(control?.tagName || '').toUpperCase();
+    const type = String(control?.type || '').toLowerCase();
+    if (type === 'file') return null;
+    if (type === 'checkbox' || type === 'radio') return { kind: 'checked', checked: Boolean(control.defaultChecked) };
+    if (tag === 'SELECT' && control.multiple) {
+      return { kind: 'multi', values: Array.from(control.options || []).filter((option) => option.defaultSelected).map((option) => option.value) };
+    }
+    if (tag === 'SELECT') {
+      const selected = Array.from(control.options || []).find((option) => option.defaultSelected);
+      return { kind: 'value', value: selected ? selected.value : (control.options?.[0]?.value ?? '') };
+    }
+    return { kind: 'value', value: control.defaultValue ?? '' };
+  }
+
+  function sameControlSnapshot(a, b) {
+    if (!a || !b || a.kind !== b.kind) return false;
+    if (a.kind === 'checked') return a.checked === b.checked;
+    if (a.kind === 'multi') return JSON.stringify(a.values || []) === JSON.stringify(b.values || []);
+    return String(a.value ?? '') === String(b.value ?? '');
+  }
+
+  function isFormControlDirty(control) {
+    const current = controlValueSnapshot(control);
+    if (!current) return false;
+    return !sameControlSnapshot(current, controlDefaultSnapshot(control));
+  }
+
+  function namedFormControls(form) {
+    return Array.from(form?.querySelectorAll?.('input[name], textarea[name], select[name]') || []);
+  }
+
+  function shouldPreserveForm(form) {
+    if (!form || !app?.contains?.(form)) return false;
+    if (form.contains(document.activeElement)) return true;
+    return namedFormControls(form).some(isFormControlDirty);
+  }
+
+  function captureFormStabilitySnapshot() {
+    if (!app) return null;
+    const forms = Array.from(app.querySelectorAll('form')).filter(shouldPreserveForm);
+    const active = document.activeElement;
+    const activeForm = active?.closest?.('form') || null;
+    const snapshot = { scrollX: window.scrollX || 0, scrollY: window.scrollY || 0, active: null, forms: [] };
+    forms.forEach((form) => {
+      const controls = namedFormControls(form);
+      const nameCounts = new Map();
+      const fields = [];
+      controls.forEach((control) => {
+        const value = controlValueSnapshot(control);
+        if (!value) return;
+        const name = control.getAttribute('name') || '';
+        const nameIndex = nameCounts.get(name) || 0;
+        nameCounts.set(name, nameIndex + 1);
+        fields.push({ name, nameIndex, value });
+      });
+      if (fields.length) snapshot.forms.push({ key: formStabilityKey(form), fields });
+    });
+    if (activeForm && active?.getAttribute?.('name')) {
+      const activeName = active.getAttribute('name') || '';
+      const activeControls = namedFormControls(activeForm).filter((control) => (control.getAttribute('name') || '') === activeName);
+      snapshot.active = {
+        formKey: formStabilityKey(activeForm),
+        name: activeName,
+        nameIndex: Math.max(0, activeControls.indexOf(active)),
+        selStart: typeof active.selectionStart === 'number' ? active.selectionStart : null,
+        selEnd: typeof active.selectionEnd === 'number' ? active.selectionEnd : null
+      };
+    }
+    return snapshot.forms.length || snapshot.active ? snapshot : null;
+  }
+
+  function findSnapshotForm(key) {
+    const forms = Array.from(app?.querySelectorAll?.('form') || []);
+    return forms.find((form) => formStabilityKey(form, forms) === key) || null;
+  }
+
+  function applyControlSnapshot(control, value) {
+    if (!control || !value) return;
+    const tag = String(control.tagName || '').toUpperCase();
+    if (value.kind === 'checked') {
+      control.checked = Boolean(value.checked);
+      return;
+    }
+    if (value.kind === 'multi' && tag === 'SELECT') {
+      const selected = new Set(value.values || []);
+      Array.from(control.options || []).forEach((option) => { option.selected = selected.has(option.value); });
+      return;
+    }
+    control.value = value.value ?? '';
+  }
+
+  function restoreFormStabilitySnapshot(snapshot) {
+    if (!snapshot || !app) return;
+    snapshot.forms.forEach((formSnapshot) => {
+      const form = findSnapshotForm(formSnapshot.key);
+      if (!form) return;
+      const controls = namedFormControls(form);
+      formSnapshot.fields.forEach((fieldSnapshot) => {
+        const matches = controls.filter((control) => (control.getAttribute('name') || '') === fieldSnapshot.name);
+        applyControlSnapshot(matches[fieldSnapshot.nameIndex] || matches[0], fieldSnapshot.value);
+      });
+    });
+    if (snapshot.active) {
+      const form = findSnapshotForm(snapshot.active.formKey);
+      const matches = namedFormControls(form).filter((control) => (control.getAttribute('name') || '') === snapshot.active.name);
+      const target = matches[snapshot.active.nameIndex] || matches[0];
+      if (target) {
+        target.focus();
+        if (snapshot.active.selStart !== null && snapshot.active.selEnd !== null && typeof target.setSelectionRange === 'function') {
+          try { target.setSelectionRange(snapshot.active.selStart, snapshot.active.selEnd); } catch {}
+        }
+      }
+    }
+    if (Number.isFinite(snapshot.scrollX) && Number.isFinite(snapshot.scrollY)) window.scrollTo?.(snapshot.scrollX, snapshot.scrollY);
+  }
+
+  function hasActiveDirtyForm() {
+    const form = document.activeElement?.closest?.('form');
+    return Boolean(form && app?.contains?.(form) && shouldPreserveForm(form));
+  }
+
+  function shouldDelayBackgroundRender() {
+    if (renderForcedDepth > 0) return false;
+    if (!hasActiveDirtyForm()) return false;
+    return Date.now() - lastUserInteractionAt < FORM_RENDER_MAX_WAIT_MS;
+  }
+
+  function scheduleQuietRender() {
+    if (renderQuietTimer) window.clearTimeout(renderQuietTimer);
+    const elapsed = Date.now() - lastUserInteractionAt;
+    const delay = Math.max(180, Math.min(FORM_RENDER_QUIET_MS, FORM_RENDER_QUIET_MS - elapsed + 120));
+    renderQuietTimer = window.setTimeout(() => {
+      renderQuietTimer = 0;
+      if (hasActiveDirtyForm() && Date.now() - lastUserInteractionAt < FORM_RENDER_QUIET_MS) {
+        scheduleQuietRender();
+        return;
+      }
+      renderForcedDepth += 1;
+      try {
+        renderDeferredPending = false;
+        requestRender();
+      }
+      finally { renderForcedDepth = Math.max(0, renderForcedDepth - 1); }
+    }, delay);
+  }
+
   function requestRender() {
     if (renderDeferDepth > 0 || renderInProgress) {
       renderDeferredPending = true;
+      return;
+    }
+    if (shouldDelayBackgroundRender()) {
+      renderDeferredPending = true;
+      scheduleQuietRender();
       return;
     }
     if (renderFrameRequest) return;
     const schedule = window.requestAnimationFrame || window.webkitRequestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
     renderFrameRequest = schedule(() => {
       renderFrameRequest = 0;
-      renderPreservingActiveInput();
+      render();
     });
   }
 
@@ -2793,27 +2982,7 @@
   // rozepsaná-ale-neuložená hodnota není). Hodnotu i pozici kurzoru proto kolem
   // render() přenášíme přes stejný data-form/data-id klíč, co používá formulář.
   function renderPreservingActiveInput() {
-    const active = document.activeElement;
-    const isEditable = active && app?.contains?.(active) && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName);
-    const form = isEditable ? active.closest('form') : null;
-    const name = form ? (active.getAttribute('name') || '') : '';
-    if (!form || !name) {
-      render();
-      return;
-    }
-    const formKey = `${form.dataset.form || ''}::${form.dataset.id || form.dataset.vehicleId || form.dataset.contractId || ''}`;
-    const value = active.value;
-    const selStart = typeof active.selectionStart === 'number' ? active.selectionStart : null;
-    const selEnd = typeof active.selectionEnd === 'number' ? active.selectionEnd : null;
     render();
-    const matchForm = Array.from(app.querySelectorAll('form')).find((candidate) => `${candidate.dataset.form || ''}::${candidate.dataset.id || candidate.dataset.vehicleId || candidate.dataset.contractId || ''}` === formKey);
-    const target = matchForm ? matchForm.querySelector(`[name="${CSS.escape(name)}"]`) : null;
-    if (!target) return;
-    target.value = value;
-    target.focus();
-    if (selStart !== null && selEnd !== null && typeof target.setSelectionRange === 'function') {
-      try { target.setSelectionRange(selStart, selEnd); } catch {}
-    }
   }
 
   function render() {
@@ -2821,6 +2990,8 @@
       renderDeferredPending = true;
       return;
     }
+    const formSnapshot = captureFormStabilitySnapshot();
+    lastRenderStartedAt = Date.now();
     renderInProgress = true;
     try {
       applyVisualSettings();
@@ -2915,10 +3086,11 @@
         keepActiveSectionTabsCentered();
       }
     } finally {
+      restoreFormStabilitySnapshot(formSnapshot);
       renderInProgress = false;
       if (!renderDeferDepth && renderDeferredPending) {
         renderDeferredPending = false;
-        window.setTimeout(() => render(), 0);
+        window.setTimeout(() => requestRender(), 0);
       }
     }
   }
@@ -7317,6 +7489,10 @@
     return getWarrantyModule().saveWarrantyDraftFromForm(form);
   }
 
+  function stageWarrantyFilesFromForm(form) {
+    return getWarrantyModule().stageWarrantyFilesFromForm(form);
+  }
+
   function renderWarrantyDetailModal() {
     return getWarrantyModule().renderWarrantyDetailModal();
   }
@@ -8169,11 +8345,12 @@
   }
 
   function readingMeterAverageUnitPrice(meter = null) {
+    const direct = decimalValue(meter?.pricePerUnit);
+    if (direct !== '' && direct >= 0) return direct;
     const total = decimalValue(meter?.averageBillTotal);
     const usage = decimalValue(meter?.averageBillUsage);
     if (total !== '' && usage !== '' && total >= 0 && usage > 0) return Number((total / usage).toFixed(4));
-    const legacy = decimalValue(meter?.pricePerUnit);
-    return legacy !== '' && legacy >= 0 ? legacy : '';
+    return '';
   }
 
   function readingMeterContractUnitPrice(meter = null) {
@@ -8290,6 +8467,9 @@
     const averageFields = `
       ${field('Celková cena z vyúčtování', 'averageBillTotal', 'text', 'např. 24000', false, meter.averageBillTotal ?? '', 'decimal')}
       ${field(`Spotřeba z vyúčtování (${meta.unit || 'jednotka'})`, 'averageBillUsage', 'text', 'např. 3200', false, meter.averageBillUsage ?? '', 'decimal')}`;
+    const averageUnit = meta.unit || meter.unit || 'jednotka';
+    const directAverageFields = `
+      ${field(`Průměrná cena za ${averageUnit}`, 'pricePerUnit', 'text', `Kč/${averageUnit}`, false, meter.pricePerUnit ?? '', 'decimal')}`;
     const contractFields = type === 'water'
       ? `
         ${field('Vodné', 'waterPrice', 'text', 'Kč/m³', false, meter.waterPrice ?? '', 'decimal')}
@@ -8320,7 +8500,7 @@
         <div class="small-muted">Tady nastavíš cenu jen pro toto konkrétní měřidlo. Když ji nevyplníš, použije se cena skupiny vyúčtování.</div>
         <div class="form-grid two">
           ${selectField('Výpočet ceny', 'pricingMode', readingPriceModeOptions, selectedMode)}
-          ${averageFields}
+          ${directAverageFields}
           ${contractFields}
           ${field('Popis stálých plateb', 'fixedMonthlyLabel', 'text', 'např. jistič + stálý plat', false, meter.fixedMonthlyLabel ?? '')}
         </div>
@@ -8896,6 +9076,11 @@
         return latest && String(date || '') < String(latest.date || '');
       });
       if (confirmOlder && !window.confirm('Datum je starší než poslední odečet u některého tarifu. Uložit i tak?')) return;
+      const tooLow = registerEntries.find((item) => {
+        const latest = [...readingEntriesForRegister(meter.id, item.register)].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0];
+        return latest && String(date || '') >= String(latest.date || '') && Number.isFinite(Number(latest.value)) && item.value < Number(latest.value);
+      });
+      if (tooLow) return showToast(`Stav ${tooLow.register} nesmí být menší než poslední odečet`);
       const entries = registerEntries.map((item) => normalizeReadingEntry({ meterId: meter.id, date, value: item.value, register: item.register, unitPrice, note }));
       state.readings = [...readingsEntries(), ...entries];
     } else {
@@ -8904,9 +9089,10 @@
       const entry = normalizeReadingEntry({ meterId: meter.id, date, value, unitPrice, note });
       const latest = latestReadingForMeter(meter.id);
       if (latest && String(entry.date || '') < String(latest.date || '') && !window.confirm('Datum je starší než poslední odečet. Uložit i tak?')) return;
+      if (latest && String(entry.date || '') >= String(latest.date || '') && Number.isFinite(Number(latest.value)) && value < Number(latest.value)) return showToast('Stav nesmí být menší než poslední odečet');
       state.readings = [...readingsEntries(), entry];
     }
-    readingsEntryDrawerOpen = false;
+    readingsEntryDrawerOpen = true;
     form?.reset?.();
     const dateInput = form?.querySelector?.('[name="date"]');
     if (dateInput) dateInput.value = todayISO();
@@ -8970,12 +9156,9 @@
         patch.otherUnitPrice = otherUnitPrice;
       }
     } else {
-      const averageBillTotal = window.prompt('Celková cena z vyúčtování v Kč', meter.averageBillTotal === '' ? '' : String(meter.averageBillTotal).replace('.', ','));
-      if (averageBillTotal === null) return;
-      const averageBillUsage = window.prompt(`Spotřeba z vyúčtování v ${meter.unit || 'jednotkách'}`, meter.averageBillUsage === '' ? '' : String(meter.averageBillUsage).replace('.', ','));
-      if (averageBillUsage === null) return;
-      patch.averageBillTotal = averageBillTotal;
-      patch.averageBillUsage = averageBillUsage;
+      const unitPrice = window.prompt(`Průměrná cena v Kč/${meter.unit || 'jednotka'}`, meter.pricePerUnit === '' ? '' : String(meter.pricePerUnit).replace('.', ','));
+      if (unitPrice === null) return;
+      patch.pricePerUnit = unitPrice;
     }
     const fixedMonthlyCost = window.prompt('Stálá platba / měsíc', meter.fixedMonthlyCost === '' ? '' : String(meter.fixedMonthlyCost).replace('.', ','));
     if (fixedMonthlyCost === null) return;
@@ -9434,6 +9617,29 @@
     return entries.filter((entry) => String(entry.date || '') >= startKey);
   }
 
+  function latestReadingForEntryInput(meterId, register = '') {
+    const entries = register ? readingEntriesForRegister(meterId, register) : readingsEntries(meterId);
+    return [...entries].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0] || null;
+  }
+
+  function readingEntryValuePlaceholder(meter, register = '') {
+    const latest = latestReadingForEntryInput(meter?.id, register);
+    if (!latest || !Number.isFinite(Number(latest.value))) return register ? `aktuální stav ${register}` : 'aktuální stav';
+    return `naposledy ${Number(latest.value).toLocaleString('cs-CZ', { maximumFractionDigits: 3 })} ${meter?.unit || ''}`.trim();
+  }
+
+  function readingEntryValueField(label, name, meter, register = '', required = false) {
+    const inputId = `field-${name}-${Math.random().toString(36).slice(2, 7)}`;
+    const latest = latestReadingForEntryInput(meter?.id, register);
+    const minAttr = latest && Number.isFinite(Number(latest.value)) ? ` min="${escapeHtml(String(latest.value))}"` : '';
+    return `
+      <div class="field">
+        <label for="${inputId}">${escapeHtml(label)}</label>
+        <input class="input" id="${inputId}" name="${escapeHtml(name)}" type="number" step="any" inputmode="decimal" placeholder="${escapeHtml(readingEntryValuePlaceholder(meter, register))}" value="" ${required ? 'required' : ''}${minAttr}>
+      </div>
+    `;
+  }
+
   function renderReadingEntryForm(meters = [], selectedId = '', options = {}) {
     const showMeterSelect = options.showMeterSelect !== false;
     const meter = readingMeterById(selectedId) || meters[0] || null;
@@ -9442,6 +9648,12 @@
     const lastKnownPrice = readingLastKnownUnitPrice(meter.id, null, registers[0] || '') || readingMeterUnitPrice(meter, registers[0] || '');
     const unitPricePlaceholder = lastKnownPrice !== '' ? `prázdné = poslední ${lastKnownPrice.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })} Kč/${meter.unit || 'j.'}` : 'volitelně, prázdné = poslední cena';
     const meterOptions = meters.map((item) => [item.id, `${readingTypeMeta(item.type).icon} ${item.name} · ${item.unit}`]);
+    const stableValueFields = registers.length
+      ? registers.map((register) => {
+        const key = readingRegisterInputKey(register);
+        return `${readingEntryValueField(`Stav ${register}`, `registerValue__${key}`, meter, register, false)}<input type="hidden" name="registerLabel__${key}" value="${escapeHtml(register)}">`;
+      }).join('')
+      : readingEntryValueField('Stav', 'value', meter, '', true);
     const valueFields = registers.length
       ? registers.map((register) => {
         const key = readingRegisterInputKey(register);
@@ -9453,7 +9665,7 @@
         <div class="form-grid two">
           ${showMeterSelect ? selectField('Měřidlo', 'meterId', [['', 'Vyber měřidlo'], ...meterOptions], meter.id) : `<input type="hidden" name="meterId" value="${escapeHtml(meter.id)}">`}
           ${field('Datum', 'date', 'date', '', true, todayISO())}
-          ${valueFields}
+          ${stableValueFields}
           ${field('Cena za jednotku pro tento odečet', 'unitPrice', 'text', unitPricePlaceholder, false, '', 'decimal')}
           <label><span>Foto odečtu</span><input type="file" name="photo" accept="image/*" capture="environment"><small>Fotka se zatím použije jen jako poznámka k odečtu. Automatické přečtení hodnoty bude potřeba doplnit přes OCR/backend.</small></label>
           ${field('Poznámka', 'note', 'text', 'např. samoodečet')}
@@ -18817,6 +19029,11 @@
     }
     const warrantyForm = event.target.closest('form[data-form="add-warranty"], form[data-form="edit-warranty"]');
     if (warrantyForm) {
+      if (event.target.matches('input[type="file"]')) {
+        stageWarrantyFilesFromForm(warrantyForm);
+        render();
+        return;
+      }
       const warrantyYears = event.target.closest('select[name="warrantyYears"]');
       if (warrantyYears) {
         const until = warrantyForm.querySelector('[name="warrantyUntil"]');
@@ -18827,6 +19044,12 @@
         }
       }
       saveWarrantyDraftFromForm(warrantyForm);
+    }
+    const warrantyFilesForm = event.target.closest('form[data-form="add-warranty-files"]');
+    if (warrantyFilesForm && event.target.matches('input[type="file"]')) {
+      stageWarrantyFilesFromForm(warrantyFilesForm);
+      render();
+      return;
     }
     const profileSwitch = event.target.closest('[data-profile-switch]');
     if (profileSwitch) {
@@ -18997,6 +19220,19 @@
   setupInstallAndUpdateFlow();
   registerServiceWorker();
   installAppLikeTouchGuards();
+
+  if (state.meta?.mode === 'e2e-smoke' || ['127.0.0.1', 'localhost'].includes(window.location.hostname)) {
+    window.__DOMACNOST_E2E_NAV__ = (moduleId, tab = '') => {
+      const nextModule = String(moduleId || 'home');
+      window.__DOMACNOST_E2E_LAST_NAV__ = nextModule;
+      activeModule = nextModule;
+      if (tab) {
+        moduleTabs = { ...(moduleTabs || {}), [nextModule]: tab };
+        localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      }
+      render();
+    };
+  }
 
   render();
   scheduleBootCloudWarmStart();

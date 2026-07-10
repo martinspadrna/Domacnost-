@@ -415,6 +415,24 @@ function smokeSeedScript() {
     user: { id: 'user-e2e-smoke', email: 'smoke@example.test' }
   };
   return `
+    try {
+      const noopRegistration = {
+        waiting: null,
+        installing: null,
+        addEventListener: function () {},
+        update: function () { return Promise.resolve(); }
+      };
+      Object.defineProperty(navigator, 'serviceWorker', {
+        configurable: true,
+        value: {
+          controller: null,
+          ready: Promise.resolve(noopRegistration),
+          register: function () { return Promise.resolve(noopRegistration); },
+          addEventListener: function () {},
+          getRegistration: function () { return Promise.resolve(noopRegistration); }
+        }
+      });
+    } catch {}
     localStorage.clear();
     sessionStorage.clear();
     localStorage.setItem('domacnostPlus.v0.1_86', ${JSON.stringify(JSON.stringify(seed))});
@@ -458,6 +476,16 @@ async function run() {
     if (!tabInfo?.webSocketDebuggerUrl) throw new Error('Nepovedlo se získat CDP URL pro stránku.');
     page = connectCdp(tabInfo.webSocketDebuggerUrl);
     await page.open;
+    const runtimeErrors = [];
+    page.socket.addEventListener('message', (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.method === 'Runtime.exceptionThrown') {
+          const details = message.params?.exceptionDetails || {};
+          runtimeErrors.push(`${details.text || 'Runtime exception'}${details.url ? ` @ ${details.url}:${details.lineNumber || 0}` : ''}`);
+        }
+      } catch {}
+    });
     await page.send('Page.enable');
     await page.send('Runtime.enable');
     await page.send('Emulation.setDeviceMetricsOverride', {
@@ -468,7 +496,15 @@ async function run() {
     });
     await page.send('Page.addScriptToEvaluateOnNewDocument', { source: smokeSeedScript() });
     await page.send('Page.navigate', { url });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 2500));
+    const bootWaitStart = Date.now();
+    while (Date.now() - bootWaitStart < timeoutMs) {
+      const bootState = await page.send('Runtime.evaluate', {
+        returnByValue: true,
+        expression: `Boolean(window.__DOMACNOST_APP_STARTED__ || document.querySelector('#app[data-boot-ok="1"], .home-dash, .app-boot-error'))`
+      });
+      if (bootState.result?.value) break;
+      await new Promise((resolveWait) => setTimeout(resolveWait, 150));
+    }
 
     const initial = await page.send('Runtime.evaluate', {
       returnByValue: true,
@@ -479,6 +515,7 @@ async function run() {
         return {
           title: document.title,
           appStarted: Boolean(window.__DOMACNOST_APP_STARTED__),
+          e2eNavHook: typeof window.__DOMACNOST_E2E_NAV__,
           appRoot: Boolean(document.querySelector('#app')),
           versionOk: document.title.includes('v.0.1_${expectedBuild}') || text.includes('v.0.1_${expectedBuild}'),
           bootError: Boolean(document.querySelector('.module-error-card, .app-boot-error')),
@@ -503,7 +540,9 @@ async function run() {
     const initialValue = initial.result?.value || {};
     if (process.env.E2E_DEBUG === '1') {
       console.log('DEBUG initial:', JSON.stringify(initialValue, null, 2));
+      if (runtimeErrors.length) console.log('DEBUG runtime errors:', JSON.stringify(runtimeErrors, null, 2));
     }
+    runtimeErrors.forEach((line) => fail(`Runtime chyba v prohlížeči: ${line}`));
     let bootOk = true;
     if (!initialValue.appStarted) { fail('App nenastavila __DOMACNOST_APP_STARTED__.'); bootOk = false; }
     if (!initialValue.appRoot) { fail('Chybí #app root.'); bootOk = false; }
@@ -526,9 +565,9 @@ async function run() {
     if (bootOk) ok('boot: nový Home, app root, verze, Finance, Bazén i Smlouvy navigace dostupné.');
 
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.nav-shell [data-nav="more"]')?.click()`
+      expression: `window.__DOMACNOST_E2E_NAV__ ? window.__DOMACNOST_E2E_NAV__('more') : (() => { const item = document.querySelector('[data-nav="more"]'); item?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window })); })()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 400));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 900));
     const moreCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
@@ -548,6 +587,10 @@ async function run() {
         const moduleCopy = moduleCard ? moduleCard.querySelector('.more-module-copy strong') : null;
         const moduleCopyStyle = moduleCopy ? getComputedStyle(moduleCopy) : null;
         return {
+          text: (document.body?.innerText || '').slice(0, 400),
+          lastNav: window.__DOMACNOST_E2E_LAST_NAV__ || '',
+          moreButton: document.querySelector('[data-nav="more"]')?.outerHTML?.slice(0, 220) || '',
+          moreInApp: Boolean(document.querySelector('[data-nav="more"]')?.closest('#app')),
           settings: Boolean(document.querySelector('.more-settings-card[data-nav="settings"]')),
           sectionCount: document.querySelectorAll('.more-module-section').length,
           hasDaily: headings.includes('Přehled'),
@@ -565,6 +608,9 @@ async function run() {
       })()`
     });
     const moreValue = moreCheck.result?.value || {};
+    if (process.env.E2E_DEBUG === '1') {
+      console.log('DEBUG more:', JSON.stringify(moreValue, null, 2));
+    }
     let moreOk = true;
     if (!moreValue.settings) { fail('Více neobsahuje vstup do Nastavení.'); moreOk = false; }
     if (moreValue.sectionCount < 3) { fail('Více nemá skupiny modulů.'); moreOk = false; }
@@ -694,18 +740,22 @@ async function run() {
     if (!/Smoke udalost/.test(calendarModalValue.text || '')) { fail('Kalendář detail neukazuje seed událost.'); calendarOk = false; }
     if (calendarOk) ok('Kalendář: mřížka, zdroje a detail události renderují v novém povrchu.');
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('[data-action="close-modal"]')?.click(); document.querySelector('.nav-shell [data-nav="more"]')?.click();`
+      expression: `document.querySelector('[data-action="close-modal"]')?.click();`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 450));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 300));
+    await page.send('Runtime.evaluate', {
+      expression: `window.__DOMACNOST_E2E_NAV__ ? window.__DOMACNOST_E2E_NAV__('more') : (() => { const item = document.querySelector('[data-nav="more"]'); item?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window })); })();`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 900));
 
     await page.send('Runtime.evaluate', {
       expression: `document.querySelector('.more-module-section [data-nav="shopping"], [data-nav="shopping"]')?.click()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 600));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 900));
     await page.send('Runtime.evaluate', {
       expression: `document.querySelector('[data-action="open-shopping-done-modal"]')?.click()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 900));
     const shoppingDoneCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
