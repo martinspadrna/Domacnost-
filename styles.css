@@ -15684,6 +15684,11 @@ body.home-active {
   white-space: nowrap;
 }
 
+.home-timeline-row .home-row-copy em {
+  font-size: .72rem;
+  line-height: 1.15;
+}
+
 .home-edit-backdrop {
   position: fixed;
   inset: 0;
