@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_417';
-  const APP_BUILD = 417;
+  const APP_VERSION = 'Domácnost+ v.0.1_418';
+  const APP_BUILD = 418;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1179,6 +1179,7 @@
   let renderQuietMotionUntil = 0;
   let renderQuietMotionCleanupTimer = 0;
   let moduleTransitionCleanupTimer = 0;
+  let mobileDockSyncTimer = 0;
   let lastRenderStartedAt = 0;
   let pendingStatePersistTimer = 0;
   let pendingStatePersistKind = '';
@@ -3124,6 +3125,7 @@
         lastRenderedBottomNavId = activeBottomNavId;
         keepActiveNavCentered();
         keepActiveSectionTabsCentered();
+        scheduleMobileDockRuntimeSync();
       }
     } finally {
       restoreFormStabilitySnapshot(formSnapshot);
@@ -3171,6 +3173,39 @@
   function safeAnimationFrame(callback) {
     const frame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
     frame(callback);
+  }
+
+  function syncMobileDockRuntimeOffset() {
+    const root = document.documentElement;
+    const nav = document.querySelector('.nav-shell');
+    if (!root || !nav || !window.matchMedia?.('(max-width: 720px)')?.matches) {
+      root?.style?.setProperty('--mobile-dock-runtime-offset', '0px');
+      return;
+    }
+    const rect = nav.getBoundingClientRect();
+    if (!rect?.height) return;
+    const viewport = window.visualViewport;
+    const viewportBottom = viewport && Number.isFinite(viewport.height)
+      ? Number(viewport.offsetTop || 0) + Number(viewport.height || 0)
+      : Number(window.innerHeight || document.documentElement.clientHeight || 0);
+    if (!Number.isFinite(viewportBottom) || viewportBottom <= 0) return;
+    const currentRaw = getComputedStyle(root).getPropertyValue('--mobile-dock-runtime-offset') || '0';
+    const currentOffset = Number.parseFloat(currentRaw) || 0;
+    const targetGap = 4;
+    const currentGap = viewportBottom - rect.bottom;
+    const nextOffset = Math.max(-72, Math.min(24, currentOffset + targetGap - currentGap));
+    if (Math.abs(nextOffset - currentOffset) < 0.5) return;
+    root.style.setProperty('--mobile-dock-runtime-offset', `${nextOffset.toFixed(1)}px`);
+  }
+
+  function scheduleMobileDockRuntimeSync() {
+    if (mobileDockSyncTimer) window.clearTimeout(mobileDockSyncTimer);
+    safeAnimationFrame(syncMobileDockRuntimeOffset);
+    mobileDockSyncTimer = window.setTimeout(() => {
+      mobileDockSyncTimer = 0;
+      syncMobileDockRuntimeOffset();
+    }, 90);
+    [260, 720, 1400].forEach((delay) => window.setTimeout(syncMobileDockRuntimeOffset, delay));
   }
 
   function placeNavRunner(runner, item, animate = false) {
@@ -19443,6 +19478,14 @@
   window.addEventListener('online', () => {
     scheduleShoppingCloudRefresh('online', { delay: 900, minAgeMs: 5000 });
   });
+
+  window.addEventListener('resize', scheduleMobileDockRuntimeSync, { passive: true });
+  window.addEventListener('pageshow', scheduleMobileDockRuntimeSync, { passive: true });
+  window.addEventListener('orientationchange', () => window.setTimeout(scheduleMobileDockRuntimeSync, 180), { passive: true });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', scheduleMobileDockRuntimeSync, { passive: true });
+    window.visualViewport.addEventListener('scroll', scheduleMobileDockRuntimeSync, { passive: true });
+  }
 
   app.addEventListener('focusout', (event) => {
     const hdoTimeInput = event.target.closest('[data-hdo-time-input]');

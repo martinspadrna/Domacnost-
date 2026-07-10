@@ -15752,7 +15752,7 @@ body.home-active {
   margin-bottom: 8px;
 }
 
-/* Domacnost+ v0.1_417 - klidne cloud rendery a stabilni mobilni dock */
+/* Domacnost+ v0.1_418 - klidne cloud rendery a stabilni mobilni dock */
 .app-frame main {
   animation: none !important;
 }
@@ -15774,6 +15774,7 @@ html.app-quiet-render .nav-item .nav-icon.module-illustration-slot {
 @media (max-width: 720px) {
   :root {
     --mobile-dock-bottom-gap: 4px;
+    --mobile-dock-runtime-offset: 0px;
     --nav-v278-bottom-gap: var(--mobile-dock-bottom-gap);
   }
 
@@ -15781,8 +15782,8 @@ html.app-quiet-render .nav-item .nav-icon.module-illustration-slot {
     position: fixed !important;
     top: auto !important;
     right: auto !important;
-    bottom: var(--mobile-dock-bottom-gap) !important;
-    inset-block-end: var(--mobile-dock-bottom-gap) !important;
+    bottom: calc(var(--mobile-dock-bottom-gap) + var(--mobile-dock-runtime-offset)) !important;
+    inset-block-end: calc(var(--mobile-dock-bottom-gap) + var(--mobile-dock-runtime-offset)) !important;
     left: 50% !important;
     width: min(620px, calc(100dvw - 32px)) !important;
     margin: 0 !important;
