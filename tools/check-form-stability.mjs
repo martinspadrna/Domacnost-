@@ -58,6 +58,14 @@ const checks = [
       app.includes('renderReadingsCostSummary(consumptionRows)')
   },
   {
+    name: 'reading meter billing period overrides group period and rolls yearly',
+    ok: app.includes('function readingMeterBillingPeriod(meter = null, referenceDate = todayISO())') &&
+      app.includes('rolledFrom: base.from') &&
+      app.includes("field('Fakturační období od', 'billingFrom'") &&
+      app.includes("field('Fakturační období do', 'billingTo'") &&
+      app.includes('readingMeterBillingLabel(item.meter)')
+  },
+  {
     name: 'warranty files survive renders through an in-memory queue',
     ok: warranty.includes('const warrantyPendingFiles = new Map();') &&
       warranty.includes('stageWarrantyFilesFromForm') &&

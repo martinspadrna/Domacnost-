@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_415';
-  const APP_BUILD = 415;
+  const APP_VERSION = 'Domácnost+ v.0.1_416';
+  const APP_BUILD = 416;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -8192,6 +8192,32 @@
     return readingBillingPeriodLabel(readingBillingForType(type, groupId));
   }
 
+  function readingMeterBaseBillingPeriod(meter = null) {
+    return normalizeReadingBillingPeriod({
+      from: meter?.billingFrom ?? meter?.billing_from ?? meter?.periodFrom ?? meter?.period_from,
+      to: meter?.billingTo ?? meter?.billing_to ?? meter?.periodTo ?? meter?.period_to
+    });
+  }
+
+  function readingMeterBillingPeriod(meter = null, referenceDate = todayISO()) {
+    const base = readingMeterBaseBillingPeriod(meter);
+    if (!base.from && !base.to) return readingBillingForType(meter?.type || '', meter?.groupId || DEFAULT_READING_GROUP_ID);
+    if (!base.from || !base.to || base.to < base.from || referenceDate <= base.to) return base;
+    let from = addDaysIso(base.to, 1);
+    let to = addYearsIso(base.to, 1);
+    let guard = 0;
+    while (from && to && referenceDate > to && guard < 40) {
+      from = addYearsIso(from, 1);
+      to = addYearsIso(to, 1);
+      guard += 1;
+    }
+    return from && to ? { from, to, rolledFrom: base.from, rolledTo: base.to } : base;
+  }
+
+  function readingMeterBillingLabel(meter = null, referenceDate = todayISO()) {
+    return readingBillingPeriodLabel(readingMeterBillingPeriod(meter, referenceDate));
+  }
+
   function readingGroupAverageUnitPrice(groupId = '', type = '', registerLabel = '') {
     const group = readingGroupById(groupId);
     const prices = normalizeReadingPrices(group?.prices || {});
@@ -8251,6 +8277,8 @@
       type,
       groupId: normalizeText(item.groupId || item.readingGroupId || item.billingGroupId) || DEFAULT_READING_GROUP_ID,
       parentMeterId: normalizeText(item.parentMeterId || item.parent_meter_id || item.mainMeterId || item.main_meter_id),
+      billingFrom: normalizeReadingBillingPeriod(item).from,
+      billingTo: normalizeReadingBillingPeriod(item).to,
       name: normalizeText(item.name) || meta.label,
       unit: normalizeText(item.unit) || meta.unit,
       serial: normalizeText(item.serial || item.number || item.identifier),
@@ -8857,7 +8885,7 @@
         const meta = readingTypeMeta(item.meter?.type);
         const hasDeposit = item.deposit !== '';
         const diffClass = readingCostBalanceClass(item.status);
-        const billingLabel = readingBillingLabel(item.meter?.type, item.meter?.groupId);
+        const billingLabel = readingMeterBillingLabel(item.meter);
         const depositSource = item.depositSource === 'místo' ? ' · z místa' : '';
         return `<article class="mini-stat readings-cost-card">
           <span>${escapeHtml(item.group?.name || 'Domácnost')} · ${escapeHtml(meta.icon)} ${escapeHtml(item.meter?.name || meta.label)}</span>
@@ -9023,11 +9051,13 @@
               ${field('Název', 'name', 'text', 'např. Elektroměr hlavní', true)}
               ${selectField('Jednotka', 'unit', READING_UNIT_OPTIONS, 'kWh')}
               ${field('Měsíční záloha', 'monthlyDeposit', 'text', 'Kč/měsíc, volitelné', false, '', 'decimal')}
+              ${field('Fakturační období od', 'billingFrom', 'date', '', false)}
+              ${field('Fakturační období do', 'billingTo', 'date', '', false)}
               ${field('Číslo měřidla', 'serial', 'text', 'volitelné')}
               ${field('Umístění', 'location', 'text', 'např. chodba / sklep')}
               ${field('Poznámka', 'note', 'text', 'volitelné')}
             </div>
-            <div class="small-muted">Podružné měřidlo se odečítá z hlavního jen tehdy, když mají stejný typ a jednotku.</div>
+            <div class="small-muted">Podružné měřidlo se odečítá z hlavního jen tehdy, když mají stejný typ a jednotku. Vlastní fakturační období se po prvním konci dál posouvá ročně.</div>
             ${priceFormBlock}
             <div class="form-actions"><button class="primary-btn" type="submit">Přidat měřidlo</button></div>
           </form>
@@ -9121,6 +9151,8 @@
       type,
       groupId: data.groupId || readingDefaultGroup().id,
       parentMeterId: data.parentMeterId,
+      billingFrom: data.billingFrom,
+      billingTo: data.billingTo,
       name: normalizeText(data.name) || meta.label,
       unit: normalizeText(data.unit) || meta.unit,
       monthlyDeposit: data.monthlyDeposit,
@@ -9168,6 +9200,8 @@
       type,
       groupId: data.groupId || original.groupId || readingDefaultGroup().id,
       parentMeterId: data.parentMeterId,
+      billingFrom: data.billingFrom,
+      billingTo: data.billingTo,
       name: normalizeText(data.name) || original.name || meta.label,
       unit: normalizeText(data.unit) || original.unit || meta.unit,
       monthlyDeposit: data.monthlyDeposit,
@@ -9687,6 +9721,7 @@
     const isEditing = showManage && readingsEditingMeterId === meter.id;
     const meterGroup = readingMeterGroup(meter);
     const relationLabel = readingMeterRelationLabel(meter);
+    const billingLabel = readingMeterBillingLabel(meter);
     const balance = readingCostBalance(meter, lastMonth);
     const balanceClass = readingCostBalanceClass(balance.status);
     const depositLabel = balance.deposit !== '' ? `${readingMoney(balance.deposit)}/měs.${balance.depositSource === 'místo' ? ' · z místa' : ''}` : 'záloha nenastavená';
@@ -9694,7 +9729,7 @@
       <article class="reading-meter-card reading-meter-${escapeHtml(meta.className)} ${meter.archived ? 'muted-item' : ''} ${isEditing ? 'is-editing' : ''}">
         <div class="reading-meter-top">
           <span class="reading-meter-icon">${escapeHtml(meta.icon)}</span>
-          <div><strong>${escapeHtml(meter.name)}</strong><em>${escapeHtml(meta.label)} · ${escapeHtml(meterGroup?.name || 'Domácnost')} · ${escapeHtml(relationLabel)}${meter.location ? ` · ${escapeHtml(meter.location)}` : ''}</em></div>
+          <div><strong>${escapeHtml(meter.name)}</strong><em>${escapeHtml(meta.label)} · ${escapeHtml(meterGroup?.name || 'Domácnost')} · ${escapeHtml(relationLabel)} · období ${escapeHtml(billingLabel)}${meter.location ? ` · ${escapeHtml(meter.location)}` : ''}</em></div>
           <span class="badge ${latest ? 'good' : ''}">${latest ? escapeHtml(formatDate(latest.date)) : 'bez odečtu'}</span>
         </div>
         <div class="reading-meter-value"><strong>${escapeHtml(readingMeterLatestDisplay(meter))}</strong><span>${escapeHtml(deltaLabel)}</span></div>
@@ -9712,11 +9747,13 @@
               ${field('Název', 'name', 'text', 'např. Elektroměr hlavní', true, meter.name)}
               ${selectField('Jednotka', 'unit', READING_UNIT_OPTIONS, meter.unit)}
               ${field('Měsíční záloha', 'monthlyDeposit', 'text', 'Kč/měsíc, volitelné', false, meter.monthlyDeposit ?? '', 'decimal')}
+              ${field('Fakturační období od', 'billingFrom', 'date', '', false, meter.billingFrom || '')}
+              ${field('Fakturační období do', 'billingTo', 'date', '', false, meter.billingTo || '')}
               ${field('Číslo měřidla', 'serial', 'text', 'volitelné', false, meter.serial)}
               ${field('Umístění', 'location', 'text', 'např. chodba / sklep', false, meter.location)}
               ${field('Poznámka', 'note', 'text', 'volitelné', false, meter.note)}
             </div>
-            <div class="small-muted">Podružné měřidlo se odečítá z hlavního jen tehdy, když mají stejný typ a jednotku.</div>
+            <div class="small-muted">Podružné měřidlo se odečítá z hlavního jen tehdy, když mají stejný typ a jednotku. Vlastní fakturační období se po prvním konci dál posouvá ročně.</div>
             ${renderReadingPriceFormBlock(meter)}
             <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button></div>
           </form>
