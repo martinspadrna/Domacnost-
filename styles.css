@@ -15956,3 +15956,101 @@ html.app-quiet-render .nav-item .nav-icon.module-illustration-slot {
     transform: translate3d(-50%, 0, 0) !important;
   }
 }
+
+/* Domacnost+ v0.1_423 - pocasi, desktop logo a sjednoceny Vape povrch */
+@media (min-width: 900px) {
+  .app-sidebar-logo {
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+
+  .app-sidebar-logo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+  }
+}
+
+.home-weather-astronomy {
+  width: 118px;
+}
+
+.home-weather-astro-row {
+  grid-template-columns: 22px 43px 43px;
+  justify-content: stretch;
+}
+
+.home-weather-astro-row strong,
+.home-weather-astro-row em {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 390px) {
+  .home-weather-astronomy {
+    width: 100px;
+  }
+
+  .home-weather-astro-row {
+    grid-template-columns: 20px 38px 38px;
+  }
+}
+
+.vape-calc-panel.card,
+.vape-item-form-panel.card,
+.vape-items-panel.card,
+.vape-stats-panel.card {
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .085), rgba(255, 255, 255, .045)),
+    var(--surface);
+  box-shadow: var(--shadow-soft, var(--shadow));
+}
+
+[data-theme="dark"] .vape-calc-panel.card,
+[data-theme="dark"] .vape-item-form-panel.card,
+[data-theme="dark"] .vape-items-panel.card,
+[data-theme="dark"] .vape-stats-panel.card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .035)),
+    rgba(13, 18, 30, .82);
+}
+
+.vape-item-list.compact-file-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.vape-item-row.item {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .075);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .vape-item-row.item {
+  background: rgba(255, 255, 255, .052);
+}
+
+.vape-item-row .item-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+.vape-item-row .item-title,
+.vape-item-row .item-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vape-item-row .badge {
+  background: rgba(255, 255, 255, .10);
+  color: var(--text);
+}

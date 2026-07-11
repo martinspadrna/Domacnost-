@@ -303,7 +303,6 @@
             <div class="mini-stat"><span>Nasvícení</span><strong>${escapeHtml(`${astronomy.moon.illumination} %`)}</strong></div>
             <div class="mini-stat"><span>Fáze</span><strong>${escapeHtml(astronomy.moon.label)}</strong></div>
           </div>
-          <div class="inline-note compact-note">Východ a západ slunce jsou z počasí. Měsíc je lokální orientační výpočet podle data a polohy, takže pro běžné plánování stačí, ale není to astronomická observatoř.</div>
         </section>
       `;
     }
