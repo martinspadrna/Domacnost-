@@ -30,6 +30,7 @@
     const confirm = deps.confirm || ((message) => window.confirm(message));
 
     let activePoolId = '';
+    let activePoolMeasurementEditId = '';
     let phInfoOpen = false;
 
     const SHAPE_OPTIONS = [
@@ -51,11 +52,26 @@
       return Number.isFinite(number) && number > 0 ? number : '';
     }
 
+    function normalizePoolTime(value) {
+      const raw = normalizeText(value);
+      const match = raw.match(/^(\d{1,2}):(\d{2})/);
+      if (!match) return '';
+      const hours = Math.max(0, Math.min(23, Number(match[1])));
+      const minutes = Math.max(0, Math.min(59, Number(match[2])));
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    }
+
+    function currentPoolTime() {
+      const now = new Date();
+      return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    }
+
     function normalizePoolMeasurement(value = {}) {
       const date = normalizeText(value.date || value.measuredAt || value.createdAt || todayISO()).slice(0, 10) || todayISO();
       return {
         id: normalizeText(value.id) || `pool-measure-${uid()}`,
         date,
+        time: normalizePoolTime(value.time || value.measuredTime || String(value.measuredAt || value.createdAt || '').slice(11, 16)),
         ph: nullableNumber(value.ph),
         waterTempC: nullableNumber(value.waterTempC ?? value.waterTemp ?? value.temperature),
         note: normalizeText(value.note),
@@ -68,7 +84,7 @@
       return rows
         .map(normalizePoolMeasurement)
         .filter((item) => item.ph !== '' || item.waterTempC !== '')
-        .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')))
+        .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.time || '').localeCompare(String(b.time || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')))
         .slice(-120);
     }
 
@@ -179,6 +195,7 @@
       const last = latestPoolMeasurement(current);
       if (!last) return true;
       return !(last.date === measurement.date
+        && String(last.time || '') === String(measurement.time || '')
         && Number(last.ph || 0) === Number(measurement.ph || 0)
         && Number(last.waterTempC || 0) === Number(measurement.waterTempC || 0)
         && String(last.note || '') === String(measurement.note || ''));
@@ -258,6 +275,33 @@
       const chartRows = measurements.slice(-14);
       const tableRows = measurements.slice(-6).reverse();
       const chart = renderPoolMeasurementChart(chartRows);
+      const renderMeasurementRow = (item) => {
+        const isEditing = activePoolMeasurementEditId === item.id;
+        return `
+            <div class="file-row compact-file-row pool-measurement-row ${isEditing ? 'is-editing' : ''}">
+              <div>
+                <strong>${escapeHtml(formatDate(item.date))}${item.time ? ` · ${escapeHtml(item.time)}` : ''}</strong>
+                <em>pH ${escapeHtml(formatPoolNumber(item.ph, 2))} · voda ${escapeHtml(item.waterTempC !== '' ? `${formatPoolNumber(item.waterTempC, 1)} °C` : '—')}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</em>
+              </div>
+              <div class="item-actions">
+                <button class="ghost-btn" type="button" data-action="pool-measurement-edit" data-id="${escapeHtml(item.id)}">${isEditing ? 'Zavřít úpravu' : 'Upravit'}</button>
+                <button class="danger-btn" type="button" data-action="pool-measurement-delete" data-id="${escapeHtml(item.id)}">Smazat</button>
+              </div>
+              ${isEditing ? `
+                <form data-form="pool-measurement" data-id="${escapeHtml(item.id)}" class="compact-form inline-edit-form pool-measurement-edit-form">
+                  <div class="form-grid three">
+                    ${field('Datum měření', 'date', 'date', '', true, item.date || todayISO())}
+                    ${field('Čas měření', 'time', 'time', '', false, item.time || '')}
+                    ${field('pH', 'ph', 'number', 'např. 7,4', false, item.ph)}
+                    ${field('Teplota vody °C', 'waterTempC', 'number', 'např. 24,5', false, item.waterTempC)}
+                  </div>
+                  ${field('Poznámka', 'note', 'text', 'volitelné', false, item.note || '')}
+                  <div class="form-actions"><button class="primary-btn" type="submit">Uložit měření</button><button class="ghost-btn" type="button" data-action="pool-measurement-cancel">Zrušit</button></div>
+                </form>
+              ` : ''}
+            </div>
+        `;
+      };
       return `
         <section class="card desktop-span-2 pool-measurements-panel">
           <div class="card-header"><div><h2>Měření vody</h2><p>Historie pH a teploty vody pro sledování trendu.</p></div><span class="badge">${measurements.length} měření</span></div>
@@ -267,14 +311,7 @@
             <div class="kpi"><strong>${latest?.date ? formatDate(latest.date) : '—'}</strong><span>poslední měření</span></div>
           </div>
           ${chart}
-          ${tableRows.length ? `<div class="file-list compact-file-list pool-measurement-list">${tableRows.map((item) => `
-            <div class="file-row compact-file-row">
-              <div>
-                <strong>${escapeHtml(formatDate(item.date))}</strong>
-                <em>pH ${escapeHtml(formatPoolNumber(item.ph, 2))} · voda ${escapeHtml(item.waterTempC !== '' ? `${formatPoolNumber(item.waterTempC, 1)} °C` : '—')}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</em>
-              </div>
-            </div>
-          `).join('')}</div>` : '<div class="inline-note compact-note">Zatím žádné uložené měření. Vyplň pH nebo teplotu vody a ulož bazén.</div>'}
+          ${tableRows.length ? `<div class="file-list compact-file-list pool-measurement-list">${tableRows.map(renderMeasurementRow).join('')}</div>` : '<div class="inline-note compact-note">Zatím žádné uložené měření. Vyplň pH nebo teplotu vody a ulož bazén.</div>'}
         </section>
       `;
     }
@@ -283,7 +320,7 @@
       if (!rows.length) return '<div class="inline-note compact-note">Graf se zobrazí po prvním měření.</div>';
       const width = 520;
       const height = 220;
-      const padLeft = 36;
+      const padLeft = 52;
       const padRight = 18;
       const padTop = 20;
       const padBottom = 42;
@@ -387,6 +424,7 @@
             ${selectField('Tvar bazénu', 'shape', SHAPE_OPTIONS, pool.shape)}
             ${renderDimensionFields(pool)}
             ${field('Datum měření', 'measurementDate', 'date', '', false, todayISO())}
+            ${field('Čas měření', 'measurementTime', 'time', '', false, currentPoolTime())}
             ${field('Aktuální pH', 'ph', 'number', 'např. 7,6', false, '')}
             ${field('Teplota vody °C', 'waterTempC', 'number', 'např. 24,5', false, '')}
             ${field('Cílové pH', 'targetPh', 'number', 'např. 7,2', false, pool.targetPh || 7.2)}
@@ -438,7 +476,7 @@
                 <div class="kpi"><strong>${pool.waterTempC ? `${formatPoolNumber(pool.waterTempC, 1)} °C` : '—'}</strong><span>teplota vody</span></div>
                 <div class="kpi ${tone}"><strong>${dose.status === 'ok' ? 'OK' : dose.status === 'missing' ? 'doplň' : formatGrams(dose.grams)}</strong><span>${escapeHtml(dose.label)}</span></div>
               </div>
-              ${pool.updatedAt ? `<div class="inline-note compact-note">Naposledy upraveno ${escapeHtml(formatDateTime(pool.updatedAt))}${latest?.date ? ` · měření ${escapeHtml(formatDate(latest.date))}` : ''}${pool.note ? ` · ${escapeHtml(pool.note)}` : ''}</div>` : ''}
+              ${pool.updatedAt ? `<div class="inline-note compact-note">Naposledy upraveno ${escapeHtml(formatDateTime(pool.updatedAt))}${latest?.date ? ` · měření ${escapeHtml(formatDate(latest.date))}${latest.time ? ` ${escapeHtml(latest.time)}` : ''}` : ''}${pool.note ? ` · ${escapeHtml(pool.note)}` : ''}</div>` : ''}
               <div class="form-actions compact-actions pool-overview-actions"><button class="ghost-btn danger-btn" type="button" data-action="pool-delete" data-id="${escapeHtml(pool.id)}">Smazat tento bazén</button></div>
             `}
           </div>
@@ -524,6 +562,80 @@
       showToast('Bazén smazán');
     }
 
+    function poolWithLatestMeasurementState(pool) {
+      const measurements = normalizePoolMeasurements(pool.measurements || []);
+      const latest = measurements.length ? measurements[measurements.length - 1] : null;
+      return normalizePool({
+        ...pool,
+        measurements,
+        ph: latest ? latest.ph : '',
+        waterTempC: latest ? latest.waterTempC : '',
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    function setPoolMeasurementEdit(id) {
+      activePoolMeasurementEditId = activePoolMeasurementEditId === id ? '' : normalizeText(id);
+      render();
+    }
+
+    function cancelPoolMeasurementEdit() {
+      if (!activePoolMeasurementEditId) return;
+      activePoolMeasurementEditId = '';
+      render();
+    }
+
+    function updatePoolMeasurementFromForm(id, data) {
+      const cleanId = normalizeText(id);
+      if (!cleanId) return;
+      const pools = getPools();
+      const current = getActivePool(pools);
+      if (!current) return;
+      const existing = normalizePoolMeasurements(current.measurements || []).find((item) => item.id === cleanId);
+      if (!existing) return;
+      const updatedMeasurement = normalizePoolMeasurement({
+        ...existing,
+        date: normalizeText(data.date) || existing.date || todayISO(),
+        time: normalizePoolTime(data.time) || existing.time || '',
+        ph: data.ph,
+        waterTempC: data.waterTempC,
+        note: data.note,
+        createdAt: existing.createdAt
+      });
+      if (updatedMeasurement.ph === '' && updatedMeasurement.waterTempC === '') {
+        showToast('Zadej pH nebo teplotu vody');
+        return;
+      }
+      const nextMeasurements = normalizePoolMeasurements((current.measurements || []).map((item) => (
+        item.id === cleanId ? updatedMeasurement : item
+      )));
+      const nextPool = poolWithLatestMeasurementState({ ...current, measurements: nextMeasurements });
+      const nextPools = pools.map((pool) => (pool.id === current.id ? nextPool : pool));
+      activePoolMeasurementEditId = '';
+      persistPools(nextPools, { immediate: true });
+      render();
+      showToast('Měření upraveno');
+    }
+
+    function deletePoolMeasurement(id) {
+      const cleanId = normalizeText(id);
+      if (!cleanId) return;
+      const pools = getPools();
+      const current = getActivePool(pools);
+      if (!current) return;
+      const measurements = normalizePoolMeasurements(current.measurements || []);
+      const target = measurements.find((item) => item.id === cleanId);
+      if (!target) return;
+      if (!confirm(`Smazat měření z ${formatDate(target.date)}${target.time ? ` ${target.time}` : ''}?`)) return;
+      const nextMeasurements = measurements.filter((item) => item.id !== cleanId);
+      const nextPool = poolWithLatestMeasurementState({ ...current, measurements: nextMeasurements });
+      const nextPools = pools.map((pool) => (pool.id === current.id ? nextPool : pool));
+      if (activePoolMeasurementEditId === cleanId) activePoolMeasurementEditId = '';
+      persistPools(nextPools, { immediate: true });
+      render();
+      showToast('Měření smazáno');
+    }
+
     async function savePoolFromForm(data) {
       const pools = getPools();
       const current = getActivePool(pools) || normalizePool({}, pools.length);
@@ -542,6 +654,7 @@
       });
       const measurement = normalizePoolMeasurement({
         date: normalizeText(data.measurementDate) || todayISO(),
+        time: normalizePoolTime(data.measurementTime) || currentPoolTime(),
         ph: typedPh === '' ? '' : next.ph,
         waterTempC: typedWaterTempC === '' ? '' : next.waterTempC,
         note: next.note
@@ -554,6 +667,7 @@
       const exists = pools.some((pool) => pool.id === current.id);
       const nextPools = exists ? pools.map((pool) => (pool.id === current.id ? next : pool)) : [...pools, next];
       activePoolId = next.id;
+      activePoolMeasurementEditId = '';
       persistPools(nextPools);
       render();
       showToast('Bazén uložen');
@@ -572,6 +686,10 @@
       addPool,
       selectPool,
       deletePool,
+      setPoolMeasurementEdit,
+      cancelPoolMeasurementEdit,
+      updatePoolMeasurementFromForm,
+      deletePoolMeasurement,
       previewShape,
       openPhInfoModal,
       closePhInfoModal

@@ -84,8 +84,13 @@ if (app && pool && index && sw) {
   expect(pool, 'deletedIds[deletedId] = now', 'pool.js: smazání bazénu ukládá tombstone podle id.');
   expect(pool, 'saveState({ immediate: options.immediate === true })', 'pool.js: smazání bazénu se umí uložit okamžitě.');
   expect(pool, 'persistPools(next, { deletedId: id, immediate: true })', 'pool.js: deletePool zapisuje tombstone a okamžitý lokální save.');
+  expect(app, "'pool-measurement': () => updatePoolMeasurementFromForm(form.dataset.id, data, form)", 'app.js: úprava měření bazénu má form handler.');
+  expect(app, "action === 'pool-measurement-delete'", 'app.js: smazání měření bazénu má action handler.');
   expect(pool, 'function normalizePool(', 'pool.js: jednotlivý bazén se normalizuje (více bazénů podporováno).');
   expect(pool, 'function normalizePoolMeasurements', 'pool.js: historie měření bazénu se normalizuje.');
+  expect(pool, 'function normalizePoolTime', 'pool.js: měření bazénu normalizuje čas HH:MM.');
+  expect(pool, "data-form=\"pool-measurement\"", 'pool.js: měření bazénu má inline editační formulář.');
+  expect(pool, "'measurementTime'", 'pool.js: nové měření bazénu ukládá čas.');
   expect(pool, 'function poolVolumeM3', 'pool.js: výpočet objemu existuje.');
   expect(pool, 'function poolPhDose', 'pool.js: dávkování pH existuje.');
   expect(pool, 'waterTempC', 'pool.js: teplota vody je součást stavu/renderu.');
@@ -123,8 +128,11 @@ if (app) {
   expect(app, "document.documentElement.classList.add('app-quiet-render')", 'app.js: tiche rendery umi vypnout rusivou animaci obsahu.');
   expect(app, 'function markModuleTransition()', 'app.js: rucni prepnuti modulu ma explicitni prechod.');
   expect(app, /markModuleTransition\(\);\s*render\(\);/, 'app.js: modulovy prechod se pousti jen pred rucnim nav renderem.');
-  expect(app, 'function syncMobileDockRuntimeOffset()', 'app.js: mobilni dock se po bootu meri proti aktualnimu viewportu.');
-  expect(app, "root.style.setProperty('--mobile-dock-runtime-offset'", 'app.js: mobilni dock umi nastavit runtime korekci.');
+  expect(app, 'function syncMobileDockRuntimeOffset()', 'app.js: mobilni dock ma jednotny boot sync.');
+  expect(app, "root?.style?.setProperty('--mobile-dock-runtime-offset', '0px')", 'app.js: mobilni dock drzi runtime offset na nule.');
+  expectAbsent(app, 'const currentGap = viewportBottom - rect.bottom;', 'app.js: mobilni dock uz se po startu neposouva podle dodatecneho mereni viewportu.');
+  expectAbsent(app, 'SIDEBAR_PINNED_IDS', 'app.js: desktop sidebar už nemá natvrdo duplikovanou sekci Oblíbené.');
+  expectAbsent(app, '<div class="app-sidebar-label">Oblíbené</div>', 'app.js: desktop sidebar nerenderuje sekci Oblíbené.');
   expect(app, 'function isHorizontallyScrollableTarget', 'app.js: swipe guard umí poznat horizontálně scrollovatelný blok.');
   expect(app, 'const NAVIGATION_SWIPE_IGNORE_SELECTOR', 'app.js: swipe guard má centrální seznam chráněných oblastí.');
   expect(app, 'function isNavigationSwipeIgnoredTarget', 'app.js: navigační swipe má jednotný ignore helper.');

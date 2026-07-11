@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_425';
-  const APP_BUILD = 425;
+  const APP_VERSION = 'Domácnost+ v.0.1_426';
+  const APP_BUILD = 426;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -45,8 +45,6 @@
     { id: 'money', label: 'Finance' },
     { id: 'system', label: 'Systém' }
   ];
-
-  const SIDEBAR_PINNED_IDS = ['home', 'garage', 'readings', 'subscriptions'];
 
   const DEFAULT_BOTTOM_NAV_IDS = ['home', 'calendar', 'shopping', 'finance'];
 
@@ -2425,7 +2423,6 @@
 
   function renderDesktopSidebar(activeId) {
     const visible = getVisibleModules();
-    const pinned = SIDEBAR_PINNED_IDS.map((id) => visible.find((module) => module.id === id)).filter(Boolean);
     const groups = MODULE_CATEGORIES
       .map((category) => ({ label: category.label, items: visible.filter((module) => module.category === category.id) }))
       .filter((group) => group.items.length);
@@ -2434,10 +2431,6 @@
         <div class="app-sidebar-brand">
           <span class="app-sidebar-logo" aria-hidden="true"><img src="${BRAND_ICON_SRC}" alt=""></span>
           <span class="app-sidebar-word">Domácnost+</span>
-        </div>
-        <div class="app-sidebar-group">
-          <div class="app-sidebar-label">Oblíbené</div>
-          ${pinned.map((module) => renderDesktopSidebarRow(module, activeId)).join('')}
         </div>
         ${groups.map((group) => `
           <div class="app-sidebar-group">
@@ -3257,35 +3250,16 @@
 
   function syncMobileDockRuntimeOffset() {
     const root = document.documentElement;
-    const nav = document.querySelector('.nav-shell');
-    if (!root || !nav || !window.matchMedia?.('(max-width: 720px)')?.matches) {
-      root?.style?.setProperty('--mobile-dock-runtime-offset', '0px');
-      return;
-    }
-    const rect = nav.getBoundingClientRect();
-    if (!rect?.height) return;
-    const viewport = window.visualViewport;
-    const viewportBottom = viewport && Number.isFinite(viewport.height)
-      ? Number(viewport.offsetTop || 0) + Number(viewport.height || 0)
-      : Number(window.innerHeight || document.documentElement.clientHeight || 0);
-    if (!Number.isFinite(viewportBottom) || viewportBottom <= 0) return;
-    const currentRaw = getComputedStyle(root).getPropertyValue('--mobile-dock-runtime-offset') || '0';
-    const currentOffset = Number.parseFloat(currentRaw) || 0;
-    const targetGap = 4;
-    const currentGap = viewportBottom - rect.bottom;
-    const nextOffset = Math.max(-72, Math.min(24, currentOffset + targetGap - currentGap));
-    if (Math.abs(nextOffset - currentOffset) < 0.5) return;
-    root.style.setProperty('--mobile-dock-runtime-offset', `${nextOffset.toFixed(1)}px`);
+    root?.style?.setProperty('--mobile-dock-runtime-offset', '0px');
   }
 
   function scheduleMobileDockRuntimeSync() {
     if (mobileDockSyncTimer) window.clearTimeout(mobileDockSyncTimer);
-    safeAnimationFrame(syncMobileDockRuntimeOffset);
+    syncMobileDockRuntimeOffset();
     mobileDockSyncTimer = window.setTimeout(() => {
       mobileDockSyncTimer = 0;
       syncMobileDockRuntimeOffset();
     }, 90);
-    [260, 720, 1400].forEach((delay) => window.setTimeout(syncMobileDockRuntimeOffset, delay));
   }
 
   function placeNavRunner(runner, item, animate = false) {
@@ -12176,6 +12150,22 @@
     return getPoolModule().deletePool(id);
   }
 
+  function updatePoolMeasurementFromForm(id, data, form) {
+    return getPoolModule().updatePoolMeasurementFromForm(id, data, form);
+  }
+
+  function setPoolMeasurementEdit(id) {
+    return getPoolModule().setPoolMeasurementEdit(id);
+  }
+
+  function cancelPoolMeasurementEdit() {
+    return getPoolModule().cancelPoolMeasurementEdit();
+  }
+
+  function deletePoolMeasurement(id) {
+    return getPoolModule().deletePoolMeasurement(id);
+  }
+
   function renderVape() {
     return getVapeModule().renderVape();
   }
@@ -15274,6 +15264,7 @@
       'add-profile': () => addProfile(data.name, data.role),
       'weather-settings': () => saveWeatherSettings(data, form),
       'pool-settings': () => savePoolFromForm(data, form),
+      'pool-measurement': () => updatePoolMeasurementFromForm(form.dataset.id, data, form),
       'add-vape-item': () => addVapeItemFromForm(data, form),
       'update-vape-item': () => updateVapeItemFromForm(form.dataset.id, data, form),
       'vape-settings': () => saveVapeSettingsFromForm(data),
@@ -16863,6 +16854,18 @@
     }
     if (action === 'pool-delete') {
       deletePool(button.dataset.id);
+      return;
+    }
+    if (action === 'pool-measurement-edit') {
+      setPoolMeasurementEdit(button.dataset.id);
+      return;
+    }
+    if (action === 'pool-measurement-cancel') {
+      cancelPoolMeasurementEdit();
+      return;
+    }
+    if (action === 'pool-measurement-delete') {
+      deletePoolMeasurement(button.dataset.id);
       return;
     }
     if (action === 'pool-ph-info') {

@@ -16131,3 +16131,14 @@ body:not(.home-active) .app-frame main .pwa-diagnostic-item {
   background: rgba(255, 255, 255, .055);
   box-shadow: 0 10px 24px rgba(0, 0, 0, .16);
 }
+
+/* Domacnost+ v0.1_426 - stabilni dock a upravitelna mereni bazenu */
+.pool-measurement-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.pool-measurement-row .pool-measurement-edit-form {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+}
