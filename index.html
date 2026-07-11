@@ -42,20 +42,14 @@
     </div>
     <script>
       (function () {
-        // iOS standalone PWA při studeném startu hlásí layout viewport zkrácený
-        // o výšku status baru (44-47pt notch, 54-59pt Dynamic Island; změřeno
-        // in=879 vs scr=926 na Pro Max) a opraví ho až při prvním gestu -
-        // fixed dock tak sedí výš. innerHeight i visualViewport lžou
-        // konzistentně, jediná nezávislá reference je fyzický screen.height.
-        // Dorovnáváme dock záporným offsetem, dokud se viewport nesrovná;
-        // po opravě viewportu vyjde delta 0 a offset se sám vynuluje.
+        // iOS standalone PWA při studeném startu někdy hlásí layout viewport
+        // zkrácený o status bar (in=879 vs scr=926 na Pro Max) - ale malovat
+        // podle něj může i nemusí (dva režimy se stejnými JS čísly). Korekce
+        // podle screen.height proto v jednom režimu dock srovnala a ve druhém
+        // ho usekla pod okraj - je vypnutá, dokud diagnostika CSS jednotek
+        // (lvh/dvh) neukáže hodnotu sledující skutečné kreslení.
         function syncDockViewportOffset() {
-          var offset = 0;
-          if (navigator.standalone === true && window.screen && window.screen.height) {
-            var delta = window.screen.height - (window.innerHeight || 0);
-            if (delta >= 20 && delta <= 64) offset = -delta;
-          }
-          document.documentElement.style.setProperty('--mobile-dock-runtime-offset', offset + 'px');
+          document.documentElement.style.setProperty('--mobile-dock-runtime-offset', '0px');
         }
         function syncAppViewport() {
           var height = 0;
