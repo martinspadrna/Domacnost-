@@ -15977,13 +15977,31 @@ html.app-quiet-render .nav-item .nav-icon.module-illustration-slot {
   font-variant-numeric: tabular-nums;
 }
 
+/* Slunce byla holá emoji na textové základní lince, měsíc má vlastní
+   22×22 "čip" (weather-moon-icon-sm) s place-items:center - proto
+   spolu vizuálně nebyly vystředěné. Stejný box i pro slunce. */
+.home-weather-astro-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .34);
+  font-size: .94rem;
+  line-height: 1;
+}
+
+[data-theme="dark"] .home-weather-astro-icon {
+  background: rgba(255, 255, 255, .08);
+}
+
 @media (max-width: 390px) {
   .home-weather-astronomy {
     width: 100px;
   }
 
   .home-weather-astro-row {
-    grid-template-columns: 20px 38px 38px;
+    grid-template-columns: 22px 38px 38px;
   }
 }
 

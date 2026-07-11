@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_427';
-  const APP_BUILD = 427;
+  const APP_VERSION = 'Domácnost+ v.0.1_428';
+  const APP_BUILD = 428;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -4259,7 +4259,7 @@
           </div>
         </div>
         <span class="home-weather-astronomy" aria-label="Slunce a měsíc">
-          <span class="home-weather-astro-row"><span aria-hidden="true">☀️</span><strong>${escapeHtml(astronomy.sun.sunrise)}</strong><em>${escapeHtml(astronomy.sun.sunset)}</em></span>
+          <span class="home-weather-astro-row"><span class="home-weather-astro-icon" aria-hidden="true">☀️</span><strong>${escapeHtml(astronomy.sun.sunrise)}</strong><em>${escapeHtml(astronomy.sun.sunset)}</em></span>
           <span class="home-weather-astro-row">${renderWeatherMoonPhaseIcon(astronomy.moon, { size: 'sm' })}<strong>${escapeHtml(astronomy.moon.moonrise)}</strong><em>${escapeHtml(astronomy.moon.moonset)}</em></span>
         </span>
       </button>
