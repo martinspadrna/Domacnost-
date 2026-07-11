@@ -449,12 +449,39 @@
       `;
     }
 
-    function persistPools(pools) {
-      getState().pools = pools;
+    function markPoolCloudPending(options = {}) {
+      const state = getState();
+      const now = new Date().toISOString();
+      const deletedIds = { ...(state.poolCloud?.deletedIds || {}) };
+      const deletedId = normalizeText(options.deletedId);
+      if (deletedId) deletedIds[deletedId] = now;
+      state.poolCloud = {
+        ...(state.poolCloud || {}),
+        pendingAt: now,
+        deletedIds
+      };
+    }
+
+    function markPoolCloudSaved() {
+      const state = getState();
+      state.poolCloud = {
+        ...(state.poolCloud || {}),
+        pendingAt: '',
+        loadedAt: new Date().toISOString(),
+        deletedIds: { ...(state.poolCloud?.deletedIds || {}) }
+      };
+      saveState({ immediate: true });
+    }
+
+    function persistPools(pools, options = {}) {
+      getState().pools = normalizePools(pools);
+      markPoolCloudPending(options);
       touchState();
-      saveState();
+      saveState({ immediate: options.immediate === true });
       if (cloudReady()) {
-        cloudSaveHouseholdUiSettings(false).catch((error) => console.warn('Cloud sync (bazén) na pozadí selhal', error));
+        cloudSaveHouseholdUiSettings(false)
+          .then((ok) => { if (ok) markPoolCloudSaved(); })
+          .catch((error) => console.warn('Cloud sync (bazén) na pozadí selhal', error));
       }
     }
 
@@ -491,7 +518,7 @@
       if (!confirm(`Smazat bazén „${target.name}“${target.measurements.length ? ` včetně ${target.measurements.length} měření` : ''}?`)) return;
       const next = pools.filter((pool) => pool.id !== id);
       if (activePoolId === id) activePoolId = next[0]?.id || '';
-      persistPools(next);
+      persistPools(next, { deletedId: id, immediate: true });
       setModuleTab('pool', 'overview');
       render();
       showToast('Bazén smazán');

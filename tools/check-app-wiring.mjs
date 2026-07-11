@@ -72,10 +72,18 @@ if (app && pool && index && sw) {
   expect(app, 'pool: renderPool', 'app.js: pool renderer je v renderModule mapě.');
   expect(app, "'pool-settings': () => savePoolFromForm(data, form)", 'app.js: pool-settings form handler existuje.');
   expect(app, /migrated\.pools = normalizePools\(migrated\.pools\)/, 'app.js: pool prochází migrací.');
+  expect(app, "poolCloud: { loadedAt: '', pendingAt: '', deletedIds: {} }", 'app.js: pool cloud metadata má default stav.');
+  expect(app, 'function normalizePoolCloudState', 'app.js: pool cloud metadata se normalizuje.');
+  expect(app, 'function poolDeleteWinsOverCloud', 'app.js: smazaný bazén chrání tombstone proti starému cloudu.');
   expect(app, /pools: normalizePools\(state\.pools \|\| \[\]\)/, 'app.js: pool se ukládá do household UI payloadu.');
   expect(app, /layout\.pool && typeof layout\.pool === 'object'/, 'app.js: pool se obnovuje z cloud layoutu.');
+  expectAbsent(app, 'state.pools = normalizePools([...merged, ...cloudOnly]);', 'app.js: pool cloud restore už neudržuje lokální orphan bazény.');
   expect(app, /pool: \[loadHouseholdUiForModule\]/, 'app.js: pool lazy/background loader tahá household UI.');
   expect(pool, 'function normalizePools', 'pool.js: normalizePools existuje.');
+  expect(pool, 'function markPoolCloudPending', 'pool.js: změny bazénu značí pending cloud sync.');
+  expect(pool, 'deletedIds[deletedId] = now', 'pool.js: smazání bazénu ukládá tombstone podle id.');
+  expect(pool, 'saveState({ immediate: options.immediate === true })', 'pool.js: smazání bazénu se umí uložit okamžitě.');
+  expect(pool, 'persistPools(next, { deletedId: id, immediate: true })', 'pool.js: deletePool zapisuje tombstone a okamžitý lokální save.');
   expect(pool, 'function normalizePool(', 'pool.js: jednotlivý bazén se normalizuje (více bazénů podporováno).');
   expect(pool, 'function normalizePoolMeasurements', 'pool.js: historie měření bazénu se normalizuje.');
   expect(pool, 'function poolVolumeM3', 'pool.js: výpočet objemu existuje.');

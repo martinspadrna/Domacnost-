@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_424';
-  const APP_BUILD = 424;
+  const APP_VERSION = 'Domácnost+ v.0.1_425';
+  const APP_BUILD = 425;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -842,6 +842,7 @@
     financeLoans: [],
     financeRefinanceResult: null,
     pools: [],
+    poolCloud: { loadedAt: '', pendingAt: '', deletedIds: {} },
     vape: {},
     subscriptions: [],
     subscriptionPeople: [],
@@ -1902,6 +1903,7 @@
       migrated.pools = normalizePools([{ ...legacyPool, id: 'pool-legacy-migrated', name: 'Bazén' }]);
     }
     delete migrated.pool;
+    migrated.poolCloud = normalizePoolCloudState(migrated.poolCloud);
 
     const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
     migrated.vehicles = migrated.vehicles.map((vehicle) => {
@@ -12124,6 +12126,28 @@
     return getPoolModule().normalizePools(value);
   }
 
+  function normalizePoolCloudState(value = {}) {
+    const deletedIds = {};
+    const source = value && typeof value === 'object' ? value.deletedIds || {} : {};
+    Object.entries(source).forEach(([id, deletedAt]) => {
+      const cleanId = normalizeText(id);
+      const cleanDeletedAt = normalizeText(deletedAt);
+      if (cleanId && Number.isFinite(Date.parse(cleanDeletedAt))) deletedIds[cleanId] = cleanDeletedAt;
+    });
+    return {
+      loadedAt: normalizeText(value?.loadedAt),
+      pendingAt: normalizeText(value?.pendingAt),
+      deletedIds
+    };
+  }
+
+  function poolDeleteWinsOverCloud(pool, deletedIds = {}) {
+    const deletedAt = Date.parse(deletedIds?.[pool?.id] || '');
+    if (!Number.isFinite(deletedAt)) return false;
+    const cloudUpdatedAt = Date.parse(pool?.updatedAt || pool?.createdAt || '');
+    return !Number.isFinite(cloudUpdatedAt) || cloudUpdatedAt <= deletedAt;
+  }
+
   function poolVolumeM3(value) {
     return getPoolModule().poolVolumeM3(value);
   }
@@ -18015,6 +18039,7 @@
       readingPrices: structuredCloneSafe(state.readingPrices || DEFAULT_STATE.readingPrices),
       readingDeposits: structuredCloneSafe(state.readingDeposits || DEFAULT_STATE.readingDeposits),
       readingBilling: structuredCloneSafe(state.readingBilling || DEFAULT_STATE.readingBilling),
+      poolCloud: structuredCloneSafe(normalizePoolCloudState(state.poolCloud || DEFAULT_STATE.poolCloud)),
       // Per-vehicle/per-household mapy — musí se ukládat s workspace, jinak
       // by po přepnutí domácnosti zůstala v paměti mapa z předchozí.
       vehicleServicePlans: structuredCloneSafe(normalizeVehicleServicePlanMap(state.settings?.vehicleServicePlans)),
@@ -18066,6 +18091,7 @@
       state[collection] = [];
     });
     resetCloudModuleCachesForUserSwitch();
+    state.poolCloud = structuredCloneSafe(DEFAULT_STATE.poolCloud);
     state.settings = {
       ...(state.settings || {}),
       cloudEnabled: true,
@@ -18321,17 +18347,29 @@
       state.financeCloud = { ...(state.financeCloud || {}), loansLoadedAt: new Date().toISOString() };
     }
     if (Array.isArray(layout.pools)) {
+      const poolCloud = normalizePoolCloudState(state.poolCloud || DEFAULT_STATE.poolCloud);
       const localPools = normalizePools(state.pools || []);
       const cloudPools = normalizePools(layout.pools);
-      const cloudMap = new Map(cloudPools.map((pool) => [pool.id, pool]));
-      const merged = localPools.map((pool) => (cloudMap.has(pool.id) ? cloudMap.get(pool.id) : pool));
-      const localIds = new Set(localPools.map((pool) => pool.id));
-      const cloudOnly = cloudPools.filter((pool) => !localIds.has(pool.id));
-      state.pools = normalizePools([...merged, ...cloudOnly]);
+      const cloudAllowedPools = cloudPools.filter((pool) => !poolDeleteWinsOverCloud(pool, poolCloud.deletedIds));
+      if (poolCloud.pendingAt) {
+        const localIds = new Set(localPools.map((pool) => pool.id));
+        const cloudOnly = cloudAllowedPools.filter((pool) => !localIds.has(pool.id));
+        state.pools = normalizePools([...localPools, ...cloudOnly]);
+      } else {
+        state.pools = normalizePools(cloudAllowedPools);
+      }
+      state.poolCloud = {
+        ...poolCloud,
+        loadedAt: new Date().toISOString()
+      };
     } else if (layout.pool && typeof layout.pool === 'object' && !Array.isArray(layout.pool)) {
       // Starší cloud snapshot ještě nemá pools (jednotné číslo pool) - dokud
       // se lokálně nezmigruje a znovu neodešle, bereme to jako první bazén.
-      if (!Array.isArray(state.pools) || !state.pools.length) state.pools = normalizePools([{ ...layout.pool, name: 'Bazén' }]);
+      const poolCloud = normalizePoolCloudState(state.poolCloud || DEFAULT_STATE.poolCloud);
+      const legacyPool = normalizePools([{ ...layout.pool, id: layout.pool.id || 'pool-legacy-migrated', name: layout.pool.name || 'Bazén' }])[0];
+      if ((!Array.isArray(state.pools) || !state.pools.length) && legacyPool && !poolDeleteWinsOverCloud(legacyPool, poolCloud.deletedIds)) {
+        state.pools = normalizePools([legacyPool]);
+      }
     }
     if (layout.vape && typeof layout.vape === 'object' && !Array.isArray(layout.vape)) {
       state.vape = normalizeVapeState({ ...(state.vape || {}), ...layout.vape });
@@ -18461,6 +18499,7 @@
       readingPrices: structuredCloneSafe(state.readingPrices || DEFAULT_STATE.readingPrices),
       readingDeposits: structuredCloneSafe(state.readingDeposits || DEFAULT_STATE.readingDeposits),
       readingBilling: structuredCloneSafe(state.readingBilling || DEFAULT_STATE.readingBilling),
+      poolCloud: structuredCloneSafe(normalizePoolCloudState(state.poolCloud || DEFAULT_STATE.poolCloud)),
       // Per-vehicle/per-household mapy — viz captureCurrentHouseholdWorkspace.
       vehicleServicePlans: structuredCloneSafe(normalizeVehicleServicePlanMap(state.settings?.vehicleServicePlans)),
       vehicleIconColors: structuredCloneSafe(normalizeVehicleIconColorMap(state.settings?.vehicleIconColors)),
@@ -18483,6 +18522,7 @@
       state.readingPrices = normalizeReadingPrices(snapshot.readingPrices || state.readingPrices);
       state.readingDeposits = normalizeReadingDeposits(snapshot.readingDeposits || state.readingDeposits);
       state.readingBilling = normalizeReadingBilling(snapshot.readingBilling || state.readingBilling);
+      state.poolCloud = normalizePoolCloudState(snapshot.poolCloud || state.poolCloud || DEFAULT_STATE.poolCloud);
       // Per-household vehicle mapy — z workspace snapshotu domácnosti, ne
       // z předchozí domácnosti v paměti. Chybí-li ve starším snapshotu → {}.
       state.settings.vehicleServicePlans = normalizeVehicleServicePlanMap(snapshot.vehicleServicePlans || {});
@@ -18504,6 +18544,7 @@
       state.readingPrices = normalizeReadingPrices(DEFAULT_STATE.readingPrices);
       state.readingDeposits = normalizeReadingDeposits(DEFAULT_STATE.readingDeposits);
       state.readingBilling = normalizeReadingBilling(DEFAULT_STATE.readingBilling);
+      state.poolCloud = structuredCloneSafe(DEFAULT_STATE.poolCloud);
       // Nová/neznámá domácnost bez snapshotu → prázdné vehicle mapy, ať
       // nezůstane servisní plán ani barvy z předchozí domácnosti.
       state.settings.vehicleServicePlans = {};
