@@ -39,6 +39,7 @@ const finance = read('finance.js');
 const pool = read('pool.js');
 const contracts = read('contracts.js');
 const weather = read('weather.js');
+const vape = read('vape.js');
 const index = read('index.html');
 const sw = read('sw.js');
 const pkg = read('package.json');
@@ -161,6 +162,10 @@ if (styles) {
   expect(styles, '.weather-astronomy-card {', 'styles.css: modul Pocasi ma astronomickou kartu.');
   expect(styles, '.vape-calc-panel.card,\n.vape-item-form-panel.card,\n.vape-items-panel.card,\n.vape-stats-panel.card', 'styles.css: Vape panely maji sjednoceny povrch.');
   expect(styles, '.vape-item-row.item {\n  border: 1px solid var(--line);', 'styles.css: Vape polozky maji sjednoceny seznamovy povrch.');
+  expect(vape, 'class="grid two module-tabbed vape-tab-${escapeHtml(activeTab)}" data-tab-area="vape"', 'vape.js: Vape pouziva spolecny module-tabbed layout.');
+  expect(styles, '/* Domacnost+ v0.1_424 - jednotny povrch napric vsemi moduly mimo Home */', 'styles.css: existuje finalni vrstva pro sjednoceny povrch vsech modulu.');
+  expect(styles, 'body:not(.home-active) .app-frame main .module-tabbed > .section-tabs', 'styles.css: vnitrni zalozky v module-tabbed drzi plnou sirku.');
+  expect(styles, 'body:not(.home-active) .app-frame main .item,\nbody:not(.home-active) .app-frame main .compact-item', 'styles.css: radky a polozky maji jednotny modulovy povrch mimo Home.');
   expect(styles, '.home-primary-action,\n.home-attention-item,\n.focus-tile,\n.timeline-item,\n.setup-item,\n.sync-overview-row {\n  grid-template-columns: auto minmax(0, 1fr) auto;', 'styles.css: dashboard/history řádky sdílí stabilní třísloupcový grid.');
   expect(styles, '.empty,\n.empty-cta {', 'styles.css: prázdné stavy mají sjednocený nový povrch.');
   expect(styles, '/* Domácnost+ – jednotné detailní a grafové povrchy */', 'styles.css: existuje finální blok pro detailní/grafové povrchy.');

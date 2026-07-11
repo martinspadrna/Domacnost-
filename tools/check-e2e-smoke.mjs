@@ -227,7 +227,7 @@ function smokeSeedScript() {
     household: { id: 'household-e2e-smoke', name: 'Smoke domácnost', isConfigured: true, createdAt: new Date().toISOString() },
     profiles: [{ id: 'profile-e2e-smoke', name: 'Smoke', role: 'admin', createdAt: new Date().toISOString() }],
     activeProfileId: 'profile-e2e-smoke',
-    enabledModules: ['weather', 'calendar', 'shopping', 'hdo', 'waste', 'readings', 'pool', 'tasks', 'warranties', 'polishHolidays', 'garage', 'contracts', 'finance', 'subscriptions'],
+    enabledModules: ['weather', 'calendar', 'shopping', 'hdo', 'waste', 'readings', 'pool', 'tasks', 'warranties', 'polishHolidays', 'garage', 'contracts', 'finance', 'subscriptions', 'vape'],
     shoppingLists: [{
       id: 'shopping-list-e2e-smoke',
       householdId: 'household-e2e-smoke',
@@ -349,6 +349,33 @@ function smokeSeedScript() {
           note: 'E2E smoke'
         }]
       }
+    },
+    vape: {
+      startDate: '2026-01-01',
+      cigaretteCostPerDay: 150,
+      resaleTotal: 0,
+      calcBooster: {},
+      calcReady: {},
+      calcShakeVape: {},
+      items: [{
+        id: 'vape-item-e2e-smoke-booster',
+        category: 'booster',
+        name: 'Smoke booster',
+        price: 409,
+        sizeMl: 50,
+        qty: 2,
+        rating: 8,
+        note: 'E2E smoke'
+      }, {
+        id: 'vape-item-e2e-smoke-aroma',
+        category: 'aroma',
+        name: 'Smoke aroma',
+        price: 139,
+        sizeMl: 10,
+        qty: 1,
+        rating: 9,
+        note: ''
+      }]
     },
     contracts: [{
       id: 'contract-e2e-smoke',
@@ -635,6 +662,91 @@ async function run() {
     if (!moreValue.moduleCopyClamp) { fail('Vice modulova karta nema kontrolovany orez dlouheho nazvu.'); moreOk = false; }
     if (moreOk) ok('Vice: nastaveni, skupiny modulu a novy povrch renderuji.');
 
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.more-module-section [data-nav="weather"], [data-nav="weather"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.section-tabs [data-area="weather"][data-tab="astronomy"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 300));
+    const weatherCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const module = document.querySelector('.module-tabbed[data-tab-area="weather"]');
+        const panel = document.querySelector('.weather-astronomy-card');
+        const panelStyle = panel ? getComputedStyle(panel) : null;
+        const text = document.body?.innerText || '';
+        return {
+          module: Boolean(module),
+          panel: Boolean(panel),
+          panelSurface: Boolean(panelStyle && parseFloat(panelStyle.borderTopLeftRadius) >= 16),
+          moonIcon: Boolean(document.querySelector('.weather-moon-icon')),
+          noDetailText: !text.includes('Detail ›'),
+          noAstronomyNote: !text.includes('Východ a západ slunce jsou z počasí'),
+          sunMoonText: text.includes('Slunce a měsíc') && text.includes('Východ slunce') && text.includes('Nasvícení')
+        };
+      })()`
+    });
+    const weatherValue = weatherCheck.result?.value || {};
+    let weatherOk = true;
+    if (!weatherValue.module) { fail('Počasí se neotevřelo do module-tabbed layoutu.'); weatherOk = false; }
+    if (!weatherValue.panel) { fail('Počasí/Další nerenderuje kartu Slunce a měsíc.'); weatherOk = false; }
+    if (!weatherValue.panelSurface) { fail('Počasí/Další nemá sjednocený kartový povrch.'); weatherOk = false; }
+    if (!weatherValue.moonIcon) { fail('Počasí/Další nemá vizuální fázi měsíce.'); weatherOk = false; }
+    if (!weatherValue.noDetailText) { fail('Počasí pořád někde ukazuje text Detail.'); weatherOk = false; }
+    if (!weatherValue.noAstronomyNote) { fail('Počasí/Další pořád obsahuje vysvětlující poznámku o východu/západu slunce.'); weatherOk = false; }
+    if (!weatherValue.sunMoonText) { fail('Počasí/Další nemá očekávané údaje Slunce/Měsíc.'); weatherOk = false; }
+    if (weatherOk) ok('Počasí: Home detail text je pryč a záložka Další má Slunce/Měsíc v novém povrchu.');
+
+    await page.send('Runtime.evaluate', {
+      expression: `window.__DOMACNOST_E2E_NAV__ ? window.__DOMACNOST_E2E_NAV__('more') : document.querySelector('[data-nav="more"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 350));
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.more-module-section [data-nav="vape"], [data-nav="vape"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('.section-tabs [data-area="vape"][data-tab="items"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 300));
+    const vapeCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const module = document.querySelector('.module-tabbed[data-tab-area="vape"]');
+        const panel = document.querySelector('.vape-items-panel');
+        const row = document.querySelector('.vape-item-row');
+        const innerTabs = panel ? panel.querySelector('.section-tabs') : null;
+        const moduleStyle = module ? getComputedStyle(module) : null;
+        const panelStyle = panel ? getComputedStyle(panel) : null;
+        const rowStyle = row ? getComputedStyle(row) : null;
+        const innerTabsStyle = innerTabs ? getComputedStyle(innerTabs) : null;
+        const text = document.body?.innerText || '';
+        return {
+          module: Boolean(module),
+          moduleGrid: Boolean(moduleStyle && moduleStyle.display === 'grid'),
+          panelSurface: Boolean(panelStyle && parseFloat(panelStyle.borderTopLeftRadius) >= 16),
+          rowSurface: Boolean(rowStyle && rowStyle.display === 'grid' && parseFloat(rowStyle.borderTopLeftRadius) >= 14),
+          innerTabsRail: Boolean(innerTabsStyle && /auto|scroll/.test(innerTabsStyle.overflowX)),
+          seedItems: text.includes('Smoke booster') && text.includes('Smoke aroma')
+        };
+      })()`
+    });
+    const vapeValue = vapeCheck.result?.value || {};
+    let vapeOk = true;
+    if (!vapeValue.module) { fail('Vape se neotevřel do module-tabbed layoutu.'); vapeOk = false; }
+    if (!vapeValue.moduleGrid) { fail('Vape module-tabbed není grid.'); vapeOk = false; }
+    if (!vapeValue.panelSurface) { fail('Vape Ceník nemá sjednocený panelový povrch.'); vapeOk = false; }
+    if (!vapeValue.rowSurface) { fail('Vape položky nemají sjednocený seznamový povrch.'); vapeOk = false; }
+    if (!vapeValue.innerTabsRail) { fail('Vape kategorie nejsou vodorovný rail.'); vapeOk = false; }
+    if (!vapeValue.seedItems) { fail('Vape neukazuje seed položky pro kontrolu ceníku.'); vapeOk = false; }
+    if (vapeOk) ok('Vape: Kalkulačky/Ceník/Přehled jsou ve společném module-tabbed povrchu.');
+
+    await page.send('Runtime.evaluate', {
+      expression: `window.__DOMACNOST_E2E_NAV__ ? window.__DOMACNOST_E2E_NAV__('more') : document.querySelector('[data-nav="more"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 350));
     await page.send('Runtime.evaluate', {
       expression: `document.querySelector('.more-module-section [data-nav="calendar"], [data-nav="calendar"]')?.click()`
     });

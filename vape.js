@@ -598,7 +598,9 @@
       const panel = activeTab === 'items' ? renderVapeItems(vape) : activeTab === 'stats' ? renderVapeStats(vape) : renderVapeCalculators(vape);
       return `
         ${renderSectionTabs('vape', tabs, 'calc')}
-        ${panel}
+        <div class="grid two module-tabbed vape-tab-${escapeHtml(activeTab)}" data-tab-area="vape">
+          ${panel}
+        </div>
       `;
     }
 

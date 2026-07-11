@@ -16054,3 +16054,80 @@ html.app-quiet-render .nav-item .nav-icon.module-illustration-slot {
   background: rgba(255, 255, 255, .10);
   color: var(--text);
 }
+
+/* Domacnost+ v0.1_424 - jednotny povrch napric vsemi moduly mimo Home */
+body:not(.home-active) .app-frame main .module-tabbed > .section-tabs {
+  grid-column: 1 / -1;
+}
+
+body:not(.home-active) .app-frame main > .card,
+body:not(.home-active) .app-frame main > .grid > .card,
+body:not(.home-active) .app-frame main .module-tabbed > .card,
+body:not(.home-active) .app-frame main .homecare-panel,
+body:not(.home-active) .app-frame main .finance-panel,
+body:not(.home-active) .app-frame main .subscription-panel,
+body:not(.home-active) .app-frame main .shopping-panel,
+body:not(.home-active) .app-frame main .calendar-panel,
+body:not(.home-active) .app-frame main .contracts-panel,
+body:not(.home-active) .app-frame main .pool-panel,
+body:not(.home-active) .app-frame main .vape-calc-panel,
+body:not(.home-active) .app-frame main .vape-item-form-panel,
+body:not(.home-active) .app-frame main .vape-items-panel,
+body:not(.home-active) .app-frame main .vape-stats-panel {
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .58), rgba(255, 255, 255, .36)),
+    var(--surface, rgba(255, 255, 255, .54));
+  box-shadow: var(--shadow-soft, var(--shadow));
+}
+
+[data-theme="dark"] body:not(.home-active) .app-frame main > .card,
+[data-theme="dark"] body:not(.home-active) .app-frame main > .grid > .card,
+[data-theme="dark"] body:not(.home-active) .app-frame main .module-tabbed > .card,
+[data-theme="dark"] body:not(.home-active) .app-frame main .homecare-panel,
+[data-theme="dark"] body:not(.home-active) .app-frame main .finance-panel,
+[data-theme="dark"] body:not(.home-active) .app-frame main .subscription-panel,
+[data-theme="dark"] body:not(.home-active) .app-frame main .shopping-panel,
+[data-theme="dark"] body:not(.home-active) .app-frame main .calendar-panel,
+[data-theme="dark"] body:not(.home-active) .app-frame main .contracts-panel,
+[data-theme="dark"] body:not(.home-active) .app-frame main .pool-panel,
+[data-theme="dark"] body:not(.home-active) .app-frame main .vape-calc-panel,
+[data-theme="dark"] body:not(.home-active) .app-frame main .vape-item-form-panel,
+[data-theme="dark"] body:not(.home-active) .app-frame main .vape-items-panel,
+[data-theme="dark"] body:not(.home-active) .app-frame main .vape-stats-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .035)),
+    rgba(13, 18, 30, .82);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .22);
+}
+
+body:not(.home-active) .app-frame main .item,
+body:not(.home-active) .app-frame main .compact-item,
+body:not(.home-active) .app-frame main .file-row.compact-file-row,
+body:not(.home-active) .app-frame main .kpi,
+body:not(.home-active) .app-frame main .mini-stat,
+body:not(.home-active) .app-frame main .visual-choice-card,
+body:not(.home-active) .app-frame main .module-toggle,
+body:not(.home-active) .app-frame main .switch-row,
+body:not(.home-active) .app-frame main .cloud-household-row,
+body:not(.home-active) .app-frame main .install-step,
+body:not(.home-active) .app-frame main .pwa-diagnostic-item {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .50);
+  box-shadow: 0 8px 22px rgba(31, 41, 55, .055);
+}
+
+[data-theme="dark"] body:not(.home-active) .app-frame main .item,
+[data-theme="dark"] body:not(.home-active) .app-frame main .compact-item,
+[data-theme="dark"] body:not(.home-active) .app-frame main .file-row.compact-file-row,
+[data-theme="dark"] body:not(.home-active) .app-frame main .kpi,
+[data-theme="dark"] body:not(.home-active) .app-frame main .mini-stat,
+[data-theme="dark"] body:not(.home-active) .app-frame main .visual-choice-card,
+[data-theme="dark"] body:not(.home-active) .app-frame main .module-toggle,
+[data-theme="dark"] body:not(.home-active) .app-frame main .switch-row,
+[data-theme="dark"] body:not(.home-active) .app-frame main .cloud-household-row,
+[data-theme="dark"] body:not(.home-active) .app-frame main .install-step,
+[data-theme="dark"] body:not(.home-active) .app-frame main .pwa-diagnostic-item {
+  background: rgba(255, 255, 255, .055);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .16);
+}
