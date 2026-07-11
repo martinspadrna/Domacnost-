@@ -52,6 +52,15 @@
       return Number.isFinite(number) && number > 0 ? number : '';
     }
 
+    // Teplota vody smí legitimně být 0 °C (zazimovaný/promrzlý bazén) nebo i
+    // záporná - na rozdíl od nullableNumber (pH, dávkování...), kde 0/záporné
+    // číslo reálně znamená "nezadáno", tady by to hodnotu tiše zahodilo.
+    function nullableTemperature(value) {
+      if (value === '' || value === null || value === undefined) return '';
+      const number = decimalValue(value);
+      return Number.isFinite(number) ? number : '';
+    }
+
     function normalizePoolTime(value) {
       const raw = normalizeText(value);
       const match = raw.match(/^(\d{1,2}):(\d{2})/);
@@ -73,7 +82,7 @@
         date,
         time: normalizePoolTime(value.time || value.measuredTime || String(value.measuredAt || value.createdAt || '').slice(11, 16)),
         ph: nullableNumber(value.ph),
-        waterTempC: nullableNumber(value.waterTempC ?? value.waterTemp ?? value.temperature),
+        waterTempC: nullableTemperature(value.waterTempC ?? value.waterTemp ?? value.temperature),
         note: normalizeText(value.note),
         createdAt: normalizeText(value.createdAt) || new Date().toISOString()
       };
@@ -100,7 +109,7 @@
         depth: numberOrEmpty(value.depth),
         volumeM3: numberOrEmpty(value.volumeM3),
         ph: value.ph === '' || value.ph === null || value.ph === undefined ? '' : decimalValue(value.ph),
-        waterTempC: nullableNumber(value.waterTempC ?? value.waterTemp ?? value.temperature),
+        waterTempC: nullableTemperature(value.waterTempC ?? value.waterTemp ?? value.temperature),
         targetPh: value.targetPh === '' || value.targetPh === null || value.targetPh === undefined ? 7.2 : decimalValue(value.targetPh) || 7.2,
         dosePer10m3Per01: numberOrEmpty(value.dosePer10m3Per01) || 100,
         measurements: normalizePoolMeasurements(value.measurements),
@@ -122,6 +131,31 @@
         seen.add(id);
         return { ...pool, id };
       });
+    }
+
+    // Cloud-merge logika bazénů (tombstone smazání proti cloud snapshotu) -
+    // patří sem, ne do app.js, aby vlastník tvaru poolCloud.deletedIds a
+    // pravidel "kdy vyhrává lokální smazání" byl jeden modul, ne dva.
+    function normalizePoolCloudState(value = {}) {
+      const deletedIds = {};
+      const source = value && typeof value === 'object' ? value.deletedIds || {} : {};
+      Object.entries(source).forEach(([id, deletedAt]) => {
+        const cleanId = normalizeText(id);
+        const cleanDeletedAt = normalizeText(deletedAt);
+        if (cleanId && Number.isFinite(Date.parse(cleanDeletedAt))) deletedIds[cleanId] = cleanDeletedAt;
+      });
+      return {
+        loadedAt: normalizeText(value?.loadedAt),
+        pendingAt: normalizeText(value?.pendingAt),
+        deletedIds
+      };
+    }
+
+    function poolDeleteWinsOverCloud(pool, deletedIds = {}) {
+      const deletedAt = Date.parse(deletedIds?.[pool?.id] || '');
+      if (!Number.isFinite(deletedAt)) return false;
+      const cloudUpdatedAt = Date.parse(pool?.updatedAt || pool?.createdAt || '');
+      return !Number.isFinite(cloudUpdatedAt) || cloudUpdatedAt <= deletedAt;
     }
 
     function getPools() {
@@ -676,6 +710,8 @@
     return {
       normalizePool,
       normalizePools,
+      normalizePoolCloudState,
+      poolDeleteWinsOverCloud,
       getPools,
       getActivePool,
       poolVolumeM3,

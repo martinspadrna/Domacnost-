@@ -74,11 +74,20 @@
       return date.toISOString().slice(0, 10);
     }
 
+    function isLeapYear(year) {
+      return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+    }
+
     function addYearsIso(isoDate, years = 2) {
       const [year, month, day] = String(isoDate || '').slice(0, 10).split('-').map(Number);
       if (!year || !month || !day) return '';
-      const date = new Date(Date.UTC(year, month - 1, day));
-      date.setUTCFullYear(date.getUTCFullYear() + Number(years || 0));
+      const targetYear = year + Number(years || 0);
+      // Date.UTC by 29. únor v necílovém-přestupném roce tiše přeteklo na
+      // 1. březen (fakturační období měřidel i konec záruky by tak driftovaly
+      // o den dál při každém dalším posunu) - den se proto zarovná na 28.
+      // dřív, než se z něj postaví Date.
+      const clampedDay = (month === 2 && day === 29 && !isLeapYear(targetYear)) ? 28 : day;
+      const date = new Date(Date.UTC(targetYear, month - 1, clampedDay));
       return date.toISOString().slice(0, 10);
     }
 

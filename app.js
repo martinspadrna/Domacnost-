@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_426';
-  const APP_BUILD = 426;
+  const APP_VERSION = 'Domácnost+ v.0.1_427';
+  const APP_BUILD = 427;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1178,8 +1178,6 @@
   let renderQuietMotionUntil = 0;
   let renderQuietMotionCleanupTimer = 0;
   let moduleTransitionCleanupTimer = 0;
-  let mobileDockSyncTimer = 0;
-  let lastRenderStartedAt = 0;
   let pendingStatePersistTimer = 0;
   let pendingStatePersistKind = '';
   let lastStatePersistAt = 0;
@@ -2728,6 +2726,16 @@
   }
 
   function markModuleTransition() {
+    // Deliberátní přepnutí modulu uživatelem musí animaci vždycky dostat,
+    // i kdyby zrovna doznívalo okno "app-quiet-render" z nedávného tichého
+    // renderu na pozadí (jinak :not(.app-quiet-render) v CSS animaci
+    // potlačí a přepnutí vypadá "trhaně").
+    renderQuietMotionUntil = 0;
+    if (renderQuietMotionCleanupTimer) {
+      window.clearTimeout(renderQuietMotionCleanupTimer);
+      renderQuietMotionCleanupTimer = 0;
+    }
+    document.documentElement.classList.remove('app-quiet-render');
     document.documentElement.classList.add('app-module-transition');
     if (moduleTransitionCleanupTimer) window.clearTimeout(moduleTransitionCleanupTimer);
     moduleTransitionCleanupTimer = window.setTimeout(() => {
@@ -2872,13 +2880,23 @@
 
   function shouldPreserveForm(form) {
     if (!form || !app?.contains?.(form)) return false;
-    if (form.contains(document.activeElement)) return true;
+    // Jen "je ve formuláři focus" nestačí - prázdné/nedotčené pole se tak
+    // považovalo za rozepsané a zbytečně to na dlouho pozdrželo tiché
+    // překreslení na pozadí (cloud sync realtime apod.), i když uživatel nic
+    // nenapsal. Kurzor/pozici výběru pro aktivní prvek řeší samostatně
+    // snapshot.active v captureFormStabilitySnapshot, ten na tomhle
+    // rozhodnutí nezávisí.
     return namedFormControls(form).some(isFormControlDirty);
   }
 
   function captureFormStabilitySnapshot() {
     if (!app) return null;
-    const forms = Array.from(app.querySelectorAll('form')).filter(shouldPreserveForm);
+    // Jedno querySelectorAll('form') pro celou appku, sdílené jak pro filtr
+    // preserve-worthy formulářů, tak pro formStabilityKey() - ta bez předaného
+    // seznamu dřív dělala vlastní O(formulářů) sken pro KAŽDÝ zachovávaný
+    // formulář zvlášť.
+    const allForms = Array.from(app.querySelectorAll('form'));
+    const forms = allForms.filter(shouldPreserveForm);
     const scrollContainers = captureScrollStabilitySnapshot();
     const active = document.activeElement;
     const activeForm = active?.closest?.('form') || null;
@@ -2895,13 +2913,13 @@
         nameCounts.set(name, nameIndex + 1);
         fields.push({ name, nameIndex, value });
       });
-      if (fields.length) snapshot.forms.push({ key: formStabilityKey(form), fields });
+      if (fields.length) snapshot.forms.push({ key: formStabilityKey(form, allForms), fields });
     });
     if (activeForm && active?.getAttribute?.('name')) {
       const activeName = active.getAttribute('name') || '';
       const activeControls = namedFormControls(activeForm).filter((control) => (control.getAttribute('name') || '') === activeName);
       snapshot.active = {
-        formKey: formStabilityKey(activeForm),
+        formKey: formStabilityKey(activeForm, allForms),
         name: activeName,
         nameIndex: Math.max(0, activeControls.indexOf(active)),
         selStart: typeof active.selectionStart === 'number' ? active.selectionStart : null,
@@ -2976,8 +2994,18 @@
 
   function restoreScrollStabilitySnapshot(snapshot) {
     const containers = Array.isArray(snapshot?.scrollContainers) ? snapshot.scrollContainers : [];
+    if (!containers.length) return;
+    // Jeden průchod DOM pro všechny kontejnery místo scrollStabilityElements()
+    // (querySelectorAll('*') přes celou appku) volaného zvlášť pro každý klíč -
+    // při více otevřených scrollovatelných panelech to jinak bylo O(kontejnerů)
+    // plných průchodů DOM na jedno obnovení.
+    const byKey = new Map();
+    scrollStabilityElements().forEach((node) => {
+      const key = scrollStabilityKey(node);
+      if (key && !byKey.has(key)) byKey.set(key, node);
+    });
     containers.forEach((item) => {
-      const node = findScrollStabilityElement(item.key);
+      const node = byKey.get(item.key);
       if (!node) return;
       const top = Number.isFinite(item.scrollTop) ? item.scrollTop : 0;
       const left = Number.isFinite(item.scrollLeft) ? item.scrollLeft : 0;
@@ -2986,31 +3014,49 @@
     });
   }
 
-  function findSnapshotForm(key) {
-    const forms = Array.from(app?.querySelectorAll?.('form') || []);
-    return forms.find((form) => formStabilityKey(form, forms) === key) || null;
+  function findSnapshotForm(key, forms = null) {
+    const all = forms || Array.from(app?.querySelectorAll?.('form') || []);
+    return all.find((form) => formStabilityKey(form, all) === key) || null;
   }
 
   function applyControlSnapshot(control, value) {
     if (!control || !value) return;
     const tag = String(control.tagName || '').toUpperCase();
+    // 'change' se musí vyvolat i po obnovení hodnoty - jinak zůstanou
+    // navázané posluchače (např. syncReadingPriceModeFields/
+    // syncReadingParentMeterOptions, které přepínají viditelné/disabled
+    // fieldsety podle vybrané hodnoty) mimo synchronizaci se selectem, který
+    // teď ukazuje jinou hodnotu, než na jakou naposled reagovaly.
     if (value.kind === 'checked') {
-      control.checked = Boolean(value.checked);
+      const next = Boolean(value.checked);
+      if (control.checked !== next) {
+        control.checked = next;
+        control.dispatchEvent(new Event('change', { bubbles: true }));
+      }
       return;
     }
     if (value.kind === 'multi' && tag === 'SELECT') {
       const selected = new Set(value.values || []);
       Array.from(control.options || []).forEach((option) => { option.selected = selected.has(option.value); });
+      control.dispatchEvent(new Event('change', { bubbles: true }));
       return;
     }
-    control.value = value.value ?? '';
+    const next = value.value ?? '';
+    if (control.value !== next) {
+      control.value = next;
+      control.dispatchEvent(new Event('change', { bubbles: true }));
+    }
   }
 
   function restoreFormStabilitySnapshot(snapshot) {
     if (!snapshot || !app) return;
     restoreScrollStabilitySnapshot(snapshot);
+    // Jedno querySelectorAll('form') pro celé obnovení místo toho, aby si ho
+    // findSnapshotForm/formStabilityKey znovu stavěly pro každý zachovávaný
+    // formulář a znovu pro aktivní prvek.
+    const allForms = snapshot.forms.length || snapshot.active ? Array.from(app.querySelectorAll('form')) : [];
     snapshot.forms.forEach((formSnapshot) => {
-      const form = findSnapshotForm(formSnapshot.key);
+      const form = findSnapshotForm(formSnapshot.key, allForms);
       if (!form) return;
       const controls = namedFormControls(form);
       formSnapshot.fields.forEach((fieldSnapshot) => {
@@ -3019,7 +3065,7 @@
       });
     });
     if (snapshot.active) {
-      const form = findSnapshotForm(snapshot.active.formKey);
+      const form = findSnapshotForm(snapshot.active.formKey, allForms);
       const matches = namedFormControls(form).filter((control) => (control.getAttribute('name') || '') === snapshot.active.name);
       const target = matches[snapshot.active.nameIndex] || matches[0];
       if (target) {
@@ -3063,17 +3109,27 @@
     }, delay);
   }
 
+  // Odloženy render je "quiet" (bez přechodové animace) jen tehdy, když BYLY
+  // quiet úplně všechny požadavky, co se zatím sesbíraly - jinak by pozdější
+  // tichý požadavek (např. cloud sync na pozadí) mohl tiše "downgradovat"
+  // dřív naplánovaný hlasitý/animovaný render (např. přepnutí modulu), který
+  // na to spoléhal. Hlasitý požadavek proto vždy shodí quiet zpátky na false,
+  // ať přijde v jakémkoli pořadí.
+  function markRenderDeferred(quiet) {
+    if (!renderDeferredPending) renderDeferredQuietPending = quiet;
+    else if (!quiet) renderDeferredQuietPending = false;
+    renderDeferredPending = true;
+  }
+
   function requestRender(options = {}) {
     const quiet = options?.quiet === true;
     if (quiet) markQuietRender();
     if (renderDeferDepth > 0 || renderInProgress) {
-      renderDeferredPending = true;
-      if (quiet) renderDeferredQuietPending = true;
+      markRenderDeferred(quiet);
       return;
     }
     if (shouldDelayBackgroundRender()) {
-      renderDeferredPending = true;
-      if (quiet) renderDeferredQuietPending = true;
+      markRenderDeferred(quiet);
       scheduleQuietRender();
       return;
     }
@@ -3089,23 +3145,15 @@
     requestRender({ quiet: true });
   }
 
-  // requestRender() je jediný vstup pro rendery z pozadí (cloud autosync, realtime,
-  // boot warm start...) — na rozdíl od přímých render() volání z akcí uživatele.
-  // Když uživatel zrovna píše do inputu/textarea/selectu, tenhle re-render by mu
-  // jinak smazal rozepsanou hodnotu (formulář se vždy generuje znovu ze state, kde
-  // rozepsaná-ale-neuložená hodnota není). Hodnotu i pozici kurzoru proto kolem
-  // render() přenášíme přes stejný data-form/data-id klíč, co používá formulář.
-  function renderPreservingActiveInput() {
-    render();
-  }
-
   function render() {
     if (renderDeferDepth > 0 || renderInProgress) {
-      renderDeferredPending = true;
+      // render() je vždy hlasitá cesta (uživatelská akce) - i tady musí vynulovat
+      // renderDeferredQuietPending, jinak by dřívější tichý požadavek na pozadí
+      // mohl "vyhrát" a odloženému renderu sebrat přechodovou animaci.
+      markRenderDeferred(false);
       return;
     }
     const formSnapshot = captureFormStabilitySnapshot();
-    lastRenderStartedAt = Date.now();
     renderInProgress = true;
     try {
       applyVisualSettings();
@@ -3198,7 +3246,6 @@
         lastRenderedBottomNavId = activeBottomNavId;
         keepActiveNavCentered();
         keepActiveSectionTabsCentered();
-        scheduleMobileDockRuntimeSync();
       }
     } finally {
       restoreFormStabilitySnapshot(formSnapshot);
@@ -3246,20 +3293,6 @@
   function safeAnimationFrame(callback) {
     const frame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
     frame(callback);
-  }
-
-  function syncMobileDockRuntimeOffset() {
-    const root = document.documentElement;
-    root?.style?.setProperty('--mobile-dock-runtime-offset', '0px');
-  }
-
-  function scheduleMobileDockRuntimeSync() {
-    if (mobileDockSyncTimer) window.clearTimeout(mobileDockSyncTimer);
-    syncMobileDockRuntimeOffset();
-    mobileDockSyncTimer = window.setTimeout(() => {
-      mobileDockSyncTimer = 0;
-      syncMobileDockRuntimeOffset();
-    }, 90);
   }
 
   function placeNavRunner(runner, item, animate = false) {
@@ -8761,6 +8794,23 @@
       </details>`;
   }
 
+  // Podružné měřidlo se párovat smí jen se stejným typem/jednotkou (jinak ho
+  // readingsMeters() při dalším přepočtu tiše odpojí, viz readingsMeters()
+  // parent-link revalidace). Nabídka rodičů proto musí reagovat na změnu
+  // typu/jednotky přímo ve formuláři, ne jen na jejich hodnotu při renderu.
+  function syncReadingParentMeterOptions(form) {
+    if (!form) return;
+    const select = form.querySelector('select[name="parentMeterId"]');
+    if (!select) return;
+    const type = form.querySelector('select[name="type"]')?.value || '';
+    const unit = form.querySelector('select[name="unit"]')?.value || '';
+    const currentId = form.dataset.id || '';
+    const currentValue = select.value;
+    const options = readingParentMeterOptions(type, unit, currentId);
+    select.innerHTML = options.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join('');
+    select.value = options.some(([value]) => value === currentValue) ? currentValue : '';
+  }
+
   function syncReadingPriceModeFields(form) {
     if (!form) return;
     const mode = form.querySelector('select[name="pricingMode"]')?.value === 'contract' ? 'contract' : 'average';
@@ -9193,7 +9243,7 @@
             <div class="form-grid two">
               ${selectField('Typ', 'type', READING_TYPE_OPTIONS, 'electricity')}
               ${selectField('Místo / domácnost', 'groupId', readingGroupOptions(), readingDefaultGroup().id)}
-              ${selectField('Vazba na hlavní měřidlo', 'parentMeterId', readingParentMeterOptions(), '')}
+              ${selectField('Vazba na hlavní měřidlo', 'parentMeterId', readingParentMeterOptions('electricity', 'kWh'), '')}
               ${field('Název', 'name', 'text', 'např. Elektroměr hlavní', true)}
               ${selectField('Jednotka', 'unit', READING_UNIT_OPTIONS, 'kWh')}
               ${field('Měsíční záloha', 'monthlyDeposit', 'text', 'Kč/měsíc, volitelné', false, '', 'decimal')}
@@ -9354,21 +9404,28 @@
       serial: data.serial,
       location: data.location,
       pricingMode: data.pricingMode,
-      pricePerUnit: data.pricePerUnit,
-      averageBillTotal: data.averageBillTotal,
-      averageBillUsage: data.averageBillUsage,
-      commodityPrice: data.commodityPrice,
-      distributionPrice: data.distributionPrice,
-      regulatedPrice: data.regulatedPrice,
-      waterPrice: data.waterPrice,
-      sewerPrice: data.sewerPrice,
-      otherUnitPrice: data.otherUnitPrice,
-      fixedMonthlyCost: data.fixedMonthlyCost,
-      fixedDistributionMonthly: data.fixedDistributionMonthly,
-      fixedSupplierMonthly: data.fixedSupplierMonthly,
-      breakerMonthly: data.breakerMonthly,
-      otherFixedMonthly: data.otherFixedMonthly,
-      fixedMonthlyLabel: data.fixedMonthlyLabel,
+      // Cenová pole žijí v <fieldset disabled> podle zvoleného režimu (average/
+      // contract) - needitovaný fieldset se needošle ve FormData vůbec, takže
+      // data.X je undefined pro režim, který zrovna není aktivní. Bez '??
+      // original.X' fallbacku by prosté přepnutí režimu nebo úprava jiného pole
+      // (třeba jen názvu měřidla) tiše smazalo ceny uložené v tom druhém
+      // režimu. '' (skutečné vymazání polem) se sem pořád propíše normálně,
+      // padá jen chybějící (undefined) klíč zpátky na původní hodnotu.
+      pricePerUnit: data.pricePerUnit ?? original.pricePerUnit,
+      averageBillTotal: data.averageBillTotal ?? original.averageBillTotal,
+      averageBillUsage: data.averageBillUsage ?? original.averageBillUsage,
+      commodityPrice: data.commodityPrice ?? original.commodityPrice,
+      distributionPrice: data.distributionPrice ?? original.distributionPrice,
+      regulatedPrice: data.regulatedPrice ?? original.regulatedPrice,
+      waterPrice: data.waterPrice ?? original.waterPrice,
+      sewerPrice: data.sewerPrice ?? original.sewerPrice,
+      otherUnitPrice: data.otherUnitPrice ?? original.otherUnitPrice,
+      fixedMonthlyCost: data.fixedMonthlyCost ?? original.fixedMonthlyCost,
+      fixedDistributionMonthly: data.fixedDistributionMonthly ?? original.fixedDistributionMonthly,
+      fixedSupplierMonthly: data.fixedSupplierMonthly ?? original.fixedSupplierMonthly,
+      breakerMonthly: data.breakerMonthly ?? original.breakerMonthly,
+      otherFixedMonthly: data.otherFixedMonthly ?? original.otherFixedMonthly,
+      fixedMonthlyLabel: data.fixedMonthlyLabel ?? original.fixedMonthlyLabel,
       note: data.note,
       archived: original.archived
     });
@@ -9404,7 +9461,10 @@
         const latest = [...readingEntriesForRegister(meter.id, item.register)].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0];
         return latest && String(date || '') >= String(latest.date || '') && Number.isFinite(Number(latest.value)) && item.value < Number(latest.value);
       });
-      if (tooLow) return showToast(`Stav ${tooLow.register} nesmí být menší než poslední odečet`);
+      // Potvrzovací dialog místo tvrdého zákazu - nižší stav bývá překlep, ale
+      // taky legitimně nastane po výměně měřidla (nové začíná od nižšího
+      // čísla). Bez téhle možnosti se dřív nedalo takový odečet zadat vůbec.
+      if (tooLow && !window.confirm(`Stav ${tooLow.register} je nižší než poslední odečet. Vyměnil/a jsi měřidlo? Uložit i tak?`)) return;
       const entries = registerEntries.map((item) => normalizeReadingEntry({ meterId: meter.id, date, value: item.value, register: item.register, unitPrice, note }));
       state.readings = [...readingsEntries(), ...entries];
     } else {
@@ -9413,7 +9473,7 @@
       const entry = normalizeReadingEntry({ meterId: meter.id, date, value, unitPrice, note });
       const latest = latestReadingForMeter(meter.id);
       if (latest && String(entry.date || '') < String(latest.date || '') && !window.confirm('Datum je starší než poslední odečet. Uložit i tak?')) return;
-      if (latest && String(entry.date || '') >= String(latest.date || '') && Number.isFinite(Number(latest.value)) && value < Number(latest.value)) return showToast('Stav nesmí být menší než poslední odečet');
+      if (latest && String(entry.date || '') >= String(latest.date || '') && Number.isFinite(Number(latest.value)) && value < Number(latest.value) && !window.confirm('Stav je nižší než poslední odečet. Vyměnil/a jsi měřidlo? Uložit i tak?')) return;
       state.readings = [...readingsEntries(), entry];
     }
     readingsEntryDrawerOpen = true;
@@ -9967,12 +10027,15 @@
 
   function readingEntryValueField(label, name, meter, register = '', required = false) {
     const inputId = `field-${name}-${Math.random().toString(36).slice(2, 7)}`;
-    const latest = latestReadingForEntryInput(meter?.id, register);
-    const minAttr = latest && Number.isFinite(Number(latest.value)) ? ` min="${escapeHtml(String(latest.value))}"` : '';
+    // Žádné min="" tady - nativní HTML5 validace by odeslání formuláře
+    // zablokovala úplně, dřív než se stihne zeptat addReadingEntryFromForm()
+    // svým vlastním potvrzovacím dialogem (window.confirm). Nižší stav je
+    // typicky překlep, ale legitimně nastane i po výměně měřidla - tam musí
+    // jít formulář vůbec odeslat, aby se potvrzení mohlo zobrazit.
     return `
       <div class="field">
         <label for="${inputId}">${escapeHtml(label)}</label>
-        <input class="input" id="${inputId}" name="${escapeHtml(name)}" type="number" step="any" inputmode="decimal" placeholder="${escapeHtml(readingEntryValuePlaceholder(meter, register))}" value="" ${required ? 'required' : ''}${minAttr}>
+        <input class="input" id="${inputId}" name="${escapeHtml(name)}" type="number" step="any" inputmode="decimal" placeholder="${escapeHtml(readingEntryValuePlaceholder(meter, register))}" value="" ${required ? 'required' : ''}>
       </div>
     `;
   }
@@ -9991,12 +10054,6 @@
         return `${readingEntryValueField(`Stav ${register}`, `registerValue__${key}`, meter, register, false)}<input type="hidden" name="registerLabel__${key}" value="${escapeHtml(register)}">`;
       }).join('')
       : readingEntryValueField('Stav', 'value', meter, '', true);
-    const valueFields = registers.length
-      ? registers.map((register) => {
-        const key = readingRegisterInputKey(register);
-        return `${field(`Stav ${register}`, `registerValue__${key}`, 'number', `např. ${register === 'T2' ? '450' : '12542'}`, false)}<input type="hidden" name="registerLabel__${key}" value="${escapeHtml(register)}">`;
-      }).join('')
-      : field('Stav', 'value', 'number', 'např. 12542', true);
     return `
       <form data-form="add-reading-entry" class="compact-form readings-form readings-entry-form">
         <div class="form-grid two">
@@ -12101,25 +12158,11 @@
   }
 
   function normalizePoolCloudState(value = {}) {
-    const deletedIds = {};
-    const source = value && typeof value === 'object' ? value.deletedIds || {} : {};
-    Object.entries(source).forEach(([id, deletedAt]) => {
-      const cleanId = normalizeText(id);
-      const cleanDeletedAt = normalizeText(deletedAt);
-      if (cleanId && Number.isFinite(Date.parse(cleanDeletedAt))) deletedIds[cleanId] = cleanDeletedAt;
-    });
-    return {
-      loadedAt: normalizeText(value?.loadedAt),
-      pendingAt: normalizeText(value?.pendingAt),
-      deletedIds
-    };
+    return getPoolModule().normalizePoolCloudState(value);
   }
 
   function poolDeleteWinsOverCloud(pool, deletedIds = {}) {
-    const deletedAt = Date.parse(deletedIds?.[pool?.id] || '');
-    if (!Number.isFinite(deletedAt)) return false;
-    const cloudUpdatedAt = Date.parse(pool?.updatedAt || pool?.createdAt || '');
-    return !Number.isFinite(cloudUpdatedAt) || cloudUpdatedAt <= deletedAt;
+    return getPoolModule().poolDeleteWinsOverCloud(pool, deletedIds);
   }
 
   function poolVolumeM3(value) {
@@ -18450,6 +18493,11 @@
     state.subscriptionsCloud = { ...(state.subscriptionsCloud || {}), loadedAt: syncedAt, pendingAt: '' };
     state.readingsCloud = { ...(state.readingsCloud || {}), loadedAt: syncedAt, pendingAt: '' };
     state.loyaltyCardsCloud = { ...(state.loyaltyCardsCloud || {}), loadedAt: syncedAt, pendingAt: '' };
+    // householdUiPayload() posílá i state.pools při KAŽDÉM volání téhle funkce,
+    // ne jen když ho vyvolal pool.js - bez tohohle zůstal poolCloud.pendingAt
+    // uvízlý po úspěšném uložení z jiné funkce (předplatné, věrnostní karty...),
+    // takže merge z cloudu pak navždy preferoval lokální bazény.
+    state.poolCloud = { ...(state.poolCloud || {}), loadedAt: syncedAt, pendingAt: '' };
     saveState();
     if (showMessage) showToast('Nastavení hlavní obrazovky uloženo do cloudu');
     return true;
@@ -19413,6 +19461,11 @@
       syncReadingPriceModeFields(readingsPricingModeControl.form);
       return;
     }
+    const readingsParentTypeControl = event.target.closest('form[data-form="add-reading-meter"] select[name="type"], form[data-form="add-reading-meter"] select[name="unit"], form[data-form="update-reading-meter"] select[name="type"], form[data-form="update-reading-meter"] select[name="unit"]');
+    if (readingsParentTypeControl) {
+      syncReadingParentMeterOptions(readingsParentTypeControl.form);
+      return;
+    }
     const readingEntryMeterSelect = event.target.closest('form[data-form="add-reading-entry"] select[name="meterId"]');
     if (readingEntryMeterSelect) {
       readingsEntryMeterId = readingEntryMeterSelect.value || readingsEntryMeterId;
@@ -19614,14 +19667,6 @@
   window.addEventListener('online', () => {
     scheduleShoppingCloudRefresh('online', { delay: 900, minAgeMs: 5000 });
   });
-
-  window.addEventListener('resize', scheduleMobileDockRuntimeSync, { passive: true });
-  window.addEventListener('pageshow', scheduleMobileDockRuntimeSync, { passive: true });
-  window.addEventListener('orientationchange', () => window.setTimeout(scheduleMobileDockRuntimeSync, 180), { passive: true });
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', scheduleMobileDockRuntimeSync, { passive: true });
-    window.visualViewport.addEventListener('scroll', scheduleMobileDockRuntimeSync, { passive: true });
-  }
 
   app.addEventListener('focusout', (event) => {
     const hdoTimeInput = event.target.closest('[data-hdo-time-input]');

@@ -27,17 +27,21 @@ const checks = [
       app.includes('scheduleQuietRender()')
   },
   {
-    name: 'reading entry form uses last-value placeholder and min guard',
+    // Zámerně BEZ nativního min="" - to blokovalo odeslání formuláře dřív, než
+    // se stihl zeptat JS potvrzovací dialog (viz check níže), takže po výměně
+    // měřidla nešlo zadat legitimně nižší stav vůbec.
+    name: 'reading entry form uses last-value placeholder without a hard native min block',
     ok: app.includes('readingEntryValuePlaceholder') &&
       app.includes('readingEntryValueField') &&
       app.includes('naposledy') &&
-      app.includes(' min="${escapeHtml(String(latest.value))}"')
+      !app.includes(' min="${escapeHtml(String(latest.value))}"')
   },
   {
-    name: 'reading entries stay open after save and reject lower current values',
+    name: 'reading entries stay open after save and confirm before accepting a lower current value',
     ok: app.includes('readingsEntryDrawerOpen = true;') &&
       app.includes('item.value < Number(latest.value)') &&
-      app.includes('value < Number(latest.value)')
+      app.includes('value < Number(latest.value)') &&
+      app.includes('Vyměnil/a jsi měřidlo? Uložit i tak?')
   },
   {
     name: 'average reading price is direct unit price first',

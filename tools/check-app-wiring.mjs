@@ -128,8 +128,7 @@ if (app) {
   expect(app, "document.documentElement.classList.add('app-quiet-render')", 'app.js: tiche rendery umi vypnout rusivou animaci obsahu.');
   expect(app, 'function markModuleTransition()', 'app.js: rucni prepnuti modulu ma explicitni prechod.');
   expect(app, /markModuleTransition\(\);\s*render\(\);/, 'app.js: modulovy prechod se pousti jen pred rucnim nav renderem.');
-  expect(app, 'function syncMobileDockRuntimeOffset()', 'app.js: mobilni dock ma jednotny boot sync.');
-  expect(app, "root?.style?.setProperty('--mobile-dock-runtime-offset', '0px')", 'app.js: mobilni dock drzi runtime offset na nule.');
+  expectAbsent(app, 'function syncMobileDockRuntimeOffset()', 'app.js: mobilni dock uz nema mrtvy runtime-sync mechanismus (5 listeneru, ktere jen porad nastavovaly stejnou konstantu) - offset je staticka CSS hodnota v styles.css.');
   expectAbsent(app, 'const currentGap = viewportBottom - rect.bottom;', 'app.js: mobilni dock uz se po startu neposouva podle dodatecneho mereni viewportu.');
   expectAbsent(app, 'SIDEBAR_PINNED_IDS', 'app.js: desktop sidebar už nemá natvrdo duplikovanou sekci Oblíbené.');
   expectAbsent(app, '<div class="app-sidebar-label">Oblíbené</div>', 'app.js: desktop sidebar nerenderuje sekci Oblíbené.');
