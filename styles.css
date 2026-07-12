@@ -6189,28 +6189,9 @@ svg.anime-module-svg .anime-icon-line {
   line-height: 1.1;
 }
 
-.subscription-service-brand-md {
-  min-width: 42px;
-  height: 42px;
-  padding: 0 11px;
-}
-.subscription-service-brand-md b { font-size: 0.84rem; }
-
-.subscription-service-brand-sm {
-  min-width: 34px;
-  height: 34px;
-  padding: 0 9px;
-}
-.subscription-service-brand-sm b { font-size: 0.74rem; }
-
 .subscription-service-brand-xs {
-  min-width: 24px;
-  height: 24px;
-  padding: 0 6px;
   vertical-align: middle;
 }
-.subscription-service-brand-xs b { font-size: 0.58rem; }
-.subscription-inline-service .subscription-service-brand-name { display:none; }
 
 .brand-netflix { background: linear-gradient(135deg, #e50914, #8b0000); }
 .brand-disney { background: linear-gradient(135deg, #1d4ed8, #60a5fa); }
@@ -6240,16 +6221,6 @@ svg.anime-module-svg .anime-icon-line {
   vertical-align: middle;
 }
 
-@media (max-width: 640px) {
-  .subscription-service-brand-md {
-    min-width: 38px;
-    height: 38px;
-    padding: 0 10px;
-  }
-  .subscription-service-brand-name {
-    font-size: 0.94rem;
-  }
-}
 
 /* Domácnost+ v.0.1_133 – logo-like badge, filtr plateb a lepší Home souhrn Předplatného */
 .subscription-service-brand {
@@ -6577,23 +6548,28 @@ svg.anime-module-svg .anime-icon-line {
   height: 100%;
 }
 
+/* Domácnost+ v0.1_440 - sjednocená velikost log služeb napříč celým
+   Předplatným (dřív "md" ve Službách vs "sm" v Platbách vypadaly různě
+   velké a mobilní @media pravidlo bylo zdvojené a přebíjelo samo sebe).
+   sm = ikonka + název (Služby, Platby), xs = jen ikonka bez textu
+   (Přehled, Historie plateb) - stejné rozměry všude, o něco užší než dřív. */
 .subscription-service-brand-md {
-  min-width: 54px;
-  height: 42px;
-  padding: 0 8px;
-}
-
-.subscription-service-brand-sm {
   min-width: 46px;
-  height: 34px;
+  height: 40px;
   padding: 0 7px;
 }
 
+.subscription-service-brand-sm {
+  min-width: 40px;
+  height: 32px;
+  padding: 0 6px;
+}
+
 .subscription-service-brand-xs {
-  min-width: 32px;
-  height: 24px;
-  padding: 0 5px;
-  border-radius: 10px;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 4px;
+  border-radius: 9px;
 }
 
 .subscription-service-brand-name {
@@ -6614,15 +6590,25 @@ svg.anime-module-svg .anime-icon-line {
 
 @media (max-width: 640px) {
   .subscription-service-brand-md {
-    min-width: 50px;
-    height: 38px;
-    padding: 0 7px;
+    min-width: 42px;
+    height: 36px;
+    padding: 0 6px;
   }
 
   .subscription-service-brand-sm {
-    min-width: 42px;
-    height: 32px;
-    padding: 0 6px;
+    min-width: 36px;
+    height: 28px;
+    padding: 0 5px;
+  }
+
+  .subscription-service-brand-xs {
+    min-width: 24px;
+    height: 20px;
+    padding: 0 3px;
+  }
+
+  .subscription-service-brand-name {
+    font-size: 0.94rem;
   }
 }
 
@@ -15788,6 +15774,16 @@ body.home-active {
   gap: 8px;
 }
 
+/* Domacnost+ v0.1_440 - Nadcházející: JS teď připraví až 8 položek (viz
+   buildHomeSoonItems), na mobilu se schová 5.-8., aby jich bylo pořád
+   nejvýš 4 (2×2); na PC (od 900px, viz media blok níž) se ukáže všech
+   8 (2×4). */
+@media (max-width: 899px) {
+  .home-timeline-list > :nth-child(n + 5) {
+    display: none;
+  }
+}
+
 .home-timeline-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -16159,86 +16155,95 @@ body:not(.home-active) .app-frame main .pwa-diagnostic-item {
    seznamy polozek a garaz grafy v gridu. Na siroke obrazovce je mista dost,
    mobil zustava beze zmeny. */
 @media (min-width: 900px) {
-  /* Home panely ("Dnesni prehled") +75 % vysky, vetsi pismo. */
+  /* Home panely ("Dnesni prehled") - v438 +75 %, teď dalších +75 % navrch
+     (min-height misto spoleh na padding, ať je rust predvidatelny). */
   .home-today-card {
-    padding: 24px 18px;
-    gap: 9px;
-    border-radius: 20px;
+    min-height: 176px;
+    padding: 34px 22px;
+    gap: 12px;
+    border-radius: 22px;
   }
 
   .home-today-label {
-    font-size: .82rem;
+    font-size: .95rem;
   }
 
   .home-today-value {
-    font-size: 1.08rem;
+    font-size: 1.4rem;
   }
 
-  /* Pocasi +100 % vysky vcetne ikon a pisma. */
+  /* Pocasi - stejne vysoke jako cely blok "Dnesni prehled" (jeden radek
+     panelu + rezerva na druhy radek u vice nez 3 badgi). */
   .home-weather-widget {
-    padding: 34px 30px;
-    gap: 18px;
+    min-height: 200px;
+    padding: 40px 34px;
+    gap: 20px;
   }
 
   .home-weather-widget-icon {
-    width: 84px;
-    height: 84px;
+    width: 96px;
+    height: 96px;
   }
 
   .home-weather-widget-temp {
-    font-size: 2.4rem;
+    font-size: 2.7rem;
   }
 
   .home-weather-widget-meta {
-    font-size: 1rem;
+    font-size: 1.05rem;
   }
 
   .home-weather-astronomy {
-    gap: 10px;
-    width: 172px;
+    gap: 12px;
+    width: 190px;
   }
 
   .home-weather-astro-row {
-    grid-template-columns: 30px 64px 64px;
-    gap: 8px;
-    font-size: .92rem;
+    grid-template-columns: 32px 68px 68px;
+    gap: 9px;
+    font-size: .98rem;
   }
 
   .home-weather-astro-row strong {
-    font-size: 1rem;
+    font-size: 1.05rem;
   }
 
   .home-weather-astro-icon,
   .home-weather-astronomy .weather-moon-icon-sm {
-    width: 30px;
-    height: 30px;
-    font-size: 1.2rem;
+    width: 32px;
+    height: 32px;
+    font-size: 1.28rem;
   }
 
-  /* Nadchazejici + mini seznamy +75 %. Rychle akce zamerne beze zmeny. */
+  /* Nadchazejici + mini seznamy - dalsich +75 % navrch v438 rustu.
+     Rychle akce zamerne beze zmeny. */
   .home-timeline-row {
-    padding: 20px 18px;
-    gap: 12px;
-    border-radius: 20px;
+    padding: 34px 20px;
+    gap: 14px;
+    border-radius: 22px;
   }
 
   .home-timeline-row .home-row-copy strong {
-    font-size: 1.02rem;
+    font-size: 1.2rem;
   }
 
   .home-timeline-row .home-row-copy em {
-    font-size: .86rem;
+    font-size: 1rem;
   }
 
   .home-timeline-row .home-row-icon {
-    width: 52px;
-    height: 52px;
-    font-size: 1.45rem;
+    width: 68px;
+    height: 68px;
+    font-size: 1.75rem;
   }
 
   .home-dash-section-title {
-    font-size: 1.12rem;
+    font-size: 1.2rem;
   }
+
+  /* Nadchazejici na PC: az 8 polozek (2×4) - JS pripravi vsech 8, mobilni
+     schovavani 5.-8. polozky (viz base .home-timeline-list pravidlo) tady
+     neplati. */
 
   .home-finance-widget {
     padding: 26px 24px;

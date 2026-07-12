@@ -511,7 +511,7 @@
       if (!sources.length) {
         return renderEmptyCta({ icon: '📅', title: 'Zatím žádné zdroje', text: 'Přidej ruční domácí zdroj nebo připoj Google kalendář.', nav: 'calendar', tab: 'sources', label: 'Přidat zdroj' });
       }
-      return `<details class="compact-edit-details calendar-source-list-details"><summary><span>Aktivní zdroje</span><em>${sources.length} zdrojů</em></summary><div class="list compact-list calendar-source-list">${sources.map((source) => {
+      return `<details class="compact-edit-details calendar-source-list-details" data-details-key="calendar-source-list" ${getDetailsOpen('calendar-source-list') ? 'open' : ''}><summary><span>Aktivní zdroje</span><em>${sources.length} zdrojů</em></summary><div class="list compact-list calendar-source-list">${sources.map((source) => {
         const linkedEvents = (getState().calendar || []).filter((event) => String(event.sourceId || '') === String(source.id || source.cloudId || '')).length;
         const google = normalizeCalendarSourceProvider(source.provider) === 'google';
         return `
@@ -574,7 +574,7 @@
               <div><h2>Přehled</h2></div>
               <span class="badge ${cloudCount ? 'good' : ''}">${events.length} událostí</span>
             </div>
-            <details class="compact-edit-details calendar-overview-summary-details">
+            <details class="compact-edit-details calendar-overview-summary-details" data-details-key="calendar-overview-summary" ${getDetailsOpen('calendar-overview-summary') ? 'open' : ''}>
               <summary><span>Souhrn kalendáře</span><em>${events.length} událostí · ${activeSources}/${sourceList.length || 0} zdrojů</em></summary>
               <div class="cloud-status-grid compact-cloud-stats calendar-overview-stats">
                 <div class="mini-stat"><span>Celkem</span><strong>${events.length}</strong></div>

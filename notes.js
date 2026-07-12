@@ -6,6 +6,7 @@
   // takže ukládání zůstává 1:1 jako v app.js: mutace pole → saveState() → render().
   function createNotes(deps) {
     const getState = deps.getState || (() => ({}));
+    const getDetailsOpen = deps.getDetailsOpen || (() => false);
     const uid = deps.uid || (() => Math.random().toString(36).slice(2));
     const normalizeText = deps.normalizeText || ((value) => String(value || '').trim());
     const escapeHtml = deps.escapeHtml || ((value) => String(value ?? ''));
@@ -720,7 +721,7 @@
                   <div class="notebook-pages">${group.items.map((page) => renderNotebookPage(page)).join('')}</div>
                 </section>
               `).join('')}</div>` : '<div class="notebook-empty-actions"><div><strong>Poznámky jsou prázdné</strong><p>Vytvoř první vlastní sekci a stránku. Žádné výchozí sekce se nepřidávají.</p></div><button class="primary-btn" type="button" data-action="set-section-tab" data-area="notebookCreate" data-tab="note">+ přidat poznámku</button></div>'}
-              ${legacyQuickNotes().length ? `<details class="compact-edit-details legacy-notes"><summary><span>Starší rychlé poznámky</span><em>${legacyQuickNotes().length}</em></summary><div class="list">${legacyQuickNotes().map((note) => `<div class="item"><div class="item-top"><div class="item-title">${escapeHtml(note.text)}</div><span class="badge ${note.cloudId ? 'good' : ''}">${note.cloudId ? 'cloud' : 'lokálně'}</span></div><div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="notes" data-id="${escapeHtml(note.id)}">Smazat</button></div></div>`).join('')}</div></details>` : ''}
+              ${legacyQuickNotes().length ? `<details class="compact-edit-details legacy-notes" data-details-key="notes-legacy-quick" ${getDetailsOpen('notes-legacy-quick') ? 'open' : ''}><summary><span>Starší rychlé poznámky</span><em>${legacyQuickNotes().length}</em></summary><div class="list">${legacyQuickNotes().map((note) => `<div class="item"><div class="item-top"><div class="item-title">${escapeHtml(note.text)}</div><span class="badge ${note.cloudId ? 'good' : ''}">${note.cloudId ? 'cloud' : 'lokálně'}</span></div><div class="item-actions"><button class="danger-btn" type="button" data-action="delete" data-collection="notes" data-id="${escapeHtml(note.id)}">Smazat</button></div></div>`).join('')}</div></details>` : ''}
             </div>
           ` : `
             <div class="notebook-tab-content notebook-tasks-tab">

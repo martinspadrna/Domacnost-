@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_439';
-  const APP_BUILD = 439;
+  const APP_VERSION = 'Domácnost+ v.0.1_440';
+  const APP_BUILD = 440;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -3086,6 +3086,13 @@
 
   function shouldDelayBackgroundRender() {
     if (renderForcedDepth > 0) return false;
+    // Otevřený náhled přílohy (smlouvy, záruky...) reguluje app.innerHTML
+    // stejně jako zbytek stránky - periodický cloud/realtime background
+    // render tak vytvořil nový <img>/<iframe> pod uživatelem a náhled
+    // problikl a ztratil zoom/scroll. Dokud je náhled otevřený, čeká se
+    // stejně jako u rozepsaného formuláře; zavření jde vždy přes render()
+    // přímo (mimo requestRender), takže samotné zavírání nic nezdrží.
+    if (filePreviewModal) return true;
     if (!hasActiveDirtyForm()) return false;
     return Date.now() - lastUserInteractionAt < FORM_RENDER_MAX_WAIT_MS;
   }
@@ -3096,6 +3103,13 @@
     const delay = Math.max(180, Math.min(FORM_RENDER_QUIET_MS, FORM_RENDER_QUIET_MS - elapsed + 120));
     renderQuietTimer = window.setTimeout(() => {
       renderQuietTimer = 0;
+      // Náhled přílohy nemá časový strop jako rozepsaný formulář - dokud je
+      // otevřený, žádný tichý render neproběhne (viz shouldDelayBackgroundRender).
+      // Zavření jde přímo přes render(), takže odložená data se hned dokreslí.
+      if (filePreviewModal) {
+        scheduleQuietRender();
+        return;
+      }
       if (hasActiveDirtyForm() && Date.now() - lastUserInteractionAt < FORM_RENDER_QUIET_MS) {
         scheduleQuietRender();
         return;
@@ -4621,13 +4635,14 @@
 
   function buildHomeSoonItems(ctx) {
     // Hledání jede přes buildHomeAttentionItems napříč všemi moduly (kalendář,
-    // úkoly, smlouvy, auto, záruky, odečty, svátky PL...), ale na Domů se z
-    // toho ukážou jen 4 nejnaléhavější ve dvou řádcích, ať widget nezabírá
-    // zbytečně místo, ale pořád dá rychlý kontext.
+    // úkoly, smlouvy, auto, záruky, odečty, svátky PL...). Do DOM se připraví
+    // až 8 nejnaléhavějších (2 sloupce × 4 řádky) - na mobilu jich CSS ukáže
+    // jen prvních 4 (.home-timeline-list media query), na širším PC je vidět
+    // všech 8, ať widget nezabírá zbytečně místo na malé obrazovce.
     const excludedOverviews = new Set(['hdo', 'waste', 'pool', 'finance', 'shopping']);
     return buildHomeAttentionItems(ctx)
       .filter((item) => !excludedOverviews.has(item.overview))
-      .slice(0, 4);
+      .slice(0, 8);
   }
 
   function buildHomeAttentionItems(ctx) {
@@ -6345,6 +6360,7 @@
       getState: () => state,
       defaultCatalogCount: DEFAULT_SHOPPING_CATALOG.length,
       escapeHtml,
+      getDetailsOpen: isDetailsOpen,
       getModuleTab,
       renderSectionTabs,
       selectField,
@@ -6514,6 +6530,7 @@
     if (!factory) throw new Error('notes.js není načtený');
     notesInstance = factory({
       getState: () => state,
+      getDetailsOpen: isDetailsOpen,
       uid,
       normalizeText,
       escapeHtml,
@@ -6550,6 +6567,7 @@
     warrantyInstance = factory({
       getState: () => state,
       getActiveWarrantyDetailId: () => activeWarrantyDetailId,
+      getDetailsOpen: isDetailsOpen,
       getModuleTab,
       setModuleTab,
       renderSectionTabs,
@@ -7788,7 +7806,7 @@
             <div class="chip-grid polish-trading-grid">${(nextTrading.length ? nextTrading : trading.slice(0, 4)).map(renderPolishTradingSundayItem).join('')}</div>
           </div>
         </div>
-        <details class="compact-edit-details polish-shop-all">
+        <details class="compact-edit-details polish-shop-all" data-details-key="polish-shop-all" ${isDetailsOpen('polish-shop-all') ? 'open' : ''}>
           <summary><span>Celý přehled roku ${escapeHtml(year)}</span><em>${visibleEntries.length} položek</em></summary>
           <div class="list compact-list">${visibleEntries.map(renderPolishShopEntry).join('')}</div>
         </details>
@@ -10889,6 +10907,12 @@
     const purchasePrice = vehicleMoneyValue(vehicle?.purchasePrice);
     const salePrice = vehicleMoneyValue(vehicle?.salePrice);
     const distance = vehicleOwnedDistance(vehicle, analytics);
+    // Kč/km jen palivo musí dělit STEJNOU vzdáleností, ze které se počítá
+    // fuelCost - segmenty mezi tankováními (stats.totalKm), NE celý nájezd
+    // od koupě (vehicleOwnedDistance). Auto koupené s vysokým stavem km a
+    // roky bez zalogovaného tankování by jinak dělilo cenu paliva km, které
+    // appka vůbec nezná - výsledná Kč/km vyšla na zlomek reálné hodnoty.
+    const fuelDistance = Number(analytics.stats?.totalKm || 0);
     const totalWithoutPurchase = fuelCost + serviceCost;
     const totalWithPurchase = totalWithoutPurchase + purchasePrice - salePrice;
     return {
@@ -10897,7 +10921,7 @@
       purchasePrice,
       salePrice,
       distance,
-      fuelPerKm: distance > 0 ? fuelCost / distance : null,
+      fuelPerKm: fuelDistance > 0 ? fuelCost / fuelDistance : null,
       runningPerKm: distance > 0 ? totalWithoutPurchase / distance : null,
       totalPerKm: distance > 0 ? totalWithPurchase / distance : null,
       totalWithoutPurchase,

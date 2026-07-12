@@ -8,6 +8,7 @@
   function createWarranty(deps) {
     const getState = deps.getState || (() => ({}));
     const getActiveWarrantyDetailId = deps.getActiveWarrantyDetailId || (() => null);
+    const getDetailsOpen = deps.getDetailsOpen || (() => false);
     const getModuleTab = deps.getModuleTab || ((area, fallback) => fallback);
     const renderSectionTabs = deps.renderSectionTabs || (() => '');
     const sessionStorage = deps.sessionStorage || window.sessionStorage;
@@ -302,7 +303,7 @@
               <div class="modal-detail-card"><span>Přílohy</span><strong>${files.length}</strong></div>
             </div>
 
-            <details class="compact-edit-details warranty-detail-edit" open>
+            <details class="compact-edit-details warranty-detail-edit" data-details-key="warranty-detail-edit-${escapeHtml(item.id)}" ${getDetailsOpen(`warranty-detail-edit-${item.id}`, true) ? 'open' : ''}>
               <summary><span>Upravit údaje</span><em>všechny hodnoty záruky</em></summary>
               <form data-form="edit-warranty" data-id="${escapeHtml(item.id)}" class="compact-form warranty-form">
                 <div class="form-grid two">
@@ -319,7 +320,7 @@
               </form>
             </details>
 
-            <details class="compact-edit-details warranty-detail-files" open>
+            <details class="compact-edit-details warranty-detail-files" data-details-key="warranty-detail-files-${escapeHtml(item.id)}" ${getDetailsOpen(`warranty-detail-files-${item.id}`, true) ? 'open' : ''}>
               <summary><span>Přílohy</span><em>${files.length ? `${files.length} souborů` : 'fotka / PDF'}</em></summary>
               ${files.length ? `<div class="warranty-file-list">${files.map((file) => renderWarrantyFileItem(file)).join('')}</div>` : '<div class="item-meta">Bez přílohy</div>'}
               <form data-form="add-warranty-files" data-warranty-id="${escapeHtml(item.id)}" class="compact-form warranty-file-form">
@@ -329,7 +330,7 @@
               </form>
             </details>
 
-            <details class="compact-edit-details danger-zone warranty-detail-danger">
+            <details class="compact-edit-details danger-zone warranty-detail-danger" data-details-key="warranty-detail-danger-${escapeHtml(item.id)}" ${getDetailsOpen(`warranty-detail-danger-${item.id}`) ? 'open' : ''}>
               <summary><span>Smazat záruku</span><em>nevratná akce</em></summary>
               <div class="hint-box danger-hint">Smaže se záruka i její vazby na přílohy.</div>
               <div class="form-actions modal-actions"><button class="danger-btn" type="button" data-action="delete-warranty" data-id="${escapeHtml(item.id)}">Smazat záruku</button></div>

@@ -138,7 +138,7 @@
       const catalogPanel = isShoppingCatalogTab ? `
         <section class="card shopping-panel panel-catalog">
           <div class="card-header"><div><h2>Katalog domácnosti</h2><p>Produkty můžeš přidat rovnou tady. Pak se budou nabízet v nákupním seznamu.</p></div><span class="badge">${ownCatalogCount ? `${ownCatalogCount} vlastních` : 'základ'}</span></div>
-          <details class="action-details compact-edit-details shopping-catalog-add-details">
+          <details class="action-details compact-edit-details shopping-catalog-add-details" data-details-key="shopping-catalog-add" ${deps.getDetailsOpen?.('shopping-catalog-add') ? 'open' : ''}>
             <summary><span>Přidat produkt do katalogu</span><em>název, druh a výchozí jednotka</em></summary>
             <form data-form="add-shopping-catalog-item" class="compact-form shopping-catalog-add-form">
               <div class="form-grid three">
@@ -158,7 +158,7 @@
       const couponsPanel = isShoppingCouponsTab ? `
         <section class="card shopping-panel panel-coupons">
           <div class="card-header"><div><h2>Slevové kódy</h2><p>Kupóny a kódy, které nechceš zapomenout. V online domácnosti jsou sdílené pro všechny členy.</p></div><span class="badge ${coupons.some((item) => item.cloudId) ? 'good' : ''}">${coupons.some((item) => item.cloudId) ? 'cloud' : 'lokálně'}</span></div>
-          <details class="action-details compact-edit-details coupon-add-details">
+          <details class="action-details compact-edit-details coupon-add-details" data-details-key="shopping-coupon-add" ${deps.getDetailsOpen?.('shopping-coupon-add') ? 'open' : ''}>
             <summary><span>Přidat nový kód</span><em>obchod, kód, platnost</em></summary>
             <form data-form="add-coupon" class="compact-form">
               <div class="form-grid two">

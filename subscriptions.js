@@ -699,7 +699,7 @@
         const ownCost = Math.max(0, decimalValue(service.price) - shareTotal);
         return `
           <div class="subscription-overview-service">
-            <div class="subscription-overview-service-head">${renderSubscriptionServiceIcon(service, { size: 'sm', showName: false })}<span class="badge ${capacity.isFull ? 'warn' : capacity.used ? 'good' : ''}">${capacity.maxMembers ? `${capacity.used}/${capacity.maxMembers}` : `${capacity.used}`}</span></div>
+            <div class="subscription-overview-service-head">${renderSubscriptionServiceIcon(service, { size: 'xs', showName: false })}<span class="badge ${capacity.isFull ? 'warn' : capacity.used ? 'good' : ''}">${capacity.maxMembers ? `${capacity.used}/${capacity.maxMembers}` : `${capacity.used}`}</span></div>
             <strong class="subscription-overview-service-name">${escapeHtml(service.name)}</strong>
             <div class="subscription-overview-service-meta"><span>Cena ${formatCurrency(service.price)}</span><span>Vrací se ${formatCurrency(shareTotal)}</span><span>Tvoje část ${formatCurrency(ownCost)}</span></div>
           </div>`;
@@ -832,7 +832,7 @@
       const availableCount = subscriptionPersonAvailableServiceCount(row.person.id);
       const canAssign = availableCount > 0;
       return `
-        <details class="item compact-item subscription-person-detail-card ${row.cumulativeDebt ? 'subscription-debt' : ''}">
+        <details class="item compact-item subscription-person-detail-card ${row.cumulativeDebt ? 'subscription-debt' : ''}" data-details-key="subscription-person-${escapeHtml(row.person.id)}" ${getDetailsOpen(`subscription-person-${row.person.id}`) ? 'open' : ''}>
           <summary class="subscription-person-summary-toggle">
             <span class="subscription-person-summary-main">
               <strong>${escapeHtml(row.person.name)}</strong>
@@ -890,7 +890,7 @@
       const isEditing = subscriptionServiceEditId === service.id;
       return `
         <div class="item compact-item subscription-service-item ${service.enabled === false ? 'muted-item' : ''}">
-          <div class="item-top"><div class="item-title subscription-service-title">${renderSubscriptionServiceIcon(service, { size: 'md' })}</div><span class="badge ${capacity.isFull ? 'warn' : service.enabled === false ? '' : 'good'}">${escapeHtml(capacityText)}</span></div>
+          <div class="item-top"><div class="item-title subscription-service-title">${renderSubscriptionServiceIcon(service, { size: 'sm' })}</div><span class="badge ${capacity.isFull ? 'warn' : service.enabled === false ? '' : 'good'}">${escapeHtml(capacityText)}</span></div>
           <div class="item-meta">Cena ${formatCurrency(service.price)} · den stržení ${service.billingDay}. · Sdílení ${formatCurrency(shareTotal)} / měsíc · tvoje část ${formatCurrency(Math.max(0, decimalValue(service.price) - shareTotal))}${service.note ? ` · ${escapeHtml(service.note)}` : ''}</div>
           ${shares.length ? `<div class="subscription-share-list">${shares.map((share) => `<span class="quick-chip static-chip">${escapeHtml(subscriptionPersonName(share.personId))}: ${formatCurrency(share.amount)} <button type="button" data-action="delete-subscription-share" data-subscription-id="${escapeHtml(service.id)}" data-person-id="${escapeHtml(share.personId)}" aria-label="Odebrat sdílení">×</button></span>`).join('')}</div>` : '<div class="inline-note compact-note">Zatím není nikomu přiřazená.</div>'}
           <div class="item-actions"><button class="ghost-btn" type="button" data-action="edit-subscription-service" data-id="${escapeHtml(service.id)}">${isEditing ? 'Zavřít úpravu' : 'Upravit'}</button><button class="ghost-btn" type="button" data-action="subscription-toggle-service" data-id="${escapeHtml(service.id)}">${service.enabled === false ? 'Zapnout' : 'Vypnout'}</button><button class="danger-btn" type="button" data-action="delete-subscription" data-id="${escapeHtml(service.id)}">Smazat</button></div>
