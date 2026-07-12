@@ -6561,19 +6561,23 @@ svg.anime-module-svg .anime-icon-line {
 }
 
 .subscription-service-brand-sm {
-  min-width: 40px;
-  height: 32px;
-  padding: 0 6px;
+  /* v0.1_443 - sm (Služby, Platby) byla vedle xs (Přehled, chip u osoby...)
+     výrazně větší, i když jde vizuálně o stejnou "ikonku služby" - teď mají
+     obě stejnou výšku, sm je jen o trochu širší kvůli SVG wordmarku vedle
+     samostatného textu s názvem. */
+  min-width: 32px;
+  height: 26px;
+  padding: 0 5px;
 }
 
 .subscription-service-brand-xs {
   /* Pevná šířka (ne jen min-width) drží tvar na 4:3 - jinak si SVG logo
      (viewBox 44x24, poměr ~1.83:1) samo natáhlo box do širšího obdélníku,
      než chce showName:false kontext (Přehled, Historie plateb, chip u
-     osoby). */
-  width: 29px;
-  height: 22px;
-  padding: 0 3px;
+     osoby). Vyska sjednocena se sm (viz v0.1_443 vyse). */
+  width: 35px;
+  height: 26px;
+  padding: 0 4px;
   border-radius: 9px;
 }
 
@@ -6601,15 +6605,15 @@ svg.anime-module-svg .anime-icon-line {
   }
 
   .subscription-service-brand-sm {
-    min-width: 36px;
-    height: 28px;
-    padding: 0 5px;
+    min-width: 28px;
+    height: 23px;
+    padding: 0 4px;
   }
 
   .subscription-service-brand-xs {
-    width: 27px;
-    height: 20px;
-    padding: 0 2px;
+    width: 31px;
+    height: 23px;
+    padding: 0 3px;
   }
 
   .subscription-service-brand-name {
