@@ -332,26 +332,71 @@
       return getSubscriptionServices().filter((service) => (service.shares || []).some((share) => share.personId === personId));
     }
 
+    // Měsíce MEZI první platbou a "uptoIndex" (včetně), kde součet plateb
+    // nepokryl očekávaný podíl - tedy historické nedoplatky konkrétní služby,
+    // seřazené od nejstaršího. subscriptionCumulativeDebt/creditBeforeMonth
+    // počítají jen SOUČET plateb s payment.month <= cílový měsíc - platba
+    // datovaná do "teď" (pozdější měsíc) se do historického "k červnu" součtu
+    // nikdy nezapočítá, takže starý nedoplatek zůstane navždy viset, dokud
+    // se nezapíše platba přímo do TOHO starého měsíce. Proto bulk platba musí
+    // nedoplatky nejdřív "zacílit" na jejich vlastní měsíc, ne je hodit
+    // všechny naráz do aktuálního měsíce.
+    function subscriptionServiceHistoricalShortfalls(personId, subscriptionId, uptoMonthIndex) {
+      const expected = subscriptionShareAmountForPerson(personId, subscriptionId);
+      if (!(expected > 0)) return [];
+      const firstIndex = subscriptionFirstPaymentIndex(personId, subscriptionId);
+      if (firstIndex === null) return [];
+      const payments = getSubscriptionPayments().filter((payment) => payment.personId === personId && payment.subscriptionId === subscriptionId);
+      const lastIndex = Math.min(uptoMonthIndex, firstIndex + 119);
+      const shortfalls = [];
+      for (let index = firstIndex; index <= lastIndex; index += 1) {
+        const monthKey = subscriptionIndexToMonth(index);
+        const paidThatMonth = payments.filter((payment) => payment.month === monthKey).reduce((sum, payment) => sum + decimalValue(payment.amount), 0);
+        const shortfall = Math.round((expected - paidThatMonth) * 100) / 100;
+        if (shortfall > 0) shortfalls.push({ month: monthKey, amount: shortfall });
+      }
+      return shortfalls;
+    }
+
     // Rozpočítání jedné přijaté částky mezi všechny služby dané osoby podle
     // poměru jejich měsíčních podílů (ne rovným dílem v Kč) - jen tak vyjde
     // "zaplaceno do měsíce X" stejně pro všechny služby dohromady. Poslední
     // služba dostane zbytek po zaokrouhlení, aby součet přesně sedněl na
     // vloženou částku (žádný halíř neuteče/nepřebude kvůli zaokrouhlování).
-    function subscriptionBulkPaymentAllocations(personId, amount) {
+    // Pro KAŽDOU službu se rozpočtený díl nejdřív rozdělí na jednotlivé
+    // historicky nedoplacené měsíce (platba dovnitř TOHO měsíce), a teprve
+    // zbytek se zapíše jako jedna platba do aktuálního měsíce - o rozpočítání
+    // do dalších budoucích měsíců se pak postará existující kredit/dluh engine
+    // (subscriptionCreditBeforeMonth), stejně jako u běžné jednorázové platby.
+    function subscriptionBulkPaymentPlan(personId, amount) {
+      const currentMonthKey = todayISO().slice(0, 7);
+      const currentMonthIndex = subscriptionMonthToIndex(currentMonthKey);
       const shares = subscriptionPersonAssignedServices(personId)
         .map((service) => ({ service, expected: subscriptionShareAmountForPerson(personId, service.id) }))
         .filter((row) => row.expected > 0);
       const totalExpected = shares.reduce((sum, row) => sum + row.expected, 0);
       if (!(totalExpected > 0) || !(amount > 0)) return [];
       let remaining = Math.round(amount);
-      return shares
-        .map((row, index) => {
-          const isLast = index === shares.length - 1;
-          const raw = isLast ? remaining : Math.round((row.expected / totalExpected) * amount);
-          remaining -= raw;
-          return { service: row.service, amount: Math.max(0, raw) };
-        })
-        .filter((row) => row.amount > 0);
+      return shares.map((row, index) => {
+        const isLast = index === shares.length - 1;
+        let budget = isLast ? remaining : Math.round((row.expected / totalExpected) * amount);
+        remaining -= budget;
+        budget = Math.max(0, budget);
+        const entries = [];
+        const shortfalls = subscriptionServiceHistoricalShortfalls(personId, row.service.id, currentMonthIndex);
+        for (const shortfall of shortfalls) {
+          if (budget <= 0) break;
+          const pay = Math.min(budget, shortfall.amount);
+          entries.push({ month: shortfall.month, amount: pay });
+          budget -= pay;
+        }
+        if (budget > 0) {
+          const lastEntry = entries[entries.length - 1];
+          if (lastEntry && lastEntry.month === currentMonthKey) lastEntry.amount += budget;
+          else entries.push({ month: currentMonthKey, amount: budget });
+        }
+        return { service: row.service, entries };
+      }).filter((row) => row.entries.length > 0);
     }
 
     function subscriptionPersonAvailableServiceCount(personId) {
@@ -1076,24 +1121,28 @@
       const amount = decimalValue(data.amount);
       if (!person) return showToast('Vyber člověka');
       if (!(amount > 0)) return showToast('Vyplň částku');
-      const allocations = subscriptionBulkPaymentAllocations(person.id, amount);
-      if (!allocations.length) return showToast(`${person.name} nemá přiřazenou žádnou placenou službu`);
-      const month = todayISO().slice(0, 7);
+      const plan = subscriptionBulkPaymentPlan(person.id, amount);
+      if (!plan.length) return showToast(`${person.name} nemá přiřazenou žádnou placenou službu`);
       const paidAt = todayISO();
       getState().subscriptionPayments = Array.isArray(getState().subscriptionPayments) ? getState().subscriptionPayments : [];
-      allocations.forEach((row) => {
-        getState().subscriptionPayments.push(normalizeSubscriptionPayment({
-          subscriptionId: row.service.id,
-          personId: person.id,
-          month,
-          amount: row.amount,
-          paidAt,
-          note: data.note
-        }));
+      const breakdown = [];
+      plan.forEach((row) => {
+        const serviceTotal = row.entries.reduce((sum, entry) => sum + entry.amount, 0);
+        if (!(serviceTotal > 0)) return;
+        breakdown.push(`${row.service.name} ${formatCurrency(serviceTotal)}`);
+        row.entries.forEach((entry) => {
+          getState().subscriptionPayments.push(normalizeSubscriptionPayment({
+            subscriptionId: row.service.id,
+            personId: person.id,
+            month: entry.month,
+            amount: entry.amount,
+            paidAt,
+            note: data.note
+          }));
+        });
       });
       form.reset();
-      const breakdown = allocations.map((row) => `${row.service.name} ${formatCurrency(row.amount)}`).join(', ');
-      persistSubscriptionsState({ toast: `Přijato ${formatCurrency(amount)} · rozpočítáno: ${breakdown}` });
+      persistSubscriptionsState({ toast: `Přijato ${formatCurrency(amount)} · rozpočítáno: ${breakdown.join(', ')}` });
     }
 
     function toggleSubscriptionPaid(subscriptionId, personId, month = subscriptionSelectedMonth()) {

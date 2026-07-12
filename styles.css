@@ -6561,11 +6561,12 @@ svg.anime-module-svg .anime-icon-line {
 }
 
 .subscription-service-brand-sm {
-  /* v0.1_443 - sm (Služby, Platby) byla vedle xs (Přehled, chip u osoby...)
-     výrazně větší, i když jde vizuálně o stejnou "ikonku služby" - teď mají
-     obě stejnou výšku, sm je jen o trochu širší kvůli SVG wordmarku vedle
-     samostatného textu s názvem. */
-  min-width: 32px;
+  /* v0.1_444 - min-width samo o sobě nestačilo: SVG wordmark (Netflix,
+     SkyShowtime...) má různě dlouhý natvrdo kreslený text a bez max-width
+     si box natáhl podle NEJDELŠÍHO loga - proto Služby vypadaly "dlouhé"
+     vedle ostatních záložek. Pevná šířka drží stejný rozměr všude, ať je
+     název služby jakkoli dlouhý (čitelný název je stejně vedle v textu). */
+  width: 42px;
   height: 26px;
   padding: 0 5px;
 }
@@ -6605,7 +6606,7 @@ svg.anime-module-svg .anime-icon-line {
   }
 
   .subscription-service-brand-sm {
-    min-width: 28px;
+    width: 34px;
     height: 23px;
     padding: 0 4px;
   }
