@@ -132,6 +132,11 @@ if (app) {
   expectAbsent(app, 'const currentGap = viewportBottom - rect.bottom;', 'app.js: mobilni dock uz se po startu neposouva podle dodatecneho mereni viewportu.');
   expectAbsent(app, 'SIDEBAR_PINNED_IDS', 'app.js: desktop sidebar už nemá natvrdo duplikovanou sekci Oblíbené.');
   expectAbsent(app, '<div class="app-sidebar-label">Oblíbené</div>', 'app.js: desktop sidebar nerenderuje sekci Oblíbené.');
+  expect(app, 'function garageVehicleDedupeKeys', 'app.js: Garáž deduplikuje auta přes více aliasů.');
+  expect(app, 'function garageKnownBrandModelFromName', 'app.js: Garáž umí rozpoznat značka/model i z názvu auta.');
+  expect(app, 'keys.find((candidate) => map.has(candidate))', 'app.js: dedupe aut sloučí lokální/cloud záznam podle libovolného aliasu.');
+  expect(app, 'function remapVehicleServicePlanMap', 'app.js: servisní plán auta se přemapuje při sloučení duplicitních vozidel.');
+  expect(app, 'state.settings.vehicleServicePlans = remapVehicleServicePlanMap', 'app.js: dedupe aut neponechá servisní plán pod odstraněným vehicleId.');
   expect(app, 'function isHorizontallyScrollableTarget', 'app.js: swipe guard umí poznat horizontálně scrollovatelný blok.');
   expect(app, 'const NAVIGATION_SWIPE_IGNORE_SELECTOR', 'app.js: swipe guard má centrální seznam chráněných oblastí.');
   expect(app, 'function isNavigationSwipeIgnoredTarget', 'app.js: navigační swipe má jednotný ignore helper.');

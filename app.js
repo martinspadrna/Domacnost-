@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_436';
-  const APP_BUILD = 436;
+  const APP_VERSION = 'Domácnost+ v.0.1_437';
+  const APP_BUILD = 437;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -7953,12 +7953,41 @@
   }
 
   function garageVehicleDedupeKey(vehicle = {}) {
+    return garageVehicleDedupeKeys(vehicle)[0] || '';
+  }
+
+  function garageKnownBrandModelFromName(name = '') {
+    const normalizedName = normalizeKey(name);
+    if (!normalizedName) return '';
+    for (const [brand, models] of Object.entries(GARAGE_EXTRA_MODEL_CATALOG)) {
+      const brandKey = normalizeKey(brand);
+      for (const model of models) {
+        const modelKey = normalizeKey(model);
+        if (!modelKey) continue;
+        const hasModel = normalizedName === modelKey || normalizedName.includes(` ${modelKey}`) || normalizedName.includes(`${modelKey} `);
+        if (hasModel && (!brandKey || normalizedName.includes(brandKey) || normalizedName === modelKey)) return `${brandKey}|${modelKey}`;
+      }
+    }
+    return '';
+  }
+
+  function garageVehicleDedupeKeys(vehicle = {}) {
+    const keys = [];
+    const addKey = (prefix, value) => {
+      const key = normalizeKey(value);
+      if (key && !keys.includes(`${prefix}:${key}`)) keys.push(`${prefix}:${key}`);
+    };
+    addKey('cloud', vehicle.cloudId);
     const plate = normalizeKey(vehicle.plate || vehicle.plateNumber || '');
-    if (plate) return `plate:${plate}`;
-    const name = normalizeKey(vehicle.name || vehicle.title || '');
-    if (name) return `name:${name}`;
-    const brandModel = normalizeKey([vehicle.brand, vehicle.model, vehicle.year].filter(Boolean).join(' '));
-    return brandModel ? `model:${brandModel}` : '';
+    if (plate) addKey('plate', plate);
+    const vin = normalizeKey(vehicle.vin || vehicle.technicalSpecs?.vin || '');
+    if (vin) addKey('vin', vin);
+    addKey('name', vehicle.name || vehicle.title || '');
+    const brandModel = normalizeKey([vehicle.brand, vehicle.model].filter(Boolean).join('|'));
+    if (brandModel) addKey('model', brandModel);
+    const inferredBrandModel = garageKnownBrandModelFromName(vehicle.name || vehicle.title || '');
+    if (inferredBrandModel) addKey('model', inferredBrandModel);
+    return keys;
   }
 
   function garageDateKey(value) {
@@ -8010,9 +8039,11 @@
     const idRemap = new Map();
     const unique = [];
     for (const vehicle of vehicles) {
-      const key = garageVehicleDedupeKey(vehicle) || `id:${vehicle.id}`;
+      const keys = garageVehicleDedupeKeys(vehicle);
+      const key = keys.find((candidate) => map.has(candidate)) || keys[0] || `id:${vehicle.id}`;
       if (!map.has(key)) {
-        map.set(key, vehicle);
+        keys.forEach((candidate) => map.set(candidate, vehicle));
+        if (!keys.length) map.set(key, vehicle);
         unique.push(vehicle);
         continue;
       }
@@ -8022,7 +8053,7 @@
       if (dropped?.id && preferred?.id && dropped.id !== preferred.id) idRemap.set(dropped.id, preferred.id);
       const index = unique.indexOf(existing);
       if (index >= 0) unique[index] = preferred;
-      map.set(key, preferred);
+      [...garageVehicleDedupeKeys(existing), ...keys, key].filter(Boolean).forEach((candidate) => map.set(candidate, preferred));
     }
     return { items: unique, idRemap };
   }
@@ -8141,6 +8172,7 @@
       const remappedVehicleId = dedupedVehicles.idRemap.get(item.vehicleId) || item.vehicleId;
       return { ...item, id: normalizeText(item.id) || `service-${index + 1}-${uid()}`, vehicleId: validVehicleIds.has(remappedVehicleId) ? remappedVehicleId : fallbackVehicleId, title: normalizeText(item.title || item.category || item.note || 'Servis / náklad') };
     }).filter((item) => item.vehicleId);
+    state.settings.vehicleServicePlans = remapVehicleServicePlanMap(state.settings?.vehicleServicePlans, dedupedVehicles.idRemap, validVehicleIds);
     const vehicleMap = new Map(state.vehicles.map((vehicle) => [vehicle.id, vehicle]));
     state.fuel = dedupeGarageRecords(state.fuel, garageFuelDedupeKey, vehicleMap);
     state.services = dedupeGarageRecords(state.services, garageServiceDedupeKey, vehicleMap);
@@ -10909,6 +10941,51 @@
       const list = Array.isArray(source[vehicleId]) ? source[vehicleId] : [];
       const items = list.map(normalizeServicePlanItem).filter((item) => item.intervalKm || item.intervalMonths || item.lastKm || item.lastDate || item.note || item.type !== 'custom');
       if (items.length) result[String(vehicleId)] = items;
+    });
+    return result;
+  }
+
+  function servicePlanItemDedupeKey(item = {}) {
+    return [
+      normalizeKey(item.type || 'custom'),
+      normalizeKey(item.label || servicePlanTypeLabel(item.type || 'custom')),
+      Math.max(0, Math.round(Number(item.intervalKm || 0)) || 0),
+      Math.max(0, Math.round(Number(item.intervalMonths || 0)) || 0)
+    ].join('|');
+  }
+
+  function preferServicePlanItem(current = {}, candidate = {}) {
+    const currentKm = Number(current.lastKm || 0) || 0;
+    const candidateKm = Number(candidate.lastKm || 0) || 0;
+    const currentDate = Date.parse(current.lastDate || '') || 0;
+    const candidateDate = Date.parse(candidate.lastDate || '') || 0;
+    const candidateLooksNewer = candidateKm > currentKm || candidateDate > currentDate;
+    const merged = candidateLooksNewer ? { ...current, ...candidate } : { ...candidate, ...current };
+    return { ...merged, id: current.id || candidate.id || uid() };
+  }
+
+  function mergeServicePlanItems(items = []) {
+    const byKey = new Map();
+    items.map(normalizeServicePlanItem).forEach((item) => {
+      const key = servicePlanItemDedupeKey(item) || (item.id ? `id:${item.id}` : uid());
+      const existing = byKey.get(key);
+      byKey.set(key, existing ? preferServicePlanItem(existing, item) : item);
+    });
+    return Array.from(byKey.values());
+  }
+
+  function remapVehicleServicePlanMap(map = {}, idRemap = new Map(), validVehicleIds = new Set()) {
+    const normalized = normalizeVehicleServicePlanMap(map);
+    const grouped = new Map();
+    Object.entries(normalized).forEach(([vehicleId, items]) => {
+      const remappedVehicleId = idRemap.get(vehicleId) || vehicleId;
+      if (validVehicleIds.size && !validVehicleIds.has(remappedVehicleId)) return;
+      grouped.set(remappedVehicleId, [...(grouped.get(remappedVehicleId) || []), ...items]);
+    });
+    const result = {};
+    grouped.forEach((items, vehicleId) => {
+      const merged = mergeServicePlanItems(items);
+      if (merged.length) result[vehicleId] = merged;
     });
     return result;
   }
