@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_437';
-  const APP_BUILD = 437;
+  const APP_VERSION = 'Domácnost+ v.0.1_438';
+  const APP_BUILD = 438;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -4704,6 +4704,28 @@
       overview: 'contracts',
       rank: contract.days < 0 ? 0 : contract.days <= 14 ? 1 : 3
     }));
+
+    // Lhůta pro změnu/výpověď smlouvy: upozornit s předstihem, dokud lhůta
+    // (validTo - changeDeadlineDays) ještě běží nebo právě uplynula.
+    (ctx.contracts || []).forEach((contract) => {
+      const deadlineDays = Number(contract.changeDeadlineDays);
+      if (!Number.isFinite(deadlineDays) || deadlineDays <= 0 || !contract.validTo) return;
+      const deadlineDate = addDaysIso(contract.validTo, -deadlineDays);
+      if (!deadlineDate) return;
+      const days = daysUntil(deadlineDate);
+      if (days === null || days > 14 || days < -2) return;
+      add({
+        icon: '📄',
+        title: `Lhůta pro změnu: ${contract.name || 'smlouva'}`,
+        meta: days < 0
+          ? `Uplynula ${formatDate(deadlineDate)} · smlouva do ${formatDate(contract.validTo)}`
+          : `Končí ${formatDate(deadlineDate)} · smlouva do ${formatDate(contract.validTo)}`,
+        badge: dueBadge(days),
+        tone: days < 0 ? 'bad' : days <= 5 ? 'warn' : '',
+        overview: 'contracts',
+        rank: days < 0 ? 0 : days <= 5 ? 1 : 2
+      });
+    });
 
     (ctx.vehicleAlerts || []).slice(0, 3).forEach((alert) => add({
       icon: '🚗',
@@ -10291,15 +10313,21 @@
         </section>
 
         <section class="card readings-panel panel-overview">
-          <div class="card-header"><div><h2>Graf spotřeby</h2><p>Průměrná měsíční spotřeba dopočítaná z období mezi odečty.</p></div></div>
-          ${renderReadingsChart(chartRows)}
+          <details class="compact-edit-details readings-overview-collapse" data-details-key="readings-consumption-summary" ${isDetailsOpen('readings-consumption-summary', false) ? 'open' : ''}>
+            <summary><span>📉 Spotřeba</span><em>průměr za měsíc mezi odečty</em></summary>
+            <p class="small-muted">Průměrná měsíční spotřeba dopočítaná z období mezi odečty.</p>
+            ${renderReadingsChart(chartRows)}
+          </details>
         </section>
 
         <section class="card readings-panel panel-overview">
-          <div class="card-header"><div><h2>Zálohy vs. odhad</h2><p>U každého měřidla porovnává poslední odhad měsíční spotřeby v Kč proti placené záloze.</p></div></div>
-          ${renderReadingsCostSummary(consumptionRows)}
-          <div class="card-subheader compact-subheader"><div><h3>Průměr a náklady po měsících</h3><p>Součet měsíčních průměrů podle typu měřidla včetně odhadu ceny.</p></div></div>
-          ${monthRows.length ? `<div class="list compact-list">${monthRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(row.groupName || 'Domácnost')} · ${escapeHtml(readingTypeMeta(row.type).icon)} ${escapeHtml(readingTypeMeta(row.type).label)}</div><span class="badge">${readingMonthlyValue(row.value, row.unit)}</span></div><div class="item-meta">${escapeHtml(financeMonthLabel(row.month))}${row.periods?.length ? ` · ${escapeHtml(row.periods.slice(0, 2).join('; '))}` : ''} · odhad ${escapeHtml(readingCostValueLabel(row))} · období ${escapeHtml(readingBillingLabel(row.type, row.groupId))}</div></div>`).join('')}</div>` : renderEmpty('Jakmile budou aspoň dva odečty na jednom měřidle, zobrazí se tady průměrná měsíční spotřeba.')}
+          <details class="compact-edit-details readings-overview-collapse" data-details-key="readings-cost-summary" ${isDetailsOpen('readings-cost-summary', false) ? 'open' : ''}>
+            <summary><span>💰 Zálohy vs. odhad</span><em>záloha proti odhadu spotřeby v Kč</em></summary>
+            <p class="small-muted">U každého měřidla porovnává poslední odhad měsíční spotřeby v Kč proti placené záloze.</p>
+            ${renderReadingsCostSummary(consumptionRows)}
+            <div class="card-subheader compact-subheader"><div><h3>Průměr a náklady po měsících</h3><p>Součet měsíčních průměrů podle typu měřidla včetně odhadu ceny.</p></div></div>
+            ${monthRows.length ? `<div class="list compact-list">${monthRows.map((row) => `<div class="item compact-item"><div class="item-top"><div class="item-title">${escapeHtml(row.groupName || 'Domácnost')} · ${escapeHtml(readingTypeMeta(row.type).icon)} ${escapeHtml(readingTypeMeta(row.type).label)}</div><span class="badge">${readingMonthlyValue(row.value, row.unit)}</span></div><div class="item-meta">${escapeHtml(financeMonthLabel(row.month))}${row.periods?.length ? ` · ${escapeHtml(row.periods.slice(0, 2).join('; '))}` : ''} · odhad ${escapeHtml(readingCostValueLabel(row))} · období ${escapeHtml(readingBillingLabel(row.type, row.groupId))}</div></div>`).join('')}</div>` : renderEmpty('Jakmile budou aspoň dva odečty na jednom měřidle, zobrazí se tady průměrná měsíční spotřeba.')}
+          </details>
         </section>`;
     } else if (activeTab === 'entry') {
       content = `

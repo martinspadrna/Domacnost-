@@ -16155,6 +16155,135 @@ body:not(.home-active) .app-frame main .pwa-diagnostic-item {
   margin-top: 8px;
 }
 
+/* Domacnost+ v0.1_438 - desktop polish: vyssi Home panely, dvousloupcove
+   seznamy polozek a garaz grafy v gridu. Na siroke obrazovce je mista dost,
+   mobil zustava beze zmeny. */
+@media (min-width: 900px) {
+  /* Home panely ("Dnesni prehled") +75 % vysky, vetsi pismo. */
+  .home-today-card {
+    padding: 24px 18px;
+    gap: 9px;
+    border-radius: 20px;
+  }
+
+  .home-today-label {
+    font-size: .82rem;
+  }
+
+  .home-today-value {
+    font-size: 1.08rem;
+  }
+
+  /* Pocasi +100 % vysky vcetne ikon a pisma. */
+  .home-weather-widget {
+    padding: 34px 30px;
+    gap: 18px;
+  }
+
+  .home-weather-widget-icon {
+    width: 84px;
+    height: 84px;
+  }
+
+  .home-weather-widget-temp {
+    font-size: 2.4rem;
+  }
+
+  .home-weather-widget-meta {
+    font-size: 1rem;
+  }
+
+  .home-weather-astronomy {
+    gap: 10px;
+    width: 172px;
+  }
+
+  .home-weather-astro-row {
+    grid-template-columns: 30px 64px 64px;
+    gap: 8px;
+    font-size: .92rem;
+  }
+
+  .home-weather-astro-row strong {
+    font-size: 1rem;
+  }
+
+  .home-weather-astro-icon,
+  .home-weather-astronomy .weather-moon-icon-sm {
+    width: 30px;
+    height: 30px;
+    font-size: 1.2rem;
+  }
+
+  /* Nadchazejici + mini seznamy +75 %. Rychle akce zamerne beze zmeny. */
+  .home-timeline-row {
+    padding: 20px 18px;
+    gap: 12px;
+    border-radius: 20px;
+  }
+
+  .home-timeline-row .home-row-copy strong {
+    font-size: 1.02rem;
+  }
+
+  .home-timeline-row .home-row-copy em {
+    font-size: .86rem;
+  }
+
+  .home-timeline-row .home-row-icon {
+    width: 52px;
+    height: 52px;
+    font-size: 1.45rem;
+  }
+
+  .home-dash-section-title {
+    font-size: 1.12rem;
+  }
+
+  .home-finance-widget {
+    padding: 26px 24px;
+  }
+
+  .home-finance-balance {
+    font-size: 2rem;
+  }
+
+  .home-finance-bar-row {
+    font-size: .9rem;
+  }
+
+  /* Seznamy polozek (zaruky, predplatne, smlouvy, odpad, HDO...) ve dvou
+     sloupcich; polozka s rozbalenym editem se roztahne pres oba. */
+  .app-frame main .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    align-items: start;
+  }
+
+  .app-frame main .list > .inline-note,
+  .app-frame main .list > .empty,
+  .app-frame main .list > .empty-cta {
+    grid-column: 1 / -1;
+  }
+
+  .app-frame main .list > *:has(details[open]) {
+    grid-column: 1 / -1;
+  }
+
+  /* Nakupni seznam ma vlastni UX (skupiny, swipe mazani) - 1 sloupec. */
+  .app-frame main .shopping-listonic-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Garaz: grafy vedle sebe v gridu misto horizontalniho scrollu. */
+  .garage-chart-carousel {
+    grid-auto-flow: row;
+    grid-auto-columns: unset;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow-x: visible;
+  }
+}
+
 /* Domacnost+ v0.1_436 - iOS PWA start guard (recept z RaK appky):
    iOS po studenem startu drzi viewport zkraceny o status bar a fixed dock
    sedi vys, dokud se neklepne. Kdyz je ale dokument uz pred prvnim paintem

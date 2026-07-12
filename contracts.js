@@ -87,6 +87,21 @@
       return map[value] || 'monthly';
     }
 
+    function contractDeadlineDaysValue(value) {
+      const num = Math.round(Number(value));
+      return Number.isFinite(num) && num > 0 ? num : '';
+    }
+
+    function contractDeadlineDaysFromCloud(reminderDays, existing) {
+      const num = Number(reminderDays);
+      if (!Number.isFinite(num) || num <= 0) return '';
+      // reminder_days = 30 zapisovaly starší buildy natvrdo jako konstantu
+      // (žádná lhůta) - jako nastavenou lhůtu 30 dní ji bereme jen tehdy,
+      // když ji tenhle klient sám uložil a má ji v lokálním stavu.
+      if (num === 30) return Number(existing?.changeDeadlineDays) === 30 ? 30 : '';
+      return num;
+    }
+
     function cloudContractPayload(contract, userId) {
       const state = getState();
       return {
@@ -101,7 +116,9 @@
         amount: contract.amount === '' || contract.amount === null || contract.amount === undefined ? null : Number(contract.amount),
         currency: 'CZK',
         payment_frequency: frequencyToCloud(contract.frequency),
-        reminder_days: 30,
+        // Sloupec reminder_days nese lhůtu pro změnu/výpověď; 30 je historický
+        // default pro "bez lhůty" (starší buildy ho zapisovaly natvrdo).
+        reminder_days: contract.changeDeadlineDays ? Number(contract.changeDeadlineDays) : 30,
         note: contract.note || null,
         status: 'active',
         created_by: userId || state.cloud?.userId || null,
@@ -166,7 +183,7 @@
       }
       const { data, error } = await client
         .from('contracts')
-        .select('id,title,type,provider,contract_number,valid_from,valid_until,amount,payment_frequency,note,created_at')
+        .select('id,title,type,provider,contract_number,valid_from,valid_until,amount,payment_frequency,reminder_days,note,created_at')
         .eq('household_id', state.cloud.householdId)
         .order('valid_until', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false });
@@ -191,6 +208,7 @@
           validTo: item.valid_until || '',
           amount: item.amount === null || item.amount === undefined ? '' : Number(item.amount),
           frequency: frequencyFromCloud(item.payment_frequency),
+          changeDeadlineDays: contractDeadlineDaysFromCloud(item.reminder_days, existing),
           note: item.note || ''
         };
       });
@@ -271,6 +289,10 @@
 
     async function addContractFromForm(data, form) {
       const state = getState();
+      // Soubory je potřeba přečíst před form.reset() - file input po resetu
+      // (i po re-renderu) o výběr přijde a programově se vrátit nedá.
+      const fileInput = form?.querySelector?.('input[type="file"][name="files"]') || null;
+      const pendingFiles = [...(fileInput?.files || [])];
       const contract = {
         id: uid(),
         householdId: currentHouseholdId(),
@@ -285,6 +307,7 @@
         validTo: normalizeText(data.validTo),
         amount: decimalValue(data.amount),
         frequency: data.frequency,
+        changeDeadlineDays: contractDeadlineDaysValue(data.changeDeadlineDays),
         note: normalizeText(data.note)
       };
       state.contracts = Array.isArray(state.contracts) ? state.contracts : [];
@@ -294,10 +317,17 @@
       saveState();
       if (form?.reset) form.reset();
       render();
-      showToast('Smlouva uložena');
-      cloudAddContract(contract).then((cloudContract) => {
+      showToast(pendingFiles.length ? 'Smlouva uložena, nahrávám přílohy…' : 'Smlouva uložena');
+      const cloudSync = cloudAddContract(contract).then((cloudContract) => {
         if (cloudContract?.id) { contract.cloudId = cloudContract.id; saveState(); requestRender(); }
       }).catch((error) => console.warn('Cloud sync (smlouva) na pozadí selhal', error));
+      if (pendingFiles.length) {
+        // Upload až po dokončení cloud syncu smlouvy - jinak by ensureCloudContract
+        // uvnitř uploadu založil v cloudu duplicitní smlouvu.
+        cloudSync
+          .then(() => addFilesToContractRecord(contract, pendingFiles))
+          .catch((error) => console.warn('Nahrání příloh nové smlouvy selhalo', error));
+      }
       return contract;
     }
 
@@ -313,6 +343,7 @@
       contract.validTo = normalizeText(data.validTo);
       contract.amount = decimalValue(data.amount);
       contract.frequency = data.frequency || 'monthly';
+      contract.changeDeadlineDays = contractDeadlineDaysValue(data.changeDeadlineDays);
       contract.note = normalizeText(data.note);
       contract.updatedAt = new Date().toISOString();
       touchState();
@@ -448,15 +479,7 @@
       return true;
     }
 
-    async function addContractFiles(form) {
-      const contractId = form.dataset.contractId;
-      const contract = (state.contracts || []).find((item) => item.id === contractId);
-      const input = form.querySelector('input[type="file"]');
-      const files = [...(input?.files || [])];
-      if (!contract || !files.length) {
-        showToast('Vyber soubor');
-        return;
-      }
+    async function addFilesToContractRecord(contract, files) {
       const useCloudStorage = cloudReady();
       let added = 0;
       let failed = 0;
@@ -489,7 +512,7 @@
           id,
           householdId: currentHouseholdId(),
           profileId: currentProfileId(),
-          contractId,
+          contractId: contract.id,
           fileName: file.name || 'příloha',
           fileType: file.type || 'soubor',
           size: file.size || 0,
@@ -500,14 +523,27 @@
         state.contractFiles.push(meta);
         added += 1;
       }
-      setActiveContractId(contractId);
+      setActiveContractId(contract.id);
       touchState();
       saveState();
-      if (input) input.value = '';
       render();
       if (added && useCloudStorage) showToast(failed ? `Do cloudu nahráno ${added}, neprošlo ${failed}` : (added === 1 ? 'Příloha nahraná do cloudu' : `Do cloudu nahráno příloh: ${added}`));
       else if (added) showToast(added === 1 ? 'Příloha uložená lokálně' : `Lokálně přidáno příloh: ${added}`);
       else showToast('Přílohu se nepovedlo přidat');
+      return { added, failed };
+    }
+
+    async function addContractFiles(form) {
+      const contractId = form.dataset.contractId;
+      const contract = (state.contracts || []).find((item) => item.id === contractId);
+      const input = form.querySelector('input[type="file"]');
+      const files = [...(input?.files || [])];
+      if (!contract || !files.length) {
+        showToast('Vyber soubor');
+        return;
+      }
+      if (input) input.value = '';
+      await addFilesToContractRecord(contract, files);
     }
 
     async function cloudSyncLocalContractFiles(showMessage = true) {
@@ -674,7 +710,7 @@
           <div class="item-top"><div class="item-title">${escapeHtml(contract.name)}</div><span class="badge ${badgeClass}">${escapeHtml(badgeText)}</span></div>
           <div class="item-meta">
             ${escapeHtml(contract.provider || 'Bez poskytovatele')} · ${escapeHtml(contractTypeLabel(contract.type))}${contract.number ? ` · č. ${escapeHtml(contract.number)}` : ''}<br>
-            ${contract.validFrom ? `od ${formatDate(contract.validFrom)} · ` : ''}${contract.validTo ? `do ${formatDate(contract.validTo)} · ` : ''}${formatCurrency(contract.amount)} / ${frequencyLabel(contract.frequency)}${contract.cloudId ? ' · cloud' : ''}${contract.note ? ` · ${escapeHtml(contract.note)}` : ''}
+            ${contract.validFrom ? `od ${formatDate(contract.validFrom)} · ` : ''}${contract.validTo ? `do ${formatDate(contract.validTo)} · ` : ''}${formatCurrency(contract.amount)} / ${frequencyLabel(contract.frequency)}${contract.changeDeadlineDays ? ` · lhůta ${contract.changeDeadlineDays} dní` : ''}${contract.cloudId ? ' · cloud' : ''}${contract.note ? ` · ${escapeHtml(contract.note)}` : ''}
           </div>
           <div class="item-actions">
             <button class="ghost-btn" type="button" data-action="select-contract" data-id="${escapeHtml(contract.id)}">Detail</button>
@@ -703,6 +739,7 @@
             <div class="stat-line"><span>Číslo smlouvy</span><strong>${escapeHtml(contract.number || '—')}</strong></div>
             <div class="stat-line"><span>Platnost</span><strong>${contract.validFrom ? formatDate(contract.validFrom) : '—'} → ${contract.validTo ? formatDate(contract.validTo) : '—'}</strong></div>
             <div class="stat-line"><span>Platba</span><strong>${formatCurrency(contract.amount)} / ${frequencyLabel(contract.frequency)}</strong></div>
+            <div class="stat-line"><span>Lhůta pro změnu</span><strong>${contract.changeDeadlineDays ? `${contract.changeDeadlineDays} dní před koncem` : '—'}</strong></div>
             <div class="stat-line"><span>Přílohy</span><strong>${files.length} celkem · ${cloudFiles} cloud · ${localFiles} lokálně</strong></div>
             ${contract.note ? `<div class="inline-note compact-note">${escapeHtml(contract.note)}</div>` : ''}
           </div>
@@ -736,6 +773,7 @@
               ${field('Platnost do', 'validTo', 'date', '', false, contract.validTo || '')}
               ${field('Částka', 'amount', 'number', 'např. 1250', false, contract.amount || '')}
               ${selectField('Frekvence platby', 'frequency', [['monthly', 'Měsíčně'], ['quarterly', 'Čtvrtletně'], ['yearly', 'Ročně'], ['once', 'Jednorázově'], ['other', 'Jiné']], contract.frequency || 'monthly')}
+              ${field('Lhůta pro změnu/výpověď (dny před koncem)', 'changeDeadlineDays', 'number', 'např. 20', false, contract.changeDeadlineDays || '')}
               ${field('Poznámka', 'note', 'text', 'volitelně', false, contract.note || '')}
             </div>
             <div class="form-actions"><button class="primary-btn" type="submit">Uložit změny</button>${contract.cloudId ? '<span class="badge good">cloud update</span>' : '<span class="badge">lokální smlouva</span>'}</div>
@@ -801,7 +839,13 @@
                 ${field('Platnost do', 'validTo', 'date', '')}
                 ${field('Částka', 'amount', 'number', 'např. 1250')}
                 ${selectField('Frekvence platby', 'frequency', [['monthly', 'Měsíčně'], ['yearly', 'Ročně'], ['once', 'Jednorázově'], ['other', 'Jiné']])}
+                ${field('Lhůta pro změnu/výpověď (dny před koncem)', 'changeDeadlineDays', 'number', 'např. 20')}
                 ${field('Poznámka', 'note', 'text', 'volitelně')}
+              </div>
+              <div class="upload-box">
+                <label for="newContractFiles">PDF / fotky smlouvy (volitelně, více souborů)</label>
+                <input id="newContractFiles" class="input" type="file" name="files" multiple accept="application/pdf,image/*,.pdf">
+                <p>Přílohy se nahrají hned po uložení smlouvy - u online domácnosti do Supabase Storage, jinak lokálně.</p>
               </div>
               <div class="form-actions"><button class="primary-btn" type="submit">Uložit</button>${state.cloud?.householdId ? '<button class="ghost-btn" type="button" data-action="cloud-load-contracts">Načíst cloud smlouvy</button>' : ''}${state.cloud?.householdId && (state.contracts || []).some((contract) => !contract.cloudId) ? `<button class="ghost-btn" type="button" data-action="cloud-sync-local-contracts">Odeslat lokální (${(state.contracts || []).filter((contract) => !contract.cloudId).length})</button>` : ''}</div>
             </form>
