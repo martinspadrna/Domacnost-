@@ -16154,3 +16154,22 @@ body:not(.home-active) .app-frame main .pwa-diagnostic-item {
   grid-column: 1 / -1;
   margin-top: 8px;
 }
+
+/* Domacnost+ v0.1_436 - iOS PWA start guard (recept z RaK appky):
+   iOS po studenem startu drzi viewport zkraceny o status bar a fixed dock
+   sedi vys, dokud se neklepne. Kdyz je ale dokument uz pred prvnim paintem
+   natazeny na plnou vysku obrazovky (px hodnota z inline skriptu = max
+   vcetne screen.height; 100lvh drzi plnou vysku i behem chyby - zmereno
+   build 433), iOS viewport prepocita hned a dock sedi dole od zacatku.
+   Scoped jen na iOS home-screen PWA, jinde se nic nemeni. */
+html.pwa-standalone,
+html.pwa-standalone body {
+  min-height: var(--app-boot-viewport-h, 100svh);
+}
+
+@supports (height: 100lvh) {
+  html.pwa-standalone,
+  html.pwa-standalone body {
+    min-height: 100lvh;
+  }
+}
