@@ -15943,6 +15943,18 @@ html.app-quiet-render .nav-item .nav-icon.module-illustration-slot {
     margin: 0 !important;
     transform: translate3d(-50%, 0, 0) !important;
   }
+
+  /* iOS PWA při studeném startu kreslí fixed prvky podle viewportu
+     zkráceného o status bar (dvh=879), zatímco lvh drží skutečnou výšku
+     obrazovky (926) - změřeno na Pro Max, build 433. Rozdíl lvh-dvh je
+     přesně chybějící posun docku; ve zdravém stavu je 0. JS hodnoty
+     (innerHeight, visualViewport) lžou, proto to musí řešit CSS. */
+  @supports (height: 100lvh) {
+    html.pwa-standalone .nav-shell {
+      bottom: calc(var(--mobile-dock-bottom-gap) + var(--mobile-dock-runtime-offset) - (100lvh - 100dvh)) !important;
+      inset-block-end: calc(var(--mobile-dock-bottom-gap) + var(--mobile-dock-runtime-offset) - (100lvh - 100dvh)) !important;
+    }
+  }
 }
 
 /* Domacnost+ v0.1_423 - pocasi, desktop logo a sjednoceny Vape povrch */
