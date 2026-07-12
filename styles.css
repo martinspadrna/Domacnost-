@@ -16284,6 +16284,26 @@ body:not(.home-active) .app-frame main .pwa-diagnostic-item {
   }
 }
 
+/* Domacnost+ v0.1_439 - nativni popupy formularovych prvku podle tematu.
+   Bez color-scheme si prohlizec kreslil rozbalene <select> menu svetle,
+   ale text dedil svetlou barvu z tmave appky - bily text na bilem pozadi.
+   color-scheme prepne nativni widgety (select popup, date picker,
+   scrollbary) do rezimu aktualniho tematu. */
+html {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* Pojistka pro prohlizece, ktere respektuji barvy primo na <option>. */
+html[data-theme="dark"] select option,
+html[data-theme="dark"] select optgroup {
+  background-color: var(--bg2, #101724);
+  color: var(--text, #eef2f8);
+}
+
 /* Domacnost+ v0.1_436 - iOS PWA start guard (recept z RaK appky):
    iOS po studenem startu drzi viewport zkraceny o status bar a fixed dock
    sedi vys, dokud se neklepne. Kdyz je ale dokument uz pred prvnim paintem
