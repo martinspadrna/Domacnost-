@@ -6530,13 +6530,14 @@ svg.anime-module-svg .anime-icon-line {
   .subscription-person-summary-toggle .badge {
     justify-self: start;
   }
+  /* Domacnost+ v0.1_442 - chip sluzby v karte osoby uz na mobilu neroztahujeme
+     na width:100% (vypadalo to jako dlouhy pruh pres skoro cely radek) -
+     misto toho se chipy male, obdelnikove (~4:3) a volne se zabaluji vedle
+     sebe, presne jako na desktopu, jen kompaktnejsi. */
   .subscription-person-service-chip {
-    width: 100%;
-    justify-content: flex-start;
-    border-radius: 16px;
-  }
-  .subscription-person-service-chip button {
-    margin-left: auto;
+    border-radius: 12px;
+    padding: 5px 7px 5px 5px;
+    gap: 5px;
   }
 }
 
@@ -6566,9 +6567,13 @@ svg.anime-module-svg .anime-icon-line {
 }
 
 .subscription-service-brand-xs {
-  min-width: 26px;
+  /* Pevná šířka (ne jen min-width) drží tvar na 4:3 - jinak si SVG logo
+     (viewBox 44x24, poměr ~1.83:1) samo natáhlo box do širšího obdélníku,
+     než chce showName:false kontext (Přehled, Historie plateb, chip u
+     osoby). */
+  width: 29px;
   height: 22px;
-  padding: 0 4px;
+  padding: 0 3px;
   border-radius: 9px;
 }
 
@@ -6602,9 +6607,9 @@ svg.anime-module-svg .anime-icon-line {
   }
 
   .subscription-service-brand-xs {
-    min-width: 24px;
+    width: 27px;
     height: 20px;
-    padding: 0 3px;
+    padding: 0 2px;
   }
 
   .subscription-service-brand-name {
@@ -16172,69 +16177,73 @@ body:not(.home-active) .app-frame main .pwa-diagnostic-item {
     font-size: 1.4rem;
   }
 
-  /* Pocasi - stejne vysoke jako cely blok "Dnesni prehled" (jeden radek
-     panelu + rezerva na druhy radek u vice nez 3 badgi). */
+  /* Pocasi na PC sedi ve stejnem gridovem radku jako "Dnesni prehled" (viz
+     .home-dash grid-template-columns:1fr 1fr + align-items:start vyse) -
+     align-self:stretch ho roztahne na presne stejnou vysku, aat uz je
+     todtoday-grid vysoky 1 nebo 2 radky (3-8 zapnutych badgu). Vlastni
+     obsah pocasi zustava vycentrovany pres align-content. Ikona/pismo
+     zvetseny vic, protoze box je teď typicky vyssi nez pred timhle. */
   .home-weather-widget {
-    min-height: 200px;
+    align-self: stretch;
+    align-content: center;
     padding: 40px 34px;
-    gap: 20px;
+    gap: 22px;
   }
 
   .home-weather-widget-icon {
-    width: 96px;
-    height: 96px;
+    width: 120px;
+    height: 120px;
   }
 
   .home-weather-widget-temp {
-    font-size: 2.7rem;
+    font-size: 3.4rem;
   }
 
   .home-weather-widget-meta {
-    font-size: 1.05rem;
+    font-size: 1.15rem;
   }
 
   .home-weather-astronomy {
-    gap: 12px;
-    width: 190px;
+    gap: 14px;
+    width: 210px;
   }
 
   .home-weather-astro-row {
-    grid-template-columns: 32px 68px 68px;
-    gap: 9px;
-    font-size: .98rem;
+    grid-template-columns: 36px 74px 74px;
+    gap: 10px;
+    font-size: 1.05rem;
   }
 
   .home-weather-astro-row strong {
-    font-size: 1.05rem;
+    font-size: 1.12rem;
   }
 
   .home-weather-astro-icon,
   .home-weather-astronomy .weather-moon-icon-sm {
-    width: 32px;
-    height: 32px;
-    font-size: 1.28rem;
+    width: 36px;
+    height: 36px;
+    font-size: 1.4rem;
   }
 
-  /* Nadchazejici + mini seznamy - dalsich +75 % navrch v438 rustu.
-     Rychle akce zamerne beze zmeny. */
+  /* Nadchazejici - o 20 % nizsi nez v438 (padding/ikona/pismo dolu). */
   .home-timeline-row {
-    padding: 34px 20px;
-    gap: 14px;
-    border-radius: 22px;
+    padding: 27px 16px;
+    gap: 11px;
+    border-radius: 18px;
   }
 
   .home-timeline-row .home-row-copy strong {
-    font-size: 1.2rem;
+    font-size: .98rem;
   }
 
   .home-timeline-row .home-row-copy em {
-    font-size: 1rem;
+    font-size: .82rem;
   }
 
   .home-timeline-row .home-row-icon {
-    width: 68px;
-    height: 68px;
-    font-size: 1.75rem;
+    width: 55px;
+    height: 55px;
+    font-size: 1.4rem;
   }
 
   .home-dash-section-title {
