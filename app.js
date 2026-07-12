@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_440';
-  const APP_BUILD = 440;
+  const APP_VERSION = 'Domácnost+ v.0.1_441';
+  const APP_BUILD = 441;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -12470,6 +12470,10 @@
     return getSubscriptionsModule().addSubscriptionPaymentFromForm(data, form);
   }
 
+  function addSubscriptionBulkPaymentFromForm(data, form) {
+    return getSubscriptionsModule().addSubscriptionBulkPaymentFromForm(data, form);
+  }
+
   function toggleSubscriptionPaid(subscriptionId, personId, month) {
     return getSubscriptionsModule().toggleSubscriptionPaid(subscriptionId, personId, month);
   }
@@ -15466,6 +15470,7 @@
       'update-subscription': () => updateSubscriptionServiceFromForm(form.dataset.id, data, form),
       'add-subscription-share': () => addSubscriptionShareFromForm(data, form),
       'add-subscription-payment': () => addSubscriptionPaymentFromForm(data, form),
+      'add-subscription-bulk-payment': () => addSubscriptionBulkPaymentFromForm(data, form),
       'subscription-month-filter': () => setSubscriptionMonth(data.month)
     };
     const handler = handlers[type];

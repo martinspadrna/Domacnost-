@@ -332,6 +332,28 @@
       return getSubscriptionServices().filter((service) => (service.shares || []).some((share) => share.personId === personId));
     }
 
+    // Rozpočítání jedné přijaté částky mezi všechny služby dané osoby podle
+    // poměru jejich měsíčních podílů (ne rovným dílem v Kč) - jen tak vyjde
+    // "zaplaceno do měsíce X" stejně pro všechny služby dohromady. Poslední
+    // služba dostane zbytek po zaokrouhlení, aby součet přesně sedněl na
+    // vloženou částku (žádný halíř neuteče/nepřebude kvůli zaokrouhlování).
+    function subscriptionBulkPaymentAllocations(personId, amount) {
+      const shares = subscriptionPersonAssignedServices(personId)
+        .map((service) => ({ service, expected: subscriptionShareAmountForPerson(personId, service.id) }))
+        .filter((row) => row.expected > 0);
+      const totalExpected = shares.reduce((sum, row) => sum + row.expected, 0);
+      if (!(totalExpected > 0) || !(amount > 0)) return [];
+      let remaining = Math.round(amount);
+      return shares
+        .map((row, index) => {
+          const isLast = index === shares.length - 1;
+          const raw = isLast ? remaining : Math.round((row.expected / totalExpected) * amount);
+          remaining -= raw;
+          return { service: row.service, amount: Math.max(0, raw) };
+        })
+        .filter((row) => row.amount > 0);
+    }
+
     function subscriptionPersonAvailableServiceCount(personId) {
       return subscriptionServiceOptionsForPerson(personId, false).length;
     }
@@ -812,16 +834,28 @@
                 <div class="item-meta">Měsíční podíl ${formatCurrency(subscriptionShareAmountForPerson(row.person.id, entry.service.id))}${entry.months > 1 ? ` · dluh za ${entry.months} měsíce${entry.months >= 5 ? 'ů' : ''}` : ` · ${escapeHtml(financeMonthLabel(month))}`}</div>
               </div>
             `).join('')}</div>` : '<div class="empty">Nic nechybí.</div>'}
-            <form data-form="add-subscription-payment" class="compact-form subscription-smart-payment-form">
+            <form data-form="add-subscription-bulk-payment" class="compact-form subscription-bulk-payment-form">
+              <input type="hidden" name="personId" value="${escapeHtml(row.person.id)}">
               <div class="form-grid two">
-                ${selectField('Služba', 'subscriptionId', paymentServiceOptions, paymentDraft.subscriptionId)}
-                ${selectField('Člověk', 'personId', paymentPersonOptions, paymentDraft.personId)}
-                ${field('Měsíc', 'month', 'month', '', false, paymentDraft.month)}
-                ${field('Částka', 'amount', 'number', 'např. 80', true, paymentDefaultAmount ? String(paymentDefaultAmount) : '')}
+                ${field('Přijatá částka', 'amount', 'number', 'např. 1000', true, row.cumulativeDebt ? String(row.cumulativeDebt) : '')}
                 ${field('Poznámka', 'note', 'text', 'volitelné')}
               </div>
-              <div class="form-actions modal-actions"><button class="primary-btn" type="submit">Zapsat platbu</button><button class="ghost-btn" type="button" data-action="close-modal">Zavřít</button></div>
+              <div class="form-actions modal-actions"><button class="primary-btn" type="submit">Zapsat a rozpočítat mezi služby</button><button class="ghost-btn" type="button" data-action="close-modal">Zavřít</button></div>
+              <p class="small-muted">Částka se rozdělí podle měsíčního podílu mezi všechny služby ${escapeHtml(row.person.name)} - nejdřív doplatí dluh, zbytek se počítá jako záloha na další měsíce.</p>
             </form>
+            <details class="compact-edit-details" data-details-key="subscription-manual-payment-${escapeHtml(row.person.id)}" ${getDetailsOpen(`subscription-manual-payment-${row.person.id}`) ? 'open' : ''}>
+              <summary><span>Ruční zápis platby za jednu službu</span><em>konkrétní měsíc a služba</em></summary>
+              <form data-form="add-subscription-payment" class="compact-form subscription-smart-payment-form">
+                <div class="form-grid two">
+                  ${selectField('Služba', 'subscriptionId', paymentServiceOptions, paymentDraft.subscriptionId)}
+                  ${selectField('Člověk', 'personId', paymentPersonOptions, paymentDraft.personId)}
+                  ${field('Měsíc', 'month', 'month', '', false, paymentDraft.month)}
+                  ${field('Částka', 'amount', 'number', 'např. 80', true, paymentDefaultAmount ? String(paymentDefaultAmount) : '')}
+                  ${field('Poznámka', 'note', 'text', 'volitelné')}
+                </div>
+                <div class="form-actions modal-actions"><button class="primary-btn" type="submit">Zapsat platbu</button></div>
+              </form>
+            </details>
           </section>
         </div>
       `;
@@ -845,6 +879,17 @@
               const share = service.shares.find((entry) => entry.personId === row.person.id);
               return `<span class="subscription-person-service-chip"><span class="subscription-inline-service">${renderSubscriptionServiceIcon(service, { size: 'xs' })}</span><strong>${escapeHtml(service.name)}</strong><em>${formatCurrency(share.amount)} / měsíc</em><button type="button" data-action="delete-subscription-share" data-subscription-id="${escapeHtml(service.id)}" data-person-id="${escapeHtml(row.person.id)}" aria-label="Odebrat službu ${escapeHtml(service.name)}">×</button></span>`;
             }).join('') : 'Zatím s ním nesdílíš žádnou službu.'}${row.person.note ? ` <span class="subscription-person-note">${escapeHtml(row.person.note)}</span>` : ''}</div>
+            ${services.length ? `
+              <form data-form="add-subscription-bulk-payment" class="compact-form subscription-bulk-payment-form">
+                <input type="hidden" name="personId" value="${escapeHtml(row.person.id)}">
+                <div class="form-grid two">
+                  ${field('Přijatá částka', 'amount', 'number', 'např. 1000', true, row.cumulativeDebt ? String(row.cumulativeDebt) : '')}
+                  ${field('Poznámka', 'note', 'text', 'volitelné')}
+                </div>
+                <div class="form-actions"><button class="primary-btn" type="submit">Zapsat a rozpočítat mezi služby</button></div>
+                <p class="small-muted">Rozdělí se podle měsíčního podílu mezi všechny služby - nejdřív doplatí dluh, zbytek jako záloha na další měsíce.</p>
+              </form>
+            ` : ''}
             <div class="subscription-person-assign-box">
               <h3>Přiřadit službu</h3>
               <p>Vyber jednu ze svých služeb a částku, kterou ti má ${escapeHtml(row.person.name)} měsíčně platit. Obsazenost služby se tím automaticky přepočítá.</p>
@@ -1016,6 +1061,41 @@
       persistSubscriptionsState({ toast: month > subscriptionSelectedMonth() ? 'Platba dopředu zapsaná' : 'Platba zapsaná' });
     }
 
+    // Přijatá platba jedním číslem (např. "dostal jsem 1000 Kč") se rozpočítá
+    // mezi VŠECHNY služby dané osoby podle poměru měsíčních podílů a zapíše
+    // se jako samostatná platba ke KAŽDÉ službě, datovaná do aktuálního
+    // kalendářního měsíce (ne do měsíce, který je zrovna prohlížený v
+    // přehledu - platba přišla "teď", bez ohledu na to, jaký měsíc si
+    // uživatel v UI zrovna prochází). Existující dluh (subscriptionCumulativeDebt)
+    // i kredit do budoucích měsíců (subscriptionCreditBeforeMonth) se z toho
+    // dopočítají automaticky, protože obě počítají se SOUČTEM všech plateb
+    // dané služby/osoby bez ohledu na to, kolik jich bylo - není potřeba nic
+    // ručně rozdělovat po měsících dopředu.
+    function addSubscriptionBulkPaymentFromForm(data, form) {
+      const person = getState().subscriptionPeople.find((item) => item.id === data.personId);
+      const amount = decimalValue(data.amount);
+      if (!person) return showToast('Vyber člověka');
+      if (!(amount > 0)) return showToast('Vyplň částku');
+      const allocations = subscriptionBulkPaymentAllocations(person.id, amount);
+      if (!allocations.length) return showToast(`${person.name} nemá přiřazenou žádnou placenou službu`);
+      const month = todayISO().slice(0, 7);
+      const paidAt = todayISO();
+      getState().subscriptionPayments = Array.isArray(getState().subscriptionPayments) ? getState().subscriptionPayments : [];
+      allocations.forEach((row) => {
+        getState().subscriptionPayments.push(normalizeSubscriptionPayment({
+          subscriptionId: row.service.id,
+          personId: person.id,
+          month,
+          amount: row.amount,
+          paidAt,
+          note: data.note
+        }));
+      });
+      form.reset();
+      const breakdown = allocations.map((row) => `${row.service.name} ${formatCurrency(row.amount)}`).join(', ');
+      persistSubscriptionsState({ toast: `Přijato ${formatCurrency(amount)} · rozpočítáno: ${breakdown}` });
+    }
+
     function toggleSubscriptionPaid(subscriptionId, personId, month = subscriptionSelectedMonth()) {
       const service = getState().subscriptions.find((item) => item.id === subscriptionId);
       const share = service?.shares?.find((item) => item.personId === personId);
@@ -1107,6 +1187,7 @@
       setSubscriptionServiceEdit,
       addSubscriptionShareFromForm,
       addSubscriptionPaymentFromForm,
+      addSubscriptionBulkPaymentFromForm,
       toggleSubscriptionPaid,
       toggleSubscriptionService,
       deleteSubscription,
