@@ -158,13 +158,6 @@
       return date.getHours() * 60 + date.getMinutes();
     }
 
-    function formatMinuteOfDay(value) {
-      const minutes = Math.round(positiveModulo(value, 1440));
-      const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60;
-      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-    }
-
     function formatMinutesDuration(value) {
       const minutes = Math.round(Number(value || 0));
       if (!(minutes > 0)) return '—';
@@ -199,24 +192,130 @@
       return { age, phase, illumination, waxing, label, emoji };
     }
 
-    function approximateMoonTimes(day = null, moon = moonPhaseInfo(day)) {
-      const sunrise = minutesOfDay(day?.sunrise);
-      const baseRise = Number.isFinite(sunrise) ? sunrise : 6 * 60;
-      const moonriseMinutes = baseRise + moon.phase * 1440;
+    // Skutečná pozice Měsíce (ne lineární odhad podle fáze) - nízkoprecizní,
+    // ale reálná efemerida podle SunCalc/Meeus ("Astronomical Algorithms"),
+    // řádově minutová přesnost. Předchozí `approximateMoonTimes` jen posouvala
+    // sluneční východ o (fáze × 24 h), což se s reálným východem/západem
+    // Měsíce (viz nativní Počasí na iPhonu) mohlo rozejít i o hodiny.
+    const MOON_RAD = Math.PI / 180;
+    const MOON_DAY_MS = 1000 * 60 * 60 * 24;
+    const MOON_OBLIQUITY = MOON_RAD * 23.4397;
+
+    function moonJulianDays(date) {
+      return date.valueOf() / MOON_DAY_MS - 0.5 + 2440588 - 2451545;
+    }
+
+    function moonRightAscension(l, b) {
+      return Math.atan2(Math.sin(l) * Math.cos(MOON_OBLIQUITY) - Math.tan(b) * Math.sin(MOON_OBLIQUITY), Math.cos(l));
+    }
+
+    function moonDeclination(l, b) {
+      return Math.asin(Math.sin(b) * Math.cos(MOON_OBLIQUITY) + Math.cos(b) * Math.sin(MOON_OBLIQUITY) * Math.sin(l));
+    }
+
+    function moonSiderealTime(d, lw) {
+      return MOON_RAD * (280.16 + 360.9856235 * d) - lw;
+    }
+
+    function moonAltitudeAngle(H, phi, dec) {
+      return Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H));
+    }
+
+    function moonAstroRefraction(h) {
+      const safeH = h < 0 ? 0 : h;
+      return 0.0002967 / Math.tan(safeH + 0.00312536 / (safeH + 0.08901179));
+    }
+
+    function moonEclipticCoords(d) {
+      const L = MOON_RAD * (218.316 + 13.176396 * d);
+      const M = MOON_RAD * (134.963 + 13.064993 * d);
+      const F = MOON_RAD * (93.272 + 13.229350 * d);
+      const l = L + MOON_RAD * 6.289 * Math.sin(M);
+      const b = MOON_RAD * 5.128 * Math.sin(F);
+      const dist = 385001 - 20905 * Math.cos(M);
+      return { ra: moonRightAscension(l, b), dec: moonDeclination(l, b), dist };
+    }
+
+    function moonAltitudeAt(date, lat, lng) {
+      const lw = MOON_RAD * -lng;
+      const phi = MOON_RAD * lat;
+      const d = moonJulianDays(date);
+      const coords = moonEclipticCoords(d);
+      const H = moonSiderealTime(d, lw) - coords.ra;
+      const h = moonAltitudeAngle(H, phi, coords.dec);
+      return h + moonAstroRefraction(h);
+    }
+
+    function moonHoursLater(date, hours) {
+      return new Date(date.valueOf() + hours * MOON_DAY_MS / 24);
+    }
+
+    // Hledá průchod výšky Měsíce nad obzorem (s korekcí na paralaxu/refrakci)
+    // po dvouhodinových úsecích a zpřesní parabolickou interpolací - stejný
+    // princip jako u slunečního východu/západu, jen pro Měsíc, jehož pozice se
+    // (na rozdíl od Slunce) mezi jednotlivými dny výrazně nelineárně mění.
+    function realMoonTimesForDate(baseDate, latitude, longitude) {
+      const t = new Date(baseDate);
+      t.setHours(0, 0, 0, 0);
+      const hc = 0.133 * MOON_RAD;
+      let h0 = moonAltitudeAt(t, latitude, longitude) - hc;
+      let rise = null;
+      let set = null;
+      let ye = 0;
+      for (let i = 1; i <= 24; i += 2) {
+        const h1 = moonAltitudeAt(moonHoursLater(t, i), latitude, longitude) - hc;
+        const h2 = moonAltitudeAt(moonHoursLater(t, i + 1), latitude, longitude) - hc;
+        const a = (h0 + h2) / 2 - h1;
+        const b = (h2 - h0) / 2;
+        const xe = a ? -b / (2 * a) : 0;
+        ye = (a * xe + b) * xe + h1;
+        const d = b * b - 4 * a * h1;
+        let roots = 0;
+        let x1 = 0;
+        let x2 = 0;
+        if (d >= 0) {
+          const dx = Math.sqrt(d) / (Math.abs(a) * 2 || 1);
+          x1 = xe - dx;
+          x2 = xe + dx;
+          if (Math.abs(x1) <= 1) roots += 1;
+          if (Math.abs(x2) <= 1) roots += 1;
+          if (x1 < -1) x1 = x2;
+        }
+        if (roots === 1) {
+          if (h0 < 0) rise = i + x1; else set = i + x1;
+        } else if (roots === 2) {
+          rise = i + (ye < 0 ? x2 : x1);
+          set = i + (ye < 0 ? x1 : x2);
+        }
+        if (rise !== null && set !== null) break;
+        h0 = h2;
+      }
       return {
-        moonrise: formatMinuteOfDay(moonriseMinutes),
-        moonset: formatMinuteOfDay(moonriseMinutes + 720)
+        rise: rise !== null ? moonHoursLater(t, rise) : null,
+        set: set !== null ? moonHoursLater(t, set) : null,
+        alwaysUp: rise === null && set === null && ye > 0,
+        alwaysDown: rise === null && set === null && ye <= 0
+      };
+    }
+
+    function realMoonTimes(day = null, location = null) {
+      const baseDate = astronomyDateForDay(day);
+      const times = realMoonTimesForDate(baseDate, location.latitude, location.longitude);
+      return {
+        moonrise: times.rise ? shortTime(times.rise) : (times.alwaysUp ? 'celý den' : '—'),
+        moonset: times.set ? shortTime(times.set) : (times.alwaysDown ? '—' : '—')
       };
     }
 
     function weatherAstronomyForDay(day = null, location = null) {
       const moon = moonPhaseInfo(day);
-      const moonTimes = approximateMoonTimes(day, moon);
+      const resolvedLocation = normalizeWeatherLocation(location || getWeatherState()?.location);
+      const moonTimes = realMoonTimes(day, resolvedLocation);
       const sunrise = minutesOfDay(day?.sunrise);
       const sunset = minutesOfDay(day?.sunset);
       const daylight = Number.isFinite(sunrise) && Number.isFinite(sunset) ? positiveModulo(sunset - sunrise, 1440) : 0;
       return {
-        location: normalizeWeatherLocation(location || getWeatherState()?.location),
+        location: resolvedLocation,
         sun: {
           sunrise: shortTime(day?.sunrise),
           sunset: shortTime(day?.sunset),
