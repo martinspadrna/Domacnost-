@@ -388,10 +388,13 @@
           monthShortfalls.forEach((row) => entriesByService.get(row.service.id).push({ month: monthKey, amount: row.shortfall }));
           remaining -= monthTotal;
         } else {
+          // Poslední měsíc, na který už peníze nestačí celé: nejdřív doplatit
+          // jednu službu do plna (v pořadí services), zbytek teprve do další -
+          // ne poměrně rozpočítat mezi obě najednou.
           let partRemaining = remaining;
-          monthShortfalls.forEach((row, entryIndex) => {
-            const isLast = entryIndex === monthShortfalls.length - 1;
-            const part = isLast ? partRemaining : Math.round((row.shortfall / monthTotal) * remaining);
+          monthShortfalls.forEach((row) => {
+            if (partRemaining <= 0) return;
+            const part = Math.min(row.shortfall, partRemaining);
             partRemaining -= part;
             if (part > 0) entriesByService.get(row.service.id).push({ month: monthKey, amount: part });
           });
