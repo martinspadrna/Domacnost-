@@ -5148,7 +5148,10 @@ textarea {
 }
 .app-modal {
   width: min(720px, 100%);
-  max-height: min(82vh, 760px);
+  /* var(--app-vh) sleduje visualViewport.height (viz index.html) a zmenší
+     se, když se na mobilu vysune klávesnice - čistý 82vh to ignoruje a
+     spodek modalu (tlačítko potvrdit) tak zmizel pod klávesnicí. */
+  max-height: min(calc(var(--app-vh, 100svh) * 0.82), 760px);
   overflow: auto;
   border: 1px solid rgba(148, 163, 184, .22);
   border-radius: 28px;
@@ -5305,7 +5308,7 @@ textarea {
 }
 @media (max-width: 520px) {
   .app-modal {
-    max-height: 88vh;
+    max-height: calc(var(--app-vh, 100svh) * 0.88);
     border-radius: 26px 26px 0 0;
     padding: 14px;
   }
