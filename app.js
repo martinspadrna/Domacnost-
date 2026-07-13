@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_445';
-  const APP_BUILD = 445;
+  const APP_VERSION = 'Domácnost+ v.0.1_446';
+  const APP_BUILD = 446;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -533,7 +533,7 @@
     { id: 'garage', label: 'Garáž', icon: '🚗', overview: 'garage', metric: () => state.vehicles.length, text: () => garageCountLabel(state.vehicles.length) },
     { id: 'contracts', label: 'Smlouvy', icon: '📄', overview: 'contracts', metric: () => state.contracts.length, text: () => 'smlouvy' },
     { id: 'finance', label: 'Finance', icon: '💰', overview: 'finance', metric: () => formatCurrency(financeMonthSummary().balance), text: () => 'měsíční rozdíl' },
-    { id: 'subscriptions', label: 'Předplatné', icon: '🎬', nav: 'subscriptions', tab: 'overview', metric: () => formatCurrency(subscriptionMonthSummary().expectedReturn), text: () => 'má se vrátit' }
+    { id: 'subscriptions', label: 'Předplatné', icon: '🎬', nav: 'subscriptions', tab: 'overview', metric: () => formatCurrency(subscriptionMonthSummary(todayISO().slice(0, 7)).expectedReturn), text: () => 'má se vrátit' }
   ];
   const DEFAULT_HOME_HERO_IDS = [];
   const HOME_HERO_MAX = 10;
@@ -4352,11 +4352,15 @@
         return { label: 'Odečty', value: due ? `${due} čeká` : 'hotovo', tone: due ? 'warn' : 'good', nav: 'readings', tab: 'entry' };
       }
       case 'subscriptions': {
-        // Panel na Domů ukazuje jen AKTUÁLNÍ měsíc (row.debt), ne kumulativní
-        // dluh od začátku (row.cumulativeDebt) - ten může zůstat vysoký i
-        // dlouho po doplacení starších měsíců a na Domů to působilo jako
-        // pořád nezaplaceno, i když je člověk aktuálně v pořádku.
-        const summary = subscriptionMonthSummary();
+        // Panel na Domů ukazuje jen AKTUÁLNÍ měsíc (row.debt, který v sobě
+        // nese i nedoplatek ze starších měsíců), ne kumulativní dluh od
+        // začátku (row.cumulativeDebt) - ten může zůstat vysoký i dlouho po
+        // doplacení starších měsíců a na Domů to působilo jako pořád
+        // nezaplaceno, i když je člověk aktuálně v pořádku. Měsíc musí být
+        // skutečný dnešní měsíc (ne subscriptionSelectedMonth) - jinak by
+        // ruční prolistování Předplatného na budoucí měsíc nechalo Domů
+        // hlásit dluh za měsíc, který ještě ani nenastal.
+        const summary = subscriptionMonthSummary(todayISO().slice(0, 7));
         const debtRows = summary.peopleRows
           .filter((row) => row.debt > 0)
           .sort((a, b) => b.debt - a.debt || String(a.person?.name || '').localeCompare(String(b.person?.name || ''), 'cs'));
@@ -4565,7 +4569,7 @@
 
   function renderHomeSubscriptionsWidget(ctx) {
     if (!ctx.visibleModules.some((module) => module.id === 'subscriptions')) return '';
-    const summary = subscriptionMonthSummary();
+    const summary = subscriptionMonthSummary(todayISO().slice(0, 7));
     const items = [{ icon: '🎬', title: `Má se vrátit ${formatCurrency(summary.expectedReturn)}`, meta: 'Tento měsíc', nav: 'subscriptions', tab: 'overview' }];
     return renderHomeMiniListWidget('Předplatné', items, '');
   }
@@ -5173,7 +5177,7 @@
       return { ...base, metric: slide.metric, text: slide.text, detail: slide.detail, live: true, tone: summary.balance >= 0 ? 'good' : 'warn' };
     }
     if (id === 'subscriptions') {
-      const summary = subscriptionMonthSummary();
+      const summary = subscriptionMonthSummary(todayISO().slice(0, 7));
       const debtRows = summary.peopleRows.filter((row) => row.cumulativeDebt > 0).sort((a, b) => b.cumulativeDebt - a.cumulativeDebt);
       const currentDebt = homeCycleItem(debtRows, 45);
       const servicesWithShares = summary.services.filter((service) => (service.shares || []).length);
@@ -5975,7 +5979,7 @@
       garage: () => ({ count: countBy('vehicles'), label: 'aut', note: `${countBy('fuel')} tankování, ${countBy('services')} servisů.` }),
       contracts: () => ({ count: countBy('contracts'), label: 'smluv', note: `${countBy('contractFiles')} příloh smluv, ${countBy('warrantyFiles')} příloh záruk.` }),
       finance: () => ({ count: countBy('finance'), label: 'záznamů', note: `${formatCurrency(financeMonthSummary().balance)} rozdíl tento měsíc.` }),
-      subscriptions: () => ({ count: countBy('subscriptions', (item) => item.enabled !== false), label: 'služeb', note: `${formatCurrency(subscriptionMonthSummary().expectedReturn)} se má vrátit tento měsíc.` }),
+      subscriptions: () => ({ count: countBy('subscriptions', (item) => item.enabled !== false), label: 'služeb', note: `${formatCurrency(subscriptionMonthSummary(todayISO().slice(0, 7)).expectedReturn)} se má vrátit tento měsíc.` }),
       vape: () => ({ count: Array.isArray(state.vape?.items) ? state.vape.items.length : 0, label: 'položek ceníku', note: 'Nákupy, boostery, aroma a kalkulačky na jednom místě.' }),
       pool: () => ({ count: Array.isArray(state.pools) ? state.pools.length : 0, label: 'bazénů', note: `${(state.pools || []).reduce((sum, pool) => sum + (Array.isArray(pool.measurements) ? pool.measurements.length : 0), 0)} měření celkem.` })
     };
