@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_444';
-  const APP_BUILD = 444;
+  const APP_VERSION = 'Domácnost+ v.0.1_445';
+  const APP_BUILD = 445;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -4263,6 +4263,21 @@
     const value = hasCurrent ? roundWeather(current.temperature, '°') : '—';
     const place = weatherLocationLabel() || 'Počasí';
     const label = weather.loading ? 'Načítám počasí' : (weather.error && !hasCurrent) ? 'Počasí nejde načíst' : hasCurrent ? condition : 'Počasí není načtené';
+    // Týdenní pruh se renderuje vždy, ale je vidět jen na PC (od 900px) -
+    // widget je tam díky align-self:stretch tak vysoký jako "Dnešní přehled"
+    // vedle a zůstávalo tam prázdné místo pod hodinami/sluncem a měsícem.
+    const weekDays = (weather.daily || []).slice(0, 7);
+    const weekStrip = weekDays.length ? `
+      <div class="home-weather-week">
+        ${weekDays.map((day, index) => `
+          <div class="home-weather-week-day">
+            <span class="home-weather-week-label">${escapeHtml(index === 0 ? 'Dnes' : shortWeekday(day.date))}</span>
+            ${renderWeatherAnimeIcon(day.weatherCode, { size: 'xs', extraClass: 'home-weather-week-icon' })}
+            <span class="home-weather-week-temp"><strong>${escapeHtml(roundWeather(day.max, '°'))}</strong><em>${escapeHtml(roundWeather(day.min, '°'))}</em></span>
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
     return `
       <button class="home-widget-card home-weather-widget" type="button" data-nav="weather">
         <div class="home-weather-widget-main">
@@ -4276,6 +4291,7 @@
           <span class="home-weather-astro-row"><span class="home-weather-astro-icon" aria-hidden="true">☀️</span><strong>${escapeHtml(astronomy.sun.sunrise)}</strong><em>${escapeHtml(astronomy.sun.sunset)}</em></span>
           <span class="home-weather-astro-row">${renderWeatherMoonPhaseIcon(astronomy.moon, { size: 'sm' })}<strong>${escapeHtml(astronomy.moon.moonrise)}</strong><em>${escapeHtml(astronomy.moon.moonset)}</em></span>
         </span>
+        ${weekStrip}
       </button>
     `;
   }
@@ -4336,13 +4352,17 @@
         return { label: 'Odečty', value: due ? `${due} čeká` : 'hotovo', tone: due ? 'warn' : 'good', nav: 'readings', tab: 'entry' };
       }
       case 'subscriptions': {
+        // Panel na Domů ukazuje jen AKTUÁLNÍ měsíc (row.debt), ne kumulativní
+        // dluh od začátku (row.cumulativeDebt) - ten může zůstat vysoký i
+        // dlouho po doplacení starších měsíců a na Domů to působilo jako
+        // pořád nezaplaceno, i když je člověk aktuálně v pořádku.
         const summary = subscriptionMonthSummary();
         const debtRows = summary.peopleRows
-          .filter((row) => row.cumulativeDebt > 0)
-          .sort((a, b) => b.cumulativeDebt - a.cumulativeDebt || String(a.person?.name || '').localeCompare(String(b.person?.name || ''), 'cs'));
+          .filter((row) => row.debt > 0)
+          .sort((a, b) => b.debt - a.debt || String(a.person?.name || '').localeCompare(String(b.person?.name || ''), 'cs'));
         const currentDebt = homeCycleItem(debtRows, 45);
         if (currentDebt) {
-          return { label: currentDebt.person?.name || 'Předplatné', value: formatCurrency(currentDebt.cumulativeDebt), tone: 'warn', nav: 'subscriptions', tab: 'overview' };
+          return { label: currentDebt.person?.name || 'Předplatné', value: formatCurrency(currentDebt.debt), tone: 'warn', nav: 'subscriptions', tab: 'overview' };
         }
         return { label: 'Předplatné', value: summary.expectedReturn ? 'srovnáno' : 'bez sdílení', tone: summary.expectedReturn ? 'good' : '', nav: 'subscriptions', tab: 'overview' };
       }

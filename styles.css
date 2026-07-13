@@ -15595,6 +15595,12 @@ body.home-active {
   gap: 12px;
 }
 
+/* Tydenni pruh je jen pro PC (viz @media min-width:900px nize) - na mobilu
+   na nej ve widgetu neni misto. */
+.home-weather-week {
+  display: none;
+}
+
 .home-weather-widget-main {
   display: flex;
   align-items: center;
@@ -16228,6 +16234,56 @@ body:not(.home-active) .app-frame main .pwa-diagnostic-item {
     width: 36px;
     height: 36px;
     font-size: 1.4rem;
+  }
+
+  /* Tydenni pruh pod hodinami/sluncem - widget je diky align-self:stretch
+     stejne vysoky jako "Dnesni prehled" vedle a zbyvalo tam prazdne misto. */
+  .home-weather-week {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border, var(--line));
+  }
+
+  .home-weather-week-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .home-weather-week-label {
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .02em;
+  }
+
+  .home-weather-week-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .home-weather-week-temp {
+    display: flex;
+    gap: 5px;
+    font-size: .82rem;
+    white-space: nowrap;
+  }
+
+  .home-weather-week-temp strong {
+    color: var(--text);
+    font-weight: 800;
+  }
+
+  .home-weather-week-temp em {
+    color: var(--muted-soft, var(--muted-2));
+    font-style: normal;
   }
 
   /* Nadchazejici - o 20 % nizsi nez v438 (padding/ikona/pismo dolu). */

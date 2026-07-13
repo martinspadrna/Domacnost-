@@ -332,71 +332,76 @@
       return getSubscriptionServices().filter((service) => (service.shares || []).some((share) => share.personId === personId));
     }
 
-    // Měsíce MEZI první platbou a "uptoIndex" (včetně), kde součet plateb
-    // nepokryl očekávaný podíl - tedy historické nedoplatky konkrétní služby,
-    // seřazené od nejstaršího. subscriptionCumulativeDebt/creditBeforeMonth
-    // počítají jen SOUČET plateb s payment.month <= cílový měsíc - platba
-    // datovaná do "teď" (pozdější měsíc) se do historického "k červnu" součtu
-    // nikdy nezapočítá, takže starý nedoplatek zůstane navždy viset, dokud
-    // se nezapíše platba přímo do TOHO starého měsíce. Proto bulk platba musí
-    // nedoplatky nejdřív "zacílit" na jejich vlastní měsíc, ne je hodit
-    // všechny naráz do aktuálního měsíce.
-    function subscriptionServiceHistoricalShortfalls(personId, subscriptionId, uptoMonthIndex) {
-      const expected = subscriptionShareAmountForPerson(personId, subscriptionId);
-      if (!(expected > 0)) return [];
-      const firstIndex = subscriptionFirstPaymentIndex(personId, subscriptionId);
-      if (firstIndex === null) return [];
-      const payments = getSubscriptionPayments().filter((payment) => payment.personId === personId && payment.subscriptionId === subscriptionId);
-      const lastIndex = Math.min(uptoMonthIndex, firstIndex + 119);
-      const shortfalls = [];
-      for (let index = firstIndex; index <= lastIndex; index += 1) {
-        const monthKey = subscriptionIndexToMonth(index);
-        const paidThatMonth = payments.filter((payment) => payment.month === monthKey).reduce((sum, payment) => sum + decimalValue(payment.amount), 0);
-        const shortfall = Math.round((expected - paidThatMonth) * 100) / 100;
-        if (shortfall > 0) shortfalls.push({ month: monthKey, amount: shortfall });
-      }
-      return shortfalls;
-    }
-
-    // Rozpočítání jedné přijaté částky mezi všechny služby dané osoby podle
-    // poměru jejich měsíčních podílů (ne rovným dílem v Kč) - jen tak vyjde
-    // "zaplaceno do měsíce X" stejně pro všechny služby dohromady. Poslední
-    // služba dostane zbytek po zaokrouhlení, aby součet přesně sedněl na
-    // vloženou částku (žádný halíř neuteče/nepřebude kvůli zaokrouhlování).
-    // Pro KAŽDOU službu se rozpočtený díl nejdřív rozdělí na jednotlivé
-    // historicky nedoplacené měsíce (platba dovnitř TOHO měsíce), a teprve
-    // zbytek se zapíše jako jedna platba do aktuálního měsíce - o rozpočítání
-    // do dalších budoucích měsíců se pak postará existující kredit/dluh engine
-    // (subscriptionCreditBeforeMonth), stejně jako u běžné jednorázové platby.
+    // Rozpočítání jedné přijaté částky mezi všechny služby dané osoby -
+    // MĚSÍC PO MĚSÍCI, VŠECHNY SLUŽBY NAJEDNOU ("lockstep"), ne napřed
+    // rozdělit celou částku podle poměru cen a pak dopočítávat historii
+    // každé služby zvlášť. Ten druhý přístup (vyzkoušeno a zahozeno) vypadá
+    // rozumně, ale při RŮZNÝCH cenách služeb (např. 240 a 70) a RŮZNÉ
+    // historii plateb u každé z nich se jim rozjíždí kolik měsíců dopředu
+    // je která "napřed" - výsledkem je, že se v jednom měsíci jedna služba
+    // dopočítá a druhá ne, takže součet za osobu vyjde na divné číslo
+    // (např. započteno 266 míso čistých 310 + 40 kredit).
+    // Lockstep: pro KAŽDÝ měsíc od nejstaršího dluhu dál se napřed spočítá
+    // nedoplatek VŠECH služeb za TEN měsíc; pokud peníze na celý měsíc
+    // stačí, doplatí se všem službám současně a jde se na další měsíc;
+    // pokud nestačí, rozdělí se zbytek poměrně jen mezi nedoplatky TOHO
+    // posledního měsíce a končí se - obě/všechny služby tak mají vždy
+    // zaplaceno přesně do stejného měsíce.
     function subscriptionBulkPaymentPlan(personId, amount) {
       const currentMonthKey = todayISO().slice(0, 7);
       const currentMonthIndex = subscriptionMonthToIndex(currentMonthKey);
       const shares = subscriptionPersonAssignedServices(personId)
         .map((service) => ({ service, expected: subscriptionShareAmountForPerson(personId, service.id) }))
         .filter((row) => row.expected > 0);
-      const totalExpected = shares.reduce((sum, row) => sum + row.expected, 0);
-      if (!(totalExpected > 0) || !(amount > 0)) return [];
+      if (!shares.length || !(amount > 0)) return [];
+      const combinedExpected = shares.reduce((sum, row) => sum + row.expected, 0);
+      if (!(combinedExpected > 0)) return [];
+
+      const firstIndexes = shares
+        .map((row) => subscriptionFirstPaymentIndex(personId, row.service.id))
+        .filter((index) => index !== null);
+      const startIndex = firstIndexes.length ? Math.min(...firstIndexes, currentMonthIndex) : currentMonthIndex;
+      const maxIndex = startIndex + 239;
+
+      const paidByServiceMonth = new Map();
+      shares.forEach((row) => {
+        const payments = getSubscriptionPayments().filter((payment) => payment.personId === personId && payment.subscriptionId === row.service.id);
+        const monthTotals = new Map();
+        payments.forEach((payment) => monthTotals.set(payment.month, (monthTotals.get(payment.month) || 0) + decimalValue(payment.amount)));
+        paidByServiceMonth.set(row.service.id, monthTotals);
+      });
+
+      const entriesByService = new Map(shares.map((row) => [row.service.id, []]));
       let remaining = Math.round(amount);
-      return shares.map((row, index) => {
-        const isLast = index === shares.length - 1;
-        let budget = isLast ? remaining : Math.round((row.expected / totalExpected) * amount);
-        remaining -= budget;
-        budget = Math.max(0, budget);
-        const entries = [];
-        const shortfalls = subscriptionServiceHistoricalShortfalls(personId, row.service.id, currentMonthIndex);
-        for (const shortfall of shortfalls) {
-          if (budget <= 0) break;
-          const pay = Math.min(budget, shortfall.amount);
-          entries.push({ month: shortfall.month, amount: pay });
-          budget -= pay;
+
+      for (let index = startIndex; index <= maxIndex && remaining > 0; index += 1) {
+        const monthKey = subscriptionIndexToMonth(index);
+        const monthShortfalls = shares
+          .map((row) => {
+            const already = paidByServiceMonth.get(row.service.id).get(monthKey) || 0;
+            return { service: row.service, shortfall: Math.max(0, Math.round(row.expected - already)) };
+          })
+          .filter((row) => row.shortfall > 0);
+        if (!monthShortfalls.length) continue;
+        const monthTotal = monthShortfalls.reduce((sum, row) => sum + row.shortfall, 0);
+        if (remaining >= monthTotal) {
+          monthShortfalls.forEach((row) => entriesByService.get(row.service.id).push({ month: monthKey, amount: row.shortfall }));
+          remaining -= monthTotal;
+        } else {
+          let partRemaining = remaining;
+          monthShortfalls.forEach((row, entryIndex) => {
+            const isLast = entryIndex === monthShortfalls.length - 1;
+            const part = isLast ? partRemaining : Math.round((row.shortfall / monthTotal) * remaining);
+            partRemaining -= part;
+            if (part > 0) entriesByService.get(row.service.id).push({ month: monthKey, amount: part });
+          });
+          remaining = 0;
         }
-        if (budget > 0) {
-          const lastEntry = entries[entries.length - 1];
-          if (lastEntry && lastEntry.month === currentMonthKey) lastEntry.amount += budget;
-          else entries.push({ month: currentMonthKey, amount: budget });
-        }
-        return { service: row.service, entries };
-      }).filter((row) => row.entries.length > 0);
+      }
+
+      return shares
+        .map((row) => ({ service: row.service, entries: entriesByService.get(row.service.id) || [] }))
+        .filter((row) => row.entries.length > 0);
     }
 
     function subscriptionPersonAvailableServiceCount(personId) {
