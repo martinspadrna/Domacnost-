@@ -4649,13 +4649,17 @@ textarea {
 
 @media (max-width: 560px) {
   .overview-backdrop {
+    /* Spodní dock je pod backdropem (z-index 80 vs 2200) - při otevřeném
+       přehledu je stejně ztmavený a neklikatelný, takže mu nemá smysl
+       rezervovat místo. Okno tak může být o výšku docku větší a na
+       "Otevřít modul" se míň scrolluje. */
     align-items: flex-end !important;
-    padding: max(10px, env(safe-area-inset-top, 0px)) 10px calc(var(--nav-height) + max(10px, env(safe-area-inset-bottom, 0px)) + 12px) !important;
+    padding: max(10px, env(safe-area-inset-top, 0px)) 10px max(10px, env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .overview-panel {
     width: 100% !important;
-    max-height: calc(100dvh - max(14px, env(safe-area-inset-top, 0px)) - var(--nav-height) - max(20px, env(safe-area-inset-bottom, 0px)) - 22px) !important;
+    max-height: calc(100dvh - max(14px, env(safe-area-inset-top, 0px)) - max(20px, env(safe-area-inset-bottom, 0px)) - 22px) !important;
     margin: 0 !important;
     border-radius: 26px !important;
     padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)) !important;
@@ -4663,7 +4667,7 @@ textarea {
 
   @supports not (height: 100dvh) {
     .overview-panel {
-      max-height: calc(100vh - max(14px, env(safe-area-inset-top, 0px)) - var(--nav-height) - max(20px, env(safe-area-inset-bottom, 0px)) - 22px) !important;
+      max-height: calc(100vh - max(14px, env(safe-area-inset-top, 0px)) - max(20px, env(safe-area-inset-bottom, 0px)) - 22px) !important;
     }
   }
 
@@ -16421,15 +16425,16 @@ html.pwa-standalone body {
 }
 
 /* Domacnost+ - "Otevřít modul" v přehledovém okně (Home -> denní přehled)
-   musí zůstat vidět i u delšího obsahu (např. HDO s víc okny). Zkoušené
-   position:sticky (build 452) u dlouhého obsahu tlačítko sice udrželo na
-   obrazovce, ale přelepilo se přes poslední řádky obsahu (sticky element
-   zůstane "přilepený" dřív, než se pod ním reálně proscroluje úplně
-   všechno) - tlačítko tak schovávalo kus posledního řádku. Normální tok
-   (bez sticky) je jednodušší a spolehlivější: tlačítko je vždy až za
-   posledním řádkem, nikdy nic nepřekrývá, jen je potřeba na něj scrollnout. */
+   musí být klikatelné BEZ scrollování i u delšího obsahu (např. HDO s víc
+   okny). Sticky bottom s PLNĚ NEPRŮHLEDNÝM pozadím: během scrollování jede
+   obsah pod lištou (standardní vzor ukotvené patičky), na konci scrollu je
+   lišta na svém místě v toku ZA posledním řádkem, takže nikdy nic trvale
+   neschovává. Průšvih z buildu 452 ("přelepený poslední řádek") způsobovalo
+   poloprůhledné pozadí lišty - obsah pod ní prosvítal a vypadal uříznutě. */
 .overview-panel .overview-actions {
-  position: relative !important;
+  position: sticky !important;
+  bottom: 0;
+  z-index: 3;
   margin: 14px -1px -1px;
   padding: 12px 1px max(12px, env(safe-area-inset-bottom, 0px)) !important;
   background: var(--panel);
