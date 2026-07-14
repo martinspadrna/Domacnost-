@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_451';
-  const APP_BUILD = 451;
+  const APP_VERSION = 'Domácnost+ v.0.1_452';
+  const APP_BUILD = 452;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -614,6 +614,16 @@
     ['red', 'Červená'],
     ['purple', 'Fialová'],
     ['graphite', 'Šedá']
+  ];
+  const VEHICLE_ICON_SHAPES = [
+    ['car', '🚗', 'Auto'],
+    ['suv', '🚙', 'SUV / off-road'],
+    ['van', '🚐', 'Van / dodávka'],
+    ['pickup', '🛻', 'Pickup'],
+    ['taxi', '🚕', 'Taxi'],
+    ['sport', '🏎️', 'Sport'],
+    ['motorcycle', '🏍️', 'Motorka'],
+    ['scooter', '🛵', 'Skútr']
   ];
 
   const GARAGE_VEHICLE_PRESETS = [
@@ -1907,6 +1917,7 @@
         technicalInspectionUntil: '',
         insuranceUntil: '',
         insuranceContractId: '',
+        iconShape: 'car',
         serviceIntervalKm: '',
         nextServiceKm: '',
         nextServiceDate: '',
@@ -1956,6 +1967,7 @@
       baseVehicle.ownershipStatus = normalizeVehicleOwnershipStatus(baseVehicle.ownershipStatus || (baseVehicle.saleDate ? 'sold' : 'owned'));
       baseVehicle.iconColor = normalizeVehicleIconColor(baseVehicle.iconColor || keys.map((key) => migratedVehicleIconColors[key]).find(Boolean) || 'blue');
       keys.forEach((key) => { migratedVehicleIconColors[key] = baseVehicle.iconColor; });
+      baseVehicle.iconShape = normalizeVehicleIconShape(baseVehicle.iconShape);
       return baseVehicle;
     });
     migrated.settings.vehicleIconColors = migratedVehicleIconColors;
@@ -3482,7 +3494,7 @@
       <div class="item compact-item overview-list-item overview-action-item vehicle-overview-action vehicle-overview-action-with-tools">
         <button class="vehicle-overview-main" type="button" data-action="select-vehicle" data-id="${escapeHtml(vehicle.id)}">
           <div class="item-top">
-            <div class="item-title"><span class="vehicle-icon-bubble ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span>${escapeHtml(vehicle.name || 'Auto')}</div>
+            <div class="item-title"><span class="vehicle-icon-bubble ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">${vehicleIconShapeEmoji(vehicle.iconShape)}</span>${escapeHtml(vehicle.name || 'Auto')}</div>
             ${currentKm ? `<span class="badge">${escapeHtml(formatKm(currentKm))}</span>` : ''}
           </div>
           <div class="item-meta">${escapeHtml([vehicle.brand, vehicle.model, vehicle.year, vehicle.plate].filter(Boolean).join(' · ') || 'Otevřít přehled auta')}</div>
@@ -3497,7 +3509,7 @@
       return `
         <button class="item compact-item overview-list-item overview-action-item vehicle-overview-action" type="button" data-action="select-vehicle" data-id="${item.vehicleId}">
           <div class="item-top">
-            <div class="item-title"><span class="vehicle-icon-bubble ${vehicleIconColorClass(item.iconColor)}" aria-hidden="true">🚗</span>${escapeHtml(item.title || 'Upozornění')}</div>
+            <div class="item-title"><span class="vehicle-icon-bubble ${vehicleIconColorClass(item.iconColor)}" aria-hidden="true">${vehicleIconShapeEmoji(item.iconShape)}</span>${escapeHtml(item.title || 'Upozornění')}</div>
             <span class="badge ${item.days !== null && item.days <= 7 ? 'warn' : ''}">${escapeHtml(dueBadge(item.days))}</span>
           </div>
           <div class="item-meta">${escapeHtml(item.meta || 'Otevřít detail auta')}</div>
@@ -3635,7 +3647,7 @@
             <div class="garage-vehicle-picker-list">
               ${vehicles.map((item) => `
                 <button class="garage-vehicle-picker-item" type="button" data-action="select-fuel-vehicle" data-id="${escapeHtml(item.id)}">
-                  <span class="vehicle-icon-bubble vehicle-icon-bubble-large ${vehicleIconColorClass(item.iconColor)}" aria-hidden="true">🚗</span>
+                  <span class="vehicle-icon-bubble vehicle-icon-bubble-large ${vehicleIconColorClass(item.iconColor)}" aria-hidden="true">${vehicleIconShapeEmoji(item.iconShape)}</span>
                   <span class="item-title">${escapeHtml(item.name)}</span>
                 </button>
               `).join('')}
@@ -3805,7 +3817,13 @@
       finance: { nav: 'finance', tab: 'summary' },
       tasks: { nav: 'tasks', tab: '' },
       waste: { nav: 'waste', tab: '' },
-      important: { nav: 'tasks', tab: '' }
+      important: { nav: 'tasks', tab: '' },
+      warranties: { nav: 'warranties', tab: '' },
+      readings: { nav: 'readings', tab: '' },
+      subscriptions: { nav: 'subscriptions', tab: '' },
+      pool: { nav: 'pool', tab: '' },
+      vape: { nav: 'vape', tab: '' },
+      polishHolidays: { nav: 'polishHolidays', tab: '' }
     };
     return map[type] || { nav: type || 'tasks', tab: '' };
   }
@@ -3826,7 +3844,13 @@
       finance: ['💰', 'Finance'],
       tasks: ['✅', 'Úkoly'],
       waste: ['♻️', 'Odpad'],
-      important: ['⭐', 'Důležité']
+      important: ['⭐', 'Důležité'],
+      warranties: ['🧾', 'Záruky'],
+      readings: ['📊', 'Odečty'],
+      subscriptions: ['💳', 'Předplatné'],
+      pool: ['🏊', 'Bazén'],
+      vape: ['💨', 'Vape'],
+      polishHolidays: ['🇵🇱', 'Svátky PL']
     };
     const [icon, title] = titleMap[type] || ['🏠', 'Přehled'];
     let body = '';
@@ -3888,6 +3912,41 @@
       const typeCount = new Set(state.waste.map((item) => item.type || 'jiný')).size;
       const waste = upcomingWaste.slice(0,8);
       body = `${renderOverviewSummary([{ label: 'Nejbližší', value: nextWaste ? dueBadge(nextWaste.days) : '—', tone: nextWaste?.days <= 1 ? 'warn' : '' }, { label: 'Typy', value: typeCount }, { label: 'Plánů', value: state.waste.length }])}${waste.length ? `<div class="list compact-list overview-list">${waste.map(renderWasteOverviewItem).join('')}</div>` : renderEmptyCta({ icon: '♻️', title: 'Svoz odpadu není nastavený', text: 'Přidej typ odpadu a termín. Dashboard pak ukáže nejbližší svoz.', nav: 'waste', tab: '', label: 'Přidat svoz' })}`;
+    } else if (type === 'warranties') {
+      const list = sortedWarranties().filter((item) => !['archived', 'done'].includes(item.status));
+      const withDays = list.map((item) => ({ item, days: daysUntil(item.warrantyUntil) }));
+      const expiredCount = withDays.filter((row) => row.days !== null && row.days < 0).length;
+      const soonCount = withDays.filter((row) => row.days !== null && row.days >= 0 && row.days <= 30).length;
+      const rows = withDays.slice(0, 8);
+      body = `${renderOverviewSummary([{ label: 'Aktivní', value: list.length }, { label: 'Do 30 dnů', value: soonCount, tone: soonCount ? 'warn' : '' }, { label: 'Prošlé', value: expiredCount, tone: expiredCount ? 'bad' : '' }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map(({ item, days }) => renderOverviewItem({ title: item.name || item.itemName || 'Záruka', badge: days === null ? 'bez data' : dueBadge(days), badgeClass: days !== null && days < 0 ? 'bad' : days !== null && days <= 30 ? 'warn' : 'good', meta: item.store || item.note || '', icon: '🧾' })).join('')}</div>` : renderEmptyCta({ icon: '🧾', title: 'Žádné záruky', text: 'Přidej záruční list k nákupu a dashboard pohlídá termín.', nav: 'warranties', tab: '', label: 'Přidat záruku' })}`;
+    } else if (type === 'readings') {
+      const meters = readingsMeters();
+      const dueMeters = new Set(meters.filter((meter) => !readingMeterHasCompleteMonthEntry(meter)).map((meter) => meter.id));
+      const rows = meters.slice(0, 8);
+      body = `${renderOverviewSummary([{ label: 'Měřidla', value: meters.length }, { label: 'Čeká odečet', value: dueMeters.size, tone: dueMeters.size ? 'warn' : 'good' }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map((meter) => renderOverviewItem({ title: meter.name, badge: dueMeters.has(meter.id) ? 'čeká' : 'hotovo', badgeClass: dueMeters.has(meter.id) ? 'warn' : 'good', icon: '📊' })).join('')}</div>` : renderEmptyCta({ icon: '📊', title: 'Žádná měřidla', text: 'Přidej měřidlo elektřiny, plynu nebo vody a hlídej odečty.', nav: 'readings', tab: 'entry', label: 'Přidat měřidlo' })}`;
+    } else if (type === 'subscriptions') {
+      const summary = subscriptionMonthSummary(todayISO().slice(0, 7));
+      const debtRows = summary.peopleRows.filter((row) => row.debt > 0).sort((a, b) => b.debt - a.debt);
+      const rows = debtRows.slice(0, 8);
+      body = `${renderOverviewSummary([{ label: 'Lidí', value: summary.peopleRows.length }, { label: 'Dluží', value: debtRows.length, tone: debtRows.length ? 'warn' : 'good' }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map((row) => renderOverviewItem({ title: row.person?.name || 'Osoba', badge: formatCurrency(row.debt), badgeClass: 'warn', icon: '💳' })).join('')}</div>` : renderEmptyCta({ icon: '💳', title: 'Všechno srovnáno', text: 'Nikdo aktuálně nedluží za tenhle měsíc.', nav: 'subscriptions', tab: 'overview', label: 'Otevřít předplatné' })}`;
+    } else if (type === 'pool') {
+      const pools = getPoolModule().getPools();
+      const rows = pools.slice(0, 8);
+      body = `${renderOverviewSummary([{ label: 'Bazény', value: pools.length }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map((pool) => {
+        const dose = getPoolModule().poolPhDose(pool);
+        return renderOverviewItem({ title: pool.name || 'Bazén', badge: dose.status === 'ok' ? 'pH OK' : dose.status === 'missing' ? 'doplň pH' : dose.label, badgeClass: dose.status === 'ok' ? 'good' : dose.status === 'missing' ? '' : 'warn', icon: '🏊' });
+      }).join('')}</div>` : renderEmptyCta({ icon: '🏊', title: 'Bazén není nastavený', text: 'Přidej rozměry bazénu a měření pH.', nav: 'pool', tab: 'add', label: 'Přidat bazén' })}`;
+    } else if (type === 'vape') {
+      const items = Array.isArray(state.vape?.items) ? state.vape.items : [];
+      const total = items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
+      const rows = items.slice(0, 8);
+      body = `${renderOverviewSummary([{ label: 'Položek', value: items.length }, { label: 'Celkem', value: formatCurrency(total) }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map((item) => renderOverviewItem({ title: item.name || 'Položka', badge: formatCurrency(Number(item.price || 0) * Number(item.qty || 0)), icon: '💨' })).join('')}</div>` : renderEmptyCta({ icon: '💨', title: 'Žádné položky', text: 'Přidej vape položku a sleduj náklady.', nav: 'vape', tab: '', label: 'Přidat položku' })}`;
+    } else if (type === 'polishHolidays') {
+      const upcoming = polishShopCalendarAround(new Date().getFullYear())
+        .filter((entry) => entry.date >= todayISO() && !isPolishShopSundayEntry(entry) && ['closed', 'limited'].includes(entry.status))
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(0, 8);
+      body = `${renderOverviewSummary([{ label: 'Nejbližší', value: upcoming[0] ? dueBadge(daysUntil(upcoming[0].date)) : '—' }])}${upcoming.length ? `<div class="list compact-list overview-list">${upcoming.map((entry) => renderOverviewItem({ title: entry.name, badge: formatDate(entry.date), meta: entry.status === 'closed' ? 'zavřeno' : 'zkráceno', icon: '🇵🇱' })).join('')}</div>` : renderEmptyCta({ icon: '🇵🇱', title: 'Žádné známé zavírací neděle', text: 'Data se doplňují automaticky online.', nav: 'polishHolidays', tab: '', label: 'Otevřít' })}`;
     } else {
       const tasks = state.homeTasks.filter((task) => !task.done).slice(0,5);
       const waste = getUpcomingWasteRuntimeItems({ limit: 4 });
@@ -4355,8 +4414,7 @@
           value: nextEvent ? nextEvent.title : 'žádná',
           meta: following ? `další: ${following.title}` : '',
           tone: '',
-          nav: 'calendar',
-          tab: 'overview'
+          overview: 'calendar'
         };
       }
       case 'shopping': {
@@ -4393,8 +4451,7 @@
           value: warranty ? `${warranty.name || warranty.itemName || 'Záruka'} · ${days === null ? 'bez data' : dueBadge(days)}` : 'žádná záruka',
           meta: next ? `další: ${next.name || next.itemName || 'Záruka'} · ${nextDays === null ? 'bez data' : dueBadge(nextDays)}` : '',
           tone: days !== null && days < 0 ? 'bad' : days !== null && days <= 30 ? 'warn' : 'good',
-          nav: 'warranties',
-          tab: ''
+          overview: 'warranties'
         };
       }
       case 'readings': {
@@ -4405,8 +4462,7 @@
           value: dueMeters.length ? `${dueMeters.length} čeká` : 'hotovo',
           meta: dueMeters.length ? dueMeters.slice(0, 3).map((meter) => meter.name).filter(Boolean).join(' · ') : '',
           tone: dueMeters.length ? 'warn' : 'good',
-          nav: 'readings',
-          tab: 'entry'
+          overview: 'readings'
         };
       }
       case 'subscriptions': {
@@ -4430,16 +4486,15 @@
             value: formatCurrency(currentDebt.debt),
             meta: rest > 0 ? `+ ${rest} ${rest === 1 ? 'další dluží' : 'dalších dluží'} · celkem ${formatCurrency(debtRows.reduce((sum, row) => sum + row.debt, 0))}` : '',
             tone: 'warn',
-            nav: 'subscriptions',
-            tab: 'overview'
+            overview: 'subscriptions'
           };
         }
-        return { label: 'Předplatné', value: summary.expectedReturn ? 'srovnáno' : 'bez sdílení', tone: summary.expectedReturn ? 'good' : '', nav: 'subscriptions', tab: 'overview' };
+        return { label: 'Předplatné', value: summary.expectedReturn ? 'srovnáno' : 'bez sdílení', tone: summary.expectedReturn ? 'good' : '', overview: 'subscriptions' };
       }
       case 'pool': {
         const pools = getPoolModule().getPools();
         const pool = pools[0];
-        if (!pool) return { label: 'Bazén', value: 'nenastaveno', tone: '', nav: 'pool', tab: 'add' };
+        if (!pool) return { label: 'Bazén', value: 'nenastaveno', tone: '', overview: 'pool' };
         const dose = getPoolModule().poolPhDose(pool);
         const latest = getPoolModule().latestPoolMeasurement(pool);
         const meta = latest ? `naposledy ${formatDate(latest.date)}${latest.waterTempC !== '' && latest.waterTempC !== undefined ? ` · voda ${latest.waterTempC} °C` : ''}` : '';
@@ -4448,15 +4503,14 @@
           value: dose.status === 'ok' ? 'pH OK' : dose.status === 'missing' ? 'doplň pH' : dose.label,
           meta,
           tone: dose.status === 'ok' ? 'good' : dose.status === 'missing' ? '' : 'warn',
-          nav: 'pool',
-          tab: ''
+          overview: 'pool'
         };
       }
       case 'vape': {
         const items = Array.isArray(state.vape?.items) ? state.vape.items : [];
         const count = items.length;
         const total = items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
-        return { label: 'Vape', value: `${count} položek`, meta: total > 0 ? `celkem ${formatCurrency(total)}` : '', tone: '', nav: 'vape', tab: '' };
+        return { label: 'Vape', value: `${count} položek`, meta: total > 0 ? `celkem ${formatCurrency(total)}` : '', tone: '', overview: 'vape' };
       }
       case 'polishHolidays': {
         const next = nextPolishShopHomeEntry();
@@ -4468,8 +4522,7 @@
           value: polishShopHeroMetric(),
           meta: following ? `další: ${formatDate(following.date)} · ${following.name}` : '',
           tone: '',
-          nav: 'polishHolidays',
-          tab: ''
+          overview: 'polishHolidays'
         };
       }
       case 'tasks': {
@@ -5978,6 +6031,7 @@
             days,
             vehicleId: vehicle.id,
             iconColor: vehicle.iconColor,
+            iconShape: vehicle.iconShape,
             title: `${item.label}: ${vehicle.name}`,
             meta: `${item.label} do ${formatDate(dateValue)}`
           });
@@ -5990,6 +6044,7 @@
           days: nextKm < currentKm ? -1 : 30,
           vehicleId: vehicle.id,
           iconColor: vehicle.iconColor,
+          iconShape: vehicle.iconShape,
           title: `Servis podle km: ${vehicle.name}`,
           meta: `Aktuálně ${currentKm} km · další servis při ${nextKm} km`
         });
@@ -6003,6 +6058,7 @@
             days: status.tone === 'bad' ? -1 : 20,
             vehicleId: vehicle.id,
             iconColor: vehicle.iconColor,
+            iconShape: vehicle.iconShape,
             title: `${item.label}: ${vehicle.name}`,
             meta: `Servisní plán · ${status.detail}`
           });
@@ -8075,6 +8131,20 @@
     return `vehicle-icon-color-${normalizeVehicleIconColor(value)}`;
   }
 
+  function normalizeVehicleIconShape(value, fallback = 'car') {
+    const key = normalizeKey(value || '');
+    return VEHICLE_ICON_SHAPES.some(([id]) => id === key) ? key : fallback;
+  }
+
+  function vehicleIconShapeOptions() {
+    return VEHICLE_ICON_SHAPES.map(([id, , label]) => [id, label]);
+  }
+
+  function vehicleIconShapeEmoji(value) {
+    const key = normalizeVehicleIconShape(value);
+    return (VEHICLE_ICON_SHAPES.find(([id]) => id === key) || VEHICLE_ICON_SHAPES[0])[1];
+  }
+
   function vehicleIconColorFromSettings(vehicle = {}) {
     const map = normalizeVehicleIconColorMap(state.settings?.vehicleIconColors);
     const keys = [vehicle.cloudId, vehicle.id, normalizeKey(vehicle.name)].filter(Boolean);
@@ -8267,6 +8337,7 @@
         technicalInspectionUntil: '',
         insuranceUntil: '',
         insuranceContractId: '',
+        iconShape: 'car',
         nextServiceKm: '',
         nextServiceDate: '',
         purchaseDate: '',
@@ -8313,7 +8384,8 @@
         id,
         name: normalizeText(vehicle.name || vehicle.title || vehicle.model || `Auto ${index + 1}`),
         ownershipStatus: vehicleOwnershipStatus(vehicle),
-        iconColor: normalizeVehicleIconColor(vehicle.iconColor || vehicle.color || iconColorsBefore[id] || iconColorsBefore[normalizeKey(vehicle.name)] || 'blue')
+        iconColor: normalizeVehicleIconColor(vehicle.iconColor || vehicle.color || iconColorsBefore[id] || iconColorsBefore[normalizeKey(vehicle.name)] || 'blue'),
+        iconShape: normalizeVehicleIconShape(vehicle.iconShape)
       };
       applyVehicleTechnicalFields(normalized, Object.keys(normalized.technicalSpecs || {}).length ? normalized.technicalSpecs : normalized);
       return normalized;
@@ -10564,6 +10636,7 @@
               ${field('STK do', 'technicalInspectionUntil', 'date', '')}
               ${field('Pojistka do', 'insuranceUntil', 'date', '')}
               ${selectField('Barva ikonky auta', 'iconColor', vehicleIconColorOptions(), 'blue')}
+              ${selectField('Tvar ikonky auta', 'iconShape', vehicleIconShapeOptions(), 'car')}
             </div>
             ${renderVehicleTechnicalFields()}
             <div class="form-actions"><button class="primary-btn" type="submit">Přidat auto</button></div>
@@ -10598,7 +10671,7 @@
     return `
       <div class="item vehicle-list-item fuelio-vehicle-card ${vehicle.id === garageVehicleId ? 'selected' : ''}">
         <button class="vehicle-main-action" type="button" data-action="select-vehicle" data-id="${vehicle.id}">
-          <span class="vehicle-icon-bubble ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span>
+          <span class="vehicle-icon-bubble ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">${vehicleIconShapeEmoji(vehicle.iconShape)}</span>
           <span class="vehicle-main-copy">
             <strong>${escapeHtml(vehicle.name)}</strong>
             <em>${escapeHtml([vehicle.brand, vehicle.model, vehicle.plate].filter(Boolean).join(' · ') || vehicle.fuelType || 'auto')}</em>
@@ -10777,7 +10850,7 @@
     const merged = { ...fallback, ...primary };
     const preserveKeys = [
       'name','plate','fuelType','odometer','purchaseDate','purchasePrice','purchaseOdometer','ownershipStatus','saleDate','salePrice','saleOdometer',
-      'technicalInspectionUntil','insuranceUntil','insuranceContractId','nextServiceKm','nextServiceDate','iconColor','note',
+      'technicalInspectionUntil','insuranceUntil','insuranceContractId','nextServiceKm','nextServiceDate','iconColor','iconShape','note',
       ...VEHICLE_TECHNICAL_FIELD_NAMES
     ];
     preserveKeys.forEach((key) => {
@@ -11478,7 +11551,7 @@
       <section class="garage-active-vehicle-selector garage-active-vehicle-selector-clean">
         <details class="garage-vehicle-dropdown">
           <summary>
-            <span class="garage-vehicle-summary-main"><span class="vehicle-icon-bubble ${vehicleIconColorClass(activeVehicle?.iconColor)}" aria-hidden="true">🚗</span><strong>${escapeHtml(activeVehicle?.name || 'Vyber auto')}</strong>${activeMeta ? `<em>${escapeHtml(activeMeta)}</em>` : ''}</span>
+            <span class="garage-vehicle-summary-main"><span class="vehicle-icon-bubble ${vehicleIconColorClass(activeVehicle?.iconColor)}" aria-hidden="true">${vehicleIconShapeEmoji(activeVehicle?.iconShape)}</span><strong>${escapeHtml(activeVehicle?.name || 'Vyber auto')}</strong>${activeMeta ? `<em>${escapeHtml(activeMeta)}</em>` : ''}</span>
             <span class="garage-vehicle-summary-side">${activeIsOwned ? `<span class="garage-vehicle-summary-km">${escapeHtml(formatKm(activeKm))}</span>` : ''}<span class="garage-vehicle-dropdown-arrow" aria-hidden="true">⌄</span></span>
           </summary>
           <div class="garage-vehicle-dropdown-list">
@@ -11489,7 +11562,7 @@
               const meta = garageVehiclePickerMeta(vehicle, rows);
               return `<div class="garage-vehicle-option-row ${vehicle.id === activeVehicle?.id ? 'active' : ''} ${!isOwned ? 'garage-vehicle-option-archived' : ''}">
                 <button class="garage-vehicle-option-main" type="button" data-action="garage-select-overview-vehicle" data-id="${escapeHtml(vehicle.id)}">
-                  <span class="vehicle-icon-bubble ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span>
+                  <span class="vehicle-icon-bubble ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">${vehicleIconShapeEmoji(vehicle.iconShape)}</span>
                   <span class="garage-vehicle-option-copy"><strong>${escapeHtml(vehicle.name || 'Auto')}</strong><em>${escapeHtml(meta)}</em></span>
                   ${isOwned ? `<b>${escapeHtml(formatKm(km))}</b>` : ''}
                 </button>
@@ -12080,7 +12153,7 @@
     const totalCostPerKm = garageVehicleTotalCostPerKm(analytics);
     return `
       <div class="card-header compact-detail-head vehicle-detail-head">
-        <div class="vehicle-detail-title"><span class="vehicle-icon-bubble vehicle-icon-bubble-large ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">🚗</span><div><h2>${escapeHtml(vehicle.name)}</h2><p>${escapeHtml(vehicle.plate || 'Bez SPZ')} · ${escapeHtml(vehicle.fuelType || 'palivo neuvedeno')} · ${escapeHtml(vehicleOwnershipLabel(vehicle))}</p></div></div>
+        <div class="vehicle-detail-title"><span class="vehicle-icon-bubble vehicle-icon-bubble-large ${vehicleIconColorClass(vehicle.iconColor)}" aria-hidden="true">${vehicleIconShapeEmoji(vehicle.iconShape)}</span><div><h2>${escapeHtml(vehicle.name)}</h2><p>${escapeHtml(vehicle.plate || 'Bez SPZ')} · ${escapeHtml(vehicle.fuelType || 'palivo neuvedeno')} · ${escapeHtml(vehicleOwnershipLabel(vehicle))}</p></div></div>
         <div class="vehicle-detail-head-actions">
           <button class="ghost-btn icon-action-btn" type="button" data-action="open-garage-detail" data-garage-target="vehicle-settings" title="Nastavení auta" aria-label="Nastavení auta">⚙️</button>
           ${vehicleOwnershipStatus(vehicle) === 'owned' ? '<button class="primary-btn icon-action-btn fuel-add-shortcut" type="button" data-action="open-garage-detail" data-garage-target="add-fuel" title="Přidat tankování" aria-label="Přidat tankování">⛽+</button>' : ''}
@@ -12142,6 +12215,7 @@
             ${field('Další servis při km', 'nextServiceKm', 'number', 'např. 150000', false, vehicle.nextServiceKm || '')}
             ${field('Další servis do data', 'nextServiceDate', 'date', '', false, vehicle.nextServiceDate || '')}
             ${selectField('Barva ikonky auta', 'iconColor', vehicleIconColorOptions(), normalizeVehicleIconColor(vehicle.iconColor))}
+            ${selectField('Tvar ikonky auta', 'iconShape', vehicleIconShapeOptions(), normalizeVehicleIconShape(vehicle.iconShape))}
             ${field('Poznámka', 'note', 'text', 'pneu, rozměr, VIN...', false, vehicle.note || '')}
           </div>
           ${linkedInsuranceContract ? `<div class="inline-note compact-note">Datum konce pojistky se bere ze smlouvy „${escapeHtml(linkedInsuranceContract.name)}“ (${escapeHtml(formatDate(linkedInsuranceContract.validTo))}) - pole „Pojistka do“ výše se pak ignoruje.</div>` : ''}
@@ -14206,6 +14280,7 @@
     vehicle.nextServiceKm = normalizeText(data.nextServiceKm);
     vehicle.nextServiceDate = normalizeText(data.nextServiceDate);
     vehicle.iconColor = normalizeVehicleIconColor(data.iconColor || vehicle.iconColor);
+    vehicle.iconShape = normalizeVehicleIconShape(data.iconShape || vehicle.iconShape);
     vehicle.note = normalizeText(data.note);
     vehicle.updatedAt = new Date().toISOString();
     applyVehicleTechnicalFields(vehicle, data);
@@ -15076,6 +15151,7 @@
         nextServiceKm: keepExistingGarageValue(vehicle.next_service_odometer, existing.nextServiceKm),
         nextServiceDate: keepExistingGarageValue(vehicle.next_service_date, existing.nextServiceDate),
         iconColor: normalizeVehicleIconColor(existing.iconColor || vehicleIconColorFromSettings({ cloudId: vehicle.id, name: vehicle.name })),
+        iconShape: normalizeVehicleIconShape(existing.iconShape),
         note: keepExistingGarageValue(vehicle.note, existing.note),
         technicalSpecs: keepExistingGarageObject(vehicle.technical_specs, existing.technicalSpecs)
       };
@@ -15507,6 +15583,7 @@
           technicalInspectionUntil: normalizeText(data.technicalInspectionUntil),
           insuranceUntil: normalizeText(data.insuranceUntil),
           iconColor: normalizeVehicleIconColor(data.iconColor),
+          iconShape: normalizeVehicleIconShape(data.iconShape),
           nextServiceKm: '',
           nextServiceDate: '',
           note: ''
@@ -19641,11 +19718,15 @@
         if (nav.dataset.targetTab && nav.dataset.nav !== 'homecare') {
           moduleTabs = { ...(moduleTabs || {}), [activeModule]: nav.dataset.targetTab };
           localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
-        } else if (activeModule === 'calendar') {
-          // Kalendář se má vždy otevřít na Přehledu, i když byl naposledy
-          // otevřený na Historii/Zdrojích - jinak si appka pamatuje starou
-          // záložku a uživatel čeká, že uvidí měsíční přehled.
-          moduleTabs = { ...(moduleTabs || {}), calendar: 'overview' };
+        } else if (nav.dataset.nav !== 'homecare' && moduleTabs && activeModule in moduleTabs) {
+          // Běžné otevření modulu (dolní lišta, postranní menu...) bez
+          // explicitního cíle se má vždy otevřít na základní záložce, ne na
+          // té, kde uživatel modul naposledy opustil - jinak appka "uvízne"
+          // na historii/detailu a vypadá to, že se nedá dostat zpátky na
+          // přehled. Rychlé akce a denní přehled cíl výslovně nastavují
+          // (data-target-tab), takže je tahle větev nezasáhne.
+          moduleTabs = { ...moduleTabs };
+          delete moduleTabs[activeModule];
           localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
         }
         markModuleTransition();

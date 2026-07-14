@@ -169,7 +169,7 @@ async function loadChmi(regionName: string, regionCode: string) {
 
 async function loadOpenMeteo(latitude: number, longitude: number, name: string) {
   const params = new URLSearchParams({
-    latitude: String(latitude), longitude: String(longitude), timezone: 'Europe/Prague', forecast_days: '5',
+    latitude: String(latitude), longitude: String(longitude), timezone: 'Europe/Prague', forecast_days: '7',
     current: 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m',
     daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset',
     hourly: 'temperature_2m,precipitation,weather_code,wind_speed_10m',
@@ -193,7 +193,7 @@ async function loadOpenMeteo(latitude: number, longitude: number, name: string) 
       time: typeof current.time === 'string' ? current.time : new Date().toISOString(),
       text: codeToText(currentCode),
     },
-    daily: dailyTime.slice(0, 5).map((date: unknown, index: number) => ({
+    daily: dailyTime.slice(0, 7).map((date: unknown, index: number) => ({
       date: String(date),
       weatherCode: numberOrNull((daily.weather_code as unknown[])?.[index]),
       min: numberOrNull((daily.temperature_2m_min as unknown[])?.[index]),

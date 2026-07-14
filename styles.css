@@ -14061,7 +14061,7 @@ body.home-active {
 .app-modal,
 .overview-panel {
   width: min(100%, 760px);
-  max-height: min(86dvh, 820px);
+  max-height: min(94dvh, 960px);
   min-width: 0;
   overflow: hidden auto;
   overscroll-behavior: contain;
@@ -14273,7 +14273,7 @@ body.home-active {
   .app-modal,
   .overview-panel {
     width: 100%;
-    max-height: 88dvh;
+    max-height: 92dvh;
     border-radius: 22px 22px 18px 18px;
   }
 
@@ -16418,4 +16418,18 @@ html.pwa-standalone body {
   html.pwa-standalone body {
     min-height: 100lvh;
   }
+}
+
+/* Domacnost+ - "Otevřít modul" v přehledovém okně (Home -> denní přehled)
+   musí zůstat vidět i u delšího obsahu (např. HDO s víc okny) - starší
+   vrstvy nechávaly position:relative vyhrát, takže tlačítko šlo mimo
+   viditelnou plochu okna místo aby zůstalo přilepené dole. */
+.overview-panel .overview-actions {
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 2;
+  margin: 10px -1px -1px;
+  padding: 12px 1px max(12px, env(safe-area-inset-bottom, 0px)) !important;
+  background: var(--panel);
+  border-top: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
 }
