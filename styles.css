@@ -14273,7 +14273,7 @@ body.home-active {
   .app-modal,
   .overview-panel {
     width: 100%;
-    max-height: 92dvh;
+    max-height: 96dvh;
     border-radius: 22px 22px 18px 18px;
   }
 
@@ -16421,14 +16421,16 @@ html.pwa-standalone body {
 }
 
 /* Domacnost+ - "Otevřít modul" v přehledovém okně (Home -> denní přehled)
-   musí zůstat vidět i u delšího obsahu (např. HDO s víc okny) - starší
-   vrstvy nechávaly position:relative vyhrát, takže tlačítko šlo mimo
-   viditelnou plochu okna místo aby zůstalo přilepené dole. */
+   musí zůstat vidět i u delšího obsahu (např. HDO s víc okny). Zkoušené
+   position:sticky (build 452) u dlouhého obsahu tlačítko sice udrželo na
+   obrazovce, ale přelepilo se přes poslední řádky obsahu (sticky element
+   zůstane "přilepený" dřív, než se pod ním reálně proscroluje úplně
+   všechno) - tlačítko tak schovávalo kus posledního řádku. Normální tok
+   (bez sticky) je jednodušší a spolehlivější: tlačítko je vždy až za
+   posledním řádkem, nikdy nic nepřekrývá, jen je potřeba na něj scrollnout. */
 .overview-panel .overview-actions {
-  position: sticky !important;
-  bottom: 0 !important;
-  z-index: 2;
-  margin: 10px -1px -1px;
+  position: relative !important;
+  margin: 14px -1px -1px;
   padding: 12px 1px max(12px, env(safe-area-inset-bottom, 0px)) !important;
   background: var(--panel);
   border-top: 1px solid color-mix(in srgb, var(--line) 78%, transparent);

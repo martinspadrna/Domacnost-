@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_452';
-  const APP_BUILD = 452;
+  const APP_VERSION = 'Domácnost+ v.0.1_453';
+  const APP_BUILD = 453;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -797,6 +797,7 @@
       homeQuickActionIds: [...DEFAULT_HOME_QUICK_ACTION_IDS],
       homeTodayBadgeIds: [...DEFAULT_HOME_TODAY_BADGE_IDS],
       vehicleIconColors: {},
+      vehicleIconShapes: {},
       vehicleServicePlans: {},
       profileUiSettings: {},
       polishShopShowNonTradingSundays: false
@@ -1716,6 +1717,7 @@
       homeQuickActionIds: normalizeHomeQuickActionIds(migrated.settings?.homeQuickActionIds),
       homeTodayBadgeIds: normalizeHomeTodayBadgeIds(migrated.settings?.homeTodayBadgeIds),
       vehicleIconColors: normalizeVehicleIconColorMap(migrated.settings?.vehicleIconColors),
+      vehicleIconShapes: normalizeVehicleIconShapeMap(migrated.settings?.vehicleIconShapes),
       vehicleServicePlans: normalizeVehicleServicePlanMap(migrated.settings?.vehicleServicePlans),
       profileUiSettings: normalizeProfileUiSettingsMap(migrated.settings?.profileUiSettings, migrated.enabledModules)
     };
@@ -1912,6 +1914,7 @@
     migrated.poolCloud = normalizePoolCloudState(migrated.poolCloud);
 
     const migratedVehicleIconColors = normalizeVehicleIconColorMap(migrated.settings.vehicleIconColors);
+    const migratedVehicleIconShapes = normalizeVehicleIconShapeMap(migrated.settings.vehicleIconShapes);
     migrated.vehicles = migrated.vehicles.map((vehicle) => {
       const baseVehicle = {
         technicalInspectionUntil: '',
@@ -1967,10 +1970,12 @@
       baseVehicle.ownershipStatus = normalizeVehicleOwnershipStatus(baseVehicle.ownershipStatus || (baseVehicle.saleDate ? 'sold' : 'owned'));
       baseVehicle.iconColor = normalizeVehicleIconColor(baseVehicle.iconColor || keys.map((key) => migratedVehicleIconColors[key]).find(Boolean) || 'blue');
       keys.forEach((key) => { migratedVehicleIconColors[key] = baseVehicle.iconColor; });
-      baseVehicle.iconShape = normalizeVehicleIconShape(baseVehicle.iconShape);
+      baseVehicle.iconShape = normalizeVehicleIconShape(baseVehicle.iconShape || keys.map((key) => migratedVehicleIconShapes[key]).find(Boolean) || 'car');
+      keys.forEach((key) => { migratedVehicleIconShapes[key] = baseVehicle.iconShape; });
       return baseVehicle;
     });
     migrated.settings.vehicleIconColors = migratedVehicleIconColors;
+    migrated.settings.vehicleIconShapes = migratedVehicleIconShapes;
 
     return migrated;
   }
@@ -8174,6 +8179,42 @@
     state.settings.vehicleIconColors = map;
   }
 
+  function normalizeVehicleIconShapeMap(map = {}) {
+    if (!map || typeof map !== 'object' || Array.isArray(map)) return {};
+    return Object.fromEntries(Object.entries(map)
+      .map(([key, value]) => [String(key || '').trim(), normalizeVehicleIconShape(value, '')])
+      .filter(([key, value]) => key && value));
+  }
+
+  function vehicleIconShapeFromSettings(vehicle = {}) {
+    const map = normalizeVehicleIconShapeMap(state.settings?.vehicleIconShapes);
+    const keys = [vehicle.cloudId, vehicle.id, normalizeKey(vehicle.name)].filter(Boolean);
+    for (const key of keys) {
+      if (map[key]) return map[key];
+    }
+    return 'car';
+  }
+
+  function rememberVehicleIconShape(vehicle) {
+    if (!vehicle) return;
+    const shape = normalizeVehicleIconShape(vehicle.iconShape);
+    vehicle.iconShape = shape;
+    state.settings.vehicleIconShapes = normalizeVehicleIconShapeMap(state.settings?.vehicleIconShapes);
+    [vehicle.cloudId, vehicle.id, normalizeKey(vehicle.name)].filter(Boolean).forEach((key) => {
+      state.settings.vehicleIconShapes[key] = shape;
+    });
+  }
+
+  function refreshVehicleIconShapeSettings() {
+    const map = {};
+    (state.vehicles || []).forEach((vehicle) => {
+      const shape = normalizeVehicleIconShape(vehicle.iconShape);
+      vehicle.iconShape = shape;
+      [vehicle.cloudId, vehicle.id, normalizeKey(vehicle.name)].filter(Boolean).forEach((key) => { map[key] = shape; });
+    });
+    state.settings.vehicleIconShapes = map;
+  }
+
   function garageNumberKey(value, decimals = 2) {
     const normalized = parseCzNumber(value);
     if (!Number.isFinite(normalized)) return '';
@@ -14199,6 +14240,7 @@
       fallbackVehicle = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name: 'Fuelio import', plate: '', fuelType: '', odometer: '', purchaseDate: '', purchasePrice: '', purchaseOdometer: '', ownershipStatus: 'owned', saleDate: '', salePrice: '', saleOdometer: '', technicalInspectionUntil: '', insuranceUntil: '', nextServiceKm: '', nextServiceDate: '', iconColor: 'blue', note: '' };
       state.vehicles.push(fallbackVehicle);
       rememberVehicleIconColor(fallbackVehicle);
+      rememberVehicleIconShape(fallbackVehicle);
       vehicleByName.set(normalizeKey(fallbackVehicle.name), fallbackVehicle);
     }
 
@@ -14213,6 +14255,7 @@
         vehicle = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), name: row.vehicleName, plate: '', fuelType: '', odometer: row.odometer || '', purchaseDate: '', purchasePrice: '', purchaseOdometer: '', ownershipStatus: 'owned', saleDate: '', salePrice: '', saleOdometer: '', technicalInspectionUntil: '', insuranceUntil: '', nextServiceKm: '', nextServiceDate: '', iconColor: 'blue', note: '' };
         state.vehicles.push(vehicle);
         rememberVehicleIconColor(vehicle);
+        rememberVehicleIconShape(vehicle);
         vehicleByName.set(normalizeKey(row.vehicleName), vehicle);
         importedIds.vehicles.push(vehicle.id);
       }
@@ -14285,6 +14328,7 @@
     vehicle.updatedAt = new Date().toISOString();
     applyVehicleTechnicalFields(vehicle, data);
     rememberVehicleIconColor(vehicle);
+    rememberVehicleIconShape(vehicle);
     touchState();
     saveState();
     render();
@@ -15151,7 +15195,7 @@
         nextServiceKm: keepExistingGarageValue(vehicle.next_service_odometer, existing.nextServiceKm),
         nextServiceDate: keepExistingGarageValue(vehicle.next_service_date, existing.nextServiceDate),
         iconColor: normalizeVehicleIconColor(existing.iconColor || vehicleIconColorFromSettings({ cloudId: vehicle.id, name: vehicle.name })),
-        iconShape: normalizeVehicleIconShape(existing.iconShape),
+        iconShape: normalizeVehicleIconShape(existing.iconShape || vehicleIconShapeFromSettings({ cloudId: vehicle.id, name: vehicle.name })),
         note: keepExistingGarageValue(vehicle.note, existing.note),
         technicalSpecs: keepExistingGarageObject(vehicle.technical_specs, existing.technicalSpecs)
       };
@@ -15162,6 +15206,7 @@
     const localVehicles = state.vehicles.filter((vehicle) => !vehicle.cloudId);
     state.vehicles = [...localVehicles, ...cloudVehicles];
     refreshVehicleIconColorSettings();
+    refreshVehicleIconShapeSettings();
 
     const localFuel = state.fuel.filter((item) => !item.cloudId);
     state.fuel = [
@@ -15238,6 +15283,7 @@
         if (cloudVehicle?.id) {
           vehicle.cloudId = cloudVehicle.id;
           rememberVehicleIconColor(vehicle);
+          rememberVehicleIconShape(vehicle);
           vehicles += 1;
         }
         continue;
@@ -15260,6 +15306,7 @@
       }
     }
     refreshVehicleIconColorSettings();
+    refreshVehicleIconShapeSettings();
     touchState();
     saveState();
     if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
@@ -15278,6 +15325,7 @@
         if (cloudVehicle?.id) {
           vehicle.cloudId = cloudVehicle.id;
           rememberVehicleIconColor(vehicle);
+          rememberVehicleIconShape(vehicle);
           vehicles += 1;
         }
         continue;
@@ -15300,6 +15348,7 @@
       }
     }
     refreshVehicleIconColorSettings();
+    refreshVehicleIconShapeSettings();
     touchState();
     saveState();
     if (cloudReady()) await cloudSaveHouseholdUiSettings(false);
@@ -15591,6 +15640,7 @@
         applyVehicleTechnicalFields(vehicle, data);
         state.vehicles.push(vehicle);
         rememberVehicleIconColor(vehicle);
+        rememberVehicleIconShape(vehicle);
         garageVehicleId = vehicle.id;
         garageCalcVehicleId = vehicle.id;
         garageTripCalcResult = null;
@@ -18515,6 +18565,7 @@
       // z předchozího uživatele.
       vehicleServicePlans: {},
       vehicleIconColors: {},
+      vehicleIconShapes: {},
       bottomNavIds: normalizeBottomNavIds(state.settings?.bottomNavIds || DEFAULT_BOTTOM_NAV_IDS, state.enabledModules)
     };
     state.enabledModules = normalizeModuleList(state.enabledModules?.length ? state.enabledModules : MANAGED_MODULE_IDS);
@@ -18715,6 +18766,12 @@
         vehicle.iconColor = normalizeVehicleIconColor(vehicle.iconColor || vehicleIconColorFromSettings(vehicle));
       });
     }
+    if (layout.vehicleIconShapes && typeof layout.vehicleIconShapes === 'object') {
+      state.settings.vehicleIconShapes = normalizeVehicleIconShapeMap(layout.vehicleIconShapes);
+      (state.vehicles || []).forEach((vehicle) => {
+        vehicle.iconShape = normalizeVehicleIconShape(vehicle.iconShape || vehicleIconShapeFromSettings(vehicle));
+      });
+    }
     if (layout.vehicleServicePlans && typeof layout.vehicleServicePlans === 'object') {
       state.settings.vehicleServicePlans = normalizeVehicleServicePlanMap(layout.vehicleServicePlans);
     }
@@ -18807,6 +18864,7 @@
         widgets: normalizeDashboardWidgetIds(state.settings?.dashboardWidgets),
         heroItems: normalizeHomeHeroIds(state.settings?.homeHeroItems),
         vehicleIconColors: normalizeVehicleIconColorMap(state.settings?.vehicleIconColors),
+        vehicleIconShapes: normalizeVehicleIconShapeMap(state.settings?.vehicleIconShapes),
         vehicleServicePlans: normalizeVehicleServicePlanMap(state.settings?.vehicleServicePlans),
         visualSettings: getVisualSettingsSnapshot(),
         profileUiSettings: getProfileUiSettingsSnapshot(),
