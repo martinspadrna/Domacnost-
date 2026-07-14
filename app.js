@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_449';
-  const APP_BUILD = 449;
+  const APP_VERSION = 'Domácnost+ v.0.1_451';
+  const APP_BUILD = 451;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -1906,6 +1906,7 @@
       const baseVehicle = {
         technicalInspectionUntil: '',
         insuranceUntil: '',
+        insuranceContractId: '',
         serviceIntervalKm: '',
         nextServiceKm: '',
         nextServiceDate: '',
@@ -4296,51 +4297,101 @@
     `;
   }
 
+  function hdoWindowAfter(date) {
+    const next = getHdoModule().findNextHdoWindow(date);
+    return next ? { start: next.item.start, end: next.item.end } : null;
+  }
+
+  function hdoTimeToDate(base, time) {
+    const [h, m] = String(time || '').split(':').map(Number);
+    if (!Number.isFinite(h)) return null;
+    const date = new Date(base);
+    date.setHours(h, Number.isFinite(m) ? m : 0, 0, 0);
+    return date;
+  }
+
   function computeHomeTodayBadge(id, ctx) {
     switch (id) {
-      case 'hdo':
+      case 'hdo': {
+        const hdo = ctx.hdo;
+        if (hdo.active) {
+          const endDate = hdo.activeEnd ? hdoTimeToDate(now, hdo.activeEnd) : null;
+          const following = endDate ? hdoWindowAfter(endDate) : null;
+          return {
+            label: 'Nízký tarif',
+            value: hdo.activeEnd ? `do ${hdo.activeEnd}` : (hdo.label || 'aktivní'),
+            meta: following ? `další od ${following.start}` : '',
+            tone: 'good',
+            overview: 'hdo'
+          };
+        }
+        const startDate = hdo.nextEnd ? hdoTimeToDate(now, hdo.nextEnd) : null;
+        const following = startDate ? hdoWindowAfter(startDate) : null;
         return {
-          label: ctx.hdo.active ? 'Nízký tarif' : 'HDO',
-          value: ctx.hdo.active ? (ctx.hdo.activeEnd ? `do ${ctx.hdo.activeEnd}` : (ctx.hdo.label || 'aktivní')) : (ctx.hdo.nextStart ? `od ${ctx.hdo.nextStart}` : 'nenastaveno'),
+          label: 'HDO',
+          value: hdo.nextStart ? (hdo.nextEnd ? `${hdo.nextStart}–${hdo.nextEnd}` : `od ${hdo.nextStart}`) : 'nenastaveno',
+          meta: following ? `další ${following.start}–${following.end}` : '',
           tone: 'good',
           overview: 'hdo'
         };
+      }
       case 'waste': {
         const next = ctx.wasteSoon[0] || ctx.wasteNext;
+        const upcoming = ctx.wasteSoon[1] || null;
         return {
           label: `Svoz${next ? ` · ${next.type || ''}` : ''}`,
           value: next ? dueBadge(next.days) : 'nic naplánováno',
+          meta: upcoming ? `další ${formatDate(upcoming.date)}${upcoming.type ? ` · ${upcoming.type}` : ''}` : '',
           tone: 'warn',
           overview: 'waste'
         };
       }
       case 'event': {
-        const nextEvent = ctx.todayEvents[0] || ctx.upcomingEvents[0];
-        return { label: 'Událost', value: nextEvent ? nextEvent.title : 'žádná', tone: '', nav: 'calendar', tab: 'overview' };
+        const list = ctx.todayEvents.length ? ctx.todayEvents : ctx.upcomingEvents;
+        const nextEvent = list[0];
+        const following = list[1];
+        return {
+          label: 'Událost',
+          value: nextEvent ? nextEvent.title : 'žádná',
+          meta: following ? `další: ${following.title}` : '',
+          tone: '',
+          nav: 'calendar',
+          tab: 'overview'
+        };
       }
       case 'shopping': {
         const count = ctx.openShopping.length;
-        return { label: 'Nákupy', value: count ? `${count} položek` : 'hotovo', tone: count ? 'warn' : 'good', overview: 'shopping' };
+        const names = ctx.openShopping.slice(0, 3).map((item) => item.name).filter(Boolean).join(' · ');
+        return { label: 'Nákupy', value: count ? `${count} položek` : 'hotovo', meta: names, tone: count ? 'warn' : 'good', overview: 'shopping' };
       }
       case 'garage': {
         const alert = (ctx.vehicleAlerts || [])[0];
-        return { label: 'Garáž', value: alert ? alert.title : 'v pořádku', tone: alert ? 'warn' : 'good', overview: 'garage' };
+        const vehicles = state.vehicles.filter(isVehicleOwned);
+        const cycled = homeCycleItem(vehicles, 20);
+        const meta = cycled ? `${cycled.name || 'Vozidlo'} · ${Number(cycled.odometer || 0).toLocaleString('cs-CZ')} km` : '';
+        return { label: 'Garáž', value: alert ? alert.title : 'v pořádku', meta, tone: alert ? 'warn' : 'good', overview: 'garage' };
       }
       case 'contracts': {
         const contract = (ctx.urgentContracts || [])[0];
+        const next = (ctx.urgentContracts || [])[1];
         return {
           label: 'Smlouvy',
           value: contract ? `${contract.name} · ${dueBadge(contract.days)}` : 'v pořádku',
+          meta: next ? `další: ${next.name} · ${dueBadge(next.days)}` : '',
           tone: contract ? (contract.days < 0 ? 'bad' : 'warn') : 'good',
           overview: 'contracts'
         };
       }
       case 'warranties': {
-        const warranty = sortedWarranties().find((item) => !['archived', 'done'].includes(item.status));
+        const list = sortedWarranties().filter((item) => !['archived', 'done'].includes(item.status));
+        const warranty = list[0];
+        const next = list[1];
         const days = warranty ? daysUntil(warranty.warrantyUntil) : null;
+        const nextDays = next ? daysUntil(next.warrantyUntil) : null;
         return {
           label: 'Záruky',
           value: warranty ? `${warranty.name || warranty.itemName || 'Záruka'} · ${days === null ? 'bez data' : dueBadge(days)}` : 'žádná záruka',
+          meta: next ? `další: ${next.name || next.itemName || 'Záruka'} · ${nextDays === null ? 'bez data' : dueBadge(nextDays)}` : '',
           tone: days !== null && days < 0 ? 'bad' : days !== null && days <= 30 ? 'warn' : 'good',
           nav: 'warranties',
           tab: ''
@@ -4348,8 +4399,15 @@
       }
       case 'readings': {
         const meters = readingsMeters();
-        const due = meters.filter((meter) => !readingMeterHasCompleteMonthEntry(meter)).length;
-        return { label: 'Odečty', value: due ? `${due} čeká` : 'hotovo', tone: due ? 'warn' : 'good', nav: 'readings', tab: 'entry' };
+        const dueMeters = meters.filter((meter) => !readingMeterHasCompleteMonthEntry(meter));
+        return {
+          label: 'Odečty',
+          value: dueMeters.length ? `${dueMeters.length} čeká` : 'hotovo',
+          meta: dueMeters.length ? dueMeters.slice(0, 3).map((meter) => meter.name).filter(Boolean).join(' · ') : '',
+          tone: dueMeters.length ? 'warn' : 'good',
+          nav: 'readings',
+          tab: 'entry'
+        };
       }
       case 'subscriptions': {
         // Panel na Domů ukazuje jen AKTUÁLNÍ měsíc (row.debt, který v sobě
@@ -4366,7 +4424,15 @@
           .sort((a, b) => b.debt - a.debt || String(a.person?.name || '').localeCompare(String(b.person?.name || ''), 'cs'));
         const currentDebt = homeCycleItem(debtRows, 45);
         if (currentDebt) {
-          return { label: currentDebt.person?.name || 'Předplatné', value: formatCurrency(currentDebt.debt), tone: 'warn', nav: 'subscriptions', tab: 'overview' };
+          const rest = debtRows.length - 1;
+          return {
+            label: currentDebt.person?.name || 'Předplatné',
+            value: formatCurrency(currentDebt.debt),
+            meta: rest > 0 ? `+ ${rest} ${rest === 1 ? 'další dluží' : 'dalších dluží'} · celkem ${formatCurrency(debtRows.reduce((sum, row) => sum + row.debt, 0))}` : '',
+            tone: 'warn',
+            nav: 'subscriptions',
+            tab: 'overview'
+          };
         }
         return { label: 'Předplatné', value: summary.expectedReturn ? 'srovnáno' : 'bez sdílení', tone: summary.expectedReturn ? 'good' : '', nav: 'subscriptions', tab: 'overview' };
       }
@@ -4375,23 +4441,48 @@
         const pool = pools[0];
         if (!pool) return { label: 'Bazén', value: 'nenastaveno', tone: '', nav: 'pool', tab: 'add' };
         const dose = getPoolModule().poolPhDose(pool);
+        const latest = getPoolModule().latestPoolMeasurement(pool);
+        const meta = latest ? `naposledy ${formatDate(latest.date)}${latest.waterTempC !== '' && latest.waterTempC !== undefined ? ` · voda ${latest.waterTempC} °C` : ''}` : '';
         return {
           label: 'Bazén',
           value: dose.status === 'ok' ? 'pH OK' : dose.status === 'missing' ? 'doplň pH' : dose.label,
+          meta,
           tone: dose.status === 'ok' ? 'good' : dose.status === 'missing' ? '' : 'warn',
           nav: 'pool',
           tab: ''
         };
       }
       case 'vape': {
-        const count = Array.isArray(state.vape?.items) ? state.vape.items.length : 0;
-        return { label: 'Vape', value: `${count} položek`, tone: '', nav: 'vape', tab: '' };
+        const items = Array.isArray(state.vape?.items) ? state.vape.items : [];
+        const count = items.length;
+        const total = items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
+        return { label: 'Vape', value: `${count} položek`, meta: total > 0 ? `celkem ${formatCurrency(total)}` : '', tone: '', nav: 'vape', tab: '' };
       }
-      case 'polishHolidays':
-        return { label: 'Svátky PL', value: polishShopHeroMetric(), tone: '', nav: 'polishHolidays', tab: '' };
+      case 'polishHolidays': {
+        const next = nextPolishShopHomeEntry();
+        const following = polishShopCalendarAround(new Date().getFullYear())
+          .filter((entry) => entry.date > (next?.date || todayISO()) && !isPolishShopSundayEntry(entry) && ['closed', 'limited'].includes(entry.status))
+          .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+        return {
+          label: 'Svátky PL',
+          value: polishShopHeroMetric(),
+          meta: following ? `další: ${formatDate(following.date)} · ${following.name}` : '',
+          tone: '',
+          nav: 'polishHolidays',
+          tab: ''
+        };
+      }
       case 'tasks': {
-        const count = (ctx.openTasks || []).length;
-        return { label: 'Úkoly', value: count ? `${count} otevřených` : 'hotovo', tone: count ? 'warn' : 'good', overview: 'tasks' };
+        const list = ctx.openTasks || [];
+        const count = list.length;
+        const next = list[0];
+        return {
+          label: 'Úkoly',
+          value: count ? `${count} otevřených` : 'hotovo',
+          meta: next ? `${next.title}${next.due ? ` · ${formatDate(next.due)}` : ''}` : '',
+          tone: count ? 'warn' : 'good',
+          overview: 'tasks'
+        };
       }
       default:
         return null;
@@ -4413,6 +4504,7 @@
           <button class="home-today-card" type="button" ${homeActionAttrs(card)}>
             <span class="home-today-label home-today-label-${card.tone || 'neutral'}">${escapeHtml(card.label)}</span>
             <span class="home-today-value">${escapeHtml(card.value)}</span>
+            ${card.meta ? `<span class="home-today-meta">${escapeHtml(card.meta)}</span>` : ''}
           </button>
         `).join('')}
       </div>
@@ -4660,9 +4752,10 @@
   function buildHomeSoonItems(ctx) {
     // Hledání jede přes buildHomeAttentionItems napříč všemi moduly (kalendář,
     // úkoly, smlouvy, auto, záruky, odečty, svátky PL...). Do DOM se připraví
-    // až 8 nejnaléhavějších (2 sloupce × 4 řádky) - na mobilu jich CSS ukáže
-    // jen prvních 4 (.home-timeline-list media query), na širším PC je vidět
-    // všech 8, ať widget nezabírá zbytečně místo na malé obrazovce.
+    // až 8 nejnaléhavějších (2 sloupce × 4 řádky na mobilu, 4 sloupce × 2 řádky
+    // na PC) - na mobilu jich CSS ukáže jen prvních 4 (.home-timeline-list
+    // media query), na širším PC je vidět všech 8, ať widget nezabírá
+    // zbytečně místo na malé obrazovce.
     const excludedOverviews = new Set(['hdo', 'waste', 'pool', 'finance', 'shopping']);
     return buildHomeAttentionItems(ctx)
       .filter((item) => !excludedOverviews.has(item.overview))
@@ -5875,17 +5968,18 @@
     state.vehicles.filter(isVehicleOwned).forEach((vehicle) => {
       [
         { key: 'technicalInspectionUntil', label: 'STK' },
-        { key: 'insuranceUntil', label: 'Pojistka' },
+        { key: 'insuranceUntil', label: 'Pojistka', value: vehicleInsuranceUntilEffective(vehicle) },
         { key: 'nextServiceDate', label: 'Servis' }
       ].forEach((item) => {
-        const days = daysUntil(vehicle[item.key]);
+        const dateValue = item.value !== undefined ? item.value : vehicle[item.key];
+        const days = daysUntil(dateValue);
         if (days !== null && days <= 45) {
           alerts.push({
             days,
             vehicleId: vehicle.id,
             iconColor: vehicle.iconColor,
             title: `${item.label}: ${vehicle.name}`,
-            meta: `${item.label} do ${formatDate(vehicle[item.key])}`
+            meta: `${item.label} do ${formatDate(dateValue)}`
           });
         }
       });
@@ -8172,6 +8266,7 @@
       const normalized = {
         technicalInspectionUntil: '',
         insuranceUntil: '',
+        insuranceContractId: '',
         nextServiceKm: '',
         nextServiceDate: '',
         purchaseDate: '',
@@ -10682,7 +10777,7 @@
     const merged = { ...fallback, ...primary };
     const preserveKeys = [
       'name','plate','fuelType','odometer','purchaseDate','purchasePrice','purchaseOdometer','ownershipStatus','saleDate','salePrice','saleOdometer',
-      'technicalInspectionUntil','insuranceUntil','nextServiceKm','nextServiceDate','iconColor','note',
+      'technicalInspectionUntil','insuranceUntil','insuranceContractId','nextServiceKm','nextServiceDate','iconColor','note',
       ...VEHICLE_TECHNICAL_FIELD_NAMES
     ];
     preserveKeys.forEach((key) => {
@@ -11941,6 +12036,33 @@
     `;
   }
 
+  function resolveVehicleInsuranceContract(vehicle) {
+    const ref = normalizeText(vehicle?.insuranceContractId);
+    if (!ref) return null;
+    return state.contracts.find((contract) => contract.id === ref || contract.cloudId === ref) || null;
+  }
+
+  function resolveVehicleInsuranceContractRef(selectedId) {
+    const id = normalizeText(selectedId);
+    if (!id) return '';
+    const contract = state.contracts.find((item) => item.id === id);
+    return contract ? (contract.cloudId || contract.id) : '';
+  }
+
+  function vehicleInsuranceUntilEffective(vehicle) {
+    const contract = resolveVehicleInsuranceContract(vehicle);
+    return contract?.validTo || vehicle.insuranceUntil;
+  }
+
+  function vehicleInsuranceContractOptions() {
+    const carInsuranceContracts = state.contracts.filter((contract) => contract.type === 'car_insurance');
+    const list = carInsuranceContracts.length ? carInsuranceContracts : state.contracts;
+    return [['', '— žádná (zadat datum ručně) —'], ...list.map((contract) => [
+      contract.id,
+      `${contract.name}${contract.provider ? ` · ${contract.provider}` : ''}${contract.validTo ? ` · do ${formatDate(contract.validTo)}` : ''}`
+    ])];
+  }
+
   function renderVehicleDetail(vehicle) {
     const fuelRows = sortFuelRows(state.fuel.filter((item) => item.vehicleId === vehicle.id));
     const serviceRows = state.services.filter((item) => item.vehicleId === vehicle.id).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
@@ -11950,7 +12072,8 @@
     const latestService = serviceRows[0] || null;
     const serviceStatus = getServiceStatus(vehicle, latestService, latestFuel);
     const stk = dateStatus(vehicle.technicalInspectionUntil, 60);
-    const insurance = dateStatus(vehicle.insuranceUntil, 45);
+    const linkedInsuranceContract = resolveVehicleInsuranceContract(vehicle);
+    const insurance = dateStatus(vehicleInsuranceUntilEffective(vehicle), 45);
     const costPerKm = stats.totalKm > 0 ? stats.fuelCost / stats.totalKm : null;
     const totalCost = stats.fuelCost + stats.serviceCost;
     const costSummary = garageVehicleCostSummary(vehicle, analytics);
@@ -11975,7 +12098,7 @@
       </div>
       <div class="garage-status-grid compact-status-grid">
         ${renderDueCard('STK', stk, 'Datum STK zatím není nastavené.')}
-        ${renderDueCard('Pojistka', insurance, 'Datum konce pojistky zatím není nastavené.')}
+        ${renderDueCard(linkedInsuranceContract ? 'Pojistka · smlouva' : 'Pojistka', insurance, 'Datum konce pojistky zatím není nastavené.')}
         ${renderDueCard('Servis', serviceStatus, 'Servisní interval zatím není nastavený.')}
       </div>
       <div class="grid two detail-summary-grid">
@@ -12015,11 +12138,13 @@
             ${field('Km při prodeji', 'saleOdometer', 'number', 'volitelné', false, vehicle.saleOdometer || '')}
             ${field('STK do', 'technicalInspectionUntil', 'date', '', false, vehicle.technicalInspectionUntil || '')}
             ${field('Pojistka do', 'insuranceUntil', 'date', '', false, vehicle.insuranceUntil || '')}
+            ${selectField('Smlouva pojištění (povinné ručení)', 'insuranceContractId', vehicleInsuranceContractOptions(), linkedInsuranceContract?.id || '')}
             ${field('Další servis při km', 'nextServiceKm', 'number', 'např. 150000', false, vehicle.nextServiceKm || '')}
             ${field('Další servis do data', 'nextServiceDate', 'date', '', false, vehicle.nextServiceDate || '')}
             ${selectField('Barva ikonky auta', 'iconColor', vehicleIconColorOptions(), normalizeVehicleIconColor(vehicle.iconColor))}
             ${field('Poznámka', 'note', 'text', 'pneu, rozměr, VIN...', false, vehicle.note || '')}
           </div>
+          ${linkedInsuranceContract ? `<div class="inline-note compact-note">Datum konce pojistky se bere ze smlouvy „${escapeHtml(linkedInsuranceContract.name)}“ (${escapeHtml(formatDate(linkedInsuranceContract.validTo))}) - pole „Pojistka do“ výše se pak ignoruje.</div>` : ''}
           ${renderVehicleTechnicalFields(vehicle)}
           <div class="form-actions"><button class="primary-btn" type="submit">Uložit údaje auta</button></div>
         </form>
@@ -14077,6 +14202,7 @@
     vehicle.saleOdometer = normalizeText(data.saleOdometer);
     vehicle.technicalInspectionUntil = normalizeText(data.technicalInspectionUntil);
     vehicle.insuranceUntil = normalizeText(data.insuranceUntil);
+    vehicle.insuranceContractId = resolveVehicleInsuranceContractRef(data.insuranceContractId);
     vehicle.nextServiceKm = normalizeText(data.nextServiceKm);
     vehicle.nextServiceDate = normalizeText(data.nextServiceDate);
     vehicle.iconColor = normalizeVehicleIconColor(data.iconColor || vehicle.iconColor);
@@ -14657,7 +14783,7 @@
 
   function isGarageVehicleExtendedSchemaError(error) {
     const message = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
-    return error?.code === 'PGRST204' || ((message.includes('schema cache') || message.includes('could not find')) && /(purchase_|sale_|ownership_status|technical_specs|ownership status|purchase date|sale date)/.test(message));
+    return error?.code === 'PGRST204' || ((message.includes('schema cache') || message.includes('could not find')) && /(purchase_|sale_|ownership_status|technical_specs|ownership status|purchase date|sale date|insurance_contract)/.test(message));
   }
 
   function markGarageVehicleExtendedSchemaPending() {
@@ -14711,6 +14837,11 @@
       assignGaragePayloadField(payload, 'sale_price', vehicle.salePrice, { type: 'number', updateMode });
       assignGaragePayloadField(payload, 'sale_odometer', vehicle.saleOdometer, { type: 'number', updateMode });
       if (!updateMode || garageHasTechnicalSpecs(vehicle)) payload.technical_specs = normalizeVehicleTechnicalSpecs(vehicle);
+      // Odkaz na smlouvu ("povinné ručení") se do cloudu posílá jen jako
+      // cloud id smlouvy (aby dávalo smysl i na jiném zařízení) - dokud
+      // smlouva sama ještě není v cloudu, pole se prostě přeskočí.
+      const insuranceContract = resolveVehicleInsuranceContract(vehicle);
+      assignGaragePayloadField(payload, 'insurance_contract_id', insuranceContract?.cloudId || '', { updateMode });
     }
     return payload;
   }
@@ -14941,6 +15072,7 @@
         saleOdometer: keepExistingGarageValue(vehicle.sale_odometer, existing.saleOdometer),
         technicalInspectionUntil: keepExistingGarageValue(vehicle.stk_until, existing.technicalInspectionUntil),
         insuranceUntil: keepExistingGarageValue(vehicle.insurance_until, existing.insuranceUntil),
+        insuranceContractId: keepExistingGarageValue(vehicle.insurance_contract_id, existing.insuranceContractId),
         nextServiceKm: keepExistingGarageValue(vehicle.next_service_odometer, existing.nextServiceKm),
         nextServiceDate: keepExistingGarageValue(vehicle.next_service_date, existing.nextServiceDate),
         iconColor: normalizeVehicleIconColor(existing.iconColor || vehicleIconColorFromSettings({ cloudId: vehicle.id, name: vehicle.name })),

@@ -193,6 +193,7 @@
         message: `Další nízký tarif: ${next.item.label} za ${humanDuration(next.diffMinutes)} (${hdoWindowTimeLabel(next.item)}).`,
         nextLabel: next.item.label,
         nextStart: next.item.start,
+        nextEnd: next.item.end,
         nextInMinutes: next.diffMinutes,
         nextInLabel: `za ${humanDuration(next.diffMinutes)}`
       };

@@ -15730,6 +15730,15 @@ body.home-active {
   text-overflow: ellipsis;
 }
 
+.home-today-meta {
+  display: none;
+  color: var(--muted);
+  font-size: .74rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .home-widget-kicker {
   font-size: .72rem;
   font-weight: 700;
@@ -15796,7 +15805,7 @@ body.home-active {
 /* Domacnost+ v0.1_440 - Nadcházející: JS teď připraví až 8 položek (viz
    buildHomeSoonItems), na mobilu se schová 5.-8., aby jich bylo pořád
    nejvýš 4 (2×2); na PC (od 900px, viz media blok níž) se ukáže všech
-   8 (2×4). */
+   8 (4×2). */
 @media (max-width: 899px) {
   .home-timeline-list > :nth-child(n + 5) {
     display: none;
@@ -16191,6 +16200,11 @@ body:not(.home-active) .app-frame main .pwa-diagnostic-item {
     font-size: 1.4rem;
   }
 
+  .home-today-meta {
+    display: block;
+    font-size: .82rem;
+  }
+
   /* Pocasi na PC sedi ve stejnem gridovem radku jako "Dnesni prehled" (viz
      .home-dash grid-template-columns:1fr 1fr + align-items:start vyse) -
      align-self:stretch ho roztahne na presne stejnou vysku, aat uz je
@@ -16289,6 +16303,11 @@ body:not(.home-active) .app-frame main .pwa-diagnostic-item {
     font-style: normal;
   }
 
+  /* Nadchazejici na PC: 4 sloupce x 2 rady mista 2x4 - vic mista na sirku. */
+  .home-timeline-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   /* Nadchazejici - o 20 % nizsi nez v438 (padding/ikona/pismo dolu). */
   .home-timeline-row {
     padding: 27px 16px;
@@ -16314,7 +16333,7 @@ body:not(.home-active) .app-frame main .pwa-diagnostic-item {
     font-size: 1.2rem;
   }
 
-  /* Nadchazejici na PC: az 8 polozek (2×4) - JS pripravi vsech 8, mobilni
+  /* Nadchazejici na PC: az 8 polozek (4×2) - JS pripravi vsech 8, mobilni
      schovavani 5.-8. polozky (viz base .home-timeline-list pravidlo) tady
      neplati. */
 

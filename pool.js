@@ -717,6 +717,7 @@
       poolVolumeM3,
       formatPoolVolume: formatVolume,
       poolPhDose,
+      latestPoolMeasurement,
       renderPool,
       savePoolFromForm,
       addPool,
