@@ -1026,6 +1026,15 @@ async function run() {
       expression: `document.querySelector('[data-nav="finance"]')?.click()`
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    // Běžný klik na modul v dolní liště teď vždy resetuje zapamatovanou
+    // záložku na výchozí (viz app.js click handler pro [data-nav]) - do
+    // Půjček je proto potřeba přepnout výslovným kliknutím na záložku,
+    // stejně jako se to řeší výš u Bazénu/"Nové měření". Spoléhat na
+    // předvyplněné moduleTabs.finance='loans' v localStorage už nestačí.
+    await page.send('Runtime.evaluate', {
+      expression: `document.querySelector('[data-action="set-section-tab"][data-area="finance"][data-tab="loans"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
     const financeCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
