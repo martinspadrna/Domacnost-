@@ -16430,13 +16430,15 @@ html.pwa-standalone body {
    obsah pod lištou (standardní vzor ukotvené patičky), na konci scrollu je
    lišta na svém místě v toku ZA posledním řádkem, takže nikdy nic trvale
    neschovává. Průšvih z buildu 452 ("přelepený poslední řádek") způsobovalo
-   poloprůhledné pozadí lišty - obsah pod ní prosvítal a vypadal uříznutě. */
+   poloprůhledné pozadí lišty - obsah pod ní prosvítal a vypadal uříznutě.
+   POZOR: var(--panel) je v tmavém režimu rgba s alfa 0.055 (skoro čirá),
+   proto pozadí MUSÍ být --bg2 (plná barva povrchu v obou režimech). */
 .overview-panel .overview-actions {
   position: sticky !important;
   bottom: 0;
   z-index: 3;
   margin: 14px -1px -1px;
   padding: 12px 1px max(12px, env(safe-area-inset-bottom, 0px)) !important;
-  background: var(--panel);
+  background: var(--bg2, #11161f);
   border-top: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
 }
