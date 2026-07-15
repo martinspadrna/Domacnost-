@@ -151,6 +151,8 @@ if (app) {
   expectAbsent(app, 'google-calendar-start', 'app.js: Google OAuth action handlery jsou odstranene.');
   expect(app, 'const upcomingEvents = calendarPanelEvents.slice(0, 8);', 'app.js: Home Nadchazejici pripravi 8 polozek pro desktop 4x2.');
   expect(app, ".slice(0, 8)\n      .forEach((event) => add({\n        icon: '📅'", 'app.js: Home Nadchazejici doplnuje az 8 kalendarovych udalosti, ne jen 6.');
+  expect(app, 'function compareHomeAttentionItems', 'app.js: Home Nadchazejici ma vlastni comparator pro casove razeni.');
+  expect(app, 'sortAt: calendarEventStartMs(event)', 'app.js: kalendarove udalosti na Home se radi podle skutecneho zacatku.');
   expect(styles, 'grid-template-columns: repeat(4, minmax(0, 1fr));', 'styles.css: Home Nadchazejici ma desktop 4 sloupce.');
   expect(app, 'function isHorizontallyScrollableTarget', 'app.js: swipe guard umí poznat horizontálně scrollovatelný blok.');
   expect(app, 'const NAVIGATION_SWIPE_IGNORE_SELECTOR', 'app.js: swipe guard má centrální seznam chráněných oblastí.');

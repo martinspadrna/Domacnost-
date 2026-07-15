@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_460';
-  const APP_BUILD = 460;
+  const APP_VERSION = 'Domácnost+ v.0.1_461';
+  const APP_BUILD = 461;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -4828,7 +4828,8 @@
       nav: item.nav || '',
       tab: item.tab || '',
       overview: item.overview || item.nav || '',
-      rank: Number.isFinite(item.rank) ? item.rank : 5
+      rank: Number.isFinite(item.rank) ? item.rank : 5,
+      sortAt: Number.isFinite(item.sortAt) ? item.sortAt : null
     });
 
     (ctx.todayEvents || []).slice(0, 3).forEach((event) => {
@@ -4841,7 +4842,8 @@
         tone: running ? 'good' : '',
         nav: 'calendar',
         tab: 'overview',
-        rank: running ? 0 : 2
+        rank: running ? 0 : 2,
+        sortAt: calendarEventStartMs(event)
       });
     });
 
@@ -4860,7 +4862,8 @@
         tone: '',
         nav: 'calendar',
         tab: 'overview',
-        rank: 5
+        rank: 5,
+        sortAt: calendarEventStartMs(event)
       }));
 
     (ctx.openTasks || []).slice(0, 3).forEach((task) => {
@@ -5020,8 +5023,17 @@
 
     return rows
       .filter((item) => item.title)
-      .sort((a, b) => a.rank - b.rank || String(a.title).localeCompare(String(b.title), 'cs'))
+      .sort(compareHomeAttentionItems)
       .slice(0, 12);
+  }
+
+  function compareHomeAttentionItems(a, b) {
+    const rankDiff = a.rank - b.rank;
+    if (rankDiff) return rankDiff;
+    const aSortAt = Number.isFinite(a.sortAt) ? a.sortAt : Number.POSITIVE_INFINITY;
+    const bSortAt = Number.isFinite(b.sortAt) ? b.sortAt : Number.POSITIVE_INFINITY;
+    if (aSortAt !== bSortAt) return aSortAt - bSortAt;
+    return String(a.title).localeCompare(String(b.title), 'cs');
   }
 
   function buildHomePoolAttentionItem() {
