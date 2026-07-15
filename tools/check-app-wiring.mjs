@@ -143,6 +143,12 @@ if (app) {
   expect(calendar, 'function calendarSourceColorPicker', 'calendar.js: barva zdroje kalendare je vyber ze swatchu.');
   expect(calendar, 'calendarSourceDedupeKeys', 'calendar.js: zdroje kalendare se deduplikuji podle provider/url aliasu.');
   expect(styles, '.calendar-color-picker', 'styles.css: kalendar ma swatch vyber barvy zdroje.');
+  expect(calendar, 'function scheduleCalendarAutoSync', 'calendar.js: iCal auto-sync uz nema Google OAuth wrapper.');
+  expectAbsent(calendar, 'function googleCalendarStart', 'calendar.js: Google OAuth pripojeni je odstranene.');
+  expectAbsent(app, 'google-calendar-start', 'app.js: Google OAuth action handlery jsou odstranene.');
+  expect(app, 'const upcomingEvents = calendarPanelEvents.slice(0, 8);', 'app.js: Home Nadchazejici pripravi 8 polozek pro desktop 4x2.');
+  expect(app, ".slice(0, 8)\n      .forEach((event) => add({\n        icon: '📅'", 'app.js: Home Nadchazejici doplnuje az 8 kalendarovych udalosti, ne jen 6.');
+  expect(styles, 'grid-template-columns: repeat(4, minmax(0, 1fr));', 'styles.css: Home Nadchazejici ma desktop 4 sloupce.');
   expect(app, 'function isHorizontallyScrollableTarget', 'app.js: swipe guard umí poznat horizontálně scrollovatelný blok.');
   expect(app, 'const NAVIGATION_SWIPE_IGNORE_SELECTOR', 'app.js: swipe guard má centrální seznam chráněných oblastí.');
   expect(app, 'function isNavigationSwipeIgnoredTarget', 'app.js: navigační swipe má jednotný ignore helper.');

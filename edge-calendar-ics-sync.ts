@@ -1,12 +1,9 @@
-// Domácnost+ - ICS/iCal kalendář bez Google OAuth: uživatel v Google Kalendáři
-// (nebo jiné aplikaci) vezme "tajný" nebo "veřejný" iCal odkaz kalendáře, uloží
+// Domácnost+ - ICS/iCal kalendář bez dalšího přihlášení: uživatel v kalendářové aplikaci
+// vezme "tajný" nebo "veřejný" iCal odkaz kalendáře, uloží
 // ho jako zdroj (provider='ical', provider_calendar_id=URL) a tahle funkce ho
-// pravidelně stáhne a naparsuje - žádný token, který po týdnu (neověřená Google
-// OAuth aplikace) přestane fungovat.
+// pravidelně stáhne a naparsuje - žádný krátkodobý přihlašovací token.
 //
-// Samostatný soubor (bez importu z edge-shared-google-calendar.ts) - stejný
-// vzor jako reálně nasazená google-calendar-sync, ať se nespoléhá na
-// neověřené chování multi-file importu při deployi.
+// Samostatný soubor bez sdílených importů, ať deploy nezávisí na multi-file importu.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

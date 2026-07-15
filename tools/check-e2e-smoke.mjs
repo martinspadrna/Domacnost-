@@ -509,7 +509,8 @@ async function run() {
         const message = JSON.parse(event.data);
         if (message.method === 'Runtime.exceptionThrown') {
           const details = message.params?.exceptionDetails || {};
-          runtimeErrors.push(`${details.text || 'Runtime exception'}${details.url ? ` @ ${details.url}:${details.lineNumber || 0}` : ''}`);
+          const description = details.exception?.description || details.exception?.value || details.text || 'Runtime exception';
+          runtimeErrors.push(`${description}${details.url ? ` @ ${details.url}:${details.lineNumber || 0}` : ''}`);
         }
       } catch {}
     });

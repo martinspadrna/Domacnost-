@@ -1,17 +1,13 @@
 (function () {
   'use strict';
 
-  // Kalendář – ČÁST A + B (fáze B): render + měsíční mřížka + event/dashboard helpery +
+  // Kalendář: render + měsíční mřížka + event/dashboard helpery +
   // zdroje + CRUD událostí + cloud načtení (cloudLoadCalendar / cloudLoadCalendarSources)
-  // + Google OAuth/edge funkce (googleCalendarStart/Sync/ListCalendars/Disconnect,
-  //   invokeGoogleCalendarFunction, renderGoogleCalendarConnector, auto-sync).
+  // + ICS/iCal sync bez dalsiho prihlaseni.
   // Realtime sync mezi zařízeními ZŮSTÁVÁ v app.js (generický kanál, ne kalendářový kód);
-  // OAuth NÁVRAT (handleInitialAuthReturn) také zůstává v bootu app.js – volá modul přes wrappery.
   //   - cloudLoadCalendar / cloudLoadCalendarSources: state.X -> getState().X, aby časování
   //     zápisu (state.calendar/calendarCloud -> saveState) zůstalo IDENTICKÉ –
   //     realtime reload v app.js je volá a sync mezi zařízeními se nesmí rozbít.
-  //   - invokeGoogleCalendarFunction dostává HEAVY DEPS (cloudLoadHouseholds,
-  //     bootstrapCloudHousehold, resetLocalWorkspaceForCloudUser) – vynechaný dep = tichý pád syncu.
   function createCalendar(deps) {
     const getState = deps.getState || (() => ({}));
     const getNow = deps.getNow || (() => new Date());
@@ -46,20 +42,12 @@
     const getSupabaseClient = deps.getSupabaseClient || (() => null);
     const refreshCloudSession = deps.refreshCloudSession || (async () => null);
     const cloudReady = deps.cloudReady || (() => false);
-    // ČÁST B – Google OAuth + edge (heavy deps pro invokeGoogleCalendarFunction):
-    const cloudLoadHouseholds = deps.cloudLoadHouseholds || (async () => []);
-    const bootstrapCloudHousehold = deps.bootstrapCloudHousehold || (async () => null);
-    const resetLocalWorkspaceForCloudUser = deps.resetLocalWorkspaceForCloudUser || (() => {});
     const runWhenUiQuiet = deps.runWhenUiQuiet || ((cb) => setTimeout(cb, 0));
     const requestRender = deps.requestRender || render;
-    const getGoogleCalendarDetailsOpen = deps.getGoogleCalendarDetailsOpen || (() => false);
-    const APP_PUBLIC_URL = deps.APP_PUBLIC_URL || '';
-    const GOOGLE_CALENDAR_RECONNECT_FLAG = deps.GOOGLE_CALENDAR_RECONNECT_FLAG || 'domacnostPlus.googleCalendarReconnectAttempted';
-    const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = deps.GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG || 'domacnostPlus.googleCalendarCallbackAutoLoaded';
 
     const DEFAULT_CALENDAR_EVENT_MINUTES = deps.DEFAULT_CALENDAR_EVENT_MINUTES || 60;
     const APP_TIME_ZONE = deps.APP_TIME_ZONE || 'Europe/Prague';
-    const GOOGLE_CALENDAR_AUTO_SYNC_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+    const CALENDAR_AUTO_SYNC_MAX_AGE_MS = 2 * 60 * 60 * 1000;
     const CALENDAR_SOURCE_COLOR_OPTIONS = [
       ['#3b82f6', 'Modrá'],
       ['#8b5cf6', 'Fialová'],
@@ -72,8 +60,8 @@
       ['#64748b', 'Šedá']
     ];
 
-    let googleCalendarAutoSyncTimer = null;
-    let googleCalendarAutoSyncRunning = false;
+    let calendarAutoSyncTimer = null;
+    let calendarAutoSyncRunning = false;
 
     function getCalendarSources() {
       return Array.isArray(getState().calendarCloud?.sources) ? getState().calendarCloud.sources : [];
@@ -81,7 +69,7 @@
 
     function normalizeCalendarSourceProvider(provider = '') {
       const value = String(provider || '').toLowerCase();
-      if (['google', 'manual', 'family', 'work', 'ical', 'other'].includes(value)) return value;
+      if (['manual', 'family', 'work', 'ical', 'other'].includes(value)) return value;
       return 'manual';
     }
 
@@ -90,7 +78,6 @@
         manual: 'Ruční',
         family: 'Rodinný',
         work: 'Práce',
-        google: 'Google',
         ical: 'iCal',
         other: 'Jiný'
       };
@@ -98,7 +85,7 @@
     }
 
     function calendarSourceIcon(provider = '') {
-      const icons = { manual: '✍️', family: '👨‍👩‍👧', work: '🏭', google: 'G', ical: '📥', other: '📅' };
+      const icons = { manual: '✍️', family: '👨‍👩‍👧', work: '🏭', ical: '📥', other: '📅' };
       return icons[normalizeCalendarSourceProvider(provider)] || '📅';
     }
 
@@ -153,7 +140,7 @@
       add(normalized.id ? `id:${normalized.id}` : '');
       const provider = normalizeCalendarSourceProvider(normalized.provider);
       const providerCalendarId = normalizeCalendarUrl(normalized.providerCalendarId);
-      if (providerCalendarId && ['google', 'ical'].includes(provider)) add(`${provider}:${providerCalendarId}`);
+      if (providerCalendarId && provider === 'ical') add(`${provider}:${providerCalendarId}`);
       if (providerCalendarId) add(`url:${providerCalendarId}`);
       add(`${provider}:name:${calendarKey(normalized.name)}`);
       return keys;
@@ -167,7 +154,7 @@
         profileId: row.profile_id || row.profileId || '',
         name: row.name || 'Kalendář',
         provider: normalizeCalendarSourceProvider(row.provider),
-        providerCalendarId: row.provider_calendar_id || row.providerCalendarId || row.calendar_id || row.external_calendar_id || row.google_calendar_id || '',
+        providerCalendarId: row.provider_calendar_id || row.providerCalendarId || row.calendar_id || row.external_calendar_id || '',
         providerConnectionId: row.provider_connection_id || row.providerConnectionId || '',
         color: normalizeCalendarSourceColor(row.color),
         isEnabled: row.is_enabled !== undefined ? Boolean(row.is_enabled) : row.isEnabled !== false,
@@ -577,11 +564,10 @@
 
     function renderCalendarSourceList(sources = getCalendarSources()) {
       if (!sources.length) {
-        return renderEmptyCta({ icon: '📅', title: 'Zatím žádné zdroje', text: 'Přidej ruční domácí zdroj nebo připoj Google kalendář.', nav: 'calendar', tab: 'sources', label: 'Přidat zdroj' });
+        return renderEmptyCta({ icon: '📅', title: 'Zatím žádné zdroje', text: 'Přidej ruční domácí zdroj nebo sdílený ICS/iCal odkaz.', nav: 'calendar', tab: 'sources', label: 'Přidat zdroj' });
       }
       return `<details class="compact-edit-details calendar-source-list-details" data-details-key="calendar-source-list" ${getDetailsOpen('calendar-source-list') ? 'open' : ''}><summary><span>Aktivní zdroje</span><em>${sources.length} zdrojů</em></summary><div class="list compact-list calendar-source-list">${sources.map((source) => {
         const linkedEvents = (getState().calendar || []).filter((event) => String(event.sourceId || '') === String(source.id || source.cloudId || '')).length;
-        const google = normalizeCalendarSourceProvider(source.provider) === 'google';
         const ical = normalizeCalendarSourceProvider(source.provider) === 'ical';
         return `
           <div class="item calendar-source-item ${source.isEnabled === false ? 'muted-item' : ''}">
@@ -598,7 +584,6 @@
             </div>
             <div class="item-actions">
               <button class="ghost-btn" type="button" data-action="calendar-toggle-source" data-source-id="${escapeHtml(source.id || source.cloudId || '')}" data-enabled="${source.isEnabled === false ? 'true' : 'false'}">${source.isEnabled === false ? 'Zobrazit' : 'Skrýt'}</button>
-              ${google && getState().cloud?.householdId ? `<button class="ghost-btn" type="button" data-action="google-calendar-sync" data-source-id="${escapeHtml(source.cloudId || source.id || '')}">Sync</button>` : ''}
               ${ical && getState().cloud?.householdId ? `<button class="ghost-btn" type="button" data-action="ics-calendar-sync" data-source-id="${escapeHtml(source.cloudId || source.id || '')}">Sync</button>` : ''}
               <button class="danger-btn" type="button" data-action="calendar-delete-source" data-source-id="${escapeHtml(source.id || source.cloudId || '')}">Odebrat</button>
             </div>
@@ -630,7 +615,6 @@
       const monthGridHtml = renderCalendarMonthGrid(events, getCalendarViewMonth());
       const sourceListHtml = renderCalendarSourceList(sourceList);
       const pastListHtml = past.length ? renderEventList(past, true) : renderEmpty('Historie je zatím prázdná.');
-      const googleConnectorHtml = renderGoogleCalendarConnector(cloudReadyFlag, sourceList);
       return `
         ${renderSectionTabs('calendar', [
           { id: 'overview', label: 'Přehled', icon: '📅', count: todayEvents.length },
@@ -663,18 +647,17 @@
               <div><h2>Zdroje kalendáře</h2></div>
               <span class="badge ${cloudReadyFlag ? 'good' : ''}">${cloudReadyFlag ? 'cloud' : 'lokálně'}</span>
             </div>
-            ${googleConnectorHtml}
             <details class="compact-edit-details calendar-manual-source-details" data-details-key="calendar-add-source" ${getDetailsOpen('calendar-add-source') ? 'open' : ''}>
               <summary><span>Přidat ruční zdroj kalendáře</span><em>domácí / sdílený ICS/iCal odkaz</em></summary>
               <form data-form="add-calendar-source" class="compact-form">
                 <div class="form-grid two">
                   ${field('Název kalendáře', 'name', 'text', 'Rodina / Práce / Sdílený kalendář', true)}
                   ${selectField('Typ', 'provider', [['manual', 'Ruční domácí'], ['family', 'Rodinný'], ['work', 'Práce'], ['ical', 'ICS/iCal odkaz (sdílený kalendář)'], ['other', 'Jiný']])}
-                  ${field('ICS odkaz (jen typ „iCal“)', 'providerCalendarId', 'text', 'https://calendar.google.com/.../basic.ics')}
+                  ${field('ICS odkaz (jen typ „iCal“)', 'providerCalendarId', 'text', 'https://.../calendar.ics')}
                   ${calendarSourceColorPicker('#3b82f6')}
                   ${field('Poznámka', 'note', 'text', 'volitelné')}
                 </div>
-                <div class="inline-note compact-note">Typ „iCal“: vlož tajný/veřejný ICS odkaz kalendáře (Google Kalendář → Nastavení → Integrovat kalendář → tajná adresa v iCal formátu). Appka ho pravidelně sama stáhne tlačítkem „Sync“ u zdroje - bez Google přihlášení.</div>
+                <div class="inline-note compact-note">Typ „iCal“: vlož tajný/veřejný ICS odkaz kalendáře. Appka ho pravidelně sama stáhne tlačítkem „Sync“ u zdroje - bez dalšího přihlášení.</div>
                 <div class="form-actions"><button class="primary-btn" type="submit">Přidat zdroj</button></div>
               </form>
             </details>
@@ -683,7 +666,7 @@
 
           <section class="card calendar-panel panel-add">
             <div class="card-header">
-              <div><h2>Přidat událost</h2><p>Událost může být jen sdílená v domácnosti, bez Google kalendáře.</p></div>
+              <div><h2>Přidat událost</h2><p>Událost může být sdílená v domácnosti nebo doplněná z ICS/iCal zdrojů.</p></div>
               <span class="badge ${cloudCount ? 'good' : ''}">${cloudReadyFlag ? 'sdílené v domácnosti' : 'lokálně'}</span>
             </div>
             <form data-form="add-event">
@@ -775,8 +758,8 @@
       };
       touchState();
       saveState();
-      if (sources.some((source) => ['google', 'ical'].includes(normalizeCalendarSourceProvider(source.provider)))) {
-        scheduleGoogleCalendarAutoSync('sources-loaded', { delay: showMessage ? 1800 : 9000 });
+      if (sources.some((source) => normalizeCalendarSourceProvider(source.provider) === 'ical')) {
+        scheduleCalendarAutoSync('sources-loaded', { delay: showMessage ? 1800 : 9000 });
       }
       if (showMessage) {
         render();
@@ -873,9 +856,9 @@
         providerCalendarId,
         color: normalizeCalendarSourceColor(data.color),
         isEnabled: true,
-        // ical zdroj se (stejně jako google) rovnou synchronizuje - jinak by
+        // iCal zdroj se rovnou synchronizuje - jinak by
         // ho icsCalendarSync() bez ruční akce navíc nikdy neposbíral.
-        syncEnabled: ['google', 'ical'].includes(provider),
+        syncEnabled: provider === 'ical',
         note: normalizeText(data.note),
         createdAt: new Date().toISOString()
       });
@@ -907,7 +890,7 @@
       if (!user) return null;
       const provider = normalizeCalendarSourceProvider(source.provider);
       const providerCalendarId = provider === 'ical' ? normalizeCalendarUrl(source.providerCalendarId) : normalizeText(source.providerCalendarId);
-      if (['google', 'ical'].includes(provider) && providerCalendarId) {
+      if (provider === 'ical' && providerCalendarId) {
         const { data: existing, error: existingError } = await client
           .from('calendar_sources')
           .select('id,household_id,profile_id,name,provider,provider_calendar_id,provider_connection_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at')
@@ -925,7 +908,7 @@
         provider_calendar_id: providerCalendarId || null,
         color: normalizeCalendarSourceColor(source.color),
         is_enabled: source.isEnabled !== false,
-        sync_enabled: ['google', 'ical'].includes(provider) ? source.syncEnabled !== false : Boolean(source.syncEnabled),
+        sync_enabled: provider === 'ical' ? source.syncEnabled !== false : Boolean(source.syncEnabled),
         note: source.note || null,
         created_by: user.id,
         updated_by: user.id
@@ -1009,9 +992,6 @@
         sourcesLoadedAt: new Date().toISOString()
       };
       getState().calendar = (getState().calendar || []).filter((event) => !sourceKeys.includes(String(event.sourceId || '')));
-      if (getState().calendarCloud?.googleCalendars?.length && source.providerCalendarId) {
-        getState().calendarCloud.googleCalendars = getState().calendarCloud.googleCalendars.map((calendar) => String(calendar.id || '') === String(source.providerCalendarId) ? { ...calendar, selected: false } : calendar);
-      }
       touchState();
       saveState();
       render();
@@ -1191,165 +1171,7 @@
       cloudDeleteCalendarEvent(event).catch((error) => console.warn('Cloud sync (smazání události) na pozadí selhal', error));
     }
 
-    // ---------- Google OAuth + edge (ČÁST B) ----------
-
-    function googleCalendarConnection() {
-      return getState().calendarCloud?.googleConnection || null;
-    }
-
-    function googleCalendarItems() {
-      return Array.isArray(getState().calendarCloud?.googleCalendars) ? getState().calendarCloud.googleCalendars : [];
-    }
-
-    function googleCalendarStatusLabel(connection = googleCalendarConnection()) {
-      const status = String(connection?.status || '').toLowerCase();
-      const tokenState = String(connection?.tokenState || '').toLowerCase();
-      if (status === 'connected' && tokenState === 'missing') return 'účet přihlášený, token chybí';
-      if (status === 'connected' && tokenState === 'ready') return 'token uložený';
-      if (status === 'connected') return 'připojeno';
-      if (status === 'oauth_pending') return 'čeká na dokončení OAuth';
-      if (status === 'error') return 'chyba připojení';
-      if (status === 'disconnected') return 'odpojeno';
-      return 'nepřipojeno';
-    }
-
-    function googleCalendarLastError() {
-      return getState().calendarCloud?.googleLastError || googleCalendarConnection()?.lastError || null;
-    }
-
-    function googleCalendarStatusNote(connection = googleCalendarConnection()) {
-      const lastError = googleCalendarLastError();
-      const status = String(connection?.status || '').toLowerCase();
-      const tokenState = String(connection?.tokenState || '').toLowerCase();
-      const reason = String(lastError?.code || lastError?.reason || connection?.lastError || '').toLowerCase();
-      const message = lastError?.message || lastError?.error || connection?.lastError || '';
-      if (status === 'connected' && tokenState === 'ready') return { tone: 'good', title: 'Google kalendář je připojený', text: 'Můžeš načíst dostupné kalendáře a vybrat, které se mají zobrazovat v domácnosti.' };
-      if (status === 'oauth_pending') return { tone: 'warn', title: 'Připojení čeká na dokončení', text: 'Dokonči přihlášení u Googlu. Když se stav nezmění, spusť znovupřipojení.' };
-      if (status === 'connected' && tokenState === 'missing') return { tone: 'warn', title: 'Google kalendář je potřeba znovu připojit', text: 'Přihlášení do aplikace nestačí pro kalendář. Spusť znovu připojení Google kalendáře.' };
-      if (['missing_google_token', 'token_store_failed', 'missing_encryption_key', 'redirect_uri_mismatch', 'missing_calendar_scope'].includes(reason)) return { tone: 'danger', title: 'Připojení Google kalendáře selhalo', text: message || 'Zkus připojení spustit znovu.' };
-      if (status === 'error' || message) return { tone: 'danger', title: 'Google kalendář má chybu', text: message || 'Zkus znovu spustit připojení Google kalendáře.' };
-      return { tone: '', title: 'Google kalendář není připojený', text: 'Rozbal Google kalendář a spusť připojení.' };
-    }
-
-    function isGoogleCalendarSelected(calendarId, sourceList = getCalendarSources()) {
-      const id = String(calendarId || '');
-      return Boolean(id && sourceList.some((source) => normalizeCalendarSourceProvider(source.provider) === 'google' && String(source.providerCalendarId || '') === id));
-    }
-
-    function renderGoogleCalendarConnector(cloudReadyFlag, sourceList = getCalendarSources()) {
-      const connection = googleCalendarConnection();
-      const calendars = googleCalendarItems();
-      const connected = String(connection?.status || '').toLowerCase() === 'connected';
-      const tokenReady = String(connection?.tokenState || '').toLowerCase() === 'ready';
-      const statusNote = googleCalendarStatusNote(connection);
-      const googleSources = sourceList.filter((source) => normalizeCalendarSourceProvider(source.provider) === 'google');
-      const detailsOpen = getGoogleCalendarDetailsOpen();
-      return `
-        <details class="compact-edit-details google-calendar-connector calendar-google-details" ${detailsOpen ? 'open' : ''}>
-          <summary><span>Google kalendář</span><em>${escapeHtml(googleCalendarStatusLabel(connection))}</em></summary>
-          <div class="google-calendar-connector-body">
-            <div class="cloud-status-grid compact-cloud-stats google-calendar-stats">
-              <div class="mini-stat"><span>Účet</span><strong>${escapeHtml(connection?.googleAccountEmail || connection?.email || '—')}</strong></div>
-              <div class="mini-stat"><span>Vybrané</span><strong>${googleSources.length}</strong></div>
-              <div class="mini-stat"><span>Dostupné</span><strong>${calendars.length || '—'}</strong></div>
-            </div>
-            <div class="form-actions connector-actions">
-              ${cloudReadyFlag ? `<button class="primary-btn" type="button" data-action="google-calendar-reconnect">${connected ? 'Znovu připojit Google kalendář' : 'Připojit Google kalendář'}</button>` : '<span class="badge">nejdřív online účet</span>'}
-              ${cloudReadyFlag ? `<button class="ghost-btn" type="button" data-action="google-calendar-list-calendars" ${tokenReady ? '' : 'aria-describedby="google-calendar-state-note"'}>Načíst kalendáře</button>` : ''}
-              ${cloudReadyFlag && googleSources.length ? '<button class="ghost-btn" type="button" data-action="google-calendar-sync">Spustit sync</button>' : ''}
-              ${cloudReadyFlag && connected ? '<button class="danger-btn" type="button" data-action="google-calendar-disconnect">Odpojit Google</button>' : ''}
-            </div>
-            ${cloudReadyFlag ? `<div id="google-calendar-state-note" class="inline-note google-calendar-state-note ${statusNote.tone ? `is-${statusNote.tone}` : ''}"><strong>${escapeHtml(statusNote.title)}</strong><span>${escapeHtml(statusNote.text)}</span></div>` : '<div class="inline-note">Google kalendář funguje jen v online domácnosti.</div>'}
-            ${calendars.length ? `
-              <form data-form="google-calendar-save-sources" class="google-calendar-picker">
-                <div class="google-calendar-grid">
-                  ${calendars.map((calendar) => {
-                    const checked = isGoogleCalendarSelected(calendar.id, sourceList) || calendar.selected;
-                    return `
-                      <label class="google-calendar-option ${checked ? 'active' : ''}">
-                        <input type="checkbox" name="googleCalendarIds" value="${escapeHtml(calendar.id)}" ${checked ? 'checked' : ''}>
-                        <span>
-                          <strong>${escapeHtml(calendar.summary || calendar.name || 'Google kalendář')}</strong>
-                          <em>${calendar.primary ? 'hlavní' : escapeHtml(calendar.id || '')}${calendar.accessRole ? ` · ${escapeHtml(calendar.accessRole)}` : ''}</em>
-                        </span>
-                      </label>
-                    `;
-                  }).join('')}
-                </div>
-                <div class="form-actions">
-                  <button class="primary-btn" type="submit">Uložit vybrané kalendáře</button>
-                </div>
-              </form>
-            ` : ''}
-          </div>
-        </details>
-      `;
-    }
-
-    function normalizeGoogleCalendarItem(item = {}) {
-      return {
-        id: String(item.id || item.calendarId || ''),
-        summary: item.summary || item.name || 'Google kalendář',
-        description: item.description || '',
-        primary: Boolean(item.primary),
-        accessRole: item.accessRole || item.access_role || '',
-        backgroundColor: item.backgroundColor || item.background_color || '',
-        foregroundColor: item.foregroundColor || item.foreground_color || '',
-        selected: Boolean(item.selected)
-      };
-    }
-
-    function rememberGoogleCalendarError(payload = {}) {
-      getState().calendarCloud = {
-        ...(getState().calendarCloud || {}),
-        googleLastError: {
-          code: payload.code || payload.errorCode || '',
-          message: payload.error || payload.message || '',
-          at: new Date().toISOString(),
-          needsOAuthReconnect: Boolean(payload.needsOAuthReconnect || payload.needsGoogleLogin || payload.fallbackAvailable)
-        }
-      };
-      touchState();
-      saveState();
-    }
-
-    function googleCalendarNeedsOAuthReconnect(payload = {}) {
-      const code = String(payload.code || payload.errorCode || payload.reason || '').toLowerCase();
-      const message = String(payload.error || payload.message || '').toLowerCase();
-      return Boolean(payload.needsOAuthReconnect || payload.needsGoogleLogin || payload.fallbackAvailable)
-        || ['missing_provider_token', 'missing_google_token', 'google_token_missing', 'token_not_available', 'missing_calendar_scope', 'token_store_failed'].includes(code)
-        || message.includes('google token is not available')
-        || message.includes('chybí google token')
-        || message.includes('nepředalo kalendářový token');
-    }
-
-    function markGoogleCalendarMissingToken(message = 'Google účet je přihlášený, ale kalendářový token chybí.') {
-      getState().calendarCloud = {
-        ...(getState().calendarCloud || {}),
-        googleConnection: {
-          ...(getState().calendarCloud?.googleConnection || {}),
-          status: 'error',
-          tokenState: 'missing',
-          lastError: message
-        }
-      };
-      touchState();
-      saveState();
-    }
-
-    async function startGoogleCalendarOAuthReconnect(reason = '', { force = false } = {}) {
-      const attempted = sessionStorage.getItem(GOOGLE_CALENDAR_RECONNECT_FLAG) === '1';
-      if (attempted && !force) {
-        showToast('Automatické znovupřipojení už proběhlo. Další pokus spusť ručně tlačítkem Znovu připojit Google kalendář.');
-        return false;
-      }
-      sessionStorage.setItem(GOOGLE_CALENDAR_RECONNECT_FLAG, '1');
-      showToast(reason || 'Spouštím čisté znovupřipojení Google kalendáře.');
-      await googleCalendarStart({ cleanup: true });
-      return true;
-    }
-
-    async function readFunctionErrorMessage(error, fallback = 'Google backend zatím není připravený') {
+    async function readFunctionErrorMessage(error, fallback = 'Backend zatím není připravený') {
       if (!error) return fallback;
       const context = error.context;
       try {
@@ -1374,63 +1196,8 @@
       return error.message || fallback;
     }
 
-    async function invokeGoogleCalendarFunction(functionName, body = {}, showMessage = true) {
-      const client = getSupabaseClient();
-      if (!client?.functions?.invoke) {
-        if (showMessage) showToast('Supabase funkce nejsou dostupné');
-        return null;
-      }
-      const user = await refreshCloudSession(false);
-      if (!user) {
-        if (showMessage) showToast('Nejdřív se přihlas');
-        return null;
-      }
-      let households = await cloudLoadHouseholds(false);
-      if (!households.length) {
-        resetLocalWorkspaceForCloudUser(user, { force: true });
-        const createdHouseholdId = await bootstrapCloudHousehold(false);
-        if (!createdHouseholdId) {
-          if (showMessage) showToast('Nejdřív vytvoř domácnost pro tento Google účet');
-          return null;
-        }
-        households = await cloudLoadHouseholds(false);
-      }
-      if (!cloudReady()) {
-        if (showMessage) showToast('Google účet zatím nemá aktivní domácnost');
-        return null;
-      }
-      const payload = {
-        householdId: getState().cloud.householdId,
-        profileId: currentProfileId(),
-        ...body
-      };
-      try {
-        const { data, error } = await client.functions.invoke(functionName, { body: payload });
-        if (error || data?.error || data?.ok === false) {
-          const payloadError = data || {};
-          const message = payloadError?.error || payloadError?.message || await readFunctionErrorMessage(error, 'Google backend zatím není připravený');
-          console.warn(`${functionName} failed`, error || payloadError?.error || payloadError);
-          rememberGoogleCalendarError({ ...payloadError, error: message });
-          if (showMessage) showToast(message);
-          return null;
-        }
-        return data || {};
-      } catch (error) {
-        console.warn(`${functionName} failed`, error);
-        const message = await readFunctionErrorMessage(error, 'Google backend zatím není nasazený nebo nemá credentials');
-        if (showMessage) showToast(message);
-        return null;
-      }
-    }
-
-    // Odlehčená verze invokeGoogleCalendarFunction pro zdroje BEZ OAuth (ICS
-    // odkaz): žádný "nula domácností → resetuj lokální workspace a založ
-    // novou domácnost" fallback - ten dává smysl jen hned po Google OAuth
-    // přihlášení (nový cloud účet ještě nemá domácnost), ne pro rutinní
-    // periodickou synchronizaci ICS zdroje v domácnosti, která už dávno
-    // existuje. Bez týhle odlehčené verze by běžný auto-sync (kdykoliv
-    // cloudLoadHouseholds() přechodně selže/vrátí prázdno) mohl neprávem
-    // smazat lokální stav domácnosti.
+    // Lehký invoke pro ICS zdroje: žádné přihlašovací fallbacky, jen existující
+    // přihlášená cloud domácnost a volání edge funkce calendar-ics-sync.
     async function invokeCalendarEdgeFunction(functionName, body = {}, showMessage = true) {
       const client = getSupabaseClient();
       if (!client?.functions?.invoke) {
@@ -1710,7 +1477,7 @@
         }
       }
       if (sourceIds.size) {
-        getState().calendarCloud = { ...(getState().calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), sources), googleLastSyncAt: syncedAt };
+        getState().calendarCloud = { ...(getState().calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), sources), calendarLastSyncAt: syncedAt };
         touchState();
         saveState({ immediate: true });
         requestRender();
@@ -1718,216 +1485,82 @@
       return attempted && !succeeded ? -1 : total;
     }
 
-    function googleCalendarSourceSyncMs(source = {}) {
-      const raw = source.lastSyncedAt || source.last_synced_at || getState().calendarCloud?.googleLastSyncAt || '';
+    async function icsCalendarSync(sourceId = '', options = {}) {
+      const showMessage = options.showMessage !== false;
+      const sourceKey = String(sourceId || '');
+      const enabledIcsSources = getCalendarSources().filter((source) => {
+        if (normalizeCalendarSourceProvider(source.provider) !== 'ical' || source.isEnabled === false) return false;
+        if (!sourceKey) return true;
+        return [source.id, source.cloudId].filter(Boolean).map(String).includes(sourceKey);
+      });
+      if (!enabledIcsSources.length) {
+        if (showMessage) showToast('Nemáš žádný zapnutý ICS/iCal zdroj k synchronizaci');
+        return false;
+      }
+
+      const body = sourceKey
+        ? { sourceId: sourceKey }
+        : { sourceIds: enabledIcsSources.map((source) => source.cloudId || source.id).filter(Boolean) };
+      const data = cloudReady() ? await invokeCalendarEdgeFunction('calendar-ics-sync', body, showMessage) : null;
+      if (data) {
+        await cloudLoadCalendarSources(false);
+        await cloudLoadCalendar(false);
+        getState().calendarCloud = { ...(getState().calendarCloud || {}), calendarLastSyncAt: new Date().toISOString() };
+        touchState();
+        saveState({ immediate: true });
+        requestRender();
+        if (showMessage) {
+          const count = Number(data.eventsUpserted || 0);
+          showToast(count ? `ICS kalendář synchronizován (${count} událostí)` : 'ICS kalendář synchronizován');
+        }
+        return data;
+      }
+
+      const browserResult = await syncIcsSourcesInBrowser(enabledIcsSources, showMessage);
+      if (browserResult >= 0) {
+        if (showMessage) showToast(browserResult ? `ICS kalendář načten (${browserResult} událostí)` : 'ICS kalendář načten');
+        return { ok: true, fallback: 'browser', eventsUpserted: browserResult };
+      }
+      return false;
+    }
+
+    function calendarSourceSyncMs(source = {}) {
+      const raw = source.lastSyncedAt || source.last_synced_at || getState().calendarCloud?.calendarLastSyncAt || '';
       const ms = raw ? Date.parse(raw) : 0;
       return Number.isFinite(ms) ? ms : 0;
     }
 
-    function googleCalendarAutoSyncNeeded(sources = getCalendarSources()) {
-      const googleSources = (sources || []).filter((source) => normalizeCalendarSourceProvider(source.provider) === 'google' && source.isEnabled !== false);
-      if (!googleSources.length) return false;
-      const connection = googleCalendarConnection();
-      const status = String(connection?.status || '').toLowerCase();
-      const tokenState = String(connection?.tokenState || '').toLowerCase();
-      if (status === 'connected' && tokenState === 'missing') return false;
-      const nowMs = Date.now();
-      return googleSources.some((source) => {
-        const syncedMs = googleCalendarSourceSyncMs(source);
-        return !syncedMs || nowMs - syncedMs > GOOGLE_CALENDAR_AUTO_SYNC_MAX_AGE_MS;
-      });
-    }
-
-    // ICS zdroje nemají OAuth token, takže tu odpadá google's connection/
-    // tokenState kontrola - jen "je nějaký ical zdroj starší než max stáří".
+    // iCal zdroj je potřeba průběžně obnovovat, ale bez rušivého spinneru.
     function icsCalendarAutoSyncNeeded(sources = getCalendarSources()) {
       const icsSources = (sources || []).filter((source) => normalizeCalendarSourceProvider(source.provider) === 'ical' && source.isEnabled !== false);
       if (!icsSources.length) return false;
       const nowMs = Date.now();
       return icsSources.some((source) => {
-        const syncedMs = googleCalendarSourceSyncMs(source);
-        return !syncedMs || nowMs - syncedMs > GOOGLE_CALENDAR_AUTO_SYNC_MAX_AGE_MS;
+        const syncedMs = calendarSourceSyncMs(source);
+        return !syncedMs || nowMs - syncedMs > CALENDAR_AUTO_SYNC_MAX_AGE_MS;
       });
     }
 
-    // Jedna společná plánovací smyčka pro oba typy zdrojů (Google OAuth i ICS
-    // odkaz) - název zůstal historický (google-*), volající kód v app.js se
-    // tak nemusí měnit, jen uvnitř teď zkusí synchronizovat obojí.
-    function scheduleGoogleCalendarAutoSync(reason = 'auto', options = {}) {
-      if (googleCalendarAutoSyncTimer || googleCalendarAutoSyncRunning || !cloudReady()) return;
-      googleCalendarAutoSyncTimer = runWhenUiQuiet(async () => {
-        googleCalendarAutoSyncTimer = null;
-        if (googleCalendarAutoSyncRunning || !cloudReady()) return;
-        googleCalendarAutoSyncRunning = true;
+    function scheduleCalendarAutoSync(reason = 'auto', options = {}) {
+      if (calendarAutoSyncTimer || calendarAutoSyncRunning || !cloudReady()) return;
+      calendarAutoSyncTimer = runWhenUiQuiet(async () => {
+        calendarAutoSyncTimer = null;
+        if (calendarAutoSyncRunning || !cloudReady()) return;
+        calendarAutoSyncRunning = true;
         try {
           let sources = getCalendarSources();
           if (!sources.length || options.forceLoadSources) sources = await cloudLoadCalendarSources(false);
-          if (options.force || googleCalendarAutoSyncNeeded(sources)) {
-            await googleCalendarSync('', { showMessage: false, auto: true, reason });
-          }
           if (options.force || icsCalendarAutoSyncNeeded(sources)) {
             await icsCalendarSync('', { showMessage: false, auto: true, reason });
           }
         } catch (error) {
           console.warn('Calendar auto sync failed', reason, error);
         } finally {
-          googleCalendarAutoSyncRunning = false;
+          calendarAutoSyncRunning = false;
         }
       }, { delay: Number(options.delay || 12000), quietMs: Number(options.quietMs || 2200), timeout: Number(options.timeout || 12000) });
     }
 
-    async function googleCalendarStart(options = {}) {
-      const data = await invokeGoogleCalendarFunction('google-calendar-start', { returnTo: APP_PUBLIC_URL, cleanup: options.cleanup !== false }, true);
-      if (data?.connection) {
-        getState().calendarCloud = { ...(getState().calendarCloud || {}), googleConnection: data.connection, googleLastError: null };
-        touchState();
-        saveState();
-      }
-      if (data?.authUrl) {
-        window.location.href = data.authUrl;
-        return;
-      }
-      showToast('Nepřišla OAuth adresa. Zkontroluj Edge Function secrets.');
-    }
-
-    async function googleCalendarListCalendars(showMessage = true) {
-      const data = await invokeGoogleCalendarFunction('google-calendar-list-calendars', {}, showMessage);
-      if (!data) {
-        const lastError = getState().calendarCloud?.googleLastError || {};
-        if (googleCalendarNeedsOAuthReconnect(lastError)) {
-          markGoogleCalendarMissingToken(lastError.message || lastError.error || 'Google účet je vidět, ale kalendářový token chybí.');
-          render();
-          if (showMessage) showToast('Kalendářový token chybí. Použij tlačítko Znovu připojit Google kalendář.');
-        }
-        return [];
-      }
-      const calendars = (data.calendars || data.items || []).map(normalizeGoogleCalendarItem).filter((calendar) => calendar.id);
-      getState().calendarCloud = {
-        ...(getState().calendarCloud || {}),
-        googleConnection: data.connection ? { ...data.connection, tokenState: data.connection.tokenState || 'ready' } : getState().calendarCloud?.googleConnection || null,
-        googleCalendars: calendars,
-        googleCalendarsLoadedAt: new Date().toISOString(),
-        googleLastError: null
-      };
-      touchState();
-      saveState();
-      sessionStorage.removeItem(GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG);
-      render();
-      if (showMessage) showToast(calendars.length ? `Načteno Google kalendářů: ${calendars.length}` : 'Google účet nemá dostupné kalendáře');
-      return calendars;
-    }
-
-    async function saveGoogleCalendarSourcesFromForm(form) {
-      if (!form) return;
-      const checkedIds = [...form.querySelectorAll('input[name="googleCalendarIds"]:checked')].map((input) => input.value);
-      if (!checkedIds.length) return showToast('Vyber aspoň jeden Google kalendář');
-      const calendars = googleCalendarItems().filter((calendar) => checkedIds.includes(calendar.id));
-      const data = await invokeGoogleCalendarFunction('google-calendar-save-sources', { calendars }, true);
-      if (!data) return;
-      const savedSources = (data.sources || []).map(mapCalendarSource);
-      getState().calendarCloud = {
-        ...(getState().calendarCloud || {}),
-        sources: mergeCalendarSources(getCalendarSources(), savedSources),
-        googleConnection: data.connection || getState().calendarCloud?.googleConnection || null
-      };
-      touchState();
-      saveState();
-      render();
-      scheduleGoogleCalendarAutoSync('sources-saved', { delay: 1800, force: true });
-      showToast(savedSources.length ? `Uloženo Google kalendářů: ${savedSources.length}` : 'Výběr Google kalendářů uložen');
-    }
-
-    async function googleCalendarSync(sourceId = '', options = {}) {
-      const showMessage = options.showMessage !== false;
-      const cleanSourceId = normalizeText(sourceId);
-      let sources = getCalendarSources();
-      if (!sources.length && getState().cloud?.householdId) sources = await cloudLoadCalendarSources(false);
-      const googleSources = sources.filter((source) => normalizeCalendarSourceProvider(source.provider) === 'google' && source.isEnabled !== false);
-      const body = {};
-
-      if (cleanSourceId) {
-        const source = getCalendarSource(cleanSourceId) || googleSources.find((item) => [item.id, item.cloudId].filter(Boolean).map(String).includes(cleanSourceId));
-        if (!source || normalizeCalendarSourceProvider(source.provider) !== 'google') { if (showMessage) showToast('Google kalendář nenalezen'); return false; }
-        body.sourceId = source.cloudId || source.id;
-        body.sourceIds = [source.cloudId || source.id].filter(Boolean);
-        body.calendarIds = [source.providerCalendarId].filter(Boolean);
-      } else if (googleSources.length) {
-        body.sourceIds = googleSources.map((source) => source.cloudId || source.id).filter(Boolean);
-        body.calendarIds = googleSources.map((source) => source.providerCalendarId).filter(Boolean);
-      }
-
-      const data = await invokeGoogleCalendarFunction('google-calendar-sync', body, showMessage);
-      if (!data) return false;
-      const syncedSources = (data.sources || []).map(mapCalendarSource);
-      getState().calendarCloud = {
-        ...(getState().calendarCloud || {}),
-        sources: syncedSources.length ? mergeCalendarSources(getCalendarSources(), syncedSources) : getCalendarSources(),
-        googleConnection: data.connection || getState().calendarCloud?.googleConnection || null,
-        googleLastSyncAt: new Date().toISOString()
-      };
-      await cloudLoadCalendar(false);
-      requestRender();
-      if (showMessage) showToast(`Google sync hotový${Number.isFinite(data.eventsUpserted) ? ` · ${data.eventsUpserted} událostí` : ''}`);
-      return true;
-    }
-
-    // ICS/iCal odkaz (bez Google OAuth) - stejný backend-invoke vzor jako
-    // googleCalendarSync, jen bez OAuth tokenu: edge funkce si ICS adresu
-    // (uloženou v providerCalendarId) stáhne a naparsuje sama za appku.
-    async function icsCalendarSync(sourceId = '', options = {}) {
-      const showMessage = options.showMessage !== false;
-      const cleanSourceId = normalizeText(sourceId);
-      let sources = getCalendarSources();
-      if (!sources.length && getState().cloud?.householdId) sources = await cloudLoadCalendarSources(false);
-      const icsSources = sources.filter((source) => normalizeCalendarSourceProvider(source.provider) === 'ical' && source.isEnabled !== false);
-      const body = {};
-      let targetSources = icsSources;
-
-      if (cleanSourceId) {
-        const source = getCalendarSource(cleanSourceId) || icsSources.find((item) => [item.id, item.cloudId].filter(Boolean).map(String).includes(cleanSourceId));
-        targetSources = [source];
-        if (!source || normalizeCalendarSourceProvider(source.provider) !== 'ical') { if (showMessage) showToast('ICS kalendář nenalezen'); return false; }
-        body.sourceId = source.cloudId || source.id;
-        body.sourceIds = [source.cloudId || source.id].filter(Boolean);
-      } else if (icsSources.length) {
-        body.sourceIds = icsSources.map((source) => source.cloudId || source.id).filter(Boolean);
-      } else {
-        if (showMessage) showToast('Nemáš žádný ICS/iCal zdroj kalendáře');
-        return false;
-      }
-
-      const data = await invokeCalendarEdgeFunction('calendar-ics-sync', body, showMessage);
-      if (data) {
-        const syncedSources = (data.sources || []).map(mapCalendarSource);
-        getState().calendarCloud = {
-          ...(getState().calendarCloud || {}),
-          sources: syncedSources.length ? mergeCalendarSources(getCalendarSources(), syncedSources) : getCalendarSources()
-        };
-        await cloudLoadCalendar(false);
-      }
-      const targetIds = new Set(targetSources.flatMap((source) => [source?.id, source?.cloudId].filter(Boolean).map(String)));
-      const linkedEvents = (getState().calendar || []).filter((event) => targetIds.has(String(event.sourceId || ''))).length;
-      let localEvents = 0;
-      if (!data || linkedEvents === 0) localEvents = await syncIcsSourcesInBrowser(targetSources.filter(Boolean), showMessage);
-      requestRender();
-      const errorCount = Array.isArray(data?.errors) ? data.errors.length : 0;
-      const eventCount = Number.isFinite(data?.eventsUpserted) ? data.eventsUpserted : (localEvents >= 0 ? localEvents : NaN);
-      if (showMessage) showToast(`ICS sync hotový${Number.isFinite(eventCount) ? ` · ${eventCount} událostí` : ''}${localEvents ? ' · lokálně' : ''}${errorCount ? ` · ${errorCount} zdroj selhal` : ''}`);
-      return Boolean(data || localEvents >= 0);
-    }
-
-    async function googleCalendarDisconnect() {
-      const data = await invokeGoogleCalendarFunction('google-calendar-disconnect', {}, true);
-      if (!data) return;
-      getState().calendarCloud = {
-        ...(getState().calendarCloud || {}),
-        googleConnection: data.connection || { ...(getState().calendarCloud?.googleConnection || {}), status: 'disconnected' },
-        googleCalendars: []
-      };
-      await cloudLoadCalendarSources(false);
-      render();
-      showToast('Google kalendář odpojený');
-    }
 
     return {
       // dashboard / čtení
@@ -1962,20 +1595,7 @@
       toggleCalendarSource,
       deleteCalendarSource,
       icsCalendarSync,
-      // Google OAuth + edge (ČÁST B) – volané z app.js (boot, handlery, návrat z OAuth)
-      googleCalendarConnection,
-      googleCalendarItems,
-      googleCalendarLastError,
-      googleCalendarStart,
-      googleCalendarListCalendars,
-      googleCalendarSync,
-      googleCalendarDisconnect,
-      startGoogleCalendarOAuthReconnect,
-      scheduleGoogleCalendarAutoSync,
-      saveGoogleCalendarSourcesFromForm,
-      rememberGoogleCalendarError,
-      renderGoogleCalendarConnector,
-      normalizeGoogleCalendarItem
+      scheduleCalendarAutoSync
     };
   }
 

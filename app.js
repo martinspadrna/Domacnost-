@@ -9,12 +9,10 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_458';
-  const APP_BUILD = 458;
+  const APP_VERSION = 'Domácnost+ v.0.1_459';
+  const APP_BUILD = 459;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
-  const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
-  const GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG = 'domacnostPlus.googleCalendarCallbackAutoLoaded';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
   const PREVIOUS_STORAGE_KEY = 'domacnostPlus.v0.1_85';
   const LEGACY_STORAGE_KEYS = [PREVIOUS_STORAGE_KEY, 'domacnostPlus.v0.1_82', 'domacnostPlus.v0.1_81', 'domacnostPlus.v0.1_80', 'domacnostPlus.v0.1_79', 'domacnostPlus.v0.1_78', 'domacnostPlus.v0.1_77', 'domacnostPlus.v0.1_72', 'domacnostPlus.v0.1_71', 'domacnostPlus.v0.1_70', 'domacnostPlus.v0.1_69', 'domacnostPlus.v0.1_68', 'domacnostPlus.v0.1_67', 'domacnostPlus.v0.1_66', 'domacnostPlus.v0.1_65', 'domacnostPlus.v0.1_64', 'domacnostPlus.v0.1_63', 'domacnostPlus.v0.1_62', 'domacnostPlus.v0.1_61', 'domacnostPlus.v0.1_60', 'domacnostPlus.v0.1_59', 'domacnostPlus.v0.1_58', 'domacnostPlus.v0.1_57', 'domacnostPlus.v0.1_56', 'domacnostPlus.v0.1_55', 'domacnostPlus.v0.1_54', 'domacnostPlus.v0.1_53', 'domacnostPlus.v0.1_52', 'domacnostPlus.v0.1_51', 'domacnostPlus.v0.1_50', 'domacnostPlus.v0.1_49', 'domacnostPlus.v0.1_48', 'domacnostPlus.v0.1_47', 'domacnostPlus.v0.1_46', 'domacnostPlus.v0.1_45', 'domacnostPlus.v0.1_44', 'domacnostPlus.v0.1_43', 'domacnostPlus.v0.1_42', 'domacnostPlus.v0.1_41', 'domacnostPlus.v0.1_39', 'domacnostPlus.v0.1_38', 'domacnostPlus.v0.1_37', 'domacnostPlus.v0.1_36', 'domacnostPlus.v0.1_35', 'domacnostPlus.v0.1_34', 'domacnostPlus.v0.1_33', 'domacnostPlus.v0.1_32', 'domacnostPlus.v0.1_31', 'domacnostPlus.v0.1_30', 'domacnostPlus.v0.1_29', 'domacnostPlus.v0.1_28', 'domacnostPlus.v0.1_27', 'domacnostPlus.v0.1_26', 'domacnostPlus.v0.1_24', 'domacnostPlus.v0.1_23', 'domacnostPlus.v0.1_21', 'domacnostPlus.v0.1_20', 'domacnostPlus.v0.1_19', 'domacnostPlus.v0.1_18', 'domacnostPlus.v0.1_17', 'domacnostPlus.v0.1_16', 'domacnostPlus.v0.1_14', 'domacnostPlus.v0.1_13', 'domacnostPlus.v0.1_12', 'domacnostPlus.cloud.v1.2.911', 'domacnostPlus.cloud.v1.1.910', 'homeWebOffline.v1.0.909', 'homeWebOffline.v0.9.908', 'homeWebOffline.v0.8.907', 'homeWebOffline.v0.7.906', 'homeWebOffline.v0.6.905', 'homeWebOffline.v0.5.904', 'homeWebOffline.v0.4.903', 'homeWebOffline.v0.3.902', 'homeWebOffline.v0.2.901', 'homeWebOffline.v0.1.900'];
@@ -825,7 +823,7 @@
     hdoCloud: { settingId: '', loadedAt: '' },
     wasteCloud: { types: [], loadedAt: '' },
     tasksCloud: { loadedAt: '' },
-    calendarCloud: { sources: [], loadedAt: '', sourcesLoadedAt: '', googleConnection: null, googleCalendars: [], googleCalendarsLoadedAt: '', googleLastSyncAt: '' },
+    calendarCloud: { sources: [], loadedAt: '', sourcesLoadedAt: '', calendarLastSyncAt: '' },
     shoppingStats: {},
     pwa: { installed: false, lastUpdateCheck: '', lastInstallPrompt: '', diagnostics: null },
     homeTasks: [],
@@ -1090,7 +1088,6 @@
   let garageModal = null;
   let filePreviewModal = null;
   let activeWarrantyDetailId = null;
-  let googleCalendarDetailsOpen = false;
   // Garáž „Přidat auto": rozbalené pomocné details (předvyplnění / technický
   // list) si drží stav přes render, aby je autosync/realtime rerender
   // nezavíral uprostřed vyplňování. Jen lokální UI stav, do cloudu se neukládá.
@@ -2824,7 +2821,7 @@
       try {
         await cloudLoadModuleForNav(id, false);
         lazyModuleCloudLoads.set(id, 'loaded');
-        if (id === 'calendar') scheduleGoogleCalendarAutoSync('calendar-open', { delay: 1800 });
+        if (id === 'calendar') scheduleCalendarAutoSync('calendar-open', { delay: 1800 });
       } catch (error) {
         lazyModuleCloudLoads.delete(id);
         console.warn('Lazy module cloud load failed', id, error);
@@ -4140,7 +4137,7 @@
     const subtitles = {
       weather: 'Aktuální počasí, hodinový výhled a předpověď pro místo domácnosti.',
       home: 'Rychlý domácí přehled pro tablet i mobil. Online domácnost je hlavní zdroj, lokál jen cache/fallback.',
-      calendar: 'Kalendář umí více zdrojů. Google Calendar je připravený přes bezpečný backend, ne přes tokeny ve frontendu.',
+      calendar: 'Kalendář umí ruční domácí události i sdílené ICS/iCal odkazy bez dalšího přihlášení.',
       shopping: 'Sdílený nákupní seznam s katalogem položek, jednotkami a cloudovým oddělením domácností.',
       hdo: 'Nízký tarif, aktuální stav a další přepnutí.',
       waste: 'Svoz odpadu, nejbližší termíny a připomínky.',
@@ -4263,7 +4260,7 @@
     const todayEvents = calendarPanelEvents
       .filter((event) => event.date === todayISO())
       .sort((a, b) => calendarEventStartMs(a) - calendarEventStartMs(b));
-    const upcomingEvents = calendarPanelEvents.slice(0, 6);
+    const upcomingEvents = calendarPanelEvents.slice(0, 8);
     const hdo = getHdoStatus(now);
     const urgentContracts = state.contracts
       .map((contract) => ({ ...contract, days: daysUntil(contract.validTo) }))
@@ -4850,11 +4847,11 @@
 
     (ctx.upcomingEvents || [])
       .filter((event) => event.date !== todayISO())
-      // 6 místo 2: na PC má "Nadcházející" kapacitu 4×2 = 8 karet a s limitem
-      // 2 zůstávala většina řádku prázdná. Budoucí události mají rank 5
+      // 8 místo 6: na PC má "Nadcházející" kapacitu 4×2 = 8 karet.
+      // Budoucí události mají rank 5
       // (nejnižší priorita), takže urgentní položky ostatních modulů pořád
       // vyhrávají - kalendář jen dorovnává volná místa do 8.
-      .slice(0, 6)
+      .slice(0, 8)
       .forEach((event) => add({
         icon: '📅',
         title: event.title || 'Událost',
@@ -5951,7 +5948,6 @@
     const riskNotes = [];
     const shoppingListsLocal = (state.shoppingLists || []).filter((list) => !(list.cloudId || list.cloudListId)).length;
     if (shoppingListsLocal) riskNotes.push({ label: 'Nákupní seznamy', note: `${shoppingListsLocal} seznamů je zatím jen lokálně. Autosync je může poslat do cloudu, až je domácnost online.` });
-    if (!state.googleCalendar?.connected && !getCalendarSources().some((source) => source.type === 'google')) riskNotes.push({ label: 'Google Kalendář', note: 'Bez samostatného OAuth napojení se používají jen ručně zadané / lokální události.' });
     if (!state.weather?.loadedAt && !state.weather?.updatedAt) riskNotes.push({ label: 'Počasí', note: 'Počasí je cache/fallback modul, ne citlivá domácí evidence.' });
     return { overview, online, localOnly, riskNotes, watched };
   }
@@ -6127,7 +6123,7 @@
     // by dělal 16×16 přepočtů - naměřeno přes 1 s zamrznutí na reálném účtu.
     const stats = {
       weather: () => ({ count: normalizeWeatherState(state.weather).current ? 1 : 0, label: 'místo', note: weatherLocationLabel() || 'Počasí podle místa domácnosti.' }),
-      calendar: () => ({ count: countBy('calendar'), label: 'událostí', note: 'Google napojení později přes backend.' }),
+      calendar: () => ({ count: countBy('calendar'), label: 'událostí', note: 'Ruční události a sdílené ICS/iCal zdroje.' }),
       shopping: () => ({ count: countBy('shopping', (item) => !item.done), label: 'koupit', note: `${countBy('coupons', (item) => !item.used)} nepoužitých kódů.` }),
       hdo: () => ({ count: countBy('hdoWindows'), label: 'oken', note: 'Nízký tarif, normální dny a víkend + svátky.' }),
       waste: () => ({ count: countBy('waste'), label: 'svozů', note: 'Nejbližší odpad a připomínky.' }),
@@ -6211,8 +6207,7 @@
   }
 
 
-  // Google connection/render/status helpery – všechny přesunuté do calendar.js (ČÁST B).
-  // Wrappery jsou definované dole u ostatních Google wrapperů.
+  // Kalendářové helpery jsou přesunuté do calendar.js.
 
   function shiftCalendarMonth(monthKey, delta) {
     return getCalendarModule().shiftCalendarMonth(monthKey, delta);
@@ -7110,14 +7105,6 @@
       getSupabaseClient,
       refreshCloudSession,
       cloudReady,
-      // ČÁST B – heavy deps pro invokeGoogleCalendarFunction (OAuth + edge):
-      cloudLoadHouseholds,
-      bootstrapCloudHousehold,
-      resetLocalWorkspaceForCloudUser,
-      getGoogleCalendarDetailsOpen: () => googleCalendarDetailsOpen,
-      APP_PUBLIC_URL,
-      GOOGLE_CALENDAR_RECONNECT_FLAG,
-      GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG,
       DEFAULT_CALENDAR_EVENT_MINUTES,
       APP_TIME_ZONE
     });
@@ -15402,45 +15389,12 @@
     return getCalendarModule().cloudSyncLocalCalendarSources(showMessage);
   }
 
-
-  // Google OAuth + edge funkce jsou přesunuté do calendar.js (ČÁST B).
-  // Tady zůstávají jen wrappery pro external callery (boot, akční handlery,
-  // handleInitialAuthReturn a google-calendar-save-sources form dispatch).
-
-  function googleCalendarStart(options) {
-    return getCalendarModule().googleCalendarStart(options);
-  }
-
-  function googleCalendarListCalendars(showMessage) {
-    return getCalendarModule().googleCalendarListCalendars(showMessage);
-  }
-
-  function googleCalendarSync(sourceId, options) {
-    return getCalendarModule().googleCalendarSync(sourceId, options);
-  }
-
   function icsCalendarSync(sourceId, options) {
     return getCalendarModule().icsCalendarSync(sourceId, options);
   }
 
-  function googleCalendarDisconnect() {
-    return getCalendarModule().googleCalendarDisconnect();
-  }
-
-  function startGoogleCalendarOAuthReconnect(reason, options) {
-    return getCalendarModule().startGoogleCalendarOAuthReconnect(reason, options);
-  }
-
-  function scheduleGoogleCalendarAutoSync(reason, options) {
-    return getCalendarModule().scheduleGoogleCalendarAutoSync(reason, options);
-  }
-
-  function saveGoogleCalendarSourcesFromForm(form) {
-    return getCalendarModule().saveGoogleCalendarSourcesFromForm(form);
-  }
-
-  function rememberGoogleCalendarError(payload) {
-    return getCalendarModule().rememberGoogleCalendarError(payload);
+  function scheduleCalendarAutoSync(reason, options) {
+    return getCalendarModule().scheduleCalendarAutoSync(reason, options);
   }
 
   function toggleCalendarSource(sourceId, enabled) {
@@ -15591,7 +15545,6 @@
     const handlers = {
       'add-event': () => addEventFromForm(data, form),
       'add-calendar-source': () => addCalendarSourceFromForm(data, form),
-      'google-calendar-save-sources': () => saveGoogleCalendarSourcesFromForm(form),
       'add-shopping': () => addShoppingFromForm(data, form),
       'add-shopping-list': () => addShoppingListFromForm(data, form),
       'add-shopping-catalog-item': () => addShoppingCatalogItemFromForm(data, form),
@@ -15901,7 +15854,7 @@
     if (!email || !password) return showToast('Vyplň e-mail a heslo');
     const client = getSupabaseClient();
     if (!client) return showToast('Supabase knihovna není načtená');
-    // Clear any stale session locally before signing in — prevents old Google OAuth
+    // Clear any stale session locally before signing in - prevents old auth
     // tokens from racing with autoRefreshToken and wiping the new session.
     await client.auth.signOut({ scope: 'local' }).catch(() => {});
     const { data: authData, error } = await client.auth.signInWithPassword({ email, password });
@@ -16948,7 +16901,7 @@
       // klasický background load pro zbytek modulů (s předaným skipModules).
       scheduleBootHomePriorityCloudLoad();
       scheduleBootCloudMaintenance();
-      scheduleGoogleCalendarAutoSync('boot', { delay: 26000 });
+      scheduleCalendarAutoSync('boot', { delay: 26000 });
       if (showMessage) showToast('Cloud domácnost připravená, data se dočítají na pozadí');
     });
   }
@@ -17140,7 +17093,7 @@
       touchState();
       saveState({ immediate: true });
       requestBackgroundRender();
-      scheduleGoogleCalendarAutoSync('background-load', { delay: 6000 });
+      scheduleCalendarAutoSync('background-load', { delay: 6000 });
       if (showMessage) showToast(`Cloud pozadí načteno: ${ok}/${moduleOrder.length - skipModules.size}`);
       return true;
     });
@@ -17445,29 +17398,8 @@
       setCloudAutosyncEnabled(state.cloud?.autoSyncEnabled === false);
       return;
     }
-    if (action === 'google-calendar-start') {
-      googleCalendarStart({ cleanup: true });
-      return;
-    }
-    if (action === 'google-calendar-reconnect') {
-      sessionStorage.removeItem(GOOGLE_CALENDAR_RECONNECT_FLAG);
-      startGoogleCalendarOAuthReconnect('Čistím staré pokusy a spouštím nové připojení Google kalendáře.', { force: true });
-      return;
-    }
-    if (action === 'google-calendar-list-calendars') {
-      googleCalendarListCalendars(true);
-      return;
-    }
-    if (action === 'google-calendar-sync') {
-      googleCalendarSync(button.dataset.sourceId || '');
-      return;
-    }
     if (action === 'ics-calendar-sync') {
       icsCalendarSync(button.dataset.sourceId || '');
-      return;
-    }
-    if (action === 'google-calendar-disconnect') {
-      googleCalendarDisconnect();
       return;
     }
     if (action === 'cloud-load-calendar') {
@@ -18613,42 +18545,13 @@
     return hash.includes('access_token=') || hash.includes('refresh_token=') || hash.includes('type=signup') || hash.includes('type=recovery');
   }
 
-  function hasGoogleCalendarReturnUrl() {
-    const params = new URLSearchParams(window.location.search || '');
-    return params.has('googleCalendar');
-  }
-
   function clearAuthReturnUrl(force = false) {
-    if (!force && !isAuthReturnUrl() && !hasGoogleCalendarReturnUrl()) return;
+    if (!force && !isAuthReturnUrl()) return;
     const clean = `${window.location.origin}${window.location.pathname}`;
     window.history.replaceState({}, document.title, clean);
   }
 
   async function handleInitialAuthReturn() {
-    if (hasGoogleCalendarReturnUrl()) {
-      const params = new URLSearchParams(window.location.search || '');
-      const result = params.get('googleCalendar');
-      activeModule = 'calendar';
-      moduleTabs = { ...(moduleTabs || {}), calendar: 'sources' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
-      render();
-      const reason = params.get('reason') || '';
-      if (result === 'connected') {
-        const alreadyAutoLoaded = sessionStorage.getItem(GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG) === '1';
-        if (!alreadyAutoLoaded) {
-          sessionStorage.setItem(GOOGLE_CALENDAR_CALLBACK_AUTOLOAD_FLAG, '1');
-          showToast('Google účet připojený. Jednou zkusím načíst kalendáře.');
-          await googleCalendarListCalendars(false);
-        } else {
-          showToast('Google callback už byl zpracovaný. Další načtení spusť ručně.');
-        }
-      } else if (result === 'error') {
-        rememberGoogleCalendarError({ code: reason || 'google_calendar_callback_error', error: reason === 'token_store_failed' ? 'Token exchange proběhl, ale uložení tokenu přes serverové RPC selhalo. Zkontroluj SQL RPC migraci, GOOGLE_TOKEN_ENCRYPTION_KEY_BASE64 a service role práva.' : 'Google připojení se nepovedlo. Zkontroluj redirect_uri, scopes a Edge Function secrets.' });
-        showToast(reason === 'token_store_failed' ? 'Google token se nepovedlo uložit. Zkontroluj Supabase secrets.' : 'Google připojení se nepovedlo.');
-      }
-      clearAuthReturnUrl(true);
-      return;
-    }
     if (!isAuthReturnUrl()) return;
     const search = new URLSearchParams(window.location.search || '');
     const hashParams = new URLSearchParams((window.location.hash || '').slice(1));
@@ -19720,7 +19623,6 @@
     const details = event.target;
     if (!(details instanceof HTMLDetailsElement)) return;
     if (details.matches('.loyalty-add-details')) loyaltyAddDetailsOpen = details.open;
-    if (details.matches('.calendar-google-details')) googleCalendarDetailsOpen = details.open;
     if (details.matches('.garage-preset-tool')) garagePresetToolOpen = details.open;
     if (details.matches('.garage-technical-fields')) garageTechnicalFieldsOpen = details.open;
     if (details.matches('.garage-service-plan-details')) garageServicePlanOpen = details.open;
@@ -20168,7 +20070,7 @@
       <div class="boot-fallback-screen">
         <section class="boot-fallback-card">
           <div class="brand-mark big logo-mark">🏠</div>
-          <span class="badge">${APP_VERSION}</span>
+          <span class="badge">${escapeBootText(document.title || 'Domácnost+')}</span>
           <h1>Aplikace se nespustila čistě</h1>
           <p>Nezůstáváš na bílé stránce. Nejčastější příčina je stará PWA cache nebo uložený stav rozhraní po aktualizaci.</p>
           <div class="inline-note boot-error-text"><strong>Technicky:</strong><br>${message}</div>
