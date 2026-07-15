@@ -13033,6 +13033,13 @@ body.home-active {
   .home-dash-sync {
     grid-column: 1 / -1;
   }
+
+  /* Sekce se seznamy karet (Nadcházející, Nákupní seznam, Bazén...) přes
+     celou šířku - jinak se auto-umístí do jednoho sloupce (1fr = půlka) a
+     4sloupcový .home-timeline-list uvnitř vyrobí titěrné ~135px kartičky. */
+  .home-dash > .home-dash-section {
+    grid-column: 1 / -1;
+  }
 }
 
 .home-dash-top {

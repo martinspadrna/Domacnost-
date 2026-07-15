@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_455';
-  const APP_BUILD = 455;
+  const APP_VERSION = 'Domácnost+ v.0.1_456';
+  const APP_BUILD = 456;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -4850,7 +4850,11 @@
 
     (ctx.upcomingEvents || [])
       .filter((event) => event.date !== todayISO())
-      .slice(0, 2)
+      // 6 místo 2: na PC má "Nadcházející" kapacitu 4×2 = 8 karet a s limitem
+      // 2 zůstávala většina řádku prázdná. Budoucí události mají rank 5
+      // (nejnižší priorita), takže urgentní položky ostatních modulů pořád
+      // vyhrávají - kalendář jen dorovnává volná místa do 8.
+      .slice(0, 6)
       .forEach((event) => add({
         icon: '📅',
         title: event.title || 'Událost',
