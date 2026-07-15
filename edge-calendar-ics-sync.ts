@@ -3,7 +3,51 @@
 // ho jako zdroj (provider='ical', provider_calendar_id=URL) a tahle funkce ho
 // pravidelně stáhne a naparsuje - žádný token, který po týdnu (neověřená Google
 // OAuth aplikace) přestane fungovat.
-import { assertHouseholdMember, corsHeaders, getUserFromRequest, jsonResponse, readBody, serviceClient } from './edge-shared-google-calendar.ts';
+//
+// Samostatný soubor (bez importu z edge-shared-google-calendar.ts) - stejný
+// vzor jako reálně nasazená google-calendar-sync, ať se nespoléhá na
+// neověřené chování multi-file importu při deployi.
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS"
+};
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "content-type": "application/json; charset=utf-8" } });
+}
+
+function requireEnv(name: string) {
+  const value = Deno.env.get(name);
+  if (!value) throw new Error(`Missing env ${name}`);
+  return value;
+}
+
+function serviceClient() {
+  return createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false, autoRefreshToken: false } });
+}
+
+async function readBody(req: Request) {
+  if (req.method === 'GET') return {} as Record<string, unknown>;
+  try { return await req.json(); } catch (_) { return {}; }
+}
+
+async function getUserFromRequest(req: Request, supabase = serviceClient()) {
+  const jwt = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  if (!jwt) throw new Error("Missing auth token");
+  const { data, error } = await supabase.auth.getUser(jwt);
+  if (error || !data?.user) throw new Error("Invalid auth token");
+  return data.user;
+}
+
+async function assertHouseholdMember(supabase: ReturnType<typeof serviceClient>, householdId: string, userId: string) {
+  if (!householdId) throw new Error("Missing householdId");
+  const { data, error } = await supabase.from("household_members").select("role,status").eq("household_id", householdId).eq("user_id", userId).eq("status", "active").maybeSingle();
+  if (error || !data) throw new Error("No access to household");
+}
 
 type SupabaseClient = ReturnType<typeof serviceClient>;
 
