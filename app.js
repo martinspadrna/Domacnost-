@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_456';
-  const APP_BUILD = 456;
+  const APP_VERSION = 'Domácnost+ v.0.1_457';
+  const APP_BUILD = 457;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const GOOGLE_CALENDAR_RECONNECT_FLAG = 'domacnostPlus.googleCalendarReconnectAttempted';
@@ -15419,6 +15419,10 @@
     return getCalendarModule().googleCalendarSync(sourceId, options);
   }
 
+  function icsCalendarSync(sourceId, options) {
+    return getCalendarModule().icsCalendarSync(sourceId, options);
+  }
+
   function googleCalendarDisconnect() {
     return getCalendarModule().googleCalendarDisconnect();
   }
@@ -17456,6 +17460,10 @@
     }
     if (action === 'google-calendar-sync') {
       googleCalendarSync(button.dataset.sourceId || '');
+      return;
+    }
+    if (action === 'ics-calendar-sync') {
+      icsCalendarSync(button.dataset.sourceId || '');
       return;
     }
     if (action === 'google-calendar-disconnect') {
