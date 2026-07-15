@@ -4057,11 +4057,25 @@ body.overview-open {
   overflow: hidden;
 }
 
-.weather-astronomy-hero {
+.weather-astronomy-columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin-bottom: 12px;
+}
+
+.weather-astronomy-section {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .26);
+}
+
+[data-theme="dark"] .weather-astronomy-section {
+  background: rgba(255, 255, 255, .035);
 }
 
 .weather-astronomy-feature {
@@ -4130,7 +4144,7 @@ body.overview-open {
 
 .weather-astronomy-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -4139,7 +4153,7 @@ body.overview-open {
 }
 
 @media (max-width: 520px) {
-  .weather-astronomy-hero {
+  .weather-astronomy-columns {
     grid-template-columns: minmax(0, 1fr);
   }
 }

@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_461';
-  const APP_BUILD = 461;
+  const APP_VERSION = 'Domácnost+ v.0.1_462';
+  const APP_BUILD = 462;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';

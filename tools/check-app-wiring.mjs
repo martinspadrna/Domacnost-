@@ -196,7 +196,11 @@ if (styles) {
   expect(weather, 'function renderMoonPhaseIcon', 'weather.js: pocasi renderuje vizualni fazi Mesice.');
   expect(weather, "{ id: 'astronomy', label: 'Další', icon: '🌙' }", 'weather.js: modul Pocasi ma zalozku Dalsi pro Slunce a Mesic.');
   expectAbsent(weather, 'Východ a západ slunce jsou z počasí', 'weather.js: astronomicka zalozka uz nema vysvetlujici popis.');
+  expect(weather, 'class="weather-astronomy-columns"', 'weather.js: Slunce a Mesic jsou v oddelenych sloupcich.');
+  expect(weather, 'weather-astronomy-section-sun', 'weather.js: Slunce ma vlastni astronomy sekci.');
+  expect(weather, 'weather-astronomy-section-moon', 'weather.js: Mesic ma vlastni astronomy sekci.');
   expect(styles, '.weather-astronomy-card {', 'styles.css: modul Pocasi ma astronomickou kartu.');
+  expect(styles, '.weather-astronomy-columns {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));', 'styles.css: Pocasi/Dalsi ma na desktopu 2 sloupce Slunce/Mesic.');
   expect(styles, '.vape-calc-panel.card,\n.vape-item-form-panel.card,\n.vape-items-panel.card,\n.vape-stats-panel.card', 'styles.css: Vape panely maji sjednoceny povrch.');
   expect(styles, '.vape-item-row.item {\n  border: 1px solid var(--line);', 'styles.css: Vape polozky maji sjednoceny seznamovy povrch.');
   expect(vape, 'class="grid two module-tabbed vape-tab-${escapeHtml(activeTab)}" data-tab-area="vape"', 'vape.js: Vape pouziva spolecny module-tabbed layout.');

@@ -384,23 +384,29 @@
             <div><h2>Slunce a měsíc</h2><p>${escapeHtml(weatherLocationLabel())}</p></div>
             <span class="badge">${escapeHtml(astronomy.moon.label)}</span>
           </div>
-          <div class="weather-astronomy-hero">
-            <div class="weather-astronomy-feature weather-astronomy-sun">
-              <span class="weather-astronomy-icon" aria-hidden="true">☀️</span>
-              <div><strong>${escapeHtml(astronomy.sun.daylight)}</strong><em>délka dne</em></div>
+          <div class="weather-astronomy-columns">
+            <div class="weather-astronomy-section weather-astronomy-section-sun">
+              <div class="weather-astronomy-feature weather-astronomy-sun">
+                <span class="weather-astronomy-icon" aria-hidden="true">☀️</span>
+                <div><strong>${escapeHtml(astronomy.sun.daylight)}</strong><em>délka dne</em></div>
+              </div>
+              <div class="weather-astronomy-grid">
+                <div class="mini-stat"><span>Východ slunce</span><strong>${escapeHtml(astronomy.sun.sunrise)}</strong></div>
+                <div class="mini-stat"><span>Západ slunce</span><strong>${escapeHtml(astronomy.sun.sunset)}</strong></div>
+              </div>
             </div>
-            <div class="weather-astronomy-feature weather-astronomy-moon">
-              ${renderMoonPhaseIcon(astronomy.moon, { size: 'lg' })}
-              <div><strong>${escapeHtml(`${astronomy.moon.illumination} %`)}</strong><em>${escapeHtml(astronomy.moon.label)}</em></div>
+            <div class="weather-astronomy-section weather-astronomy-section-moon">
+              <div class="weather-astronomy-feature weather-astronomy-moon">
+                ${renderMoonPhaseIcon(astronomy.moon, { size: 'lg' })}
+                <div><strong>${escapeHtml(`${astronomy.moon.illumination} %`)}</strong><em>${escapeHtml(astronomy.moon.label)}</em></div>
+              </div>
+              <div class="weather-astronomy-grid">
+                <div class="mini-stat"><span>Východ měsíce</span><strong>${escapeHtml(astronomy.moon.moonrise)}</strong></div>
+                <div class="mini-stat"><span>Západ měsíce</span><strong>${escapeHtml(astronomy.moon.moonset)}</strong></div>
+                <div class="mini-stat"><span>Nasvícení</span><strong>${escapeHtml(`${astronomy.moon.illumination} %`)}</strong></div>
+                <div class="mini-stat"><span>Fáze</span><strong>${escapeHtml(astronomy.moon.label)}</strong></div>
+              </div>
             </div>
-          </div>
-          <div class="weather-astronomy-grid">
-            <div class="mini-stat"><span>Východ slunce</span><strong>${escapeHtml(astronomy.sun.sunrise)}</strong></div>
-            <div class="mini-stat"><span>Západ slunce</span><strong>${escapeHtml(astronomy.sun.sunset)}</strong></div>
-            <div class="mini-stat"><span>Východ měsíce</span><strong>${escapeHtml(astronomy.moon.moonrise)}</strong></div>
-            <div class="mini-stat"><span>Západ měsíce</span><strong>${escapeHtml(astronomy.moon.moonset)}</strong></div>
-            <div class="mini-stat"><span>Nasvícení</span><strong>${escapeHtml(`${astronomy.moon.illumination} %`)}</strong></div>
-            <div class="mini-stat"><span>Fáze</span><strong>${escapeHtml(astronomy.moon.label)}</strong></div>
           </div>
         </section>
       `;
