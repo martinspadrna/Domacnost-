@@ -60,6 +60,17 @@
     const DEFAULT_CALENDAR_EVENT_MINUTES = deps.DEFAULT_CALENDAR_EVENT_MINUTES || 60;
     const APP_TIME_ZONE = deps.APP_TIME_ZONE || 'Europe/Prague';
     const GOOGLE_CALENDAR_AUTO_SYNC_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+    const CALENDAR_SOURCE_COLOR_OPTIONS = [
+      ['#3b82f6', 'Modrá'],
+      ['#8b5cf6', 'Fialová'],
+      ['#ec4899', 'Růžová'],
+      ['#ef4444', 'Červená'],
+      ['#f97316', 'Oranžová'],
+      ['#f59e0b', 'Žlutá'],
+      ['#22c55e', 'Zelená'],
+      ['#14b8a6', 'Tyrkysová'],
+      ['#64748b', 'Šedá']
+    ];
 
     let googleCalendarAutoSyncTimer = null;
     let googleCalendarAutoSyncRunning = false;
@@ -91,6 +102,63 @@
       return icons[normalizeCalendarSourceProvider(provider)] || '📅';
     }
 
+    function calendarKey(value = '') {
+      return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function normalizeCalendarUrl(value = '') {
+      const text = String(value || '').trim();
+      if (!text) return '';
+      try {
+        const url = new URL(text);
+        url.hash = '';
+        return url.toString();
+      } catch (_) {
+        return text;
+      }
+    }
+
+    function normalizeCalendarSourceColor(value = '') {
+      const color = String(value || '').trim().toLowerCase();
+      const allowed = new Set(CALENDAR_SOURCE_COLOR_OPTIONS.map(([item]) => item));
+      if (allowed.has(color)) return color;
+      if (/^#[0-9a-f]{6}$/i.test(color)) return color;
+      return CALENDAR_SOURCE_COLOR_OPTIONS[0][0];
+    }
+
+    function calendarSourceColorPicker(selected = '') {
+      const current = normalizeCalendarSourceColor(selected || CALENDAR_SOURCE_COLOR_OPTIONS[0][0]);
+      return `
+        <div class="field calendar-color-field">
+          <span>Barva</span>
+          <div class="calendar-color-picker" role="radiogroup" aria-label="Barva kalendáře">
+            ${CALENDAR_SOURCE_COLOR_OPTIONS.map(([color, label]) => `
+              <label class="calendar-color-option" title="${escapeHtml(label)}">
+                <input type="radio" name="color" value="${escapeHtml(color)}" ${color === current ? 'checked' : ''}>
+                <span class="calendar-color-swatch" style="--calendar-source-color: ${escapeHtml(color)}"></span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function calendarSourceDedupeKeys(source = {}) {
+      const normalized = mapCalendarSource(source);
+      const keys = [];
+      const add = (key) => {
+        if (key && !keys.includes(key)) keys.push(key);
+      };
+      add(normalized.cloudId ? `cloud:${normalized.cloudId}` : '');
+      add(normalized.id ? `id:${normalized.id}` : '');
+      const provider = normalizeCalendarSourceProvider(normalized.provider);
+      const providerCalendarId = normalizeCalendarUrl(normalized.providerCalendarId);
+      if (providerCalendarId && ['google', 'ical'].includes(provider)) add(`${provider}:${providerCalendarId}`);
+      if (providerCalendarId) add(`url:${providerCalendarId}`);
+      add(`${provider}:name:${calendarKey(normalized.name)}`);
+      return keys;
+    }
+
     function mapCalendarSource(row = {}) {
       return {
         id: row.id || row.cloudId || uid(),
@@ -101,7 +169,7 @@
         provider: normalizeCalendarSourceProvider(row.provider),
         providerCalendarId: row.provider_calendar_id || row.providerCalendarId || row.calendar_id || row.external_calendar_id || row.google_calendar_id || '',
         providerConnectionId: row.provider_connection_id || row.providerConnectionId || '',
-        color: row.color || '',
+        color: normalizeCalendarSourceColor(row.color),
         isEnabled: row.is_enabled !== undefined ? Boolean(row.is_enabled) : row.isEnabled !== false,
         syncEnabled: row.sync_enabled !== undefined ? Boolean(row.sync_enabled) : Boolean(row.syncEnabled),
         lastSyncedAt: row.last_synced_at || row.lastSyncedAt || '',
@@ -518,7 +586,7 @@
         return `
           <div class="item calendar-source-item ${source.isEnabled === false ? 'muted-item' : ''}">
             <div class="item-top">
-              <div class="item-title"><span class="calendar-source-icon">${escapeHtml(calendarSourceIcon(source.provider))}</span> ${escapeHtml(source.name)}</div>
+              <div class="item-title"><span class="calendar-source-color-dot" style="--calendar-source-color: ${escapeHtml(normalizeCalendarSourceColor(source.color))}"></span><span class="calendar-source-icon">${escapeHtml(calendarSourceIcon(source.provider))}</span> ${escapeHtml(source.name)}</div>
               <span class="badge ${source.isEnabled === false ? '' : 'good'}">${source.isEnabled === false ? 'skrytý' : 'aktivní'}</span>
             </div>
             <div class="item-meta">${escapeHtml(calendarSourceProviderLabel(source.provider))}${source.providerCalendarId ? ` · ${escapeHtml(source.providerCalendarId)}` : ''}${source.lastSyncedAt ? ` · sync ${formatDateTime(source.lastSyncedAt)}` : ''}</div>
@@ -603,7 +671,7 @@
                   ${field('Název kalendáře', 'name', 'text', 'Rodina / Práce / Sdílený kalendář', true)}
                   ${selectField('Typ', 'provider', [['manual', 'Ruční domácí'], ['family', 'Rodinný'], ['work', 'Práce'], ['ical', 'ICS/iCal odkaz (sdílený kalendář)'], ['other', 'Jiný']])}
                   ${field('ICS odkaz (jen typ „iCal“)', 'providerCalendarId', 'text', 'https://calendar.google.com/.../basic.ics')}
-                  ${field('Barva', 'color', 'text', '#8b5cf6')}
+                  ${calendarSourceColorPicker('#3b82f6')}
                   ${field('Poznámka', 'note', 'text', 'volitelné')}
                 </div>
                 <div class="inline-note compact-note">Typ „iCal“: vlož tajný/veřejný ICS odkaz kalendáře (Google Kalendář → Nastavení → Integrovat kalendář → tajná adresa v iCal formátu). Appka ho pravidelně sama stáhne tlačítkem „Sync“ u zdroje - bez Google přihlášení.</div>
@@ -707,7 +775,7 @@
       };
       touchState();
       saveState();
-      if (sources.some((source) => normalizeCalendarSourceProvider(source.provider) === 'google')) {
+      if (sources.some((source) => ['google', 'ical'].includes(normalizeCalendarSourceProvider(source.provider)))) {
         scheduleGoogleCalendarAutoSync('sources-loaded', { delay: showMessage ? 1800 : 9000 });
       }
       if (showMessage) {
@@ -765,25 +833,49 @@
       const map = new Map();
       [...current, ...incoming].forEach((source) => {
         const normalized = mapCalendarSource(source);
-        const key = String(normalized.id || normalized.cloudId || normalized.name);
-        map.set(key, normalized);
+        const keys = calendarSourceDedupeKeys(normalized);
+        const key = keys.find((candidate) => map.has(candidate)) || keys[0] || String(normalized.id || normalized.cloudId || normalized.name);
+        const existing = map.get(key);
+        const merged = existing
+          ? {
+              ...existing,
+              ...normalized,
+              id: normalized.cloudId || normalized.id || existing.id,
+              cloudId: normalized.cloudId || existing.cloudId || '',
+              name: normalized.name || existing.name,
+              color: normalizeCalendarSourceColor(normalized.color || existing.color),
+              providerCalendarId: normalizeCalendarUrl(normalized.providerCalendarId || existing.providerCalendarId),
+              isEnabled: normalized.isEnabled !== false && existing.isEnabled !== false,
+              syncEnabled: normalized.syncEnabled !== false || existing.syncEnabled !== false
+            }
+          : normalized;
+        [...keys, key, ...calendarSourceDedupeKeys(merged)].filter(Boolean).forEach((candidate) => map.set(candidate, merged));
       });
-      return [...map.values()].sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+      return Array.from(new Set(map.values())).sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
     }
 
     async function addCalendarSourceFromForm(data, form) {
+      const provider = normalizeCalendarSourceProvider(data.provider);
+      const providerCalendarId = provider === 'ical' ? normalizeCalendarUrl(data.providerCalendarId) : normalizeText(data.providerCalendarId);
+      if (provider === 'ical' && !providerCalendarId) return showToast('Vlož ICS/iCal odkaz kalendáře');
+      const duplicate = getCalendarSources().find((item) => normalizeCalendarSourceProvider(item.provider) === provider && provider === 'ical' && normalizeCalendarUrl(item.providerCalendarId) === providerCalendarId);
+      if (duplicate) {
+        showToast('Tento ICS kalendář už je přidaný');
+        icsCalendarSync(duplicate.cloudId || duplicate.id || '', { showMessage: true }).catch((error) => console.warn('ICS sync duplicate source failed', error));
+        return;
+      }
       const source = mapCalendarSource({
         id: uid(),
         householdId: currentHouseholdId(),
         profileId: currentProfileId(),
         name: normalizeText(data.name),
-        provider: normalizeCalendarSourceProvider(data.provider),
-        providerCalendarId: normalizeText(data.providerCalendarId),
-        color: normalizeText(data.color),
+        provider,
+        providerCalendarId,
+        color: normalizeCalendarSourceColor(data.color),
         isEnabled: true,
         // ical zdroj se (stejně jako google) rovnou synchronizuje - jinak by
         // ho icsCalendarSync() bez ruční akce navíc nikdy neposbíral.
-        syncEnabled: ['google', 'ical'].includes(normalizeCalendarSourceProvider(data.provider)),
+        syncEnabled: ['google', 'ical'].includes(provider),
         note: normalizeText(data.note),
         createdAt: new Date().toISOString()
       });
@@ -801,6 +893,9 @@
           getState().calendarCloud = { ...(getState().calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), [source]) };
           saveState();
           requestRender();
+          if (normalizeCalendarSourceProvider(source.provider) === 'ical') {
+            icsCalendarSync(source.cloudId || source.id || '', { showMessage: true }).catch((error) => console.warn('ICS sync after source save failed', error));
+          }
         }
       }).catch((error) => console.warn('Cloud sync (zdroj kalendáře) na pozadí selhal', error));
     }
@@ -810,15 +905,27 @@
       if (!client || !getState().cloud?.householdId) return null;
       const user = await refreshCloudSession(false);
       if (!user) return null;
+      const provider = normalizeCalendarSourceProvider(source.provider);
+      const providerCalendarId = provider === 'ical' ? normalizeCalendarUrl(source.providerCalendarId) : normalizeText(source.providerCalendarId);
+      if (['google', 'ical'].includes(provider) && providerCalendarId) {
+        const { data: existing, error: existingError } = await client
+          .from('calendar_sources')
+          .select('id,household_id,profile_id,name,provider,provider_calendar_id,provider_connection_id,color,is_enabled,sync_enabled,last_synced_at,note,created_at')
+          .eq('household_id', getState().cloud.householdId)
+          .eq('provider', provider)
+          .eq('provider_calendar_id', providerCalendarId)
+          .limit(1);
+        if (!existingError && existing?.[0]?.id) return existing[0];
+      }
       const payload = {
         household_id: getState().cloud.householdId,
         profile_id: source.profileId && String(source.profileId).startsWith('profile-') ? null : source.profileId || null,
         name: source.name || 'Kalendář',
-        provider: normalizeCalendarSourceProvider(source.provider),
-        provider_calendar_id: source.providerCalendarId || null,
-        color: source.color || null,
+        provider,
+        provider_calendar_id: providerCalendarId || null,
+        color: normalizeCalendarSourceColor(source.color),
         is_enabled: source.isEnabled !== false,
-        sync_enabled: ['google', 'ical'].includes(normalizeCalendarSourceProvider(source.provider)) ? source.syncEnabled !== false : Boolean(source.syncEnabled),
+        sync_enabled: ['google', 'ical'].includes(provider) ? source.syncEnabled !== false : Boolean(source.syncEnabled),
         note: source.note || null,
         created_by: user.id,
         updated_by: user.id
@@ -1362,6 +1469,255 @@
       }
     }
 
+    function hashCalendarText(value = '') {
+      let hash = 0x811c9dc5;
+      const text = String(value || '');
+      for (let index = 0; index < text.length; index += 1) {
+        hash ^= text.charCodeAt(index);
+        hash = Math.imul(hash, 0x01000193);
+      }
+      return (hash >>> 0).toString(36);
+    }
+
+    function unfoldIcsText(text = '') {
+      return String(text || '').replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    }
+
+    function parseIcsLine(line = '') {
+      const index = line.indexOf(':');
+      if (index < 0) return null;
+      const head = line.slice(0, index);
+      const value = line.slice(index + 1);
+      const [rawName, ...rawParams] = head.split(';');
+      const params = {};
+      rawParams.forEach((part) => {
+        const eq = part.indexOf('=');
+        if (eq > 0) params[part.slice(0, eq).toUpperCase()] = part.slice(eq + 1);
+      });
+      return { name: rawName.toUpperCase(), params, value };
+    }
+
+    function decodeIcsValue(value = '') {
+      return String(value || '').replace(/\\n/gi, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\').trim();
+    }
+
+    function icsDateToIsoDate(value = '') {
+      const text = String(value || '').replace(/Z$/i, '');
+      if (!/^\d{8}/.test(text)) return '';
+      return `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}`;
+    }
+
+    function icsDateToIsoTime(value = '') {
+      const text = String(value || '').replace(/Z$/i, '');
+      if (!/^\d{8}T\d{4}/.test(text)) return '';
+      return `${text.slice(9, 11)}:${text.slice(11, 13)}`;
+    }
+
+    function parseIcsDateValue(value = '', params = {}) {
+      const text = String(value || '').trim();
+      if (!text) return { date: '', time: '', allDay: false };
+      if (params.VALUE === 'DATE' || /^\d{8}$/.test(text)) return { date: icsDateToIsoDate(text), time: '', allDay: true };
+      if (/^\d{8}T\d{6}Z$/i.test(text)) {
+        const iso = `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}T${text.slice(9, 11)}:${text.slice(11, 13)}:${text.slice(13, 15)}Z`;
+        return { ...splitCalendarDateTime(iso), allDay: false };
+      }
+      return { date: icsDateToIsoDate(text), time: icsDateToIsoTime(text), allDay: false };
+    }
+
+    function parseIcsDuration(value = '') {
+      const match = String(value || '').match(/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?$/i);
+      if (!match) return 0;
+      return (Number(match[1] || 0) * 24 * 60) + (Number(match[2] || 0) * 60) + Number(match[3] || 0);
+    }
+
+    function addMonthsClampedIso(isoDate = '', months = 0) {
+      const date = new Date(`${String(isoDate || '').slice(0, 10)}T00:00:00Z`);
+      if (Number.isNaN(date.getTime())) return '';
+      const day = date.getUTCDate();
+      date.setUTCDate(1);
+      date.setUTCMonth(date.getUTCMonth() + Number(months || 0));
+      const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
+      date.setUTCDate(Math.min(day, lastDay));
+      return date.toISOString().slice(0, 10);
+    }
+
+    function diffDaysIso(a = '', b = '') {
+      const start = Date.parse(`${String(a).slice(0, 10)}T00:00:00Z`);
+      const end = Date.parse(`${String(b).slice(0, 10)}T00:00:00Z`);
+      if (!Number.isFinite(start) || !Number.isFinite(end)) return 0;
+      return Math.round((end - start) / 86400000);
+    }
+
+    function parseIcsRrule(value = '') {
+      const result = {};
+      String(value || '').split(';').forEach((part) => {
+        const eq = part.indexOf('=');
+        if (eq > 0) result[part.slice(0, eq).toUpperCase()] = part.slice(eq + 1);
+      });
+      return result;
+    }
+
+    function weekdayCode(isoDate = '') {
+      const date = new Date(`${String(isoDate).slice(0, 10)}T00:00:00Z`);
+      return ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][date.getUTCDay()] || '';
+    }
+
+    function shouldIncludeRecurringDate(dateIso, startIso, rule = {}) {
+      const interval = Math.max(1, Number(rule.INTERVAL || 1) || 1);
+      const freq = String(rule.FREQ || '').toUpperCase();
+      if (freq === 'DAILY') return diffDaysIso(startIso, dateIso) % interval === 0;
+      if (freq === 'WEEKLY') {
+        const days = String(rule.BYDAY || weekdayCode(startIso)).split(',').map((item) => item.replace(/^-?\d+/, '')).filter(Boolean);
+        const weeks = Math.floor(diffDaysIso(startIso, dateIso) / 7);
+        return weeks % interval === 0 && days.includes(weekdayCode(dateIso));
+      }
+      if (freq === 'MONTHLY') {
+        const start = new Date(`${startIso}T00:00:00Z`);
+        const current = new Date(`${dateIso}T00:00:00Z`);
+        const months = (current.getUTCFullYear() - start.getUTCFullYear()) * 12 + current.getUTCMonth() - start.getUTCMonth();
+        const allowedDays = String(rule.BYMONTHDAY || String(start.getUTCDate())).split(',').map(Number);
+        return months >= 0 && months % interval === 0 && allowedDays.includes(current.getUTCDate());
+      }
+      if (freq === 'YEARLY') {
+        const start = new Date(`${startIso}T00:00:00Z`);
+        const current = new Date(`${dateIso}T00:00:00Z`);
+        return (current.getUTCFullYear() - start.getUTCFullYear()) % interval === 0 && current.getUTCMonth() === start.getUTCMonth() && current.getUTCDate() === start.getUTCDate();
+      }
+      return false;
+    }
+
+    function buildIcsEvent(raw = {}, source = {}, occurrenceDate = '') {
+      const start = raw.dtstart || {};
+      const end = raw.dtend || {};
+      const startDate = occurrenceDate || start.date;
+      if (!startDate) return null;
+      let endDate = end.date || '';
+      let endTime = end.time || '';
+      if (!endDate && raw.durationMinutes) {
+        const startMs = Date.parse(buildCalendarDateTime(startDate, start.time || '00:00'));
+        if (Number.isFinite(startMs)) {
+          const endParts = splitCalendarDateTime(new Date(startMs + raw.durationMinutes * 60000).toISOString());
+          endDate = endParts.date;
+          endTime = start.allDay ? '' : endParts.time;
+        }
+      }
+      if (occurrenceDate && raw.dtstart?.date && endDate) endDate = addDaysIso(occurrenceDate, Math.max(0, diffDaysIso(raw.dtstart.date, endDate)));
+      const uidKey = `${raw.uid || raw.summary || startDate}-${start.time || ''}-${occurrenceDate || start.date}`;
+      return {
+        id: `event-ics-${hashCalendarText(`${source.id || source.cloudId || source.name}-${uidKey}`)}`,
+        cloudId: '',
+        externalId: raw.uid || '',
+        sourceId: source.id || source.cloudId || '',
+        householdId: currentHouseholdId(),
+        profileId: currentProfileId(),
+        createdAt: new Date().toISOString(),
+        title: raw.summary || source.name || 'Udalost',
+        date: startDate,
+        time: start.allDay ? '' : start.time,
+        endDate: endDate && endDate !== startDate ? endDate : '',
+        endTime: start.allDay ? '' : endTime,
+        type: 'event',
+        location: raw.location || '',
+        note: raw.description || ''
+      };
+    }
+
+    function expandIcsEvent(raw = {}, source = {}) {
+      if (!raw.dtstart?.date) return [];
+      const rule = raw.rrule ? parseIcsRrule(raw.rrule) : null;
+      if (!rule?.FREQ) return [buildIcsEvent(raw, source)].filter(Boolean);
+      const startIso = raw.dtstart.date;
+      const windowStart = addDaysIso(todayISO(), -370);
+      const windowEnd = addDaysIso(todayISO(), 730);
+      const until = rule.UNTIL ? parseIcsDateValue(rule.UNTIL, {}).date : '';
+      const countLimit = Math.min(Math.max(Number(rule.COUNT || 0) || 1500, 1), 1500);
+      const exdates = new Set((raw.exdates || []).flatMap((item) => String(item.value || '').split(',').map((value) => parseIcsDateValue(value, item.params || {}).date)).filter(Boolean));
+      const events = [];
+      let cursor = startIso;
+      let produced = 0;
+      let guard = 0;
+      while (cursor && cursor <= windowEnd && guard < 1500 && produced < countLimit) {
+        guard += 1;
+        if ((!until || cursor <= until) && shouldIncludeRecurringDate(cursor, startIso, rule)) {
+          produced += 1;
+          if (cursor >= windowStart && !exdates.has(cursor)) {
+            const event = buildIcsEvent(raw, source, cursor);
+            if (event) events.push(event);
+          }
+        }
+        if (String(rule.FREQ).toUpperCase() === 'MONTHLY') cursor = addMonthsClampedIso(cursor, 1);
+        else if (String(rule.FREQ).toUpperCase() === 'YEARLY') cursor = addMonthsClampedIso(cursor, 12);
+        else cursor = addDaysIso(cursor, 1);
+      }
+      return events;
+    }
+
+    function parseIcsEvents(text = '', source = {}) {
+      const lines = unfoldIcsText(text).split('\n');
+      const events = [];
+      let current = null;
+      lines.forEach((line) => {
+        const clean = line.trimEnd();
+        if (clean === 'BEGIN:VEVENT') { current = { exdates: [] }; return; }
+        if (clean === 'END:VEVENT') {
+          if (current) events.push(...expandIcsEvent(current, source));
+          current = null;
+          return;
+        }
+        if (!current) return;
+        const parsed = parseIcsLine(clean);
+        if (!parsed) return;
+        if (parsed.name === 'UID') current.uid = decodeIcsValue(parsed.value);
+        if (parsed.name === 'SUMMARY') current.summary = decodeIcsValue(parsed.value);
+        if (parsed.name === 'DESCRIPTION') current.description = decodeIcsValue(parsed.value);
+        if (parsed.name === 'LOCATION') current.location = decodeIcsValue(parsed.value);
+        if (parsed.name === 'DTSTART') current.dtstart = parseIcsDateValue(parsed.value, parsed.params);
+        if (parsed.name === 'DTEND') current.dtend = parseIcsDateValue(parsed.value, parsed.params);
+        if (parsed.name === 'DURATION') current.durationMinutes = parseIcsDuration(parsed.value);
+        if (parsed.name === 'RRULE') current.rrule = parsed.value;
+        if (parsed.name === 'EXDATE') current.exdates.push(parsed);
+      });
+      const byId = new Map();
+      events.filter((event) => event?.date && event.title).forEach((event) => byId.set(event.id, event));
+      return Array.from(byId.values()).sort((a, b) => calendarEventStartMs(a) - calendarEventStartMs(b));
+    }
+
+    async function syncIcsSourcesInBrowser(sources = [], showMessage = true) {
+      let total = 0;
+      let attempted = 0;
+      let succeeded = 0;
+      const syncedAt = new Date().toISOString();
+      const sourceIds = new Set();
+      for (const source of sources) {
+        const url = normalizeCalendarUrl(source.providerCalendarId);
+        if (!url) continue;
+        attempted += 1;
+        try {
+          const response = await fetch(url, { cache: 'no-store' });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const text = await response.text();
+          const events = parseIcsEvents(text, source);
+          const keys = [source.id, source.cloudId].filter(Boolean).map(String);
+          keys.forEach((key) => sourceIds.add(key));
+          getState().calendar = (getState().calendar || []).filter((event) => event.cloudId || !keys.includes(String(event.sourceId || '')));
+          getState().calendar.push(...events);
+          source.lastSyncedAt = syncedAt;
+          total += events.length;
+          succeeded += 1;
+        } catch (error) {
+          console.warn('Browser ICS sync failed', source.name || source.providerCalendarId, error);
+          if (showMessage) showToast('ICS odkaz nejde načíst. Zkontroluj odkaz nebo sdílení kalendáře.');
+        }
+      }
+      if (sourceIds.size) {
+        getState().calendarCloud = { ...(getState().calendarCloud || {}), sources: mergeCalendarSources(getCalendarSources(), sources), googleLastSyncAt: syncedAt };
+        touchState();
+        saveState({ immediate: true });
+        requestRender();
+      }
+      return attempted && !succeeded ? -1 : total;
+    }
+
     function googleCalendarSourceSyncMs(source = {}) {
       const raw = source.lastSyncedAt || source.last_synced_at || getState().calendarCloud?.googleLastSyncAt || '';
       const ms = raw ? Date.parse(raw) : 0;
@@ -1525,9 +1881,11 @@
       if (!sources.length && getState().cloud?.householdId) sources = await cloudLoadCalendarSources(false);
       const icsSources = sources.filter((source) => normalizeCalendarSourceProvider(source.provider) === 'ical' && source.isEnabled !== false);
       const body = {};
+      let targetSources = icsSources;
 
       if (cleanSourceId) {
         const source = getCalendarSource(cleanSourceId) || icsSources.find((item) => [item.id, item.cloudId].filter(Boolean).map(String).includes(cleanSourceId));
+        targetSources = [source];
         if (!source || normalizeCalendarSourceProvider(source.provider) !== 'ical') { if (showMessage) showToast('ICS kalendář nenalezen'); return false; }
         body.sourceId = source.cloudId || source.id;
         body.sourceIds = [source.cloudId || source.id].filter(Boolean);
@@ -1539,17 +1897,23 @@
       }
 
       const data = await invokeCalendarEdgeFunction('calendar-ics-sync', body, showMessage);
-      if (!data) return false;
-      const syncedSources = (data.sources || []).map(mapCalendarSource);
-      getState().calendarCloud = {
-        ...(getState().calendarCloud || {}),
-        sources: syncedSources.length ? mergeCalendarSources(getCalendarSources(), syncedSources) : getCalendarSources()
-      };
-      await cloudLoadCalendar(false);
+      if (data) {
+        const syncedSources = (data.sources || []).map(mapCalendarSource);
+        getState().calendarCloud = {
+          ...(getState().calendarCloud || {}),
+          sources: syncedSources.length ? mergeCalendarSources(getCalendarSources(), syncedSources) : getCalendarSources()
+        };
+        await cloudLoadCalendar(false);
+      }
+      const targetIds = new Set(targetSources.flatMap((source) => [source?.id, source?.cloudId].filter(Boolean).map(String)));
+      const linkedEvents = (getState().calendar || []).filter((event) => targetIds.has(String(event.sourceId || ''))).length;
+      let localEvents = 0;
+      if (!data || linkedEvents === 0) localEvents = await syncIcsSourcesInBrowser(targetSources.filter(Boolean), showMessage);
       requestRender();
-      const errorCount = Array.isArray(data.errors) ? data.errors.length : 0;
-      if (showMessage) showToast(`ICS sync hotový${Number.isFinite(data.eventsUpserted) ? ` · ${data.eventsUpserted} událostí` : ''}${errorCount ? ` · ${errorCount} zdroj(ů) selhalo` : ''}`);
-      return true;
+      const errorCount = Array.isArray(data?.errors) ? data.errors.length : 0;
+      const eventCount = Number.isFinite(data?.eventsUpserted) ? data.eventsUpserted : (localEvents >= 0 ? localEvents : NaN);
+      if (showMessage) showToast(`ICS sync hotový${Number.isFinite(eventCount) ? ` · ${eventCount} událostí` : ''}${localEvents ? ' · lokálně' : ''}${errorCount ? ` · ${errorCount} zdroj selhal` : ''}`);
+      return Boolean(data || localEvents >= 0);
     }
 
     async function googleCalendarDisconnect() {

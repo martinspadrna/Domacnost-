@@ -20,6 +20,15 @@ function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "content-type": "application/json; charset=utf-8" } });
 }
 
+function errorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === 'object') {
+    const anyError = error as Record<string, unknown>;
+    return String(anyError.message || anyError.details || anyError.hint || anyError.code || JSON.stringify(anyError));
+  }
+  return String(error);
+}
+
 function requireEnv(name: string) {
   const value = Deno.env.get(name);
   if (!value) throw new Error(`Missing env ${name}`);
@@ -365,7 +374,13 @@ function normalizeIcsEvent(instance: { event: IcsEvent; startIso: string; endIso
     provider_updated_at: event.lastModified || null,
     source_etag: null,
     external_url: null,
-    raw_provider_payload: null,
+    raw_provider_payload: {
+      provider: 'ical',
+      uid: event.uid,
+      recurrenceId: event.recurrenceId,
+      startIso,
+      endIso
+    },
     updated_by: userId,
   };
 }
@@ -421,7 +436,7 @@ Deno.serve(async (req: Request) => {
         }
         await supabase.from('calendar_sources').update({ last_synced_at: new Date().toISOString(), sync_status: 'idle', sync_error: null, updated_by: user.id }).eq('id', source.id);
       } catch (sourceError) {
-        const message = sourceError instanceof Error ? sourceError.message : String(sourceError);
+        const message = errorMessage(sourceError);
         errors.push({ sourceId: source.id, error: message });
         await supabase.from('calendar_sources').update({ sync_status: 'error', sync_error: message, updated_by: user.id }).eq('id', source.id);
       }
@@ -429,7 +444,7 @@ Deno.serve(async (req: Request) => {
 
     return jsonResponse({ ok: true, sources, eventsUpserted, eventsCancelled, errors });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorMessage(error);
     return jsonResponse({ ok: false, code: 'calendar_ics_sync_failed', error: message }, 400);
   }
 });
