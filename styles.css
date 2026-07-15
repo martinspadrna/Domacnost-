@@ -14436,9 +14436,10 @@ body.home-active {
   display: grid;
   gap: 2px;
   padding: 6px 7px;
-  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--line));
+  border: 1px solid color-mix(in srgb, var(--calendar-source-color, var(--primary)) 38%, var(--line));
+  border-left-width: 4px;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--primary) 10%, rgba(255, 255, 255, 0.72));
+  background: color-mix(in srgb, var(--calendar-source-color, var(--primary)) 11%, rgba(255, 255, 255, 0.72));
   color: var(--text);
   text-align: left;
 }
@@ -14449,8 +14450,7 @@ body.home-active {
 }
 
 .calendar-day-event.cloud-event {
-  border-color: color-mix(in srgb, #0e9f6e 22%, var(--line));
-  background: color-mix(in srgb, #0e9f6e 10%, rgba(255, 255, 255, 0.72));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
 }
 
 .calendar-day-event.continued-event {
@@ -14458,8 +14458,18 @@ body.home-active {
   border-style: dashed;
 }
 
+.calendar-event-list-item {
+  border-color: color-mix(in srgb, var(--calendar-source-color, var(--primary)) 34%, var(--line));
+  border-left: 4px solid var(--calendar-source-color, var(--primary));
+  background: color-mix(in srgb, var(--calendar-source-color, var(--primary)) 8%, var(--panel-strong));
+}
+
 [data-theme="dark"] .calendar-day-event {
-  background: color-mix(in srgb, var(--primary) 18%, rgba(255, 255, 255, 0.055));
+  background: color-mix(in srgb, var(--calendar-source-color, var(--primary)) 18%, rgba(255, 255, 255, 0.055));
+}
+
+[data-theme="dark"] .calendar-event-list-item {
+  background: color-mix(in srgb, var(--calendar-source-color, var(--primary)) 12%, rgba(255, 255, 255, 0.055));
 }
 
 .calendar-day-event strong,

@@ -141,8 +141,11 @@ if (app) {
   expect(calendar, 'function parseIcsEvents', 'calendar.js: ICS/iCal ma frontend fallback parser.');
   expect(calendar, 'function syncIcsSourcesInBrowser', 'calendar.js: ICS/iCal umi nacist udalosti i bez edge funkce.');
   expect(calendar, 'function calendarSourceColorPicker', 'calendar.js: barva zdroje kalendare je vyber ze swatchu.');
+  expect(calendar, 'function calendarSourceColor', 'calendar.js: udalosti umi nacist barvu sveho zdroje.');
+  expect(calendar, 'style="--calendar-source-color:', 'calendar.js: udalosti v kalendari dostavaji CSS barvu zdroje.');
   expect(calendar, 'calendarSourceDedupeKeys', 'calendar.js: zdroje kalendare se deduplikuji podle provider/url aliasu.');
   expect(styles, '.calendar-color-picker', 'styles.css: kalendar ma swatch vyber barvy zdroje.');
+  expect(styles, 'border-left: 4px solid var(--calendar-source-color', 'styles.css: kalendarove seznamove udalosti maji barevny okraj podle zdroje.');
   expect(calendar, 'function scheduleCalendarAutoSync', 'calendar.js: iCal auto-sync uz nema Google OAuth wrapper.');
   expectAbsent(calendar, 'function googleCalendarStart', 'calendar.js: Google OAuth pripojeni je odstranene.');
   expectAbsent(app, 'google-calendar-start', 'app.js: Google OAuth action handlery jsou odstranene.');

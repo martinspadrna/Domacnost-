@@ -230,6 +230,11 @@
       return source?.name || 'Ruční kalendář';
     }
 
+    function calendarSourceColor(sourceId) {
+      const source = getCalendarSource(sourceId);
+      return normalizeCalendarSourceColor(source?.color || CALENDAR_SOURCE_COLOR_OPTIONS[0][0]);
+    }
+
     function calendarSourceOptions(selected = '') {
       const sources = getCalendarSources().filter((source) => source.isEnabled !== false);
       const options = [['manual', 'Sdílený kalendář domácnosti']];
@@ -545,7 +550,7 @@
                       </div>
                       <div class="calendar-day-events">
                         ${visible.map((event) => `
-                          <button class="calendar-day-event ${event.cloudId ? 'cloud-event' : ''} ${dayIso !== String(event.date || '').slice(0, 10) ? 'continued-event' : ''}" type="button" data-action="calendar-event-detail" data-id="${escapeHtml(event.id || event.cloudId || '')}" title="${escapeHtml(event.title)}">
+                          <button class="calendar-day-event ${event.cloudId ? 'cloud-event' : ''} ${dayIso !== String(event.date || '').slice(0, 10) ? 'continued-event' : ''}" type="button" data-action="calendar-event-detail" data-id="${escapeHtml(event.id || event.cloudId || '')}" title="${escapeHtml(event.title)}" style="--calendar-source-color: ${escapeHtml(calendarSourceColor(event.sourceId))}">
                             <strong>${dayIso !== String(event.date || '').slice(0, 10) ? '↳ ' : ''}${escapeHtml(event.title)}</strong>
                             <span>${escapeHtml(dayIso !== String(event.date || '').slice(0, 10) ? 'pokračuje' : calendarCellEventTime(event))}${event.location ? ` · ${escapeHtml(event.location)}` : ''}</span>
                           </button>
@@ -697,7 +702,7 @@
 
     function renderEventList(events, withDelete = false) {
       return `<div class="list">${events.map((event) => `
-        <div class="item">
+        <div class="item calendar-event-list-item" style="--calendar-source-color: ${escapeHtml(calendarSourceColor(event.sourceId))}">
           <div class="item-top">
             <div class="item-title">${escapeHtml(event.title)}</div>
             <span class="badge ${event.cloudId ? 'good' : ''}">${event.cloudId ? 'cloud' : 'lokálně'}</span>
