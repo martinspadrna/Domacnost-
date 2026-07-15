@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_462';
-  const APP_BUILD = 462;
+  const APP_VERSION = 'Domácnost+ v.0.1_463';
+  const APP_BUILD = 463;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -8606,6 +8606,14 @@
     return readingGroups().find((group) => group.id === cleanId) || readingDefaultGroup();
   }
 
+  function readingGroupIdOrDefault(id = '') {
+    const cleanId = normalizeText(id);
+    if (!cleanId) return DEFAULT_READING_GROUP_ID;
+    const source = Array.isArray(state.readingGroups) ? state.readingGroups : [];
+    if (cleanId === DEFAULT_READING_GROUP_ID || source.some((group) => normalizeText(group?.id) === cleanId)) return cleanId;
+    return DEFAULT_READING_GROUP_ID;
+  }
+
   function readingGroupOptions() {
     return readingGroups().map((group) => [group.id, group.name]);
   }
@@ -9652,7 +9660,7 @@
     const meta = readingTypeMeta(type);
     const meter = normalizeReadingMeter({
       type,
-      groupId: data.groupId || readingDefaultGroup().id,
+      groupId: readingGroupIdOrDefault(data.groupId),
       parentMeterId: data.parentMeterId,
       billingFrom: data.billingFrom,
       billingTo: data.billingTo,
@@ -9701,7 +9709,7 @@
       createdAt: original.createdAt,
       updatedAt: new Date().toISOString(),
       type,
-      groupId: data.groupId || original.groupId || readingDefaultGroup().id,
+      groupId: readingGroupIdOrDefault(data.groupId || original.groupId),
       parentMeterId: data.parentMeterId,
       billingFrom: data.billingFrom,
       billingTo: data.billingTo,
@@ -10602,7 +10610,7 @@
           <div class="readings-meter-tools readings-meter-tool-tabs">
             <button class="readings-tool-card ${readingsMeterToolPage === 'import' ? 'active' : ''}" type="button" data-action="set-reading-meter-tool" data-tool="import"><strong>Import</strong><span>z Domácí odečty</span></button>
             <button class="readings-tool-card ${readingsMeterToolPage === 'add' ? 'active' : ''}" type="button" data-action="set-reading-meter-tool" data-tool="add"><strong>Přidat měřidlo</strong><span>elektřina, plyn, voda</span></button>
-            <button class="readings-tool-card ${readingsMeterToolPage === 'prices' ? 'active' : ''}" type="button" data-action="set-reading-meter-tool" data-tool="prices"><strong>Ceny</strong><span>průměry a zálohy</span></button>
+            <button class="readings-tool-card ${readingsMeterToolPage === 'prices' ? 'active' : ''}" type="button" data-action="set-reading-meter-tool" data-tool="prices"><strong>Místa</strong><span>skupiny, ceny, zálohy</span></button>
           </div>
           ${renderReadingsMeterToolPage(readingsMeterToolPage, priceFormBlock)}
           ${allMeters.length ? `<div class="readings-meter-grid">${allMeters.map((meter) => renderReadingMeterCard(meter, { context: 'meters' })).join('')}</div>` : renderEmpty('Zatím není přidané žádné měřidlo.')}

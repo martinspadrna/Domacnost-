@@ -154,6 +154,10 @@ if (app) {
   expect(app, 'function compareHomeAttentionItems', 'app.js: Home Nadchazejici ma vlastni comparator pro casove razeni.');
   expect(app, 'sortAt: calendarEventStartMs(event)', 'app.js: kalendarove udalosti na Home se radi podle skutecneho zacatku.');
   expect(styles, 'grid-template-columns: repeat(4, minmax(0, 1fr));', 'styles.css: Home Nadchazejici ma desktop 4 sloupce.');
+  expect(app, 'function readingGroupIdOrDefault', 'app.js: Odecty maji bezpecny fallback pro skupinu meridla.');
+  expect(app, 'groupId: readingGroupIdOrDefault(data.groupId)', 'app.js: pridani meridla uklada jen existujici skupinu.');
+  expect(app, 'groupId: readingGroupIdOrDefault(data.groupId || original.groupId)', 'app.js: uprava meridla uklada jen existujici skupinu.');
+  expect(app, '<strong>Místa</strong><span>skupiny, ceny, zálohy</span>', 'app.js: Odecty ukazuji spravu skupin jako Mista, ne jen jako Ceny.');
   expect(app, 'function isHorizontallyScrollableTarget', 'app.js: swipe guard umí poznat horizontálně scrollovatelný blok.');
   expect(app, 'const NAVIGATION_SWIPE_IGNORE_SELECTOR', 'app.js: swipe guard má centrální seznam chráněných oblastí.');
   expect(app, 'function isNavigationSwipeIgnoredTarget', 'app.js: navigační swipe má jednotný ignore helper.');
