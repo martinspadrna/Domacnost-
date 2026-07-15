@@ -158,6 +158,8 @@ if (app) {
   expect(app, 'groupId: readingGroupIdOrDefault(data.groupId)', 'app.js: pridani meridla uklada jen existujici skupinu.');
   expect(app, 'groupId: readingGroupIdOrDefault(data.groupId || original.groupId)', 'app.js: uprava meridla uklada jen existujici skupinu.');
   expect(app, '<strong>Místa</strong><span>skupiny, ceny, zálohy</span>', 'app.js: Odecty ukazuji spravu skupin jako Mista, ne jen jako Ceny.');
+  expect(app, 'function resetSubscriptionMonthToCurrentForOpen', 'app.js: Predplatne ma reset mesice pri otevreni modulu.');
+  expect(app, "if (activeModule === 'subscriptions') resetSubscriptionMonthToCurrentForOpen();", 'app.js: otevreni Predplatneho prepne prehled na aktualni mesic.');
   expect(app, 'function isHorizontallyScrollableTarget', 'app.js: swipe guard umí poznat horizontálně scrollovatelný blok.');
   expect(app, 'const NAVIGATION_SWIPE_IGNORE_SELECTOR', 'app.js: swipe guard má centrální seznam chráněných oblastí.');
   expect(app, 'function isNavigationSwipeIgnoredTarget', 'app.js: navigační swipe má jednotný ignore helper.');

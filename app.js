@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_463';
-  const APP_BUILD = 463;
+  const APP_VERSION = 'Domácnost+ v.0.1_464';
+  const APP_BUILD = 464;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -12709,6 +12709,14 @@
     return getSubscriptionsModule().shiftSubscriptionMonth(offset);
   }
 
+  function resetSubscriptionMonthToCurrentForOpen() {
+    const currentMonth = todayISO().slice(0, 7);
+    if (subscriptionSelectedMonth() === currentMonth) return;
+    state.settings = { ...(state.settings || {}), subscriptionMonth: currentMonth };
+    touchState();
+    saveState();
+  }
+
   function setSubscriptionPaymentFilter(filter) {
     return getSubscriptionsModule().setSubscriptionPaymentFilter(filter);
   }
@@ -19707,6 +19715,7 @@
           : null;
         activeOverview = null;
         activeModule = nextModule;
+        if (activeModule === 'subscriptions') resetSubscriptionMonthToCurrentForOpen();
         if (nav.dataset.targetTab && nav.dataset.nav !== 'homecare') {
           moduleTabs = { ...(moduleTabs || {}), [activeModule]: nav.dataset.targetTab };
           localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
