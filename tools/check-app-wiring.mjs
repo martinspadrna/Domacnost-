@@ -142,6 +142,9 @@ if (app) {
   expect(calendar, 'function parseIcsEvents', 'calendar.js: ICS/iCal ma frontend fallback parser.');
   expect(calendar, 'function syncIcsSourcesInBrowser', 'calendar.js: ICS/iCal umi nacist udalosti i bez edge funkce.');
   expect(calendar, "filter((event) => !keys.includes(String(event.sourceId || '')))", 'calendar.js: browser ICS sync maze lokalni udalosti, ktere uz ve zdroji nejsou.');
+  expect(calendar, 'function calendarSourceIdSet', 'calendar.js: cloud calendar load umi porovnat lokalni udalosti s aliasy cloud/source id.');
+  expect(calendar, 'cloudBackedIcsSourceIds', 'calendar.js: cloud calendar load cisti lokalni ICS kopie po nacteni cloud zdroje.');
+  expect(calendar, '!event.cloudId && !isEventFromSourceSet(event, cloudBackedIcsSourceIds)', 'calendar.js: zrusene ICS udalosti nezustavaji v lokalnim fallback stavu po cloud syncu.');
   expect(calendar, 'const CALENDAR_AUTO_SYNC_MAX_AGE_MS = 30 * 60 * 1000;', 'calendar.js: ICS/iCal auto-sync se kontroluje priblizne po 30 minutach.');
   expect(calendar, 'scheduleCalendarAutoSync(\'periodic\'', 'calendar.js: ICS/iCal auto-sync se sam znovu naplanuje.');
   expect(calendar, 'eventsRemoved', 'calendar.js: ICS/iCal sync vraci pocet odstranenych udalosti.');

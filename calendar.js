@@ -236,6 +236,15 @@
       return normalizeCalendarSourceColor(source?.color || CALENDAR_SOURCE_COLOR_OPTIONS[0][0]);
     }
 
+    function calendarSourceIdSet(source = {}) {
+      return new Set([source.id, source.cloudId].filter(Boolean).map(String));
+    }
+
+    function isEventFromSourceSet(event = {}, sourceIds = new Set()) {
+      const sourceId = String(event.sourceId || '');
+      return Boolean(sourceId && sourceIds.has(sourceId));
+    }
+
     function calendarSourceOptions(selected = '') {
       const sources = getCalendarSources().filter((source) => source.isEnabled !== false);
       const options = [['manual', 'Sdílený kalendář domácnosti']];
@@ -1084,7 +1093,11 @@
         showToast(error.message || 'Kalendář se nepovedlo načíst');
         return false;
       }
-      const localOnly = getState().calendar.filter((event) => !event.cloudId);
+      const cloudBackedIcsSourceIds = new Set();
+      getCalendarSources()
+        .filter((source) => normalizeCalendarSourceProvider(source.provider) === 'ical')
+        .forEach((source) => calendarSourceIdSet(source).forEach((id) => cloudBackedIcsSourceIds.add(id)));
+      const localOnly = getState().calendar.filter((event) => !event.cloudId && !isEventFromSourceSet(event, cloudBackedIcsSourceIds));
       const cloudItems = (data || []).map((item) => {
         const start = splitCalendarDateTime(item.starts_at, { allDay: item.all_day });
         const end = splitCalendarDateTime(item.ends_at, { allDay: item.all_day });
