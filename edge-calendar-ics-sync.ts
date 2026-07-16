@@ -128,7 +128,19 @@ function parseIcsLine(line: string): { name: string; params: Record<string, stri
   return { name, params, value };
 }
 
-type IcsDateTime = { iso: string; allDay: boolean };
+type IcsDateTime = {
+  iso: string;
+  allDay: boolean;
+  timeZone: string;
+  localDate: string;
+  localTime: string;
+  y: number;
+  mo: number;
+  d: number;
+  h: number;
+  mi: number;
+  s: number;
+};
 
 // Deno (Supabase edge runtime) má plnou ICU/Intl data - offset konkrétní IANA
 // zóny v konkrétní chvíli se dá spočítat i bez timezone knihovny: naformátuj
@@ -162,6 +174,26 @@ function localPartsToUtcMs(y: number, mo: number, d: number, h: number, mi: numb
   return guessUtc - offsetMin * 60000;
 }
 
+function pad2(value: number) {
+  return String(value).padStart(2, '0');
+}
+
+function localDateKey(parts: Pick<IcsDateTime, 'y' | 'mo' | 'd'>) {
+  return `${parts.y}-${pad2(parts.mo + 1)}-${pad2(parts.d)}`;
+}
+
+function localTimeKey(parts: Pick<IcsDateTime, 'h' | 'mi' | 's'>) {
+  return `${pad2(parts.h)}:${pad2(parts.mi)}:${pad2(parts.s)}`;
+}
+
+function occurrenceKeys(item: IcsDateTime) {
+  return [
+    item.iso,
+    item.localDate,
+    `${item.localDate}T${item.localTime}`
+  ].filter(Boolean);
+}
+
 function parseIcsDate(prop: { params: Record<string, string>; value: string }, fallbackTimeZone = 'Europe/Prague'): IcsDateTime | null {
   const raw = prop.value.trim();
   if (!raw) return null;
@@ -170,14 +202,39 @@ function parseIcsDate(prop: { params: Record<string, string>; value: string }, f
   if (!match) return null;
   const [, yStr, moStr, dStr, hStr, miStr, sStr, zFlag] = match;
   const y = Number(yStr); const mo = Number(moStr) - 1; const d = Number(dStr);
+  const timeZone = zFlag ? 'UTC' : (prop.params.TZID || fallbackTimeZone);
   if (isDateOnly || !hStr) {
-    return { iso: `${yStr}-${moStr}-${dStr}T00:00:00Z`, allDay: true };
+    return {
+      iso: `${yStr}-${moStr}-${dStr}T00:00:00Z`,
+      allDay: true,
+      timeZone,
+      localDate: `${yStr}-${moStr}-${dStr}`,
+      localTime: '00:00:00',
+      y,
+      mo,
+      d,
+      h: 0,
+      mi: 0,
+      s: 0
+    };
   }
   const h = Number(hStr); const mi = Number(miStr); const s = Number(sStr);
   let utcMs: number;
   if (zFlag) utcMs = Date.UTC(y, mo, d, h, mi, s);
-  else utcMs = localPartsToUtcMs(y, mo, d, h, mi, s, prop.params.TZID || fallbackTimeZone);
-  return { iso: new Date(utcMs).toISOString(), allDay: false };
+  else utcMs = localPartsToUtcMs(y, mo, d, h, mi, s, timeZone);
+  return {
+    iso: new Date(utcMs).toISOString(),
+    allDay: false,
+    timeZone,
+    localDate: `${yStr}-${moStr}-${dStr}`,
+    localTime: `${hStr}:${miStr}:${sStr}`,
+    y,
+    mo,
+    d,
+    h,
+    mi,
+    s
+  };
 }
 
 type IcsEvent = {
@@ -191,6 +248,7 @@ type IcsEvent = {
   rrule: Record<string, string> | null;
   exdates: string[];
   recurrenceId: string | null;
+  recurrenceKeys: string[];
   lastModified: string;
 };
 
@@ -230,6 +288,7 @@ function parseIcs(raw: string): IcsEvent[] {
           rrule: current.rrule || null,
           exdates,
           recurrenceId: current.recurrenceId || null,
+          recurrenceKeys: current.recurrenceKeys || [],
           lastModified: current.lastModified || ''
         });
       }
@@ -245,12 +304,19 @@ function parseIcs(raw: string): IcsEvent[] {
       case 'STATUS': current.status = value.trim().toUpperCase(); break;
       case 'DTSTART': { const parsed = parseIcsDate({ params, value }); if (parsed) current.start = parsed; break; }
       case 'DTEND': { const parsed = parseIcsDate({ params, value }); if (parsed) current.end = parsed; break; }
-      case 'RECURRENCE-ID': { const parsed = parseIcsDate({ params, value }); if (parsed) current.recurrenceId = parsed.iso; break; }
+      case 'RECURRENCE-ID': {
+        const parsed = parseIcsDate({ params, value });
+        if (parsed) {
+          current.recurrenceId = parsed.iso;
+          current.recurrenceKeys = occurrenceKeys(parsed);
+        }
+        break;
+      }
       case 'RRULE': current.rrule = parseRrule(value); break;
       case 'EXDATE': {
         for (const part of value.split(',')) {
           const parsed = parseIcsDate({ params, value: part });
-          if (parsed) exdates.push(parsed.iso);
+          if (parsed) exdates.push(...occurrenceKeys(parsed));
         }
         break;
       }
@@ -267,13 +333,64 @@ function parseIcs(raw: string): IcsEvent[] {
 const WEEKDAY_INDEX: Record<string, number> = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
 const MAX_OCCURRENCES_PER_EVENT = 200;
 
-function addUnit(date: Date, unit: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY', amount: number): Date {
-  const next = new Date(date.getTime());
-  if (unit === 'DAILY') next.setUTCDate(next.getUTCDate() + amount);
-  else if (unit === 'WEEKLY') next.setUTCDate(next.getUTCDate() + amount * 7);
-  else if (unit === 'MONTHLY') next.setUTCMonth(next.getUTCMonth() + amount);
-  else next.setUTCFullYear(next.getUTCFullYear() + amount);
-  return next;
+type LocalOccurrenceParts = Pick<IcsDateTime, 'y' | 'mo' | 'd' | 'h' | 'mi' | 's' | 'timeZone' | 'allDay'>;
+
+function daysInMonth(y: number, mo: number) {
+  return new Date(Date.UTC(y, mo + 1, 0)).getUTCDate();
+}
+
+function normalizeLocalParts(parts: LocalOccurrenceParts): LocalOccurrenceParts {
+  const normalized = new Date(Date.UTC(parts.y, parts.mo, parts.d, parts.h, parts.mi, parts.s));
+  return {
+    ...parts,
+    y: normalized.getUTCFullYear(),
+    mo: normalized.getUTCMonth(),
+    d: normalized.getUTCDate(),
+    h: normalized.getUTCHours(),
+    mi: normalized.getUTCMinutes(),
+    s: normalized.getUTCSeconds()
+  };
+}
+
+function addUnit(parts: LocalOccurrenceParts, unit: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY', amount: number): LocalOccurrenceParts {
+  if (unit === 'DAILY') return normalizeLocalParts({ ...parts, d: parts.d + amount });
+  if (unit === 'WEEKLY') return normalizeLocalParts({ ...parts, d: parts.d + amount * 7 });
+  if (unit === 'MONTHLY') {
+    const targetMonth = parts.mo + amount;
+    const base = new Date(Date.UTC(parts.y, targetMonth, 1, parts.h, parts.mi, parts.s));
+    const maxDay = daysInMonth(base.getUTCFullYear(), base.getUTCMonth());
+    return { ...parts, y: base.getUTCFullYear(), mo: base.getUTCMonth(), d: Math.min(parts.d, maxDay) };
+  }
+  return { ...parts, y: parts.y + amount, d: Math.min(parts.d, daysInMonth(parts.y + amount, parts.mo)) };
+}
+
+function localWeekday(parts: Pick<IcsDateTime, 'y' | 'mo' | 'd'>) {
+  return new Date(Date.UTC(parts.y, parts.mo, parts.d)).getUTCDay();
+}
+
+function withLocalWeekday(parts: LocalOccurrenceParts, weekday: number): LocalOccurrenceParts {
+  const diff = (weekday - localWeekday(parts) + 7) % 7;
+  return normalizeLocalParts({ ...parts, d: parts.d + diff });
+}
+
+function localPartsToIcsDateTime(parts: LocalOccurrenceParts): IcsDateTime {
+  const normalized = normalizeLocalParts(parts);
+  const utcMs = normalized.allDay
+    ? Date.UTC(normalized.y, normalized.mo, normalized.d, 0, 0, 0)
+    : localPartsToUtcMs(normalized.y, normalized.mo, normalized.d, normalized.h, normalized.mi, normalized.s, normalized.timeZone || 'Europe/Prague');
+  return {
+    iso: new Date(utcMs).toISOString(),
+    allDay: normalized.allDay,
+    timeZone: normalized.timeZone || 'Europe/Prague',
+    localDate: localDateKey(normalized),
+    localTime: localTimeKey(normalized),
+    y: normalized.y,
+    mo: normalized.mo,
+    d: normalized.d,
+    h: normalized.h,
+    mi: normalized.mi,
+    s: normalized.s
+  };
 }
 
 function expandRecurrence(event: IcsEvent, windowStartMs: number, windowEndMs: number): IcsDateTime[] {
@@ -296,33 +413,38 @@ function expandRecurrence(event: IcsEvent, windowStartMs: number, windowEndMs: n
   const exSet = new Set(event.exdates);
 
   const results: IcsDateTime[] = [];
-  let cursor = new Date(startMs);
+  let cursor: LocalOccurrenceParts = {
+    y: event.start.y,
+    mo: event.start.mo,
+    d: event.start.d,
+    h: event.start.h,
+    mi: event.start.mi,
+    s: event.start.s,
+    timeZone: event.start.timeZone,
+    allDay: event.start.allDay
+  };
   let produced = 0;
   const hardEnd = until ? Math.min(until, windowEndMs) : windowEndMs;
 
-  while (produced < MAX_OCCURRENCES_PER_EVENT && cursor.getTime() <= hardEnd) {
+  while (produced < MAX_OCCURRENCES_PER_EVENT && Date.parse(localPartsToIcsDateTime(cursor).iso) <= hardEnd) {
     if (count !== null && produced >= count) break;
     const candidates = byDay
-      ? byDay.map((weekday) => {
-          const weekStart = new Date(cursor.getTime());
-          const diff = (weekday - weekStart.getUTCDay() + 7) % 7;
-          weekStart.setUTCDate(weekStart.getUTCDate() + diff);
-          return weekStart;
-        })
+      ? byDay.map((weekday) => withLocalWeekday(cursor, weekday))
       : [cursor];
 
-    for (const candidate of candidates) {
-      if (candidate.getTime() < startMs) continue;
-      if (until !== null && candidate.getTime() > until) continue;
+    for (const candidateParts of candidates) {
+      const occurrence = localPartsToIcsDateTime(candidateParts);
+      const candidateMs = Date.parse(occurrence.iso);
+      if (candidateMs < startMs) continue;
+      if (until !== null && candidateMs > until) continue;
       if (count !== null && produced >= count) break;
       // COUNT se čerpá z RAW řady výskytů PŘED odečtením EXDATE (RFC 5545) -
       // vyloučený termín pořád "spotřebuje" jedno místo, negeneruje se náhrada.
       produced += 1;
-      const iso = candidate.toISOString();
-      if (exSet.has(iso)) continue;
-      if (candidate.getTime() > windowEndMs) continue;
-      if (candidate.getTime() >= windowStartMs) {
-        results.push({ iso, allDay: event.start.allDay });
+      if (occurrenceKeys(occurrence).some((key) => exSet.has(key))) continue;
+      if (candidateMs > windowEndMs) continue;
+      if (candidateMs >= windowStartMs) {
+        results.push(occurrence);
       }
     }
     cursor = addUnit(cursor, freq as any, interval);
@@ -340,7 +462,8 @@ function buildInstances(events: IcsEvent[], windowStartMs: number, windowEndMs: 
   for (const event of events) {
     if (event.status !== 'CANCELLED' || !event.recurrenceId) continue;
     if (!cancelledRecurrenceIds.has(event.uid)) cancelledRecurrenceIds.set(event.uid, new Set());
-    cancelledRecurrenceIds.get(event.uid)?.add(event.recurrenceId);
+    const keys = event.recurrenceKeys?.length ? event.recurrenceKeys : [event.recurrenceId];
+    keys.forEach((key) => cancelledRecurrenceIds.get(event.uid)?.add(key));
   }
 
   const instances: { event: IcsEvent; startIso: string; endIso: string | null }[] = [];

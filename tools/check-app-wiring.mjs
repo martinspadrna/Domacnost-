@@ -156,6 +156,10 @@ if (app) {
   expect(edgeCalendarIcs, 'event.rrule || event.recurrenceId', 'edge-calendar-ics-sync.ts: cloud ICS provider id rozlisuje upravene jednotlive vyskyty opakovani.');
   expect(edgeCalendarIcs, "status: 'cancelled'", 'edge-calendar-ics-sync.ts: zmizele ICS udalosti se v cloudu oznaci jako cancelled.');
   expect(edgeCalendarIcs, 'eventsRemoved', 'edge-calendar-ics-sync.ts: cloud ICS sync vraci pocet odstraneni.');
+  expect(edgeCalendarIcs, 'function localPartsToIcsDateTime', 'edge-calendar-ics-sync.ts: RRULE se expanduje v lokalnim case zdroje kvuli DST/letnimu casu.');
+  expect(edgeCalendarIcs, 'withLocalWeekday(cursor, weekday)', 'edge-calendar-ics-sync.ts: tydenni RRULE kandidati pouzivaji lokalni weekday, ne UTC weekday.');
+  expect(edgeCalendarIcs, 'occurrenceKeys(occurrence).some((key) => exSet.has(key))', 'edge-calendar-ics-sync.ts: EXDATE se porovnava podle UTC i lokalniho occurrence klice.');
+  expectAbsent(edgeCalendarIcs, 'let cursor = new Date(startMs);', 'edge-calendar-ics-sync.ts: RRULE se nesmi vratit na stary UTC cursor, ktery v lete minul EXDATE.');
   expect(calendar, 'function calendarSourceColorPicker', 'calendar.js: barva zdroje kalendare je vyber ze swatchu.');
   expect(calendar, 'function calendarSourceColor', 'calendar.js: udalosti umi nacist barvu sveho zdroje.');
   expect(calendar, 'style="--calendar-source-color:', 'calendar.js: udalosti v kalendari dostavaji CSS barvu zdroje.');
