@@ -142,6 +142,8 @@ if (app) {
   expect(calendar, 'function parseIcsEvents', 'calendar.js: ICS/iCal ma frontend fallback parser.');
   expect(calendar, 'function syncIcsSourcesInBrowser', 'calendar.js: ICS/iCal umi nacist udalosti i bez edge funkce.');
   expect(calendar, "filter((event) => !keys.includes(String(event.sourceId || '')))", 'calendar.js: browser ICS sync maze lokalni udalosti, ktere uz ve zdroji nejsou.');
+  expect(calendar, "parsed.name === 'RECURRENCE-ID'", 'calendar.js: browser ICS parser cte RECURRENCE-ID pro zrusene vyskyty opakovanych udalosti.');
+  expect(calendar, "String(raw.status || '').toUpperCase() === 'CANCELLED'", 'calendar.js: browser ICS parser vyrazuje zrusene vyskyty opakovanych udalosti.');
   expect(calendar, 'function calendarSourceIdSet', 'calendar.js: cloud calendar load umi porovnat lokalni udalosti s aliasy cloud/source id.');
   expect(calendar, 'cloudBackedIcsSourceIds', 'calendar.js: cloud calendar load cisti lokalni ICS kopie po nacteni cloud zdroje.');
   expect(calendar, '!event.cloudId && !isEventFromSourceSet(event, cloudBackedIcsSourceIds)', 'calendar.js: zrusene ICS udalosti nezustavaji v lokalnim fallback stavu po cloud syncu.');
@@ -150,6 +152,8 @@ if (app) {
   expect(calendar, 'eventsRemoved', 'calendar.js: ICS/iCal sync vraci pocet odstranenych udalosti.');
   expect(calendar, 'fallbackPruned: true', 'calendar.js: pri stare edge funkci umi ICS sync uklidit lokalni udalosti browser fallbackem.');
   expect(edgeCalendarIcs, 'async function cancelMissingEventsForSource', 'edge-calendar-ics-sync.ts: cloud ICS sync umi zrusit udalosti, ktere zmizely ze zdroje.');
+  expect(edgeCalendarIcs, 'cancelledRecurrenceIds', 'edge-calendar-ics-sync.ts: cloud ICS sync vyrazuje STATUS:CANCELLED recurrence override.');
+  expect(edgeCalendarIcs, 'event.rrule || event.recurrenceId', 'edge-calendar-ics-sync.ts: cloud ICS provider id rozlisuje upravene jednotlive vyskyty opakovani.');
   expect(edgeCalendarIcs, "status: 'cancelled'", 'edge-calendar-ics-sync.ts: zmizele ICS udalosti se v cloudu oznaci jako cancelled.');
   expect(edgeCalendarIcs, 'eventsRemoved', 'edge-calendar-ics-sync.ts: cloud ICS sync vraci pocet odstraneni.');
   expect(calendar, 'function calendarSourceColorPicker', 'calendar.js: barva zdroje kalendare je vyber ze swatchu.');

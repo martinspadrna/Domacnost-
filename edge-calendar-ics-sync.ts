@@ -336,14 +336,25 @@ function eventDurationMs(event: IcsEvent): number {
 }
 
 function buildInstances(events: IcsEvent[], windowStartMs: number, windowEndMs: number) {
+  const cancelledRecurrenceIds = new Map<string, Set<string>>();
+  for (const event of events) {
+    if (event.status !== 'CANCELLED' || !event.recurrenceId) continue;
+    if (!cancelledRecurrenceIds.has(event.uid)) cancelledRecurrenceIds.set(event.uid, new Set());
+    cancelledRecurrenceIds.get(event.uid)?.add(event.recurrenceId);
+  }
+
   const instances: { event: IcsEvent; startIso: string; endIso: string | null }[] = [];
   for (const event of events) {
-    if (event.status === 'CANCELLED' && !event.rrule) continue;
-    const durationMs = eventDurationMs(event);
-    const occurrences = expandRecurrence(event, windowStartMs, windowEndMs);
+    if (event.status === 'CANCELLED') continue;
+    const cancelledForEvent = cancelledRecurrenceIds.get(event.uid);
+    const eventForExpansion = cancelledForEvent?.size
+      ? { ...event, exdates: [...event.exdates, ...Array.from(cancelledForEvent)] }
+      : event;
+    const durationMs = eventDurationMs(eventForExpansion);
+    const occurrences = expandRecurrence(eventForExpansion, windowStartMs, windowEndMs);
     for (const occurrence of occurrences) {
-      const endIso = event.end ? new Date(Date.parse(occurrence.iso) + durationMs).toISOString() : null;
-      instances.push({ event, startIso: occurrence.iso, endIso });
+      const endIso = eventForExpansion.end ? new Date(Date.parse(occurrence.iso) + durationMs).toISOString() : null;
+      instances.push({ event: eventForExpansion, startIso: occurrence.iso, endIso });
     }
   }
   return instances;
@@ -353,7 +364,7 @@ function buildInstances(events: IcsEvent[], windowStartMs: number, windowEndMs: 
 
 function normalizeIcsEvent(instance: { event: IcsEvent; startIso: string; endIso: string | null }, source: any, householdId: string, userId: string) {
   const { event, startIso, endIso } = instance;
-  const providerEventId = event.rrule ? `${event.uid}::${startIso}` : event.uid;
+  const providerEventId = event.rrule || event.recurrenceId ? `${event.uid}::${event.recurrenceId || startIso}` : event.uid;
   return {
     household_id: householdId,
     source_id: source.id,

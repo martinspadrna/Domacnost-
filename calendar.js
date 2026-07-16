@@ -1409,8 +1409,9 @@
       };
     }
 
-    function expandIcsEvent(raw = {}, source = {}) {
+    function expandIcsEvent(raw = {}, source = {}, cancelledRecurrenceIds = new Map()) {
       if (!raw.dtstart?.date) return [];
+      if (String(raw.status || '').toUpperCase() === 'CANCELLED') return [];
       const rule = raw.rrule ? parseIcsRrule(raw.rrule) : null;
       if (!rule?.FREQ) return [buildIcsEvent(raw, source)].filter(Boolean);
       const startIso = raw.dtstart.date;
@@ -1419,6 +1420,7 @@
       const until = rule.UNTIL ? parseIcsDateValue(rule.UNTIL, {}).date : '';
       const countLimit = Math.min(Math.max(Number(rule.COUNT || 0) || 1500, 1), 1500);
       const exdates = new Set((raw.exdates || []).flatMap((item) => String(item.value || '').split(',').map((value) => parseIcsDateValue(value, item.params || {}).date)).filter(Boolean));
+      (cancelledRecurrenceIds.get(raw.uid) || new Set()).forEach((date) => exdates.add(date));
       const events = [];
       let cursor = startIso;
       let produced = 0;
@@ -1441,13 +1443,13 @@
 
     function parseIcsEvents(text = '', source = {}) {
       const lines = unfoldIcsText(text).split('\n');
-      const events = [];
+      const rawEvents = [];
       let current = null;
       lines.forEach((line) => {
         const clean = line.trimEnd();
         if (clean === 'BEGIN:VEVENT') { current = { exdates: [] }; return; }
         if (clean === 'END:VEVENT') {
-          if (current) events.push(...expandIcsEvent(current, source));
+          if (current) rawEvents.push(current);
           current = null;
           return;
         }
@@ -1458,12 +1460,21 @@
         if (parsed.name === 'SUMMARY') current.summary = decodeIcsValue(parsed.value);
         if (parsed.name === 'DESCRIPTION') current.description = decodeIcsValue(parsed.value);
         if (parsed.name === 'LOCATION') current.location = decodeIcsValue(parsed.value);
+        if (parsed.name === 'STATUS') current.status = normalizeText(parsed.value).toUpperCase();
         if (parsed.name === 'DTSTART') current.dtstart = parseIcsDateValue(parsed.value, parsed.params);
         if (parsed.name === 'DTEND') current.dtend = parseIcsDateValue(parsed.value, parsed.params);
+        if (parsed.name === 'RECURRENCE-ID') current.recurrenceId = parseIcsDateValue(parsed.value, parsed.params).date;
         if (parsed.name === 'DURATION') current.durationMinutes = parseIcsDuration(parsed.value);
         if (parsed.name === 'RRULE') current.rrule = parsed.value;
         if (parsed.name === 'EXDATE') current.exdates.push(parsed);
       });
+      const cancelledRecurrenceIds = new Map();
+      rawEvents.forEach((event) => {
+        if (String(event.status || '').toUpperCase() !== 'CANCELLED' || !event.uid || !event.recurrenceId) return;
+        if (!cancelledRecurrenceIds.has(event.uid)) cancelledRecurrenceIds.set(event.uid, new Set());
+        cancelledRecurrenceIds.get(event.uid).add(event.recurrenceId);
+      });
+      const events = rawEvents.flatMap((event) => expandIcsEvent(event, source, cancelledRecurrenceIds));
       const byId = new Map();
       events.filter((event) => event?.date && event.title).forEach((event) => byId.set(event.id, event));
       return Array.from(byId.values()).sort((a, b) => calendarEventStartMs(a) - calendarEventStartMs(b));
