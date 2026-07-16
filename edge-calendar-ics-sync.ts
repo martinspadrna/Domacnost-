@@ -398,6 +398,44 @@ async function upsertEvent(supabase: SupabaseClient, source: any, payload: Recor
   return true;
 }
 
+async function cancelMissingEventsForSource(
+  supabase: SupabaseClient,
+  source: any,
+  activeProviderEventIds: Set<string>,
+  windowStartMs: number,
+  windowEndMs: number,
+  userId: string
+) {
+  const windowStartIso = new Date(windowStartMs).toISOString();
+  const windowEndIso = new Date(windowEndMs).toISOString();
+  const { data, error } = await supabase
+    .from('calendar_events')
+    .select('id,provider_event_id')
+    .eq('source_id', source.id)
+    .neq('status', 'cancelled')
+    .gte('starts_at', windowStartIso)
+    .lte('starts_at', windowEndIso);
+  if (error) throw error;
+  const staleIds = (data || [])
+    .filter((row: any) => row.provider_event_id && !activeProviderEventIds.has(String(row.provider_event_id)))
+    .map((row: any) => row.id)
+    .filter(Boolean);
+  if (!staleIds.length) return 0;
+  for (let index = 0; index < staleIds.length; index += 100) {
+    const ids = staleIds.slice(index, index + 100);
+    const { error: updateError } = await supabase
+      .from('calendar_events')
+      .update({
+        status: 'cancelled',
+        provider_status: 'CANCELLED',
+        updated_by: userId
+      })
+      .in('id', ids);
+    if (updateError) throw updateError;
+  }
+  return staleIds.length;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -416,6 +454,7 @@ Deno.serve(async (req: Request) => {
 
     let eventsUpserted = 0;
     let eventsCancelled = 0;
+    let eventsRemoved = 0;
     const errors: { sourceId: string; error: string }[] = [];
 
     for (const source of sources) {
@@ -426,11 +465,14 @@ Deno.serve(async (req: Request) => {
         const text = await response.text();
         const parsedEvents = parseIcs(text);
         const instances = buildInstances(parsedEvents, windowStartMs, windowEndMs);
+        const activeProviderEventIds = new Set<string>();
         for (const instance of instances) {
           const payload = normalizeIcsEvent(instance, source, householdId, user.id);
+          activeProviderEventIds.add(String(payload.provider_event_id || ''));
           if (await upsertEvent(supabase, source, payload, user.id)) eventsUpserted += 1;
           if (payload.status === 'cancelled') eventsCancelled += 1;
         }
+        eventsRemoved += await cancelMissingEventsForSource(supabase, source, activeProviderEventIds, windowStartMs, windowEndMs, user.id);
         await supabase.from('calendar_sources').update({ last_synced_at: new Date().toISOString(), sync_status: 'idle', sync_error: null, updated_by: user.id }).eq('id', source.id);
       } catch (sourceError) {
         const message = errorMessage(sourceError);
@@ -439,7 +481,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    return jsonResponse({ ok: true, sources, eventsUpserted, eventsCancelled, errors });
+    return jsonResponse({ ok: true, sources, eventsUpserted, eventsCancelled, eventsRemoved, errors });
   } catch (error) {
     const message = errorMessage(error);
     return jsonResponse({ ok: false, code: 'calendar_ics_sync_failed', error: message }, 400);

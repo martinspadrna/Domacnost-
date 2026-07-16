@@ -47,7 +47,8 @@
 
     const DEFAULT_CALENDAR_EVENT_MINUTES = deps.DEFAULT_CALENDAR_EVENT_MINUTES || 60;
     const APP_TIME_ZONE = deps.APP_TIME_ZONE || 'Europe/Prague';
-    const CALENDAR_AUTO_SYNC_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+    const CALENDAR_AUTO_SYNC_MAX_AGE_MS = 30 * 60 * 1000;
+    const CALENDAR_AUTO_SYNC_CHECK_MS = 30 * 60 * 1000;
     const CALENDAR_SOURCE_COLOR_OPTIONS = [
       ['#3b82f6', 'Modrá'],
       ['#8b5cf6', 'Fialová'],
@@ -662,7 +663,7 @@
                   ${calendarSourceColorPicker('#3b82f6')}
                   ${field('Poznámka', 'note', 'text', 'volitelné')}
                 </div>
-                <div class="inline-note compact-note">Typ „iCal“: vlož tajný/veřejný ICS odkaz kalendáře. Appka ho pravidelně sama stáhne tlačítkem „Sync“ u zdroje - bez dalšího přihlášení.</div>
+                <div class="inline-note compact-note">Typ „iCal“: vlož tajný/veřejný ICS odkaz kalendáře. Appka ho umí načíst tlačítkem „Sync“ a při používání ho průběžně obnovuje bez dalšího přihlášení.</div>
                 <div class="form-actions"><button class="primary-btn" type="submit">Přidat zdroj</button></div>
               </form>
             </details>
@@ -1075,7 +1076,7 @@
       await cloudLoadCalendarSources(false);
       const { data, error } = await client
         .from('calendar_events')
-        .select('id,source_id,title,description,location,starts_at,ends_at,all_day,event_type,created_at')
+        .select('id,source_id,title,description,location,starts_at,ends_at,all_day,event_type,provider_event_id,provider_status,created_at')
         .eq('household_id', getState().cloud.householdId)
         .neq('status', 'cancelled')
         .order('starts_at', { ascending: true });
@@ -1090,6 +1091,7 @@
         return {
           id: getState().calendar.find((event) => event.cloudId === item.id)?.id || `event-cloud-${item.id}`,
           cloudId: item.id,
+          externalId: item.provider_event_id || '',
           sourceId: item.source_id || '',
           householdId: currentHouseholdId(),
           profileId: currentProfileId(),
@@ -1456,6 +1458,7 @@
 
     async function syncIcsSourcesInBrowser(sources = [], showMessage = true) {
       let total = 0;
+      let removed = 0;
       let attempted = 0;
       let succeeded = 0;
       const syncedAt = new Date().toISOString();
@@ -1471,7 +1474,9 @@
           const events = parseIcsEvents(text, source);
           const keys = [source.id, source.cloudId].filter(Boolean).map(String);
           keys.forEach((key) => sourceIds.add(key));
-          getState().calendar = (getState().calendar || []).filter((event) => event.cloudId || !keys.includes(String(event.sourceId || '')));
+          const beforeCount = (getState().calendar || []).length;
+          getState().calendar = (getState().calendar || []).filter((event) => !keys.includes(String(event.sourceId || '')));
+          removed += Math.max(0, beforeCount - getState().calendar.length);
           getState().calendar.push(...events);
           source.lastSyncedAt = syncedAt;
           total += events.length;
@@ -1487,7 +1492,7 @@
         saveState({ immediate: true });
         requestRender();
       }
-      return attempted && !succeeded ? -1 : total;
+      return attempted && !succeeded ? { ok: false, total: -1, removed: 0 } : { ok: true, total, removed, attempted, succeeded };
     }
 
     async function icsCalendarSync(sourceId = '', options = {}) {
@@ -1508,23 +1513,33 @@
         : { sourceIds: enabledIcsSources.map((source) => source.cloudId || source.id).filter(Boolean) };
       const data = cloudReady() ? await invokeCalendarEdgeFunction('calendar-ics-sync', body, showMessage) : null;
       if (data) {
+        const edgeSupportsRemovedCount = Object.prototype.hasOwnProperty.call(data, 'eventsRemoved');
         await cloudLoadCalendarSources(false);
         await cloudLoadCalendar(false);
+        const browserPruneResult = edgeSupportsRemovedCount
+          ? null
+          : await syncIcsSourcesInBrowser(enabledIcsSources, false).catch((error) => {
+              console.warn('Browser ICS prune after legacy edge sync failed', error);
+              return null;
+            });
         getState().calendarCloud = { ...(getState().calendarCloud || {}), calendarLastSyncAt: new Date().toISOString() };
         touchState();
         saveState({ immediate: true });
         requestRender();
         if (showMessage) {
           const count = Number(data.eventsUpserted || 0);
-          showToast(count ? `ICS kalendář synchronizován (${count} událostí)` : 'ICS kalendář synchronizován');
+          const removed = Number(data.eventsRemoved || data.eventsPruned || browserPruneResult?.removed || 0);
+          showToast(count || removed ? `ICS kalendář synchronizován (${count} událostí, odstraněno ${removed})` : 'ICS kalendář synchronizován');
         }
-        return data;
+        return browserPruneResult?.ok
+          ? { ...data, fallbackPruned: true, eventsRemoved: Number(data.eventsRemoved || data.eventsPruned || browserPruneResult.removed || 0) }
+          : data;
       }
 
       const browserResult = await syncIcsSourcesInBrowser(enabledIcsSources, showMessage);
-      if (browserResult >= 0) {
-        if (showMessage) showToast(browserResult ? `ICS kalendář načten (${browserResult} událostí)` : 'ICS kalendář načten');
-        return { ok: true, fallback: 'browser', eventsUpserted: browserResult };
+      if (browserResult?.ok) {
+        if (showMessage) showToast(browserResult.total || browserResult.removed ? `ICS kalendář načten (${browserResult.total} událostí, odstraněno ${browserResult.removed})` : 'ICS kalendář načten');
+        return { ok: true, fallback: 'browser', eventsUpserted: browserResult.total, eventsRemoved: browserResult.removed };
       }
       return false;
     }
@@ -1546,6 +1561,10 @@
       });
     }
 
+    function hasEnabledIcsSources(sources = getCalendarSources()) {
+      return (sources || []).some((source) => normalizeCalendarSourceProvider(source.provider) === 'ical' && source.isEnabled !== false);
+    }
+
     function scheduleCalendarAutoSync(reason = 'auto', options = {}) {
       if (calendarAutoSyncTimer || calendarAutoSyncRunning || !cloudReady()) return;
       calendarAutoSyncTimer = runWhenUiQuiet(async () => {
@@ -1562,6 +1581,9 @@
           console.warn('Calendar auto sync failed', reason, error);
         } finally {
           calendarAutoSyncRunning = false;
+          if (cloudReady() && hasEnabledIcsSources()) {
+            scheduleCalendarAutoSync('periodic', { delay: CALENDAR_AUTO_SYNC_CHECK_MS, quietMs: 5000, forceLoadSources: true });
+          }
         }
       }, { delay: Number(options.delay || 12000), quietMs: Number(options.quietMs || 2200), timeout: Number(options.timeout || 12000) });
     }
