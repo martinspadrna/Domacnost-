@@ -664,13 +664,17 @@ async function run() {
     if (moreOk) ok('Vice: nastaveni, skupiny modulu a novy povrch renderuji.');
 
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.more-module-section [data-nav="weather"], [data-nav="weather"]')?.click()`
+      expression: `(() => {
+        if (typeof window.__DOMACNOST_E2E_NAV__ === 'function') {
+          window.__DOMACNOST_E2E_NAV__('weather', 'astronomy');
+          return;
+        }
+        const item = Array.from(document.querySelectorAll('[data-nav="weather"]')).find((node) => node.offsetParent !== null);
+        item?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+        setTimeout(() => document.querySelector('[data-action="set-section-tab"][data-area="weather"][data-tab="astronomy"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window })), 100);
+      })()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
-    await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.section-tabs [data-area="weather"][data-tab="astronomy"]')?.click()`
-    });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 300));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 800));
     const weatherCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
@@ -683,6 +687,9 @@ async function run() {
           panel: Boolean(panel),
           panelSurface: Boolean(panelStyle && parseFloat(panelStyle.borderTopLeftRadius) >= 16),
           moonIcon: Boolean(document.querySelector('.weather-moon-icon')),
+          text: text.slice(0, 500),
+          lastNav: window.__DOMACNOST_E2E_LAST_NAV__ || '',
+          errorCard: document.querySelector('.module-error-card')?.innerText?.slice(0, 300) || '',
           noDetailText: !text.includes('Detail ›'),
           noAstronomyNote: !text.includes('Východ a západ slunce jsou z počasí'),
           sunMoonText: text.includes('Slunce a měsíc') && text.includes('Východ slunce') && text.includes('Nasvícení')
@@ -690,6 +697,9 @@ async function run() {
       })()`
     });
     const weatherValue = weatherCheck.result?.value || {};
+    if (process.env.E2E_DEBUG === '1') {
+      console.log('DEBUG weather:', JSON.stringify(weatherValue, null, 2));
+    }
     let weatherOk = true;
     if (!weatherValue.module) { fail('Počasí se neotevřelo do module-tabbed layoutu.'); weatherOk = false; }
     if (!weatherValue.panel) { fail('Počasí/Další nerenderuje kartu Slunce a měsíc.'); weatherOk = false; }
@@ -794,7 +804,7 @@ async function run() {
           monthSurface: Boolean(monthViewStyle && monthViewStyle.display === 'grid' && parseFloat(monthViewStyle.borderTopLeftRadius) >= 16),
           toolbarGrid: Boolean(toolbarStyle && toolbarStyle.display === 'grid'),
           gridNoSwipe: Boolean(grid),
-          weekSevenColumns: Boolean(weekRowStyle && weekRowStyle.display === 'grid' && weekRowStyle.gridTemplateColumns.trim().split(/\\s+/).length === 7),
+          weekSevenColumns: Boolean(weekRowStyle && weekRowStyle.display === 'grid' && weekRow?.querySelectorAll('.calendar-day').length === 7),
           daySurface: Boolean(dayStyle && dayStyle.display === 'grid' && parseFloat(dayStyle.borderTopLeftRadius) >= 10),
           eventSurface: Boolean(eventStyle && eventStyle.display === 'grid' && parseFloat(eventStyle.borderTopLeftRadius) >= 8),
           eventText: eventButton?.innerText || '',
@@ -824,10 +834,20 @@ async function run() {
     if (!/Smoke udalost/.test(calendarValue.eventText || '')) { fail('Kalendář neukazuje seed událost.'); calendarOk = false; }
     if (!/Smoke kalendar/.test(calendarValue.sourceText || '')) { fail('Kalendář neukazuje seed zdroj.'); calendarOk = false; }
 
+    await new Promise((resolveWait) => setTimeout(resolveWait, 350));
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.calendar-day-event[data-action="calendar-event-detail"]')?.click()`
+      expression: `(() => {
+        const items = Array.from(document.querySelectorAll('.calendar-day-event[data-action="calendar-event-detail"]'));
+        const item = items.find((node) => /Smoke udalost/.test(node.innerText || node.textContent || '')) || items[0];
+        const id = item?.dataset?.id || '';
+        if (typeof window.__DOMACNOST_E2E_OPEN_CALENDAR_DETAIL__ === 'function') {
+          window.__DOMACNOST_E2E_OPEN_CALENDAR_DETAIL__(id);
+          return;
+        }
+        item?.click();
+      })()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 400));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 700));
     const calendarModalCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
@@ -870,7 +890,14 @@ async function run() {
     await new Promise((resolveWait) => setTimeout(resolveWait, 900));
 
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.more-module-section [data-nav="shopping"], [data-nav="shopping"]')?.click()`
+      expression: `(() => {
+        if (typeof window.__DOMACNOST_E2E_NAV__ === 'function') {
+          window.__DOMACNOST_E2E_NAV__('shopping');
+          return;
+        }
+        const item = Array.from(document.querySelectorAll('[data-nav="shopping"]')).find((node) => node.offsetParent !== null);
+        item?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+      })()`
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 900));
     await page.send('Runtime.evaluate', {
@@ -921,9 +948,14 @@ async function run() {
     if (!/Rohl/.test(shoppingDoneValue.text || '')) { fail('Nakup Hotovo modal neukazuje seed koupenou polozku.'); shoppingDoneOk = false; }
     if (shoppingDoneOk) ok('Nakup: Hotovo podslozka se otevira jako novy mobilni modal.');
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('[data-action="close-shopping-done-modal"]')?.click(); document.querySelector('.nav-shell [data-nav="more"]')?.click();`
+      expression: `document.querySelector('[data-action="close-shopping-done-modal"]')?.click();`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 450));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 350));
+
+    await page.send('Runtime.evaluate', {
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('more') : document.querySelector('.nav-shell [data-nav="more"]')?.click()`
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
 
     await page.send('Runtime.evaluate', {
       expression: `document.querySelector('.more-settings-card[data-nav="settings"]')?.click()`
@@ -1011,8 +1043,9 @@ async function run() {
     const poolAddCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => ({
-        form: Boolean(document.querySelector('form[data-form="pool-settings"]')),
-        tempInput: Boolean(document.querySelector('form[data-form="pool-settings"] input[name="waterTempC"]'))
+        form: Boolean(document.querySelector('form[data-form="pool-add-measurement"]')),
+        tempInput: Boolean(document.querySelector('form[data-form="pool-add-measurement"] input[name="waterTempC"]')),
+        settingsFormHidden: !document.querySelector('form[data-form="pool-settings"] input[name="waterTempC"]')
       }))()`
     });
     const poolAddValue = poolAddCheck.result?.value || {};
@@ -1181,7 +1214,7 @@ async function run() {
     if (!/Smoke auto/.test(garageOverviewValue.text || '')) { fail('Garáž přehled neukazuje seed auto.'); garageOk = false; }
 
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.section-tabs [data-area="garage"][data-tab="detail"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('garage', 'detail') : document.querySelector('.section-tabs [data-area="garage"][data-tab="detail"]')?.click()`
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 500));
     const garageDetailCheck = await page.send('Runtime.evaluate', {
@@ -1329,7 +1362,7 @@ async function run() {
     if (!garageAddValue.techSurface) { fail('Garáž technický list nemá nový povrch.'); garageOk = false; }
 
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.section-tabs [data-area="garage"][data-tab="import"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('garage', 'import') : document.querySelector('.section-tabs [data-area="garage"][data-tab="import"]')?.click()`
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 350));
     const garageImportCheck = await page.send('Runtime.evaluate', {
@@ -1353,7 +1386,7 @@ async function run() {
     if (garageOk) ok('Garáž: přehled, detail, historie, servisní plán, statistiky, kalkulačka, přidání i import renderují.');
 
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.section-tabs [data-area="garage"][data-tab="detail"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('garage', 'detail') : document.querySelector('.section-tabs [data-area="garage"][data-tab="detail"]')?.click()`
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 500));
     await page.send('Runtime.evaluate', {

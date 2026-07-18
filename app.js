@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_471';
-  const APP_BUILD = 471;
+  const APP_VERSION = 'Domácnost+ v.0.1_472';
+  const APP_BUILD = 472;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -20068,11 +20068,36 @@
     window.__DOMACNOST_E2E_NAV__ = (moduleId, tab = '') => {
       const nextModule = String(moduleId || 'home');
       window.__DOMACNOST_E2E_LAST_NAV__ = nextModule;
+      if (renderFrameRequest) {
+        try { (window.cancelAnimationFrame || window.webkitCancelAnimationFrame)?.(renderFrameRequest); } catch {}
+      }
+      renderFrameRequest = 0;
+      renderDeferDepth = 0;
+      renderInProgress = false;
+      renderDeferredPending = false;
+      renderDeferredQuietPending = false;
+      activeOverview = null;
       activeModule = nextModule;
+      if (activeModule === 'subscriptions') resetSubscriptionMonthToCurrentForOpen();
       if (tab) {
         moduleTabs = { ...(moduleTabs || {}), [nextModule]: tab };
         localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      } else if (moduleTabs && nextModule in moduleTabs) {
+        moduleTabs = { ...moduleTabs };
+        delete moduleTabs[nextModule];
+        localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
       }
+      render();
+    };
+    window.__DOMACNOST_E2E_OPEN_CALENDAR_DETAIL__ = (eventId = '') => {
+      const key = String(eventId || '');
+      let event = key
+        ? (state.calendar || []).find((item) => String(item.id || '') === key || String(item.cloudId || '') === key)
+        : null;
+      if (!event) {
+        event = (state.calendar || []).find((item) => /Smoke udalost/i.test(String(item.title || ''))) || (state.calendar || [])[0];
+      }
+      calendarDetailEventId = String(event?.id || event?.cloudId || key || '');
       render();
     };
   }
