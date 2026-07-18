@@ -36,6 +36,15 @@
     let pwaControllerReloadTriggered = false;
     let userRequestedUpdate = false;
     let lastAutoUpdateCheckAt = 0;
+    // Zachyceno co nejdřív po startu: vrácející se uživatel má aktivní SW z
+    // minula, takže "controller" je nastavený hned (žádná změna, appka
+    // je pořád ta samá běžící verze). Naproti tomu první instalace SW (po
+    // reinstalaci appky, vyčištění dat, nebo prvním otevření) jde z null na
+    // worker přes clients.claim() - stránka už ale běží se správnou (jedinou
+    // dostupnou) verzí, není co reloadovat. Bez tohohle rozlišení
+    // controllerchange reloadoval appku hned po každém prvním claimu, což
+    // vypadalo jako "pár vteřin po startu nejde nic kliknout".
+    let hadServiceWorkerControllerAtBoot = ('serviceWorker' in navigator) && Boolean(navigator.serviceWorker.controller);
 
     function getPwaStatus() {
       const standalone = window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone === true;
@@ -436,6 +445,14 @@
         // těsně za sebou (nebo mezitím, co běží reload), pustíme reload
         // jen jednou.
         if (pwaControllerReloadTriggered) return;
+        // První claim (viz hadServiceWorkerControllerAtBoot výše) neznamená
+        // update běžící appky - stránka už doběhla se stejnou verzí, kterou
+        // si SW právě nárokoval. Reload by jen zbytečně appku hned po startu
+        // na chvíli zaseknul/restartoval, aniž by se cokoliv reálně změnilo.
+        if (!hadServiceWorkerControllerAtBoot) {
+          hadServiceWorkerControllerAtBoot = true;
+          return;
+        }
         // iOS: tichý reload na pozadí (bez tapu uživatele) je riskantní ve
         // standalone PWA, proto tam jen ukážeme trvalý pruh k dotažení.
         // Když si to ale uživatel právě odklikl přes "Aktualizovat"
