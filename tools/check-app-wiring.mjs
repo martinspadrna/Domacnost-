@@ -92,12 +92,15 @@ if (app && pool && index && sw) {
   expect(pool, 'function normalizePoolMeasurements', 'pool.js: historie měření bazénu se normalizuje.');
   expect(pool, 'function normalizePoolTime', 'pool.js: měření bazénu normalizuje čas HH:MM.');
   expect(pool, "data-form=\"pool-measurement\"", 'pool.js: měření bazénu má inline editační formulář.');
-  expect(pool, "'measurementTime'", 'pool.js: nové měření bazénu ukládá čas.');
   expect(pool, 'function poolVolumeM3', 'pool.js: výpočet objemu existuje.');
   expect(pool, 'function poolPhDose', 'pool.js: dávkování pH existuje.');
   expect(pool, 'waterTempC', 'pool.js: teplota vody je součást stavu/renderu.');
   expect(pool, 'function renderPoolMeasurementChart', 'pool.js: graf pH/teploty existuje.');
   expect(pool, 'data-form="pool-settings"', 'pool.js: formulář nastavení bazénu se renderuje.');
+  expect(pool, 'data-form="pool-add-measurement"', 'pool.js: nové měření má vlastní zjednodušený formulář (jen pH + teplota).');
+  expect(pool, 'function addPoolMeasurementFromForm', 'pool.js: nové měření se ukládá bez zásahu do nastavení bazénu.');
+  expect(app, "'pool-add-measurement': () => addPoolMeasurementFromForm(data, form)", 'app.js: nové měření bazénu má form handler.');
+  expect(pool, "id: 'settings', label: 'Nastavení'", 'pool.js: bazén má samostatnou záložku Nastavení.');
 }
 
 if (app && contracts && index && sw) {

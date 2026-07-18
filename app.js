@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_468';
-  const APP_BUILD = 468;
+  const APP_VERSION = 'Domácnost+ v.0.1_469';
+  const APP_BUILD = 469;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -3937,7 +3937,7 @@
       body = `${renderOverviewSummary([{ label: 'Bazény', value: pools.length }])}${rows.length ? `<div class="list compact-list overview-list">${rows.map((pool) => {
         const dose = getPoolModule().poolPhDose(pool);
         return renderOverviewItem({ title: pool.name || 'Bazén', badge: dose.status === 'ok' ? 'pH OK' : dose.status === 'missing' ? 'doplň pH' : dose.label, badgeClass: dose.status === 'ok' ? 'good' : dose.status === 'missing' ? '' : 'warn', icon: '🏊' });
-      }).join('')}</div>` : renderEmptyCta({ icon: '🏊', title: 'Bazén není nastavený', text: 'Přidej rozměry bazénu a měření pH.', nav: 'pool', tab: 'add', label: 'Přidat bazén' })}`;
+      }).join('')}</div>` : renderEmptyCta({ icon: '🏊', title: 'Bazén není nastavený', text: 'Přidej rozměry bazénu a cílové pH.', nav: 'pool', tab: 'settings', label: 'Přidat bazén' })}`;
     } else if (type === 'vape') {
       const items = Array.isArray(state.vape?.items) ? state.vape.items : [];
       const total = items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
@@ -12585,6 +12585,10 @@
     return getPoolModule().savePoolFromForm(data, form);
   }
 
+  function addPoolMeasurementFromForm(data, form) {
+    return getPoolModule().addPoolMeasurementFromForm(data, form);
+  }
+
   function addPool() {
     return getPoolModule().addPool();
   }
@@ -15712,6 +15716,7 @@
       'add-profile': () => addProfile(data.name, data.role),
       'weather-settings': () => saveWeatherSettings(data, form),
       'pool-settings': () => savePoolFromForm(data, form),
+      'pool-add-measurement': () => addPoolMeasurementFromForm(data, form),
       'pool-measurement': () => updatePoolMeasurementFromForm(form.dataset.id, data, form),
       'add-vape-item': () => addVapeItemFromForm(data, form),
       'update-vape-item': () => updateVapeItemFromForm(form.dataset.id, data, form),

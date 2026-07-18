@@ -224,17 +224,6 @@
       return measurements.length ? measurements[measurements.length - 1] : null;
     }
 
-    function shouldAppendMeasurement(current, measurement) {
-      if (!measurement || (measurement.ph === '' && measurement.waterTempC === '')) return false;
-      const last = latestPoolMeasurement(current);
-      if (!last) return true;
-      return !(last.date === measurement.date
-        && String(last.time || '') === String(measurement.time || '')
-        && Number(last.ph || 0) === Number(measurement.ph || 0)
-        && Number(last.waterTempC || 0) === Number(measurement.waterTempC || 0)
-        && String(last.note || '') === String(measurement.note || ''));
-    }
-
     function formatPoolNumber(value, decimals = 1) {
       const number = Number(value);
       if (!Number.isFinite(number) || number <= 0) return '—';
@@ -450,25 +439,39 @@
       `;
     }
 
-    function renderPoolAddForm(pool, exists = true) {
+    function renderPoolSettingsForm(pool, exists = true) {
       return `
         <form data-form="pool-settings" class="compact-form pool-form">
           <div class="form-grid two">
             ${field('Název bazénu', 'name', 'text', 'např. Zahradní bazén', true, pool.name || '')}
             ${selectField('Tvar bazénu', 'shape', SHAPE_OPTIONS, pool.shape)}
             ${renderDimensionFields(pool)}
-            ${field('Datum měření', 'measurementDate', 'date', '', false, todayISO())}
-            ${field('Čas měření', 'measurementTime', 'time', '', false, currentPoolTime())}
-            ${field('Aktuální pH', 'ph', 'number', 'např. 7,6', false, '')}
-            ${field('Teplota vody °C', 'waterTempC', 'number', 'např. 24,5', false, '')}
             ${field('Cílové pH', 'targetPh', 'number', 'např. 7,2', false, pool.targetPh || 7.2)}
             ${field('Dávka g / 10 m³ / 0,1 pH', 'dosePer10m3Per01', 'number', 'např. 100', false, pool.dosePer10m3Per01 || 100)}
             ${field('Poznámka', 'note', 'text', 'např. po dešti / chlorování', false, pool.note || '')}
           </div>
-          <div class="inline-note compact-note">Dávkování je orientační. Vždy ho porovnej s etiketou konkrétního pH+ / pH- přípravku. Uložení se zaznamená i jako nové měření, pokud se pH/teplota/datum liší od posledního záznamu.</div>
+          <div class="inline-note compact-note">Dávkování je orientační. Vždy ho porovnej s etiketou konkrétního pH+ / pH- přípravku. Aktuální pH a teplotu vody zapisuješ v záložce „Nové měření“.</div>
           <div class="form-actions">
-            <button class="primary-btn" type="submit">${exists ? 'Uložit bazén / měření' : 'Založit bazén'}</button>
+            <button class="primary-btn" type="submit">${exists ? 'Uložit nastavení' : 'Založit bazén'}</button>
             ${exists ? `<button class="danger-btn" type="button" data-action="pool-delete" data-id="${escapeHtml(pool.id)}">Smazat tento bazén</button>` : ''}
+          </div>
+        </form>
+      `;
+    }
+
+    // "Nové měření" má záměrně jen 2 pole - pH a teplotu vody. Datum/čas se
+    // berou automaticky (teď), zbytek bazénu (rozměry, cílové pH, dávkování)
+    // patří do Nastavení, ne sem - uživatel chce při zápisu měření zadávat
+    // jen tyhle dvě hodnoty, nic víc.
+    function renderPoolMeasurementForm(pool) {
+      return `
+        <form data-form="pool-add-measurement" class="compact-form pool-form">
+          <div class="form-grid two">
+            ${field('Aktuální pH', 'ph', 'number', 'např. 7,6', false, '')}
+            ${field('Teplota vody °C', 'waterTempC', 'number', 'např. 24,5', false, '')}
+          </div>
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">Uložit měření</button>
           </div>
         </form>
       `;
@@ -478,15 +481,15 @@
       const pools = getPools();
       const pool = getActivePool(pools);
       if (!pool) {
-        if (getModuleTab('pool', 'overview') === 'add') {
+        if (['add', 'settings'].includes(getModuleTab('pool', 'overview'))) {
           return `
             <section class="card desktop-span-2 pool-panel">
               <div class="card-header"><div><h2>Nový bazén</h2><p>Zadej rozměry a cílové pH, uložením se bazén založí.</p></div></div>
-              ${renderPoolAddForm(normalizePool({}), false)}
+              ${renderPoolSettingsForm(normalizePool({}), false)}
             </section>
           `;
         }
-        return renderEmptyCta({ icon: '🏊', title: 'Zatím žádný bazén', text: 'Založ bazén, nastav rozměry a cílové pH, ať se dá počítat objem vody a dávkování.', nav: 'pool', tab: 'add', label: 'Založit bazén' });
+        return renderEmptyCta({ icon: '🏊', title: 'Zatím žádný bazén', text: 'Založ bazén, nastav rozměry a cílové pH, ať se dá počítat objem vody a dávkování.', nav: 'pool', tab: 'settings', label: 'Založit bazén' });
       }
       const volume = poolVolumeM3(pool);
       const dose = poolPhDose(pool);
@@ -495,7 +498,8 @@
       const activeTab = getModuleTab('pool', 'overview');
       const tabs = renderSectionTabs('pool', [
         { id: 'overview', label: 'Přehled', icon: '🏊', count: normalizePoolMeasurements(pool.measurements).length },
-        { id: 'add', label: 'Nové měření', icon: '➕' }
+        { id: 'add', label: 'Nové měření', icon: '➕' },
+        { id: 'settings', label: 'Nastavení', icon: '⚙️' }
       ], 'overview');
       return `
         <section class="card desktop-span-2 pool-panel">
@@ -503,7 +507,7 @@
           ${renderPoolSwitcher(pools, pool)}
           ${tabs}
           <div class="module-tabbed pool-tab-${escapeHtml(activeTab)}" data-tab-area="pool">
-            ${activeTab === 'add' ? renderPoolAddForm(pool) : `
+            ${activeTab === 'add' ? renderPoolMeasurementForm(pool) : activeTab === 'settings' ? renderPoolSettingsForm(pool, true) : `
               <div class="kpi-grid compact-kpi-grid">
                 <div class="kpi"><strong>${formatVolume(volume)}</strong><span>objem vody</span></div>
                 <button type="button" class="kpi kpi-clickable" data-action="pool-ph-info"><strong>${pool.ph || '—'}</strong><span>aktuální pH</span></button>
@@ -511,12 +515,11 @@
                 <div class="kpi ${tone}"><strong>${dose.status === 'ok' ? 'OK' : dose.status === 'missing' ? 'doplň' : formatGrams(dose.grams)}</strong><span>${escapeHtml(dose.label)}</span></div>
               </div>
               ${pool.updatedAt ? `<div class="inline-note compact-note">Naposledy upraveno ${escapeHtml(formatDateTime(pool.updatedAt))}${latest?.date ? ` · měření ${escapeHtml(formatDate(latest.date))}${latest.time ? ` ${escapeHtml(latest.time)}` : ''}` : ''}${pool.note ? ` · ${escapeHtml(pool.note)}` : ''}</div>` : ''}
-              <div class="form-actions compact-actions pool-overview-actions"><button class="ghost-btn danger-btn" type="button" data-action="pool-delete" data-id="${escapeHtml(pool.id)}">Smazat tento bazén</button></div>
             `}
           </div>
         </section>
         ${activeTab === 'overview' ? renderPoolMeasurements(pool) : ''}
-        ${volume > 0 ? '' : renderEmptyCta({ icon: '🏊', title: 'Zadej rozměry bazénu', text: 'Pak se dopočítá objem vody a dávkování podle naměřeného pH.', nav: 'pool', tab: 'add', label: 'Nastavit bazén' })}
+        ${volume > 0 ? '' : renderEmptyCta({ icon: '🏊', title: 'Zadej rozměry bazénu', text: 'Pak se dopočítá objem vody a dávkování podle naměřeného pH.', nav: 'pool', tab: 'settings', label: 'Nastavit bazén' })}
         ${renderPhInfoModal(pool)}
       `;
     }
@@ -562,9 +565,9 @@
       const pool = normalizePool({ name: `Bazén ${pools.length + 1}` }, pools.length);
       persistPools([...pools, pool]);
       activePoolId = pool.id;
-      setModuleTab('pool', 'add');
+      setModuleTab('pool', 'settings');
       render();
-      showToast('Nový bazén přidán, doplň rozměry a pH');
+      showToast('Nový bazén přidán, doplň rozměry');
     }
 
     function previewShape(shape) {
@@ -670,41 +673,53 @@
       showToast('Měření smazáno');
     }
 
-    async function savePoolFromForm(data) {
+    // Nastavení bazénu (název/tvar/rozměry/cílové pH/dávkování/poznámka) -
+    // NIKDY se tu nezapisuje měření ani se nemění aktuální pH/teplota vody,
+    // to žije jen v addPoolMeasurementFromForm/měřeních. Založení nového
+    // bazénu jde přes stejný formulář (exists=false).
+    function savePoolFromForm(data) {
       const pools = getPools();
       const current = getActivePool(pools) || normalizePool({}, pools.length);
-      // Formulář "Nové měření" nechává pH/teplotu prázdné (nepředvyplňuje se stará
-      // hodnota) - když je uživatel nevyplní, zůstává aktuální pH/teplota bazénu
-      // beze změny (nesmaže se na prázdno) a žádné nové měření se nezaznamená.
-      const typedPh = normalizeText(data.ph);
-      const typedWaterTempC = normalizeText(data.waterTempC);
       const next = normalizePool({
         ...current,
         ...data,
         name: normalizeText(data.name) || current.name,
-        ph: typedPh === '' ? current.ph : data.ph,
-        waterTempC: typedWaterTempC === '' ? current.waterTempC : data.waterTempC,
         updatedAt: new Date().toISOString()
       });
-      const measurement = normalizePoolMeasurement({
-        date: normalizeText(data.measurementDate) || todayISO(),
-        time: normalizePoolTime(data.measurementTime) || currentPoolTime(),
-        ph: typedPh === '' ? '' : next.ph,
-        waterTempC: typedWaterTempC === '' ? '' : next.waterTempC,
-        note: next.note
-      });
-      if (shouldAppendMeasurement(current, measurement)) {
-        next.measurements = normalizePoolMeasurements([...(current.measurements || []), measurement]);
-      } else {
-        next.measurements = normalizePoolMeasurements(current.measurements || []);
-      }
       const exists = pools.some((pool) => pool.id === current.id);
       const nextPools = exists ? pools.map((pool) => (pool.id === current.id ? next : pool)) : [...pools, next];
       activePoolId = next.id;
-      activePoolMeasurementEditId = '';
       persistPools(nextPools);
       render();
-      showToast('Bazén uložen');
+      showToast(exists ? 'Nastavení bazénu uloženo' : 'Bazén založen');
+    }
+
+    // "Nové měření" - jen pH a teplota vody, datum/čas se berou automaticky.
+    // Vždy zapíše nový záznam do historie (na rozdíl od dřívějšího chování,
+    // kdy uložení nastavení mimochodem přidalo měření jen když se pH/teplota
+    // lišily od posledního záznamu - teď je to oddělená, výslovná akce).
+    function addPoolMeasurementFromForm(data) {
+      const pools = getPools();
+      const current = getActivePool(pools);
+      if (!current) return showToast('Nejdřív založ bazén');
+      const typedPh = normalizeText(data.ph);
+      const typedWaterTempC = normalizeText(data.waterTempC);
+      if (typedPh === '' && typedWaterTempC === '') {
+        showToast('Zadej pH nebo teplotu vody');
+        return;
+      }
+      const measurement = normalizePoolMeasurement({
+        date: todayISO(),
+        time: currentPoolTime(),
+        ph: typedPh === '' ? '' : data.ph,
+        waterTempC: typedWaterTempC === '' ? '' : data.waterTempC
+      });
+      const nextMeasurements = normalizePoolMeasurements([...(current.measurements || []), measurement]);
+      const nextPool = poolWithLatestMeasurementState({ ...current, measurements: nextMeasurements });
+      const nextPools = pools.map((pool) => (pool.id === current.id ? nextPool : pool));
+      persistPools(nextPools, { immediate: true });
+      render();
+      showToast('Měření uloženo');
     }
 
     return {
@@ -720,6 +735,7 @@
       latestPoolMeasurement,
       renderPool,
       savePoolFromForm,
+      addPoolMeasurementFromForm,
       addPool,
       selectPool,
       deletePool,
