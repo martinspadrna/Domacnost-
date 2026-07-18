@@ -711,17 +711,9 @@ async function run() {
     if (weatherOk) ok('Počasí: Home detail text je pryč a záložka Další má Slunce/Měsíc v novém povrchu.');
 
     await page.send('Runtime.evaluate', {
-      expression: `window.__DOMACNOST_E2E_NAV__ ? window.__DOMACNOST_E2E_NAV__('more') : document.querySelector('[data-nav="more"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('vape', 'items') : document.querySelector('[data-nav="vape"]')?.click()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 350));
-    await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.more-module-section [data-nav="vape"], [data-nav="vape"]')?.click()`
-    });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
-    await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.section-tabs [data-area="vape"][data-tab="items"]')?.click()`
-    });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 300));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 800));
     const vapeCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
@@ -755,17 +747,9 @@ async function run() {
     if (vapeOk) ok('Vape: Kalkulačky/Ceník/Přehled jsou ve společném module-tabbed povrchu.');
 
     await page.send('Runtime.evaluate', {
-      expression: `window.__DOMACNOST_E2E_NAV__ ? window.__DOMACNOST_E2E_NAV__('more') : document.querySelector('[data-nav="more"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('calendar', 'sources') : document.querySelector('[data-nav="calendar"]')?.click()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 350));
-    await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.more-module-section [data-nav="calendar"], [data-nav="calendar"]')?.click()`
-    });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 700));
-    await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.section-tabs [data-area="calendar"][data-tab="sources"]')?.click()`
-    });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 250));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 800));
     const calendarCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
@@ -782,7 +766,11 @@ async function run() {
         const sourceDetailsDisplay = sourceDetailsStyle?.display || '';
         const sourceDetailsRadius = sourceDetailsStyle?.borderTopLeftRadius || '';
         const sourceText = sourceItem?.innerText || '';
-        document.querySelector('.section-tabs [data-area="calendar"][data-tab="overview"]')?.click();
+        if (typeof window.__DOMACNOST_E2E_NAV__ === 'function') {
+          window.__DOMACNOST_E2E_NAV__('calendar', 'overview');
+        } else {
+          document.querySelector('.section-tabs [data-area="calendar"][data-tab="overview"]')?.click();
+        }
         const overview = document.querySelector('.calendar-panel.panel-overview');
         const monthView = document.querySelector('.calendar-month-view');
         const toolbar = document.querySelector('.calendar-month-toolbar');
@@ -919,6 +907,9 @@ async function run() {
         const rowStyle = row ? getComputedStyle(row) : null;
         return {
           modal: Boolean(modal),
+          helper: typeof window.__DOMACNOST_E2E_OPEN_GARAGE_MODAL__,
+          helperState: window.__DOMACNOST_E2E_LAST_GARAGE_MODAL__ || null,
+          bodyText: (document.body?.innerText || '').slice(0, 360),
           bodyOpen: document.body.classList.contains('overview-open'),
           backdrop: Boolean(backdrop),
           modalSurface: Boolean(modalStyle && parseFloat(modalStyle.borderTopLeftRadius) >= 18 && /auto|scroll/.test(modalStyle.overflowY) && modalStyle.overscrollBehaviorY === 'contain'),
@@ -1281,7 +1272,7 @@ async function run() {
     if (!/Olej/.test(garageDetailValue.serviceText || '') || !/Smoke servis/.test(garageDetailValue.historyText || '')) { fail('Garáž detail neukazuje seed servisní plán a historii.'); garageOk = false; }
 
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.section-tabs [data-area="garage"][data-tab="stats"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('garage', 'stats') : document.querySelector('.section-tabs [data-area="garage"][data-tab="stats"]')?.click()`
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 350));
     const garageStatsCheck = await page.send('Runtime.evaluate', {
@@ -1311,7 +1302,7 @@ async function run() {
     if (!/Statistiky/.test(garageStatsValue.text || '')) { fail('Garáž statistiky neukazují obsah.'); garageOk = false; }
 
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.section-tabs [data-area="garage"][data-tab="calculator"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('garage', 'calculator') : document.querySelector('.section-tabs [data-area="garage"][data-tab="calculator"]')?.click()`
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 350));
     const garageCalculatorCheck = await page.send('Runtime.evaluate', {
@@ -1335,7 +1326,7 @@ async function run() {
     if (!garageCalculatorValue.resultSurface) { fail('Garáž kalkulačka výsledek nemá nový povrch.'); garageOk = false; }
 
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.section-tabs [data-area="garage"][data-tab="add"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('garage', 'add') : document.querySelector('.section-tabs [data-area="garage"][data-tab="add"]')?.click()`
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 350));
     const garageAddCheck = await page.send('Runtime.evaluate', {
@@ -1390,9 +1381,19 @@ async function run() {
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 500));
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('button[data-action="open-garage-detail"][data-garage-target="add-fuel"], button[data-action="select-vehicle"][data-garage-target="add-fuel"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_OPEN_GARAGE_MODAL__ === 'function' ? window.__DOMACNOST_E2E_OPEN_GARAGE_MODAL__('add-fuel') : document.querySelector('button[data-action="open-garage-detail"][data-garage-target="add-fuel"], button[data-action="select-vehicle"][data-garage-target="add-fuel"]')?.click()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 900));
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      await new Promise((resolveWait) => setTimeout(resolveWait, 450));
+      const readyCheck = await page.send('Runtime.evaluate', {
+        returnByValue: true,
+        expression: `Boolean(document.querySelector('.app-modal.garage-record-modal form[data-form="add-fuel"]'))`
+      });
+      if (readyCheck.result?.value) break;
+      await page.send('Runtime.evaluate', {
+        expression: `typeof window.__DOMACNOST_E2E_OPEN_GARAGE_MODAL__ === 'function' ? window.__DOMACNOST_E2E_OPEN_GARAGE_MODAL__('add-fuel') : document.querySelector('button[data-action="open-garage-detail"][data-garage-target="add-fuel"], button[data-action="select-vehicle"][data-garage-target="add-fuel"]')?.click()`
+      });
+    }
     const modalCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {

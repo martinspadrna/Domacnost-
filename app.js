@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_472';
-  const APP_BUILD = 472;
+  const APP_VERSION = 'Domácnost+ v.0.1_473';
+  const APP_BUILD = 473;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -20098,6 +20098,18 @@
         event = (state.calendar || []).find((item) => /Smoke udalost/i.test(String(item.title || ''))) || (state.calendar || [])[0];
       }
       calendarDetailEventId = String(event?.id || event?.cloudId || key || '');
+      render();
+    };
+    window.__DOMACNOST_E2E_OPEN_GARAGE_MODAL__ = (type = 'add-fuel') => {
+      const modalType = String(type || 'add-fuel');
+      const vehicle = (state.vehicles || []).find((item) => vehicleOwnershipStatus(item) === 'owned') || (state.vehicles || [])[0] || null;
+      activeOverview = null;
+      activeModule = 'garage';
+      moduleTabs = { ...(moduleTabs || {}), garage: 'detail' };
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      if (vehicle?.id) garageVehicleId = vehicle.id;
+      garageModal = { type: modalType, vehicleId: vehicle?.id || garageVehicleId || '' };
+      window.__DOMACNOST_E2E_LAST_GARAGE_MODAL__ = { type: garageModal.type, vehicleId: garageModal.vehicleId, vehicles: (state.vehicles || []).length };
       render();
     };
   }
