@@ -1,11 +1,12 @@
 const CACHE_PREFIX = 'domacnost-plus-';
-const CACHE_NAME = `${CACHE_PREFIX}v0-1-470`;
+const CACHE_NAME = `${CACHE_PREFIX}v0-1-471`;
 const APP_ASSETS = [
   './',
   './index.html',
   './styles.css',
   './icon-assets.css',
   './shopping.css',
+  './supabase.js',
   './utils.js',
   './shopping-utils.js',
   './shopping-render.js',
@@ -108,6 +109,9 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== location.origin) return;
+  // Lokální vývoj: žádné SW cachování, jinak by cache-first start skrýval
+  // čerstvě uložené soubory až do další instalace service workeru.
+  if (requestUrl.hostname === 'localhost' || requestUrl.hostname === '127.0.0.1') return;
 
   const isManifest = requestUrl.pathname.endsWith('/manifest.webmanifest');
   const isInstallIcon = requestUrl.pathname.includes('/icons/') && /apple-touch-icon|favicon|domacnost-plus-icon|maskable/.test(requestUrl.pathname);
@@ -124,11 +128,17 @@ self.addEventListener('fetch', (event) => {
   const isNavigation = event.request.mode === 'navigate' || requestUrl.pathname.endsWith('/');
   const isCoreAppFile = /\/(index\.html|app\.js|styles\.css|icon-assets\.css|shopping\.css|shopping-utils\.js|shopping-render\.js|shopping-actions\.js|sw\.js)$/.test(requestUrl.pathname);
 
+  // Start appky je cache-first: síť dřív blokovala každé spuštění (na mobilu
+  // klidně několik vteřin, než dorazil index.html + app.js + styles.css), i
+  // když byla kompletní aktuální verze předcachovaná. Nové verze se dál
+  // dostávají ke slovu přes update service workeru (nový CACHE_NAME se při
+  // instalaci předcachuje celý najednou a po "Aktualizovat" se atomicky
+  // přepne) - takže cache-first nemíchá soubory dvou verzí.
   if (isNavigation) {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => cacheNetworkResponse(event.request, response))
-        .catch(() => matchCached(event.request, './index.html').then((cached) => cached || caches.match('./index.html')))
+      matchCached(event.request, './index.html').then((cached) =>
+        cached || fetch(event.request).then((response) => cacheNetworkResponse(event.request, response))
+      )
     );
     return;
   }
@@ -136,9 +146,9 @@ self.addEventListener('fetch', (event) => {
   if (isCoreAppFile) {
     const fallbackKey = CORE_FALLBACKS[requestUrl.pathname] || `.${requestUrl.pathname}`;
     event.respondWith(
-      fetch(event.request)
-        .then((response) => cacheNetworkResponse(event.request, response))
-        .catch(() => matchCached(event.request, fallbackKey))
+      matchCached(event.request, fallbackKey).then((cached) =>
+        cached || fetch(event.request).then((response) => cacheNetworkResponse(event.request, response))
+      )
     );
     return;
   }
