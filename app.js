@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_473';
-  const APP_BUILD = 473;
+  const APP_VERSION = 'Domácnost+ v.0.1_474';
+  const APP_BUILD = 474;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -3664,12 +3664,17 @@
     let subtitle = escapeHtml(vehicle.name || 'Auto');
     let form = '';
     if (type === 'add-fuel') {
+      const lastOdometer = getVehicleLastKnownOdometer(vehicle.id);
+      const odometerPlaceholder = lastOdometer ? `naposled ${formatKm(lastOdometer)}` : 'např. 125000';
       title = 'Přidat tankování';
       form = `
         <form data-form="add-fuel" data-vehicle-id="${escapeHtml(vehicle.id)}" class="compact-form garage-modal-form">
           <div class="form-grid two">
             ${field('Datum tankování', 'date', 'date', '', true, todayISO())}
-            ${field('Stav km', 'odometer', 'number', 'např. 125000', true)}
+            <div class="field">
+              <label for="field-fuel-odometer">Stav km</label>
+              <input class="input" id="field-fuel-odometer" name="odometer" type="number" step="1" inputmode="numeric" placeholder="${escapeHtml(odometerPlaceholder)}" ${lastOdometer ? `min="${escapeHtml(String(lastOdometer))}"` : ''} required>
+            </div>
             <div class="fuel-cost-row wide-row">
               ${fuelNumberField('Litry', 'liters', 'např. 42,5')}
               ${fuelNumberField('Cena za litr', 'pricePerLiter', 'např. 38,90')}
@@ -11193,6 +11198,13 @@
     return values.length ? Math.max(...values) : 0;
   }
 
+  function getVehicleLastKnownOdometer(vehicleId) {
+    const vehicle = (state.vehicles || []).find((item) => item.id === vehicleId);
+    if (!vehicle) return 0;
+    const rows = garageRowsForVehicle(vehicle.id);
+    return getVehicleCurrentOdometer(vehicle, rows.fuelRows, rows.serviceRows);
+  }
+
   // Tankování/servis se zadaným stavem km musí posunout i vehicle.odometer
   // ("Aktuální km" v nastavení auta) — jinak to pole zůstane na staré hodnotě
   // ze založení auta, i když má appka novější (vyšší) odečet z tankování.
@@ -15663,6 +15675,17 @@
       },
       'add-fuel': async () => {
         const fuelParts = normalizeFuelCostParts(data);
+        const lastOdometer = getVehicleLastKnownOdometer(form.dataset.vehicleId);
+        const odometer = Math.round(Number(data.odometer || 0));
+        if (lastOdometer && Number.isFinite(odometer) && odometer < lastOdometer) {
+          showToast(`Stav km nemůže být menší než poslední: ${formatKm(lastOdometer)}`);
+          const input = form.querySelector('[name="odometer"]');
+          input?.setCustomValidity?.(`Zadej alespoň ${lastOdometer} km`);
+          input?.reportValidity?.();
+          input?.addEventListener?.('input', () => input.setCustomValidity(''), { once: true });
+          input?.focus?.();
+          return;
+        }
         const item = { id: uid(), householdId: currentHouseholdId(), profileId: currentProfileId(), createdAt: new Date().toISOString(), vehicleId: form.dataset.vehicleId, date: data.date, odometer: data.odometer, liters: fuelParts.liters, price: fuelParts.price, pricePerLiter: fuelParts.pricePerLiter, note: data.note };
         state.fuel.push(item);
         syncVehicleOdometerFromReading(item.vehicleId, item.odometer);

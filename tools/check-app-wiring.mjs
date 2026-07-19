@@ -142,6 +142,9 @@ if (app) {
   expect(app, 'keys.find((candidate) => map.has(candidate))', 'app.js: dedupe aut sloučí lokální/cloud záznam podle libovolného aliasu.');
   expect(app, 'function remapVehicleServicePlanMap', 'app.js: servisní plán auta se přemapuje při sloučení duplicitních vozidel.');
   expect(app, 'state.settings.vehicleServicePlans = remapVehicleServicePlanMap', 'app.js: dedupe aut neponechá servisní plán pod odstraněným vehicleId.');
+  expect(app, 'function getVehicleLastKnownOdometer', 'app.js: Garáž umí zjistit poslední známý nájezd auta.');
+  expect(app, 'naposled ${formatKm(lastOdometer)}', 'app.js: tankování ukazuje placeholder s posledním nájezdem.');
+  expect(app, 'odometer < lastOdometer', 'app.js: tankování blokuje menší nájezd než poslední známý.');
   expect(calendar, 'function parseIcsEvents', 'calendar.js: ICS/iCal ma frontend fallback parser.');
   expect(calendar, 'function syncIcsSourcesInBrowser', 'calendar.js: ICS/iCal umi nacist udalosti i bez edge funkce.');
   expect(calendar, "filter((event) => !keys.includes(String(event.sourceId || '')))", 'calendar.js: browser ICS sync maze lokalni udalosti, ktere uz ve zdroji nejsou.');
