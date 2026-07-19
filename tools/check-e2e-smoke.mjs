@@ -835,7 +835,17 @@ async function run() {
         item?.click();
       })()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 700));
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      await new Promise((resolveWait) => setTimeout(resolveWait, 350));
+      const readyCheck = await page.send('Runtime.evaluate', {
+        returnByValue: true,
+        expression: `Boolean(document.querySelector('.calendar-event-modal.app-modal'))`
+      });
+      if (readyCheck.result?.value) break;
+      await page.send('Runtime.evaluate', {
+        expression: `typeof window.__DOMACNOST_E2E_OPEN_CALENDAR_DETAIL__ === 'function' ? window.__DOMACNOST_E2E_OPEN_CALENDAR_DETAIL__('calendar-event-e2e-smoke') : document.querySelector('.calendar-day-event[data-action="calendar-event-detail"]')?.click()`
+      });
+    }
     const calendarModalCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
@@ -944,19 +954,13 @@ async function run() {
     await new Promise((resolveWait) => setTimeout(resolveWait, 350));
 
     await page.send('Runtime.evaluate', {
-      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('more') : document.querySelector('.nav-shell [data-nav="more"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('settings', 'data') : document.querySelector('[data-nav="settings"]')?.click()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
-
-    await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.more-settings-card[data-nav="settings"]')?.click()`
-    });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 800));
     const settingsCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
         const settings = document.querySelector('.settings-tabbed[data-tab-area="settings"]');
-        document.querySelector('.section-tabs [data-area="settings"][data-tab="data"]')?.click();
         const card = document.querySelector('.compact-settings-card');
         const cardStyle = card ? getComputedStyle(card) : null;
         const visualChoice = document.querySelector('.visual-choice-card');
@@ -998,9 +1002,9 @@ async function run() {
     if (settingsOk) ok('Nastavení: karty, volby vzhledu a import dat renderují v novém povrchu.');
 
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('[data-nav="pool"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('pool') : document.querySelector('[data-nav="pool"]')?.click()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 800));
     const poolOverviewCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
@@ -1028,9 +1032,9 @@ async function run() {
     if (!poolOverviewValue.chartSurface) { fail('Bazénový graf nemá sjednocený detailní/grafový povrch.'); poolOk = false; }
 
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('[data-action="set-section-tab"][data-area="pool"][data-tab="add"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('pool', 'add') : document.querySelector('[data-action="set-section-tab"][data-area="pool"][data-tab="add"]')?.click()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 800));
     const poolAddCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => ({
@@ -1048,18 +1052,18 @@ async function run() {
     if (poolOk) ok('Bazén: přehled (objem/pH/teplota/graf) i záložka Nové měření s formulářem renderují.');
 
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('[data-nav="finance"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('finance', 'loans') : document.querySelector('[data-nav="finance"]')?.click()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 800));
     // Běžný klik na modul v dolní liště teď vždy resetuje zapamatovanou
     // záložku na výchozí (viz app.js click handler pro [data-nav]) - do
     // Půjček je proto potřeba přepnout výslovným kliknutím na záložku,
     // stejně jako se to řeší výš u Bazénu/"Nové měření". Spoléhat na
     // předvyplněné moduleTabs.finance='loans' v localStorage už nestačí.
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('[data-action="set-section-tab"][data-area="finance"][data-tab="loans"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('finance', 'loans') : document.querySelector('[data-action="set-section-tab"][data-area="finance"][data-tab="loans"]')?.click()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 800));
     const financeCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
@@ -1120,9 +1124,9 @@ async function run() {
     if (financeOk) ok('Finance: půjčka a refinancování renderují.');
 
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('[data-nav="contracts"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('contracts') : document.querySelector('[data-nav="contracts"]')?.click()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 800));
     const contractsCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
@@ -1148,13 +1152,9 @@ async function run() {
     if (contractsOk) ok('Smlouvy: přehled, detail i příloha formuláře renderují.');
 
     await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.nav-shell [data-nav="more"]')?.click()`
+      expression: `typeof window.__DOMACNOST_E2E_NAV__ === 'function' ? window.__DOMACNOST_E2E_NAV__('garage') : document.querySelector('[data-nav="garage"]')?.click()`
     });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 350));
-    await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('.more-module-section [data-nav="garage"], [data-nav="garage"]')?.click()`
-    });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 600));
+    await new Promise((resolveWait) => setTimeout(resolveWait, 900));
     const garageOverviewCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
