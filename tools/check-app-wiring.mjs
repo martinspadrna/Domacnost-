@@ -295,6 +295,10 @@ if (shoppingCss) {
   expect(shoppingCss, '.loyalty-wallet-grid .loyalty-card-item:not(.is-editing) {\n  min-height: 158px;', 'shopping.css: kompaktni vernostni karty ziji ve finalni vrstve bez !important override.');
 }
 
+if (app) {
+  expect(app, 'window.__DOMACNOST_E2E_OPEN_SHOPPING_DONE__', 'app.js: E2E umi otevrit Nakup Hotovo modal deterministicky.');
+}
+
 if (pkg) {
   expect(pkg, '"check:wiring"', 'package.json: check:wiring je v npm skriptech.');
   expect(pkg, 'npm run check:wiring', 'package.json: hlavní check spouští wiring smoke.');

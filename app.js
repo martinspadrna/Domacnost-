@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_475';
-  const APP_BUILD = 475;
+  const APP_VERSION = 'Domácnost+ v.0.1_476';
+  const APP_BUILD = 476;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -20133,6 +20133,21 @@
       if (vehicle?.id) garageVehicleId = vehicle.id;
       garageModal = { type: modalType, vehicleId: vehicle?.id || garageVehicleId || '' };
       window.__DOMACNOST_E2E_LAST_GARAGE_MODAL__ = { type: garageModal.type, vehicleId: garageModal.vehicleId, vehicles: (state.vehicles || []).length };
+      render();
+    };
+    window.__DOMACNOST_E2E_OPEN_SHOPPING_DONE__ = () => {
+      ensureShoppingListsReady();
+      const list = getShoppingLists().find((item) => shoppingItemsForList(item.id).some((shoppingItem) => shoppingItem.done)) || getShoppingLists()[0] || null;
+      activeOverview = null;
+      activeModule = 'shopping';
+      moduleTabs = { ...(moduleTabs || {}), shopping: 'list' };
+      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      if (list?.id) state.activeShoppingListId = list.id;
+      shoppingDoneModalOpen = true;
+      window.__DOMACNOST_E2E_LAST_SHOPPING_DONE__ = {
+        listId: list?.id || '',
+        doneItems: list?.id ? shoppingItemsForList(list.id).filter((item) => item.done).length : 0
+      };
       render();
     };
   }

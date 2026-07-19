@@ -898,10 +898,17 @@ async function run() {
       })()`
     });
     await new Promise((resolveWait) => setTimeout(resolveWait, 900));
-    await page.send('Runtime.evaluate', {
-      expression: `document.querySelector('[data-action="open-shopping-done-modal"]')?.click()`
-    });
-    await new Promise((resolveWait) => setTimeout(resolveWait, 900));
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      await page.send('Runtime.evaluate', {
+        expression: `typeof window.__DOMACNOST_E2E_OPEN_SHOPPING_DONE__ === 'function' ? window.__DOMACNOST_E2E_OPEN_SHOPPING_DONE__() : document.querySelector('[data-action="open-shopping-done-modal"]')?.click()`
+      });
+      await new Promise((resolveWait) => setTimeout(resolveWait, 300));
+      const readyCheck = await page.send('Runtime.evaluate', {
+        returnByValue: true,
+        expression: `Boolean(document.querySelector('.shopping-done-modal.app-modal'))`
+      });
+      if (readyCheck.result?.value) break;
+    }
     const shoppingDoneCheck = await page.send('Runtime.evaluate', {
       returnByValue: true,
       expression: `(() => {
@@ -917,8 +924,8 @@ async function run() {
         const rowStyle = row ? getComputedStyle(row) : null;
         return {
           modal: Boolean(modal),
-          helper: typeof window.__DOMACNOST_E2E_OPEN_GARAGE_MODAL__,
-          helperState: window.__DOMACNOST_E2E_LAST_GARAGE_MODAL__ || null,
+          helper: typeof window.__DOMACNOST_E2E_OPEN_SHOPPING_DONE__,
+          helperState: window.__DOMACNOST_E2E_LAST_SHOPPING_DONE__ || null,
           bodyText: (document.body?.innerText || '').slice(0, 360),
           bodyOpen: document.body.classList.contains('overview-open'),
           backdrop: Boolean(backdrop),
