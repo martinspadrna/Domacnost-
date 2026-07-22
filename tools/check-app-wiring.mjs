@@ -191,6 +191,12 @@ if (app) {
   expect(app, 'function isNavigationSwipeIgnoredTarget', 'app.js: navigační swipe má jednotný ignore helper.');
   expect(app, 'swipeStartTarget', 'app.js: navigační swipe kontroluje i místo začátku gesta.');
   expect(app, 'isNavigationSwipeIgnoredTarget(event.target) || isNavigationSwipeIgnoredTarget(swipeStartTarget)', 'app.js: swipe navigace ignoruje start i konec v chráněném bloku.');
+  expect(app, 'function deferUiStorageSet', 'app.js: UI storage preference se zapisují odloženě mimo klik.');
+  expect(app, 'function persistActiveModuleSoon', 'app.js: aktivní modul má odložený persistence helper.');
+  expect(app, 'function persistModuleTabsSoon', 'app.js: modulové záložky mají odložený persistence helper.');
+  expect(app, "cloudWarmStartTimer = runWhenUiQuiet(() => {\n        cloudWarmStartTimer = null;", 'app.js: cloud warm-start u přihlášeného uživatele ustoupí první interakci.');
+  expectAbsent(app, "localStorage.setItem('homeWeb.activeModule', activeModule);", 'app.js: přepnutí modulu nesmí synchronně zapisovat activeModule do localStorage.');
+  expectAbsent(app, "localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));", 'app.js: přepnutí záložek nesmí synchronně zapisovat moduleTabs do localStorage.');
   expect(app, "'.form-actions'", 'app.js: formulářové akce jsou chráněné proti swipe přepnutí.');
   expect(app, "'.finance-toolbar'", 'app.js: finance toolbar je chráněný proti swipe přepnutí.');
   expect(app, "'.garage-history-toolbar'", 'app.js: garážové filtry jsou chráněné proti swipe přepnutí.');

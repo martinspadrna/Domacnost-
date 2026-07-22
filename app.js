@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_476';
-  const APP_BUILD = 476;
+  const APP_VERSION = 'Domácnost+ v.0.1_477';
+  const APP_BUILD = 477;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -1190,6 +1190,9 @@
   let pendingStatePersistKind = '';
   let lastStatePersistAt = 0;
   let statePersistDirty = false;
+  let deferredUiStorageTimer = 0;
+  const deferredUiStorageValues = new Map();
+  const deferredUiStorageLastWritten = new Map();
   let cloudWarmStartTimer = null;
   let bootCloudMaintenanceTimer = null;
   let bootBackgroundCloudLoadTimer = null;
@@ -2719,6 +2722,38 @@
     return window.setTimeout(attempt, Math.max(0, delay));
   }
 
+  function flushDeferredUiStorage() {
+    deferredUiStorageTimer = 0;
+    deferredUiStorageValues.forEach((value, key) => {
+      if (deferredUiStorageLastWritten.get(key) === value) return;
+      try {
+        localStorage.setItem(key, value);
+        deferredUiStorageLastWritten.set(key, value);
+      } catch {}
+    });
+    deferredUiStorageValues.clear();
+  }
+
+  function deferUiStorageSet(key, value) {
+    const stringValue = String(value ?? '');
+    if (deferredUiStorageLastWritten.get(key) === stringValue) return;
+    deferredUiStorageValues.set(key, stringValue);
+    if (deferredUiStorageTimer) return;
+    const schedule = () => {
+      deferredUiStorageTimer = 0;
+      runWhenUiQuiet(flushDeferredUiStorage, { delay: 0, quietMs: 420, timeout: 1400 });
+    };
+    deferredUiStorageTimer = window.setTimeout(schedule, 0);
+  }
+
+  function persistActiveModuleSoon(moduleId = activeModule) {
+    deferUiStorageSet('homeWeb.activeModule', moduleId || 'home');
+  }
+
+  function persistModuleTabsSoon() {
+    deferUiStorageSet('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs || {}));
+  }
+
   function yieldToMainThread() {
     return new Promise((resolve) => window.setTimeout(resolve, 0));
   }
@@ -2763,8 +2798,21 @@
     if (cloudWarmStartTimer) return;
     // If we believe the user is signed in (saved state), start eagerly so the
     // household loads quickly and the "not configured" login flash is minimised.
+    // It still waits for a short quiet window: the first tap after opening the
+    // app should paint the requested module before any cloud warm-start JSON
+    // merge/render work gets time on the main thread.
     const isLikelySignedIn = hasStoredSupabaseSession() || (state.cloud?.status === 'signed-in' && Boolean(state.cloud?.userId));
-    const delay = isLikelySignedIn ? 0 : 6200;
+    if (isLikelySignedIn) {
+      cloudWarmStartTimer = runWhenUiQuiet(() => {
+        cloudWarmStartTimer = null;
+        cloudWarmStartLoad(false).catch((error) => {
+          bootCloudResumeChecked = true;
+          requestBackgroundRender();
+          console.warn('Cloud warm start failed', error);
+        });
+      }, { delay: 140, quietMs: 520, timeout: 2200 });
+      return;
+    }
     cloudWarmStartTimer = runWhenMainThreadFree(() => {
       cloudWarmStartTimer = null;
       cloudWarmStartLoad(false).catch((error) => {
@@ -2772,7 +2820,7 @@
         requestBackgroundRender();
         console.warn('Cloud warm start failed', error);
       });
-    }, { delay, timeout: 9000 });
+    }, { delay: 6200, timeout: 9000 });
   }
 
   function scheduleBootCloudMaintenance() {
@@ -3206,7 +3254,7 @@
         const visibleModules = getVisibleModules();
         const selectableModules = [...visibleModules, MORE_MODULE];
         if (!selectableModules.some((module) => module.id === activeModule)) activeModule = 'home';
-      localStorage.setItem('homeWeb.activeModule', activeModule);
+      persistActiveModuleSoon(activeModule);
 
         const active = selectableModules.find((module) => module.id === activeModule) || visibleModules[0];
         const bottomNavModules = getBottomNavModules();
@@ -3427,7 +3475,7 @@
       shoppingSwipeStart = null;
       document.body.classList.remove('overview-open');
     }
-    localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+    persistModuleTabsSoon();
     render();
     keepActiveSectionTabsCentered('smooth');
   }
@@ -6900,7 +6948,7 @@
       setDetailsOpen,
       writeFinanceModuleTab: (tab) => {
         moduleTabs = { ...(moduleTabs || {}), finance: tab };
-        localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+        persistModuleTabsSoon();
       },
       getModuleTab,
       escapeHtml,
@@ -10225,7 +10273,7 @@
       state.readingMeters = [...readingsMeters(true), ...result.meters];
       state.readings = [...readingsEntries(), ...result.entries];
       moduleTabs = { ...(moduleTabs || {}), readings: 'meters' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       if (fileInput) fileInput.value = '';
       await persistReadingsState(`Import hotový: ${result.meters.length} měřidel, ${result.entries.length} odečtů`);
     } catch (error) {
@@ -15670,7 +15718,7 @@
         garageCalcVehicleId = data.vehicleId || garageCalcVehicleId;
         garageTripCalcResult = { vehicleId: garageCalcVehicleId, distance, consumption, fuelPrice, liters, total: liters * fuelPrice };
         moduleTabs = { ...(moduleTabs || {}), garage: 'calculator' };
-        localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+        persistModuleTabsSoon();
         render();
       },
       'add-fuel': async () => {
@@ -16165,9 +16213,9 @@
     const vehicles = garageOwnedVehicles();
     if (!vehicles.length) {
       activeModule = 'garage';
-      localStorage.setItem('homeWeb.activeModule', activeModule);
+      persistActiveModuleSoon(activeModule);
       moduleTabs = { ...(moduleTabs || {}), garage: 'add' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       render();
       showToast('Nejdřív přidej auto');
       return;
@@ -17228,8 +17276,8 @@
         activeOverview = null;
         activeModule = 'calendar';
         moduleTabs = { ...(moduleTabs || {}), calendar: 'overview' };
-        localStorage.setItem('homeWeb.activeModule', activeModule);
-        localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+        persistActiveModuleSoon(activeModule);
+        persistModuleTabsSoon();
         render();
         keepActiveNavCentered('smooth');
         keepActiveSectionTabsCentered('smooth');
@@ -17580,7 +17628,7 @@
       garageEditRecord = null;
       garageModal = null;
       moduleTabs = { ...(moduleTabs || {}), garage: 'overview' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       touchState();
       saveState();
       render();
@@ -17631,7 +17679,7 @@
       garageVehicleId = button.dataset.id || garageVehicleId;
       garageStatsVehicleId = garageVehicleId;
       moduleTabs = { ...(moduleTabs || {}), garage: 'overview' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       render();
       return;
     }
@@ -17654,9 +17702,9 @@
       garageEditRecord = null;
       activeOverview = null;
       activeModule = 'garage';
-      localStorage.setItem('homeWeb.activeModule', activeModule);
+      persistActiveModuleSoon(activeModule);
       moduleTabs = { ...(moduleTabs || {}), garage: 'detail' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       const garageTarget = button.dataset.garageTarget || '';
       render();
       keepActiveSectionTabsCentered('smooth');
@@ -17666,7 +17714,7 @@
     if (action === 'select-contract') {
       activeContractId = button.dataset.id;
       moduleTabs = { ...(moduleTabs || {}), contracts: 'detail' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       render();
       keepActiveSectionTabsCentered('smooth');
       return;
@@ -17863,7 +17911,7 @@
       readingsMeterToolPage = readingsMeterToolPage === tool ? '' : tool;
       localStorage.setItem('domacnostPlus.readingsMeterToolPage', readingsMeterToolPage);
       moduleTabs = { ...(moduleTabs || {}), readings: 'meters' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       render();
       return;
     }
@@ -17877,7 +17925,7 @@
       readingsEntryDrawerOpen = true;
       moduleTabs = { ...(moduleTabs || {}), readings: 'entry' };
       localStorage.setItem('domacnostPlus.readingsEntryMeterId', readingsEntryMeterId);
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       render();
       return;
     }
@@ -17899,7 +17947,7 @@
       if (readingsEditingMeterId) localStorage.setItem('domacnostPlus.readingsEditingMeterId', readingsEditingMeterId);
       else localStorage.removeItem('domacnostPlus.readingsEditingMeterId');
       moduleTabs = { ...(moduleTabs || {}), readings: 'meters' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       render();
       return;
     }
@@ -19746,7 +19794,7 @@
         if (activeModule === 'subscriptions') resetSubscriptionMonthToCurrentForOpen();
         if (nav.dataset.targetTab && nav.dataset.nav !== 'homecare') {
           moduleTabs = { ...(moduleTabs || {}), [activeModule]: nav.dataset.targetTab };
-          localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+          persistModuleTabsSoon();
         } else if (nav.dataset.nav !== 'homecare' && moduleTabs && activeModule in moduleTabs) {
           // Běžné otevření modulu (dolní lišta, postranní menu...) bez
           // explicitního cíle se má vždy otevřít na základní záložce, ne na
@@ -19756,7 +19804,7 @@
           // (data-target-tab), takže je tahle větev nezasáhne.
           moduleTabs = { ...moduleTabs };
           delete moduleTabs[activeModule];
-          localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+          persistModuleTabsSoon();
         }
         markModuleTransition();
         render();
@@ -19872,7 +19920,7 @@
       readingsEntryDrawerOpen = true;
       localStorage.setItem('domacnostPlus.readingsEntryMeterId', readingsEntryMeterId);
       moduleTabs = { ...(moduleTabs || {}), readings: 'entry' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       render();
       return;
     }
@@ -19889,7 +19937,7 @@
       localStorage.setItem('domacnostPlus.readingsDetailPeriod', readingsDetailPeriod);
       localStorage.setItem('domacnostPlus.readingsCompareMeterIds', JSON.stringify(readingsCompareMeterIds));
       moduleTabs = { ...(moduleTabs || {}), readings: 'detail' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       render();
       return;
     }
@@ -19927,7 +19975,7 @@
       garageVehicleId = garageOverviewVehicle.value || garageVehicleId;
       garageStatsVehicleId = garageVehicleId;
       moduleTabs = { ...(moduleTabs || {}), garage: 'overview' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       render();
       return;
     }
@@ -19951,7 +19999,7 @@
       garageCalcVehicleId = garageCalcVehicle.value || '';
       garageTripCalcResult = null;
       moduleTabs = { ...(moduleTabs || {}), garage: 'calculator' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       render();
       return;
     }
@@ -19961,7 +20009,7 @@
       if (garageStatsFilter.dataset.garageStatsFilter === 'period') garageStatsPeriodFilter = garageStatsFilter.value || 'last12';
       if (garageStatsFilter.dataset.garageStatsFilter === 'type') garageStatsTypeFilter = garageStatsFilter.value || 'all';
       moduleTabs = { ...(moduleTabs || {}), garage: 'stats' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       render();
       return;
     }
@@ -20002,7 +20050,7 @@
       localStorage.setItem('domacnostPlus.readingsDetailPeriod', readingsDetailPeriod);
       localStorage.setItem('domacnostPlus.readingsCompareMeterIds', JSON.stringify(readingsCompareMeterIds));
       moduleTabs = { ...(moduleTabs || {}), readings: 'detail' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       render();
       return;
     }
@@ -20032,6 +20080,7 @@
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
+      flushDeferredUiStorage();
       flushStatePersist();
       return;
     }
@@ -20039,6 +20088,7 @@
   });
 
   window.addEventListener('pagehide', () => {
+    flushDeferredUiStorage();
     flushStatePersist();
   });
 
@@ -20047,6 +20097,7 @@
   // visibilitychange/pagehide (které se u samostatné (home-screen) PWA na
   // iOS občas vůbec nespustí, než systém proces ukončí).
   window.addEventListener('freeze', () => {
+    flushDeferredUiStorage();
     flushStatePersist();
   });
 
@@ -20104,11 +20155,11 @@
       if (activeModule === 'subscriptions') resetSubscriptionMonthToCurrentForOpen();
       if (tab) {
         moduleTabs = { ...(moduleTabs || {}), [nextModule]: tab };
-        localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+        persistModuleTabsSoon();
       } else if (moduleTabs && nextModule in moduleTabs) {
         moduleTabs = { ...moduleTabs };
         delete moduleTabs[nextModule];
-        localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+        persistModuleTabsSoon();
       }
       render();
     };
@@ -20129,7 +20180,7 @@
       activeOverview = null;
       activeModule = 'garage';
       moduleTabs = { ...(moduleTabs || {}), garage: 'detail' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       if (vehicle?.id) garageVehicleId = vehicle.id;
       garageModal = { type: modalType, vehicleId: vehicle?.id || garageVehicleId || '' };
       window.__DOMACNOST_E2E_LAST_GARAGE_MODAL__ = { type: garageModal.type, vehicleId: garageModal.vehicleId, vehicles: (state.vehicles || []).length };
@@ -20141,7 +20192,7 @@
       activeOverview = null;
       activeModule = 'shopping';
       moduleTabs = { ...(moduleTabs || {}), shopping: 'list' };
-      localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));
+      persistModuleTabsSoon();
       if (list?.id) state.activeShoppingListId = list.id;
       shoppingDoneModalOpen = true;
       window.__DOMACNOST_E2E_LAST_SHOPPING_DONE__ = {
