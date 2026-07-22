@@ -9,8 +9,8 @@
   const localStorage = createSafeStorage(window.localStorage, 'local');
   const sessionStorage = createSafeStorage(window.sessionStorage, 'session');
 
-  const APP_VERSION = 'Domácnost+ v.0.1_477';
-  const APP_BUILD = 477;
+  const APP_VERSION = 'Domácnost+ v.0.1_478';
+  const APP_BUILD = 478;
   const APP_TIME_ZONE = 'Europe/Prague';
   const DEFAULT_READING_GROUP_ID = 'default-readings-group';
   const STORAGE_KEY = 'domacnostPlus.v0.1_86';
@@ -1186,6 +1186,7 @@
   let renderQuietMotionUntil = 0;
   let renderQuietMotionCleanupTimer = 0;
   let moduleTransitionCleanupTimer = 0;
+  let postRenderLayoutToken = 0;
   let pendingStatePersistTimer = 0;
   let pendingStatePersistKind = '';
   let lastStatePersistAt = 0;
@@ -3230,6 +3231,8 @@
       markRenderDeferred(false);
       return;
     }
+    const renderStartedAt = performance?.now ? performance.now() : Date.now();
+    const renderModuleIdAtStart = activeModule || 'home';
     const formSnapshot = captureFormStabilitySnapshot();
     renderInProgress = true;
     try {
@@ -3318,11 +3321,8 @@
         `;
 
         if (app) app.setAttribute?.('data-boot-ok', '1');
-        promoteActiveContentBeforeForms();
-        syncNavMotion(navMotion, navMotionFromIndex, activeBottomNavIndex);
         lastRenderedBottomNavId = activeBottomNavId;
-        keepActiveNavCentered();
-        keepActiveSectionTabsCentered();
+        schedulePostRenderLayoutWork(navMotion, navMotionFromIndex, activeBottomNavIndex);
       }
     } finally {
       restoreFormStabilitySnapshot(formSnapshot);
@@ -3334,6 +3334,12 @@
         window.setTimeout(() => requestRender({ quiet }), 0);
       }
       clearQuietRenderClass();
+      if (state.meta?.mode === 'e2e-smoke' || ['127.0.0.1', 'localhost'].includes(window.location.hostname)) {
+        const renderMs = Math.round((performance?.now ? performance.now() : Date.now()) - renderStartedAt);
+        const timings = window.__DOMACNOST_E2E_RENDER_TIMINGS__ || [];
+        timings.push({ module: renderModuleIdAtStart, ms: renderMs, at: Date.now() });
+        window.__DOMACNOST_E2E_RENDER_TIMINGS__ = timings.slice(-80);
+      }
     }
   }
 
@@ -3370,6 +3376,20 @@
   function safeAnimationFrame(callback) {
     const frame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || ((fn) => window.setTimeout(fn, 0));
     frame(callback);
+  }
+
+  function schedulePostRenderLayoutWork(motion, fromIndex = 0, toIndex = 0) {
+    const token = ++postRenderLayoutToken;
+    safeAnimationFrame(() => {
+      if (token !== postRenderLayoutToken) return;
+      syncNavMotion(motion, fromIndex, toIndex);
+      keepActiveNavCentered();
+      keepActiveSectionTabsCentered();
+      runWhenMainThreadFree(() => {
+        if (token !== postRenderLayoutToken) return;
+        promoteActiveContentBeforeForms();
+      }, { delay: 0, timeout: 1400 });
+    });
   }
 
   function placeNavRunner(runner, item, animate = false) {

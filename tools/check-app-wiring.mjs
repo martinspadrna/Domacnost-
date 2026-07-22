@@ -47,6 +47,7 @@ const sw = read('sw.js');
 const pkg = read('package.json');
 const styles = read('styles.css');
 const shoppingCss = read('shopping.css');
+const e2e = read('tools/check-e2e-smoke.mjs');
 
 if (app && finance) {
   expect(app, "financeLoans: []", 'app.js: financeLoans jsou ve výchozím stavu.');
@@ -195,6 +196,11 @@ if (app) {
   expect(app, 'function persistActiveModuleSoon', 'app.js: aktivní modul má odložený persistence helper.');
   expect(app, 'function persistModuleTabsSoon', 'app.js: modulové záložky mají odložený persistence helper.');
   expect(app, "cloudWarmStartTimer = runWhenUiQuiet(() => {\n        cloudWarmStartTimer = null;", 'app.js: cloud warm-start u přihlášeného uživatele ustoupí první interakci.');
+  expect(app, 'function schedulePostRenderLayoutWork', 'app.js: layout práce po renderu je odložená mimo klikový task.');
+  expect(app, 'schedulePostRenderLayoutWork(navMotion, navMotionFromIndex, activeBottomNavIndex);', 'app.js: render odkládá nav/layout stabilizaci až po přepisu DOM.');
+  expect(app, 'window.__DOMACNOST_E2E_RENDER_TIMINGS__', 'app.js: E2E sbírá render timingy pro hlídání dlouhých prvních navigací.');
+  expect(e2e, 'renderTimingCheck', 'tools/check-e2e-smoke.mjs: E2E kontroluje render timingy.');
+  expect(e2e, 'maxMs || 0) > 2200', 'tools/check-e2e-smoke.mjs: E2E failne render v řádu sekund.');
   expectAbsent(app, "localStorage.setItem('homeWeb.activeModule', activeModule);", 'app.js: přepnutí modulu nesmí synchronně zapisovat activeModule do localStorage.');
   expectAbsent(app, "localStorage.setItem('domacnostPlus.moduleTabs', JSON.stringify(moduleTabs));", 'app.js: přepnutí záložek nesmí synchronně zapisovat moduleTabs do localStorage.');
   expect(app, "'.form-actions'", 'app.js: formulářové akce jsou chráněné proti swipe přepnutí.');

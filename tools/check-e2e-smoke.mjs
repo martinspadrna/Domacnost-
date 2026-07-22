@@ -1446,6 +1446,32 @@ async function run() {
     if (!modalValue.formSingleColumn) { fail('Modalni formular neni na mobilu jednosloupcovy.'); modalOk = false; }
     if (modalOk) ok('Modaly: garage tankovani se otevira jako novy mobilni sheet s formularovou akci.');
 
+    const renderTimingCheck = await page.send('Runtime.evaluate', {
+      returnByValue: true,
+      expression: `(() => {
+        const timings = Array.isArray(window.__DOMACNOST_E2E_RENDER_TIMINGS__) ? window.__DOMACNOST_E2E_RENDER_TIMINGS__ : [];
+        const sorted = [...timings].sort((a, b) => Number(b.ms || 0) - Number(a.ms || 0));
+        return {
+          count: timings.length,
+          slowest: sorted.slice(0, 5).map((item) => ({ module: item.module || '', ms: Number(item.ms || 0) })),
+          maxMs: sorted.length ? Number(sorted[0].ms || 0) : 0
+        };
+      })()`
+    });
+    const renderTimingValue = renderTimingCheck.result?.value || {};
+    if (process.env.E2E_DEBUG === '1') {
+      console.log('DEBUG render timings:', JSON.stringify(renderTimingValue, null, 2));
+    }
+    if (!renderTimingValue.count) {
+      fail('E2E nesebral render timingy pro kontrolu prvni navigace.');
+    } else if (Number(renderTimingValue.maxMs || 0) > 2200) {
+      const slowest = (renderTimingValue.slowest || []).map((item) => `${item.module}:${item.ms}ms`).join(', ');
+      fail(`Nektery render trval pres 2,2 s (${slowest}).`);
+    } else {
+      const slowest = (renderTimingValue.slowest || []).slice(0, 3).map((item) => `${item.module}:${item.ms}ms`).join(', ');
+      ok(`Performance: render tasky zustaly pod 2,2 s (${slowest || 'bez pomalych renderu'}).`);
+    }
+
     browserCdp.close();
   } finally {
     if (page) page.close();
